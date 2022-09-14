@@ -192,7 +192,23 @@ func (n *IsNil) Capture(_ []string) error {
 
 type EnumSymbol string
 
-func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) ([]Query, error) {
+type Parser struct {
+	functions  map[string]interface{}
+	pathParser PathExpressionParser
+	enumParser EnumParser
+	logger     Logger
+}
+
+func NewParser(functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser, logger Logger) Parser {
+	return Parser{
+		functions:  functions,
+		pathParser: pathParser,
+		enumParser: enumParser,
+		logger:     logger,
+	}
+}
+
+func (p *Parser) ParseQueries(statements []string) ([]Query, error) {
 	var queries []Query
 	var errors error
 
@@ -202,12 +218,12 @@ func ParseQueries(statements []string, functions map[string]interface{}, pathPar
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		function, err := NewFunctionCall(parsed.Invocation, functions, pathParser, enumParser)
+		function, err := p.NewFunctionCall(parsed.Invocation)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		expression, err := newBooleanExpressionEvaluator(parsed.WhereClause, functions, pathParser, enumParser)
+		expression, err := p.newBooleanExpressionEvaluator(parsed.WhereClause)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue

@@ -104,7 +104,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 		clientSpan.SpanID(),
 	)
 	serverSpan.SetKind(ptrace.SpanKindServer)
-	serverSpan.SetTraceState("key=val")
+	serverSpan.TraceStateStruct().FromRaw("key=val")
 	serverAttrs := serverSpan.Attributes()
 	serverAttrs.UpsertString(conventions.AttributeServiceName, "the-server")
 	serverAttrs.UpsertString(conventions.AttributeHTTPMethod, "POST")

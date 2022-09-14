@@ -261,7 +261,7 @@ func (m *metricContainerCPUTime) init() {
 	m.data.SetName("container.cpu.time")
 	m.data.SetDescription("Container CPU time")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -312,7 +312,7 @@ func (m *metricContainerCPUUtilization) init() {
 	m.data.SetName("container.cpu.utilization")
 	m.data.SetDescription("Container CPU utilization")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -361,7 +361,7 @@ func (m *metricContainerFilesystemAvailable) init() {
 	m.data.SetName("container.filesystem.available")
 	m.data.SetDescription("Container filesystem available")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerFilesystemAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -410,7 +410,7 @@ func (m *metricContainerFilesystemCapacity) init() {
 	m.data.SetName("container.filesystem.capacity")
 	m.data.SetDescription("Container filesystem capacity")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerFilesystemCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -459,7 +459,7 @@ func (m *metricContainerFilesystemUsage) init() {
 	m.data.SetName("container.filesystem.usage")
 	m.data.SetDescription("Container filesystem usage")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerFilesystemUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -508,7 +508,7 @@ func (m *metricContainerMemoryAvailable) init() {
 	m.data.SetName("container.memory.available")
 	m.data.SetDescription("Container memory available")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerMemoryAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -557,7 +557,7 @@ func (m *metricContainerMemoryMajorPageFaults) init() {
 	m.data.SetName("container.memory.major_page_faults")
 	m.data.SetDescription("Container memory major_page_faults")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerMemoryMajorPageFaults) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -606,7 +606,7 @@ func (m *metricContainerMemoryPageFaults) init() {
 	m.data.SetName("container.memory.page_faults")
 	m.data.SetDescription("Container memory page_faults")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerMemoryPageFaults) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -655,7 +655,7 @@ func (m *metricContainerMemoryRss) init() {
 	m.data.SetName("container.memory.rss")
 	m.data.SetDescription("Container memory rss")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerMemoryRss) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -704,7 +704,7 @@ func (m *metricContainerMemoryUsage) init() {
 	m.data.SetName("container.memory.usage")
 	m.data.SetDescription("Container memory usage")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -753,7 +753,7 @@ func (m *metricContainerMemoryWorkingSet) init() {
 	m.data.SetName("container.memory.working_set")
 	m.data.SetDescription("Container memory working_set")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerMemoryWorkingSet) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -802,7 +802,7 @@ func (m *metricK8sNodeCPUTime) init() {
 	m.data.SetName("k8s.node.cpu.time")
 	m.data.SetDescription("Node CPU time")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -853,7 +853,7 @@ func (m *metricK8sNodeCPUUtilization) init() {
 	m.data.SetName("k8s.node.cpu.utilization")
 	m.data.SetDescription("Node CPU utilization")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sNodeCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -902,7 +902,7 @@ func (m *metricK8sNodeFilesystemAvailable) init() {
 	m.data.SetName("k8s.node.filesystem.available")
 	m.data.SetDescription("Node filesystem available")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sNodeFilesystemAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -951,7 +951,7 @@ func (m *metricK8sNodeFilesystemCapacity) init() {
 	m.data.SetName("k8s.node.filesystem.capacity")
 	m.data.SetDescription("Node filesystem capacity")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sNodeFilesystemCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1000,7 +1000,7 @@ func (m *metricK8sNodeFilesystemUsage) init() {
 	m.data.SetName("k8s.node.filesystem.usage")
 	m.data.SetDescription("Node filesystem usage")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sNodeFilesystemUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1049,7 +1049,7 @@ func (m *metricK8sNodeMemoryAvailable) init() {
 	m.data.SetName("k8s.node.memory.available")
 	m.data.SetDescription("Node memory available")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sNodeMemoryAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1098,7 +1098,7 @@ func (m *metricK8sNodeMemoryMajorPageFaults) init() {
 	m.data.SetName("k8s.node.memory.major_page_faults")
 	m.data.SetDescription("Node memory major_page_faults")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sNodeMemoryMajorPageFaults) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1147,7 +1147,7 @@ func (m *metricK8sNodeMemoryPageFaults) init() {
 	m.data.SetName("k8s.node.memory.page_faults")
 	m.data.SetDescription("Node memory page_faults")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sNodeMemoryPageFaults) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1196,7 +1196,7 @@ func (m *metricK8sNodeMemoryRss) init() {
 	m.data.SetName("k8s.node.memory.rss")
 	m.data.SetDescription("Node memory rss")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sNodeMemoryRss) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1245,7 +1245,7 @@ func (m *metricK8sNodeMemoryUsage) init() {
 	m.data.SetName("k8s.node.memory.usage")
 	m.data.SetDescription("Node memory usage")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sNodeMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1294,7 +1294,7 @@ func (m *metricK8sNodeMemoryWorkingSet) init() {
 	m.data.SetName("k8s.node.memory.working_set")
 	m.data.SetDescription("Node memory working_set")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sNodeMemoryWorkingSet) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1343,7 +1343,7 @@ func (m *metricK8sNodeNetworkErrors) init() {
 	m.data.SetName("k8s.node.network.errors")
 	m.data.SetDescription("Node network errors")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1397,7 +1397,7 @@ func (m *metricK8sNodeNetworkErrorsReceive) init() {
 	m.data.SetName("k8s.node.network.errors.receive")
 	m.data.SetDescription("Node network receive errors")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1450,7 +1450,7 @@ func (m *metricK8sNodeNetworkErrorsTransmit) init() {
 	m.data.SetName("k8s.node.network.errors.transmit")
 	m.data.SetDescription("Node network transmission errors")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1503,7 +1503,7 @@ func (m *metricK8sNodeNetworkIo) init() {
 	m.data.SetName("k8s.node.network.io")
 	m.data.SetDescription("Node network IO")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1557,7 +1557,7 @@ func (m *metricK8sNodeNetworkIoReceive) init() {
 	m.data.SetName("k8s.node.network.io.receive")
 	m.data.SetDescription("Node network IO received")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1610,7 +1610,7 @@ func (m *metricK8sNodeNetworkIoTransmit) init() {
 	m.data.SetName("k8s.node.network.io.transmit")
 	m.data.SetDescription("Node network IO transmitted")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1663,7 +1663,7 @@ func (m *metricK8sPodCPUTime) init() {
 	m.data.SetName("k8s.pod.cpu.time")
 	m.data.SetDescription("Pod CPU time")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1714,7 +1714,7 @@ func (m *metricK8sPodCPUUtilization) init() {
 	m.data.SetName("k8s.pod.cpu.utilization")
 	m.data.SetDescription("Pod CPU utilization")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sPodCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -1763,7 +1763,7 @@ func (m *metricK8sPodFilesystemAvailable) init() {
 	m.data.SetName("k8s.pod.filesystem.available")
 	m.data.SetDescription("Pod filesystem available")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sPodFilesystemAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1812,7 +1812,7 @@ func (m *metricK8sPodFilesystemCapacity) init() {
 	m.data.SetName("k8s.pod.filesystem.capacity")
 	m.data.SetDescription("Pod filesystem capacity")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sPodFilesystemCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1861,7 +1861,7 @@ func (m *metricK8sPodFilesystemUsage) init() {
 	m.data.SetName("k8s.pod.filesystem.usage")
 	m.data.SetDescription("Pod filesystem usage")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sPodFilesystemUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1910,7 +1910,7 @@ func (m *metricK8sPodMemoryAvailable) init() {
 	m.data.SetName("k8s.pod.memory.available")
 	m.data.SetDescription("Pod memory available")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sPodMemoryAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1959,7 +1959,7 @@ func (m *metricK8sPodMemoryMajorPageFaults) init() {
 	m.data.SetName("k8s.pod.memory.major_page_faults")
 	m.data.SetDescription("Pod memory major_page_faults")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sPodMemoryMajorPageFaults) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2008,7 +2008,7 @@ func (m *metricK8sPodMemoryPageFaults) init() {
 	m.data.SetName("k8s.pod.memory.page_faults")
 	m.data.SetDescription("Pod memory page_faults")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sPodMemoryPageFaults) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2057,7 +2057,7 @@ func (m *metricK8sPodMemoryRss) init() {
 	m.data.SetName("k8s.pod.memory.rss")
 	m.data.SetDescription("Pod memory rss")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sPodMemoryRss) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2106,7 +2106,7 @@ func (m *metricK8sPodMemoryUsage) init() {
 	m.data.SetName("k8s.pod.memory.usage")
 	m.data.SetDescription("Pod memory usage")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sPodMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2155,7 +2155,7 @@ func (m *metricK8sPodMemoryWorkingSet) init() {
 	m.data.SetName("k8s.pod.memory.working_set")
 	m.data.SetDescription("Pod memory working_set")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sPodMemoryWorkingSet) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2204,7 +2204,7 @@ func (m *metricK8sPodNetworkErrors) init() {
 	m.data.SetName("k8s.pod.network.errors")
 	m.data.SetDescription("Pod network errors")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2258,7 +2258,7 @@ func (m *metricK8sPodNetworkErrorsReceive) init() {
 	m.data.SetName("k8s.pod.network.errors.receive")
 	m.data.SetDescription("Pod network receive errors")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2311,7 +2311,7 @@ func (m *metricK8sPodNetworkErrorsTransmit) init() {
 	m.data.SetName("k8s.pod.network.errors.transmit")
 	m.data.SetDescription("Pod network transmission errors")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2364,7 +2364,7 @@ func (m *metricK8sPodNetworkIo) init() {
 	m.data.SetName("k8s.pod.network.io")
 	m.data.SetDescription("Pod network IO")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2418,7 +2418,7 @@ func (m *metricK8sPodNetworkIoReceive) init() {
 	m.data.SetName("k8s.pod.network.io.receive")
 	m.data.SetDescription("Pod network IO received")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2471,7 +2471,7 @@ func (m *metricK8sPodNetworkIoTransmit) init() {
 	m.data.SetName("k8s.pod.network.io.transmit")
 	m.data.SetDescription("Pod network IO transmitted")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2524,7 +2524,7 @@ func (m *metricK8sVolumeAvailable) init() {
 	m.data.SetName("k8s.volume.available")
 	m.data.SetDescription("The number of available bytes in the volume.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sVolumeAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2573,7 +2573,7 @@ func (m *metricK8sVolumeCapacity) init() {
 	m.data.SetName("k8s.volume.capacity")
 	m.data.SetDescription("The total capacity in bytes of the volume.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sVolumeCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2622,7 +2622,7 @@ func (m *metricK8sVolumeInodes) init() {
 	m.data.SetName("k8s.volume.inodes")
 	m.data.SetDescription("The total inodes in the filesystem.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sVolumeInodes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2671,7 +2671,7 @@ func (m *metricK8sVolumeInodesFree) init() {
 	m.data.SetName("k8s.volume.inodes.free")
 	m.data.SetDescription("The free inodes in the filesystem.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sVolumeInodesFree) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2720,7 +2720,7 @@ func (m *metricK8sVolumeInodesUsed) init() {
 	m.data.SetName("k8s.volume.inodes.used")
 	m.data.SetDescription("The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sVolumeInodesUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {

@@ -34,9 +34,8 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, time
 	if parsedMetric.unit != "" {
 		nm.SetUnit(parsedMetric.unit)
 	}
-	nm.SetDataType(pmetric.MetricDataTypeSum)
 
-	nm.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+	nm.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 	nm.Sum().SetIsMonotonic(isMonotonicCounter)
 
 	dp := nm.Sum().DataPoints().AppendEmpty()
@@ -57,8 +56,7 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pmetric.Scop
 	if parsedMetric.unit != "" {
 		nm.SetUnit(parsedMetric.unit)
 	}
-	nm.SetDataType(pmetric.MetricDataTypeGauge)
-	dp := nm.Gauge().DataPoints().AppendEmpty()
+	dp := nm.SetEmptyGauge().DataPoints().AppendEmpty()
 	dp.SetDoubleVal(parsedMetric.gaugeValue())
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	for i := parsedMetric.description.attrs.Iter(); i.Next(); {
@@ -71,9 +69,7 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pmetric.Scop
 func buildSummaryMetric(desc statsDMetricDescription, summary summaryMetric, startTime, timeNow time.Time, percentiles []float64, ilm pmetric.ScopeMetrics) {
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(desc.name)
-	nm.SetDataType(pmetric.MetricDataTypeSummary)
-
-	dp := nm.Summary().DataPoints().AppendEmpty()
+	dp := nm.SetEmptySummary().DataPoints().AppendEmpty()
 
 	count := float64(0)
 	sum := float64(0)

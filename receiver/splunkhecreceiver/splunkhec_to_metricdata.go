@@ -107,8 +107,7 @@ func convertString(logger *zap.Logger, numDroppedTimeSeries *int, metrics pmetri
 func addIntGauge(metrics pmetric.MetricSlice, metricName string, value int64, ts pcommon.Timestamp, attributes pcommon.Map) {
 	metric := metrics.AppendEmpty()
 	metric.SetName(metricName)
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
-	intPt := metric.Gauge().DataPoints().AppendEmpty()
+	intPt := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 	intPt.SetTimestamp(ts)
 	intPt.SetIntVal(value)
 	attributes.CopyTo(intPt.Attributes())
@@ -117,8 +116,7 @@ func addIntGauge(metrics pmetric.MetricSlice, metricName string, value int64, ts
 func addDoubleGauge(metrics pmetric.MetricSlice, metricName string, value float64, ts pcommon.Timestamp, attributes pcommon.Map) {
 	metric := metrics.AppendEmpty()
 	metric.SetName(metricName)
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
-	doublePt := metric.Gauge().DataPoints().AppendEmpty()
+	doublePt := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 	doublePt.SetTimestamp(ts)
 	doublePt.SetDoubleVal(value)
 	attributes.CopyTo(doublePt.Attributes())

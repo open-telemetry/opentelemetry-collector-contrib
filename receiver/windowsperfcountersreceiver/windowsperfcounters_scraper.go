@@ -121,8 +121,7 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 		builtMetric.SetUnit(metricCfg.Unit)
 
 		if (metricCfg.Sum != SumMetric{}) {
-			builtMetric.SetDataType(pmetric.MetricDataTypeSum)
-			builtMetric.Sum().SetIsMonotonic(metricCfg.Sum.Monotonic)
+			builtMetric.SetEmptySum().SetIsMonotonic(metricCfg.Sum.Monotonic)
 
 			switch metricCfg.Sum.Aggregation {
 			case "cumulative":
@@ -131,7 +130,7 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 				builtMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 			}
 		} else {
-			builtMetric.SetDataType(pmetric.MetricDataTypeGauge)
+			builtMetric.SetEmptyGauge()
 		}
 
 		metrics[name] = builtMetric
@@ -150,9 +149,9 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 				metric = builtmetric
 			} else {
 				metric = metricSlice.AppendEmpty()
-				metric.SetDataType(pmetric.MetricDataTypeGauge)
 				metric.SetName(watcher.MetricRep.Name)
 				metric.SetUnit("1")
+				metric.SetEmptyGauge()
 			}
 
 			initializeMetricDps(metric, now, val, watcher.MetricRep.Attributes)

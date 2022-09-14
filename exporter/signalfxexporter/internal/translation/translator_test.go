@@ -2539,13 +2539,11 @@ func TestDeltaTranslatorNoMatchingMapping(t *testing.T) {
 func TestDeltaTranslatorMismatchedValueTypes(t *testing.T) {
 	c := testConverter(t, map[string]string{"system.cpu.time": "system.cpu.delta"})
 	md1 := baseMD()
-	md1.SetDataType(pmetric.MetricDataTypeSum)
-	intTS("cpu0", "user", 1, 1, 1, md1.Sum().DataPoints().AppendEmpty())
+	intTS("cpu0", "user", 1, 1, 1, md1.SetEmptySum().DataPoints().AppendEmpty())
 
 	_ = c.MetricsToSignalFxV2(wrapMetric(md1))
 	md2 := baseMD()
-	md2.SetDataType(pmetric.MetricDataTypeSum)
-	dblTS("cpu0", "user", 1, 1, 1, md2.Sum().DataPoints().AppendEmpty())
+	dblTS("cpu0", "user", 1, 1, 1, md2.SetEmptySum().DataPoints().AppendEmpty())
 	pts := c.MetricsToSignalFxV2(wrapMetric(md2))
 	idx := indexPts(pts)
 	require.Equal(t, 1, len(idx))
@@ -2983,8 +2981,7 @@ func indexPts(pts []*sfxpb.DataPoint) map[string][]*sfxpb.DataPoint {
 
 func doubleMD(secondsDelta int64, valueDelta float64) pmetric.Metrics {
 	md := baseMD()
-	md.SetDataType(pmetric.MetricDataTypeSum)
-	ms := md.Sum()
+	ms := md.SetEmptySum()
 	dblTS("cpu0", "user", secondsDelta, 100, valueDelta, ms.DataPoints().AppendEmpty())
 	dblTS("cpu0", "system", secondsDelta, 200, valueDelta, ms.DataPoints().AppendEmpty())
 	dblTS("cpu0", "idle", secondsDelta, 300, valueDelta, ms.DataPoints().AppendEmpty())
@@ -2997,8 +2994,7 @@ func doubleMD(secondsDelta int64, valueDelta float64) pmetric.Metrics {
 
 func intMD(secondsDelta int64, valueDelta int64) pmetric.Metrics {
 	md := baseMD()
-	md.SetDataType(pmetric.MetricDataTypeSum)
-	ms := md.Sum()
+	ms := md.SetEmptySum()
 	intTS("cpu0", "user", secondsDelta, 100, valueDelta, ms.DataPoints().AppendEmpty())
 	intTS("cpu0", "system", secondsDelta, 200, valueDelta, ms.DataPoints().AppendEmpty())
 	intTS("cpu0", "idle", secondsDelta, 300, valueDelta, ms.DataPoints().AppendEmpty())
@@ -3011,8 +3007,7 @@ func intMD(secondsDelta int64, valueDelta int64) pmetric.Metrics {
 
 func intMDAfterReset(secondsDelta int64, valueDelta int64) pmetric.Metrics {
 	md := baseMD()
-	md.SetDataType(pmetric.MetricDataTypeSum)
-	ms := md.Sum()
+	ms := md.SetEmptySum()
 	intTS("cpu0", "user", secondsDelta, 0, valueDelta, ms.DataPoints().AppendEmpty())
 	intTS("cpu0", "system", secondsDelta, 0, valueDelta, ms.DataPoints().AppendEmpty())
 	intTS("cpu0", "idle", secondsDelta, 0, valueDelta, ms.DataPoints().AppendEmpty())

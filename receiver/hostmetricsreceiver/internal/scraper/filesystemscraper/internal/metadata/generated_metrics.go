@@ -78,7 +78,7 @@ func (m *metricSystemFilesystemInodesUsage) init() {
 	m.data.SetName("system.filesystem.inodes.usage")
 	m.data.SetDescription("FileSystem inodes used.")
 	m.data.SetUnit("{inodes}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -135,7 +135,7 @@ func (m *metricSystemFilesystemUsage) init() {
 	m.data.SetName("system.filesystem.usage")
 	m.data.SetDescription("Filesystem bytes used.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -192,7 +192,7 @@ func (m *metricSystemFilesystemUtilization) init() {
 	m.data.SetName("system.filesystem.utilization")
 	m.data.SetDescription("Fraction of filesystem bytes used.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 

@@ -12,6 +12,50 @@ data:
         protocols:
           grpc:
           http:
+      # The hostmetrics receiver is required to get correct infrastructure metrics in Datadog.
+      hostmetrics:
+        collection_interval: 10s
+        scrapers:
+          paging:
+            metrics:
+              system.paging.utilization:
+                enabled: true
+              system.paging.usage:
+                enabled: true
+          cpu:
+            metrics:
+              system.cpu.utilization:
+                enabled: true
+          disk:
+          filesystem:
+            metrics:
+              system.filesystem.utilization:
+                enabled: true
+          load:
+          memory:
+            metrics:
+              system.memory.utilization:
+                enabled: true
+          network:
+            metrics:
+              system.network.io.receive:
+                enabled: true
+              system.network.io.transmit:
+                enabled: true
+          processes:
+      # # Comment out this block below to get access to system metrics regarding
+      # # the OpenTelemetry Collector and its environment, such as spans or metrics
+      # # processed, running and sent, queue sizes, uptime, k8s information
+      # # and much more.
+      #
+      # # The prometheus receiver scrapes essential metrics regarding the OpenTelemetry Collector.
+      # prometheus:
+      #   config:
+      #     scrape_configs:
+      #     - job_name: 'otelcol'
+      #       scrape_interval: 10s
+      #       static_configs:
+      #       - targets: ['0.0.0.0:8888']
     exporters:
       datadog:
         api:
@@ -26,11 +70,15 @@ data:
       # adds various tags related to k8s
       k8sattributes:
       batch:
+        # Datadog APM Intake limit is 3.2MB. Let's make sure the batches do not
+        # go over that.
+        send_batch_max_size: 1000
+        send_batch_size: 100
         timeout: 10s
     service:
       pipelines:
         metrics:
-          receivers: [otlp]
+          receivers: [hostmetrics, otlp]
           processors: [resourcedetection, k8sattributes, batch]
           exporters: [datadog]
         traces:

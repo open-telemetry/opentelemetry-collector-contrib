@@ -34,6 +34,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 )
 
+const mongoDBMajorVersion4_2 = "4.2"
+
 type logsReceiver struct {
 	log         *zap.Logger
 	cfg         *Config
@@ -174,8 +176,8 @@ func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, proje
 	for _, cluster := range clusters {
 		hostnames := parseHostNames(cluster.ConnectionStrings.Standard, s.log)
 		for _, hostname := range hostnames {
-			s.collectLogs(pc, hostname, "mongodb.gz", cluster.Name)
-			s.collectLogs(pc, hostname, "mongos.gz", cluster.Name)
+			s.collectLogs(pc, hostname, "mongodb.gz", cluster.Name, cluster.MongoDBMajorVersion)
+			s.collectLogs(pc, hostname, "mongos.gz", cluster.Name, cluster.MongoDBMajorVersion)
 
 			if projectCfg.EnableAuditLogs {
 				s.collectAuditLogs(pc, hostname, "mongodb-audit-log.gz", cluster.Name)
@@ -201,34 +203,14 @@ func filterClusters(clusters []mongodbatlas.Cluster, clusterNames []string, incl
 	return filtered
 }
 
-func (s *logsReceiver) getHostLogs(groupID, hostname, logName string) ([]model.LogEntry, error) {
+func (s *logsReceiver) getHostLogs(groupID, hostname, logName string, clusterMajorVersion string) ([]model.LogEntry, error) {
 	// Get gzip bytes buffer from API
 	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName, s.start, s.end)
 	if err != nil {
 		return nil, err
 	}
-	// Pass this into a gzip reader for decoding
-	reader, err := gzip.NewReader(buf)
-	if err != nil {
-		return nil, err
-	}
 
-	// Logs are in JSON format so create a JSON decoder to process them
-	dec := json.NewDecoder(reader)
-
-	var entries []model.LogEntry
-	for {
-		var entry model.LogEntry
-		err := dec.Decode(&entry)
-		if errors.Is(err, io.EOF) {
-			return entries, nil
-		}
-		if err != nil {
-			s.log.Error("Entry could not be decoded into LogEntry", zap.Error(err))
-		}
-
-		entries = append(entries, entry)
-	}
+	return decodeLogs(s.log, clusterMajorVersion, buf)
 }
 
 func (s *logsReceiver) getHostAuditLogs(groupID, hostname, logName string) ([]model.AuditLog, error) {
@@ -259,8 +241,8 @@ func (s *logsReceiver) getHostAuditLogs(groupID, hostname, logName string) ([]mo
 	}
 }
 
-func (s *logsReceiver) collectLogs(pc ProjectContext, hostname, logName, clusterName string) {
-	logs, err := s.getHostLogs(pc.Project.ID, hostname, logName)
+func (s *logsReceiver) collectLogs(pc ProjectContext, hostname, logName, clusterName, clusterMajorVersion string) {
+	logs, err := s.getHostLogs(pc.Project.ID, hostname, logName, clusterMajorVersion)
 	if err != nil && !errors.Is(err, io.EOF) {
 		s.log.Warn("Failed to retrieve logs from: "+logName, zap.Error(err))
 	}
@@ -270,7 +252,8 @@ func (s *logsReceiver) collectLogs(pc ProjectContext, hostname, logName, cluster
 		pc,
 		hostname,
 		logName,
-		clusterName)
+		clusterName,
+		clusterMajorVersion)
 	err = s.consumer.ConsumeLogs(context.Background(), plog)
 	if err != nil {
 		s.log.Error("Failed to consume logs", zap.Error(err))

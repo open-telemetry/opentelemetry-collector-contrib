@@ -79,7 +79,7 @@ func (m *metricKafkaBrokers) init() {
 	m.data.SetName("kafka.brokers")
 	m.data.SetDescription("Number of brokers in the cluster.")
 	m.data.SetUnit("{brokers}")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricKafkaBrokers) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -128,7 +128,7 @@ func (m *metricKafkaConsumerGroupLag) init() {
 	m.data.SetName("kafka.consumer_group.lag")
 	m.data.SetDescription("Current approximate lag of consumer group at partition of topic")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -181,7 +181,7 @@ func (m *metricKafkaConsumerGroupLagSum) init() {
 	m.data.SetName("kafka.consumer_group.lag_sum")
 	m.data.SetDescription("Current approximate sum of consumer group lag across all partitions of topic")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -233,7 +233,7 @@ func (m *metricKafkaConsumerGroupMembers) init() {
 	m.data.SetName("kafka.consumer_group.members")
 	m.data.SetDescription("Count of members in the consumer group")
 	m.data.SetUnit("{members}")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -284,7 +284,7 @@ func (m *metricKafkaConsumerGroupOffset) init() {
 	m.data.SetName("kafka.consumer_group.offset")
 	m.data.SetDescription("Current offset of the consumer group at partition of topic")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -337,7 +337,7 @@ func (m *metricKafkaConsumerGroupOffsetSum) init() {
 	m.data.SetName("kafka.consumer_group.offset_sum")
 	m.data.SetDescription("Sum of consumer group offset across partitions of topic")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -389,7 +389,7 @@ func (m *metricKafkaPartitionCurrentOffset) init() {
 	m.data.SetName("kafka.partition.current_offset")
 	m.data.SetDescription("Current offset of partition of topic.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -441,7 +441,7 @@ func (m *metricKafkaPartitionOldestOffset) init() {
 	m.data.SetName("kafka.partition.oldest_offset")
 	m.data.SetDescription("Oldest offset of partition of topic")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -493,7 +493,7 @@ func (m *metricKafkaPartitionReplicas) init() {
 	m.data.SetName("kafka.partition.replicas")
 	m.data.SetDescription("Number of replicas for partition of topic")
 	m.data.SetUnit("{replicas}")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -545,7 +545,7 @@ func (m *metricKafkaPartitionReplicasInSync) init() {
 	m.data.SetName("kafka.partition.replicas_in_sync")
 	m.data.SetDescription("Number of synchronized replicas of partition")
 	m.data.SetUnit("{replicas}")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -597,7 +597,7 @@ func (m *metricKafkaTopicPartitions) init() {
 	m.data.SetName("kafka.topic.partitions")
 	m.data.SetDescription("Number of partitions in topic.")
 	m.data.SetUnit("{partitions}")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 

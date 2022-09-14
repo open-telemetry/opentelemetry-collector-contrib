@@ -16,14 +16,6 @@ package testdata
 
 import "go.opentelemetry.io/collector/pdata/pcommon"
 
-var (
-	resourceAttributes1 = map[string]interface{}{"resource-attr": "resource-attr-val-1"}
-	resourceAttributes2 = map[string]interface{}{"resource-attr": "resource-attr-val-2"}
-	spanEventAttributes = map[string]interface{}{"span-event-attr": "span-event-attr-val"}
-	spanLinkAttributes  = map[string]interface{}{"span-link-attr": "span-link-attr-val"}
-	spanAttributes      = map[string]interface{}{"span-attr": "span-attr-val"}
-)
-
 const (
 	TestLabelKey1       = "label-1"
 	TestLabelValue1     = "label-value-1"
@@ -34,26 +26,6 @@ const (
 	TestAttachmentKey   = "exemplar-attachment"
 	TestAttachmentValue = "exemplar-attachment-value"
 )
-
-func initResourceAttributes1(dest pcommon.Map) {
-	pcommon.NewMapFromRaw(resourceAttributes1).CopyTo(dest)
-}
-
-func initResourceAttributes2(dest pcommon.Map) {
-	pcommon.NewMapFromRaw(resourceAttributes2).CopyTo(dest)
-}
-
-func initSpanAttributes(dest pcommon.Map) {
-	pcommon.NewMapFromRaw(spanAttributes).CopyTo(dest)
-}
-
-func initSpanEventAttributes(dest pcommon.Map) {
-	pcommon.NewMapFromRaw(spanEventAttributes).CopyTo(dest)
-}
-
-func initSpanLinkAttributes(dest pcommon.Map) {
-	pcommon.NewMapFromRaw(spanLinkAttributes).CopyTo(dest)
-}
 
 func initMetricAttachment(dest pcommon.Map) {
 	dest.UpsertString(TestAttachmentKey, TestAttachmentValue)

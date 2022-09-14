@@ -70,11 +70,9 @@ func setMetricFields(cfg MetricCfg, dest pmetric.Metric) pmetric.NumberDataPoint
 	var out pmetric.NumberDataPointSlice
 	switch cfg.DataType {
 	case MetricDataTypeUnspecified, MetricDataTypeGauge:
-		dest.SetDataType(pmetric.MetricDataTypeGauge)
-		out = dest.Gauge().DataPoints()
+		out = dest.SetEmptyGauge().DataPoints()
 	case MetricDataTypeSum:
-		dest.SetDataType(pmetric.MetricDataTypeSum)
-		sum := dest.Sum()
+		sum := dest.SetEmptySum()
 		sum.SetIsMonotonic(cfg.Monotonic)
 		sum.SetAggregationTemporality(cfgToAggregationTemporality(cfg.Aggregation))
 		out = sum.DataPoints()

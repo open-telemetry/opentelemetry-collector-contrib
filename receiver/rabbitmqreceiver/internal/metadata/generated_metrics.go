@@ -85,7 +85,7 @@ func (m *metricRabbitmqConsumerCount) init() {
 	m.data.SetName("rabbitmq.consumer.count")
 	m.data.SetDescription("The number of consumers currently reading from the queue.")
 	m.data.SetUnit("{consumers}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -136,7 +136,7 @@ func (m *metricRabbitmqMessageAcknowledged) init() {
 	m.data.SetName("rabbitmq.message.acknowledged")
 	m.data.SetDescription("The number of messages acknowledged by consumers.")
 	m.data.SetUnit("{messages}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -187,7 +187,7 @@ func (m *metricRabbitmqMessageCurrent) init() {
 	m.data.SetName("rabbitmq.message.current")
 	m.data.SetDescription("The total number of messages currently in the queue.")
 	m.data.SetUnit("{messages}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -240,7 +240,7 @@ func (m *metricRabbitmqMessageDelivered) init() {
 	m.data.SetName("rabbitmq.message.delivered")
 	m.data.SetDescription("The number of messages delivered to consumers.")
 	m.data.SetUnit("{messages}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -291,7 +291,7 @@ func (m *metricRabbitmqMessageDropped) init() {
 	m.data.SetName("rabbitmq.message.dropped")
 	m.data.SetDescription("The number of messages dropped as unroutable.")
 	m.data.SetUnit("{messages}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -342,7 +342,7 @@ func (m *metricRabbitmqMessagePublished) init() {
 	m.data.SetName("rabbitmq.message.published")
 	m.data.SetDescription("The number of messages published to a queue.")
 	m.data.SetUnit("{messages}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }

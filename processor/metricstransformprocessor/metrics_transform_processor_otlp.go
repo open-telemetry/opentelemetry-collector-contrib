@@ -171,21 +171,20 @@ func extractMetricWithMatchingAttrs(metric pmetric.Metric, f internalFilter) pme
 	}
 
 	newMetric := pmetric.NewMetric()
-	newMetric.SetDataType(metric.DataType())
 	newMetric.SetName(metric.Name())
 	newMetric.SetDescription(metric.Description())
 	newMetric.SetUnit(metric.Unit())
 
 	switch metric.DataType() {
 	case pmetric.MetricDataTypeGauge:
-		newMetric.Gauge().DataPoints().EnsureCapacity(matchedDpsCount)
+		newMetric.SetEmptyGauge().DataPoints().EnsureCapacity(matchedDpsCount)
 		for i := 0; i < metric.Gauge().DataPoints().Len(); i++ {
 			if dpsMatches[i] {
 				metric.Gauge().DataPoints().At(i).CopyTo(newMetric.Gauge().DataPoints().AppendEmpty())
 			}
 		}
 	case pmetric.MetricDataTypeSum:
-		newMetric.Sum().DataPoints().EnsureCapacity(matchedDpsCount)
+		newMetric.SetEmptySum().DataPoints().EnsureCapacity(matchedDpsCount)
 		for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
 			if dpsMatches[i] {
 				metric.Sum().DataPoints().At(i).CopyTo(newMetric.Sum().DataPoints().AppendEmpty())
@@ -194,7 +193,7 @@ func extractMetricWithMatchingAttrs(metric pmetric.Metric, f internalFilter) pme
 		newMetric.Sum().SetAggregationTemporality(metric.Sum().AggregationTemporality())
 		newMetric.Sum().SetIsMonotonic(metric.Sum().IsMonotonic())
 	case pmetric.MetricDataTypeHistogram:
-		newMetric.Histogram().DataPoints().EnsureCapacity(matchedDpsCount)
+		newMetric.SetEmptyHistogram().DataPoints().EnsureCapacity(matchedDpsCount)
 		for i := 0; i < metric.Histogram().DataPoints().Len(); i++ {
 			if dpsMatches[i] {
 				metric.Histogram().DataPoints().At(i).CopyTo(newMetric.Histogram().DataPoints().AppendEmpty())
@@ -202,7 +201,7 @@ func extractMetricWithMatchingAttrs(metric pmetric.Metric, f internalFilter) pme
 		}
 		newMetric.Histogram().SetAggregationTemporality(metric.Histogram().AggregationTemporality())
 	case pmetric.MetricDataTypeExponentialHistogram:
-		newMetric.ExponentialHistogram().DataPoints().EnsureCapacity(matchedDpsCount)
+		newMetric.SetEmptyExponentialHistogram().DataPoints().EnsureCapacity(matchedDpsCount)
 		for i := 0; i < metric.ExponentialHistogram().DataPoints().Len(); i++ {
 			if dpsMatches[i] {
 				metric.ExponentialHistogram().DataPoints().At(i).CopyTo(newMetric.ExponentialHistogram().DataPoints().AppendEmpty())
@@ -210,7 +209,7 @@ func extractMetricWithMatchingAttrs(metric pmetric.Metric, f internalFilter) pme
 		}
 		newMetric.ExponentialHistogram().SetAggregationTemporality(metric.ExponentialHistogram().AggregationTemporality())
 	case pmetric.MetricDataTypeSummary:
-		newMetric.Summary().DataPoints().EnsureCapacity(matchedDpsCount)
+		newMetric.SetEmptySummary().DataPoints().EnsureCapacity(matchedDpsCount)
 		for i := 0; i < metric.Summary().DataPoints().Len(); i++ {
 			if dpsMatches[i] {
 				metric.Summary().DataPoints().At(i).CopyTo(newMetric.Summary().DataPoints().AppendEmpty())
@@ -460,16 +459,19 @@ func combine(transform internalTransform, metrics pmetric.MetricSlice) pmetric.M
 
 func copyMetricDetails(from, to pmetric.Metric) {
 	to.SetName(from.Name())
-	to.SetDataType(from.DataType())
 	to.SetUnit(from.Unit())
 	switch from.DataType() {
+	case pmetric.MetricDataTypeGauge:
+		to.SetEmptyGauge()
 	case pmetric.MetricDataTypeSum:
-		to.Sum().SetAggregationTemporality(from.Sum().AggregationTemporality())
+		to.SetEmptySum().SetAggregationTemporality(from.Sum().AggregationTemporality())
 		to.Sum().SetIsMonotonic(from.Sum().IsMonotonic())
 	case pmetric.MetricDataTypeHistogram:
-		to.Histogram().SetAggregationTemporality(from.Histogram().AggregationTemporality())
+		to.SetEmptyHistogram().SetAggregationTemporality(from.Histogram().AggregationTemporality())
 	case pmetric.MetricDataTypeExponentialHistogram:
-		to.ExponentialHistogram().SetAggregationTemporality(from.Histogram().AggregationTemporality())
+		to.SetEmptyExponentialHistogram().SetAggregationTemporality(from.Histogram().AggregationTemporality())
+	case pmetric.MetricDataTypeSummary:
+		to.SetEmptySummary()
 	}
 }
 

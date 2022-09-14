@@ -7,6 +7,9 @@ on:
   pull_request:
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
+  # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
+  # Cache downloads for this workflow consistently run in under 10 minutes
+  SEGMENT_DOWNLOAD_TIMEOUT_MIN: 15
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
@@ -30,10 +33,6 @@ jobs:
           path: |
             ~\go\pkg\mod
           key: go-mod-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-        env:
-          # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
-          # Cache downloads for this workflow consistently run in under 10 minutes
-          SEGMENT_DOWNLOAD_TIMEOUT_MIN: 15
       - name: Install dependencies
         if: steps.go-mod-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -71,20 +70,12 @@ jobs:
           path: |
             ~\go\pkg\mod
           key: go-mod-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-        env:
-          # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
-          # Cache downloads for this workflow consistently run in under 10 minutes
-          SEGMENT_DOWNLOAD_TIMEOUT_MIN: 15
       - name: Cache Go Build
         uses: actions/cache@v3
         with:
           path: |
             ~\AppData\Local\go-build
           key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
-        env:
-          # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
-          # Cache downloads for this workflow consistently run in under 10 minutes
-          SEGMENT_DOWNLOAD_TIMEOUT_MIN: 15
       - name: Run Unit tests
         run: make gotest GROUP=${{ matrix.group }}
   windows-unittest:
