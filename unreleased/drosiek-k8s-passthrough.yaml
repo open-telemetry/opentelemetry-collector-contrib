@@ -5,7 +5,7 @@ change_type: bug_fix
 component: k8sprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: treat k8s.pod.ip in special way
+note: fix the passthrough mode
 
 # One or more tracking issues related to the change
 issues: [13765]
