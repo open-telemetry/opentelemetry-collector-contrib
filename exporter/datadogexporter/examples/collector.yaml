@@ -21,8 +21,6 @@ receivers:
         metrics:
           system.paging.utilization:
             enabled: true
-          system.paging.usage:
-            enabled: true
       cpu:
         metrics:
           system.cpu.utilization:
@@ -38,11 +36,6 @@ receivers:
           system.memory.utilization:
             enabled: true
       network:
-        metrics:
-          system.network.io.receive:
-            enabled: true
-          system.network.io.transmit:
-            enabled: true
       processes:
   # # Comment out this block below to get access to system metrics regarding
   # # the OpenTelemetry Collector and its environment, such as spans or metrics

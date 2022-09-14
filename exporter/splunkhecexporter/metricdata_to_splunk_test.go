@@ -186,12 +186,12 @@ func Test_metricDataToSplunk(t *testing.T) {
 			name: "int_gauge",
 			resourceFn: func() pcommon.Resource {
 				res := pcommon.NewResource()
-				res.Attributes().UpsertString("com.splunk.source", "mysource")
-				res.Attributes().UpsertString("host.name", "myhost")
-				res.Attributes().UpsertString("com.splunk.sourcetype", "mysourcetype")
-				res.Attributes().UpsertString("com.splunk.index", "myindex")
-				res.Attributes().UpsertString("k0", "v0")
-				res.Attributes().UpsertString("k1", "v1")
+				res.Attributes().PutString("com.splunk.source", "mysource")
+				res.Attributes().PutString("host.name", "myhost")
+				res.Attributes().PutString("com.splunk.sourcetype", "mysourcetype")
+				res.Attributes().PutString("com.splunk.index", "myindex")
+				res.Attributes().PutString("k0", "v0")
+				res.Attributes().PutString("k1", "v1")
 				return res
 			},
 			metricsDataFn: func() pmetric.Metric {
@@ -216,12 +216,12 @@ func Test_metricDataToSplunk(t *testing.T) {
 			name: "double_gauge",
 			resourceFn: func() pcommon.Resource {
 				res := pcommon.NewResource()
-				res.Attributes().UpsertString("com.splunk.source", "mysource")
-				res.Attributes().UpsertString("host.name", "myhost")
-				res.Attributes().UpsertString("com.splunk.sourcetype", "mysourcetype")
-				res.Attributes().UpsertString("com.splunk.index", "myindex")
-				res.Attributes().UpsertString("k0", "v0")
-				res.Attributes().UpsertString("k1", "v1")
+				res.Attributes().PutString("com.splunk.source", "mysource")
+				res.Attributes().PutString("host.name", "myhost")
+				res.Attributes().PutString("com.splunk.sourcetype", "mysourcetype")
+				res.Attributes().PutString("com.splunk.index", "myindex")
+				res.Attributes().PutString("k0", "v0")
+				res.Attributes().PutString("k1", "v1")
 				return res
 			},
 			metricsDataFn: func() pmetric.Metric {
@@ -520,12 +520,12 @@ func Test_metricDataToSplunk(t *testing.T) {
 			name: "custom_config_mapping",
 			resourceFn: func() pcommon.Resource {
 				res := pcommon.NewResource()
-				res.Attributes().UpsertString("mysource", "mysource2")
-				res.Attributes().UpsertString("myhost", "myhost2")
-				res.Attributes().UpsertString("mysourcetype", "mysourcetype2")
-				res.Attributes().UpsertString("myindex", "myindex2")
-				res.Attributes().UpsertString("k0", "v0")
-				res.Attributes().UpsertString("k1", "v1")
+				res.Attributes().PutString("mysource", "mysource2")
+				res.Attributes().PutString("myhost", "myhost2")
+				res.Attributes().PutString("mysourcetype", "mysourcetype2")
+				res.Attributes().PutString("myindex", "myindex2")
+				res.Attributes().PutString("k0", "v0")
+				res.Attributes().PutString("k1", "v1")
 				return res
 			},
 			metricsDataFn: func() pmetric.Metric {
@@ -616,7 +616,7 @@ func TestNilTimeWhenTimestampIsZero(t *testing.T) {
 
 func newMetricsWithResources() pcommon.Resource {
 	res := pcommon.NewResource()
-	res.Attributes().UpsertString("k0", "v0")
-	res.Attributes().UpsertString("k1", "v1")
+	res.Attributes().PutString("k0", "v0")
+	res.Attributes().PutString("k1", "v1")
 	return res
 }

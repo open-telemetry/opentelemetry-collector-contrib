@@ -157,7 +157,7 @@ func TestPushTraceData_TransientOnPartialFailure(t *testing.T) {
 	traces := ptrace.NewTraces()
 	traces.ResourceSpans().EnsureCapacity(2)
 	rspan := traces.ResourceSpans().AppendEmpty()
-	rspan.Resource().Attributes().UpsertString(conventions.AttributeServiceName, "service1")
+	rspan.Resource().Attributes().PutString(conventions.AttributeServiceName, "service1")
 	rspan.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 
 	// ...and one without (partial failure)
@@ -195,17 +195,17 @@ func TestTracesToHumioEvents_OrganizedByTags(t *testing.T) {
 	// Three spans for the same trace across two different resources, as
 	// well a span from a separate trace
 	res1 := traces.ResourceSpans().AppendEmpty()
-	res1.Resource().Attributes().UpsertString(conventions.AttributeServiceName, "service-A")
+	res1.Resource().Attributes().PutString(conventions.AttributeServiceName, "service-A")
 	ils1 := res1.ScopeSpans().AppendEmpty()
 	ils1.Spans().AppendEmpty().SetTraceID(createTraceID("10000000000000000000000000000000"))
 	ils1.Spans().AppendEmpty().SetTraceID(createTraceID("10000000000000000000000000000000"))
 
 	res2 := traces.ResourceSpans().AppendEmpty()
-	res2.Resource().Attributes().UpsertString(conventions.AttributeServiceName, "service-B")
+	res2.Resource().Attributes().PutString(conventions.AttributeServiceName, "service-B")
 	res2.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(createTraceID("10000000000000000000000000000000"))
 
 	res3 := traces.ResourceSpans().AppendEmpty()
-	res3.Resource().Attributes().UpsertString(conventions.AttributeServiceName, "service-C")
+	res3.Resource().Attributes().PutString(conventions.AttributeServiceName, "service-C")
 	res3.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(createTraceID("20000000000000000000000000000000"))
 
 	// Organize by trace id
@@ -252,14 +252,14 @@ func TestSpanToHumioEvent(t *testing.T) {
 	))
 	span.Status().SetCode(ptrace.StatusCodeOk)
 	span.Status().SetMessage("done")
-	span.Attributes().UpsertString("key", "val")
+	span.Attributes().PutString("key", "val")
 
 	inst := pcommon.NewInstrumentationScope()
 	inst.SetName("otel-test")
 	inst.SetVersion("1.0.0")
 
 	res := pcommon.NewResource()
-	res.Attributes().UpsertString("service.name", "myapp")
+	res.Attributes().PutString("service.name", "myapp")
 
 	expected := &HumioStructuredEvent{
 		Timestamp: time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC),
@@ -374,10 +374,10 @@ func TestToHumioAttributes(t *testing.T) {
 			desc: "Simple types",
 			attr: func() pcommon.Map {
 				attrMap := pcommon.NewMap()
-				attrMap.UpsertString("string", "val")
-				attrMap.UpsertInt("integer", 42)
-				attrMap.UpsertDouble("double", 4.2)
-				attrMap.UpsertBool("bool", false)
+				attrMap.PutString("string", "val")
+				attrMap.PutInt("integer", 42)
+				attrMap.PutDouble("double", 4.2)
+				attrMap.PutBool("bool", false)
 				return attrMap
 			},
 			expected: map[string]interface{}{
@@ -391,7 +391,7 @@ func TestToHumioAttributes(t *testing.T) {
 			desc: "Nil element",
 			attr: func() pcommon.Map {
 				attrMap := pcommon.NewMap()
-				attrMap.UpsertEmpty("key")
+				attrMap.PutEmpty("key")
 				return attrMap
 			},
 			expected: map[string]interface{}{
@@ -402,7 +402,7 @@ func TestToHumioAttributes(t *testing.T) {
 			desc: "Array element",
 			attr: func() pcommon.Map {
 				attrMap := pcommon.NewMap()
-				arr := attrMap.UpsertEmptySlice("array")
+				arr := attrMap.PutEmptySlice("array")
 				arr.AppendEmpty().SetStringVal("a")
 				arr.AppendEmpty().SetStringVal("b")
 				arr.AppendEmpty().SetIntVal(4)
@@ -418,8 +418,8 @@ func TestToHumioAttributes(t *testing.T) {
 			desc: "Nested map",
 			attr: func() pcommon.Map {
 				attrMap := pcommon.NewMap()
-				attrMap.UpsertEmptyMap("nested").UpsertString("key", "val")
-				attrMap.UpsertBool("active", true)
+				attrMap.PutEmptyMap("nested").PutString("key", "val")
+				attrMap.PutBool("active", true)
 				return attrMap
 			},
 			expected: map[string]interface{}{
@@ -444,12 +444,12 @@ func TestToHumioAttributes(t *testing.T) {
 func TestToHumioAttributesShaded(t *testing.T) {
 	// Arrange
 	attrMapA := pcommon.NewMap()
-	attrMapA.UpsertString("string", "val")
-	attrMapA.UpsertInt("integer", 42)
+	attrMapA.PutString("string", "val")
+	attrMapA.PutInt("integer", 42)
 
 	attrMapB := pcommon.NewMap()
-	attrMapB.UpsertInt("integer", 0)
-	attrMapB.UpsertString("key", "val")
+	attrMapB.PutInt("integer", 0)
+	attrMapB.PutString("key", "val")
 
 	expected := map[string]interface{}{
 		"string":  "val",

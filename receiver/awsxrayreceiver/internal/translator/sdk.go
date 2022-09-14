@@ -28,19 +28,19 @@ func addSdkToResource(seg *awsxray.Segment, attrs pcommon.Map) {
 		xr := seg.AWS.XRay
 		addString(xr.SDKVersion, conventions.AttributeTelemetrySDKVersion, attrs)
 		if xr.SDK != nil {
-			attrs.UpsertString(conventions.AttributeTelemetrySDKName, *xr.SDK)
+			attrs.PutString(conventions.AttributeTelemetrySDKName, *xr.SDK)
 			if seg.Cause != nil && len(seg.Cause.Exceptions) > 0 {
 				// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/cause.go#L150
 				// x-ray exporter only supports Java stack trace for now
 				// TODO: Update this once the exporter is more flexible
-				attrs.UpsertString(conventions.AttributeTelemetrySDKLanguage, "java")
+				attrs.PutString(conventions.AttributeTelemetrySDKLanguage, "java")
 			} else {
 				// sample *xr.SDK: "X-Ray for Go"
 				sep := "for "
 				sdkStr := *xr.SDK
 				i := strings.Index(sdkStr, sep)
 				if i != -1 {
-					attrs.UpsertString(conventions.AttributeTelemetrySDKLanguage, sdkStr[i+len(sep):])
+					attrs.PutString(conventions.AttributeTelemetrySDKLanguage, sdkStr[i+len(sep):])
 				}
 			}
 		}

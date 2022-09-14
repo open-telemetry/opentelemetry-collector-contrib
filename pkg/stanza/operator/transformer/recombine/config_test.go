@@ -15,80 +15,76 @@
 package recombine
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
 )
 
-func TestConfig(t *testing.T) {
-	cases := []operatortest.ConfigUnmarshalTest{
-		{
-			Name:      "default",
-			ExpectErr: false,
-			Expect:    defaultCfg(),
+func TestUnmarshal(t *testing.T) {
+	operatortest.ConfigUnmarshalTests{
+		DefaultConfig: NewConfig(),
+		TestsFile:     filepath.Join(".", "testdata", "config.yaml"),
+		Tests: []operatortest.ConfigUnmarshalTest{
+			{
+				Name:      "default",
+				ExpectErr: false,
+				Expect:    NewConfig(),
+			},
+			{
+				Name:      "custom_id",
+				ExpectErr: false,
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.OperatorID = "merge-split-lines"
+					return cfg
+				}(),
+			},
+			{
+				Name:      "combine_with_custom_string",
+				ExpectErr: false,
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.CombineWith = "ABC"
+					return cfg
+				}(),
+			},
+			{
+				Name:      "combine_with_empty_string",
+				ExpectErr: false,
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.CombineWith = ""
+					return cfg
+				}(),
+			},
+			{
+				Name:      "combine_with_tab",
+				ExpectErr: false,
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.CombineWith = "\t"
+					return cfg
+				}(),
+			},
+			{
+				Name:      "combine_with_backslash_t",
+				ExpectErr: false,
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.CombineWith = "\\t"
+					return cfg
+				}(),
+			},
+			{
+				Name:      "combine_with_multiline_string",
+				ExpectErr: false,
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.CombineWith = "line1\nLINE2"
+					return cfg
+				}(),
+			},
 		},
-		{
-			Name:      "custom_id",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := defaultCfg()
-				cfg.OperatorID = "merge-split-lines"
-				return cfg
-			}(),
-		},
-		{
-			Name:      "combine_with_custom_string",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := defaultCfg()
-				cfg.CombineWith = "ABC"
-				return cfg
-			}(),
-		},
-		{
-			Name:      "combine_with_empty_string",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := defaultCfg()
-				cfg.CombineWith = ""
-				return cfg
-			}(),
-		},
-		{
-			Name:      "combine_with_tab",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := defaultCfg()
-				cfg.CombineWith = "\t"
-				return cfg
-			}(),
-		},
-		{
-			Name:      "combine_with_backslash_t",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := defaultCfg()
-				cfg.CombineWith = "\\t"
-				return cfg
-			}(),
-		},
-		{
-			Name:      "combine_with_multiline_string",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := defaultCfg()
-				cfg.CombineWith = "line1\nLINE2"
-				return cfg
-			}(),
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.Name, func(t *testing.T) {
-			tc.RunDeprecated(t, defaultCfg())
-		})
-	}
-}
-
-func defaultCfg() *Config {
-	return NewConfig()
+	}.Run(t)
 }

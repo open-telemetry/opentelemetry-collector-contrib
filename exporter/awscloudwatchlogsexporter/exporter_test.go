@@ -119,8 +119,8 @@ func BenchmarkLogToCWLog(b *testing.B) {
 
 func testResource() pcommon.Resource {
 	resource := pcommon.NewResource()
-	resource.Attributes().UpsertString("host", "abc123")
-	resource.Attributes().UpsertInt("node", 5)
+	resource.Attributes().PutString("host", "abc123")
+	resource.Attributes().PutInt("node", 5)
 	return resource
 }
 
@@ -130,8 +130,8 @@ func testLogRecord() plog.LogRecord {
 	record.SetSeverityText("debug")
 	record.SetDroppedAttributesCount(4)
 	record.Body().SetStringVal("hello world")
-	record.Attributes().UpsertInt("key1", 1)
-	record.Attributes().UpsertString("key2", "attr2")
+	record.Attributes().PutInt("key1", 1)
+	record.Attributes().PutString("key2", "attr2")
 	record.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	record.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 	record.SetFlags(plog.DefaultLogRecordFlags.WithIsSampled(true))
@@ -145,8 +145,8 @@ func testLogRecordWithoutTrace() plog.LogRecord {
 	record.SetSeverityText("debug")
 	record.SetDroppedAttributesCount(4)
 	record.Body().SetStringVal("hello world")
-	record.Attributes().UpsertInt("key1", 1)
-	record.Attributes().UpsertString("key2", "attr2")
+	record.Attributes().PutInt("key1", 1)
+	record.Attributes().PutString("key2", "attr2")
 	record.SetTimestamp(1609719139000000)
 	return record
 }
@@ -182,11 +182,11 @@ func TestAttrValue(t *testing.T) {
 			value: func() pcommon.Value {
 				mAttr := pcommon.NewValueMap()
 				m := mAttr.MapVal()
-				m.UpsertString("key1", "value1")
-				m.UpsertEmpty("key2")
-				m.UpsertBool("key3", true)
-				m.UpsertInt("key4", 4)
-				m.UpsertDouble("key5", 5.6)
+				m.PutString("key1", "value1")
+				m.PutEmpty("key2")
+				m.PutBool("key3", true)
+				m.PutInt("key4", 4)
+				m.PutDouble("key5", 5.6)
 				return mAttr
 			}(),
 			want: map[string]interface{}{
@@ -239,7 +239,7 @@ func TestConsumeLogs(t *testing.T) {
 	assert.NotNil(t, exp)
 	ld := plog.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
-	r.Resource().Attributes().UpsertString("hello", "test")
+	r.Resource().Attributes().PutString("hello", "test")
 	logRecords := r.ScopeLogs().AppendEmpty().LogRecords()
 	logRecords.EnsureCapacity(5)
 	logRecords.AppendEmpty()

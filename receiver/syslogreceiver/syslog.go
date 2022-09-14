@@ -67,10 +67,9 @@ type SysLogConfig struct {
 	adapter.BaseConfig `mapstructure:",squash"`
 }
 
-// DecodeInputConfig unmarshals the input operator
-func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
-	logConfig := cfg.(*SysLogConfig)
-	return &operator.Config{Builder: &logConfig.InputConfig}, nil
+// InputConfig unmarshals the input operator
+func (f ReceiverType) InputConfig(cfg config.Receiver) operator.Config {
+	return operator.NewConfig(&cfg.(*SysLogConfig).InputConfig)
 }
 
 func (cfg *SysLogConfig) Unmarshal(componentParser *confmap.Conf) error {

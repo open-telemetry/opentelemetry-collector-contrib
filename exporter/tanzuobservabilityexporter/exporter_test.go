@@ -95,7 +95,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	status.SetMessage("an error event occurred")
 	status.CopyTo(clientSpan.Status())
 
-	clientSpan.Attributes().UpsertString(labelApplication, "test-app")
+	clientSpan.Attributes().PutString(labelApplication, "test-app")
 
 	serverSpan := createSpan(
 		"server",
@@ -106,16 +106,16 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	serverSpan.SetKind(ptrace.SpanKindServer)
 	serverSpan.TraceStateStruct().FromRaw("key=val")
 	serverAttrs := serverSpan.Attributes()
-	serverAttrs.UpsertString(conventions.AttributeServiceName, "the-server")
-	serverAttrs.UpsertString(conventions.AttributeHTTPMethod, "POST")
-	serverAttrs.UpsertInt(conventions.AttributeHTTPStatusCode, 403)
-	serverAttrs.UpsertString(labelSource, "test_source")
+	serverAttrs.PutString(conventions.AttributeServiceName, "the-server")
+	serverAttrs.PutString(conventions.AttributeHTTPMethod, "POST")
+	serverAttrs.PutInt(conventions.AttributeHTTPStatusCode, 403)
+	serverAttrs.PutString(labelSource, "test_source")
 
 	traces := constructTraces([]ptrace.Span{rootSpan, clientSpan, serverSpan})
 	resourceAttrs := traces.ResourceSpans().At(0).Resource().Attributes()
-	resourceAttrs.UpsertString("resource", "R1")
-	resourceAttrs.UpsertString(conventions.AttributeServiceName, "test-service")
-	resourceAttrs.UpsertString(labelSource, "test-source")
+	resourceAttrs.PutString("resource", "R1")
+	resourceAttrs.PutString(conventions.AttributeServiceName, "test-service")
+	resourceAttrs.PutString(labelSource, "test-source")
 
 	expected := []*span{
 		{

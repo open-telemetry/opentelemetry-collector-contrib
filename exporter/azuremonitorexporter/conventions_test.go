@@ -173,7 +173,7 @@ func TestMessagingAttributeMapping(t *testing.T) {
 // Tests what happens when an attribute that should be an int is not
 func TestAttributeMappingWithSomeBadValues(t *testing.T) {
 	attributeMap := pcommon.NewMap()
-	attributeMap.UpsertString(conventions.AttributeNetPeerPort, "xx")
+	attributeMap.PutString(conventions.AttributeNetPeerPort, "xx")
 
 	attrs := &NetworkAttributes{}
 	attributeMap.Range(attrs.MapAttribute)
@@ -183,13 +183,13 @@ func TestAttributeMappingWithSomeBadValues(t *testing.T) {
 }
 
 func addNetworkAttributes(m pcommon.Map) {
-	m.UpsertString(conventions.AttributeNetTransport, conventions.AttributeNetTransport)
-	m.UpsertString(conventions.AttributeNetPeerIP, conventions.AttributeNetPeerIP)
-	m.UpsertInt(conventions.AttributeNetPeerPort, 1)
-	m.UpsertString(conventions.AttributeNetPeerName, conventions.AttributeNetPeerName)
-	m.UpsertString(conventions.AttributeNetHostIP, conventions.AttributeNetHostIP)
-	m.UpsertInt(conventions.AttributeNetHostPort, 2)
-	m.UpsertString(conventions.AttributeNetHostName, conventions.AttributeNetHostName)
+	m.PutString(conventions.AttributeNetTransport, conventions.AttributeNetTransport)
+	m.PutString(conventions.AttributeNetPeerIP, conventions.AttributeNetPeerIP)
+	m.PutInt(conventions.AttributeNetPeerPort, 1)
+	m.PutString(conventions.AttributeNetPeerName, conventions.AttributeNetPeerName)
+	m.PutString(conventions.AttributeNetHostIP, conventions.AttributeNetHostIP)
+	m.PutInt(conventions.AttributeNetHostPort, 2)
+	m.PutString(conventions.AttributeNetHostName, conventions.AttributeNetHostName)
 }
 
 func networkAttributesValidations(t *testing.T, networkAttributes NetworkAttributes) {

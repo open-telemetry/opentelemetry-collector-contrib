@@ -14,6 +14,11 @@ exporters:
     # just a dump of internal structures which can be changed over time.
     # This intended for primarily for debugging Collector without setting up backends.
     path: ./filename.json
+    rotation:
+      max_megabytes: 10
+      max_days: 3
+      max_backups: 3
+      localtime: true
 
 service:
   pipelines:

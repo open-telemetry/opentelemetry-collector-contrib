@@ -85,24 +85,24 @@ func setupSpan(span ptrace.Span, opts SpanOptions) {
 	span.SetTraceID(traceID)
 
 	// adding attributes (tags in the instana side)
-	span.Attributes().UpsertBool("some_key", true)
+	span.Attributes().PutBool("some_key", true)
 }
 
 func generateAttrs() pcommon.Map {
 	attrs := pcommon.NewMap()
-	attrs.UpsertBool("some_boolean_key", true)
-	attrs.UpsertString("custom_attribute", "ok")
+	attrs.PutBool("some_boolean_key", true)
+	attrs.PutString("custom_attribute", "ok")
 
 	// test non empty pid
-	attrs.UpsertString(conventions.AttributeProcessPID, "1234")
+	attrs.PutString(conventions.AttributeProcessPID, "1234")
 
 	// test non empty service name
-	attrs.UpsertString(conventions.AttributeServiceName, "myservice")
+	attrs.PutString(conventions.AttributeServiceName, "myservice")
 
 	// test non empty instana host id
-	attrs.UpsertString(backend.AttributeInstanaHostID, "myhost1")
+	attrs.PutString(backend.AttributeInstanaHostID, "myhost1")
 
-	attrs.UpsertBool("itistrue", true)
+	attrs.PutBool("itistrue", true)
 
 	return attrs
 }

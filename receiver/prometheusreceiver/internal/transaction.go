@@ -224,7 +224,7 @@ func (t *transaction) AddTargetInfo(labels labels.Labels) error {
 			continue
 		}
 
-		attrs.UpsertString(lbl.Name, lbl.Value)
+		attrs.PutString(lbl.Name, lbl.Value)
 	}
 
 	return nil

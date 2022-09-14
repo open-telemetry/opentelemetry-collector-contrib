@@ -156,7 +156,7 @@ func (m *metricSystemPagingFaults) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("type", typeAttributeValue)
+	dp.Attributes().PutString("type", typeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -209,8 +209,8 @@ func (m *metricSystemPagingOperations) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", directionAttributeValue)
-	dp.Attributes().UpsertString("type", typeAttributeValue)
+	dp.Attributes().PutString("direction", directionAttributeValue)
+	dp.Attributes().PutString("type", typeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -263,7 +263,7 @@ func (m *metricSystemPagingOperationsPageIn) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("type", typeAttributeValue)
+	dp.Attributes().PutString("type", typeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -316,7 +316,7 @@ func (m *metricSystemPagingOperationsPageOut) recordDataPoint(start pcommon.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("type", typeAttributeValue)
+	dp.Attributes().PutString("type", typeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -369,8 +369,8 @@ func (m *metricSystemPagingUsage) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("device", deviceAttributeValue)
-	dp.Attributes().UpsertString("state", stateAttributeValue)
+	dp.Attributes().PutString("device", deviceAttributeValue)
+	dp.Attributes().PutString("state", stateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -421,8 +421,8 @@ func (m *metricSystemPagingUtilization) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().UpsertString("device", deviceAttributeValue)
-	dp.Attributes().UpsertString("state", stateAttributeValue)
+	dp.Attributes().PutString("device", deviceAttributeValue)
+	dp.Attributes().PutString("state", stateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

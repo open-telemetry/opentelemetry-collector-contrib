@@ -51,10 +51,6 @@ type ConverterConfig struct {
 	WorkerCount int `mapstructure:"worker_count"`
 }
 
-// InputConfig is an alias that allows unmarshaling outside of mapstructure
-// This is meant to be used only for the input operator
-type InputConfig map[string]interface{}
-
 // decodeOperatorConfigs is an unmarshaling workaround for stanza operators
 // This is needed only until stanza operators are migrated to mapstructure
 func (cfg BaseConfig) DecodeOperatorConfigs() ([]operator.Config, error) {

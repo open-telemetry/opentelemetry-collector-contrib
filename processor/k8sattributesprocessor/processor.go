@@ -32,7 +32,6 @@ import (
 )
 
 const (
-	k8sIPLabelName    string = "k8s.pod.ip"
 	clientIPLabelName string = "ip"
 )
 
@@ -112,8 +111,8 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 
 	for i := range podIdentifierValue {
 		if podIdentifierValue[i].Source.From == kube.ConnectionSource && podIdentifierValue[i].Value != "" {
-			if _, found := resource.Attributes().Get(k8sIPLabelName); !found {
-				resource.Attributes().UpsertString(k8sIPLabelName, podIdentifierValue[i].Value)
+			if _, found := resource.Attributes().Get(kube.K8sIPLabelName); !found {
+				resource.Attributes().PutString(kube.K8sIPLabelName, podIdentifierValue[i].Value)
 			}
 			break
 		}
@@ -128,7 +127,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 
 			for key, val := range pod.Attributes {
 				if _, found := resource.Attributes().Get(key); !found {
-					resource.Attributes().UpsertString(key, val)
+					resource.Attributes().PutString(key, val)
 				}
 			}
 			kp.addContainerAttributes(resource.Attributes(), pod)
@@ -140,7 +139,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		attrsToAdd := kp.getAttributesForPodsNamespace(namespace)
 		for key, val := range attrsToAdd {
 			if _, found := resource.Attributes().Get(key); !found {
-				resource.Attributes().UpsertString(key, val)
+				resource.Attributes().PutString(key, val)
 			}
 		}
 	}
@@ -159,12 +158,12 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 
 	if containerSpec.ImageName != "" {
 		if _, found := attrs.Get(conventions.AttributeContainerImageName); !found {
-			attrs.UpsertString(conventions.AttributeContainerImageName, containerSpec.ImageName)
+			attrs.PutString(conventions.AttributeContainerImageName, containerSpec.ImageName)
 		}
 	}
 	if containerSpec.ImageTag != "" {
 		if _, found := attrs.Get(conventions.AttributeContainerImageTag); !found {
-			attrs.UpsertString(conventions.AttributeContainerImageTag, containerSpec.ImageTag)
+			attrs.PutString(conventions.AttributeContainerImageTag, containerSpec.ImageTag)
 		}
 	}
 
@@ -174,7 +173,7 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 		if err == nil {
 			if containerStatus, ok := containerSpec.Statuses[runID]; ok && containerStatus.ContainerID != "" {
 				if _, found := attrs.Get(conventions.AttributeContainerID); !found {
-					attrs.UpsertString(conventions.AttributeContainerID, containerStatus.ContainerID)
+					attrs.PutString(conventions.AttributeContainerID, containerStatus.ContainerID)
 				}
 			}
 		} else {

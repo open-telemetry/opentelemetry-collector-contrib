@@ -254,7 +254,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 			for i := 0; i < md.ResourceMetrics().Len(); i++ {
 				rm := md.ResourceMetrics().At(i)
 				res := rm.Resource()
-				res.Attributes().UpsertString(splunk.SFxAccessTokenLabel, accessToken)
+				res.Attributes().PutString(splunk.SFxAccessTokenLabel, accessToken)
 			}
 		}
 	}
@@ -297,7 +297,7 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 
 	if r.config.AccessTokenPassthrough {
 		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
-			rl.Resource().Attributes().UpsertString(splunk.SFxAccessTokenLabel, accessToken)
+			rl.Resource().Attributes().PutString(splunk.SFxAccessTokenLabel, accessToken)
 		}
 	}
 

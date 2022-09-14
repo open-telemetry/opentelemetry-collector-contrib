@@ -151,7 +151,7 @@ func TestSpanEventsAreTranslatedToSpanLogs(t *testing.T) {
 	event := span.Events().AppendEmpty()
 	event.SetName("eventName")
 	event.SetTimestamp(pcommon.NewTimestampFromTime(now))
-	event.Attributes().UpsertString("attrKey", "attrVal")
+	event.Attributes().PutString("attrKey", "attrVal")
 
 	result, err := transform.Span(span)
 	require.NoError(t, err, "transforming span to wavefront format")
@@ -239,8 +239,8 @@ func TestSpanForSourceTag(t *testing.T) {
 
 	//TestCase2: source value from resAttrs.source
 	resAttrs = pcommon.NewMap()
-	resAttrs.UpsertString(labelSource, "test_source")
-	resAttrs.UpsertString(conventions.AttributeHostName, "test_host.name")
+	resAttrs.PutString(labelSource, "test_source")
+	resAttrs.PutString(conventions.AttributeHostName, "test_host.name")
 	transform = transformerFromAttributes(resAttrs)
 	span = ptrace.NewSpan()
 	span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
@@ -258,8 +258,8 @@ func TestSpanForSourceTag(t *testing.T) {
 
 	//TestCase2: source value from resAttrs.host.name when source is not present
 	resAttrs = pcommon.NewMap()
-	resAttrs.UpsertString("hostname", "test_hostname")
-	resAttrs.UpsertString(conventions.AttributeHostName, "test_host.name")
+	resAttrs.PutString("hostname", "test_hostname")
+	resAttrs.PutString(conventions.AttributeHostName, "test_host.name")
 	transform = transformerFromAttributes(resAttrs)
 	span = ptrace.NewSpan()
 	span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
@@ -277,9 +277,9 @@ func TestSpanForSourceTag(t *testing.T) {
 
 	//TestCase4: source value from resAttrs.source when spanAttrs.source is present
 	resAttrs = pcommon.NewMap()
-	span.Attributes().UpsertString(labelSource, "source_from_span_attribute")
-	resAttrs.UpsertString(labelSource, "test_source")
-	resAttrs.UpsertString(conventions.AttributeHostName, "test_host.name")
+	span.Attributes().PutString(labelSource, "source_from_span_attribute")
+	resAttrs.PutString(labelSource, "test_source")
+	resAttrs.PutString(conventions.AttributeHostName, "test_host.name")
 	transform = transformerFromAttributes(resAttrs)
 	actual, err = transform.Span(span)
 	require.NoError(t, err, "transforming span to wavefront format")
@@ -323,8 +323,8 @@ func TestSpanForDroppedCount(t *testing.T) {
 
 func TestGetSourceAndResourceTags(t *testing.T) {
 	resAttrs := pcommon.NewMap()
-	resAttrs.UpsertString(labelSource, "test_source")
-	resAttrs.UpsertString(conventions.AttributeHostName, "test_host.name")
+	resAttrs.PutString(labelSource, "test_source")
+	resAttrs.PutString(conventions.AttributeHostName, "test_host.name")
 
 	actualSource, actualAttrsWithoutSource := getSourceAndResourceTags(resAttrs)
 	assert.Equal(t, "test_source", actualSource)
@@ -336,8 +336,8 @@ func TestGetSourceAndResourceTags(t *testing.T) {
 
 func TestGetSourceAndKey(t *testing.T) {
 	resAttrs := pcommon.NewMap()
-	resAttrs.UpsertString(labelSource, "some_source")
-	resAttrs.UpsertString(conventions.AttributeHostName, "test_host.name")
+	resAttrs.PutString(labelSource, "some_source")
+	resAttrs.PutString(conventions.AttributeHostName, "test_host.name")
 
 	source, sourceKey := getSourceAndKey(resAttrs)
 	assert.Equal(t, "some_source", source)
@@ -346,8 +346,8 @@ func TestGetSourceAndKey(t *testing.T) {
 
 func TestGetSourceAndKeyNotFound(t *testing.T) {
 	resAttrs := pcommon.NewMap()
-	resAttrs.UpsertString("foo", "some_source")
-	resAttrs.UpsertString("bar", "test_host.name")
+	resAttrs.PutString("foo", "some_source")
+	resAttrs.PutString("bar", "test_host.name")
 
 	source, sourceKey := getSourceAndKey(resAttrs)
 	assert.Equal(t, "", source)
