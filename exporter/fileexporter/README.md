@@ -25,7 +25,7 @@ The following settings are required:
 
 The following settings are optional:
 - `rotation` settings to rotate telemetry files.
-    - max_size:  [default: 100]: the maximum size in megabytes of the telemetry file before it is rotated.
+    - max_megabytes:  [default: 100]: the maximum size in megabytes of the telemetry file before it is rotated.
     - max_days: [no default (unlimited)]: the maximum number of days to retain telemetry files based on the timestamp encoded in their filename.
     - max_backups: [default: 100]: the maximum number of old telemetry files to retain.
     - localtime : [default: false (use UTC)] whether or not the timestamps in backup files is formatted according to the host's local time.
