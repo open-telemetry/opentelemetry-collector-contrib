@@ -74,8 +74,8 @@ func (d *Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 		getHostFromSource := hostnameSourcesMap[source]
 		hostname, err = getHostFromSource(d)
 		if err == nil {
-			attrs.UpsertString(conventions.AttributeHostName, hostname)
-			attrs.UpsertString(conventions.AttributeOSType, osType)
+			attrs.PutString(conventions.AttributeHostName, hostname)
+			attrs.PutString(conventions.AttributeOSType, osType)
 
 			return res, conventions.SchemaURL, nil
 		}

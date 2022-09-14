@@ -27,13 +27,13 @@ func exampleLog() (plog.LogRecord, pcommon.Resource) {
 	buffer := plog.NewLogRecord()
 	buffer.Body().SetStringVal("Example log")
 	buffer.SetSeverityText("error")
-	buffer.Attributes().UpsertString("attr1", "1")
-	buffer.Attributes().UpsertString("attr2", "2")
+	buffer.Attributes().PutString("attr1", "1")
+	buffer.Attributes().PutString("attr2", "2")
 	buffer.SetTraceID([16]byte{1, 2, 3, 4})
 	buffer.SetSpanID([8]byte{5, 6, 7, 8})
 
 	resource := pcommon.NewResource()
-	resource.Attributes().UpsertString("host.name", "something")
+	resource.Attributes().PutString("host.name", "something")
 
 	return buffer, resource
 }
@@ -51,8 +51,8 @@ func TestConvertWithMapBody(t *testing.T) {
 
 	log, resource := exampleLog()
 	mapVal := pcommon.NewValueMap()
-	mapVal.MapVal().UpsertString("key1", "value")
-	mapVal.MapVal().UpsertString("key2", "value")
+	mapVal.MapVal().PutString("key1", "value")
+	mapVal.MapVal().PutString("key2", "value")
 	mapVal.CopyTo(log.Body())
 
 	out, err := encodeJSON(log, resource)
@@ -67,17 +67,17 @@ func TestSerializeBody(t *testing.T) {
 	arrayval.SliceVal().AppendEmpty().SetStringVal("b")
 
 	simplemap := pcommon.NewValueMap()
-	simplemap.MapVal().UpsertString("key", "val")
+	simplemap.MapVal().PutString("key", "val")
 
 	complexmap := pcommon.NewValueMap()
-	complexmap.MapVal().UpsertString("keystr", "val")
-	complexmap.MapVal().UpsertInt("keyint", 1)
-	complexmap.MapVal().UpsertDouble("keyint", 1)
-	complexmap.MapVal().UpsertBool("keybool", true)
-	complexmap.MapVal().UpsertEmpty("keynull")
-	arrayval.CopyTo(complexmap.MapVal().UpsertEmpty("keyarr"))
-	simplemap.CopyTo(complexmap.MapVal().UpsertEmpty("keymap"))
-	complexmap.MapVal().UpsertEmpty("keyempty")
+	complexmap.MapVal().PutString("keystr", "val")
+	complexmap.MapVal().PutInt("keyint", 1)
+	complexmap.MapVal().PutDouble("keyint", 1)
+	complexmap.MapVal().PutBool("keybool", true)
+	complexmap.MapVal().PutEmpty("keynull")
+	arrayval.CopyTo(complexmap.MapVal().PutEmpty("keyarr"))
+	simplemap.CopyTo(complexmap.MapVal().PutEmpty("keymap"))
+	complexmap.MapVal().PutEmpty("keyempty")
 
 	bytes := pcommon.NewValueBytesEmpty()
 	bytes.BytesVal().FromRaw([]byte(`abc`))

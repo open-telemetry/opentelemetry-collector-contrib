@@ -38,7 +38,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	refLog, refIS, refResource := createTelemetry()
 
 	newAttrs := pcommon.NewMap()
-	newAttrs.UpsertString("hello", "world")
+	newAttrs.PutString("hello", "world")
 
 	tests := []struct {
 		name     string
@@ -208,7 +208,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertString("str", "newVal")
+				log.Attributes().PutString("str", "newVal")
 			},
 		},
 		{
@@ -222,7 +222,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   true,
 			newVal: false,
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertBool("bool", false)
+				log.Attributes().PutBool("bool", false)
 			},
 		},
 		{
@@ -236,7 +236,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   int64(10),
 			newVal: int64(20),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertInt("int", 20)
+				log.Attributes().PutInt("int", 20)
 			},
 		},
 		{
@@ -250,7 +250,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   float64(1.2),
 			newVal: float64(2.4),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertDouble("double", 2.4)
+				log.Attributes().PutDouble("double", 2.4)
 			},
 		},
 		{
@@ -264,7 +264,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
+				log.Attributes().PutEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
 			},
 		},
 		{
@@ -281,7 +281,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []string{"new"},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertEmptySlice("arr_str").AppendEmpty().SetStringVal("new")
+				log.Attributes().PutEmptySlice("arr_str").AppendEmpty().SetStringVal("new")
 			},
 		},
 		{
@@ -298,7 +298,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []bool{false},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertEmptySlice("arr_bool").AppendEmpty().SetBoolVal(false)
+				log.Attributes().PutEmptySlice("arr_bool").AppendEmpty().SetBoolVal(false)
 			},
 		},
 		{
@@ -315,7 +315,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []int64{20},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertEmptySlice("arr_int").AppendEmpty().SetIntVal(20)
+				log.Attributes().PutEmptySlice("arr_int").AppendEmpty().SetIntVal(20)
 			},
 		},
 		{
@@ -332,7 +332,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []float64{2.0},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertEmptySlice("arr_float").AppendEmpty().SetDoubleVal(2.0)
+				log.Attributes().PutEmptySlice("arr_float").AppendEmpty().SetDoubleVal(2.0)
 			},
 		},
 		{
@@ -349,7 +349,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: [][]byte{{9, 6, 4}},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{9, 6, 4})
+				log.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{9, 6, 4})
 			},
 		},
 		{
@@ -421,29 +421,29 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	log.SetSeverityNumber(plog.SeverityNumberFatal)
 	log.SetSeverityText("blue screen of death")
 	log.Body().SetStringVal("body")
-	log.Attributes().UpsertString("str", "val")
-	log.Attributes().UpsertBool("bool", true)
-	log.Attributes().UpsertInt("int", 10)
-	log.Attributes().UpsertDouble("double", 1.2)
-	log.Attributes().UpsertEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{1, 3, 2})
+	log.Attributes().PutString("str", "val")
+	log.Attributes().PutBool("bool", true)
+	log.Attributes().PutInt("int", 10)
+	log.Attributes().PutDouble("double", 1.2)
+	log.Attributes().PutEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{1, 3, 2})
 
-	arrStr := log.Attributes().UpsertEmptySlice("arr_str")
+	arrStr := log.Attributes().PutEmptySlice("arr_str")
 	arrStr.AppendEmpty().SetStringVal("one")
 	arrStr.AppendEmpty().SetStringVal("two")
 
-	arrBool := log.Attributes().UpsertEmptySlice("arr_bool")
+	arrBool := log.Attributes().PutEmptySlice("arr_bool")
 	arrBool.AppendEmpty().SetBoolVal(true)
 	arrBool.AppendEmpty().SetBoolVal(false)
 
-	arrInt := log.Attributes().UpsertEmptySlice("arr_int")
+	arrInt := log.Attributes().PutEmptySlice("arr_int")
 	arrInt.AppendEmpty().SetIntVal(2)
 	arrInt.AppendEmpty().SetIntVal(3)
 
-	arrFloat := log.Attributes().UpsertEmptySlice("arr_float")
+	arrFloat := log.Attributes().PutEmptySlice("arr_float")
 	arrFloat.AppendEmpty().SetDoubleVal(1.0)
 	arrFloat.AppendEmpty().SetDoubleVal(2.0)
 
-	arrBytes := log.Attributes().UpsertEmptySlice("arr_bytes")
+	arrBytes := log.Attributes().PutEmptySlice("arr_bytes")
 	arrBytes.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{1, 2, 3})
 	arrBytes.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
 

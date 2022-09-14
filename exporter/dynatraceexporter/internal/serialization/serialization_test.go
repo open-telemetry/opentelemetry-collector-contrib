@@ -101,8 +101,8 @@ func Test_makeCombinedDimensions(t *testing.T) {
 		dimensions.NewDimension("c", "default"),
 	)
 	attributes := pcommon.NewMap()
-	attributes.UpsertString("a", "attribute")
-	attributes.UpsertString("b", "attribute")
+	attributes.PutString("a", "attribute")
+	attributes.PutString("b", "attribute")
 	staticDims := dimensions.NewNormalizedDimensionList(
 		dimensions.NewDimension("a", "static"),
 	)

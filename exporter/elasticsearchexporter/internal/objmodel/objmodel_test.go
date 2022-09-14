@@ -41,8 +41,8 @@ func TestObjectModel_CreateMap(t *testing.T) {
 		"from map": {
 			build: func() Document {
 				m := pcommon.NewMap()
-				m.UpsertInt("i", 42)
-				m.UpsertString("str", "test")
+				m.PutInt("i", 42)
+				m.PutString("str", "test")
 				return DocumentFromAttributes(m)
 			},
 			want: Document{[]field{{"i", IntValue(42)}, {"str", StringValue("test")}}},
@@ -50,8 +50,8 @@ func TestObjectModel_CreateMap(t *testing.T) {
 		"ignores nil values": {
 			build: func() Document {
 				m := pcommon.NewMap()
-				m.UpsertEmpty("null")
-				m.UpsertString("str", "test")
+				m.PutEmpty("null")
+				m.PutString("str", "test")
 				return DocumentFromAttributes(m)
 			},
 			want: Document{[]field{{"str", StringValue("test")}}},
@@ -59,8 +59,8 @@ func TestObjectModel_CreateMap(t *testing.T) {
 		"from map with prefix": {
 			build: func() Document {
 				m := pcommon.NewMap()
-				m.UpsertInt("i", 42)
-				m.UpsertString("str", "test")
+				m.PutInt("i", 42)
+				m.PutString("str", "test")
 				return DocumentFromAttributesWithPath("prefix", m)
 			},
 			want: Document{[]field{{"prefix.i", IntValue(42)}, {"prefix.str", StringValue("test")}}},
@@ -68,8 +68,8 @@ func TestObjectModel_CreateMap(t *testing.T) {
 		"add attributes with key": {
 			build: func() (doc Document) {
 				m := pcommon.NewMap()
-				m.UpsertInt("i", 42)
-				m.UpsertString("str", "test")
+				m.PutInt("i", 42)
+				m.PutString("str", "test")
 				doc.AddAttributes("prefix", m)
 				return doc
 			},
@@ -79,8 +79,8 @@ func TestObjectModel_CreateMap(t *testing.T) {
 			build: func() (doc Document) {
 				mapVal := pcommon.NewValueMap()
 				m := mapVal.MapVal()
-				m.UpsertInt("i", 42)
-				m.UpsertString("str", "test")
+				m.PutInt("i", 42)
+				m.PutString("str", "test")
 				doc.AddAttribute("prefix", mapVal)
 				return doc
 			},
@@ -156,9 +156,9 @@ func TestObjectModel_Dedup(t *testing.T) {
 		"duplicate after flattening from map: namespace object at end": {
 			build: func() Document {
 				am := pcommon.NewMap()
-				am.UpsertInt("namespace.a", 42)
-				am.UpsertString("toplevel", "test")
-				am.UpsertEmptyMap("namespace").UpsertInt("a", 23)
+				am.PutInt("namespace.a", 42)
+				am.PutString("toplevel", "test")
+				am.PutEmptyMap("namespace").PutInt("a", 23)
 				return DocumentFromAttributes(am)
 			},
 			want: Document{[]field{{"namespace.a", ignoreValue}, {"namespace.a", IntValue(23)}, {"toplevel", StringValue("test")}}},
@@ -166,9 +166,9 @@ func TestObjectModel_Dedup(t *testing.T) {
 		"duplicate after flattening from map: namespace object at beginning": {
 			build: func() Document {
 				am := pcommon.NewMap()
-				am.UpsertEmptyMap("namespace").UpsertInt("a", 23)
-				am.UpsertInt("namespace.a", 42)
-				am.UpsertString("toplevel", "test")
+				am.PutEmptyMap("namespace").PutInt("a", 23)
+				am.PutInt("namespace.a", 42)
+				am.PutString("toplevel", "test")
 				return DocumentFromAttributes(am)
 			},
 			want: Document{[]field{{"namespace.a", ignoreValue}, {"namespace.a", IntValue(42)}, {"toplevel", StringValue("test")}}},
@@ -263,7 +263,7 @@ func TestValue_FromAttribute(t *testing.T) {
 		"non-empty map": {
 			in: func() pcommon.Value {
 				v := pcommon.NewValueMap()
-				v.MapVal().UpsertInt("a", 1)
+				v.MapVal().PutInt("a", 1)
 				return v
 			}(),
 			want: Value{kind: KindObject, doc: Document{[]field{{"a", IntValue(1)}}}},

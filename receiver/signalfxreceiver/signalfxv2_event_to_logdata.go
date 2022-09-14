@@ -36,7 +36,7 @@ func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs plog.LogRecordSlice
 		attrs.EnsureCapacity(2 + len(event.Dimensions) + len(event.Properties))
 
 		for _, dim := range event.Dimensions {
-			attrs.UpsertString(dim.Key, dim.Value)
+			attrs.PutString(dim.Key, dim.Value)
 		}
 
 		// The EventType field is stored as an attribute.
@@ -44,40 +44,40 @@ func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs plog.LogRecordSlice
 		if eventType == "" {
 			eventType = "unknown"
 		}
-		attrs.UpsertString(splunk.SFxEventType, eventType)
+		attrs.PutString(splunk.SFxEventType, eventType)
 
 		// SignalFx timestamps are in millis so convert to nanos by multiplying
 		// by 1 million.
 		lr.SetTimestamp(pcommon.Timestamp(event.Timestamp * 1e6))
 
 		if event.Category != nil {
-			attrs.UpsertInt(splunk.SFxEventCategoryKey, int64(*event.Category))
+			attrs.PutInt(splunk.SFxEventCategoryKey, int64(*event.Category))
 		} else {
 			// This gives us an unambiguous way of determining that a log record
 			// represents a SignalFx event, even if category is missing from the
 			// event.
-			attrs.UpsertEmpty(splunk.SFxEventCategoryKey)
+			attrs.PutEmpty(splunk.SFxEventCategoryKey)
 		}
 
 		if len(event.Properties) > 0 {
-			propMap := attrs.UpsertEmptyMap(splunk.SFxEventPropertiesKey)
+			propMap := attrs.PutEmptyMap(splunk.SFxEventPropertiesKey)
 			propMap.EnsureCapacity(len(event.Properties))
 			for _, prop := range event.Properties {
 				// No way to tell what value type is without testing each
 				// individually.
 				switch {
 				case prop.Value.StrValue != nil:
-					propMap.UpsertString(prop.Key, prop.Value.GetStrValue())
+					propMap.PutString(prop.Key, prop.Value.GetStrValue())
 				case prop.Value.IntValue != nil:
-					propMap.UpsertInt(prop.Key, prop.Value.GetIntValue())
+					propMap.PutInt(prop.Key, prop.Value.GetIntValue())
 				case prop.Value.DoubleValue != nil:
-					propMap.UpsertDouble(prop.Key, prop.Value.GetDoubleValue())
+					propMap.PutDouble(prop.Key, prop.Value.GetDoubleValue())
 				case prop.Value.BoolValue != nil:
-					propMap.UpsertBool(prop.Key, prop.Value.GetBoolValue())
+					propMap.PutBool(prop.Key, prop.Value.GetBoolValue())
 				default:
 					// If there is no property value, just insert a null to
 					// record that the key was present.
-					propMap.UpsertEmpty(prop.Key)
+					propMap.PutEmpty(prop.Key)
 				}
 			}
 		}

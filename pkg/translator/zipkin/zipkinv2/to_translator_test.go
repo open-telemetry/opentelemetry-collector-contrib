@@ -122,7 +122,7 @@ func generateTraceSingleSpanMinmalResource() ptrace.Traces {
 	td := generateTraceSingleSpanNoResourceOrInstrLibrary()
 	rs := td.ResourceSpans().At(0)
 	rsc := rs.Resource()
-	rsc.Attributes().UpsertString(conventions.AttributeServiceName, "SoleAttr")
+	rsc.Attributes().PutString(conventions.AttributeServiceName, "SoleAttr")
 	return td
 }
 

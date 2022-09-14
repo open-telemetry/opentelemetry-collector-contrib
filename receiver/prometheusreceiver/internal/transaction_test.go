@@ -220,7 +220,7 @@ func TestMetricBuilderCounters(t *testing.T) {
 				pt0.SetDoubleVal(100.0)
 				pt0.SetStartTimestamp(startTimestamp)
 				pt0.SetTimestamp(tsNanos)
-				pt0.Attributes().UpsertString("foo", "bar")
+				pt0.Attributes().PutString("foo", "bar")
 
 				return []pmetric.Metrics{md0}
 			},
@@ -247,13 +247,13 @@ func TestMetricBuilderCounters(t *testing.T) {
 				pt0.SetDoubleVal(150.0)
 				pt0.SetStartTimestamp(startTimestamp)
 				pt0.SetTimestamp(tsNanos)
-				pt0.Attributes().UpsertString("foo", "bar")
+				pt0.Attributes().PutString("foo", "bar")
 
 				pt1 := sum.DataPoints().AppendEmpty()
 				pt1.SetDoubleVal(25.0)
 				pt1.SetStartTimestamp(startTimestamp)
 				pt1.SetTimestamp(tsNanos)
-				pt1.Attributes().UpsertString("foo", "other")
+				pt1.Attributes().PutString("foo", "other")
 
 				return []pmetric.Metrics{md0}
 			},
@@ -281,13 +281,13 @@ func TestMetricBuilderCounters(t *testing.T) {
 				pt0.SetDoubleVal(150.0)
 				pt0.SetStartTimestamp(startTimestamp)
 				pt0.SetTimestamp(tsNanos)
-				pt0.Attributes().UpsertString("foo", "bar")
+				pt0.Attributes().PutString("foo", "bar")
 
 				pt1 := sum0.DataPoints().AppendEmpty()
 				pt1.SetDoubleVal(25.0)
 				pt1.SetStartTimestamp(startTimestamp)
 				pt1.SetTimestamp(tsNanos)
-				pt1.Attributes().UpsertString("foo", "other")
+				pt1.Attributes().PutString("foo", "other")
 
 				m1 := mL0.AppendEmpty()
 				m1.SetName("counter_test2")
@@ -298,7 +298,7 @@ func TestMetricBuilderCounters(t *testing.T) {
 				pt2.SetDoubleVal(100.0)
 				pt2.SetStartTimestamp(startTimestamp)
 				pt2.SetTimestamp(tsNanos)
-				pt2.Attributes().UpsertString("foo", "bar")
+				pt2.Attributes().PutString("foo", "bar")
 
 				return []pmetric.Metrics{md0}
 			},
@@ -324,7 +324,7 @@ func TestMetricBuilderCounters(t *testing.T) {
 				pt0.SetDoubleVal(100.0)
 				pt0.SetStartTimestamp(startTimestamp)
 				pt0.SetTimestamp(tsNanos)
-				pt0.Attributes().UpsertString("foo", "bar")
+				pt0.Attributes().PutString("foo", "bar")
 
 				return []pmetric.Metrics{md0}
 			},
@@ -364,7 +364,7 @@ func TestMetricBuilderGauges(t *testing.T) {
 				pt0.SetDoubleVal(100.0)
 				pt0.SetStartTimestamp(0)
 				pt0.SetTimestamp(tsNanos)
-				pt0.Attributes().UpsertString("foo", "bar")
+				pt0.Attributes().PutString("foo", "bar")
 
 				md1 := pmetric.NewMetrics()
 				mL1 := md1.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
@@ -375,7 +375,7 @@ func TestMetricBuilderGauges(t *testing.T) {
 				pt1.SetDoubleVal(90.0)
 				pt1.SetStartTimestamp(0)
 				pt1.SetTimestamp(tsPlusIntervalNanos)
-				pt1.Attributes().UpsertString("foo", "bar")
+				pt1.Attributes().PutString("foo", "bar")
 
 				return []pmetric.Metrics{md0, md1}
 			},
@@ -400,13 +400,13 @@ func TestMetricBuilderGauges(t *testing.T) {
 				pt0.SetDoubleVal(100.0)
 				pt0.SetStartTimestamp(0)
 				pt0.SetTimestamp(tsNanos)
-				pt0.Attributes().UpsertString("foo", "bar")
+				pt0.Attributes().PutString("foo", "bar")
 
 				pt1 := gauge0.DataPoints().AppendEmpty()
 				pt1.SetDoubleVal(200.0)
 				pt1.SetStartTimestamp(0)
 				pt1.SetTimestamp(tsNanos)
-				pt1.Attributes().UpsertString("bar", "foo")
+				pt1.Attributes().PutString("bar", "foo")
 
 				return []pmetric.Metrics{md0}
 			},
@@ -438,13 +438,13 @@ func TestMetricBuilderGauges(t *testing.T) {
 				pt0.SetDoubleVal(100.0)
 				pt0.SetStartTimestamp(0)
 				pt0.SetTimestamp(tsNanos)
-				pt0.Attributes().UpsertString("foo", "bar")
+				pt0.Attributes().PutString("foo", "bar")
 
 				pt1 := gauge0.DataPoints().AppendEmpty()
 				pt1.SetDoubleVal(200.0)
 				pt1.SetStartTimestamp(0)
 				pt1.SetTimestamp(tsNanos)
-				pt1.Attributes().UpsertString("bar", "foo")
+				pt1.Attributes().PutString("bar", "foo")
 
 				md1 := pmetric.NewMetrics()
 				mL1 := md1.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
@@ -455,7 +455,7 @@ func TestMetricBuilderGauges(t *testing.T) {
 				pt2.SetDoubleVal(20.0)
 				pt2.SetStartTimestamp(0)
 				pt2.SetTimestamp(tsPlusIntervalNanos)
-				pt2.Attributes().UpsertString("foo", "bar")
+				pt2.Attributes().PutString("foo", "bar")
 
 				return []pmetric.Metrics{md0, md1}
 			},
@@ -490,7 +490,7 @@ func TestMetricBuilderUntyped(t *testing.T) {
 				pt0.SetDoubleVal(100.0)
 				pt0.SetStartTimestamp(0)
 				pt0.SetTimestamp(tsNanos)
-				pt0.Attributes().UpsertString("foo", "bar")
+				pt0.Attributes().PutString("foo", "bar")
 
 				return []pmetric.Metrics{md0}
 			},
@@ -515,7 +515,7 @@ func TestMetricBuilderUntyped(t *testing.T) {
 				pt0 := gauge0.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(100.0)
 				pt0.SetTimestamp(tsNanos)
-				pt0.Attributes().UpsertString("foo", "bar")
+				pt0.Attributes().PutString("foo", "bar")
 
 				m1 := mL0.AppendEmpty()
 				m1.SetName("theother_not_exists")
@@ -523,12 +523,12 @@ func TestMetricBuilderUntyped(t *testing.T) {
 				pt1 := gauge1.DataPoints().AppendEmpty()
 				pt1.SetDoubleVal(200.0)
 				pt1.SetTimestamp(tsNanos)
-				pt1.Attributes().UpsertString("foo", "bar")
+				pt1.Attributes().PutString("foo", "bar")
 
 				pt2 := gauge1.DataPoints().AppendEmpty()
 				pt2.SetDoubleVal(300.0)
 				pt2.SetTimestamp(tsNanos)
-				pt2.Attributes().UpsertString("bar", "foo")
+				pt2.Attributes().PutString("bar", "foo")
 
 				return []pmetric.Metrics{md0}
 			},
@@ -551,7 +551,7 @@ func TestMetricBuilderUntyped(t *testing.T) {
 				pt0 := gauge0.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(100.0)
 				pt0.SetTimestamp(tsNanos)
-				pt0.Attributes().UpsertString("foo", "bar")
+				pt0.Attributes().PutString("foo", "bar")
 
 				return []pmetric.Metrics{md0}
 			},
@@ -594,7 +594,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				pt0.BucketCounts().FromRaw([]uint64{1, 1, 8})
 				pt0.SetTimestamp(tsNanos)
 				pt0.SetStartTimestamp(startTimestamp)
-				pt0.Attributes().UpsertString("foo", "bar")
+				pt0.Attributes().PutString("foo", "bar")
 
 				return []pmetric.Metrics{md0}
 			},
@@ -631,7 +631,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				pt0.BucketCounts().FromRaw([]uint64{1, 1, 8})
 				pt0.SetTimestamp(tsNanos)
 				pt0.SetStartTimestamp(startTimestamp)
-				pt0.Attributes().UpsertString("foo", "bar")
+				pt0.Attributes().PutString("foo", "bar")
 
 				pt1 := hist0.DataPoints().AppendEmpty()
 				pt1.SetCount(3)
@@ -640,7 +640,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				pt1.BucketCounts().FromRaw([]uint64{1, 1, 1})
 				pt1.SetTimestamp(tsNanos)
 				pt1.SetStartTimestamp(startTimestamp)
-				pt1.Attributes().UpsertString("key2", "v2")
+				pt1.Attributes().PutString("key2", "v2")
 
 				return []pmetric.Metrics{md0}
 			},
@@ -682,7 +682,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				pt0.BucketCounts().FromRaw([]uint64{1, 1, 8})
 				pt0.SetTimestamp(tsNanos)
 				pt0.SetStartTimestamp(startTimestamp)
-				pt0.Attributes().UpsertString("foo", "bar")
+				pt0.Attributes().PutString("foo", "bar")
 
 				pt1 := hist0.DataPoints().AppendEmpty()
 				pt1.SetCount(3)
@@ -691,7 +691,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				pt1.BucketCounts().FromRaw([]uint64{1, 1, 1})
 				pt1.SetTimestamp(tsNanos)
 				pt1.SetStartTimestamp(startTimestamp)
-				pt1.Attributes().UpsertString("key2", "v2")
+				pt1.Attributes().PutString("key2", "v2")
 
 				m1 := mL0.AppendEmpty()
 				m1.SetName("hist_test2")
@@ -704,7 +704,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				pt2.BucketCounts().FromRaw([]uint64{1, 1, 1})
 				pt2.SetTimestamp(tsNanos)
 				pt2.SetStartTimestamp(startTimestamp)
-				pt2.Attributes().UpsertString("foo", "bar")
+				pt2.Attributes().PutString("foo", "bar")
 
 				return []pmetric.Metrics{md0}
 			},
@@ -736,7 +736,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				pt0.BucketCounts().FromRaw([]uint64{1, 1, 8})
 				pt0.SetTimestamp(tsNanos)
 				pt0.SetStartTimestamp(startTimestamp)
-				pt0.Attributes().UpsertString("foo", "bar")
+				pt0.Attributes().PutString("foo", "bar")
 
 				return []pmetric.Metrics{md0}
 			},
@@ -766,7 +766,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				pt0.BucketCounts().FromRaw([]uint64{3})
 				pt0.SetTimestamp(tsNanos)
 				pt0.SetStartTimestamp(startTimestamp)
-				pt0.Attributes().UpsertString("foo", "bar")
+				pt0.Attributes().PutString("foo", "bar")
 
 				return []pmetric.Metrics{md0}
 			},
@@ -796,7 +796,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				pt0.BucketCounts().FromRaw([]uint64{3})
 				pt0.SetTimestamp(tsNanos)
 				pt0.SetStartTimestamp(startTimestamp)
-				pt0.Attributes().UpsertString("foo", "bar")
+				pt0.Attributes().PutString("foo", "bar")
 
 				return []pmetric.Metrics{md0}
 			},
@@ -826,7 +826,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				pt0.BucketCounts().FromRaw([]uint64{1, 1, 1})
 				pt0.SetTimestamp(tsNanos)
 				pt0.SetStartTimestamp(startTimestamp)
-				pt0.Attributes().UpsertString("foo", "bar")
+				pt0.Attributes().PutString("foo", "bar")
 
 				return []pmetric.Metrics{md0}
 			},
@@ -924,7 +924,7 @@ func TestMetricBuilderSummary(t *testing.T) {
 				pt0.SetStartTimestamp(startTimestamp)
 				pt0.SetCount(500)
 				pt0.SetSum(0.0)
-				pt0.Attributes().UpsertString("foo", "bar")
+				pt0.Attributes().PutString("foo", "bar")
 				qvL := pt0.QuantileValues()
 				q50 := qvL.AppendEmpty()
 				q50.SetQuantile(.50)
@@ -960,7 +960,7 @@ func TestMetricBuilderSummary(t *testing.T) {
 				pt0.SetTimestamp(tsNanos)
 				pt0.SetCount(500)
 				pt0.SetSum(100.0)
-				pt0.Attributes().UpsertString("foo", "bar")
+				pt0.Attributes().PutString("foo", "bar")
 
 				return []pmetric.Metrics{md0}
 			},
@@ -989,7 +989,7 @@ func TestMetricBuilderSummary(t *testing.T) {
 				pt0.SetTimestamp(tsNanos)
 				pt0.SetCount(500)
 				pt0.SetSum(100.0)
-				pt0.Attributes().UpsertString("foo", "bar")
+				pt0.Attributes().PutString("foo", "bar")
 				qvL := pt0.QuantileValues()
 				q50 := qvL.AppendEmpty()
 				q50.SetQuantile(.50)

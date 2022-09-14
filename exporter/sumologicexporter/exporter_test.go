@@ -99,9 +99,9 @@ func TestResourceMerge(t *testing.T) {
 	test.exp.filter = f
 
 	logs := LogRecordsToLogs(exampleLog())
-	logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString("key1", "original_value")
-	logs.ResourceLogs().At(0).Resource().Attributes().UpsertString("key1", "overwrite_value")
-	logs.ResourceLogs().At(0).Resource().Attributes().UpsertString("key2", "additional_value")
+	logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("key1", "original_value")
+	logs.ResourceLogs().At(0).Resource().Attributes().PutString("key1", "overwrite_value")
+	logs.ResourceLogs().At(0).Resource().Attributes().PutString("key2", "additional_value")
 
 	err = test.exp.pushLogsData(context.Background(), logs)
 	assert.NoError(t, err)
@@ -392,8 +392,8 @@ gauge_metric_name{foo="bar",key2="value2",remote_name="156955",url="http://anoth
 		exampleIntGaugeMetric(),
 	}
 
-	records[0].attributes.UpsertString("key1", "value1")
-	records[1].attributes.UpsertString("key2", "value2")
+	records[0].attributes.PutString("key1", "value1")
+	records[1].attributes.PutString("key2", "value2")
 
 	metrics := metricPairToMetrics(records)
 	expected := metricPairToMetrics(records[:1])

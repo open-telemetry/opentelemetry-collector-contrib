@@ -40,16 +40,16 @@ func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 		}
 		attrs := resourceMetrics.Resource().Attributes()
 		if event.Host != "" {
-			attrs.UpsertString(config.HecToOtelAttrs.Host, event.Host)
+			attrs.PutString(config.HecToOtelAttrs.Host, event.Host)
 		}
 		if event.Source != "" {
-			attrs.UpsertString(config.HecToOtelAttrs.Source, event.Source)
+			attrs.PutString(config.HecToOtelAttrs.Source, event.Source)
 		}
 		if event.SourceType != "" {
-			attrs.UpsertString(config.HecToOtelAttrs.SourceType, event.SourceType)
+			attrs.PutString(config.HecToOtelAttrs.SourceType, event.SourceType)
 		}
 		if event.Index != "" {
-			attrs.UpsertString(config.HecToOtelAttrs.Index, event.Index)
+			attrs.PutString(config.HecToOtelAttrs.Index, event.Index)
 		}
 
 		values := event.GetMetricValues()
@@ -143,7 +143,7 @@ func buildAttributes(dimensions map[string]interface{}) pcommon.Map {
 			// TODO: Log or metric for this odd ball?
 			continue
 		}
-		attributes.UpsertString(key, fmt.Sprintf("%v", val))
+		attributes.PutString(key, fmt.Sprintf("%v", val))
 	}
 	return attributes
 }

@@ -38,7 +38,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	refSpan, refIS, refResource := createTelemetry()
 
 	newAttrs := pcommon.NewMap()
-	newAttrs.UpsertString("hello", "world")
+	newAttrs.PutString("hello", "world")
 
 	newEvents := ptrace.NewSpanEventSlice()
 	newEvents.AppendEmpty().SetName("new event")
@@ -231,7 +231,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertString("str", "newVal")
+				span.Attributes().PutString("str", "newVal")
 			},
 		},
 		{
@@ -245,7 +245,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   true,
 			newVal: false,
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertBool("bool", false)
+				span.Attributes().PutBool("bool", false)
 			},
 		},
 		{
@@ -259,7 +259,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   int64(10),
 			newVal: int64(20),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertInt("int", 20)
+				span.Attributes().PutInt("int", 20)
 			},
 		},
 		{
@@ -273,7 +273,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   float64(1.2),
 			newVal: float64(2.4),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertDouble("double", 2.4)
+				span.Attributes().PutDouble("double", 2.4)
 			},
 		},
 		{
@@ -287,7 +287,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
+				span.Attributes().PutEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
 			},
 		},
 		{
@@ -304,7 +304,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []string{"new"},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertEmptySlice("arr_str").AppendEmpty().SetStringVal("new")
+				span.Attributes().PutEmptySlice("arr_str").AppendEmpty().SetStringVal("new")
 			},
 		},
 		{
@@ -321,7 +321,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []bool{false},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertEmptySlice("arr_bool").AppendEmpty().SetBoolVal(false)
+				span.Attributes().PutEmptySlice("arr_bool").AppendEmpty().SetBoolVal(false)
 			},
 		},
 		{
@@ -338,7 +338,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []int64{20},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertEmptySlice("arr_int").AppendEmpty().SetIntVal(20)
+				span.Attributes().PutEmptySlice("arr_int").AppendEmpty().SetIntVal(20)
 			},
 		},
 		{
@@ -355,7 +355,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []float64{2.0},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertEmptySlice("arr_float").AppendEmpty().SetDoubleVal(2.0)
+				span.Attributes().PutEmptySlice("arr_float").AppendEmpty().SetDoubleVal(2.0)
 			},
 		},
 		{
@@ -372,7 +372,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: [][]byte{{9, 6, 4}},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{9, 6, 4})
+				span.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{9, 6, 4})
 			},
 		},
 		{
@@ -550,29 +550,29 @@ func createTelemetry() (ptrace.Span, pcommon.InstrumentationScope, pcommon.Resou
 	span.SetKind(ptrace.SpanKindServer)
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
-	span.Attributes().UpsertString("str", "val")
-	span.Attributes().UpsertBool("bool", true)
-	span.Attributes().UpsertInt("int", 10)
-	span.Attributes().UpsertDouble("double", 1.2)
-	span.Attributes().UpsertEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{1, 3, 2})
+	span.Attributes().PutString("str", "val")
+	span.Attributes().PutBool("bool", true)
+	span.Attributes().PutInt("int", 10)
+	span.Attributes().PutDouble("double", 1.2)
+	span.Attributes().PutEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{1, 3, 2})
 
-	arrStr := span.Attributes().UpsertEmptySlice("arr_str")
+	arrStr := span.Attributes().PutEmptySlice("arr_str")
 	arrStr.AppendEmpty().SetStringVal("one")
 	arrStr.AppendEmpty().SetStringVal("two")
 
-	arrBool := span.Attributes().UpsertEmptySlice("arr_bool")
+	arrBool := span.Attributes().PutEmptySlice("arr_bool")
 	arrBool.AppendEmpty().SetBoolVal(true)
 	arrBool.AppendEmpty().SetBoolVal(false)
 
-	arrInt := span.Attributes().UpsertEmptySlice("arr_int")
+	arrInt := span.Attributes().PutEmptySlice("arr_int")
 	arrInt.AppendEmpty().SetIntVal(2)
 	arrInt.AppendEmpty().SetIntVal(3)
 
-	arrFloat := span.Attributes().UpsertEmptySlice("arr_float")
+	arrFloat := span.Attributes().PutEmptySlice("arr_float")
 	arrFloat.AppendEmpty().SetDoubleVal(1.0)
 	arrFloat.AppendEmpty().SetDoubleVal(2.0)
 
-	arrBytes := span.Attributes().UpsertEmptySlice("arr_bytes")
+	arrBytes := span.Attributes().PutEmptySlice("arr_bytes")
 	arrBytes.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{1, 2, 3})
 	arrBytes.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
 

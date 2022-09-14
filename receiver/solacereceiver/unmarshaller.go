@@ -134,12 +134,12 @@ func (u *solaceMessageUnmarshallerV1) mapResourceSpanAttributes(spanData *model_
 		solosVersionAttrKey   = "service.version"
 	)
 	if spanData.RouterName != nil {
-		attrMap.UpsertString(routerNameAttrKey, *spanData.RouterName)
+		attrMap.PutString(routerNameAttrKey, *spanData.RouterName)
 	}
 	if spanData.MessageVpnName != nil {
-		attrMap.UpsertString(messageVpnNameAttrKey, *spanData.MessageVpnName)
+		attrMap.PutString(messageVpnNameAttrKey, *spanData.MessageVpnName)
 	}
-	attrMap.UpsertString(solosVersionAttrKey, spanData.SolosVersion)
+	attrMap.PutString(solosVersionAttrKey, spanData.SolosVersion)
 }
 
 func (u *solaceMessageUnmarshallerV1) mapClientSpanData(spanData *model_v1.SpanData, clientSpan ptrace.Span) {
@@ -189,8 +189,8 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 		operationAttrKey   = "messaging.operation"
 		operationAttrValue = "receive"
 	)
-	attrMap.UpsertString(systemAttrKey, systemAttrValue)
-	attrMap.UpsertString(operationAttrKey, operationAttrValue)
+	attrMap.PutString(systemAttrKey, systemAttrValue)
+	attrMap.PutString(operationAttrKey, operationAttrValue)
 	// attributes from spanData
 	const (
 		protocolAttrKey                    = "messaging.protocol"
@@ -215,59 +215,59 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 		peerIPAttrKey                      = "net.peer.ip"
 		peerPortAttrKey                    = "net.peer.port"
 	)
-	attrMap.UpsertString(protocolAttrKey, spanData.Protocol)
+	attrMap.PutString(protocolAttrKey, spanData.Protocol)
 	if spanData.ProtocolVersion != nil {
-		attrMap.UpsertString(protocolVersionAttrKey, *spanData.ProtocolVersion)
+		attrMap.PutString(protocolVersionAttrKey, *spanData.ProtocolVersion)
 	}
 	if spanData.ApplicationMessageId != nil {
-		attrMap.UpsertString(messageIDAttrKey, *spanData.ApplicationMessageId)
+		attrMap.PutString(messageIDAttrKey, *spanData.ApplicationMessageId)
 	}
 	if spanData.CorrelationId != nil {
-		attrMap.UpsertString(conversationIDAttrKey, *spanData.CorrelationId)
+		attrMap.PutString(conversationIDAttrKey, *spanData.CorrelationId)
 	}
-	attrMap.UpsertInt(payloadSizeBytesAttrKey, int64(spanData.BinaryAttachmentSize+spanData.XmlAttachmentSize+spanData.MetadataSize))
-	attrMap.UpsertString(clientUsernameAttrKey, spanData.ClientUsername)
-	attrMap.UpsertString(clientNameAttrKey, spanData.ClientName)
-	attrMap.UpsertInt(receiveTimeAttrKey, spanData.BrokerReceiveTimeUnixNano)
-	attrMap.UpsertString(destinationAttrKey, spanData.Topic)
+	attrMap.PutInt(payloadSizeBytesAttrKey, int64(spanData.BinaryAttachmentSize+spanData.XmlAttachmentSize+spanData.MetadataSize))
+	attrMap.PutString(clientUsernameAttrKey, spanData.ClientUsername)
+	attrMap.PutString(clientNameAttrKey, spanData.ClientName)
+	attrMap.PutInt(receiveTimeAttrKey, spanData.BrokerReceiveTimeUnixNano)
+	attrMap.PutString(destinationAttrKey, spanData.Topic)
 
 	rgmid := u.rgmidToString(spanData.ReplicationGroupMessageId)
 	if len(rgmid) > 0 {
-		attrMap.UpsertString(replicationGroupMessageIDAttrKey, rgmid)
+		attrMap.PutString(replicationGroupMessageIDAttrKey, rgmid)
 	}
 
 	if spanData.Priority != nil {
-		attrMap.UpsertInt(priorityAttrKey, int64(*spanData.Priority))
+		attrMap.PutInt(priorityAttrKey, int64(*spanData.Priority))
 	}
 	if spanData.Ttl != nil {
-		attrMap.UpsertInt(ttlAttrKey, *spanData.Ttl)
+		attrMap.PutInt(ttlAttrKey, *spanData.Ttl)
 	}
 	if spanData.ReplyToTopic != nil {
-		attrMap.UpsertString(replyToAttrKey, *spanData.ReplyToTopic)
+		attrMap.PutString(replyToAttrKey, *spanData.ReplyToTopic)
 	}
-	attrMap.UpsertBool(dmqEligibleAttrKey, spanData.DmqEligible)
-	attrMap.UpsertInt(droppedEnqueueEventsSuccessAttrKey, int64(spanData.DroppedEnqueueEventsSuccess))
-	attrMap.UpsertInt(droppedEnqueueEventsFailedAttrKey, int64(spanData.DroppedEnqueueEventsFailed))
+	attrMap.PutBool(dmqEligibleAttrKey, spanData.DmqEligible)
+	attrMap.PutInt(droppedEnqueueEventsSuccessAttrKey, int64(spanData.DroppedEnqueueEventsSuccess))
+	attrMap.PutInt(droppedEnqueueEventsFailedAttrKey, int64(spanData.DroppedEnqueueEventsFailed))
 
 	hostIPLen := len(spanData.HostIp)
 	if hostIPLen == 4 || hostIPLen == 16 {
-		attrMap.UpsertString(hostIPAttrKey, net.IP(spanData.HostIp).String())
+		attrMap.PutString(hostIPAttrKey, net.IP(spanData.HostIp).String())
 	} else {
 		u.logger.Warn("Host ip attribute has an illegal length", zap.Int("length", hostIPLen))
 		recordRecoverableUnmarshallingError()
 	}
-	attrMap.UpsertInt(hostPortAttrKey, int64(spanData.HostPort))
+	attrMap.PutInt(hostPortAttrKey, int64(spanData.HostPort))
 
 	peerIPLen := len(spanData.HostIp)
 	if peerIPLen == 4 || peerIPLen == 16 {
-		attrMap.UpsertString(peerIPAttrKey, net.IP(spanData.PeerIp).String())
+		attrMap.PutString(peerIPAttrKey, net.IP(spanData.PeerIp).String())
 	} else {
 		u.logger.Warn("Peer ip attribute has an illegal length", zap.Int("length", peerIPLen))
 		recordRecoverableUnmarshallingError()
 	}
-	attrMap.UpsertInt(peerPortAttrKey, int64(spanData.PeerPort))
+	attrMap.PutInt(peerPortAttrKey, int64(spanData.PeerPort))
 
-	attrMap.UpsertBool(droppedUserPropertiesAttrKey, spanData.DroppedUserProperties)
+	attrMap.PutBool(droppedUserPropertiesAttrKey, spanData.DroppedUserProperties)
 	for key, value := range spanData.UserProperties {
 		if value != nil {
 			u.insertUserProperty(attrMap, key, value.Value)
@@ -325,11 +325,11 @@ func (u *solaceMessageUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v1.Spa
 	clientEvent.SetName(eventName)
 	clientEvent.SetTimestamp(pcommon.Timestamp(enqueueEvent.TimeUnixNano))
 	clientEvent.Attributes().EnsureCapacity(3)
-	clientEvent.Attributes().UpsertString(messagingDestinationEventKey, destinationName)
-	clientEvent.Attributes().UpsertString(messagingDestinationTypeEventKey, destinationType)
-	clientEvent.Attributes().UpsertBool(rejectsAllEnqueuesKey, enqueueEvent.RejectsAllEnqueues)
+	clientEvent.Attributes().PutString(messagingDestinationEventKey, destinationName)
+	clientEvent.Attributes().PutString(messagingDestinationTypeEventKey, destinationType)
+	clientEvent.Attributes().PutBool(rejectsAllEnqueuesKey, enqueueEvent.RejectsAllEnqueues)
 	if enqueueEvent.ErrorDescription != nil {
-		clientEvent.Attributes().UpsertString(statusMessageEventKey, enqueueEvent.GetErrorDescription())
+		clientEvent.Attributes().PutString(statusMessageEventKey, enqueueEvent.GetErrorDescription())
 	}
 }
 
@@ -375,23 +375,23 @@ func (u *solaceMessageUnmarshallerV1) mapTransactionEvent(transactionEvent *mode
 		u.logger.Warn(fmt.Sprintf("Unknown transaction initiator %d", transactionEvent.GetInitiator()))
 		recordRecoverableUnmarshallingError()
 	}
-	clientEvent.Attributes().UpsertString(transactionInitiatorEventKey, initiator)
+	clientEvent.Attributes().PutString(transactionInitiatorEventKey, initiator)
 	// conditionally set the error description if one occurred, otherwise omit
 	if transactionEvent.ErrorDescription != nil {
-		clientEvent.Attributes().UpsertString(transactionErrorMessageEventKey, transactionEvent.GetErrorDescription())
+		clientEvent.Attributes().PutString(transactionErrorMessageEventKey, transactionEvent.GetErrorDescription())
 	}
 	// map the transaction type/id
 	transactionID := transactionEvent.GetTransactionId()
 	switch casted := transactionID.(type) {
 	case *model_v1.SpanData_TransactionEvent_LocalId:
-		clientEvent.Attributes().UpsertInt(transactionIDEventKey, int64(casted.LocalId.TransactionId))
-		clientEvent.Attributes().UpsertString(transactedSessionNameEventKey, casted.LocalId.SessionName)
-		clientEvent.Attributes().UpsertInt(transactedSessionIDEventKey, int64(casted.LocalId.SessionId))
+		clientEvent.Attributes().PutInt(transactionIDEventKey, int64(casted.LocalId.TransactionId))
+		clientEvent.Attributes().PutString(transactedSessionNameEventKey, casted.LocalId.SessionName)
+		clientEvent.Attributes().PutInt(transactedSessionIDEventKey, int64(casted.LocalId.SessionId))
 	case *model_v1.SpanData_TransactionEvent_Xid_:
 		// format xxxxxxxx-yyyyyyyy-zzzzzzzz where x is FormatID (hex rep of int32), y is BranchQualifier and z is GlobalID, hex encoded.
 		xidString := fmt.Sprintf("%08x", casted.Xid.FormatId) + "-" +
 			hex.EncodeToString(casted.Xid.BranchQualifier) + "-" + hex.EncodeToString(casted.Xid.GlobalId)
-		clientEvent.Attributes().UpsertString(transactionXIDEventKey, xidString)
+		clientEvent.Attributes().PutString(transactionXIDEventKey, xidString)
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown transaction ID type %T", transactionID))
 		recordRecoverableUnmarshallingError()
@@ -425,35 +425,35 @@ func (u *solaceMessageUnmarshallerV1) insertUserProperty(toMap pcommon.Map, key 
 	k := userPropertiesAttrKeyPrefix + key
 	switch v := value.(type) {
 	case *model_v1.SpanData_UserPropertyValue_NullValue:
-		toMap.UpsertEmpty(k)
+		toMap.PutEmpty(k)
 	case *model_v1.SpanData_UserPropertyValue_BoolValue:
-		toMap.UpsertBool(k, v.BoolValue)
+		toMap.PutBool(k, v.BoolValue)
 	case *model_v1.SpanData_UserPropertyValue_DoubleValue:
-		toMap.UpsertDouble(k, v.DoubleValue)
+		toMap.PutDouble(k, v.DoubleValue)
 	case *model_v1.SpanData_UserPropertyValue_ByteArrayValue:
-		toMap.UpsertEmpty(k).SetEmptyBytesVal().FromRaw(v.ByteArrayValue)
+		toMap.PutEmpty(k).SetEmptyBytesVal().FromRaw(v.ByteArrayValue)
 	case *model_v1.SpanData_UserPropertyValue_FloatValue:
-		toMap.UpsertDouble(k, float64(v.FloatValue))
+		toMap.PutDouble(k, float64(v.FloatValue))
 	case *model_v1.SpanData_UserPropertyValue_Int8Value:
-		toMap.UpsertInt(k, int64(v.Int8Value))
+		toMap.PutInt(k, int64(v.Int8Value))
 	case *model_v1.SpanData_UserPropertyValue_Int16Value:
-		toMap.UpsertInt(k, int64(v.Int16Value))
+		toMap.PutInt(k, int64(v.Int16Value))
 	case *model_v1.SpanData_UserPropertyValue_Int32Value:
-		toMap.UpsertInt(k, int64(v.Int32Value))
+		toMap.PutInt(k, int64(v.Int32Value))
 	case *model_v1.SpanData_UserPropertyValue_Int64Value:
-		toMap.UpsertInt(k, v.Int64Value)
+		toMap.PutInt(k, v.Int64Value)
 	case *model_v1.SpanData_UserPropertyValue_Uint8Value:
-		toMap.UpsertInt(k, int64(v.Uint8Value))
+		toMap.PutInt(k, int64(v.Uint8Value))
 	case *model_v1.SpanData_UserPropertyValue_Uint16Value:
-		toMap.UpsertInt(k, int64(v.Uint16Value))
+		toMap.PutInt(k, int64(v.Uint16Value))
 	case *model_v1.SpanData_UserPropertyValue_Uint32Value:
-		toMap.UpsertInt(k, int64(v.Uint32Value))
+		toMap.PutInt(k, int64(v.Uint32Value))
 	case *model_v1.SpanData_UserPropertyValue_Uint64Value:
-		toMap.UpsertInt(k, int64(v.Uint64Value))
+		toMap.PutInt(k, int64(v.Uint64Value))
 	case *model_v1.SpanData_UserPropertyValue_StringValue:
-		toMap.UpsertString(k, v.StringValue)
+		toMap.PutString(k, v.StringValue)
 	case *model_v1.SpanData_UserPropertyValue_DestinationValue:
-		toMap.UpsertString(k, v.DestinationValue)
+		toMap.PutString(k, v.DestinationValue)
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown user property type: %T", v))
 		recordRecoverableUnmarshallingError()

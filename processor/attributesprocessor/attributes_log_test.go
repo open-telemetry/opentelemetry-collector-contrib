@@ -52,7 +52,7 @@ func runIndividualLogTestCase(t *testing.T, tt logTestCase, tp component.LogsPro
 func generateLogData(resourceName string, attrs map[string]interface{}) plog.Logs {
 	td := plog.NewLogs()
 	res := td.ResourceLogs().AppendEmpty()
-	res.Resource().Attributes().UpsertString("name", resourceName)
+	res.Resource().Attributes().PutString("name", resourceName)
 	sl := res.ScopeLogs().AppendEmpty()
 	lr := sl.LogRecords().AppendEmpty()
 	lr.Attributes().FromRaw(attrs)

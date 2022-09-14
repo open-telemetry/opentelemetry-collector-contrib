@@ -63,11 +63,11 @@ func TestJThriftTagsToInternalAttributes(t *testing.T) {
 	}
 
 	expected := pcommon.NewMap()
-	expected.UpsertBool("bool-val", true)
-	expected.UpsertInt("int-val", 123)
-	expected.UpsertString("string-val", "abc")
-	expected.UpsertDouble("double-val", 1.23)
-	expected.UpsertString("binary-val", "AAAAAABkfZg=")
+	expected.PutBool("bool-val", true)
+	expected.PutInt("int-val", 123)
+	expected.PutString("string-val", "abc")
+	expected.PutDouble("double-val", 1.23)
+	expected.PutString("binary-val", "AAAAAABkfZg=")
 
 	got := pcommon.NewMap()
 	jThriftTagsToInternalAttributes(tags, got)

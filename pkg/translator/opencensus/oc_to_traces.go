@@ -224,15 +224,15 @@ func initAttributeMapFromOC(ocAttrs *octrace.Span_Attributes, dest pcommon.Map) 
 	for key, ocAttr := range ocAttrs.AttributeMap {
 		switch attribValue := ocAttr.Value.(type) {
 		case *octrace.AttributeValue_StringValue:
-			dest.UpsertString(key, attribValue.StringValue.GetValue())
+			dest.PutString(key, attribValue.StringValue.GetValue())
 		case *octrace.AttributeValue_IntValue:
-			dest.UpsertInt(key, attribValue.IntValue)
+			dest.PutInt(key, attribValue.IntValue)
 		case *octrace.AttributeValue_BoolValue:
-			dest.UpsertBool(key, attribValue.BoolValue)
+			dest.PutBool(key, attribValue.BoolValue)
 		case *octrace.AttributeValue_DoubleValue:
-			dest.UpsertDouble(key, attribValue.DoubleValue)
+			dest.PutDouble(key, attribValue.DoubleValue)
 		default:
-			dest.UpsertString(key, "<Unknown OpenCensus attribute value type>")
+			dest.PutString(key, "<Unknown OpenCensus attribute value type>")
 		}
 	}
 }
@@ -353,15 +353,15 @@ func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent
 		return
 	}
 
-	dest.UpsertString("message.type", msgEvent.Type.String())
-	dest.UpsertInt(conventions.AttributeMessagingMessageID, int64(msgEvent.Id))
-	dest.UpsertInt(conventions.AttributeMessagingMessagePayloadSizeBytes, int64(msgEvent.UncompressedSize))
-	dest.UpsertInt(conventions.AttributeMessagingMessagePayloadCompressedSizeBytes, int64(msgEvent.CompressedSize))
+	dest.PutString("message.type", msgEvent.Type.String())
+	dest.PutInt(conventions.AttributeMessagingMessageID, int64(msgEvent.Id))
+	dest.PutInt(conventions.AttributeMessagingMessagePayloadSizeBytes, int64(msgEvent.UncompressedSize))
+	dest.PutInt(conventions.AttributeMessagingMessagePayloadCompressedSizeBytes, int64(msgEvent.CompressedSize))
 }
 
 func ocSameProcessAsParentSpanToInternal(spaps *wrapperspb.BoolValue, dest ptrace.Span) {
 	if spaps == nil {
 		return
 	}
-	dest.Attributes().UpsertBool(occonventions.AttributeSameProcessAsParentSpan, spaps.Value)
+	dest.Attributes().PutBool(occonventions.AttributeSameProcessAsParentSpan, spaps.Value)
 }
