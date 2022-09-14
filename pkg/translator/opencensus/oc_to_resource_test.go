@@ -42,7 +42,7 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 	ocResource = generateOcResource()
 	expectedAttrs := generateResourceWithOcNodeAndResource().Attributes()
 	// We don't have type information in ocResource, so need to make int attr string
-	expectedAttrs.UpsertString("resource-int-attr", "123")
+	expectedAttrs.PutString("resource-int-attr", "123")
 	ocNodeResourceToInternal(ocNode, ocResource, resource)
 	assert.EqualValues(t, expectedAttrs.Sort(), resource.Attributes().Sort())
 

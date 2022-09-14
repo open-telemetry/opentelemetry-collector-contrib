@@ -28,12 +28,12 @@ import (
 
 func simpleResource() pcommon.Resource {
 	rs := pcommon.NewResource()
-	rs.Attributes().UpsertString("somekey1", "some-string-value")
-	rs.Attributes().UpsertInt("somekey2", 123)
+	rs.Attributes().PutString("somekey1", "some-string-value")
+	rs.Attributes().PutInt("somekey2", 123)
 	for i := 0; i < 10; i++ {
 		k := fmt.Sprint("random-", i)
 		v := fmt.Sprint("value-", rand.Intn(100))
-		rs.Attributes().UpsertString(k, v)
+		rs.Attributes().PutString(k, v)
 	}
 	return rs
 }
@@ -43,7 +43,7 @@ func randomAttributeMap() pcommon.Map {
 	for i := 0; i < 10; i++ {
 		k := fmt.Sprint("key-", i)
 		v := fmt.Sprint("value-", rand.Intn(500000))
-		attrs.UpsertString(k, v)
+		attrs.PutString(k, v)
 	}
 	return attrs
 }
@@ -74,11 +74,11 @@ func TestResourceAttributeScenarios(t *testing.T) {
 			name:         "When the same key is present at Resource and Record level, the latter value should be used",
 			baseResource: simpleResource(),
 			fillRecordAttributesFun: func(attributeMap pcommon.Map) {
-				attributeMap.UpsertString("somekey1", "replaced-value")
+				attributeMap.PutString("somekey1", "replaced-value")
 			},
 			fillExpectedResourceFun: func(baseResource pcommon.Resource, expectedResource pcommon.Resource) {
 				baseResource.CopyTo(expectedResource)
-				expectedResource.Attributes().UpsertString("somekey1", "replaced-value")
+				expectedResource.Attributes().PutString("somekey1", "replaced-value")
 			},
 		},
 		{
@@ -91,10 +91,10 @@ func TestResourceAttributeScenarios(t *testing.T) {
 			name:         "Empty Resource",
 			baseResource: pcommon.NewResource(),
 			fillRecordAttributesFun: func(attributeMap pcommon.Map) {
-				attributeMap.UpsertString("somekey1", "some-value")
+				attributeMap.PutString("somekey1", "some-value")
 			},
 			fillExpectedResourceFun: func(_ pcommon.Resource, expectedResource pcommon.Resource) {
-				expectedResource.Attributes().UpsertString("somekey1", "some-value")
+				expectedResource.Attributes().PutString("somekey1", "some-value")
 			},
 		},
 		{

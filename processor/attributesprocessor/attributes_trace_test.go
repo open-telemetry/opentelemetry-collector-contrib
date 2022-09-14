@@ -55,7 +55,7 @@ func generateTraceData(serviceName, spanName string, attrs map[string]interface{
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	if serviceName != "" {
-		rs.Resource().Attributes().UpsertString(conventions.AttributeServiceName, serviceName)
+		rs.Resource().Attributes().PutString(conventions.AttributeServiceName, serviceName)
 	}
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName(spanName)

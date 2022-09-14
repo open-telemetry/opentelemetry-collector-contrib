@@ -130,13 +130,13 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				logsSlice := createLogsSlice(nanoseconds)
 
 				attMap := logsSlice.At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetEmptyMapVal()
-				attMap.UpsertBool("bool", false)
-				foos := attMap.UpsertEmptySlice("foos")
+				attMap.PutBool("bool", false)
+				foos := attMap.PutEmptySlice("foos")
 				foos.EnsureCapacity(3)
 				foos.AppendEmpty().SetStringVal("foo")
 				foos.AppendEmpty().SetStringVal("bar")
 				foos.AppendEmpty().SetStringVal("foobar")
-				attMap.UpsertInt("someInt", 12)
+				attMap.PutInt("someInt", 12)
 
 				return logsSlice
 			}(),
@@ -189,11 +189,11 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				logRecord := sl.LogRecords().AppendEmpty()
 				logRecord.Body().SetStringVal("value")
 				logRecord.SetTimestamp(pcommon.Timestamp(0))
-				logRecord.Attributes().UpsertString("foo", "bar")
-				logRecord.Attributes().UpsertString("myhost", "localhost")
-				logRecord.Attributes().UpsertString("mysource", "mysource")
-				logRecord.Attributes().UpsertString("mysourcetype", "mysourcetype")
-				logRecord.Attributes().UpsertString("myindex", "myindex")
+				logRecord.Attributes().PutString("foo", "bar")
+				logRecord.Attributes().PutString("myhost", "localhost")
+				logRecord.Attributes().PutString("mysource", "mysource")
+				logRecord.Attributes().PutString("mysourcetype", "mysourcetype")
+				logRecord.Attributes().PutString("myindex", "myindex")
 				return lrs
 			}(),
 			wantErr: nil,
@@ -216,11 +216,11 @@ func createLogsSlice(nanoseconds int) plog.ResourceLogsSlice {
 	logRecord := sl.LogRecords().AppendEmpty()
 	logRecord.Body().SetStringVal("value")
 	logRecord.SetTimestamp(pcommon.Timestamp(nanoseconds))
-	logRecord.Attributes().UpsertString("foo", "bar")
-	logRecord.Attributes().UpsertString("host.name", "localhost")
-	logRecord.Attributes().UpsertString("com.splunk.source", "mysource")
-	logRecord.Attributes().UpsertString("com.splunk.sourcetype", "mysourcetype")
-	logRecord.Attributes().UpsertString("com.splunk.index", "myindex")
+	logRecord.Attributes().PutString("foo", "bar")
+	logRecord.Attributes().PutString("host.name", "localhost")
+	logRecord.Attributes().PutString("com.splunk.source", "mysource")
+	logRecord.Attributes().PutString("com.splunk.sourcetype", "mysourcetype")
+	logRecord.Attributes().PutString("com.splunk.index", "myindex")
 
 	return lrs
 }
@@ -254,7 +254,7 @@ func TestConvertToValueMap(t *testing.T) {
 	assert.NoError(t, convertToValue(zap.NewNop(), map[string]interface{}{"foo": "bar"}, value))
 	atts := pcommon.NewValueMap()
 	attMap := atts.MapVal()
-	attMap.UpsertString("foo", "bar")
+	attMap.PutString("foo", "bar")
 	assert.Equal(t, atts, value)
 }
 

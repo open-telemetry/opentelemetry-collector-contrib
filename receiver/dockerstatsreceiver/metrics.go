@@ -42,11 +42,11 @@ func ContainerStatsToMetrics(
 	rs := md.ResourceMetrics().AppendEmpty()
 	rs.SetSchemaUrl(conventions.SchemaURL)
 	resourceAttr := rs.Resource().Attributes()
-	resourceAttr.UpsertString(conventions.AttributeContainerRuntime, "docker")
-	resourceAttr.UpsertString(conventions.AttributeContainerID, container.ID)
-	resourceAttr.UpsertString(conventions.AttributeContainerImageName, container.Config.Image)
-	resourceAttr.UpsertString(conventions.AttributeContainerName, strings.TrimPrefix(container.Name, "/"))
-	resourceAttr.UpsertString("container.hostname", container.Config.Hostname)
+	resourceAttr.PutString(conventions.AttributeContainerRuntime, "docker")
+	resourceAttr.PutString(conventions.AttributeContainerID, container.ID)
+	resourceAttr.PutString(conventions.AttributeContainerImageName, container.Config.Image)
+	resourceAttr.PutString(conventions.AttributeContainerName, strings.TrimPrefix(container.Name, "/"))
+	resourceAttr.PutString("container.hostname", container.Config.Hostname)
 	updateConfiguredResourceAttributes(resourceAttr, container, config)
 	ils := rs.ScopeMetrics().AppendEmpty()
 
@@ -61,13 +61,13 @@ func ContainerStatsToMetrics(
 func updateConfiguredResourceAttributes(resourceAttr pcommon.Map, container docker.Container, config *Config) {
 	for k, label := range config.EnvVarsToMetricLabels {
 		if v := container.EnvMap[k]; v != "" {
-			resourceAttr.UpsertString(label, v)
+			resourceAttr.PutString(label, v)
 		}
 	}
 
 	for k, label := range config.ContainerLabelsToMetricLabels {
 		if v := container.Config.Labels[k]; v != "" {
-			resourceAttr.UpsertString(label, v)
+			resourceAttr.PutString(label, v)
 		}
 	}
 }
@@ -285,7 +285,7 @@ func populateMetricMetadata(dest pmetric.Metric, name string, unit string, ty pm
 
 func populateAttributes(dest pcommon.Map, labelKeys []string, labelValues []string) {
 	for i := range labelKeys {
-		dest.UpsertString(labelKeys[i], labelValues[i])
+		dest.PutString(labelKeys[i], labelValues[i])
 	}
 }
 

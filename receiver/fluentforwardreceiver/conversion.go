@@ -88,7 +88,7 @@ func parseInterfaceToMap(msi map[string]interface{}, dest pcommon.Value) {
 	am := dest.SetEmptyMapVal()
 	am.EnsureCapacity(len(msi))
 	for k, value := range msi {
-		parseToAttributeValue(value, am.UpsertEmpty(k))
+		parseToAttributeValue(value, am.PutEmpty(k))
 	}
 }
 
@@ -186,7 +186,7 @@ func parseRecordToLogRecord(dc *msgp.Reader, lr plog.LogRecord) error {
 		if key == "message" || key == "log" {
 			parseToAttributeValue(val, lr.Body())
 		} else {
-			parseToAttributeValue(val, attrs.UpsertEmpty(key))
+			parseToAttributeValue(val, attrs.PutEmpty(key))
 		}
 	}
 
@@ -223,7 +223,7 @@ func (melr *MessageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
 	}
 
 	attrs := log.Attributes()
-	attrs.UpsertString(tagAttributeKey, tag)
+	attrs.PutString(tagAttributeKey, tag)
 
 	err = decodeTimestampToLogRecord(dc, log)
 	if err != nil {
@@ -309,7 +309,7 @@ func (fe *ForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) (err error) {
 		if err != nil {
 			return msgp.WrapError(err, "Entries", i)
 		}
-		fe.LogRecordSlice.At(i).Attributes().UpsertString(tagAttributeKey, tag)
+		fe.LogRecordSlice.At(i).Attributes().PutString(tagAttributeKey, tag)
 	}
 
 	if arrLen == 3 {
@@ -434,7 +434,7 @@ func (pfe *PackedForwardEventLogRecords) parseEntries(entriesRaw []byte, isGzipp
 			return err
 		}
 
-		lr.Attributes().UpsertString(tagAttributeKey, tag)
+		lr.Attributes().PutString(tagAttributeKey, tag)
 
 		lr.MoveTo(pfe.LogRecordSlice.AppendEmpty())
 	}

@@ -410,13 +410,13 @@ func runTest(
 
 	length := len(allowed) + len(masked) + len(redacted)
 	for k, v := range allowed {
-		v.CopyTo(span.Attributes().UpsertEmpty(k))
+		v.CopyTo(span.Attributes().PutEmpty(k))
 	}
 	for k, v := range masked {
-		v.CopyTo(span.Attributes().UpsertEmpty(k))
+		v.CopyTo(span.Attributes().PutEmpty(k))
 	}
 	for k, v := range redacted {
-		v.CopyTo(span.Attributes().UpsertEmpty(k))
+		v.CopyTo(span.Attributes().PutEmpty(k))
 	}
 
 	assert.Equal(t, span.Attributes().Len(), length)
@@ -510,13 +510,13 @@ func runBenchmark(
 	span.SetTraceID([16]byte{1, 2, 3, 4})
 
 	for k, v := range allowed {
-		v.CopyTo(span.Attributes().UpsertEmpty(k))
+		v.CopyTo(span.Attributes().PutEmpty(k))
 	}
 	for k, v := range masked {
-		v.CopyTo(span.Attributes().UpsertEmpty(k))
+		v.CopyTo(span.Attributes().PutEmpty(k))
 	}
 	for k, v := range redacted {
-		v.CopyTo(span.Attributes().UpsertEmpty(k))
+		v.CopyTo(span.Attributes().PutEmpty(k))
 	}
 
 	_ = processor.ConsumeTraces(context.Background(), inBatch)

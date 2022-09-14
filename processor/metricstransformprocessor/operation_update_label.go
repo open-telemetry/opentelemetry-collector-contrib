@@ -34,13 +34,13 @@ func updateLabelOp(metric pmetric.Metric, mtpOp internalOperation, f internalFil
 		}
 
 		if op.NewLabel != "" {
-			attrVal.CopyTo(attrs.UpsertEmpty(op.NewLabel))
+			attrVal.CopyTo(attrs.PutEmpty(op.NewLabel))
 			attrs.Remove(attrKey)
 			attrKey = op.NewLabel
 		}
 
 		if newValue, ok := mtpOp.valueActionsMapping[attrVal.StringVal()]; ok {
-			attrs.UpsertString(attrKey, newValue)
+			attrs.PutString(attrKey, newValue)
 		}
 		return true
 	})

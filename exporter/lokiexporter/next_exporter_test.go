@@ -113,7 +113,7 @@ func TestPushLogData(t *testing.T) {
 
 			// we can't use copy here, as the value (Value) will be used as string lookup later, so, we need to convert it to string now
 			for k, v := range tC.hints {
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString(k, fmt.Sprintf("%v", v))
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString(k, fmt.Sprintf("%v", v))
 			}
 
 			// test

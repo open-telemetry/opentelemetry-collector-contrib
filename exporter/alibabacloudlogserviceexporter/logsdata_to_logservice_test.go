@@ -27,23 +27,23 @@ import (
 )
 
 func fillComplexAttributeValueMap(m pcommon.Map) {
-	m.UpsertBool("result", true)
-	m.UpsertString("status", "ok")
-	m.UpsertDouble("value", 1.3)
-	m.UpsertInt("code", 200)
-	m.UpsertEmpty("null")
-	m.UpsertEmptySlice("array").AppendEmpty().SetStringVal("array")
-	m.UpsertEmptyMap("map").UpsertString("data", "hello world")
-	m.UpsertString("status", "ok")
+	m.PutBool("result", true)
+	m.PutString("status", "ok")
+	m.PutDouble("value", 1.3)
+	m.PutInt("code", 200)
+	m.PutEmpty("null")
+	m.PutEmptySlice("array").AppendEmpty().SetStringVal("array")
+	m.PutEmptyMap("map").PutString("data", "hello world")
+	m.PutString("status", "ok")
 }
 
 func createLogData(numberOfLogs int) plog.Logs {
 	logs := plog.NewLogs()
 	logs.ResourceLogs().AppendEmpty() // Add an empty ResourceLogs
 	rl := logs.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().UpsertString("resouceKey", "resourceValue")
-	rl.Resource().Attributes().UpsertString(conventions.AttributeServiceName, "test-log-service-exporter")
-	rl.Resource().Attributes().UpsertString(conventions.AttributeHostName, "test-host")
+	rl.Resource().Attributes().PutString("resouceKey", "resourceValue")
+	rl.Resource().Attributes().PutString(conventions.AttributeServiceName, "test-log-service-exporter")
+	rl.Resource().Attributes().PutString(conventions.AttributeHostName, "test-host")
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.Scope().SetName("collector")
 	sl.Scope().SetVersion("v0.1.0")
@@ -63,19 +63,19 @@ func createLogData(numberOfLogs int) plog.Logs {
 		case 4:
 			logRecord.Body().SetStringVal("4")
 		case 5:
-			fillComplexAttributeValueMap(logRecord.Attributes().UpsertEmptyMap("map-value"))
+			fillComplexAttributeValueMap(logRecord.Attributes().PutEmptyMap("map-value"))
 			logRecord.Body().SetStringVal("log contents")
 		case 6:
-			logRecord.Attributes().UpsertEmptySlice("array-value").AppendEmpty().SetStringVal("array")
+			logRecord.Attributes().PutEmptySlice("array-value").AppendEmpty().SetStringVal("array")
 			logRecord.Body().SetStringVal("log contents")
 		default:
 			logRecord.Body().SetStringVal("log contents")
 		}
-		logRecord.Attributes().UpsertString(conventions.AttributeServiceName, "myapp")
-		logRecord.Attributes().UpsertString("my-label", "myapp-type")
-		logRecord.Attributes().UpsertString(conventions.AttributeHostName, "myhost")
-		logRecord.Attributes().UpsertString("custom", "custom")
-		logRecord.Attributes().UpsertEmpty("null-value")
+		logRecord.Attributes().PutString(conventions.AttributeServiceName, "myapp")
+		logRecord.Attributes().PutString("my-label", "myapp-type")
+		logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
+		logRecord.Attributes().PutString("custom", "custom")
+		logRecord.Attributes().PutEmpty("null-value")
 
 		logRecord.SetTimestamp(ts)
 	}

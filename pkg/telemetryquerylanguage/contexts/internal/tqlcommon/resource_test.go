@@ -28,7 +28,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 	refResource := createResource()
 
 	newAttrs := pcommon.NewMap()
-	newAttrs.UpsertString("hello", "world")
+	newAttrs.PutString("hello", "world")
 
 	tests := []struct {
 		name     string
@@ -70,7 +70,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(resource pcommon.Resource) {
-				resource.Attributes().UpsertString("str", "newVal")
+				resource.Attributes().PutString("str", "newVal")
 			},
 		},
 		{
@@ -84,7 +84,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 			orig:   true,
 			newVal: false,
 			modified: func(resource pcommon.Resource) {
-				resource.Attributes().UpsertBool("bool", false)
+				resource.Attributes().PutBool("bool", false)
 			},
 		},
 		{
@@ -98,7 +98,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 			orig:   int64(10),
 			newVal: int64(20),
 			modified: func(resource pcommon.Resource) {
-				resource.Attributes().UpsertInt("int", 20)
+				resource.Attributes().PutInt("int", 20)
 			},
 		},
 		{
@@ -112,7 +112,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 			orig:   1.2,
 			newVal: 2.4,
 			modified: func(resource pcommon.Resource) {
-				resource.Attributes().UpsertDouble("double", 2.4)
+				resource.Attributes().PutDouble("double", 2.4)
 			},
 		},
 		{
@@ -126,7 +126,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
 			modified: func(resource pcommon.Resource) {
-				resource.Attributes().UpsertEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
+				resource.Attributes().PutEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
 			},
 		},
 		{
@@ -143,7 +143,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 			}(),
 			newVal: []string{"new"},
 			modified: func(resource pcommon.Resource) {
-				resource.Attributes().UpsertEmptySlice("arr_str").AppendEmpty().SetStringVal("new")
+				resource.Attributes().PutEmptySlice("arr_str").AppendEmpty().SetStringVal("new")
 			},
 		},
 		{
@@ -160,7 +160,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 			}(),
 			newVal: []bool{false},
 			modified: func(resource pcommon.Resource) {
-				resource.Attributes().UpsertEmptySlice("arr_bool").AppendEmpty().SetBoolVal(false)
+				resource.Attributes().PutEmptySlice("arr_bool").AppendEmpty().SetBoolVal(false)
 			},
 		},
 		{
@@ -177,7 +177,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 			}(),
 			newVal: []int64{20},
 			modified: func(resource pcommon.Resource) {
-				resource.Attributes().UpsertEmptySlice("arr_int").AppendEmpty().SetIntVal(20)
+				resource.Attributes().PutEmptySlice("arr_int").AppendEmpty().SetIntVal(20)
 			},
 		},
 		{
@@ -194,7 +194,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 			}(),
 			newVal: []float64{2.0},
 			modified: func(resource pcommon.Resource) {
-				resource.Attributes().UpsertEmptySlice("arr_float").AppendEmpty().SetDoubleVal(2.0)
+				resource.Attributes().PutEmptySlice("arr_float").AppendEmpty().SetDoubleVal(2.0)
 			},
 		},
 		{
@@ -211,7 +211,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 			}(),
 			newVal: [][]byte{{9, 6, 4}},
 			modified: func(resource pcommon.Resource) {
-				resource.Attributes().UpsertEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{9, 6, 4})
+				resource.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{9, 6, 4})
 			},
 		},
 		{
@@ -250,29 +250,29 @@ func TestResourcePathGetSetter(t *testing.T) {
 
 func createResource() pcommon.Resource {
 	resource := pcommon.NewResource()
-	resource.Attributes().UpsertString("str", "val")
-	resource.Attributes().UpsertBool("bool", true)
-	resource.Attributes().UpsertInt("int", 10)
-	resource.Attributes().UpsertDouble("double", 1.2)
-	resource.Attributes().UpsertEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{1, 3, 2})
+	resource.Attributes().PutString("str", "val")
+	resource.Attributes().PutBool("bool", true)
+	resource.Attributes().PutInt("int", 10)
+	resource.Attributes().PutDouble("double", 1.2)
+	resource.Attributes().PutEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{1, 3, 2})
 
-	arrStr := resource.Attributes().UpsertEmptySlice("arr_str")
+	arrStr := resource.Attributes().PutEmptySlice("arr_str")
 	arrStr.AppendEmpty().SetStringVal("one")
 	arrStr.AppendEmpty().SetStringVal("two")
 
-	arrBool := resource.Attributes().UpsertEmptySlice("arr_bool")
+	arrBool := resource.Attributes().PutEmptySlice("arr_bool")
 	arrBool.AppendEmpty().SetBoolVal(true)
 	arrBool.AppendEmpty().SetBoolVal(false)
 
-	arrInt := resource.Attributes().UpsertEmptySlice("arr_int")
+	arrInt := resource.Attributes().PutEmptySlice("arr_int")
 	arrInt.AppendEmpty().SetIntVal(2)
 	arrInt.AppendEmpty().SetIntVal(3)
 
-	arrFloat := resource.Attributes().UpsertEmptySlice("arr_float")
+	arrFloat := resource.Attributes().PutEmptySlice("arr_float")
 	arrFloat.AppendEmpty().SetDoubleVal(1.0)
 	arrFloat.AppendEmpty().SetDoubleVal(2.0)
 
-	arrBytes := resource.Attributes().UpsertEmptySlice("arr_bytes")
+	arrBytes := resource.Attributes().PutEmptySlice("arr_bytes")
 	arrBytes.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{1, 2, 3})
 	arrBytes.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
 

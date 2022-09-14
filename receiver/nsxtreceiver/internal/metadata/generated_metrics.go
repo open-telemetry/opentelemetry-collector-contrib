@@ -183,7 +183,7 @@ func (m *metricNsxtNodeCPUUtilization) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().UpsertString("class", classAttributeValue)
+	dp.Attributes().PutString("class", classAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -236,7 +236,7 @@ func (m *metricNsxtNodeFilesystemUsage) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("state", diskStateAttributeValue)
+	dp.Attributes().PutString("state", diskStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -440,7 +440,7 @@ func (m *metricNsxtNodeNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", directionAttributeValue)
+	dp.Attributes().PutString("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -493,8 +493,8 @@ func (m *metricNsxtNodeNetworkPacketCount) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", directionAttributeValue)
-	dp.Attributes().UpsertString("type", packetTypeAttributeValue)
+	dp.Attributes().PutString("direction", directionAttributeValue)
+	dp.Attributes().PutString("type", packetTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -584,28 +584,28 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithDeviceID sets provided value as "device.id" attribute for current resource.
 func WithDeviceID(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("device.id", val)
+		rm.Resource().Attributes().PutString("device.id", val)
 	}
 }
 
 // WithNsxtNodeID sets provided value as "nsxt.node.id" attribute for current resource.
 func WithNsxtNodeID(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("nsxt.node.id", val)
+		rm.Resource().Attributes().PutString("nsxt.node.id", val)
 	}
 }
 
 // WithNsxtNodeName sets provided value as "nsxt.node.name" attribute for current resource.
 func WithNsxtNodeName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("nsxt.node.name", val)
+		rm.Resource().Attributes().PutString("nsxt.node.name", val)
 	}
 }
 
 // WithNsxtNodeType sets provided value as "nsxt.node.type" attribute for current resource.
 func WithNsxtNodeType(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("nsxt.node.type", val)
+		rm.Resource().Attributes().PutString("nsxt.node.type", val)
 	}
 }
 

@@ -191,7 +191,7 @@ func generateLogData(messages []testLogMessage) plog.Logs {
 		}
 		if content.attributes != nil {
 			for k, v := range *content.attributes {
-				v.CopyTo(log.Attributes().UpsertEmpty(k))
+				v.CopyTo(log.Attributes().PutEmpty(k))
 			}
 			log.Attributes().Sort()
 		}

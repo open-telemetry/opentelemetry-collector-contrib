@@ -28,7 +28,7 @@ func TestScopePathGetSetter(t *testing.T) {
 	refIS := createInstrumentationScope()
 
 	newAttrs := pcommon.NewMap()
-	newAttrs.UpsertString("hello", "world")
+	newAttrs.PutString("hello", "world")
 	tests := []struct {
 		name     string
 		path     []tql.Field
@@ -95,7 +95,7 @@ func TestScopePathGetSetter(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(is pcommon.InstrumentationScope) {
-				is.Attributes().UpsertString("str", "newVal")
+				is.Attributes().PutString("str", "newVal")
 			},
 		},
 		{
@@ -109,7 +109,7 @@ func TestScopePathGetSetter(t *testing.T) {
 			orig:   true,
 			newVal: false,
 			modified: func(is pcommon.InstrumentationScope) {
-				is.Attributes().UpsertBool("bool", false)
+				is.Attributes().PutBool("bool", false)
 			},
 		},
 		{
@@ -123,7 +123,7 @@ func TestScopePathGetSetter(t *testing.T) {
 			orig:   int64(10),
 			newVal: int64(20),
 			modified: func(is pcommon.InstrumentationScope) {
-				is.Attributes().UpsertInt("int", 20)
+				is.Attributes().PutInt("int", 20)
 			},
 		},
 		{
@@ -137,7 +137,7 @@ func TestScopePathGetSetter(t *testing.T) {
 			orig:   1.2,
 			newVal: 2.4,
 			modified: func(is pcommon.InstrumentationScope) {
-				is.Attributes().UpsertDouble("double", 2.4)
+				is.Attributes().PutDouble("double", 2.4)
 			},
 		},
 		{
@@ -151,7 +151,7 @@ func TestScopePathGetSetter(t *testing.T) {
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
 			modified: func(is pcommon.InstrumentationScope) {
-				is.Attributes().UpsertEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
+				is.Attributes().PutEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
 			},
 		},
 		{
@@ -168,7 +168,7 @@ func TestScopePathGetSetter(t *testing.T) {
 			}(),
 			newVal: []string{"new"},
 			modified: func(is pcommon.InstrumentationScope) {
-				newArr := is.Attributes().UpsertEmptySlice("arr_str")
+				newArr := is.Attributes().PutEmptySlice("arr_str")
 				newArr.AppendEmpty().SetStringVal("new")
 			},
 		},
@@ -186,7 +186,7 @@ func TestScopePathGetSetter(t *testing.T) {
 			}(),
 			newVal: []bool{false},
 			modified: func(is pcommon.InstrumentationScope) {
-				newArr := is.Attributes().UpsertEmptySlice("arr_bool")
+				newArr := is.Attributes().PutEmptySlice("arr_bool")
 				newArr.AppendEmpty().SetBoolVal(false)
 			},
 		},
@@ -204,7 +204,7 @@ func TestScopePathGetSetter(t *testing.T) {
 			}(),
 			newVal: []int64{20},
 			modified: func(is pcommon.InstrumentationScope) {
-				newArr := is.Attributes().UpsertEmptySlice("arr_int")
+				newArr := is.Attributes().PutEmptySlice("arr_int")
 				newArr.AppendEmpty().SetIntVal(20)
 			},
 		},
@@ -222,7 +222,7 @@ func TestScopePathGetSetter(t *testing.T) {
 			}(),
 			newVal: []float64{2.0},
 			modified: func(is pcommon.InstrumentationScope) {
-				newArr := is.Attributes().UpsertEmptySlice("arr_float")
+				newArr := is.Attributes().PutEmptySlice("arr_float")
 				newArr.AppendEmpty().SetDoubleVal(2.0)
 			},
 		},
@@ -240,7 +240,7 @@ func TestScopePathGetSetter(t *testing.T) {
 			}(),
 			newVal: [][]byte{{9, 6, 4}},
 			modified: func(is pcommon.InstrumentationScope) {
-				newArr := is.Attributes().UpsertEmptySlice("arr_bytes")
+				newArr := is.Attributes().PutEmptySlice("arr_bytes")
 				newArr.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{9, 6, 4})
 			},
 		},
@@ -270,29 +270,29 @@ func createInstrumentationScope() pcommon.InstrumentationScope {
 	is.SetName("library")
 	is.SetVersion("version")
 
-	is.Attributes().UpsertString("str", "val")
-	is.Attributes().UpsertBool("bool", true)
-	is.Attributes().UpsertInt("int", 10)
-	is.Attributes().UpsertDouble("double", 1.2)
-	is.Attributes().UpsertEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{1, 3, 2})
+	is.Attributes().PutString("str", "val")
+	is.Attributes().PutBool("bool", true)
+	is.Attributes().PutInt("int", 10)
+	is.Attributes().PutDouble("double", 1.2)
+	is.Attributes().PutEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{1, 3, 2})
 
-	arrStr := is.Attributes().UpsertEmptySlice("arr_str")
+	arrStr := is.Attributes().PutEmptySlice("arr_str")
 	arrStr.AppendEmpty().SetStringVal("one")
 	arrStr.AppendEmpty().SetStringVal("two")
 
-	arrBool := is.Attributes().UpsertEmptySlice("arr_bool")
+	arrBool := is.Attributes().PutEmptySlice("arr_bool")
 	arrBool.AppendEmpty().SetBoolVal(true)
 	arrBool.AppendEmpty().SetBoolVal(false)
 
-	arrInt := is.Attributes().UpsertEmptySlice("arr_int")
+	arrInt := is.Attributes().PutEmptySlice("arr_int")
 	arrInt.AppendEmpty().SetIntVal(2)
 	arrInt.AppendEmpty().SetIntVal(3)
 
-	arrFloat := is.Attributes().UpsertEmptySlice("arr_float")
+	arrFloat := is.Attributes().PutEmptySlice("arr_float")
 	arrFloat.AppendEmpty().SetDoubleVal(1.0)
 	arrFloat.AppendEmpty().SetDoubleVal(2.0)
 
-	arrBytes := is.Attributes().UpsertEmptySlice("arr_bytes")
+	arrBytes := is.Attributes().PutEmptySlice("arr_bytes")
 	arrBytes.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{1, 2, 3})
 	arrBytes.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
 

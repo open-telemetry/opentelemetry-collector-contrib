@@ -99,15 +99,15 @@ func constructSpanData() ptrace.Traces {
 
 func fillResource(resource pcommon.Resource) {
 	attrs := resource.Attributes()
-	attrs.UpsertString(conventions.AttributeServiceName, "signup_aggregator")
-	attrs.UpsertString(conventions.AttributeHostName, "xxx.et15")
-	attrs.UpsertString(conventions.AttributeContainerName, "signup_aggregator")
-	attrs.UpsertString(conventions.AttributeContainerImageName, "otel/signupaggregator")
-	attrs.UpsertString(conventions.AttributeContainerImageTag, "v1")
-	attrs.UpsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.UpsertString(conventions.AttributeCloudAccountID, "999999998")
-	attrs.UpsertString(conventions.AttributeCloudRegion, "us-west-2")
-	attrs.UpsertString(conventions.AttributeCloudAvailabilityZone, "us-west-1b")
+	attrs.PutString(conventions.AttributeServiceName, "signup_aggregator")
+	attrs.PutString(conventions.AttributeHostName, "xxx.et15")
+	attrs.PutString(conventions.AttributeContainerName, "signup_aggregator")
+	attrs.PutString(conventions.AttributeContainerImageName, "otel/signupaggregator")
+	attrs.PutString(conventions.AttributeContainerImageTag, "v1")
+	attrs.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.PutString(conventions.AttributeCloudAccountID, "999999998")
+	attrs.PutString(conventions.AttributeCloudRegion, "us-west-2")
+	attrs.PutString(conventions.AttributeCloudAvailabilityZone, "us-west-1b")
 }
 
 func fillHTTPClientSpan(span ptrace.Span) {
@@ -131,11 +131,11 @@ func fillHTTPClientSpan(span ptrace.Span) {
 	event := span.Events().AppendEmpty()
 	event.SetName("event")
 	event.SetTimestamp(1024)
-	event.Attributes().UpsertString("key", "value")
+	event.Attributes().PutString("key", "value")
 
 	link := span.Links().AppendEmpty()
 	link.TraceStateStruct().FromRaw("link:state")
-	link.Attributes().UpsertString("link", "true")
+	link.Attributes().PutString("link", "true")
 
 	status := span.Status()
 	status.SetCode(1)
@@ -169,11 +169,11 @@ func constructSpanAttributes(attributes map[string]interface{}) pcommon.Map {
 	attrs := pcommon.NewMap()
 	for key, value := range attributes {
 		if cast, ok := value.(int); ok {
-			attrs.UpsertInt(key, int64(cast))
+			attrs.PutInt(key, int64(cast))
 		} else if cast, ok := value.(int64); ok {
-			attrs.UpsertInt(key, cast)
+			attrs.PutInt(key, cast)
 		} else {
-			attrs.UpsertString(key, fmt.Sprintf("%v", value))
+			attrs.PutString(key, fmt.Sprintf("%v", value))
 		}
 	}
 	return attrs
