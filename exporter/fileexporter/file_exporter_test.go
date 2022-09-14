@@ -123,7 +123,7 @@ func Test_fileExporter_Capabilities(t *testing.T) {
 	fe := newFileExporter(
 		&Config{
 			Path:     tempFileName(t),
-			Rotation: Rotation{MaxSize: 1},
+			Rotation: Rotation{MaxMegabytes: 1},
 		})
 	require.NotNil(t, fe)
 	require.NotNil(t, fe.Capabilities())

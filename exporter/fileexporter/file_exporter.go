@@ -45,7 +45,7 @@ func newFileExporter(conf *Config) *fileExporter {
 		path: conf.Path,
 		file: &lumberjack.Logger{
 			Filename:   conf.Path,
-			MaxSize:    conf.Rotation.MaxSize,
+			MaxSize:    conf.Rotation.MaxMegabytes,
 			MaxAge:     conf.Rotation.MaxDays,
 			MaxBackups: conf.Rotation.MaxBackups,
 			LocalTime:  conf.Rotation.LocalTime,

@@ -33,9 +33,9 @@ type Config struct {
 
 // Rotation an option to rolling log files
 type Rotation struct {
-	// MaxSize is the maximum size in megabytes of the log file before it gets
+	// MaxMegabytes is the maximum size in megabytes of the file before it gets
 	// rotated. It defaults to 100 megabytes.
-	MaxSize int `mapstructure:"max_size"`
+	MaxMegabytes int `mapstructure:"max_megabytes"`
 
 	// MaxDays is the maximum number of days to retain old log files based on the
 	// timestamp encoded in their filename.  Note that a day is defined as 24

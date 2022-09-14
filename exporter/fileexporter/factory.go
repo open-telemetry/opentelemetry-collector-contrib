@@ -30,7 +30,7 @@ const (
 	// The stability level of the exporter.
 	stability = component.StabilityLevelAlpha
 	// the number of old log files to retain
-	backups = 100
+	defaultMaxBackups = 100
 )
 
 // NewFactory creates a factory for OTLP exporter.
@@ -46,7 +46,7 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		Rotation:         Rotation{MaxBackups: backups},
+		Rotation:         Rotation{MaxBackups: defaultMaxBackups},
 	}
 }
 

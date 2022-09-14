@@ -30,15 +30,14 @@ The following settings are optional:
     - max_backups: [default: 100]: the maximum number of old telemetry files to retain.
     - localtime : [default: false (use UTC)] whether or not the timestamps in backup files is formatted according to the host's local time.
 
-## How to name rotated files 
-File opens or creates the file on first Write. If the file exists and is less than MaxSize megabytes, fileexporter will open and append to that file.
+## File Rotation
+Telemetry is first written to a file that exactly matches the `path` setting. When the file size exceeds `max_megabytes` or age exceeds `max_days`, the file will be rotated.
 
-If the file exists and its size is >= MaxSize megabytes,**the file is renamed by putting the current time in a timestamp** 
+When a file is rotated, **it is renamed by putting the current time in a timestamp**
 in the name immediately before the file's extension (or the end of the filename if there's no extension).
-**A new telemetry file will be created using original filename.**
+**A new telemetry file will be created at the original `path`.**
 
-For example,  if your filename is `data.json`, when the file exists and its size is >= MaxSize megabytes, this file will be renamed to `data-2022-09-14T05-02-14.173.json`, and a new telemetry file created with `data.json`.
-
+For example, if your `path` is `data.json` and rotation is triggered, this file will be renamed to `data-2022-09-14T05-02-14.173.json`, and a new telemetry file created with `data.json`
 ## Example:
 
 ```yaml
