@@ -30,7 +30,16 @@ The following settings are optional:
     - max_backups: [no default (unlimited)]: the maximum number of old log files to retain.
     - localtime : [default: false (use UTC)] whether or not the timestamps in backup files is formatted according to the host's local time.
 
-Example:
+## How to name rotated files 
+File opens or creates the file on first Write. If the file exists and is less than MaxSize megabytes, fileexporter will open and append to that file.
+
+If the file exists and its size is >= MaxSize megabytes,**the file is renamed by putting the current time in a timestamp** 
+in the name immediately before the file's extension (or the end of the filename if there's no extension).
+**A new log file is then created using original filename.**
+
+For example,  if your Filename is `data.json`, when the file exists and its size is >= MaxSize megabytes, this file will be renamed to `data-2022-09-14T05-02-14.173.json`, and a new log file created with `data.json`.
+
+## Example:
 
 ```yaml
 exporters:
