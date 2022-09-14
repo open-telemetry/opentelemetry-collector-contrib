@@ -146,48 +146,6 @@
                      "unit": "By"
                   },
                   {
-                     "name": "apache.request.size",
-                     "description": "The average number of bytes per request.",
-                     "unit": "By/{request}",
-                     "gauge": {
-                     "dataPoints": [
-                        {
-                           "attributes": [
-                           {
-                              "key": "server_name",
-                              "value": {
-                                 "stringValue": ""
-                              }
-                           }
-                           ],
-                           "timeUnixNano": "1632495518500962000",
-                           "asDouble": "4.2"
-                        }
-                     ]
-                     }
-                  },
-                  {
-                     "name": "apache.bytes_per_second",
-                     "description": "The average number of bytes per second.",
-                     "unit": "By/s",
-                     "gauge": {
-                     "dataPoints": [
-                        {
-                           "attributes": [
-                           {
-                              "key": "server_name",
-                              "value": {
-                                 "stringValue": ""
-                              }
-                           }
-                           ],
-                           "timeUnixNano": "1632495518500962000",
-                           "asDouble": "8.4"
-                        }
-                     ]
-                     }
-                  },
-                  {
                      "name": "apache.cpu.time",
                      "description": "Jiffs used by processes of given category.",
                      "unit": "{jiff}",
@@ -318,27 +276,6 @@
                      }
                   },
                   {
-                     "name": "apache.request.average_time",
-                     "description": "The average time of handling requests.",
-                     "unit": "s",
-                     "gauge": {
-                     "dataPoints": [
-                        {
-                           "attributes": [
-                           {
-                              "key": "server_name",
-                              "value": {
-                                 "stringValue": ""
-                              }
-                           }
-                           ],
-                           "timeUnixNano": "1632495518500962000",
-                           "asDouble": "21.7"
-                        }
-                     ]
-                     }
-                  },
-                  {
                      "name": "apache.load.1",
                      "description": "The average server load during the last minute.",
                      "unit": "{load}",
@@ -397,27 +334,6 @@
                            ],
                            "timeUnixNano": "1632495518500962000",
                            "asDouble": "0.3"
-                        }
-                     ]
-                     }
-                  },
-                  {
-                     "name": "apache.request.rate",
-                     "description": "The average number of requests per second.",
-                     "unit": "{requests}/s",
-                     "gauge": {
-                     "dataPoints": [
-                        {
-                           "attributes": [
-                           {
-                              "key": "server_name",
-                              "value": {
-                                 "stringValue": ""
-                              }
-                           }
-                           ],
-                           "timeUnixNano": "1632495518500962000",
-                           "asDouble": "12.5"
                         }
                      ]
                      }
