@@ -16,6 +16,7 @@ package otto
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"reflect"
 	"sort"
@@ -24,24 +25,26 @@ import (
 )
 
 type componentHandler struct {
+	logger    *log.Logger
 	factories component.Factories
 }
 
 func (h componentHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	jsn := factoriesToComponentTypeJSON(h.factories)
-	_, err := resp.Write(jsn)
+	jsn, err := factoriesToComponentTypeJSON(h.factories)
 	if err != nil {
-		panic(err)
+		h.logger.Printf("componentHandler: ServeHTTP: error getting components: %v", err)
+		resp.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	_, err = resp.Write(jsn)
+	if err != nil {
+		h.logger.Printf("componentHandler: ServeHTTP: error writing response: %v", err)
 	}
 }
 
-func factoriesToComponentTypeJSON(factories component.Factories) []byte {
+func factoriesToComponentTypeJSON(factories component.Factories) ([]byte, error) {
 	cmp := factoriesToComponentTypes(factories)
-	jsonBytes, err := json.Marshal(cmp)
-	if err != nil {
-		panic(err)
-	}
-	return jsonBytes
+	return json.Marshal(cmp)
 }
 
 type componentTypes struct {

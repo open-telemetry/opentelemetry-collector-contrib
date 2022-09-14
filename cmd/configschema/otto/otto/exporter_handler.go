@@ -16,6 +16,7 @@ package otto
 
 import (
 	"context"
+	"log"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -29,6 +30,7 @@ import (
 )
 
 type exporterSocketHandler struct {
+	logger          *log.Logger
 	pipeline        *pipeline
 	exporterFactory component.ExporterFactory
 }

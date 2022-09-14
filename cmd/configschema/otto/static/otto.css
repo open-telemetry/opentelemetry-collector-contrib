@@ -229,8 +229,9 @@ select:invalid {
   background-color: rgb(2, 5, 10);
 }
 
-.message-summary-view tr:hover {
-  background-color: #333;
+.message-summary-view tr:hover td {
+  background-color: rgb(242, 118, 96) !important;
+  color: rgb(2, 5, 10);
 }
 
 .message-summary-view tr {

@@ -17,6 +17,7 @@ package otto
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"reflect"
@@ -29,28 +30,33 @@ import (
 )
 
 type cfgschemaHandler struct {
+	logger   *log.Logger
 	pipeline *pipeline
 }
 
-func (c cfgschemaHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+func (h cfgschemaHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	// e.g. "/configschema/receiver/redis"
 	parts := strings.Split(req.RequestURI, "/")
 	componentType := parts[2]
 	componentName := parts[3]
 
-	fieldInfo, err := getFieldInfo(componentType, componentName, c.pipeline.factories, c.pipeline.dr)
+	fieldInfo, err := getFieldInfo(componentType, componentName, h.pipeline.factories, h.pipeline.dr)
 	if err != nil {
-		panic(err)
+		h.logger.Printf("cfgschemaHandler: ServeHTTP: error getting fieldInfo: %v", err)
+		resp.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	fjson, err := json.Marshal(fieldInfo)
 	if err != nil {
-		panic(err)
+		h.logger.Printf("cfgschemaHandler: ServeHTTP: error marshaling fieldInfo to json: %v", err)
+		resp.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	_, err = resp.Write(fjson)
 	if err != nil {
-		panic(err)
+		h.logger.Printf("cfgschemaHandler: ServeHTTP: error writing response: %v", err)
 	}
 }
 

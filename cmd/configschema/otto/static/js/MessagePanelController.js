@@ -28,6 +28,10 @@ class MessagePanelController {
     this.tabController.select(0);
   }
 
+  appendToView(view) {
+    view.appendView(this.getRootView());
+  }
+
   pipelineTypeSelected(pipelineType) {
     switch (pipelineType) {
       case 'metrics':

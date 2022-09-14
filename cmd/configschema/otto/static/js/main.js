@@ -20,9 +20,9 @@ function main() {
   document.body.appendChild(mainView.getRootEl());
   let headerController = new HeaderController(mainView, componentRegistry);
   headerController.fetchComponents();
-  let receiverController = new ComponentController('receiver', mainView, componentRegistry);
-  let processorController = new ComponentController('processor', mainView, componentRegistry);
-  let exporterController = new ComponentController('exporter', mainView, componentRegistry);
+  let receiverController = new ComponentController('receiver', mainView, componentRegistry, new MessagePanelController());
+  let processorController = new ComponentController('processor', mainView, componentRegistry, new MessagePanelController());
+  let exporterController = new ComponentController('exporter', mainView, componentRegistry, new NopMessagePanelController());
 
   let exportPanelController = new ExportPanelController(mainView);
   exportPanelController.setPipelineTypeProvider(headerController);
@@ -34,4 +34,20 @@ function main() {
   headerController.addComponentListener(processorController);
   headerController.addComponentListener(exporterController);
   headerController.addComponentListener(exportPanelController);
+}
+
+class NopMessagePanelController {
+
+  hideView() {}
+
+  showView() {}
+
+  appendToView() {}
+
+  pipelineTypeSelected() {}
+
+  reset() {}
+
+  handleMessage() {}
+
 }

@@ -17,30 +17,38 @@ package otto
 import (
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 
 	"gopkg.in/yaml.v2"
 )
 
 type jsonToYAMLHandler struct {
+	logger *log.Logger
 }
 
 func (h jsonToYAMLHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	bytes, err := io.ReadAll(req.Body)
 	if err != nil {
-		panic(err)
+		h.logger.Printf("jsonToYAMLHandler: ServeHTTP: error reading request: %v", err)
+		resp.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	m := map[string]interface{}{}
 	err = json.Unmarshal(bytes, &m)
 	if err != nil {
-		panic(err)
+		h.logger.Printf("jsonToYAMLHandler: ServeHTTP: error unmarshaling request: %v", err)
+		resp.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	yml, err := yaml.Marshal(m)
 	if err != nil {
-		panic(err)
+		h.logger.Printf("jsonToYAMLHandler: ServeHTTP: error converting JSON to YAML: %v", err)
+		resp.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	_, err = resp.Write(yml)
 	if err != nil {
-		panic(err)
+		h.logger.Printf("jsonToYAMLHandler: ServeHTTP: error writing response: %v", err)
 	}
 }

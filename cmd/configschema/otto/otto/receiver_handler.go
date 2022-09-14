@@ -63,7 +63,7 @@ func (h receiverSocketHandler) startMetricsReceiver(
 	cfg config.Receiver,
 ) {
 	stop := make(chan struct{})
-	consumer := &repeatingMetricsConsumer{
+	repeater := &repeatingMetricsConsumer{
 		webSocket: webSocket,
 		marshaler: pmetric.NewJSONMarshaler(),
 		stop:      stop,
@@ -72,14 +72,14 @@ func (h receiverSocketHandler) startMetricsReceiver(
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
 		cfg,
-		consumer,
+		repeater,
 	)
 	if err != nil {
 		panic(err)
 	}
 	wrapper := metricsReceiverWrapper{
 		MetricsReceiver: receiver,
-		consumer:        consumer,
+		consumer:        repeater,
 	}
 	h.pipeline.connectMetricsReceiverWrapper(wrapper)
 	wrapper.start()

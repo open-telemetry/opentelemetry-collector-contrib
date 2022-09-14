@@ -15,6 +15,7 @@
 package otto
 
 import (
+	"log"
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
@@ -33,15 +34,25 @@ func Server() {
 		panic(err)
 	}
 
-	mux.Handle("/components", componentHandler{factories: factories})
+	logger := log.Default()
+
+	mux.Handle("/components", componentHandler{
+		logger:    logger,
+		factories: factories,
+	})
 
 	ottoPipeline := &pipeline{
 		dr:        configschema.NewDirResolver("../../..", configschema.DefaultModule),
 		factories: factories,
 	}
-	mux.Handle("/cfgschema/", cfgschemaHandler{pipeline: ottoPipeline})
+	mux.Handle("/cfgschema/", cfgschemaHandler{
+		logger:   logger,
+		pipeline: ottoPipeline,
+	})
 
-	mux.Handle("/jsonToYAML", jsonToYAMLHandler{})
+	mux.Handle("/jsonToYAML", jsonToYAMLHandler{
+		logger: logger,
+	})
 
 	wsHandlers := map[string]wsHandler{}
 	registerReceiverHandlers(factories, wsHandlers, ottoPipeline)

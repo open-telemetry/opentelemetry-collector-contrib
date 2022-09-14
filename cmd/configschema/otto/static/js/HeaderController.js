@@ -39,13 +39,18 @@ class HeaderController {
 
   fetchComponents() {
     fetch('http://localhost:8888/components').then(
-      resp => resp.json().then(
-        components => {
-          this.headerView.enableSelection();
-          this.componentRegistry.setComponents(components);
+      resp => {
+        if (resp.ok) {
+          resp.json().then(
+            components => {
+              this.headerView.enableSelection();
+              this.componentRegistry.setComponents(components);
+            }
+          );
+        } else {
+          alert('Error getting component info');
         }
-      )
+      }
     );
   }
-
 }

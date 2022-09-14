@@ -14,35 +14,36 @@
 
 class ComponentController {
 
-  constructor(componentType, parentView, componentRegistry) {
+  constructor(componentType, parentView, componentRegistry, messagePanelController) {
     this.componentType = componentType;
     this.componentTitle = titleCase(componentType + 's');
     this.rootView = new ComponentView(componentType, this.componentTitle);
     parentView.appendView(this.rootView);
     this.componentRegistry = componentRegistry;
-    this.messagePanelController = new MessagePanelController();
+    this.messagePanelController = messagePanelController;
     this.messagePanelController.hideView();
-    this.rootView.appendView(this.messagePanelController.getRootView());
+    this.messagePanelController.appendToView(this.rootView);
   }
 
   pipelineTypeSelected(pipelineType) {
-    if (pipelineType !== "") {
-      this.componentSelected("");
-      if (this.isComponentRunning()) {
-        this.stopComponent();
-      }
-      this.resetMessagePanel();
-      this.pipelineType = pipelineType;
-      this.messagePanelController.pipelineTypeSelected(pipelineType);
-      let componentNames = this.componentRegistry.getComponents(pipelineType, this.componentType + 's')
-      let componentSelectWidget = new SelectWidget();
-      componentSelectWidget.addOption('-- Select ' + this.componentTitle + ' --');
-      componentNames.forEach(name => componentSelectWidget.addOption(name, name));
-      componentSelectWidget.onSelected(
-        () => this.componentSelected(componentSelectWidget.getValue())
-      );
-      this.rootView.attachSelectWidget(componentSelectWidget);
+    if (pipelineType === "") {
+      return
     }
+    this.componentSelected("");
+    if (this.isComponentRunning()) {
+      this.stopComponent();
+    }
+    this.resetMessagePanel();
+    this.pipelineType = pipelineType;
+    this.messagePanelController.pipelineTypeSelected(pipelineType);
+    let componentNames = this.componentRegistry.getComponents(pipelineType, this.componentType + 's');
+    let componentSelectWidget = new SelectWidget();
+    componentSelectWidget.addOption('-- Select ' + this.componentTitle + ' --');
+    componentNames.forEach(name => componentSelectWidget.addOption(name, name));
+    componentSelectWidget.onSelected(
+      () => this.componentSelected(componentSelectWidget.getValue())
+    );
+    this.rootView.attachSelectWidget(componentSelectWidget);
   }
 
   componentSelected(componentName) {
@@ -51,13 +52,19 @@ class ComponentController {
     this.resetMessagePanel();
     if (componentName !== "") {
       fetch('http://localhost:8888/cfgschema/' + this.componentType + '/' + componentName).then(
-        resp => resp.json().then(
-          cfgSchema => {
-            flagUnrenderableFields(cfgSchema);
-            this.addConfigDialog();
-            this.cfgSchemaReceived(cfgSchema);
+        resp => {
+          if (resp.ok) {
+            resp.json().then(
+              cfgSchema => {
+                flagUnrenderableFields(cfgSchema);
+                this.addConfigDialog();
+                this.cfgSchemaReceived(cfgSchema);
+              }
+            );
+          } else {
+            alert("Error getting component schema");
           }
-        )
+        }
       );
     }
   }
@@ -104,9 +111,15 @@ class ComponentController {
       method: 'POST',
       body: JSON.stringify(userInputs)
     })).then(
-      resp => resp.text().then(
-        yaml => this.setConfigYaml(yaml)
-      )
+      resp => {
+        if (resp.ok) {
+          resp.text().then(
+            yaml => this.setConfigYaml(yaml)
+          );
+        } else {
+          alert('Error converting JSON to YAML');
+        }
+      }
     );
   }
 
