@@ -135,83 +135,13 @@ service:
 
 #### Transition from metrics with "direction" attribute
 
-There is a proposal to change some host metrics from being reported with a `direction` attribute to being
-reported with the direction included in the metric name.
+The proposal to change metrics from being reported with a `direction` attribute has been reverted in the specification. As a result, the
+following feature gates will be removed in v0.62.0:
 
-- `disk` scraper metrics:
-  - `system.disk.io` will become:
-    - `system.disk.io.read`
-    - `system.disk.io.write`
-  - `system.disk.operations` will become:
-    - `system.disk.operations.read`
-    - `system.disk.operations.write`
-  - `system.disk.operation_time` will become:
-    - `system.disk.operation_time.read`
-    - `system.disk.operation_time.write`
-  - `system.disk.merged` will become:
-    - `system.disk.merged.read`
-    - `system.disk.merged.write`
-- `network` scraper metrics:
-  - `system.network.dropped` will become:
-    - `system.network.dropped.receive`
-    - `system.network.dropped.transmit`
-  - `system.network.errors` will become:
-    - `system.network.errors.receive`
-    - `system.network.errors.transmit`
-  - `system.network.io` will become:
-    - `system.network.io.receive`
-    - `system.network.io.transmit`
-  - `system.network.packets` will become:
-    - `system.network.packets.receive`
-    - `system.network.packets.transmit`
-- `paging` scraper metrics:
-  - `system.paging.operations` will become:
-    - `system.paging.operations.page_in`
-    - `system.paging.operations.page_out`
-- `process` scraper metrics:
-  - `process.disk.io` will become:
-    - `process.disk.io.read`
-    - `process.disk.io.write`
+- **receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute**
+- **receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute**
 
-The following feature gates control the transition process:
-
-- **receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute**: controls if the new metrics without
-  `direction` attribute are emitted by the receiver.
-- **receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute**: controls if the deprecated metrics with 
-  `direction`
-  attribute are emitted by the receiver.
-
-##### Transition schedule:
-
-The final decision on the transition is not finalized yet. The transition is on hold until
-https://github.com/open-telemetry/opentelemetry-specification/issues/2726 is resolved.
-
-##### Usage:
-
-To enable the new metrics without `direction` attribute and disable the deprecated metrics, run OTel Collector with the 
-following arguments:
-
-```sh
-otelcol --feature-gates=-receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute,+receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute
-```
-
-It's also possible to emit both the deprecated and the new metrics:
-
-```sh
-otelcol --feature-gates=+receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute,+receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute
-```
-
-If both feature gates are enabled, each particular metric can be disabled with the user settings, for example:
-
-```yaml
-receivers:
-  hostmetrics:
-    scrapers:
-      paging:
-        metrics:
-          system.paging.operations:
-            enabled: false
-```
+For additional information, see https://github.com/open-telemetry/opentelemetry-specification/issues/2726.
 
 ##### More information:
 
