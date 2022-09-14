@@ -331,7 +331,7 @@ func fillSpanOne(span ptrace.Span) {
 	span.SetDroppedLinksCount(1)
 	span.SetDroppedEventsCount(1)
 	span.SetKind(1)
-	span.SetTraceState("new")
+	span.TraceStateStruct().FromRaw("new")
 	span.Attributes().UpsertString("http.method", "get")
 	span.Attributes().UpsertString("http.path", "/health")
 	span.Attributes().UpsertString("http.url", "http://localhost/health")

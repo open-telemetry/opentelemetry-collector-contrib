@@ -8,9 +8,9 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/spf13/cast v1.5.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.59.1-0.20220912180657-39d2372496b4
-	go.opentelemetry.io/collector/pdata v0.59.1-0.20220912180657-39d2372496b4
-	go.opentelemetry.io/collector/semconv v0.59.1-0.20220912180657-39d2372496b4
+	go.opentelemetry.io/collector v0.59.1-0.20220913184032-98c787a2ab06
+	go.opentelemetry.io/collector/pdata v0.59.1-0.20220913184032-98c787a2ab06
+	go.opentelemetry.io/collector/semconv v0.59.1-0.20220913184032-98c787a2ab06
 	go.uber.org/zap v1.23.0
 	google.golang.org/protobuf v1.28.1
 )

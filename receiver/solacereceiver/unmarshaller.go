@@ -175,7 +175,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanData(spanData *model_v1.SpanD
 	}
 	// trace state
 	if spanData.TraceState != nil {
-		clientSpan.SetTraceState(ptrace.TraceState(*spanData.TraceState))
+		clientSpan.TraceStateStruct().FromRaw(*spanData.TraceState)
 	}
 }
 
@@ -214,7 +214,6 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 		hostPortAttrKey                    = "net.host.port"
 		peerIPAttrKey                      = "net.peer.ip"
 		peerPortAttrKey                    = "net.peer.port"
-		userPropertiesPrefixAttrKey        = "messaging.solace.user_properties."
 	)
 	attrMap.UpsertString(protocolAttrKey, spanData.Protocol)
 	if spanData.ProtocolVersion != nil {
@@ -432,7 +431,7 @@ func (u *solaceMessageUnmarshallerV1) insertUserProperty(toMap pcommon.Map, key 
 	case *model_v1.SpanData_UserPropertyValue_DoubleValue:
 		toMap.UpsertDouble(k, v.DoubleValue)
 	case *model_v1.SpanData_UserPropertyValue_ByteArrayValue:
-		toMap.UpsertEmptyBytes(k).FromRaw(v.ByteArrayValue)
+		toMap.UpsertEmpty(k).SetEmptyBytesVal().FromRaw(v.ByteArrayValue)
 	case *model_v1.SpanData_UserPropertyValue_FloatValue:
 		toMap.UpsertDouble(k, float64(v.FloatValue))
 	case *model_v1.SpanData_UserPropertyValue_Int8Value:

@@ -171,7 +171,7 @@ func swReferencesToSpanLinks(refs []*agentV3.SegmentReference, dest ptrace.SpanL
 		link := dest.AppendEmpty()
 		link.SetTraceID(swTraceIDToTraceID(ref.TraceId))
 		link.SetSpanID(segmentIDToSpanID(ref.ParentTraceSegmentId, uint32(ref.ParentSpanId)))
-		link.SetTraceState("")
+		link.TraceStateStruct().FromRaw("")
 		kvParis := []*common.KeyStringValuePair{
 			{
 				Key:   AttributeParentService,

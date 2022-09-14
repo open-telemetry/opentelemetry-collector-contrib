@@ -27,6 +27,11 @@ type Config struct {
 	Builder
 }
 
+// NewConfig wraps the builder interface in a concrete struct
+func NewConfig(b Builder) Config {
+	return Config{Builder: b}
+}
+
 // Builder is an entity that can build a single operator
 type Builder interface {
 	ID() string

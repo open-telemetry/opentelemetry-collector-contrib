@@ -625,7 +625,7 @@ func generateTracesWithLibraryInfo() ptrace.Traces {
 func generateTracesOneSpanNoResourceWithTraceState() ptrace.Traces {
 	td := generateTracesOneSpanNoResource()
 	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-	span.SetTraceState("lasterror=f39cd56cc44274fd5abd07ef1164246d10ce2955")
+	span.TraceStateStruct().FromRaw("lasterror=f39cd56cc44274fd5abd07ef1164246d10ce2955")
 	return td
 }
 

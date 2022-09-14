@@ -235,7 +235,7 @@ func mergeHistogramDataPoints(dpsMap map[string]pmetric.HistogramDataPointSlice,
 	for _, dps := range dpsMap {
 		dp := to.AppendEmpty()
 		dps.At(0).MoveTo(dp)
-		counts := dp.BucketCounts().AsRaw()
+		counts := dp.BucketCounts()
 		for i := 1; i < dps.Len(); i++ {
 			if dps.At(i).Count() == 0 {
 				continue
@@ -250,14 +250,13 @@ func mergeHistogramDataPoints(dpsMap map[string]pmetric.HistogramDataPointSlice,
 			}
 			dps.At(i).Exemplars().MoveAndAppendTo(dp.Exemplars())
 			for b := 0; b < dps.At(i).BucketCounts().Len(); b++ {
-				counts[b] += dps.At(i).BucketCounts().At(b)
+				counts.SetAt(b, counts.At(b)+dps.At(i).BucketCounts().At(b))
 			}
 			dps.At(i).Exemplars().MoveAndAppendTo(dp.Exemplars())
 			if dps.At(i).StartTimestamp() < dp.StartTimestamp() {
 				dp.SetStartTimestamp(dps.At(i).StartTimestamp())
 			}
 		}
-		dp.BucketCounts().FromRaw(counts)
 	}
 }
 
@@ -266,8 +265,8 @@ func mergeExponentialHistogramDataPoints(dpsMap map[string]pmetric.ExponentialHi
 	for _, dps := range dpsMap {
 		dp := to.AppendEmpty()
 		dps.At(0).MoveTo(dp)
-		negatives := dp.Negative().BucketCounts().AsRaw()
-		positives := dp.Positive().BucketCounts().AsRaw()
+		negatives := dp.Negative().BucketCounts()
+		positives := dp.Positive().BucketCounts()
 		for i := 1; i < dps.Len(); i++ {
 			if dps.At(i).Count() == 0 {
 				continue
@@ -281,17 +280,15 @@ func mergeExponentialHistogramDataPoints(dpsMap map[string]pmetric.ExponentialHi
 				dp.SetMax(dps.At(i).Max())
 			}
 			for b := 0; b < dps.At(i).Negative().BucketCounts().Len(); b++ {
-				negatives[b] += dps.At(i).Negative().BucketCounts().At(b)
+				negatives.SetAt(b, negatives.At(b)+dps.At(i).Negative().BucketCounts().At(b))
 			}
 			for b := 0; b < dps.At(i).Positive().BucketCounts().Len(); b++ {
-				positives[b] += dps.At(i).Positive().BucketCounts().At(b)
+				positives.SetAt(b, positives.At(b)+dps.At(i).Positive().BucketCounts().At(b))
 			}
 			dps.At(i).Exemplars().MoveAndAppendTo(dp.Exemplars())
 			if dps.At(i).StartTimestamp() < dp.StartTimestamp() {
 				dp.SetStartTimestamp(dps.At(i).StartTimestamp())
 			}
 		}
-		dp.Negative().BucketCounts().FromRaw(negatives)
-		dp.Positive().BucketCounts().FromRaw(positives)
 	}
 }
