@@ -35,7 +35,7 @@ func NewTQLLogger(logger *zap.Logger) TQLLogger {
 // WithFields creates a new logger that will include the specified fields
 // in all subsequent logs in addition to fields attached to the context
 // of the parent logger. Note that fields are not deduplicated.
-func (tqll TQLLogger) WithFields(fields map[string]any) tql.Logger {
+func (t TQLLogger) WithFields(fields map[string]any) tql.Logger {
 	newFields := make([]zap.Field, len(fields))
 	i := 0
 
@@ -51,14 +51,14 @@ func (tqll TQLLogger) WithFields(fields map[string]any) tql.Logger {
 	}
 
 	return TQLLogger{
-		logger: tqll.logger.With(newFields...),
+		logger: t.logger.With(newFields...),
 	}
 }
 
-func (tqll TQLLogger) Info(msg string) {
-	tqll.logger.Info(msg)
+func (t TQLLogger) Info(msg string) {
+	t.logger.Info(msg)
 }
 
-func (tqll TQLLogger) Error(msg string) {
-	tqll.logger.Error(msg)
+func (t TQLLogger) Error(msg string) {
+	t.logger.Error(msg)
 }
