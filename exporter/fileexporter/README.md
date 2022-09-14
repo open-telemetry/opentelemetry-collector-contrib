@@ -47,7 +47,7 @@ exporters:
   file/2:
     path: ./filename.json
     rotation:
-      max_size: 10
+      max_megabytes: 10
       max_days: 3
       max_backups: 3
       localtime: true
