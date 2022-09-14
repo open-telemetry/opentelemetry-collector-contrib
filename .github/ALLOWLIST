@@ -17,6 +17,7 @@ cmd/configschema
 examples/demo/client
 examples/demo/server
 exporter/logicmonitorexporter
+exporter/influxdbexporter
 exporter/parquetexporter
 extension/fluentbitextension
 extension/httpforwarder
@@ -32,4 +33,5 @@ pkg/experimentalmetricmetadata
 processor/deltatorateprocessor
 processor/metricsgenerationprocessor
 receiver/dotnetdiagnosticsreceiver
+receiver/influxdbreceiver
 testbed

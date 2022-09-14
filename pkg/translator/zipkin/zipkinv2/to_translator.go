@@ -127,7 +127,7 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 	dest.SetTraceID(idutils.UInt64ToTraceID(zspan.TraceID.High, zspan.TraceID.Low))
 	dest.SetSpanID(idutils.UInt64ToSpanID(uint64(zspan.ID)))
 	if value, ok := tags[tracetranslator.TagW3CTraceState]; ok {
-		dest.SetTraceState(ptrace.TraceState(value))
+		dest.TraceStateStruct().FromRaw(value)
 		delete(tags, tracetranslator.TagW3CTraceState)
 	}
 	parentID := zspan.ParentID
@@ -227,7 +227,7 @@ func zTagsToSpanLinks(tags map[string]string, dest ptrace.SpanLinkSlice) error {
 		}
 		link.SetSpanID(rawSpan)
 
-		link.SetTraceState(ptrace.TraceState(parts[2]))
+		link.TraceStateStruct().FromRaw(parts[2])
 
 		var jsonStr string
 		if partCnt == 5 {

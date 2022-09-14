@@ -104,7 +104,7 @@ func fillSpan(traceID pcommon.TraceID, parentID pcommon.SpanID, spanName string,
 	endTime := time.Now().Add(-50 * time.Microsecond)
 	span.SetTraceID(traceID)
 	span.SetSpanID(generateSpanID(random))
-	span.SetTraceState(generateTraceState(spanInputs.Tracestate))
+	span.TraceStateStruct().FromRaw(generateTraceState(spanInputs.Tracestate))
 	span.SetParentSpanID(parentID)
 	span.SetName(spanName)
 	span.SetKind(lookupSpanKind(spanInputs.Kind))
@@ -119,7 +119,7 @@ func fillSpan(traceID pcommon.TraceID, parentID pcommon.SpanID, spanName string,
 	fillStatus(spanInputs.Status, span.Status())
 }
 
-func generateTraceState(tracestate PICTInputTracestate) ptrace.TraceState {
+func generateTraceState(tracestate PICTInputTracestate) string {
 	switch tracestate {
 	case TraceStateOne:
 		return "lasterror=f39cd56cc44274fd5abd07ef1164246d10ce2955"
@@ -445,7 +445,7 @@ func appendSpanLink(random io.Reader, index int, spanLinks ptrace.SpanLinkSlice)
 	spanLink := spanLinks.AppendEmpty()
 	spanLink.SetTraceID(generateTraceID(random))
 	spanLink.SetSpanID(generateSpanID(random))
-	spanLink.SetTraceState("")
+	spanLink.TraceStateStruct().FromRaw("")
 	if index%4 != 2 {
 		attrMap := spanLink.Attributes()
 		appendMessagingConsumerAttributes(attrMap)

@@ -29,8 +29,8 @@ github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.8.0 h1:pSgiaMZlXftHpm5L7V1+rVB+AZJydKsMxsQBIJw4PKk=
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
-go.opentelemetry.io/collector v0.59.1-0.20220912180657-39d2372496b4 h1:aIR2JeY6hUJyL+T9H4/7oGawIlhcWa3mooScoZ8MP8A=
-go.opentelemetry.io/collector v0.59.1-0.20220912180657-39d2372496b4/go.mod h1:R5nd/echd99mUOhGvafTQMvL5BwvxYShF3gPgKCBiMk=
+go.opentelemetry.io/collector v0.59.1-0.20220913184032-98c787a2ab06 h1:od0dX8Ub3P6g4+zPt8+mWQv1ZasERS0rl1Lpc75Qieo=
+go.opentelemetry.io/collector v0.59.1-0.20220913184032-98c787a2ab06/go.mod h1:R5nd/echd99mUOhGvafTQMvL5BwvxYShF3gPgKCBiMk=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
 go.uber.org/atomic v1.10.0 h1:9qC72Qh0+3MqyJbAn8YU5xVq1frD8bn3JtD2oXtafVQ=
 go.uber.org/atomic v1.10.0/go.mod h1:LUxbIzbOniOlMKjJjyPfpl4v+PKK2cNJn91OQbhoJI0=

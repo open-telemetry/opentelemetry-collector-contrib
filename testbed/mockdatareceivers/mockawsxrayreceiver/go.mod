@@ -4,8 +4,8 @@ go 1.18
 
 require (
 	github.com/gorilla/mux v1.8.0
-	go.opentelemetry.io/collector v0.59.1-0.20220912180657-39d2372496b4
-	go.opentelemetry.io/collector/pdata v0.59.1-0.20220912180657-39d2372496b4
+	go.opentelemetry.io/collector v0.59.1-0.20220913184032-98c787a2ab06
+	go.opentelemetry.io/collector/pdata v0.59.1-0.20220913184032-98c787a2ab06
 	go.uber.org/zap v1.23.0
 
 )
