@@ -30,7 +30,7 @@ func TestCompileExprError(t *testing.T) {
 func TestRunExprError(t *testing.T) {
 	matcher, err := NewMatcher("foo")
 	require.NoError(t, err)
-	matched, _ := matcher.match(&env{})
+	matched, _ := matcher.match(env{})
 	require.False(t, matched)
 }
 
@@ -42,6 +42,23 @@ func TestUnknownDataType(t *testing.T) {
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	assert.False(t, matched)
+}
+
+func TestDataTypeFilter(t *testing.T) {
+	matcher, err := NewMatcher(`MetricType == 'Sum'`)
+	require.NoError(t, err)
+
+	m := pmetric.NewMetric()
+
+	m.SetEmptyGauge().DataPoints().AppendEmpty()
+	matched, err := matcher.MatchMetric(m)
+	assert.NoError(t, err)
+	assert.False(t, matched)
+
+	m.SetEmptySum().DataPoints().AppendEmpty()
+	matched, err = matcher.MatchMetric(m)
+	assert.NoError(t, err)
+	assert.True(t, matched)
 }
 
 func TestGaugeMatch(t *testing.T) {
