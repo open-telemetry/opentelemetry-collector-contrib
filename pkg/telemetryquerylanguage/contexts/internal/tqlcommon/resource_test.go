@@ -126,7 +126,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
 			modified: func(resource pcommon.Resource) {
-				resource.Attributes().UpsertEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
+				resource.Attributes().UpsertEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
 			},
 		},
 		{
@@ -254,7 +254,7 @@ func createResource() pcommon.Resource {
 	resource.Attributes().UpsertBool("bool", true)
 	resource.Attributes().UpsertInt("int", 10)
 	resource.Attributes().UpsertDouble("double", 1.2)
-	resource.Attributes().UpsertEmptyBytes("bytes").FromRaw([]byte{1, 3, 2})
+	resource.Attributes().UpsertEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{1, 3, 2})
 
 	arrStr := resource.Attributes().UpsertEmptySlice("arr_str")
 	arrStr.AppendEmpty().SetStringVal("one")
