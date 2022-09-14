@@ -199,7 +199,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
 			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.Attributes().PutEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
+				datapoint.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
 		},
 		{
@@ -525,7 +525,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
 			modified: func(datapoint pmetric.HistogramDataPoint) {
-				datapoint.Attributes().PutEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
+				datapoint.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
 		},
 		{
@@ -947,7 +947,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
-				datapoint.Attributes().PutEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
+				datapoint.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
 		},
 		{
@@ -1254,7 +1254,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
 			modified: func(datapoint pmetric.SummaryDataPoint) {
-				datapoint.Attributes().PutEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
+				datapoint.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
 		},
 		{
@@ -1383,7 +1383,7 @@ func createAttributeTelemetry(attributes pcommon.Map) {
 	attributes.PutBool("bool", true)
 	attributes.PutInt("int", 10)
 	attributes.PutDouble("double", 1.2)
-	attributes.PutEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{1, 3, 2})
+	attributes.PutEmptyBytes("bytes").FromRaw([]byte{1, 3, 2})
 
 	arrStr := attributes.PutEmptySlice("arr_str")
 	arrStr.AppendEmpty().SetStringVal("one")
