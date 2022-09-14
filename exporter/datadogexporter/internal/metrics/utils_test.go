@@ -19,9 +19,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"gopkg.in/zorkian/go-datadog-api.v2"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils/cache"
 )
 
 func TestNewMetric(t *testing.T) {
@@ -74,89 +71,4 @@ func TestDefaultMetrics(t *testing.T) {
 	assert.Equal(t, "test-host", *ms[0].Host)
 	// Assert no other tags are set
 	assert.ElementsMatch(t, []string{"version:1.0", "command:otelcontribcol"}, ms[0].Tags)
-}
-
-func TestProcessMetrics(t *testing.T) {
-	// Reset hostname cache
-	cache.Cache.Flush()
-
-	ms := []datadog.Metric{
-		NewGauge(
-			"metric_name",
-			0,
-			0,
-			[]string{"key2:val2"},
-		),
-		NewGauge(
-			"system.cpu.time",
-			0,
-			0,
-			[]string{"key3:val3"},
-		),
-	}
-
-	ProcessMetrics(ms)
-
-	assert.Equal(t, "metric_name", *ms[0].Metric)
-	assert.ElementsMatch(t,
-		[]string{"key2:val2"},
-		ms[0].Tags,
-	)
-
-	assert.Equal(t, "otel.system.cpu.time", *ms[1].Metric)
-	assert.ElementsMatch(t,
-		[]string{"key3:val3"},
-		ms[1].Tags,
-	)
-}
-
-func TestShouldPrepend(t *testing.T) {
-	for _, s := range []string{
-		"system.something",
-		"process.something",
-		"process.cpu.time",
-		"system.memory.usage",
-		"system.filesystem.utilization",
-		"system.network.io",
-		"system.memory.usage",
-		"system.cpu.utilization",
-		"system.cpu.load_average.1m",
-		"system.cpu.load_average.5m",
-		"system.cpu.load_average.15m",
-	} {
-		assert.True(t, shouldPrepend(s), s)
-	}
-	for _, s := range []string{
-		"processes.cpu.time",
-		"systemd.metric.name",
-		"random.metric.name",
-		"system.disk.in_use",
-		"system.net.bytes_sent",
-		"system.net.bytes_rcvd",
-		"system.mem.usable",
-		"system.mem.total",
-		"system.cpu.stolen",
-		"system.cpu.iowait",
-		"system.cpu.user",
-		"system.cpu.idle",
-		"system.load.15",
-		"system.load.5",
-		"system.load.1",
-	} {
-		assert.False(t, shouldPrepend(s), s)
-	}
-}
-
-func TestAddNamespace(t *testing.T) {
-	ms := []datadog.Metric{
-		NewGauge("test.metric", 0, 1.0, []string{}),
-		NewGauge("system.cpu.time", 0, 2.0, []string{}),
-		NewGauge("process.memory.physical_usage", 0, 3.0, []string{}),
-	}
-
-	addNamespace(ms, "namespace")
-
-	assert.Equal(t, "test.metric", *ms[0].Metric)
-	assert.Equal(t, "namespace.system.cpu.time", *ms[1].Metric)
-	assert.Equal(t, "namespace.process.memory.physical_usage", *ms[2].Metric)
 }

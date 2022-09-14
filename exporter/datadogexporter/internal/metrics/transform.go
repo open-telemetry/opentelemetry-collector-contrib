@@ -28,16 +28,31 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 )
 
-// TransformFunc takes a set of metrics and transforms them.
-type TransformFunc func(ctx context.Context, md pmetric.Metrics) error
+// Transformer is able to transform a set of metrics by either modifying or adding
+// new ones.
+type Transformer struct {
+	names    map[string]struct{}
+	consumer func(ctx context.Context, md pmetric.Metrics) error
+}
+
+// Transform applies a set of changes to the given set of metrics.
+func (t *Transformer) Transform(ctx context.Context, md pmetric.Metrics) error {
+	return t.consumer(ctx, md)
+}
+
+// Has reports whether the metric with the given name was or would be added by the
+// transformer.
+func (t *Transformer) Has(name string) bool {
+	_, ok := t.names[name]
+	return ok
+}
 
 // NewInfraTransformFunc returns a new TransformFunc which converts OpenTelemetry system and process metrics
 // to Datadog compatible ones.
-func NewInfraTransformFunc(ctx context.Context, set component.ExporterCreateSettings) (TransformFunc, error) {
-	cid := config.NewComponentIDWithName(config.MetricsDataType, "dd-infra-metricstransformer")
-	tcfg := &metricstransformprocessor.Config{
-		ProcessorSettings: config.NewProcessorSettings(cid),
-		Transforms:        metricTransforms.Transforms,
+func NewInfraTransformer(ctx context.Context, set component.ExporterCreateSettings) (*Transformer, error) {
+	cfg, err := yamlToConfig()
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshalling yaml to config: %w", err)
 	}
 	pset := component.ProcessorCreateSettings(set)
 	noop, err := consumer.NewMetrics(
@@ -48,41 +63,35 @@ func NewInfraTransformFunc(ctx context.Context, set component.ExporterCreateSett
 	if err != nil {
 		return nil, err
 	}
-	proc, err := metricstransformprocessor.NewFactory().CreateMetricsProcessor(ctx, pset, tcfg, noop)
+	proc, err := metricstransformprocessor.NewFactory().CreateMetricsProcessor(ctx, pset, cfg, noop)
 	if err != nil {
 		return nil, err
 	}
-	return proc.ConsumeMetrics, err
+	transformer := Transformer{
+		names:    make(map[string]struct{}),
+		consumer: proc.ConsumeMetrics,
+	}
+	for _, t := range cfg.Transforms {
+		if t.NewName != "" {
+			transformer.names[t.NewName] = struct{}{}
+		}
+	}
+	return &transformer, err
 }
 
-func init() {
+func yamlToConfig() (*metricstransformprocessor.Config, error) {
 	var raw map[string]interface{}
 	if err := yaml.Unmarshal(transformYaml, &raw); err != nil {
-		panic(fmt.Errorf("Error unmarshalling internal/metrics.(transformYaml): %w", err))
+		return nil, err
 	}
-	if err := confmap.NewFromStringMap(raw).Unmarshal(&metricTransforms); err != nil {
-		panic(fmt.Errorf("Error unmarshalling confmap: %w", err))
+	cid := config.NewComponentIDWithName(config.MetricsDataType, "dd-infra-metricstransformer")
+	cfg := &metricstransformprocessor.Config{
+		ProcessorSettings: config.NewProcessorSettings(cid),
 	}
-	metricTransforms.Native = make(map[string]struct{})
-	for _, t := range metricTransforms.Transforms {
-		if t.NewName == "" {
-			continue
-		}
-		metricTransforms.Native[t.NewName] = struct{}{}
+	if err := confmap.NewFromStringMap(raw).Unmarshal(&cfg); err != nil {
+		return nil, err
 	}
-}
-
-// metricsTransforms specifies a set of metric transformation rules along with a list
-// of their names.
-//
-// The structure is initialized and populated in the package's init() function.
-var metricTransforms struct {
-	// Transforms specifies a set of metric transformation rules.
-	Transforms []metricstransformprocessor.Transform `mapstructure:"transforms"`
-	// Native specifies all metric names covered by the transforms. These are considered
-	// native Datadog metrics that should not be prepended by the "otel.*" prefix when
-	// submitted.
-	Native map[string]struct{} `mapstructure:"-"`
+	return cfg, nil
 }
 
 var transformYaml = []byte(`

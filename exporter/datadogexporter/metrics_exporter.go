@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -49,9 +50,9 @@ type metricsExporter struct {
 	retrier        *utils.Retrier
 	onceMetadata   *sync.Once
 	sourceProvider source.Provider
-	// transformInfra holds a metricsTransformFunc which is able to transform OpenTelemetry
+	// infraTransformer holds a metrics.Transformer which is able to transform OpenTelemetry
 	// system.* and process.* metrics to Datadog specific infrastructure metrics.
-	transformInfra metrics.TransformFunc
+	infraTransformer *metrics.Transformer
 	// getPushTime returns a Unix time in nanoseconds, representing the time pushing metrics.
 	// It will be overwritten in tests.
 	getPushTime func() uint64
@@ -113,23 +114,23 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 		return nil, err
 	}
 
-	transformFunc, err := metrics.NewInfraTransformFunc(ctx, params)
+	transformer, err := metrics.NewInfraTransformer(ctx, params)
 	if err != nil {
 		return nil, err
 	}
 	scrubber := scrub.NewScrubber()
 	return &metricsExporter{
-		params:         params,
-		cfg:            cfg,
-		ctx:            ctx,
-		client:         client,
-		tr:             tr,
-		scrubber:       scrubber,
-		retrier:        utils.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
-		onceMetadata:   onceMetadata,
-		sourceProvider: sourceProvider,
-		transformInfra: transformFunc,
-		getPushTime:    func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
+		params:           params,
+		cfg:              cfg,
+		ctx:              ctx,
+		client:           client,
+		tr:               tr,
+		scrubber:         scrubber,
+		retrier:          utils.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
+		onceMetadata:     onceMetadata,
+		sourceProvider:   sourceProvider,
+		infraTransformer: transformer,
+		getPushTime:      func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
 	}, nil
 }
 
@@ -167,6 +168,29 @@ func (exp *metricsExporter) PushMetricsDataScrubbed(ctx context.Context, md pmet
 	return exp.scrubber.Scrub(exp.PushMetricsData(ctx, md))
 }
 
+// otelNamespacePrefix specifies the namespace used for OpenTelemetry host metrics.
+const otelNamespacePrefix = "otel."
+
+// prependSystemMetrics prepends system hosts metrics with the otel.* prefix to identify
+// them as part of the Datadog OpenTelemetry Integration.
+func (exp *metricsExporter) prependSystemMetrics(ms []datadog.Metric) {
+	for i, m := range ms {
+		name := *m.Metric
+		if !strings.HasPrefix(name, "system.") &&
+			!strings.HasPrefix(name, "process.") {
+			// not a system metric
+			continue
+		}
+		if exp.infraTransformer.Has(name) {
+			// it is a system metric, but it's a Datadog native one,
+			// so we skip it
+			continue
+		}
+		newname := otelNamespacePrefix + name
+		ms[i].Metric = &newname
+	}
+}
+
 func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metrics) error {
 	// Start host metadata with resource attributes from
 	// the first payload.
@@ -179,7 +203,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 			go metadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
 		})
 	}
-	if err := exp.transformInfra(ctx, md); err != nil {
+	if err := exp.infraTransformer.Transform(ctx, md); err != nil {
 		return err
 	}
 	consumer := metrics.NewConsumer()
@@ -196,7 +220,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 		tags = append(tags, exp.cfg.HostMetadata.Tags...)
 	}
 	ms, sl := consumer.All(exp.getPushTime(), exp.params.BuildInfo, tags)
-	metrics.ProcessMetrics(ms)
+	exp.prependSystemMetrics(ms)
 
 	err = nil
 	if len(ms) > 0 {

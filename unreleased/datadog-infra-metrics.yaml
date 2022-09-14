@@ -5,7 +5,7 @@ change_type: enhancement
 component: datadogexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: The "hostmetrics" receiver metrics are now correctly mapped to Datadog syste metrics.
+note: The "hostmetrics" receiver metrics are now correctly mapped to Datadog system metrics.
 
 # One or more tracking issues related to the change
 issues: [14005]

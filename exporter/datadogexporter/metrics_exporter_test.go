@@ -32,9 +32,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 )
 
@@ -338,42 +338,78 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 	}
 }
 
-func Test_metricsExporter_transformFunc(t *testing.T) {
-	seriesRecorder := &testutils.HTTPRequestRecorder{Pattern: "/api/v1/series"}
-	sketchRecorder := &testutils.HTTPRequestRecorder{Pattern: "/api/beta/sketches"}
-	server := testutils.DatadogServerMock(
-		seriesRecorder.HandlerFunc,
-		sketchRecorder.HandlerFunc,
-	)
-	defer server.Close()
-
+func TestPrependSystemMetrics(t *testing.T) {
 	var once sync.Once
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	exp, err := newMetricsExporter(
 		context.Background(),
 		componenttest.NewNopExporterCreateSettings(),
-		newTestConfig(t, server.URL, nil, HistogramModeCounters),
+		cfg,
 		&once,
-		&testutils.MockSourceProvider{},
+		&testutils.MockSourceProvider{Src: source.Source{
+			Kind:       source.AWSECSFargateKind,
+			Identifier: "task_arn",
+		}},
 	)
-	exp.transformInfra = metrics.TransformFunc(func(_ context.Context, md pmetric.Metrics) error {
-		metric := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-		metric.SetName("appended.metric")
-		metric.SetEmptyGauge().DataPoints().AppendEmpty().SetIntVal(6)
-		return nil
-	})
 	require.NoError(t, err)
-	md := createTestMetrics(nil)
-	require.NoError(t, exp.PushMetricsData(context.Background(), md))
-	all := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-	for i := 0; i < all.Len(); i++ {
-		m := all.At(i)
-		if m.Name() != "appended.metric" {
-			continue
-		}
-		require.Equal(t, m.Gauge().DataPoints().At(0).IntVal(), int64(6))
-		return // success
+	sptr := func(s string) *string { return &s }
+	ms := []datadog.Metric{
+		{Metric: sptr("system.something")},
+		{Metric: sptr("process.something")},
+		{Metric: sptr("process.cpu.time")},
+		{Metric: sptr("system.memory.usage")},
+		{Metric: sptr("system.filesystem.utilization")},
+		{Metric: sptr("system.network.io")},
+		{Metric: sptr("system.memory.usage")},
+		{Metric: sptr("system.cpu.utilization")},
+		{Metric: sptr("system.cpu.load_average.1m")},
+		{Metric: sptr("system.cpu.load_average.5m")},
+		{Metric: sptr("system.cpu.load_average.15m")},
+		{Metric: sptr("processes.cpu.time")},
+		{Metric: sptr("systemd.metric.name")},
+		{Metric: sptr("random.metric.name")},
+		{Metric: sptr("system.disk.in_use")},
+		{Metric: sptr("system.net.bytes_sent")},
+		{Metric: sptr("system.net.bytes_rcvd")},
+		{Metric: sptr("system.mem.usable")},
+		{Metric: sptr("system.mem.total")},
+		{Metric: sptr("system.cpu.stolen")},
+		{Metric: sptr("system.cpu.iowait")},
+		{Metric: sptr("system.cpu.user")},
+		{Metric: sptr("system.cpu.idle")},
+		{Metric: sptr("system.load.15")},
+		{Metric: sptr("system.load.5")},
+		{Metric: sptr("system.load.1")},
 	}
-	t.Fatal("Did not apply transform func")
+	exp.prependSystemMetrics(ms)
+	require.EqualValues(t, ms, []datadog.Metric{
+		{Metric: sptr("otel.system.something")},
+		{Metric: sptr("otel.process.something")},
+		{Metric: sptr("otel.process.cpu.time")},
+		{Metric: sptr("otel.system.memory.usage")},
+		{Metric: sptr("otel.system.filesystem.utilization")},
+		{Metric: sptr("otel.system.network.io")},
+		{Metric: sptr("otel.system.memory.usage")},
+		{Metric: sptr("otel.system.cpu.utilization")},
+		{Metric: sptr("otel.system.cpu.load_average.1m")},
+		{Metric: sptr("otel.system.cpu.load_average.5m")},
+		{Metric: sptr("otel.system.cpu.load_average.15m")},
+		{Metric: sptr("processes.cpu.time")},
+		{Metric: sptr("systemd.metric.name")},
+		{Metric: sptr("random.metric.name")},
+		{Metric: sptr("system.disk.in_use")},
+		{Metric: sptr("system.net.bytes_sent")},
+		{Metric: sptr("system.net.bytes_rcvd")},
+		{Metric: sptr("system.mem.usable")},
+		{Metric: sptr("system.mem.total")},
+		{Metric: sptr("system.cpu.stolen")},
+		{Metric: sptr("system.cpu.iowait")},
+		{Metric: sptr("system.cpu.user")},
+		{Metric: sptr("system.cpu.idle")},
+		{Metric: sptr("system.load.15")},
+		{Metric: sptr("system.load.5")},
+		{Metric: sptr("system.load.1")},
+	})
 }
 
 func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {

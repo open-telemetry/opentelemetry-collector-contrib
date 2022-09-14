@@ -20,24 +20,221 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 )
 
-func TestYAMLIsValid(t *testing.T) {
-	require.True(t, len(metricTransforms.Transforms) > 5)
-	uniq := make(map[string]struct{})
-	for _, t := range metricTransforms.Transforms {
-		if t.NewName != "" {
-			uniq[t.NewName] = struct{}{}
-		}
+func TestYAML(t *testing.T) {
+	cfg, err := yamlToConfig()
+	require.NoError(t, err)
+	require.EqualValues(t, cfg.Transforms, []metricstransformprocessor.Transform{
+		{
+			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
+				Include:   "system.cpu.load_average.1m",
+				MatchType: "strict",
+			},
+			Action:  "insert",
+			NewName: "system.load.1",
+		},
+		{
+			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
+				Include:   "system.cpu.load_average.5m",
+				MatchType: "strict",
+			},
+			Action:  "insert",
+			NewName: "system.load.5",
+		},
+		{
+			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
+				Include:   "system.cpu.load_average.15m",
+				MatchType: "strict",
+			},
+			Action:  "insert",
+			NewName: "system.load.15",
+		},
+		{
+			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
+				Include:     "system.cpu.utilization",
+				MatchType:   "strict",
+				MatchLabels: map[string]string{"state": "idle"},
+			},
+			Action:  "insert",
+			NewName: "system.cpu.idle",
+			Operations: []metricstransformprocessor.Operation{
+				{
+					Action: "experimental_scale_value",
+					Scale:  100,
+				},
+			},
+		},
+		{
+			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
+				Include:     "system.cpu.utilization",
+				MatchType:   "strict",
+				MatchLabels: map[string]string{"state": "user"},
+			},
+			Action:  "insert",
+			NewName: "system.cpu.user",
+			Operations: []metricstransformprocessor.Operation{
+				{
+					Action: "experimental_scale_value",
+					Scale:  100,
+				},
+			},
+		},
+		{
+			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
+				Include:     "system.cpu.utilization",
+				MatchType:   "strict",
+				MatchLabels: map[string]string{"state": "wait"},
+			},
+			Action:  "insert",
+			NewName: "system.cpu.iowait",
+			Operations: []metricstransformprocessor.Operation{
+				{
+					Action: "experimental_scale_value",
+					Scale:  100,
+				},
+			},
+		},
+		{
+			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
+				Include:     "system.cpu.utilization",
+				MatchType:   "strict",
+				MatchLabels: map[string]string{"state": "steal"},
+			},
+			Action:  "insert",
+			NewName: "system.cpu.stolen",
+			Operations: []metricstransformprocessor.Operation{
+				{
+					Action: "experimental_scale_value",
+					Scale:  100,
+				},
+			},
+		},
+		{
+			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
+				Include:   "system.memory.usage",
+				MatchType: "strict",
+			},
+			Action:  "insert",
+			NewName: "system.mem.total",
+			Operations: []metricstransformprocessor.Operation{
+				{
+					Action: "experimental_scale_value",
+					Scale:  1e-06,
+				},
+			},
+		},
+		{
+			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
+				Include:     "system.memory.usage",
+				MatchType:   "strict",
+				MatchLabels: map[string]string{"state": "free"},
+			},
+			Action:  "insert",
+			NewName: "system.mem.usable",
+		},
+		{
+			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
+				Include:     "system.memory.usage",
+				MatchType:   "strict",
+				MatchLabels: map[string]string{"state": "cached"},
+			},
+			Action:  "insert",
+			NewName: "system.mem.usable",
+		},
+		{
+			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
+				Include:     "system.memory.usage",
+				MatchType:   "strict",
+				MatchLabels: map[string]string{"state": "buffered"},
+			},
+			Action:  "insert",
+			NewName: "system.mem.usable",
+		},
+		{
+			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
+				Include:   "system.mem.usable",
+				MatchType: "strict",
+			},
+			Action: "update",
+			Operations: []metricstransformprocessor.Operation{
+				{
+					Action:           "aggregate_label_values",
+					Label:            "state",
+					AggregationType:  "sum",
+					AggregatedValues: []string{"free", "cached", "buffered"},
+					NewValue:         "usable",
+				},
+				{
+					Action: "experimental_scale_value",
+					Scale:  1e-06,
+				},
+			},
+		},
+		{
+			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
+				Include:     "system.network.io",
+				MatchType:   "strict",
+				MatchLabels: map[string]string{"direction": "receive"},
+			},
+			Action:  "insert",
+			NewName: "system.net.bytes_rcvd",
+			Operations: []metricstransformprocessor.Operation{
+				{
+					Action: "experimental_scale_value",
+					Scale:  0.001,
+				},
+			},
+		},
+		{
+			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
+				Include:     "system.network.io",
+				MatchType:   "strict",
+				MatchLabels: map[string]string{"direction": "transmit"},
+			},
+			Action:  "insert",
+			NewName: "system.net.bytes_sent",
+			Operations: []metricstransformprocessor.Operation{
+				{
+					Action: "experimental_scale_value",
+					Scale:  0.001,
+				},
+			},
+		},
+		{
+			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
+				Include:   "system.filesystem.utilization",
+				MatchType: "strict",
+			},
+			Action:  "insert",
+			NewName: "system.disk.in_use",
+		},
+	})
+}
+
+func TestTransformer(t *testing.T) {
+	var called bool
+	tt := &Transformer{
+		names: map[string]struct{}{"x": {}},
+		consumer: func(_ context.Context, _ pmetric.Metrics) error {
+			called = true
+			return nil
+		},
 	}
-	require.Len(t, metricTransforms.Native, len(uniq))
+	require.True(t, tt.Has("x"))
+	require.False(t, tt.Has("y"))
+	err := tt.Transform(context.Background(), pmetric.Metrics{})
+	require.NoError(t, err)
+	require.True(t, called)
 }
 
 func TestTransformFunc(t *testing.T) {
 	ctx := context.Background()
-	fn, err := NewInfraTransformFunc(ctx, component.ExporterCreateSettings{})
+	transformer, err := NewInfraTransformer(ctx, component.ExporterCreateSettings{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +266,7 @@ func TestTransformFunc(t *testing.T) {
 		}},
 		{Name: "system.filesystem.utilization", DataPoints: []testutils.DataPoint{{Value: 15}}},
 	})
-	require.NoError(t, fn(ctx, md))
+	require.NoError(t, transformer.Transform(ctx, md))
 
 	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	// NVA specifies a set of Name, Value & Attributes
@@ -130,5 +327,20 @@ func TestTransformFunc(t *testing.T) {
 		{N: "system.mem.usable", V: 0.000014, A: map[string]interface{}{"state": "usable"}},
 		{N: "system.net.bytes_rcvd", V: 0.013000000000000001, A: map[string]interface{}{"direction": "receive"}},
 		{N: "system.net.bytes_sent", V: 0.014, A: map[string]interface{}{"direction": "transmit"}},
-		{N: "system.disk.in_use", V: 15}})
+		{N: "system.disk.in_use", V: 15},
+	})
+	require.EqualValues(t, transformer.names, map[string]struct{}{
+		"system.cpu.idle":       {},
+		"system.cpu.iowait":     {},
+		"system.cpu.stolen":     {},
+		"system.cpu.user":       {},
+		"system.disk.in_use":    {},
+		"system.load.1":         {},
+		"system.load.15":        {},
+		"system.load.5":         {},
+		"system.mem.total":      {},
+		"system.mem.usable":     {},
+		"system.net.bytes_rcvd": {},
+		"system.net.bytes_sent": {},
+	})
 }
