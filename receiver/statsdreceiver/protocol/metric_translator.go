@@ -20,9 +20,9 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"gonum.org/v1/gonum/stat"
 
 	"github.com/lightstep/otel-launcher-go/lightstep/sdk/metric/aggregator/histogram/structure"
+	"gonum.org/v1/gonum/stat"
 )
 
 var (
