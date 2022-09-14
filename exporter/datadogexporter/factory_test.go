@@ -75,6 +75,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://http-intake.logs.datadoghq.com",
 			},
+			SendLogRecordBody: false,
 		},
 
 		HostMetadata: HostMetadataConfig{
@@ -236,6 +237,7 @@ func TestLoadConfig(t *testing.T) {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://http-intake.logs.datadoghq.test",
 			},
+			SendLogRecordBody: true,
 		},
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
@@ -370,7 +372,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	assert.NotNil(t, exp)
 }
 
-func TestCreateAPIMetricsExporterFailOnInvalidkey(t *testing.T) {
+func TestCreateAPIExporterFailOnInvalidkey(t *testing.T) {
 	server := testutils.DatadogServerMock(testutils.ValidateAPIKeyEndpointInvalid)
 	defer server.Close()
 
@@ -392,13 +394,30 @@ func TestCreateAPIMetricsExporterFailOnInvalidkey(t *testing.T) {
 	t.Run("fail_on_invalid_key is true", func(t *testing.T) {
 		c.API.FailOnInvalidKey = true
 		ctx := context.Background()
-		exp, err := factory.CreateMetricsExporter(
+		// metrics exporter
+		mexp, err := factory.CreateMetricsExporter(
 			ctx,
 			componenttest.NewNopExporterCreateSettings(),
 			cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
 		)
 		assert.EqualError(t, err, "API Key validation failed")
-		assert.Nil(t, exp)
+		assert.Nil(t, mexp)
+
+		texp, err := factory.CreateTracesExporter(
+			ctx,
+			componenttest.NewNopExporterCreateSettings(),
+			cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
+		)
+		assert.EqualError(t, err, "API Key validation failed")
+		assert.Nil(t, texp)
+
+		lexp, err := factory.CreateLogsExporter(
+			ctx,
+			componenttest.NewNopExporterCreateSettings(),
+			cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
+		)
+		assert.EqualError(t, err, "API Key validation failed")
+		assert.Nil(t, lexp)
 	})
 	t.Run("fail_on_invalid_key is false", func(t *testing.T) {
 		c.API.FailOnInvalidKey = false
@@ -410,11 +429,27 @@ func TestCreateAPIMetricsExporterFailOnInvalidkey(t *testing.T) {
 		)
 		assert.Nil(t, err)
 		assert.NotNil(t, exp)
+
+		texp, err := factory.CreateTracesExporter(
+			ctx,
+			componenttest.NewNopExporterCreateSettings(),
+			cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, texp)
+
+		lexp, err := factory.CreateLogsExporter(
+			ctx,
+			componenttest.NewNopExporterCreateSettings(),
+			cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, lexp)
 	})
 }
 
-func TestCreateAPITracesExporter(t *testing.T) {
-	server := testutils.DatadogServerMock()
+func TestCreateAPILogsExporter(t *testing.T) {
+	server := testutils.DatadogLogServerMock()
 	defer server.Close()
 
 	factories, err := componenttest.NopFactories()
@@ -433,7 +468,7 @@ func TestCreateAPITracesExporter(t *testing.T) {
 	c.HostMetadata.Enabled = false
 
 	ctx := context.Background()
-	exp, err := factory.CreateTracesExporter(
+	exp, err := factory.CreateLogsExporter(
 		ctx,
 		componenttest.NewNopExporterCreateSettings(),
 		cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
@@ -441,49 +476,6 @@ func TestCreateAPITracesExporter(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
-}
-
-func TestCreateAPITracesExporterFailOnInvalidkey(t *testing.T) {
-	server := testutils.DatadogServerMock(testutils.ValidateAPIKeyEndpointInvalid)
-	defer server.Close()
-
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	// Use the mock server for API key validation
-	c := (cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")]).(*Config)
-	c.Metrics.TCPAddr.Endpoint = server.URL
-	c.HostMetadata.Enabled = false
-
-	t.Run("fail_on_invalid_key is true", func(t *testing.T) {
-		c.API.FailOnInvalidKey = true
-		ctx := context.Background()
-		exp, err := factory.CreateTracesExporter(
-			ctx,
-			componenttest.NewNopExporterCreateSettings(),
-			cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
-		)
-		assert.EqualError(t, err, "API Key validation failed")
-		assert.Nil(t, exp)
-	})
-	t.Run("fail_on_invalid_key is false", func(t *testing.T) {
-		c.API.FailOnInvalidKey = false
-		ctx := context.Background()
-		exp, err := factory.CreateTracesExporter(
-			ctx,
-			componenttest.NewNopExporterCreateSettings(),
-			cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
-		)
-		assert.Nil(t, err)
-		assert.NotNil(t, exp)
-	})
 }
 
 func TestOnlyMetadata(t *testing.T) {

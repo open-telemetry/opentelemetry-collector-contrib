@@ -34,8 +34,9 @@ func TestTransform(t *testing.T) {
 	ddSp := spanIDToUint64(spanID)
 
 	type args struct {
-		lr  plog.LogRecord
-		res pcommon.Resource
+		lr       plog.LogRecord
+		res      pcommon.Resource
+		sendBody bool
 	}
 	tests := []struct {
 		name string
@@ -142,15 +143,119 @@ func TestTransform(t *testing.T) {
 					otelTraceID:        fmt.Sprintf("%x", string(traceID[:])),
 					ddSpanID:           fmt.Sprintf("%d", ddSp),
 					ddTraceID:          fmt.Sprintf("%d", ddTr),
-
-					"service.name": "otlp_col",
+					"service.name":     "otlp_col",
+				},
+			},
+		},
+		{
+			// here SeverityText should take precedence for datadog status
+			name: "log_with_severity_text_and_severity_number",
+			args: args{
+				lr: func() plog.LogRecord {
+					l := plog.NewLogRecord()
+					l.Attributes().InsertString("app", "test")
+					l.SetSpanID(spanID)
+					l.SetTraceID(traceID)
+					l.Attributes().InsertString(conventions.AttributeServiceName, "otlp_col")
+					l.SetSeverityText("alert")
+					l.SetSeverityNumber(5)
+					return l
+				}(),
+				res: func() pcommon.Resource {
+					r := pcommon.NewResource()
+					return r
+				}(),
+			},
+			want: datadogV2.HTTPLogItem{
+				Message: *datadog.PtrString(""),
+				Service: datadog.PtrString("otlp_col"),
+				AdditionalProperties: map[string]string{
+					"app":              "test",
+					"status":           "alert",
+					otelSeverityText:   "alert",
+					otelSeverityNumber: "5",
+					otelSpanID:         fmt.Sprintf("%x", string(spanID[:])),
+					otelTraceID:        fmt.Sprintf("%x", string(traceID[:])),
+					ddSpanID:           fmt.Sprintf("%d", ddSp),
+					ddTraceID:          fmt.Sprintf("%d", ddTr),
+					"service.name":     "otlp_col",
+				},
+			},
+		},
+		{
+			// here SeverityText should take precedence for datadog status
+			name: "log_with_severity_text_and_severity_number",
+			args: args{
+				lr: func() plog.LogRecord {
+					l := plog.NewLogRecord()
+					l.Attributes().InsertString("app", "test")
+					l.SetSpanID(spanID)
+					l.SetTraceID(traceID)
+					l.Attributes().InsertString(conventions.AttributeServiceName, "otlp_col")
+					l.SetSeverityText("alert")
+					l.SetSeverityNumber(5)
+					return l
+				}(),
+				res: func() pcommon.Resource {
+					r := pcommon.NewResource()
+					return r
+				}(),
+			},
+			want: datadogV2.HTTPLogItem{
+				Message: *datadog.PtrString(""),
+				Service: datadog.PtrString("otlp_col"),
+				AdditionalProperties: map[string]string{
+					"app":              "test",
+					"status":           "alert",
+					otelSeverityText:   "alert",
+					otelSeverityNumber: "5",
+					otelSpanID:         fmt.Sprintf("%x", string(spanID[:])),
+					otelTraceID:        fmt.Sprintf("%x", string(traceID[:])),
+					ddSpanID:           fmt.Sprintf("%d", ddSp),
+					ddTraceID:          fmt.Sprintf("%d", ddTr),
+					"service.name":     "otlp_col",
+				},
+			},
+		},
+		{
+			name: "log_send_message",
+			args: args{
+				lr: func() plog.LogRecord {
+					l := plog.NewLogRecord()
+					l.Attributes().InsertString("app", "test")
+					l.SetSpanID(spanID)
+					l.SetTraceID(traceID)
+					l.Attributes().InsertString(conventions.AttributeServiceName, "otlp_col")
+					l.SetSeverityNumber(13)
+					l.Body().SetStringVal("This is log")
+					return l
+				}(),
+				res: func() pcommon.Resource {
+					r := pcommon.NewResource()
+					return r
+				}(),
+				sendBody: true,
+			},
+			want: datadogV2.HTTPLogItem{
+				Message: *datadog.PtrString(""),
+				Service: datadog.PtrString("otlp_col"),
+				AdditionalProperties: map[string]string{
+					"message":          "This is log",
+					"app":              "test",
+					"status":           "warn",
+					otelSeverityNumber: "13",
+					otelSpanID:         fmt.Sprintf("%x", string(spanID[:])),
+					otelTraceID:        fmt.Sprintf("%x", string(traceID[:])),
+					ddSpanID:           fmt.Sprintf("%d", ddSp),
+					ddTraceID:          fmt.Sprintf("%d", ddTr),
+					"service.name":     "otlp_col",
 				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := Transform(tt.args.lr, tt.args.res)
+			got := Transform(tt.args.lr, tt.args.res, tt.args.sendBody)
 
 			gs, err := got.MarshalJSON()
 			if err != nil {

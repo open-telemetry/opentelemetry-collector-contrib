@@ -53,7 +53,7 @@ const (
 )
 
 // Transform is responsible to convert LogRecord to datadog format
-func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
+func Transform(lr plog.LogRecord, res pcommon.Resource, sendLogRecordBody bool) datadogV2.HTTPLogItem {
 	hostName, serviceName := extractHostNameAndServiceName(res.Attributes(), lr.Attributes())
 
 	l := datadogV2.HTTPLogItem{
@@ -82,21 +82,31 @@ func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
 	}
 	var status string
 
-	if lr.SeverityNumber() != 0 {
-		status = derviveDdStatusFromSeverityNumber(lr.SeverityNumber())
-		l.AdditionalProperties[otelSeverityNumber] = fmt.Sprintf("%d", lr.SeverityNumber())
-	} else if lr.SeverityText() != "" {
+	// we want to use the serverity that client has set on the log and let datadog backend
+	// decide the appropriate level
+	if lr.SeverityText() != "" {
 		status = lr.SeverityText()
 		l.AdditionalProperties[otelSeverityText] = lr.SeverityText()
+	} else if lr.SeverityNumber() != 0 {
+		status = derviveDdStatusFromSeverityNumber(lr.SeverityNumber())
 	}
 
 	l.AdditionalProperties[ddStatus] = status
+	// if SeverityNumber is set , we want to retain it
+	if lr.SeverityNumber() != 0 {
+		l.AdditionalProperties[otelSeverityNumber] = fmt.Sprintf("%d", lr.SeverityNumber())
+	}
 
 	// for datadog to use the same timestamp we need to set the additional property of "@timestamp"
 	if lr.Timestamp() != 0 {
 		// we are retaining the nano second precision in this property
 		l.AdditionalProperties[otelTimestamp] = fmt.Sprintf("%d", lr.Timestamp())
 		l.AdditionalProperties[ddTimestamp] = lr.Timestamp().AsTime().Format(time.RFC3339)
+	}
+
+	if sendLogRecordBody {
+		// set the Message
+		l.Message = lr.Body().AsString()
 	}
 
 	var tags = attributes.TagsFromAttributes(res.Attributes())

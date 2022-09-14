@@ -247,6 +247,12 @@ type LogsConfig struct {
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send logs to.
 	// If unset, the value is obtained from the Site.
 	confignet.TCPAddr `mapstructure:",squash"`
+
+	// SendLogRecordBody when enabled would send string representation of body field of log record as message to Datadog
+	// By default this is disabled , as we want to parse the body string into attributes
+	// Set this to true, if we are unable to parse body or we want use datadog backend for parsing
+	// It is essential for Log Trace correlation to work, that we parse the body before reaching exporter.
+	SendLogRecordBody bool `mapstructure:"send_log_record_body"`
 }
 
 // TagsConfig defines the tag-related configuration
