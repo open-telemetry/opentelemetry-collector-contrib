@@ -507,7 +507,7 @@ func (m *metricVcenterClusterHostCount) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertBool("effective", hostEffectiveAttributeValue)
+	dp.Attributes().PutBool("effective", hostEffectiveAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -713,7 +713,7 @@ func (m *metricVcenterClusterVMCount) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("power_state", vmCountPowerStateAttributeValue)
+	dp.Attributes().PutString("power_state", vmCountPowerStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -766,7 +766,7 @@ func (m *metricVcenterDatastoreDiskUsage) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("disk_state", diskStateAttributeValue)
+	dp.Attributes().PutString("disk_state", diskStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -966,7 +966,7 @@ func (m *metricVcenterHostDiskLatencyAvg) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", diskDirectionAttributeValue)
+	dp.Attributes().PutString("direction", diskDirectionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1166,7 +1166,7 @@ func (m *metricVcenterHostDiskThroughput) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", diskDirectionAttributeValue)
+	dp.Attributes().PutString("direction", diskDirectionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1421,7 +1421,7 @@ func (m *metricVcenterHostNetworkPacketCount) recordDataPoint(start pcommon.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", throughputDirectionAttributeValue)
+	dp.Attributes().PutString("direction", throughputDirectionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1576,7 +1576,7 @@ func (m *metricVcenterHostNetworkPacketErrors) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", throughputDirectionAttributeValue)
+	dp.Attributes().PutString("direction", throughputDirectionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1731,7 +1731,7 @@ func (m *metricVcenterHostNetworkThroughput) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", throughputDirectionAttributeValue)
+	dp.Attributes().PutString("direction", throughputDirectionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2139,8 +2139,8 @@ func (m *metricVcenterVMDiskLatencyAvg) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", diskDirectionAttributeValue)
-	dp.Attributes().UpsertString("disk_type", diskTypeAttributeValue)
+	dp.Attributes().PutString("direction", diskDirectionAttributeValue)
+	dp.Attributes().PutString("disk_type", diskTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2191,7 +2191,7 @@ func (m *metricVcenterVMDiskLatencyAvgRead) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("disk_type", diskTypeAttributeValue)
+	dp.Attributes().PutString("disk_type", diskTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2242,7 +2242,7 @@ func (m *metricVcenterVMDiskLatencyAvgWrite) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("disk_type", diskTypeAttributeValue)
+	dp.Attributes().PutString("disk_type", diskTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2395,7 +2395,7 @@ func (m *metricVcenterVMDiskUsage) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("disk_state", diskStateAttributeValue)
+	dp.Attributes().PutString("disk_state", diskStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2599,7 +2599,7 @@ func (m *metricVcenterVMNetworkPacketCount) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", throughputDirectionAttributeValue)
+	dp.Attributes().PutString("direction", throughputDirectionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2754,7 +2754,7 @@ func (m *metricVcenterVMNetworkThroughput) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", throughputDirectionAttributeValue)
+	dp.Attributes().PutString("direction", throughputDirectionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3083,42 +3083,42 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithVcenterClusterName sets provided value as "vcenter.cluster.name" attribute for current resource.
 func WithVcenterClusterName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("vcenter.cluster.name", val)
+		rm.Resource().Attributes().PutString("vcenter.cluster.name", val)
 	}
 }
 
 // WithVcenterDatastoreName sets provided value as "vcenter.datastore.name" attribute for current resource.
 func WithVcenterDatastoreName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("vcenter.datastore.name", val)
+		rm.Resource().Attributes().PutString("vcenter.datastore.name", val)
 	}
 }
 
 // WithVcenterHostName sets provided value as "vcenter.host.name" attribute for current resource.
 func WithVcenterHostName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("vcenter.host.name", val)
+		rm.Resource().Attributes().PutString("vcenter.host.name", val)
 	}
 }
 
 // WithVcenterResourcePoolName sets provided value as "vcenter.resource_pool.name" attribute for current resource.
 func WithVcenterResourcePoolName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("vcenter.resource_pool.name", val)
+		rm.Resource().Attributes().PutString("vcenter.resource_pool.name", val)
 	}
 }
 
 // WithVcenterVMID sets provided value as "vcenter.vm.id" attribute for current resource.
 func WithVcenterVMID(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("vcenter.vm.id", val)
+		rm.Resource().Attributes().PutString("vcenter.vm.id", val)
 	}
 }
 
 // WithVcenterVMName sets provided value as "vcenter.vm.name" attribute for current resource.
 func WithVcenterVMName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("vcenter.vm.name", val)
+		rm.Resource().Attributes().PutString("vcenter.vm.name", val)
 	}
 }
 

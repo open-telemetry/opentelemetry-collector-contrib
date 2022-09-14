@@ -48,14 +48,14 @@ func BenchmarkConvertFromPdataComplex(b *testing.B) {
 }
 
 func fillBaseMap(m pcommon.Map) {
-	arr := m.UpsertEmptySlice("slice")
+	arr := m.PutEmptySlice("slice")
 	arr.AppendEmpty().SetStringVal("666")
 	arr.AppendEmpty().SetStringVal("777")
-	m.UpsertBool("bool", true)
-	m.UpsertInt("int", 123)
-	m.UpsertDouble("double", 12.34)
-	m.UpsertString("string", "hello")
-	m.UpsertEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{0xa1, 0xf0, 0x02, 0xff})
+	m.PutBool("bool", true)
+	m.PutInt("int", 123)
+	m.PutDouble("double", 12.34)
+	m.PutString("string", "hello")
+	m.PutEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{0xa1, 0xf0, 0x02, 0xff})
 }
 
 func complexPdataForNDifferentHosts(count int, n int) plog.Logs {
@@ -67,8 +67,8 @@ func complexPdataForNDifferentHosts(count int, n int) plog.Logs {
 
 		resource := rls.Resource()
 		fillBaseMap(resource.Attributes())
-		fillBaseMap(resource.Attributes().UpsertEmptyMap("object"))
-		resource.Attributes().UpsertString("host", fmt.Sprintf("host-%d", i%n))
+		fillBaseMap(resource.Attributes().PutEmptyMap("object"))
+		resource.Attributes().PutString("host", fmt.Sprintf("host-%d", i%n))
 
 		scopeLog := rls.ScopeLogs().AppendEmpty()
 		scopeLog.Scope().SetName("myScope")
@@ -90,9 +90,9 @@ func complexPdataForNDifferentHosts(count int, n int) plog.Logs {
 		lr.Attributes().Remove("host")
 
 		fillBaseMap(lr.Body().SetEmptyMapVal())
-		level1 := lr.Body().MapVal().UpsertEmptyMap("object")
+		level1 := lr.Body().MapVal().PutEmptyMap("object")
 		fillBaseMap(level1)
-		level2 := level1.UpsertEmptyMap("object")
+		level2 := level1.PutEmptyMap("object")
 		fillBaseMap(level2)
 		level2.Remove("bytes")
 	}

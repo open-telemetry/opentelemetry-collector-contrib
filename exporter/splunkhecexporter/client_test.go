@@ -84,8 +84,8 @@ func createMetricsData(numberOfDataPoints int) pmetric.Metrics {
 	doubleVal := 1234.5678
 	metrics := pmetric.NewMetrics()
 	rm := metrics.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().UpsertString("k0", "v0")
-	rm.Resource().Attributes().UpsertString("k1", "v1")
+	rm.Resource().Attributes().PutString("k0", "v0")
+	rm.Resource().Attributes().PutString("k1", "v1")
 
 	for i := 0; i < numberOfDataPoints; i++ {
 		tsUnix := time.Unix(int64(i), int64(i)*time.Millisecond.Nanoseconds())
@@ -96,10 +96,10 @@ func createMetricsData(numberOfDataPoints int) pmetric.Metrics {
 		doublePt := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
 		doublePt.SetDoubleVal(doubleVal)
-		doublePt.Attributes().UpsertString("k/n0", "vn0")
-		doublePt.Attributes().UpsertString("k/n1", "vn1")
-		doublePt.Attributes().UpsertString("k/r0", "vr0")
-		doublePt.Attributes().UpsertString("k/r1", "vr1")
+		doublePt.Attributes().PutString("k/n0", "vn0")
+		doublePt.Attributes().PutString("k/n1", "vn1")
+		doublePt.Attributes().PutString("k/r0", "vr0")
+		doublePt.Attributes().PutString("k/r1", "vr1")
 	}
 
 	return metrics
@@ -108,7 +108,7 @@ func createMetricsData(numberOfDataPoints int) pmetric.Metrics {
 func createTraceData(numberOfTraces int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().UpsertString("resource", "R1")
+	rs.Resource().Attributes().PutString("resource", "R1")
 	ils := rs.ScopeSpans().AppendEmpty()
 	ils.Spans().EnsureCapacity(numberOfTraces)
 	for i := 0; i < numberOfTraces; i++ {
@@ -155,12 +155,12 @@ func createLogDataWithCustomLibraries(numResources int, libraries []string, numR
 				ts := pcommon.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
 				logRecord := sl.LogRecords().AppendEmpty()
 				logRecord.Body().SetStringVal("mylog")
-				logRecord.Attributes().UpsertString(splunk.DefaultNameLabel, fmt.Sprintf("%d_%d_%d", i, j, k))
-				logRecord.Attributes().UpsertString(splunk.DefaultSourceLabel, "myapp")
-				logRecord.Attributes().UpsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
-				logRecord.Attributes().UpsertString(splunk.DefaultIndexLabel, "myindex")
-				logRecord.Attributes().UpsertString(conventions.AttributeHostName, "myhost")
-				logRecord.Attributes().UpsertString("custom", "custom")
+				logRecord.Attributes().PutString(splunk.DefaultNameLabel, fmt.Sprintf("%d_%d_%d", i, j, k))
+				logRecord.Attributes().PutString(splunk.DefaultSourceLabel, "myapp")
+				logRecord.Attributes().PutString(splunk.DefaultSourceTypeLabel, "myapp-type")
+				logRecord.Attributes().PutString(splunk.DefaultIndexLabel, "myindex")
+				logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
+				logRecord.Attributes().PutString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 			}
 		}

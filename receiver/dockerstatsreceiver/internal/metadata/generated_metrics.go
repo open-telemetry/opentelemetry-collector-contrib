@@ -302,9 +302,9 @@ func (m *metricContainerBlockioIoMergedRecursive) recordDataPoint(start pcommon.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().UpsertString("operation", operationAttributeValue)
+	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().PutString("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -357,9 +357,9 @@ func (m *metricContainerBlockioIoQueuedRecursive) recordDataPoint(start pcommon.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().UpsertString("operation", operationAttributeValue)
+	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().PutString("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -412,9 +412,9 @@ func (m *metricContainerBlockioIoServiceBytesRecursive) recordDataPoint(start pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().UpsertString("operation", operationAttributeValue)
+	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().PutString("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -467,9 +467,9 @@ func (m *metricContainerBlockioIoServiceTimeRecursive) recordDataPoint(start pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().UpsertString("operation", operationAttributeValue)
+	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().PutString("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -522,9 +522,9 @@ func (m *metricContainerBlockioIoServicedRecursive) recordDataPoint(start pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().UpsertString("operation", operationAttributeValue)
+	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().PutString("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -577,9 +577,9 @@ func (m *metricContainerBlockioIoTimeRecursive) recordDataPoint(start pcommon.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().UpsertString("operation", operationAttributeValue)
+	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().PutString("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -632,9 +632,9 @@ func (m *metricContainerBlockioIoWaitTimeRecursive) recordDataPoint(start pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().UpsertString("operation", operationAttributeValue)
+	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().PutString("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -687,9 +687,9 @@ func (m *metricContainerBlockioSectorsRecursive) recordDataPoint(start pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().UpsertString("operation", operationAttributeValue)
+	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().PutString("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -995,7 +995,7 @@ func (m *metricContainerCPUUsagePercpu) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("core", coreAttributeValue)
+	dp.Attributes().PutString("core", coreAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3137,7 +3137,7 @@ func (m *metricContainerNetworkIoUsageRxBytes) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("interface", interfaceAttributeValue)
+	dp.Attributes().PutString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3190,7 +3190,7 @@ func (m *metricContainerNetworkIoUsageRxDropped) recordDataPoint(start pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("interface", interfaceAttributeValue)
+	dp.Attributes().PutString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3243,7 +3243,7 @@ func (m *metricContainerNetworkIoUsageRxErrors) recordDataPoint(start pcommon.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("interface", interfaceAttributeValue)
+	dp.Attributes().PutString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3296,7 +3296,7 @@ func (m *metricContainerNetworkIoUsageRxPackets) recordDataPoint(start pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("interface", interfaceAttributeValue)
+	dp.Attributes().PutString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3349,7 +3349,7 @@ func (m *metricContainerNetworkIoUsageTxBytes) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("interface", interfaceAttributeValue)
+	dp.Attributes().PutString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3402,7 +3402,7 @@ func (m *metricContainerNetworkIoUsageTxDropped) recordDataPoint(start pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("interface", interfaceAttributeValue)
+	dp.Attributes().PutString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3455,7 +3455,7 @@ func (m *metricContainerNetworkIoUsageTxErrors) recordDataPoint(start pcommon.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("interface", interfaceAttributeValue)
+	dp.Attributes().PutString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3508,7 +3508,7 @@ func (m *metricContainerNetworkIoUsageTxPackets) recordDataPoint(start pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("interface", interfaceAttributeValue)
+	dp.Attributes().PutString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3710,35 +3710,35 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithContainerHostname sets provided value as "container.hostname" attribute for current resource.
 func WithContainerHostname(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("container.hostname", val)
+		rm.Resource().Attributes().PutString("container.hostname", val)
 	}
 }
 
 // WithContainerID sets provided value as "container.id" attribute for current resource.
 func WithContainerID(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("container.id", val)
+		rm.Resource().Attributes().PutString("container.id", val)
 	}
 }
 
 // WithContainerImageName sets provided value as "container.image.name" attribute for current resource.
 func WithContainerImageName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("container.image.name", val)
+		rm.Resource().Attributes().PutString("container.image.name", val)
 	}
 }
 
 // WithContainerName sets provided value as "container.name" attribute for current resource.
 func WithContainerName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("container.name", val)
+		rm.Resource().Attributes().PutString("container.name", val)
 	}
 }
 
 // WithContainerRuntime sets provided value as "container.runtime" attribute for current resource.
 func WithContainerRuntime(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("container.runtime", val)
+		rm.Resource().Attributes().PutString("container.runtime", val)
 	}
 }
 

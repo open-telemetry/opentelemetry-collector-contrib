@@ -87,11 +87,11 @@ func (dp *perfTestDataProvider) GenerateTraces() (ptrace.Traces, bool) {
 		span.SetName("load-generator-span")
 		span.SetKind(ptrace.SpanKindClient)
 		attrs := span.Attributes()
-		attrs.UpsertInt("load_generator.span_seq_num", int64(spanID))
-		attrs.UpsertInt("load_generator.trace_seq_num", int64(traceID))
+		attrs.PutInt("load_generator.span_seq_num", int64(spanID))
+		attrs.PutInt("load_generator.trace_seq_num", int64(traceID))
 		// Additional attributes.
 		for k, v := range dp.options.Attributes {
-			attrs.UpsertString(k, v)
+			attrs.PutString(k, v)
 		}
 		span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 		span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
@@ -109,7 +109,7 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pmetric.Metrics, bool) {
 		attrs := rm.Resource().Attributes()
 		attrs.EnsureCapacity(len(dp.options.Attributes))
 		for k, v := range dp.options.Attributes {
-			attrs.UpsertString(k, v)
+			attrs.PutString(k, v)
 		}
 	}
 	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
@@ -128,8 +128,8 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pmetric.Metrics, bool) {
 			dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 			value := dp.dataItemsGenerated.Inc()
 			dataPoint.SetIntVal(int64(value))
-			dataPoint.Attributes().UpsertString("item_index", "item_"+strconv.Itoa(j))
-			dataPoint.Attributes().UpsertString("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))
+			dataPoint.Attributes().PutString("item_index", "item_"+strconv.Itoa(j))
+			dataPoint.Attributes().PutString("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))
 		}
 	}
 	return md, false
@@ -142,7 +142,7 @@ func (dp *perfTestDataProvider) GenerateLogs() (plog.Logs, bool) {
 		attrs := rl.Resource().Attributes()
 		attrs.EnsureCapacity(len(dp.options.Attributes))
 		for k, v := range dp.options.Attributes {
-			attrs.UpsertString(k, v)
+			attrs.PutString(k, v)
 		}
 	}
 	logRecords := rl.ScopeLogs().AppendEmpty().LogRecords()
@@ -162,12 +162,12 @@ func (dp *perfTestDataProvider) GenerateLogs() (plog.Logs, bool) {
 		record.SetTimestamp(now)
 
 		attrs := record.Attributes()
-		attrs.UpsertString("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))
-		attrs.UpsertString("item_index", "item_"+strconv.Itoa(int(itemIndex)))
-		attrs.UpsertString("a", "test")
-		attrs.UpsertDouble("b", 5.0)
-		attrs.UpsertInt("c", 3)
-		attrs.UpsertBool("d", true)
+		attrs.PutString("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))
+		attrs.PutString("item_index", "item_"+strconv.Itoa(int(itemIndex)))
+		attrs.PutString("a", "test")
+		attrs.PutDouble("b", 5.0)
+		attrs.PutInt("c", 3)
+		attrs.PutBool("d", true)
 	}
 	return logs, false
 }

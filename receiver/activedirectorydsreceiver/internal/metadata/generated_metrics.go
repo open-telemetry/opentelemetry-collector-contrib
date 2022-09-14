@@ -311,7 +311,7 @@ func (m *metricActiveDirectoryDsBindRate) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().UpsertString("type", bindTypeAttributeValue)
+	dp.Attributes().PutString("type", bindTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -666,7 +666,7 @@ func (m *metricActiveDirectoryDsOperationRate) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().UpsertString("type", operationTypeAttributeValue)
+	dp.Attributes().PutString("type", operationTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -719,8 +719,8 @@ func (m *metricActiveDirectoryDsReplicationNetworkIo) recordDataPoint(start pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", directionAttributeValue)
-	dp.Attributes().UpsertString("type", networkDataTypeAttributeValue)
+	dp.Attributes().PutString("direction", directionAttributeValue)
+	dp.Attributes().PutString("type", networkDataTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -773,7 +773,7 @@ func (m *metricActiveDirectoryDsReplicationObjectRate) recordDataPoint(start pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().UpsertString("direction", directionAttributeValue)
+	dp.Attributes().PutString("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -877,7 +877,7 @@ func (m *metricActiveDirectoryDsReplicationPropertyRate) recordDataPoint(start p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().UpsertString("direction", directionAttributeValue)
+	dp.Attributes().PutString("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -981,7 +981,7 @@ func (m *metricActiveDirectoryDsReplicationSyncRequestCount) recordDataPoint(sta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("result", syncResultAttributeValue)
+	dp.Attributes().PutString("result", syncResultAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1034,8 +1034,8 @@ func (m *metricActiveDirectoryDsReplicationValueRate) recordDataPoint(start pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().UpsertString("direction", directionAttributeValue)
-	dp.Attributes().UpsertString("type", valueTypeAttributeValue)
+	dp.Attributes().PutString("direction", directionAttributeValue)
+	dp.Attributes().PutString("type", valueTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1139,7 +1139,7 @@ func (m *metricActiveDirectoryDsSuboperationRate) recordDataPoint(start pcommon.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().UpsertString("type", suboperationTypeAttributeValue)
+	dp.Attributes().PutString("type", suboperationTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
