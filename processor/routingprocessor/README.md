@@ -53,8 +53,7 @@ exporters:
 
 ### Tech Preview: Telemetry Query Language expressions as routing conditions
 
-Alternatively, it is possible to use subset of the [Telemetry Query Language (TQL)](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#telemetry-query-language)
-expressions as routing conditions.
+Alternatively, it is possible to use subset of the [Telemetry Query Language (TQL)](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#telemetry-query-language) expressions as routing conditions.
 
 To configure the routing processor with [TQL] routing conditions use the following options:
 
@@ -71,31 +70,26 @@ processors:
     default_exporters:
     - jaeger
     table:
-      - expression: route() where resource.attributes["X-Tenant"] == "value"
-        exporters: [jaeger/1]
-      - expression: delete_key(resource.attributes, "X-Tenant") where IsMatch(resource.attributes["X-Tenant"], ".*cme") == true
-        exporters: [jaeger/2]
+      - expression: route() where resource.attributes["X-Tenant"] == "acme"
+        exporters: [jaeger/acme]
+      - expression: delete_key(resource.attributes, "X-Tenant") where IsMatch(resource.attributes["X-Tenant"], ".*corp") == true
+        exporters: [jaeger/ecorp]
 
 exporters:
   jaeger:
     endpoint: localhost:14250
-  jaeger/1:
+  jaeger/acme:
     endpoint: localhost:24250
-  jaeger/2:
+  jaeger/ecorp:
     endpoint: localhost:34250
 ```
 
-It is also possible to use both the conventional routing items configuration and
-the routing items with [TQL] conditions.
+It is also possible to use both the conventional routing items configuration and the routing items with [TQL] conditions.
 
 #### Limitations:
 
 - [TQL] expressions can be applied only to resource attributes.
-- Currently, it is not possible to specify the boolean expression without function
-invocation as the routing condition. It is required to provide the NOOP `route()`
-or any other supported function as part of the routing expression, see
-[#13545](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13545)
-for more information.
+- Currently, it is not possible to specify the boolean expression without function invocation as the routing condition. It is required to provide the NOOP `route()` or any other supported function as part of the routing expression, see [#13545](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13545) for more information.
 - Supported [TQL] functions:
   - [IsMatch](../../pkg/telemetryquerylanguage/functions/tqlcommon/README.md#IsMatch)
   - [delete_key](../../pkg/telemetryquerylanguage/functions/tqlotel/README.md#delete_key)

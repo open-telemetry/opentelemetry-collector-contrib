@@ -120,12 +120,12 @@ func TestValidateConfig(t *testing.T) {
 				Table: []RoutingTableItem{
 					{
 						Exporters:  []string{"otlp"},
-						Value:      "value",
-						Expression: `route() where resource.attributes["attr"] == "value"`,
+						Value:      "acme",
+						Expression: `route() where resource.attributes["attr"] == "acme"`,
 					},
 				},
 			},
-			error: "both expression and value provided",
+			error: "invalid route: both expression (route() where resource.attributes[\"attr\"] == \"acme\") and value (acme) provided",
 		},
 		{
 			name: "neither expression or value provided",
@@ -178,7 +178,7 @@ func TestRewriteLegacyConfigToTQL(t *testing.T) {
 				Table: []RoutingTableItem{
 					{
 						Exporters: []string{"otlp"},
-						Value:     "value",
+						Value:     "acme",
 					},
 				},
 			},
@@ -186,7 +186,7 @@ func TestRewriteLegacyConfigToTQL(t *testing.T) {
 				Table: []RoutingTableItem{
 					{
 						Exporters:  []string{"otlp"},
-						Expression: `route() where resource.attributes["attr"] == "value"`,
+						Expression: `route() where resource.attributes["attr"] == "acme"`,
 					},
 				},
 			},
@@ -199,11 +199,11 @@ func TestRewriteLegacyConfigToTQL(t *testing.T) {
 				Table: []RoutingTableItem{
 					{
 						Exporters: []string{"otlp"},
-						Value:     "value",
+						Value:     "acme",
 					},
 					{
 						Exporters: []string{"otlp/2"},
-						Value:     "value2",
+						Value:     "ecorp",
 					},
 				},
 			},
@@ -211,11 +211,11 @@ func TestRewriteLegacyConfigToTQL(t *testing.T) {
 				Table: []RoutingTableItem{
 					{
 						Exporters:  []string{"otlp"},
-						Expression: `route() where resource.attributes["attr"] == "value"`,
+						Expression: `route() where resource.attributes["attr"] == "acme"`,
 					},
 					{
 						Exporters:  []string{"otlp/2"},
-						Expression: `route() where resource.attributes["attr"] == "value2"`,
+						Expression: `route() where resource.attributes["attr"] == "ecorp"`,
 					},
 				},
 			},
@@ -229,7 +229,7 @@ func TestRewriteLegacyConfigToTQL(t *testing.T) {
 				Table: []RoutingTableItem{
 					{
 						Exporters: []string{"otlp"},
-						Value:     "value",
+						Value:     "acme",
 					},
 				},
 			},
@@ -237,7 +237,7 @@ func TestRewriteLegacyConfigToTQL(t *testing.T) {
 				Table: []RoutingTableItem{
 					{
 						Exporters:  []string{"otlp"},
-						Expression: `delete_key(resource.attributes, "attr") where resource.attributes["attr"] == "value"`,
+						Expression: `delete_key(resource.attributes, "attr") where resource.attributes["attr"] == "acme"`,
 					},
 				},
 			},
@@ -250,7 +250,7 @@ func TestRewriteLegacyConfigToTQL(t *testing.T) {
 				Table: []RoutingTableItem{
 					{
 						Exporters: []string{"otlp"},
-						Value:     "value",
+						Value:     "acme",
 					},
 				},
 			},
@@ -260,7 +260,7 @@ func TestRewriteLegacyConfigToTQL(t *testing.T) {
 				Table: []RoutingTableItem{
 					{
 						Exporters: []string{"otlp"},
-						Value:     "value",
+						Value:     "acme",
 					},
 				},
 			},
@@ -273,11 +273,11 @@ func TestRewriteLegacyConfigToTQL(t *testing.T) {
 				Table: []RoutingTableItem{
 					{
 						Exporters: []string{"otlp"},
-						Value:     "value",
+						Value:     "acme",
 					},
 					{
 						Exporters:  []string{"otlp/2"},
-						Expression: `route() where resource.attributes["attr"] == "value2"`,
+						Expression: `route() where resource.attributes["attr"] == "ecorp"`,
 					},
 				},
 			},
@@ -285,11 +285,11 @@ func TestRewriteLegacyConfigToTQL(t *testing.T) {
 				Table: []RoutingTableItem{
 					{
 						Exporters:  []string{"otlp"},
-						Expression: `route() where resource.attributes["attr"] == "value"`,
+						Expression: `route() where resource.attributes["attr"] == "acme"`,
 					},
 					{
 						Exporters:  []string{"otlp/2"},
-						Expression: `route() where resource.attributes["attr"] == "value2"`,
+						Expression: `route() where resource.attributes["attr"] == "ecorp"`,
 					},
 				},
 			},
@@ -297,7 +297,7 @@ func TestRewriteLegacyConfigToTQL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, rewriteRoutingEntriesToTQL(&tt.config))
+			assert.Equal(t, tt.want, *rewriteRoutingEntriesToTQL(&tt.config))
 		})
 	}
 }

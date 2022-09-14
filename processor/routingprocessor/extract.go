@@ -23,7 +23,7 @@ import (
 )
 
 // extractor is responsible for extracting configured attributes from the processed data.
-// Currently it can be extract the attributes from context.
+// Currently, it can only extract the attributes from context.
 type extractor struct {
 	fromAttr string
 	logger   *zap.Logger

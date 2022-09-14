@@ -32,7 +32,7 @@ var _ component.LogsProcessor = (*logProcessor)(nil)
 
 type logProcessor struct {
 	logger *zap.Logger
-	config Config
+	config *Config
 
 	extractor extractor
 	router    router[component.LogsExporter]

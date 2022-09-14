@@ -32,7 +32,7 @@ var _ component.TracesProcessor = (*tracesProcessor)(nil)
 
 type tracesProcessor struct {
 	logger *zap.Logger
-	config Config
+	config *Config
 
 	extractor extractor
 	router    router[component.TracesExporter]

@@ -78,7 +78,7 @@ func (c *Config) Validate() error {
 		}
 
 		if len(item.Value) != 0 && len(item.Expression) != 0 {
-			return fmt.Errorf("both expression and value provided")
+			return fmt.Errorf("invalid route: both expression (%s) and value (%s) provided", item.Expression, item.Value)
 		}
 
 		if len(item.Exporters) == 0 {
@@ -113,9 +113,11 @@ const (
 // RoutingTableItem specifies how data should be routed to the different exporters
 type RoutingTableItem struct {
 	// Value represents a possible value for the field specified under FromAttribute.
+	// Required when 'Expression' isn't provided.
 	Value string `mapstructure:"value"`
 
-	// Expression is a TQL condition / query on which signals routing is based.
+	// Expression is a TQL expression on which signals routing is based.
+	// Required when 'Value' isn't provided.
 	Expression string `mapstructure:"expression"`
 
 	// Exporters contains the list of exporters to use when the value from the FromAttribute field matches this table item.
@@ -125,13 +127,12 @@ type RoutingTableItem struct {
 	Exporters []string `mapstructure:"exporters"`
 }
 
-// rewriteRoutingItemsToTQL rewrites routing table entries based on resource
-// attributes routing to TQL.
-func rewriteRoutingEntriesToTQL(cfg *Config) Config {
+// rewriteRoutingItemsToTQL translates the attributes-based routing into TQL
+func rewriteRoutingEntriesToTQL(cfg *Config) *Config {
 	if cfg.AttributeSource != resourceAttributeSource {
-		return *cfg
+		return cfg
 	}
-	table := make([]RoutingTableItem, 0)
+	table := make([]RoutingTableItem, 0, len(cfg.Table))
 	for _, e := range cfg.Table {
 		if e.Expression != "" {
 			table = append(table, e)
@@ -160,7 +161,7 @@ func rewriteRoutingEntriesToTQL(cfg *Config) Config {
 			Exporters:  e.Exporters,
 		})
 	}
-	return Config{
+	return &Config{
 		DefaultExporters: cfg.DefaultExporters,
 		Table:            table,
 	}
