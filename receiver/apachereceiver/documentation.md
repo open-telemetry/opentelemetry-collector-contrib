@@ -9,11 +9,8 @@ These are the metrics available for this scraper.
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
 | **apache.bytes_per_second** | The average number of bytes per second. | By/s | Gauge(Double) | <ul> <li>server_name</li> </ul> |
-| **apache.cpu_children_system** | Jiffies used in system mode by children processes. | s | Gauge(Double) | <ul> <li>server_name</li> </ul> |
-| **apache.cpu_children_user** | Jiffies used in user mode by children processes. | s | Gauge(Double) | <ul> <li>server_name</li> </ul> |
+| **apache.cpu.time** | Jiffs used by processes of given category. | {jiff} | Sum(Double) | <ul> <li>server_name</li> <li>cpu_level</li> <li>cpu_mode</li> </ul> |
 | **apache.cpu_load** | Current load of the CPU. | {load} | Sum(Double) | <ul> <li>server_name</li> </ul> |
-| **apache.cpu_system** | Jiffies used in system mode. | s | Gauge(Double) | <ul> <li>server_name</li> </ul> |
-| **apache.cpu_user** | Jiffies used in user mode. | s | Gauge(Double) | <ul> <li>server_name</li> </ul> |
 | **apache.current_connections** | The number of active connections currently attached to the HTTP server. | {connections} | Sum(Int) | <ul> <li>server_name</li> </ul> |
 | **apache.load.1** | The average server load during the last minute. | {load} | Gauge(Double) | <ul> <li>server_name</li> </ul> |
 | **apache.load.15** | The average server load during the last 15 minutes. | {load} | Gauge(Double) | <ul> <li>server_name</li> </ul> |
@@ -41,6 +38,8 @@ metrics:
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
+| cpu_level (level) | Level of processes. | self, children |
+| cpu_mode (mode) | Mode of processes. | system, user |
 | scoreboard_state (state) | The state of a connection. | open, waiting, starting, reading, sending, keepalive, dnslookup, closing, logging, finishing, idle_cleanup, unknown |
 | server_name | The name of the Apache HTTP server. |  |
 | workers_state (state) | The state of workers. | busy, idle |

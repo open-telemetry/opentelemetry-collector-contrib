@@ -98,13 +98,25 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		case "BytesPerSec":
 			addPartialIfError(errs, r.mb.RecordApacheBytesPerSecondDataPoint(now, metricValue, r.cfg.serverName))
 		case "CPUChildrenSystem":
-			addPartialIfError(errs, r.mb.RecordApacheCPUChildrenSystemDataPoint(now, metricValue, r.cfg.serverName))
+			addPartialIfError(
+				errs,
+				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, r.cfg.serverName, metadata.AttributeCPULevelChildren, metadata.AttributeCPUModeSystem),
+			)
 		case "CPUChildrenUser":
-			addPartialIfError(errs, r.mb.RecordApacheCPUChildrenUserDataPoint(now, metricValue, r.cfg.serverName))
+			addPartialIfError(
+				errs,
+				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, r.cfg.serverName, metadata.AttributeCPULevelChildren, metadata.AttributeCPUModeUser),
+			)
 		case "CPUSystem":
-			addPartialIfError(errs, r.mb.RecordApacheCPUSystemDataPoint(now, metricValue, r.cfg.serverName))
+			addPartialIfError(
+				errs,
+				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, r.cfg.serverName, metadata.AttributeCPULevelSelf, metadata.AttributeCPUModeSystem),
+			)
 		case "CPUUser":
-			addPartialIfError(errs, r.mb.RecordApacheCPUUserDataPoint(now, metricValue, r.cfg.serverName))
+			addPartialIfError(
+				errs,
+				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, r.cfg.serverName, metadata.AttributeCPULevelSelf, metadata.AttributeCPUModeUser),
+			)
 		case "CPULoad":
 			addPartialIfError(errs, r.mb.RecordApacheCPULoadDataPoint(now, metricValue, r.cfg.serverName))
 		case "DurationPerReq":

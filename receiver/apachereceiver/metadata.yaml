@@ -9,6 +9,18 @@ attributes:
     enum:
       - busy
       - idle
+  cpu_level:
+    value: level
+    description: Level of processes.
+    enum:
+      - self
+      - children
+  cpu_mode:
+    value: mode
+    description: Mode of processes.
+    enum:
+    - system
+    - user
   scoreboard_state:
     value: state
     description: The state of a connection.
@@ -92,38 +104,16 @@ metrics:
       value_type: double
       input_type: string
     attributes: [ server_name ]
-  apache.cpu_children_system:
+  apache.cpu.time:
     enabled: true
-    description: Jiffies used in system mode by children processes.
-    unit: s
-    gauge:
+    description: Jiffs used by processes of given category.
+    unit: "{jiff}"
+    sum:
       value_type: double
       input_type: string
-    attributes: [ server_name ]
-  apache.cpu_children_user:
-    enabled: true
-    description: Jiffies used in user mode by children processes.
-    unit: s
-    gauge:
-      value_type: double
-      input_type: string
-    attributes: [ server_name ]
-  apache.cpu_system:
-    enabled: true
-    description: Jiffies used in system mode.
-    unit: s
-    gauge:
-      value_type: double
-      input_type: string
-    attributes: [ server_name ]
-  apache.cpu_user:
-    enabled: true
-    description: Jiffies used in user mode.
-    unit: s
-    gauge:
-      value_type: double
-      input_type: string
-    attributes: [ server_name ]
+      monotonic: true
+      aggregation: cumulative
+    attributes: [ server_name, cpu_level, cpu_mode ]
   apache.cpu_load:
     enabled: true
     description: Current load of the CPU.
