@@ -287,7 +287,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
+				span.Attributes().UpsertEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
 			},
 		},
 		{
@@ -554,7 +554,7 @@ func createTelemetry() (ptrace.Span, pcommon.InstrumentationScope, pcommon.Resou
 	span.Attributes().UpsertBool("bool", true)
 	span.Attributes().UpsertInt("int", 10)
 	span.Attributes().UpsertDouble("double", 1.2)
-	span.Attributes().UpsertEmptyBytes("bytes").FromRaw([]byte{1, 3, 2})
+	span.Attributes().UpsertEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{1, 3, 2})
 
 	arrStr := span.Attributes().UpsertEmptySlice("arr_str")
 	arrStr.AppendEmpty().SetStringVal("one")
