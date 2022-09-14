@@ -151,7 +151,7 @@ func TestScopePathGetSetter(t *testing.T) {
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
 			modified: func(is pcommon.InstrumentationScope) {
-				is.Attributes().PutEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
+				is.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
 		},
 		{
@@ -274,7 +274,7 @@ func createInstrumentationScope() pcommon.InstrumentationScope {
 	is.Attributes().PutBool("bool", true)
 	is.Attributes().PutInt("int", 10)
 	is.Attributes().PutDouble("double", 1.2)
-	is.Attributes().PutEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{1, 3, 2})
+	is.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{1, 3, 2})
 
 	arrStr := is.Attributes().PutEmptySlice("arr_str")
 	arrStr.AppendEmpty().SetStringVal("one")

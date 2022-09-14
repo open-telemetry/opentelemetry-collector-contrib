@@ -113,7 +113,7 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	{{- else if eq (attributeInfo .).Type.Primitive "float64" }}
 	dp.Attributes().PutDouble("{{ attributeKey .}}", {{ .RenderUnexported }}AttributeValue)
 	{{- else if eq (attributeInfo .).Type.Primitive "[]byte" }}
-	dp.Attributes().PutEmpty("{{ attributeKey .}}").SetEmptyBytesVal().FromRaw({{ .RenderUnexported }}AttributeValue)
+	dp.Attributes().PutEmptyBytes("{{ attributeKey .}}").FromRaw({{ .RenderUnexported }}AttributeValue)
 	{{- else }}
 	dp.Attributes().PutString("{{ attributeKey .}}", {{ .RenderUnexported }}AttributeValue)
 	{{- end }}
