@@ -42,7 +42,7 @@ func TestScopePathGetSetter(t *testing.T) {
 			orig:   refIS,
 			newVal: pcommon.NewInstrumentationScope(),
 			modified: func(is pcommon.InstrumentationScope) {
-				pcommon.NewInstrumentationScope().CopyTo(is)
+				pcommon.NewInstrumentationScope().MoveTo(is)
 			},
 		},
 		{

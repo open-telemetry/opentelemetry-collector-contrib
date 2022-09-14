@@ -818,7 +818,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			orig:   refExpoHistogramDataPoint.Negative(),
 			newVal: newPositive,
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
-				newPositive.CopyTo(datapoint.Negative())
+				newPositive.MoveTo(datapoint.Negative())
 			},
 		},
 		{
