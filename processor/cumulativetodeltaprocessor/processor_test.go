@@ -361,7 +361,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 						} else {
 							require.Equal(t, eDataPoints.At(j).Sum(), aDataPoints.At(j).Sum())
 						}
-						require.Equal(t, eDataPoints.At(j).BucketCounts().AsRaw(), aDataPoints.At(j).BucketCounts().AsRaw())
+						require.Equal(t, eDataPoints.At(j).BucketCounts(), aDataPoints.At(j).BucketCounts())
 					}
 				}
 			}

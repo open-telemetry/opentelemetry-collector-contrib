@@ -64,24 +64,20 @@ func TestPayloadToLogRecord(t *testing.T) {
 				rl := logs.ResourceLogs().AppendEmpty()
 				lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-				pcommon.NewMapFromRaw(
-					map[string]interface{}{
-						"mongodbatlas.group.id":        "some-group-id",
-						"mongodbatlas.alert.config.id": "123",
-					},
-				).CopyTo(rl.Resource().Attributes())
+				rl.Resource().Attributes().FromRaw(map[string]interface{}{
+					"mongodbatlas.group.id":        "some-group-id",
+					"mongodbatlas.alert.config.id": "123",
+				})
 
-				pcommon.NewMapFromRaw(
-					map[string]interface{}{
-						"created":      "2022-06-03T22:30:31Z",
-						"message":      "Some event happened",
-						"event.domain": "mongodbatlas",
-						"event.name":   "EVENT",
-						"updated":      "2022-06-03T22:30:31Z",
-						"status":       "STATUS",
-						"id":           "some-id",
-					},
-				).CopyTo(lr.Attributes())
+				lr.Attributes().FromRaw(map[string]interface{}{
+					"created":      "2022-06-03T22:30:31Z",
+					"message":      "Some event happened",
+					"event.domain": "mongodbatlas",
+					"event.name":   "EVENT",
+					"updated":      "2022-06-03T22:30:31Z",
+					"status":       "STATUS",
+					"id":           "some-id",
+				})
 
 				lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
 				lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2022, time.June, 3, 22, 30, 31, 0, time.UTC)))
@@ -125,38 +121,34 @@ func TestPayloadToLogRecord(t *testing.T) {
 				rl := logs.ResourceLogs().AppendEmpty()
 				lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-				pcommon.NewMapFromRaw(
-					map[string]interface{}{
-						"mongodbatlas.group.id":         "some-group-id",
-						"mongodbatlas.alert.config.id":  "123",
-						"mongodbatlas.cluster.name":     "cluster-name",
-						"mongodbatlas.replica_set.name": "replica-set",
-					},
-				).CopyTo(rl.Resource().Attributes())
+				rl.Resource().Attributes().FromRaw(map[string]interface{}{
+					"mongodbatlas.group.id":         "some-group-id",
+					"mongodbatlas.alert.config.id":  "123",
+					"mongodbatlas.cluster.name":     "cluster-name",
+					"mongodbatlas.replica_set.name": "replica-set",
+				})
 
-				pcommon.NewMapFromRaw(
-					map[string]interface{}{
-						"acknowledgement.comment":  "Scheduled maintenance",
-						"acknowledgement.until":    "2022-06-03T22:32:34Z",
-						"acknowledgement.username": "devops",
-						"created":                  "2022-06-03T22:30:31Z",
-						"event.name":               "EVENT",
-						"event.domain":             "mongodbatlas",
-						"id":                       "some-id",
-						"last_notified":            "2022-06-03T22:30:33Z",
-						"message":                  "Some event happened",
-						"metric.name":              "my-metric",
-						"metric.units":             "RAW",
-						"metric.value":             float64(14),
-						"net.peer.name":            "my-host.mongodb.com",
-						"net.peer.port":            4923,
-						"resolved":                 "2022-06-03T22:30:34Z",
-						"status":                   "STATUS",
-						"type_name":                "type-name",
-						"updated":                  "2022-06-03T22:30:35Z",
-						"user_alias":               "user-alias",
-					},
-				).CopyTo(lr.Attributes())
+				lr.Attributes().FromRaw(map[string]interface{}{
+					"acknowledgement.comment":  "Scheduled maintenance",
+					"acknowledgement.until":    "2022-06-03T22:32:34Z",
+					"acknowledgement.username": "devops",
+					"created":                  "2022-06-03T22:30:31Z",
+					"event.name":               "EVENT",
+					"event.domain":             "mongodbatlas",
+					"id":                       "some-id",
+					"last_notified":            "2022-06-03T22:30:33Z",
+					"message":                  "Some event happened",
+					"metric.name":              "my-metric",
+					"metric.units":             "RAW",
+					"metric.value":             float64(14),
+					"net.peer.name":            "my-host.mongodb.com",
+					"net.peer.port":            4923,
+					"resolved":                 "2022-06-03T22:30:34Z",
+					"status":                   "STATUS",
+					"type_name":                "type-name",
+					"updated":                  "2022-06-03T22:30:35Z",
+					"user_alias":               "user-alias",
+				})
 
 				lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
 				lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2022, time.June, 3, 22, 30, 35, 0, time.UTC)))

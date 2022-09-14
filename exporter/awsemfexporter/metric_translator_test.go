@@ -2473,7 +2473,7 @@ func generateTestMetrics(tm testMetric) pmetric.Metrics {
 	now := time.Now()
 
 	rm := md.ResourceMetrics().AppendEmpty()
-	pcommon.NewMapFromRaw(tm.resourceAttributeMap).CopyTo(rm.Resource().Attributes())
+	rm.Resource().Attributes().FromRaw(tm.resourceAttributeMap)
 	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 
 	for i, name := range tm.metricNames {
@@ -2484,7 +2484,7 @@ func generateTestMetrics(tm testMetric) pmetric.Metrics {
 			dp := g.DataPoints().AppendEmpty()
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(10 * time.Second)))
 			dp.SetDoubleVal(value)
-			pcommon.NewMapFromRaw(tm.attributeMap).CopyTo(dp.Attributes())
+			dp.Attributes().FromRaw(tm.attributeMap)
 		}
 	}
 	return md

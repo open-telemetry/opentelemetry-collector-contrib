@@ -374,11 +374,11 @@ func spanWithKind(kind ptrace.SpanKind) ptrace.Span {
 	return span
 }
 
-func spanWithTraceState(state ptrace.TraceState) ptrace.Span {
+func spanWithTraceState(state string) ptrace.Span {
 	span := ptrace.NewSpan()
 	span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
 	span.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
-	span.SetTraceState(state)
+	span.TraceStateStruct().FromRaw(state)
 	return span
 }
 
