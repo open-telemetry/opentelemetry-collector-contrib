@@ -20,7 +20,6 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -50,7 +49,7 @@ func Test_RawMarshaler(t *testing.T) {
 			name: "[]byte",
 			logRecord: func() plog.LogRecord {
 				lr := plog.NewLogRecord()
-				lr.Body().SetBytesVal(pcommon.NewImmutableByteSlice([]byte("foo")))
+				lr.Body().SetEmptyBytesVal().FromRaw([]byte("foo"))
 				return lr
 			},
 			errorExpected: false,
