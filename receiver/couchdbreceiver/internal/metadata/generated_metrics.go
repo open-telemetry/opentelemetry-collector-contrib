@@ -279,7 +279,7 @@ func (m *metricCouchdbDatabaseOperations) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("operation", operationAttributeValue)
+	dp.Attributes().PutString("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -434,7 +434,7 @@ func (m *metricCouchdbHttpdRequests) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("http.method", httpMethodAttributeValue)
+	dp.Attributes().PutString("http.method", httpMethodAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -487,7 +487,7 @@ func (m *metricCouchdbHttpdResponses) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("http.status_code", httpStatusCodeAttributeValue)
+	dp.Attributes().PutString("http.status_code", httpStatusCodeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -540,7 +540,7 @@ func (m *metricCouchdbHttpdViews) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("view", viewAttributeValue)
+	dp.Attributes().PutString("view", viewAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -632,7 +632,7 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithCouchdbNodeName sets provided value as "couchdb.node.name" attribute for current resource.
 func WithCouchdbNodeName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("couchdb.node.name", val)
+		rm.Resource().Attributes().PutString("couchdb.node.name", val)
 	}
 }
 

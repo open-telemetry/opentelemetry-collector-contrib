@@ -71,7 +71,7 @@ func TestAttributesMapToOC(t *testing.T) {
 		DroppedAttributesCount: 234,
 	}
 	attrs := pcommon.NewMap()
-	attrs.UpsertString("abc", "def")
+	attrs.PutString("abc", "def")
 	assert.EqualValues(t, ocAttrs, attributesMapToOCSpanAttributes(attrs, 234))
 
 	ocAttrs.AttributeMap["intval"] = &octrace.AttributeValue{
@@ -135,13 +135,13 @@ func TestAttributesMapTOOcSameProcessAsParentSpan(t *testing.T) {
 	attr := pcommon.NewMap()
 	assert.Nil(t, attributesMapToOCSameProcessAsParentSpan(attr))
 
-	attr.UpsertBool(occonventions.AttributeSameProcessAsParentSpan, true)
+	attr.PutBool(occonventions.AttributeSameProcessAsParentSpan, true)
 	assert.True(t, proto.Equal(wrapperspb.Bool(true), attributesMapToOCSameProcessAsParentSpan(attr)))
 
-	attr.UpsertBool(occonventions.AttributeSameProcessAsParentSpan, false)
+	attr.PutBool(occonventions.AttributeSameProcessAsParentSpan, false)
 	assert.True(t, proto.Equal(wrapperspb.Bool(false), attributesMapToOCSameProcessAsParentSpan(attr)))
 
-	attr.UpsertInt(occonventions.AttributeSameProcessAsParentSpan, 13)
+	attr.PutInt(occonventions.AttributeSameProcessAsParentSpan, 13)
 	assert.Nil(t, attributesMapToOCSameProcessAsParentSpan(attr))
 }
 

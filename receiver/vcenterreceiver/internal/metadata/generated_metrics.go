@@ -507,7 +507,7 @@ func (m *metricVcenterClusterHostCount) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertBool("effective", hostEffectiveAttributeValue)
+	dp.Attributes().PutBool("effective", hostEffectiveAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -713,7 +713,7 @@ func (m *metricVcenterClusterVMCount) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("power_state", vmCountPowerStateAttributeValue)
+	dp.Attributes().PutString("power_state", vmCountPowerStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -766,7 +766,7 @@ func (m *metricVcenterDatastoreDiskUsage) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("disk_state", diskStateAttributeValue)
+	dp.Attributes().PutString("disk_state", diskStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -966,7 +966,7 @@ func (m *metricVcenterHostDiskLatencyAvg) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", diskDirectionAttributeValue)
+	dp.Attributes().PutString("direction", diskDirectionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1151,7 +1151,7 @@ type metricVcenterHostDiskThroughput struct {
 func (m *metricVcenterHostDiskThroughput) init() {
 	m.data.SetName("vcenter.host.disk.throughput")
 	m.data.SetDescription("Average number of kilobytes read from or written to the disk each second.")
-	m.data.SetUnit("{KBy/s}")
+	m.data.SetUnit("{KiBy/s}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1166,7 +1166,7 @@ func (m *metricVcenterHostDiskThroughput) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", diskDirectionAttributeValue)
+	dp.Attributes().PutString("direction", diskDirectionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1204,7 +1204,7 @@ type metricVcenterHostDiskThroughputRead struct {
 func (m *metricVcenterHostDiskThroughputRead) init() {
 	m.data.SetName("vcenter.host.disk.throughput.read")
 	m.data.SetDescription("Average number of kilobytes read from the disk each second.")
-	m.data.SetUnit("{KBy/s}")
+	m.data.SetUnit("{KiBy/s}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1255,7 +1255,7 @@ type metricVcenterHostDiskThroughputWrite struct {
 func (m *metricVcenterHostDiskThroughputWrite) init() {
 	m.data.SetName("vcenter.host.disk.throughput.write")
 	m.data.SetDescription("Average number of kilobytes written to the disk each second.")
-	m.data.SetUnit("{KBy/s}")
+	m.data.SetUnit("{KiBy/s}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1306,7 +1306,7 @@ type metricVcenterHostMemoryUsage struct {
 func (m *metricVcenterHostMemoryUsage) init() {
 	m.data.SetName("vcenter.host.memory.usage")
 	m.data.SetDescription("The amount of memory the host system is using.")
-	m.data.SetUnit("MBy")
+	m.data.SetUnit("MiBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1421,7 +1421,7 @@ func (m *metricVcenterHostNetworkPacketCount) recordDataPoint(start pcommon.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", throughputDirectionAttributeValue)
+	dp.Attributes().PutString("direction", throughputDirectionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1576,7 +1576,7 @@ func (m *metricVcenterHostNetworkPacketErrors) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", throughputDirectionAttributeValue)
+	dp.Attributes().PutString("direction", throughputDirectionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1716,7 +1716,7 @@ type metricVcenterHostNetworkThroughput struct {
 func (m *metricVcenterHostNetworkThroughput) init() {
 	m.data.SetName("vcenter.host.network.throughput")
 	m.data.SetDescription("The amount of data that was transmitted or received over the network by the host.")
-	m.data.SetUnit("{KBy/s}")
+	m.data.SetUnit("{KiBy/s}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1731,7 +1731,7 @@ func (m *metricVcenterHostNetworkThroughput) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", throughputDirectionAttributeValue)
+	dp.Attributes().PutString("direction", throughputDirectionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1769,7 +1769,7 @@ type metricVcenterHostNetworkThroughputReceive struct {
 func (m *metricVcenterHostNetworkThroughputReceive) init() {
 	m.data.SetName("vcenter.host.network.throughput.receive")
 	m.data.SetDescription("The amount of data that was received over the network by the host.")
-	m.data.SetUnit("{KBy/s}")
+	m.data.SetUnit("{KiBy/s}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1820,7 +1820,7 @@ type metricVcenterHostNetworkThroughputTransmit struct {
 func (m *metricVcenterHostNetworkThroughputTransmit) init() {
 	m.data.SetName("vcenter.host.network.throughput.transmit")
 	m.data.SetDescription("The amount of data that was transmitted over the network by the host.")
-	m.data.SetUnit("{KBy/s}")
+	m.data.SetUnit("{KiBy/s}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1871,7 +1871,7 @@ type metricVcenterHostNetworkUsage struct {
 func (m *metricVcenterHostNetworkUsage) init() {
 	m.data.SetName("vcenter.host.network.usage")
 	m.data.SetDescription("The sum of the data transmitted and received for all the NIC instances of the host.")
-	m.data.SetUnit("{KBy/s}")
+	m.data.SetUnit("{KiBy/s}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2075,7 +2075,7 @@ type metricVcenterResourcePoolMemoryUsage struct {
 func (m *metricVcenterResourcePoolMemoryUsage) init() {
 	m.data.SetName("vcenter.resource_pool.memory.usage")
 	m.data.SetDescription("The usage of the memory by the resource pool.")
-	m.data.SetUnit("MBy")
+	m.data.SetUnit("MiBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2139,8 +2139,8 @@ func (m *metricVcenterVMDiskLatencyAvg) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", diskDirectionAttributeValue)
-	dp.Attributes().UpsertString("disk_type", diskTypeAttributeValue)
+	dp.Attributes().PutString("direction", diskDirectionAttributeValue)
+	dp.Attributes().PutString("disk_type", diskTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2191,7 +2191,7 @@ func (m *metricVcenterVMDiskLatencyAvgRead) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("disk_type", diskTypeAttributeValue)
+	dp.Attributes().PutString("disk_type", diskTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2242,7 +2242,7 @@ func (m *metricVcenterVMDiskLatencyAvgWrite) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("disk_type", diskTypeAttributeValue)
+	dp.Attributes().PutString("disk_type", diskTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2395,7 +2395,7 @@ func (m *metricVcenterVMDiskUsage) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("disk_state", diskStateAttributeValue)
+	dp.Attributes().PutString("disk_state", diskStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2533,7 +2533,7 @@ type metricVcenterVMMemoryUsage struct {
 func (m *metricVcenterVMMemoryUsage) init() {
 	m.data.SetName("vcenter.vm.memory.usage")
 	m.data.SetDescription("The amount of memory that is used by the virtual machine.")
-	m.data.SetUnit("MBy")
+	m.data.SetUnit("MiBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2599,7 +2599,7 @@ func (m *metricVcenterVMNetworkPacketCount) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", throughputDirectionAttributeValue)
+	dp.Attributes().PutString("direction", throughputDirectionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2754,7 +2754,7 @@ func (m *metricVcenterVMNetworkThroughput) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", throughputDirectionAttributeValue)
+	dp.Attributes().PutString("direction", throughputDirectionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2894,7 +2894,7 @@ type metricVcenterVMNetworkUsage struct {
 func (m *metricVcenterVMNetworkUsage) init() {
 	m.data.SetName("vcenter.vm.network.usage")
 	m.data.SetDescription("The network utilization combined transmit and receive rates during an interval.")
-	m.data.SetUnit("{KBy/s}")
+	m.data.SetUnit("{KiBy/s}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -3083,42 +3083,42 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithVcenterClusterName sets provided value as "vcenter.cluster.name" attribute for current resource.
 func WithVcenterClusterName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("vcenter.cluster.name", val)
+		rm.Resource().Attributes().PutString("vcenter.cluster.name", val)
 	}
 }
 
 // WithVcenterDatastoreName sets provided value as "vcenter.datastore.name" attribute for current resource.
 func WithVcenterDatastoreName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("vcenter.datastore.name", val)
+		rm.Resource().Attributes().PutString("vcenter.datastore.name", val)
 	}
 }
 
 // WithVcenterHostName sets provided value as "vcenter.host.name" attribute for current resource.
 func WithVcenterHostName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("vcenter.host.name", val)
+		rm.Resource().Attributes().PutString("vcenter.host.name", val)
 	}
 }
 
 // WithVcenterResourcePoolName sets provided value as "vcenter.resource_pool.name" attribute for current resource.
 func WithVcenterResourcePoolName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("vcenter.resource_pool.name", val)
+		rm.Resource().Attributes().PutString("vcenter.resource_pool.name", val)
 	}
 }
 
 // WithVcenterVMID sets provided value as "vcenter.vm.id" attribute for current resource.
 func WithVcenterVMID(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("vcenter.vm.id", val)
+		rm.Resource().Attributes().PutString("vcenter.vm.id", val)
 	}
 }
 
 // WithVcenterVMName sets provided value as "vcenter.vm.name" attribute for current resource.
 func WithVcenterVMName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("vcenter.vm.name", val)
+		rm.Resource().Attributes().PutString("vcenter.vm.name", val)
 	}
 }
 

@@ -65,9 +65,9 @@ func (mdp *MetricsDataPoint) CopyTo(dataPoint pmetric.NumberDataPoint) {
 
 	attributes := dataPoint.Attributes()
 	attributes.EnsureCapacity(3 + len(mdp.labelValues))
-	attributes.UpsertString(projectIDLabelName, mdp.databaseID.ProjectID())
-	attributes.UpsertString(instanceIDLabelName, mdp.databaseID.InstanceID())
-	attributes.UpsertString(databaseLabelName, mdp.databaseID.DatabaseName())
+	attributes.PutString(projectIDLabelName, mdp.databaseID.ProjectID())
+	attributes.PutString(instanceIDLabelName, mdp.databaseID.InstanceID())
+	attributes.PutString(databaseLabelName, mdp.databaseID.DatabaseName())
 	for i := range mdp.labelValues {
 		mdp.labelValues[i].SetValueTo(attributes)
 	}

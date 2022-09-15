@@ -55,23 +55,23 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 		sort.Strings(keys)
 		for _, key := range keys {
 			val := event.Fields[key]
-			err := convertToValue(logger, val, logRecord.Attributes().UpsertEmpty(key))
+			err := convertToValue(logger, val, logRecord.Attributes().PutEmpty(key))
 			if err != nil {
 				return ld, err
 			}
 		}
 
 		if event.Host != "" {
-			logRecord.Attributes().UpsertString(config.HecToOtelAttrs.Host, event.Host)
+			logRecord.Attributes().PutString(config.HecToOtelAttrs.Host, event.Host)
 		}
 		if event.Source != "" {
-			logRecord.Attributes().UpsertString(config.HecToOtelAttrs.Source, event.Source)
+			logRecord.Attributes().PutString(config.HecToOtelAttrs.Source, event.Source)
 		}
 		if event.SourceType != "" {
-			logRecord.Attributes().UpsertString(config.HecToOtelAttrs.SourceType, event.SourceType)
+			logRecord.Attributes().PutString(config.HecToOtelAttrs.SourceType, event.SourceType)
 		}
 		if event.Index != "" {
-			logRecord.Attributes().UpsertString(config.HecToOtelAttrs.Index, event.Index)
+			logRecord.Attributes().PutString(config.HecToOtelAttrs.Index, event.Index)
 		}
 		if resourceCustomizer != nil {
 			resourceCustomizer(rl.Resource())
@@ -124,7 +124,7 @@ func convertToAttributeMap(logger *zap.Logger, value map[string]interface{}, des
 	sort.Strings(keys)
 	for _, k := range keys {
 		v := value[k]
-		if err := convertToValue(logger, v, attrMap.UpsertEmpty(k)); err != nil {
+		if err := convertToValue(logger, v, attrMap.PutEmpty(k)); err != nil {
 			return err
 		}
 	}

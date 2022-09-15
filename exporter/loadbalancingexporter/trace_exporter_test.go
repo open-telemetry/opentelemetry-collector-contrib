@@ -593,7 +593,7 @@ func simpleTraceWithServiceName(id pcommon.TraceID) ptrace.Traces {
 
 func fillResource(resource pcommon.Resource, svc string) {
 	attrs := resource.Attributes()
-	attrs.UpsertString("service.name", svc)
+	attrs.PutString("service.name", svc)
 }
 
 func simpleConfig() *Config {

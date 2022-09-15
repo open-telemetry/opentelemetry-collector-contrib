@@ -48,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, testdataConfigYaml(), cfg.Receivers[config.NewComponentID("journald")])
 }
 
-func TestDecodeInputConfigFailure(t *testing.T) {
+func TestInputConfigFailure(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	factory := NewFactory()
 	badCfg := &JournaldConfig{

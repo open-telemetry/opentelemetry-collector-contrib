@@ -34,12 +34,12 @@ import (
 func TestMetricsToOC(t *testing.T) {
 	sampleMetricData := testdata.GeneratMetricsAllTypesWithSampleDatapoints()
 	attrs := sampleMetricData.ResourceMetrics().At(0).Resource().Attributes()
-	attrs.UpsertString(conventions.AttributeHostName, "host1")
-	attrs.UpsertInt(conventions.AttributeProcessPID, 123)
-	attrs.UpsertString(occonventions.AttributeProcessStartTime, "2020-02-11T20:26:00Z")
-	attrs.UpsertString(conventions.AttributeTelemetrySDKLanguage, "cpp")
-	attrs.UpsertString(conventions.AttributeTelemetrySDKVersion, "v2.0.1")
-	attrs.UpsertString(occonventions.AttributeExporterVersion, "v1.2.0")
+	attrs.PutString(conventions.AttributeHostName, "host1")
+	attrs.PutInt(conventions.AttributeProcessPID, 123)
+	attrs.PutString(occonventions.AttributeProcessStartTime, "2020-02-11T20:26:00Z")
+	attrs.PutString(conventions.AttributeTelemetrySDKLanguage, "cpp")
+	attrs.PutString(conventions.AttributeTelemetrySDKVersion, "v2.0.1")
+	attrs.PutString(occonventions.AttributeExporterVersion, "v1.2.0")
 
 	tests := []struct {
 		name     string

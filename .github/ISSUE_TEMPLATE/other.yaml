@@ -1,0 +1,10 @@
+name: Other issue
+description: Create a report to help us improve the collector
+labels: ["needs triage"]
+body:
+  - type: textarea
+    attributes:
+      label: Describe the issue you're reporting
+      description: A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+    validations:
+      required: true

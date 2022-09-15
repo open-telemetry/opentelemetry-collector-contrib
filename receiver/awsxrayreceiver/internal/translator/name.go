@@ -56,7 +56,7 @@ func addNameAndNamespace(seg *awsxray.Segment, span ptrace.Span) error {
 	switch *seg.Namespace {
 	case validAWSNamespace:
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/segment.go#L116
-		attrs.UpsertString(awsxray.AWSServiceAttribute, *seg.Name)
+		attrs.PutString(awsxray.AWSServiceAttribute, *seg.Name)
 
 	case validRemoteNamespace:
 		// no op

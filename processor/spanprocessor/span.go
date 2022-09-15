@@ -198,7 +198,7 @@ func (sp *spanProcessor) processToAttributes(span ptrace.Span) {
 		// We will go over submatches and will simultaneously build a new span name,
 		// replacing matched subexpressions by attribute names.
 		for i := 1; i < len(submatches); i++ {
-			attrs.UpsertString(rule.attrNames[i], submatches[i])
+			attrs.PutString(rule.attrNames[i], submatches[i])
 
 			// Add part of span name from end of previous match to start of this match
 			// and then add attribute name wrapped in curly brackets.

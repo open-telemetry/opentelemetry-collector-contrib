@@ -34,9 +34,9 @@ func TestCauseWithExceptions(t *testing.T) {
 
 	event1 := span.Events().AppendEmpty()
 	event1.SetName(ExceptionEventName)
-	event1.Attributes().UpsertString(conventions.AttributeExceptionType, "java.lang.IllegalStateException")
-	event1.Attributes().UpsertString(conventions.AttributeExceptionMessage, "bad state")
-	event1.Attributes().UpsertString(conventions.AttributeExceptionStacktrace, `java.lang.IllegalStateException: state is not legal
+	event1.Attributes().PutString(conventions.AttributeExceptionType, "java.lang.IllegalStateException")
+	event1.Attributes().PutString(conventions.AttributeExceptionMessage, "bad state")
+	event1.Attributes().PutString(conventions.AttributeExceptionStacktrace, `java.lang.IllegalStateException: state is not legal
 	at io.opentelemetry.sdk.trace.RecordEventsReadableSpanTest.recordException(RecordEventsReadableSpanTest.java:626)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
@@ -44,12 +44,12 @@ Caused by: java.lang.IllegalArgumentException: bad argument`)
 
 	event2 := span.Events().AppendEmpty()
 	event2.SetName(ExceptionEventName)
-	event2.Attributes().UpsertString(conventions.AttributeExceptionType, "EmptyError")
+	event2.Attributes().PutString(conventions.AttributeExceptionType, "EmptyError")
 
 	filtered, _ := makeHTTP(span)
 
 	res := pcommon.NewResource()
-	res.Attributes().UpsertString(conventions.AttributeTelemetrySDKLanguage, "java")
+	res.Attributes().PutString(conventions.AttributeTelemetrySDKLanguage, "java")
 	isError, isFault, isThrottle, filteredResult, cause := makeCause(span, filtered, res)
 
 	assert.True(t, isFault)
@@ -93,14 +93,14 @@ Caused by: java.lang.IllegalArgumentException: bad argument`
 
 	event1 := span.Events().AppendEmpty()
 	event1.SetName(ExceptionEventName)
-	event1.Attributes().UpsertString(conventions.AttributeExceptionType, "java.lang.IllegalStateException")
-	event1.Attributes().UpsertString(conventions.AttributeExceptionMessage, "bad state")
-	event1.Attributes().UpsertString(conventions.AttributeExceptionStacktrace, exceptionStack)
+	event1.Attributes().PutString(conventions.AttributeExceptionType, "java.lang.IllegalStateException")
+	event1.Attributes().PutString(conventions.AttributeExceptionMessage, "bad state")
+	event1.Attributes().PutString(conventions.AttributeExceptionStacktrace, exceptionStack)
 
 	filtered, _ := makeHTTP(span)
 
 	res := pcommon.NewResource()
-	res.Attributes().UpsertString(conventions.AttributeTelemetrySDKLanguage, "java")
+	res.Attributes().PutString(conventions.AttributeTelemetrySDKLanguage, "java")
 	isError, isFault, isThrottle, filteredResult, cause := makeCause(span, filtered, res)
 
 	assert.False(t, isFault)
@@ -133,12 +133,12 @@ func EventWithoutExceptionWithoutErrorHelper(t *testing.T, statusCode ptrace.Sta
 
 	event1 := span.Events().AppendEmpty()
 	event1.SetName("NotException")
-	event1.Attributes().UpsertString(conventions.AttributeHTTPMethod, "Post")
+	event1.Attributes().PutString(conventions.AttributeHTTPMethod, "Post")
 
 	filtered, _ := makeHTTP(span)
 
 	res := pcommon.NewResource()
-	res.Attributes().UpsertString(conventions.AttributeTelemetrySDKLanguage, "java")
+	res.Attributes().PutString(conventions.AttributeTelemetrySDKLanguage, "java")
 	isError, isFault, isThrottle, filteredResult, cause := makeCause(span, filtered, res)
 
 	assert.False(t, isFault)

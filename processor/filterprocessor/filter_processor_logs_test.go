@@ -636,7 +636,7 @@ func testResourceLogs(lwrs []logWithResource) plog.Logs {
 			l := ls.AppendEmpty()
 			// Add record level attributes
 			l.Attributes().FromRaw(lwrs[i].recordAttributes)
-			l.Attributes().UpsertString("name", name)
+			l.Attributes().PutString("name", name)
 			// Set body & severity fields
 			l.Body().SetStringVal(lwr.body)
 			l.SetSeverityText(lwr.severityText)
