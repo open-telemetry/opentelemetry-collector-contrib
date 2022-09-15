@@ -10,7 +10,7 @@ require (
 
 require (
 	github.com/hashicorp/go-version v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.59.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.60.0
 	github.com/testcontainers/testcontainers-go v0.14.0
 	go.mongodb.org/mongo-driver v1.10.2
 	go.opentelemetry.io/collector/pdata v0.59.1-0.20220914173239-9df807d51dad

@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/awspr
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.59.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.59.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.60.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.60.0
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.59.1-0.20220914173239-9df807d51dad
 	go.uber.org/zap v1.23.0
