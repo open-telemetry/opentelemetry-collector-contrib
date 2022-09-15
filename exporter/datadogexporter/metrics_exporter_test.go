@@ -338,7 +338,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 	}
 }
 
-func TestPrependSystemMetrics(t *testing.T) {
+func TestPrepareSystemMetrics(t *testing.T) {
 	var once sync.Once
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	exp, err := newMetricsExporter(
@@ -353,6 +353,7 @@ func TestPrependSystemMetrics(t *testing.T) {
 	)
 	require.NoError(t, err)
 	sptr := func(s string) *string { return &s }
+	dptr := func(d int) *int { return &d }
 	ms := []datadog.Metric{
 		{Metric: sptr("system.something")},
 		{Metric: sptr("process.something")},
@@ -375,13 +376,16 @@ func TestPrependSystemMetrics(t *testing.T) {
 		{Metric: sptr("system.mem.total")},
 		{Metric: sptr("system.cpu.stolen")},
 		{Metric: sptr("system.cpu.iowait")},
+		{Metric: sptr("system.cpu.system")},
 		{Metric: sptr("system.cpu.user")},
 		{Metric: sptr("system.cpu.idle")},
+		{Metric: sptr("system.swap.free")},
+		{Metric: sptr("system.swap.used")},
 		{Metric: sptr("system.load.15")},
 		{Metric: sptr("system.load.5")},
 		{Metric: sptr("system.load.1")},
 	}
-	exp.prependSystemMetrics(ms)
+	exp.prepareSystemMetrics(ms)
 	require.EqualValues(t, ms, []datadog.Metric{
 		{Metric: sptr("otel.system.something")},
 		{Metric: sptr("otel.process.something")},
@@ -398,17 +402,20 @@ func TestPrependSystemMetrics(t *testing.T) {
 		{Metric: sptr("systemd.metric.name")},
 		{Metric: sptr("random.metric.name")},
 		{Metric: sptr("system.disk.in_use")},
-		{Metric: sptr("system.net.bytes_sent"), Type: sptr("gauge")},
-		{Metric: sptr("system.net.bytes_rcvd"), Type: sptr("gauge")},
-		{Metric: sptr("system.mem.usable")},
-		{Metric: sptr("system.mem.total")},
+		{Metric: sptr("system.net.bytes_sent"), Type: sptr("gauge"), Interval: dptr(1)},
+		{Metric: sptr("system.net.bytes_rcvd"), Type: sptr("gauge"), Interval: dptr(1)},
+		{Metric: sptr("system.mem.usable"), Interval: dptr(1)},
+		{Metric: sptr("system.mem.total"), Interval: dptr(1)},
 		{Metric: sptr("system.cpu.stolen")},
 		{Metric: sptr("system.cpu.iowait")},
-		{Metric: sptr("system.cpu.user")},
-		{Metric: sptr("system.cpu.idle")},
-		{Metric: sptr("system.load.15")},
-		{Metric: sptr("system.load.5")},
-		{Metric: sptr("system.load.1")},
+		{Metric: sptr("system.cpu.system"), Interval: dptr(1)},
+		{Metric: sptr("system.cpu.user"), Interval: dptr(1)},
+		{Metric: sptr("system.cpu.idle"), Interval: dptr(1)},
+		{Metric: sptr("system.swap.free"), Interval: dptr(1)},
+		{Metric: sptr("system.swap.used"), Interval: dptr(1)},
+		{Metric: sptr("system.load.15"), Interval: dptr(1)},
+		{Metric: sptr("system.load.5"), Interval: dptr(1)},
+		{Metric: sptr("system.load.1"), Interval: dptr(1)},
 	})
 }
 

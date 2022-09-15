@@ -171,9 +171,11 @@ func (exp *metricsExporter) PushMetricsDataScrubbed(ctx context.Context, md pmet
 // otelNamespacePrefix specifies the namespace used for OpenTelemetry host metrics.
 const otelNamespacePrefix = "otel."
 
-// prependSystemMetrics prepends system hosts metrics with the otel.* prefix to identify
+// prepareSystemMetrics prepends system hosts metrics with the otel.* prefix to identify
 // them as part of the Datadog OpenTelemetry Integration.
-func (exp *metricsExporter) prependSystemMetrics(ms []datadog.Metric) {
+func (exp *metricsExporter) prepareSystemMetrics(ms []datadog.Metric) {
+	sptr := func(s string) *string { return &s }
+	dptr := func(d int) *int { return &d }
 	for i, m := range ms {
 		name := *m.Metric
 		if !strings.HasPrefix(name, "system.") &&
@@ -189,13 +191,19 @@ func (exp *metricsExporter) prependSystemMetrics(ms []datadog.Metric) {
 				// These two metrics are reported in Datadog as Gauges, but OpenTelemetry
 				// sends them as Counts, so we need to fix this inconsistency here to avoid
 				// bugs in mixed deployments.
-				newtype := "gauge"
-				ms[i].Type = &newtype
+				ms[i].Type = sptr("gauge")
+				fallthrough
+			case "system.load.1", "system.load.5", "system.load.15",
+				"system.cpu.idle", "system.cpu.user", "system.cpu.system",
+				"system.mem.total", "system.mem.usable", "system.swap.free",
+				"system.swap.used":
+				// these need to be interval 1
+				ms[i].Interval = dptr(1)
 			}
 			continue
 		}
-		newname := otelNamespacePrefix + name
-		ms[i].Metric = &newname
+
+		ms[i].Metric = sptr(otelNamespacePrefix + name)
 	}
 }
 
@@ -228,7 +236,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 		tags = append(tags, exp.cfg.HostMetadata.Tags...)
 	}
 	ms, sl := consumer.All(exp.getPushTime(), exp.params.BuildInfo, tags)
-	exp.prependSystemMetrics(ms)
+	exp.prepareSystemMetrics(ms)
 
 	err = nil
 	if len(ms) > 0 {
