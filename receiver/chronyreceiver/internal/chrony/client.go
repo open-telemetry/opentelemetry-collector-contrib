@@ -47,7 +47,7 @@ type clientOption func(c *client)
 type client struct {
 	proto, addr string
 	timeout     time.Duration
-	dialer      func(network, addr string) (net.Conn, error)
+	dialer      func(ctx context.Context, network, addr string) (net.Conn, error)
 }
 
 // New creates a client ready to use with chronyd
@@ -61,11 +61,13 @@ func New(addr string, timeout time.Duration, opts ...clientOption) (Client, erro
 		return nil, err
 	}
 
+	var d net.Dialer
+
 	c := &client{
 		proto:   network,
 		addr:    endpoint,
 		timeout: timeout,
-		dialer:  net.Dial,
+		dialer:  d.DialContext,
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -75,13 +77,22 @@ func New(addr string, timeout time.Duration, opts ...clientOption) (Client, erro
 }
 
 func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
-	sock, err := c.dialer(c.proto, c.addr)
+	clk := clock.FromContext(ctx)
+
+	ctx, cancel := clk.TimeoutContext(ctx, c.timeout)
+	defer cancel()
+
+	sock, err := c.dialer(ctx, c.proto, c.addr)
 	if err != nil {
 		return nil, err
 	}
-	clk := clock.FromContext(ctx)
 
-	if err = sock.SetDeadline(clk.Now().Add(c.timeout)); err != nil {
+	deadline, ok := ctx.Deadline()
+	if !ok {
+		return nil, errors.New("no deadline set")
+	}
+
+	if err = sock.SetDeadline(deadline); err != nil {
 		return nil, err
 	}
 

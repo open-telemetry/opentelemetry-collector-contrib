@@ -78,6 +78,7 @@ func TestGettingTrackingData(t *testing.T) {
 	tests := []struct {
 		scenario string
 		handler  func(conn net.Conn) error
+		dialTime time.Duration
 		timeout  time.Duration
 		data     *Tracking
 		err      error
@@ -140,10 +141,29 @@ func TestGettingTrackingData(t *testing.T) {
 			err: nil,
 		},
 		{
+			scenario: "Timeout waiting for dial",
+			timeout:  10 * time.Millisecond,
+			dialTime: 100 * time.Millisecond,
+			handler: func(conn net.Conn) error {
+				return nil
+			},
+			err: os.ErrDeadlineExceeded,
+		},
+		{
 			scenario: "Timeout waiting for response",
 			timeout:  10 * time.Millisecond,
 			handler: func(conn net.Conn) error {
 				time.Sleep(100 * time.Millisecond)
+				return nil
+			},
+			err: os.ErrDeadlineExceeded,
+		},
+		{
+			scenario: "Timeout waiting for response because of slow dial",
+			timeout:  100 * time.Millisecond,
+			dialTime: 90 * time.Millisecond,
+			handler: func(conn net.Conn) error {
+				time.Sleep(20 * time.Millisecond)
 				return nil
 			},
 			err: os.ErrDeadlineExceeded,
@@ -180,11 +200,14 @@ func TestGettingTrackingData(t *testing.T) {
 		tc := tc
 		t.Run(tc.scenario, func(t *testing.T) {
 			t.Parallel()
-			conn := newMockConn(t, tc.handler)
 
 			client, err := New(fmt.Sprintf("unix://%s", t.TempDir()), tc.timeout, func(c *client) {
-				c.dialer = func(_, _ string) (net.Conn, error) {
-					return conn, nil
+				c.dialer = func(ctx context.Context, _, _ string) (net.Conn, error) {
+					if tc.dialTime > tc.timeout {
+						return nil, os.ErrDeadlineExceeded
+					}
+
+					return newMockConn(t, tc.handler), nil
 				}
 			})
 			require.NoError(t, err, "Must not error when creating client")
