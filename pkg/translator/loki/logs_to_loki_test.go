@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/zap"
 )
 
 func TestLogsToLoki(t *testing.T) {
@@ -81,10 +80,13 @@ func TestLogsToLoki(t *testing.T) {
 			}
 
 			// test
-			pushRequest := LogsToLoki(zap.NewNop(), ld)
+			pushRequest, report := LogsToLoki(ld)
 
 			// actualPushRequest is populated within the test http server, we check it here as assertions are better done at the
 			// end of the test function
+			assert.Empty(t, report.Errors)
+			assert.Equal(t, 0, report.NumDropped)
+			assert.Equal(t, 1, report.NumSubmitted)
 			assert.Len(t, pushRequest.Streams, 1)
 			assert.Equal(t, tC.expectedLabel, pushRequest.Streams[0].Labels)
 

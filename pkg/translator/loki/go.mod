@@ -7,8 +7,6 @@ require (
 	github.com/prometheus/common v0.37.0
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector/pdata v0.59.1-0.20220913184032-98c787a2ab06
-	go.uber.org/multierr v1.7.0
-	go.uber.org/zap v1.19.1
 )
 
 require (
@@ -83,6 +81,8 @@ require (
 	go.etcd.io/etcd/client/pkg/v3 v3.5.0 // indirect
 	go.etcd.io/etcd/client/v3 v3.5.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
+	go.uber.org/multierr v1.7.0 // indirect
+	go.uber.org/zap v1.19.1 // indirect
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
 	golang.org/x/net v0.0.0-20220809184613-07c6da5e1ced // indirect

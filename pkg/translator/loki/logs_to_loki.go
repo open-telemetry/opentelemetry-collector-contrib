@@ -15,18 +15,21 @@
 package loki // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/grafana/loki/pkg/logproto"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/multierr"
-	"go.uber.org/zap"
 )
 
-func LogsToLoki(logger *zap.Logger, ld plog.Logs) (pr *logproto.PushRequest) {
-	var errs error
+type PushReport struct {
+	Errors       []error
+	NumSubmitted int
+	NumDropped   int
+}
+
+func LogsToLoki(ld plog.Logs) (*logproto.PushRequest, *PushReport) {
+	report := &PushReport{}
 
 	streams := make(map[string]*logproto.Stream)
 	rls := ld.ResourceLogs()
@@ -56,17 +59,12 @@ func LogsToLoki(logger *zap.Logger, ld plog.Logs) (pr *logproto.PushRequest) {
 				entry, err := convertLogToJSONEntry(log, resource)
 				if err != nil {
 					// Couldn't convert so dropping log.
-					errs = multierr.Append(
-						errs,
-						errors.New(
-							fmt.Sprint(
-								"failed to convert, dropping log",
-								zap.Error(err),
-							),
-						),
-					)
+					report.Errors = append(report.Errors, fmt.Errorf("failed to convert, dropping log: %w", err))
+					report.NumDropped++
 					continue
 				}
+
+				report.NumSubmitted++
 
 				if stream, ok := streams[labels]; ok {
 					stream.Entries = append(stream.Entries, *entry)
@@ -81,11 +79,7 @@ func LogsToLoki(logger *zap.Logger, ld plog.Logs) (pr *logproto.PushRequest) {
 		}
 	}
 
-	if errs != nil {
-		logger.Debug("some logs has been dropped", zap.Error(errs))
-	}
-
-	pr = &logproto.PushRequest{
+	pr := &logproto.PushRequest{
 		Streams: make([]logproto.Stream, len(streams)),
 	}
 
@@ -95,5 +89,5 @@ func LogsToLoki(logger *zap.Logger, ld plog.Logs) (pr *logproto.PushRequest) {
 		i++
 	}
 
-	return pr
+	return pr, report
 }

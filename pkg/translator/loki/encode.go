@@ -51,7 +51,6 @@ func Encode(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 		Attributes: lr.Attributes().AsRaw(),
 		Resources:  res.Attributes().AsRaw(),
 	}
-	lr.Body().Type()
 
 	jsonRecord, err = json.Marshal(logRecord)
 	if err != nil {
