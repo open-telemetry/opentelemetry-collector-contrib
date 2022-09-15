@@ -68,7 +68,7 @@ func Test_logs_exporter_send_logs(t *testing.T) {
                 "otel.timestamp" : "%d"
 
             }]
-            `, testdata.TestLogTime.Format(time.RFC3339), spanIDToUint64(ld.SpanID().Bytes()), traceIDToUint64(ld.TraceID().Bytes()), ld.SpanID().HexString(), ld.TraceID().HexString(), testdata.TestLogTime.UnixNano())
+            `, testdata.TestLogTime.Format(time.RFC3339), spanIDToUint64(ld.SpanID()), traceIDToUint64(ld.TraceID()), ld.SpanID().HexString(), ld.TraceID().HexString(), testdata.TestLogTime.UnixNano())
 			}(),
 		},
 		{
@@ -94,40 +94,7 @@ func Test_logs_exporter_send_logs(t *testing.T) {
                 "otel.timestamp" : "%d"
 
             }]
-            `, ld.Body().AsString(), testdata.TestLogTime.Format(time.RFC3339), spanIDToUint64(ld.SpanID().Bytes()), traceIDToUint64(ld.TraceID().Bytes()), ld.SpanID().HexString(), ld.TraceID().HexString(), testdata.TestLogTime.UnixNano())
-			}(),
-		},
-		{
-			// Here both log message and message are added
-			// json marshal would pick the later one
-			name: "log_with_message_and_message_attribute",
-			args: args{
-				sendLogRecordBody: true,
-				ld: func() plog.Logs {
-					lr := testdata.GenerateLogsOneLogRecord()
-					ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-					ld.Attributes().InsertString("message", "This is from attribute")
-					return lr
-				}(),
-			},
-			want: func() string {
-				return fmt.Sprintf(`
-            [{
-                "message": "%s",
-                "app" : "server",
-                "instance_num": "1",
-                "@timestamp" :"%s" ,
-                "status" : "Info",
-                "dd.span_id" :"%d",
-                "dd.trace_id" : "%d",
-                "otel.severity_text":"Info",
-                "otel.severity_number":"9",
-                "otel.span_id":"%s",
-                "otel.trace_id" : "%s",
-                "otel.timestamp" : "%d"
-
-            }]
-            `, "This is from attribute", testdata.TestLogTime.Format(time.RFC3339), spanIDToUint64(ld.SpanID().Bytes()), traceIDToUint64(ld.TraceID().Bytes()), ld.SpanID().HexString(), ld.TraceID().HexString(), testdata.TestLogTime.UnixNano())
+            `, ld.Body().AsString(), testdata.TestLogTime.Format(time.RFC3339), spanIDToUint64(ld.SpanID()), traceIDToUint64(ld.TraceID()), ld.SpanID().HexString(), ld.TraceID().HexString(), testdata.TestLogTime.UnixNano())
 			}(),
 		},
 	}
