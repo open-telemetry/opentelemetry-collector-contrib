@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureb
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.59.0
-	go.opentelemetry.io/collector v0.59.1-0.20220914173239-9df807d51dad
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.60.0
+	go.opentelemetry.io/collector v0.60.0
 )
 
 require (
@@ -17,7 +17,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	go.opentelemetry.io/collector/pdata v0.59.1-0.20220914173239-9df807d51dad // indirect
+	go.opentelemetry.io/collector/pdata v0.60.0 // indirect
 	go.opentelemetry.io/otel v1.9.0 // indirect
 	go.opentelemetry.io/otel/metric v0.31.0 // indirect
 	go.opentelemetry.io/otel/trace v1.9.0 // indirect
