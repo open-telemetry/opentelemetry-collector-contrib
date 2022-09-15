@@ -34,6 +34,7 @@ type processMetadata struct {
 	command    *commandMetadata
 	username   string
 	handle     processHandle
+	createTime int64
 }
 
 type executableMetadata struct {
@@ -89,6 +90,7 @@ type processHandle interface {
 	Times() (*cpu.TimesStat, error)
 	MemoryInfo() (*process.MemoryInfoStat, error)
 	IOCounters() (*process.IOCountersStat, error)
+	NumThreads() (int32, error)
 	CreateTime() (int64, error)
 	Parent() (*process.Process, error)
 }

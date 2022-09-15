@@ -35,14 +35,15 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createTraceExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
+func createTraceExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
 	cfg := config.(*Config)
 
 	exporter := newTracesExporter(cfg, set)
 
 	return exporterhelper.NewTracesExporter(
-		config,
+		ctx,
 		set,
+		cfg,
 		exporter.pushTraces,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
@@ -50,7 +51,7 @@ func createTraceExporter(_ context.Context, set component.ExporterCreateSettings
 	)
 }
 
-func createMetricsExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.MetricsExporter, error) {
 	cfg := config.(*Config)
 
 	exporter, err := newMetricsExporter(cfg, set)
@@ -59,8 +60,9 @@ func createMetricsExporter(_ context.Context, set component.ExporterCreateSettin
 	}
 
 	return exporterhelper.NewMetricsExporter(
-		config,
+		ctx,
 		set,
+		cfg,
 		exporter.pushMetrics,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
@@ -68,14 +70,15 @@ func createMetricsExporter(_ context.Context, set component.ExporterCreateSettin
 	)
 }
 
-func createLogsExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.LogsExporter, error) {
 	cfg := config.(*Config)
 
 	exporter := newLogsExporter(cfg, set)
 
 	return exporterhelper.NewLogsExporter(
-		config,
+		ctx,
 		set,
+		cfg,
 		exporter.pushLogs,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),

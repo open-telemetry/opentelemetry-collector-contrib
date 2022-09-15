@@ -38,13 +38,11 @@ func TruncateAll(target tql.GetSetter, limit int64) (tql.ExprFunc, error) {
 
 		if attrs, ok := val.(pcommon.Map); ok {
 			updated := pcommon.NewMap()
-			updated.EnsureCapacity(attrs.Len())
-			attrs.Range(func(key string, val pcommon.Value) bool {
-				stringVal := val.StringVal()
+			attrs.CopyTo(updated)
+			updated.Range(func(key string, value pcommon.Value) bool {
+				stringVal := value.StringVal()
 				if int64(len(stringVal)) > limit {
-					updated.InsertString(key, stringVal[:limit])
-				} else {
-					updated.Insert(key, val)
+					value.SetStringVal(stringVal[:limit])
 				}
 				return true
 			})

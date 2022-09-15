@@ -54,8 +54,7 @@ func createDefaultConfig() config.Receiver {
 			Insecure:           false,
 			InsecureSkipVerify: true,
 		},
-		Databases: make([]string, 0),
-		Metrics:   metadata.DefaultMetricsSettings(),
+		Metrics: metadata.DefaultMetricsSettings(),
 	}
 }
 

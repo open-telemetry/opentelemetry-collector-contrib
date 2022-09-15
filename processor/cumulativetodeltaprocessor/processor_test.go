@@ -277,9 +277,9 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			registry := featuregate.GetRegistry()
-			registry.Apply(map[string]bool{
+			require.NoError(t, registry.Apply(map[string]bool{
 				enableHistogramSupportGateID: test.histogramSupportEnabled,
-			})
+			}))
 			// next stores the results of the filter metric processor
 			next := new(consumertest.MetricsSink)
 			cfg := &Config{
@@ -361,7 +361,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 						} else {
 							require.Equal(t, eDataPoints.At(j).Sum(), aDataPoints.At(j).Sum())
 						}
-						require.Equal(t, eDataPoints.At(j).BucketCounts().AsRaw(), aDataPoints.At(j).BucketCounts().AsRaw())
+						require.Equal(t, eDataPoints.At(j).BucketCounts(), aDataPoints.At(j).BucketCounts())
 					}
 				}
 			}
@@ -380,9 +380,7 @@ func generateTestSumMetrics(tm testSumMetric) pmetric.Metrics {
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()
 		m.SetName(name)
-		m.SetDataType(pmetric.MetricDataTypeSum)
-
-		sum := m.Sum()
+		sum := m.SetEmptySum()
 		sum.SetIsMonotonic(true)
 
 		if tm.isCumulative[i] {
@@ -410,9 +408,7 @@ func generateTestHistogramMetrics(tm testHistogramMetric) pmetric.Metrics {
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()
 		m.SetName(name)
-		m.SetDataType(pmetric.MetricDataTypeHistogram)
-
-		hist := m.Histogram()
+		hist := m.SetEmptyHistogram()
 
 		if tm.isCumulative[i] {
 			hist.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -429,7 +425,7 @@ func generateTestHistogramMetrics(tm testHistogramMetric) pmetric.Metrics {
 			if len(sums) > 0 {
 				dp.SetSum(sums[index])
 			}
-			dp.SetBucketCounts(pcommon.NewImmutableUInt64Slice(tm.metricBuckets[i][index]))
+			dp.BucketCounts().FromRaw(tm.metricBuckets[i][index])
 		}
 	}
 
@@ -453,15 +449,14 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 	metrics := pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics().AppendEmpty()
 	r := rms.Resource()
-	r.Attributes().Insert("resource", pcommon.NewValueBool(true))
+	r.Attributes().PutBool("resource", true)
 	ilms := rms.ScopeMetrics().AppendEmpty()
 	ilms.Scope().SetName("test")
 	ilms.Scope().SetVersion("0.1")
 	m := ilms.Metrics().AppendEmpty()
-	m.SetDataType(pmetric.MetricDataTypeSum)
-	m.Sum().SetIsMonotonic(true)
+	m.SetEmptySum().SetIsMonotonic(true)
 	dp := m.Sum().DataPoints().AppendEmpty()
-	dp.Attributes().Insert("tag", pcommon.NewValueString("value"))
+	dp.Attributes().PutString("tag", "value")
 
 	reset := func() {
 		m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)

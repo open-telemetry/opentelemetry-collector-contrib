@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
@@ -36,7 +35,7 @@ func convertGaugeToSum(stringAggTemp string, monotonic bool) (tql.ExprFunc, erro
 	}
 
 	return func(ctx tql.TransformContext) interface{} {
-		mtc, ok := ctx.(tqlmetrics.MetricTransformContext)
+		mtc, ok := ctx.(tqlmetrics.TransformContext)
 		if !ok {
 			return nil
 		}
@@ -48,8 +47,7 @@ func convertGaugeToSum(stringAggTemp string, monotonic bool) (tql.ExprFunc, erro
 
 		dps := metric.Gauge().DataPoints()
 
-		metric.SetDataType(pmetric.MetricDataTypeSum)
-		metric.Sum().SetAggregationTemporality(aggTemp)
+		metric.SetEmptySum().SetAggregationTemporality(aggTemp)
 		metric.Sum().SetIsMonotonic(monotonic)
 
 		// Setting the data type removed all the data points, so we must copy them back to the metric.

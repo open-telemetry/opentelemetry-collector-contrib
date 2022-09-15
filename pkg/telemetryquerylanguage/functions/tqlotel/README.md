@@ -5,6 +5,7 @@ The following functions are intended to be used in implementations of the Teleme
 Factory Functions
 - [SpanID](#spanid)
 - [TraceID](#traceid)
+- [Split](#split)
 
 Functions
 - [delete_key](#delete_key)
@@ -14,6 +15,7 @@ Functions
 - [limit](#limit)
 - [replace_all_matches](#replace_all_matches)
 - [replace_all_patterns](#replace_all_patterns)
+
 
 ## SpanID
 
@@ -101,18 +103,24 @@ Examples:
 
 ## limit
 
-`limit(target, limit)`
+`limit(target, limit, priority_keys)`
 
 The `limit` function reduces the number of elements in a `pdata.Map` to be no greater than the limit.
 
-`target` is a path expression to a `pdata.Map` type field. `limit` is a non-negative integer. 
+`target` is a path expression to a `pdata.Map` type field. `limit` is a non-negative integer.
+`priority_keys` is a list of strings of attribute keys that won't be dropped during limiting.
 
-The map will be mutated such that the number of items does not exceed the limit. Which items are dropped is random.
+The number of priority keys must be less than the supplied `limit`.
+
+The map will be mutated such that the number of items does not exceed the limit.
+The map is not copied or reallocated.
+
+Which items are dropped is random, provide `priority_keys` to preserve required keys.
 
 Examples:
 
 - `limit(attributes, 100)`
-- `limit(resource.attributes, 50)`
+- `limit(resource.attributes, 50, "http.host", "http.method")`
 
 ## replace_all_matches
 
@@ -120,7 +128,7 @@ Examples:
 
 The `replace_all_matches` function replaces any matching string value with the replacement string.
 
-`target` is a path expression to a `pdata.Mao` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is a string. 
+`target` is a path expression to a `pdata.Map` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is a string. 
 
 Each string value in `target` that matches `pattern` will get replaced with `replacement`. Non-string values are ignored.
 
@@ -132,7 +140,7 @@ Examples:
 
 `replace_all_patterns(target, regex, replacement)`
 
-The `replace_all_matches` function replaces any segments in a string value that match the regex pattern with the replacement string.
+The `replace_all_patterns` function replaces any segments in a string value that match the regex pattern with the replacement string.
 
 `target` is a path expression to a `pdata.Map` type field. `regex` is a regex string indicating a segment to replace. `replacement` is a string. 
 
@@ -141,3 +149,17 @@ If one or more sections of `target` match `regex` they will get replaced with `r
 Examples:
 
 - `replace_all_patterns(attributes, "/account/\\d{4}", "/account/{accountId}")`
+
+## Split
+
+`Split(target, delimiter)`
+
+The `Split` factory function separates a string by the delimiter, and returns an array of substrings.
+
+`target` is a string. `delimiter` is a string.
+
+If the `target` is not a string or does not exist, the `Split` factory function will return `nil`.
+
+Examples:
+
+- ```Split("A|B|C", "|")```

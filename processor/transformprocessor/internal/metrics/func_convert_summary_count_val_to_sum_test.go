@@ -22,16 +22,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 )
 
 func getTestSummaryMetric() pmetric.Metric {
 	metricInput := pmetric.NewMetric()
-	metricInput.SetDataType(pmetric.MetricDataTypeSummary)
 	metricInput.SetName("summary_metric")
-	input := metricInput.Summary().DataPoints().AppendEmpty()
+	input := metricInput.SetEmptySummary().DataPoints().AppendEmpty()
 	input.SetCount(100)
 	input.SetSum(12.34)
 
@@ -47,45 +45,43 @@ func getTestSummaryMetric() pmetric.Metric {
 	qVal3.SetValue(3)
 	qVal3.SetQuantile(.50)
 
-	attrs := getTestAttributes()
-	attrs.CopyTo(input.Attributes())
+	fillTestAttributes(input.Attributes())
 	return metricInput
 }
 
 func getTestGaugeMetric() pmetric.Metric {
 	metricInput := pmetric.NewMetric()
-	metricInput.SetDataType(pmetric.MetricDataTypeGauge)
 	metricInput.SetName("gauge_metric")
-	input := metricInput.Gauge().DataPoints().AppendEmpty()
+	input := metricInput.SetEmptyGauge().DataPoints().AppendEmpty()
 	input.SetIntVal(12)
 
-	attrs := getTestAttributes()
-	attrs.CopyTo(input.Attributes())
+	fillTestAttributes(input.Attributes())
 	return metricInput
 }
 
-func getTestAttributes() pcommon.Map {
-	attrs := pcommon.NewMap()
-	attrs.InsertString("test", "hello world")
-	attrs.InsertInt("test2", 3)
-	attrs.InsertBool("test3", true)
-	return attrs
+func fillTestAttributes(attrs pcommon.Map) {
+	attrs.PutString("test", "hello world")
+	attrs.PutInt("test2", 3)
+	attrs.PutBool("test3", true)
 }
 
 func summaryTest(tests []summaryTestCase, t *testing.T) {
+	tqlp := tql.NewParser(
+		Functions(),
+		tqlmetrics.ParsePath,
+		tqlmetrics.ParseEnum,
+		tql.NoOpLogger{},
+	)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			actualMetrics := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetrics.AppendEmpty())
 
-			evaluate, err := tql.NewFunctionCall(tt.inv, DefaultFunctions(), tqlmetrics.ParsePath, tqlmetrics.ParseEnum)
+			evaluate, err := tqlp.NewFunctionCall(tt.inv)
 			assert.NoError(t, err)
-			evaluate(tqlmetrics.MetricTransformContext{
-				InstrumentationScope: pcommon.NewInstrumentationScope(),
-				Resource:             pcommon.NewResource(),
-				Metric:               tt.input,
-				Metrics:              actualMetrics,
-			})
+
+			evaluate(tqlmetrics.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
 
 			expected := pmetric.NewMetricSlice()
 			tt.want(expected)
@@ -121,16 +117,14 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 				summaryMetric := getTestSummaryMetric()
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				sumMetric.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(false)
 
 				sumMetric.SetName("summary_metric_sum")
 				dp := sumMetric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(12.34)
 
-				attrs := getTestAttributes()
-				attrs.CopyTo(dp.Attributes())
+				fillTestAttributes(dp.Attributes())
 			},
 		},
 		{
@@ -151,16 +145,14 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 				summaryMetric := getTestSummaryMetric()
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				sumMetric.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(true)
 
 				sumMetric.SetName("summary_metric_sum")
 				dp := sumMetric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(12.34)
 
-				attrs := getTestAttributes()
-				attrs.CopyTo(dp.Attributes())
+				fillTestAttributes(dp.Attributes())
 			},
 		},
 		{
@@ -181,16 +173,14 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 				summaryMetric := getTestSummaryMetric()
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				sumMetric.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				sumMetric.Sum().SetIsMonotonic(false)
 
 				sumMetric.SetName("summary_metric_sum")
 				dp := sumMetric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(12.34)
 
-				attrs := getTestAttributes()
-				attrs.CopyTo(dp.Attributes())
+				fillTestAttributes(dp.Attributes())
 			},
 		},
 		{

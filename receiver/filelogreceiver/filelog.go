@@ -53,7 +53,7 @@ func createDefaultConfig() *FileLogConfig {
 			Operators:        adapter.OperatorConfigs{},
 			Converter:        adapter.ConverterConfig{},
 		},
-		Config: *file.NewConfig("file_input"),
+		InputConfig: *file.NewConfig(),
 	}
 }
 
@@ -64,12 +64,11 @@ func (f ReceiverType) BaseConfig(cfg config.Receiver) adapter.BaseConfig {
 
 // FileLogConfig defines configuration for the filelog receiver
 type FileLogConfig struct {
-	file.Config        `mapstructure:",squash"`
+	InputConfig        file.Config `mapstructure:",squash"`
 	adapter.BaseConfig `mapstructure:",squash"`
 }
 
-// DecodeInputConfig unmarshals the input operator
-func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
-	logConfig := cfg.(*FileLogConfig)
-	return &operator.Config{Builder: &logConfig.Config}, nil
+// InputConfig unmarshals the input operator
+func (f ReceiverType) InputConfig(cfg config.Receiver) operator.Config {
+	return operator.NewConfig(&cfg.(*FileLogConfig).InputConfig)
 }

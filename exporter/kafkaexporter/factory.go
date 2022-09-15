@@ -114,7 +114,7 @@ type kafkaExporterFactory struct {
 }
 
 func (f *kafkaExporterFactory) createTracesExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
@@ -131,8 +131,9 @@ func (f *kafkaExporterFactory) createTracesExporter(
 		return nil, err
 	}
 	return exporterhelper.NewTracesExporter(
-		&oCfg,
+		ctx,
 		set,
+		&oCfg,
 		exp.tracesPusher,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
@@ -144,7 +145,7 @@ func (f *kafkaExporterFactory) createTracesExporter(
 }
 
 func (f *kafkaExporterFactory) createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
@@ -160,8 +161,9 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 		return nil, err
 	}
 	return exporterhelper.NewMetricsExporter(
-		&oCfg,
+		ctx,
 		set,
+		&oCfg,
 		exp.metricsDataPusher,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
@@ -173,7 +175,7 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 }
 
 func (f *kafkaExporterFactory) createLogsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
@@ -189,8 +191,9 @@ func (f *kafkaExporterFactory) createLogsExporter(
 		return nil, err
 	}
 	return exporterhelper.NewLogsExporter(
-		cfg,
+		ctx,
 		set,
+		&oCfg,
 		exp.logsDataPusher,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,

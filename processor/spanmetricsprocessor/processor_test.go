@@ -472,9 +472,12 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 	seenMetricIDs = make(map[metricID]bool)
 	// The remaining metrics are for latency.
 	for ; mi < m.Len(); mi++ {
-		assert.Equal(t, "latency", m.At(mi).Name())
+		metric := m.At(mi)
 
-		data := m.At(mi).Histogram()
+		assert.Equal(t, "latency", metric.Name())
+		assert.Equal(t, "ms", metric.Unit())
+
+		data := metric.Histogram()
 		assert.Equal(t, expectedTemporality, data.AggregationTemporality())
 
 		dps := data.DataPoints()
@@ -601,11 +604,10 @@ func buildSampleTrace() ptrace.Traces {
 
 func initServiceSpans(serviceSpans serviceSpans, spans ptrace.ResourceSpans) {
 	if serviceSpans.serviceName != "" {
-		spans.Resource().Attributes().
-			InsertString(conventions.AttributeServiceName, serviceSpans.serviceName)
+		spans.Resource().Attributes().PutString(conventions.AttributeServiceName, serviceSpans.serviceName)
 	}
 
-	spans.Resource().Attributes().InsertString(regionResourceAttrName, sampleRegion)
+	spans.Resource().Attributes().PutString(regionResourceAttrName, sampleRegion)
 
 	ils := spans.ScopeSpans().AppendEmpty()
 	for _, span := range serviceSpans.spans {
@@ -620,14 +622,14 @@ func initSpan(span span, s ptrace.Span) {
 	now := time.Now()
 	s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
 	s.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(sampleLatencyDuration)))
-	s.Attributes().InsertString(stringAttrName, "stringAttrValue")
-	s.Attributes().InsertInt(intAttrName, 99)
-	s.Attributes().InsertDouble(doubleAttrName, 99.99)
-	s.Attributes().InsertBool(boolAttrName, true)
-	s.Attributes().InsertNull(nullAttrName)
-	s.Attributes().Insert(mapAttrName, pcommon.NewValueMap())
-	s.Attributes().Insert(arrayAttrName, pcommon.NewValueSlice())
-	s.SetTraceID(pcommon.NewTraceID([16]byte{byte(42)}))
+	s.Attributes().PutString(stringAttrName, "stringAttrValue")
+	s.Attributes().PutInt(intAttrName, 99)
+	s.Attributes().PutDouble(doubleAttrName, 99.99)
+	s.Attributes().PutBool(boolAttrName, true)
+	s.Attributes().PutEmpty(nullAttrName)
+	s.Attributes().PutEmptyMap(mapAttrName)
+	s.Attributes().PutEmptySlice(arrayAttrName)
+	s.SetTraceID(pcommon.TraceID([16]byte{byte(42)}))
 }
 
 func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExporter, component.TracesExporter) {
@@ -722,7 +724,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			resAttr := pcommon.NewMapFromRaw(tc.resourceAttrMap)
+			resAttr := pcommon.NewMap()
+			resAttr.FromRaw(tc.resourceAttrMap)
 			span0 := ptrace.NewSpan()
 			pcommon.NewMapFromRaw(tc.spanAttrMap).CopyTo(span0.Attributes())
 			span0.SetName("c")

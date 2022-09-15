@@ -16,6 +16,7 @@ package postgresqlreceiver
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -34,6 +35,9 @@ func TestUnsuccessfulScrape(t *testing.T) {
 	cfg.Endpoint = "fake:11111"
 
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &defaultClientFactory{})
+	scraper.emitMetricsWithResourceAttributes = false
+	scraper.emitMetricsWithoutResourceAttributes = true
+
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.Error(t, err)
 
@@ -47,6 +51,8 @@ func TestScraper(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{"otel"}
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, factory)
+	scraper.emitMetricsWithResourceAttributes = false
+	scraper.emitMetricsWithoutResourceAttributes = true
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -64,6 +70,8 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, factory)
+	scraper.emitMetricsWithResourceAttributes = false
+	scraper.emitMetricsWithoutResourceAttributes = true
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -81,11 +89,47 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
+	scraper.emitMetricsWithResourceAttributes = false
+	scraper.emitMetricsWithoutResourceAttributes = true
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "multiple", "expected.json")
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+}
+
+func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
+	factory := mockClientFactory{}
+	factory.initMocks([]string{"otel", "open", "telemetry"})
+
+	cfg := createDefaultConfig().(*Config)
+	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
+
+	actualMetrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "scraper", "multiple", "expected_with_resource.json")
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+}
+
+func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
+	factory := mockClientFactory{}
+	factory.initMocks([]string{"otel"})
+
+	cfg := createDefaultConfig().(*Config)
+	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
+
+	actualMetrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "scraper", "otel", "expected_with_resource.json")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
@@ -125,6 +169,31 @@ func (m *mockClient) getDatabaseTableMetrics(ctx context.Context, database strin
 func (m *mockClient) getBlocksReadByTable(ctx context.Context, database string) (map[tableIdentifier]tableIOStats, error) {
 	args := m.Called(ctx, database)
 	return args.Get(0).(map[tableIdentifier]tableIOStats), args.Error(1)
+}
+
+func (m *mockClient) getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error) {
+	args := m.Called(ctx, database)
+	return args.Get(0).(map[indexIdentifer]indexStat), args.Error(1)
+}
+
+func (m *mockClient) getBGWriterStats(ctx context.Context) (*bgStat, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(*bgStat), args.Error(1)
+}
+
+func (m *mockClient) getMaxConnections(ctx context.Context) (int64, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *mockClient) getLatestWalAgeSeconds(ctx context.Context) (int64, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *mockClient) getReplicationStats(ctx context.Context) ([]replicationStats, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]replicationStats), args.Error(1)
 }
 
 func (m *mockClient) listDatabases(_ context.Context) ([]string, error) {
@@ -171,29 +240,57 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 		m.On("getDatabaseStats", databases).Return(commitsAndRollbacks, nil)
 		m.On("getDatabaseSize", databases).Return(dbSize, nil)
 		m.On("getBackends", databases).Return(backends, nil)
+		m.On("getBGWriterStats", mock.Anything).Return(&bgStat{
+			checkpointsReq:       1,
+			checkpointsScheduled: 2,
+			checkpointWriteTime:  3,
+			checkpointSyncTime:   4,
+			bgWrites:             5,
+			backendWrites:        6,
+			bufferBackendWrites:  7,
+			bufferFsyncWrites:    8,
+			bufferCheckpoints:    9,
+			buffersAllocated:     10,
+			maxWritten:           11,
+		}, nil)
+		m.On("getMaxConnections", mock.Anything).Return(int64(100), nil)
+		m.On("getLatestWalAgeSeconds", mock.Anything).Return(int64(3600), nil)
+		m.On("getReplicationStats", mock.Anything).Return([]replicationStats{
+			{
+				clientAddr:   "unix",
+				pendingBytes: 1024,
+				flushLag:     600,
+				replayLag:    700,
+				writeLag:     800,
+			},
+		}, nil)
 	} else {
 		table1 := "public.table1"
 		table2 := "public.table2"
 		tableMetrics := map[tableIdentifier]tableStats{
 			tableKey(database, table1): {
-				database: database,
-				table:    table1,
-				live:     int64(index + 7),
-				dead:     int64(index + 8),
-				inserts:  int64(index + 39),
-				upd:      int64(index + 40),
-				del:      int64(index + 41),
-				hotUpd:   int64(index + 42),
+				database:    database,
+				table:       table1,
+				live:        int64(index + 7),
+				dead:        int64(index + 8),
+				inserts:     int64(index + 39),
+				upd:         int64(index + 40),
+				del:         int64(index + 41),
+				hotUpd:      int64(index + 42),
+				size:        int64(index + 43),
+				vacuumCount: int64(index + 44),
 			},
 			tableKey(database, table2): {
-				database: database,
-				table:    table2,
-				live:     int64(index + 9),
-				dead:     int64(index + 10),
-				inserts:  int64(index + 43),
-				upd:      int64(index + 44),
-				del:      int64(index + 45),
-				hotUpd:   int64(index + 46),
+				database:    database,
+				table:       table2,
+				live:        int64(index + 9),
+				dead:        int64(index + 10),
+				inserts:     int64(index + 43),
+				upd:         int64(index + 44),
+				del:         int64(index + 45),
+				hotUpd:      int64(index + 46),
+				size:        int64(index + 47),
+				vacuumCount: int64(index + 48),
 			},
 		}
 
@@ -227,5 +324,24 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 		m.On("getDatabaseTableMetrics", mock.Anything, database).Return(tableMetrics, nil)
 		m.On("getBlocksReadByTable", mock.Anything, database).Return(blocksMetrics, nil)
 
+		index1 := fmt.Sprintf("%s_test1_pkey", database)
+		index2 := fmt.Sprintf("%s_test2_pkey", database)
+		indexStats := map[indexIdentifer]indexStat{
+			indexKey(database, table1, index1): {
+				database: database,
+				table:    table1,
+				index:    index1,
+				scans:    int64(index + 35),
+				size:     int64(index + 36),
+			},
+			indexKey(index2, table2, index2): {
+				database: database,
+				table:    table2,
+				index:    index2,
+				scans:    int64(index + 37),
+				size:     int64(index + 38),
+			},
+		}
+		m.On("getIndexStats", mock.Anything, database).Return(indexStats, nil)
 	}
 }

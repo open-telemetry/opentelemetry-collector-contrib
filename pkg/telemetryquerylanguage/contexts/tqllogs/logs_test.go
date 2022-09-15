@@ -35,25 +35,10 @@ var (
 )
 
 func Test_newPathGetSetter(t *testing.T) {
-	refLog, _, _ := createTelemetry()
+	refLog, refIS, refResource := createTelemetry()
 
 	newAttrs := pcommon.NewMap()
-	newAttrs.UpsertString("hello", "world")
-
-	newArrStr := pcommon.NewValueSlice()
-	newArrStr.SliceVal().AppendEmpty().SetStringVal("new")
-
-	newArrBool := pcommon.NewValueSlice()
-	newArrBool.SliceVal().AppendEmpty().SetBoolVal(false)
-
-	newArrInt := pcommon.NewValueSlice()
-	newArrInt.SliceVal().AppendEmpty().SetIntVal(20)
-
-	newArrFloat := pcommon.NewValueSlice()
-	newArrFloat.SliceVal().AppendEmpty().SetDoubleVal(2.0)
-
-	newArrBytes := pcommon.NewValueSlice()
-	newArrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{9, 6, 4}))
+	newAttrs.PutString("hello", "world")
 
 	tests := []struct {
 		name     string
@@ -95,10 +80,10 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "severity_number",
 				},
 			},
-			orig:   int64(plog.SeverityNumberFATAL),
+			orig:   int64(plog.SeverityNumberFatal),
 			newVal: int64(3),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.SetSeverityNumber(plog.SeverityNumberTRACE3)
+				log.SetSeverityNumber(plog.SeverityNumberTrace3)
 			},
 		},
 		{
@@ -134,10 +119,10 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "flags",
 				},
 			},
-			orig:   int64(3),
-			newVal: int64(4),
+			orig:   int64(4),
+			newVal: int64(5),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.SetFlags(uint32(4))
+				log.SetFlags(plog.LogRecordFlags(5))
 			},
 		},
 		{
@@ -147,10 +132,10 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "trace_id",
 				},
 			},
-			orig:   pcommon.NewTraceID(traceID),
-			newVal: pcommon.NewTraceID(traceID2),
+			orig:   pcommon.TraceID(traceID),
+			newVal: pcommon.TraceID(traceID2),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.SetTraceID(pcommon.NewTraceID(traceID2))
+				log.SetTraceID(traceID2)
 			},
 		},
 		{
@@ -160,10 +145,10 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "span_id",
 				},
 			},
-			orig:   pcommon.NewSpanID(spanID),
-			newVal: pcommon.NewSpanID(spanID2),
+			orig:   pcommon.SpanID(spanID),
+			newVal: pcommon.SpanID(spanID2),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.SetSpanID(pcommon.NewSpanID(spanID2))
+				log.SetSpanID(spanID2)
 			},
 		},
 		{
@@ -179,7 +164,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   hex.EncodeToString(traceID[:]),
 			newVal: hex.EncodeToString(traceID2[:]),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.SetTraceID(pcommon.NewTraceID(traceID2))
+				log.SetTraceID(traceID2)
 			},
 		},
 		{
@@ -195,7 +180,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   hex.EncodeToString(spanID[:]),
 			newVal: hex.EncodeToString(spanID2[:]),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.SetSpanID(pcommon.NewSpanID(spanID2))
+				log.SetSpanID(spanID2)
 			},
 		},
 		{
@@ -223,7 +208,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertString("str", "newVal")
+				log.Attributes().PutString("str", "newVal")
 			},
 		},
 		{
@@ -237,7 +222,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   true,
 			newVal: false,
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertBool("bool", false)
+				log.Attributes().PutBool("bool", false)
 			},
 		},
 		{
@@ -251,7 +236,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   int64(10),
 			newVal: int64(20),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertInt("int", 20)
+				log.Attributes().PutInt("int", 20)
 			},
 		},
 		{
@@ -265,7 +250,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   float64(1.2),
 			newVal: float64(2.4),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertDouble("double", 2.4)
+				log.Attributes().PutDouble("double", 2.4)
 			},
 		},
 		{
@@ -279,7 +264,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
+				log.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
 		},
 		{
@@ -296,7 +281,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []string{"new"},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().Upsert("arr_str", newArrStr)
+				log.Attributes().PutEmptySlice("arr_str").AppendEmpty().SetStringVal("new")
 			},
 		},
 		{
@@ -313,7 +298,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []bool{false},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().Upsert("arr_bool", newArrBool)
+				log.Attributes().PutEmptySlice("arr_bool").AppendEmpty().SetBoolVal(false)
 			},
 		},
 		{
@@ -330,7 +315,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []int64{20},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().Upsert("arr_int", newArrInt)
+				log.Attributes().PutEmptySlice("arr_int").AppendEmpty().SetIntVal(20)
 			},
 		},
 		{
@@ -347,7 +332,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []float64{2.0},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().Upsert("arr_float", newArrFloat)
+				log.Attributes().PutEmptySlice("arr_float").AppendEmpty().SetDoubleVal(2.0)
 			},
 		},
 		{
@@ -364,7 +349,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: [][]byte{{9, 6, 4}},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().Upsert("arr_bytes", newArrBytes)
+				log.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{9, 6, 4})
 			},
 		},
 		{
@@ -381,237 +366,29 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "instrumentation_scope name",
+			name: "instrumentation_scope",
 			path: []tql.Field{
 				{
 					Name: "instrumentation_scope",
 				},
-				{
-					Name: "name",
-				},
 			},
-			orig:   "library",
-			newVal: "park",
+			orig:   refIS,
+			newVal: pcommon.NewInstrumentationScope(),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				il.SetName("park")
+				pcommon.NewInstrumentationScope().CopyTo(il)
 			},
 		},
 		{
-			name: "instrumentation_scope version",
-			path: []tql.Field{
-				{
-					Name: "instrumentation_scope",
-				},
-				{
-					Name: "version",
-				},
-			},
-			orig:   "version",
-			newVal: "next",
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				il.SetVersion("next")
-			},
-		},
-		{
-			name: "resource attributes",
+			name: "resource",
 			path: []tql.Field{
 				{
 					Name: "resource",
 				},
-				{
-					Name: "attributes",
-				},
 			},
-			orig:   refLog.Attributes(),
-			newVal: newAttrs,
+			orig:   refResource,
+			newVal: pcommon.NewResource(),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().Clear()
-				newAttrs.CopyTo(resource.Attributes())
-			},
-		},
-		{
-			name: "resource attributes string",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("str"),
-				},
-			},
-			orig:   "val",
-			newVal: "newVal",
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().UpsertString("str", "newVal")
-			},
-		},
-		{
-			name: "resource attributes bool",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("bool"),
-				},
-			},
-			orig:   true,
-			newVal: false,
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().UpsertBool("bool", false)
-			},
-		},
-		{
-			name: "resource attributes int",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("int"),
-				},
-			},
-			orig:   int64(10),
-			newVal: int64(20),
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().UpsertInt("int", 20)
-			},
-		},
-		{
-			name: "resource attributes float",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("double"),
-				},
-			},
-			orig:   float64(1.2),
-			newVal: float64(2.4),
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().UpsertDouble("double", 2.4)
-			},
-		},
-		{
-			name: "resource attributes bytes",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("bytes"),
-				},
-			},
-			orig:   []byte{1, 3, 2},
-			newVal: []byte{2, 3, 4},
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
-			},
-		},
-		{
-			name: "resource attributes array string",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("arr_str"),
-				},
-			},
-			orig: func() pcommon.Slice {
-				val, _ := refLog.Attributes().Get("arr_str")
-				return val.SliceVal()
-			}(),
-			newVal: []string{"new"},
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().Upsert("arr_str", newArrStr)
-			},
-		},
-		{
-			name: "resource attributes array bool",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("arr_bool"),
-				},
-			},
-			orig: func() pcommon.Slice {
-				val, _ := refLog.Attributes().Get("arr_bool")
-				return val.SliceVal()
-			}(),
-			newVal: []bool{false},
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().Upsert("arr_bool", newArrBool)
-			},
-		},
-		{
-			name: "resource attributes array int",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("arr_int"),
-				},
-			},
-			orig: func() pcommon.Slice {
-				val, _ := refLog.Attributes().Get("arr_int")
-				return val.SliceVal()
-			}(),
-			newVal: []int64{20},
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().Upsert("arr_int", newArrInt)
-			},
-		},
-		{
-			name: "resource attributes array float",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("arr_float"),
-				},
-			},
-			orig: func() pcommon.Slice {
-				val, _ := refLog.Attributes().Get("arr_float")
-				return val.SliceVal()
-			}(),
-			newVal: []float64{2.0},
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().Upsert("arr_float", newArrFloat)
-			},
-		},
-		{
-			name: "resource attributes array bytes",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("arr_bytes"),
-				},
-			},
-			orig: func() pcommon.Slice {
-				val, _ := refLog.Attributes().Get("arr_bytes")
-				return val.SliceVal()
-			}(),
-			newVal: [][]byte{{9, 6, 4}},
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().Upsert("arr_bytes", newArrBytes)
+				pcommon.NewResource().CopyTo(resource)
 			},
 		},
 	}
@@ -622,18 +399,10 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			log, il, resource := createTelemetry()
 
-			got := accessor.Get(LogTransformContext{
-				Log:                  log,
-				InstrumentationScope: il,
-				Resource:             resource,
-			})
+			got := accessor.Get(NewTransformContext(log, il, resource))
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(LogTransformContext{
-				Log:                  log,
-				InstrumentationScope: il,
-				Resource:             resource,
-			}, tt.newVal)
+			accessor.Set(NewTransformContext(log, il, resource), tt.newVal)
 
 			exSpan, exIl, exRes := createTelemetry()
 			tt.modified(exSpan, exIl, exRes)
@@ -649,46 +418,41 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	log := plog.NewLogRecord()
 	log.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
 	log.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
-	log.SetSeverityNumber(plog.SeverityNumberFATAL)
+	log.SetSeverityNumber(plog.SeverityNumberFatal)
 	log.SetSeverityText("blue screen of death")
 	log.Body().SetStringVal("body")
-	log.Attributes().UpsertString("str", "val")
-	log.Attributes().UpsertBool("bool", true)
-	log.Attributes().UpsertInt("int", 10)
-	log.Attributes().UpsertDouble("double", 1.2)
-	log.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{1, 3, 2}))
+	log.Attributes().PutString("str", "val")
+	log.Attributes().PutBool("bool", true)
+	log.Attributes().PutInt("int", 10)
+	log.Attributes().PutDouble("double", 1.2)
+	log.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{1, 3, 2})
 
-	arrStr := pcommon.NewValueSlice()
-	arrStr.SliceVal().AppendEmpty().SetStringVal("one")
-	arrStr.SliceVal().AppendEmpty().SetStringVal("two")
-	log.Attributes().Upsert("arr_str", arrStr)
+	arrStr := log.Attributes().PutEmptySlice("arr_str")
+	arrStr.AppendEmpty().SetStringVal("one")
+	arrStr.AppendEmpty().SetStringVal("two")
 
-	arrBool := pcommon.NewValueSlice()
-	arrBool.SliceVal().AppendEmpty().SetBoolVal(true)
-	arrBool.SliceVal().AppendEmpty().SetBoolVal(false)
-	log.Attributes().Upsert("arr_bool", arrBool)
+	arrBool := log.Attributes().PutEmptySlice("arr_bool")
+	arrBool.AppendEmpty().SetBoolVal(true)
+	arrBool.AppendEmpty().SetBoolVal(false)
 
-	arrInt := pcommon.NewValueSlice()
-	arrInt.SliceVal().AppendEmpty().SetIntVal(2)
-	arrInt.SliceVal().AppendEmpty().SetIntVal(3)
-	log.Attributes().Upsert("arr_int", arrInt)
+	arrInt := log.Attributes().PutEmptySlice("arr_int")
+	arrInt.AppendEmpty().SetIntVal(2)
+	arrInt.AppendEmpty().SetIntVal(3)
 
-	arrFloat := pcommon.NewValueSlice()
-	arrFloat.SliceVal().AppendEmpty().SetDoubleVal(1.0)
-	arrFloat.SliceVal().AppendEmpty().SetDoubleVal(2.0)
-	log.Attributes().Upsert("arr_float", arrFloat)
+	arrFloat := log.Attributes().PutEmptySlice("arr_float")
+	arrFloat.AppendEmpty().SetDoubleVal(1.0)
+	arrFloat.AppendEmpty().SetDoubleVal(2.0)
 
-	arrBytes := pcommon.NewValueSlice()
-	arrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{1, 2, 3}))
-	arrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
-	log.Attributes().Upsert("arr_bytes", arrBytes)
+	arrBytes := log.Attributes().PutEmptySlice("arr_bytes")
+	arrBytes.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{1, 2, 3})
+	arrBytes.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
 
 	log.SetDroppedAttributesCount(10)
 
-	log.SetFlags(uint32(3))
+	log.SetFlags(plog.LogRecordFlags(4))
 
-	log.SetTraceID(pcommon.NewTraceID(traceID))
-	log.SetSpanID(pcommon.NewSpanID(spanID))
+	log.SetTraceID(traceID)
+	log.SetSpanID(spanID)
 
 	il := pcommon.NewInstrumentationScope()
 	il.SetName("library")
@@ -707,103 +471,103 @@ func Test_ParseEnum(t *testing.T) {
 	}{
 		{
 			name: "SEVERITY_NUMBER_UNSPECIFIED",
-			want: tql.Enum(plog.SeverityNumberUNDEFINED),
+			want: tql.Enum(plog.SeverityNumberUndefined),
 		},
 		{
 			name: "SEVERITY_NUMBER_TRACE",
-			want: tql.Enum(plog.SeverityNumberTRACE),
+			want: tql.Enum(plog.SeverityNumberTrace),
 		},
 		{
 			name: "SEVERITY_NUMBER_TRACE2",
-			want: tql.Enum(plog.SeverityNumberTRACE2),
+			want: tql.Enum(plog.SeverityNumberTrace2),
 		},
 		{
 			name: "SEVERITY_NUMBER_TRACE3",
-			want: tql.Enum(plog.SeverityNumberTRACE3),
+			want: tql.Enum(plog.SeverityNumberTrace3),
 		},
 		{
 			name: "SEVERITY_NUMBER_TRACE4",
-			want: tql.Enum(plog.SeverityNumberTRACE4),
+			want: tql.Enum(plog.SeverityNumberTrace4),
 		},
 		{
 			name: "SEVERITY_NUMBER_DEBUG",
-			want: tql.Enum(plog.SeverityNumberDEBUG),
+			want: tql.Enum(plog.SeverityNumberDebug),
 		},
 		{
 			name: "SEVERITY_NUMBER_DEBUG2",
-			want: tql.Enum(plog.SeverityNumberDEBUG2),
+			want: tql.Enum(plog.SeverityNumberDebug2),
 		},
 		{
 			name: "SEVERITY_NUMBER_DEBUG3",
-			want: tql.Enum(plog.SeverityNumberDEBUG3),
+			want: tql.Enum(plog.SeverityNumberDebug3),
 		},
 		{
 			name: "SEVERITY_NUMBER_DEBUG4",
-			want: tql.Enum(plog.SeverityNumberDEBUG4),
+			want: tql.Enum(plog.SeverityNumberDebug4),
 		},
 		{
 			name: "SEVERITY_NUMBER_INFO",
-			want: tql.Enum(plog.SeverityNumberINFO),
+			want: tql.Enum(plog.SeverityNumberInfo),
 		},
 		{
 			name: "SEVERITY_NUMBER_INFO2",
-			want: tql.Enum(plog.SeverityNumberINFO2),
+			want: tql.Enum(plog.SeverityNumberInfo2),
 		},
 		{
 			name: "SEVERITY_NUMBER_INFO3",
-			want: tql.Enum(plog.SeverityNumberINFO3),
+			want: tql.Enum(plog.SeverityNumberInfo3),
 		},
 		{
 			name: "SEVERITY_NUMBER_INFO4",
-			want: tql.Enum(plog.SeverityNumberINFO4),
+			want: tql.Enum(plog.SeverityNumberInfo4),
 		},
 		{
 			name: "SEVERITY_NUMBER_WARN",
-			want: tql.Enum(plog.SeverityNumberWARN),
+			want: tql.Enum(plog.SeverityNumberWarn),
 		},
 		{
 			name: "SEVERITY_NUMBER_WARN2",
-			want: tql.Enum(plog.SeverityNumberWARN2),
+			want: tql.Enum(plog.SeverityNumberWarn2),
 		},
 		{
 			name: "SEVERITY_NUMBER_WARN3",
-			want: tql.Enum(plog.SeverityNumberWARN3),
+			want: tql.Enum(plog.SeverityNumberWarn3),
 		},
 		{
 			name: "SEVERITY_NUMBER_WARN4",
-			want: tql.Enum(plog.SeverityNumberWARN4),
+			want: tql.Enum(plog.SeverityNumberWarn4),
 		},
 		{
 			name: "SEVERITY_NUMBER_ERROR",
-			want: tql.Enum(plog.SeverityNumberERROR),
+			want: tql.Enum(plog.SeverityNumberError),
 		},
 		{
 			name: "SEVERITY_NUMBER_ERROR2",
-			want: tql.Enum(plog.SeverityNumberERROR2),
+			want: tql.Enum(plog.SeverityNumberError2),
 		},
 		{
 			name: "SEVERITY_NUMBER_ERROR3",
-			want: tql.Enum(plog.SeverityNumberERROR3),
+			want: tql.Enum(plog.SeverityNumberError3),
 		},
 		{
 			name: "SEVERITY_NUMBER_ERROR4",
-			want: tql.Enum(plog.SeverityNumberERROR4),
+			want: tql.Enum(plog.SeverityNumberError4),
 		},
 		{
 			name: "SEVERITY_NUMBER_FATAL",
-			want: tql.Enum(plog.SeverityNumberFATAL),
+			want: tql.Enum(plog.SeverityNumberFatal),
 		},
 		{
 			name: "SEVERITY_NUMBER_FATAL2",
-			want: tql.Enum(plog.SeverityNumberFATAL2),
+			want: tql.Enum(plog.SeverityNumberFatal2),
 		},
 		{
 			name: "SEVERITY_NUMBER_FATAL3",
-			want: tql.Enum(plog.SeverityNumberFATAL3),
+			want: tql.Enum(plog.SeverityNumberFatal3),
 		},
 		{
 			name: "SEVERITY_NUMBER_FATAL4",
-			want: tql.Enum(plog.SeverityNumberFATAL4),
+			want: tql.Enum(plog.SeverityNumberFatal4),
 		},
 	}
 	for _, tt := range tests {

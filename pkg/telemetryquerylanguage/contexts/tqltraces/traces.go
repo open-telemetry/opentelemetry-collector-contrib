@@ -24,39 +24,34 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/internal/tqlcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-type SpanTransformContext struct {
-	Span                 ptrace.Span
-	InstrumentationScope pcommon.InstrumentationScope
-	Resource             pcommon.Resource
+type transformContext struct {
+	span                 ptrace.Span
+	instrumentationScope pcommon.InstrumentationScope
+	resource             pcommon.Resource
 }
 
-func (ctx SpanTransformContext) GetItem() interface{} {
-	return ctx.Span
+func NewTransformContext(span ptrace.Span, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) tql.TransformContext {
+	return transformContext{
+		span:                 span,
+		instrumentationScope: instrumentationScope,
+		resource:             resource,
+	}
 }
 
-func (ctx SpanTransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return ctx.InstrumentationScope
+func (ctx transformContext) GetItem() interface{} {
+	return ctx.span
 }
 
-func (ctx SpanTransformContext) GetResource() pcommon.Resource {
-	return ctx.Resource
+func (ctx transformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
+	return ctx.instrumentationScope
 }
 
-// pathGetSetter is a getSetter which has been resolved using a path expression provided by a user.
-type pathGetSetter struct {
-	getter tql.ExprFunc
-	setter func(ctx tql.TransformContext, val interface{})
-}
-
-func (path pathGetSetter) Get(ctx tql.TransformContext) interface{} {
-	return path.getter(ctx)
-}
-
-func (path pathGetSetter) Set(ctx tql.TransformContext, val interface{}) {
-	path.setter(ctx, val)
+func (ctx transformContext) GetResource() pcommon.Resource {
+	return ctx.resource
 }
 
 var symbolTable = map[tql.EnumSymbol]tql.Enum{
@@ -91,26 +86,9 @@ func ParsePath(val *tql.Path) (tql.GetSetter, error) {
 func newPathGetSetter(path []tql.Field) (tql.GetSetter, error) {
 	switch path[0].Name {
 	case "resource":
-		if len(path) == 1 {
-			return accessResource(), nil
-		}
-		if path[1].Name == "attributes" {
-			mapKey := path[1].MapKey
-			if mapKey == nil {
-				return accessResourceAttributes(), nil
-			}
-			return accessResourceAttributesKey(mapKey), nil
-		}
+		return tqlcommon.ResourcePathGetSetter(path[1:])
 	case "instrumentation_library":
-		if len(path) == 1 {
-			return accessInstrumentationScope(), nil
-		}
-		switch path[1].Name {
-		case "name":
-			return accessInstrumentationScopeName(), nil
-		case "version":
-			return accessInstrumentationScopeVersion(), nil
-		}
+		return tqlcommon.ScopePathGetSetter(path[1:])
 	case "trace_id":
 		if len(path) == 1 {
 			return accessTraceID(), nil
@@ -174,90 +152,12 @@ func newPathGetSetter(path []tql.Field) (tql.GetSetter, error) {
 	return nil, fmt.Errorf("invalid path expression %v", path)
 }
 
-func accessResource() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetResource()
-		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
-			if newRes, ok := val.(pcommon.Resource); ok {
-				ctx.GetResource().Attributes().Clear()
-				newRes.CopyTo(ctx.GetResource())
-			}
-		},
-	}
-}
-
-func accessResourceAttributes() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetResource().Attributes()
-		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
-			if attrs, ok := val.(pcommon.Map); ok {
-				ctx.GetResource().Attributes().Clear()
-				attrs.CopyTo(ctx.GetResource().Attributes())
-			}
-		},
-	}
-}
-
-func accessResourceAttributesKey(mapKey *string) pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
-			return getAttr(ctx.GetResource().Attributes(), *mapKey)
-		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
-			setAttr(ctx.GetResource().Attributes(), *mapKey, val)
-		},
-	}
-}
-
-func accessInstrumentationScope() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetInstrumentationScope()
-		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
-			if newIl, ok := val.(pcommon.InstrumentationScope); ok {
-				newIl.CopyTo(ctx.GetInstrumentationScope())
-			}
-		},
-	}
-}
-
-func accessInstrumentationScopeName() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetInstrumentationScope().Name()
-		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				ctx.GetInstrumentationScope().SetName(str)
-			}
-		},
-	}
-}
-
-func accessInstrumentationScopeVersion() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetInstrumentationScope().Version()
-		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				ctx.GetInstrumentationScope().SetVersion(str)
-			}
-		},
-	}
-}
-
-func accessTraceID() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+func accessTraceID() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem().(ptrace.Span).TraceID()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newTraceID, ok := val.(pcommon.TraceID); ok {
 				ctx.GetItem().(ptrace.Span).SetTraceID(newTraceID)
 			}
@@ -265,12 +165,12 @@ func accessTraceID() pathGetSetter {
 	}
 }
 
-func accessStringTraceID() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+func accessStringTraceID() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem().(ptrace.Span).TraceID().HexString()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				if traceID, err := parseTraceID(str); err == nil {
 					ctx.GetItem().(ptrace.Span).SetTraceID(traceID)
@@ -280,12 +180,12 @@ func accessStringTraceID() pathGetSetter {
 	}
 }
 
-func accessSpanID() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+func accessSpanID() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem().(ptrace.Span).SpanID()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newSpanID, ok := val.(pcommon.SpanID); ok {
 				ctx.GetItem().(ptrace.Span).SetSpanID(newSpanID)
 			}
@@ -293,12 +193,12 @@ func accessSpanID() pathGetSetter {
 	}
 }
 
-func accessStringSpanID() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+func accessStringSpanID() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem().(ptrace.Span).SpanID().HexString()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				if spanID, err := parseSpanID(str); err == nil {
 					ctx.GetItem().(ptrace.Span).SetSpanID(spanID)
@@ -308,32 +208,32 @@ func accessStringSpanID() pathGetSetter {
 	}
 }
 
-func accessTraceState() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
-			return (string)(ctx.GetItem().(ptrace.Span).TraceState())
+func accessTraceState() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
+			return ctx.GetItem().(ptrace.Span).TraceStateStruct().AsRaw()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.GetItem().(ptrace.Span).SetTraceState(ptrace.TraceState(str))
+				ctx.GetItem().(ptrace.Span).TraceStateStruct().FromRaw(str)
 			}
 		},
 	}
 }
 
-func accessTraceStateKey(mapKey *string) pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
-			if ts, err := trace.ParseTraceState(string(ctx.GetItem().(ptrace.Span).TraceState())); err == nil {
+func accessTraceStateKey(mapKey *string) tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
+			if ts, err := trace.ParseTraceState(ctx.GetItem().(ptrace.Span).TraceStateStruct().AsRaw()); err == nil {
 				return ts.Get(*mapKey)
 			}
 			return nil
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				if ts, err := trace.ParseTraceState(string(ctx.GetItem().(ptrace.Span).TraceState())); err == nil {
+				if ts, err := trace.ParseTraceState(ctx.GetItem().(ptrace.Span).TraceStateStruct().AsRaw()); err == nil {
 					if updated, err := ts.Insert(*mapKey, str); err == nil {
-						ctx.GetItem().(ptrace.Span).SetTraceState(ptrace.TraceState(updated.String()))
+						ctx.GetItem().(ptrace.Span).TraceStateStruct().FromRaw(updated.String())
 					}
 				}
 			}
@@ -341,12 +241,12 @@ func accessTraceStateKey(mapKey *string) pathGetSetter {
 	}
 }
 
-func accessParentSpanID() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+func accessParentSpanID() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem().(ptrace.Span).ParentSpanID()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newParentSpanID, ok := val.(pcommon.SpanID); ok {
 				ctx.GetItem().(ptrace.Span).SetParentSpanID(newParentSpanID)
 			}
@@ -354,12 +254,12 @@ func accessParentSpanID() pathGetSetter {
 	}
 }
 
-func accessName() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+func accessName() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem().(ptrace.Span).Name()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				ctx.GetItem().(ptrace.Span).SetName(str)
 			}
@@ -367,12 +267,12 @@ func accessName() pathGetSetter {
 	}
 }
 
-func accessKind() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+func accessKind() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return int64(ctx.GetItem().(ptrace.Span).Kind())
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
 				ctx.GetItem().(ptrace.Span).SetKind(ptrace.SpanKind(i))
 			}
@@ -380,12 +280,12 @@ func accessKind() pathGetSetter {
 	}
 }
 
-func accessStartTimeUnixNano() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+func accessStartTimeUnixNano() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem().(ptrace.Span).StartTimestamp().AsTime().UnixNano()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
 				ctx.GetItem().(ptrace.Span).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, i)))
 			}
@@ -393,12 +293,12 @@ func accessStartTimeUnixNano() pathGetSetter {
 	}
 }
 
-func accessEndTimeUnixNano() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+func accessEndTimeUnixNano() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem().(ptrace.Span).EndTimestamp().AsTime().UnixNano()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
 				ctx.GetItem().(ptrace.Span).SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, i)))
 			}
@@ -406,37 +306,36 @@ func accessEndTimeUnixNano() pathGetSetter {
 	}
 }
 
-func accessAttributes() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+func accessAttributes() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem().(ptrace.Span).Attributes()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if attrs, ok := val.(pcommon.Map); ok {
-				ctx.GetItem().(ptrace.Span).Attributes().Clear()
 				attrs.CopyTo(ctx.GetItem().(ptrace.Span).Attributes())
 			}
 		},
 	}
 }
 
-func accessAttributesKey(mapKey *string) pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
-			return getAttr(ctx.GetItem().(ptrace.Span).Attributes(), *mapKey)
+func accessAttributesKey(mapKey *string) tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
+			return tqlcommon.GetMapValue(ctx.GetItem().(ptrace.Span).Attributes(), *mapKey)
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
-			setAttr(ctx.GetItem().(ptrace.Span).Attributes(), *mapKey, val)
+		Setter: func(ctx tql.TransformContext, val interface{}) {
+			tqlcommon.SetMapValue(ctx.GetItem().(ptrace.Span).Attributes(), *mapKey, val)
 		},
 	}
 }
 
-func accessDroppedAttributesCount() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+func accessDroppedAttributesCount() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return int64(ctx.GetItem().(ptrace.Span).DroppedAttributesCount())
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
 				ctx.GetItem().(ptrace.Span).SetDroppedAttributesCount(uint32(i))
 			}
@@ -444,12 +343,12 @@ func accessDroppedAttributesCount() pathGetSetter {
 	}
 }
 
-func accessEvents() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+func accessEvents() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem().(ptrace.Span).Events()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if slc, ok := val.(ptrace.SpanEventSlice); ok {
 				ctx.GetItem().(ptrace.Span).Events().RemoveIf(func(event ptrace.SpanEvent) bool {
 					return true
@@ -460,12 +359,12 @@ func accessEvents() pathGetSetter {
 	}
 }
 
-func accessDroppedEventsCount() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+func accessDroppedEventsCount() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return int64(ctx.GetItem().(ptrace.Span).DroppedEventsCount())
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
 				ctx.GetItem().(ptrace.Span).SetDroppedEventsCount(uint32(i))
 			}
@@ -473,12 +372,12 @@ func accessDroppedEventsCount() pathGetSetter {
 	}
 }
 
-func accessLinks() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+func accessLinks() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem().(ptrace.Span).Links()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if slc, ok := val.(ptrace.SpanLinkSlice); ok {
 				ctx.GetItem().(ptrace.Span).Links().RemoveIf(func(event ptrace.SpanLink) bool {
 					return true
@@ -489,12 +388,12 @@ func accessLinks() pathGetSetter {
 	}
 }
 
-func accessDroppedLinksCount() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+func accessDroppedLinksCount() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return int64(ctx.GetItem().(ptrace.Span).DroppedLinksCount())
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
 				ctx.GetItem().(ptrace.Span).SetDroppedLinksCount(uint32(i))
 			}
@@ -502,12 +401,12 @@ func accessDroppedLinksCount() pathGetSetter {
 	}
 }
 
-func accessStatus() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+func accessStatus() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem().(ptrace.Span).Status()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if status, ok := val.(ptrace.SpanStatus); ok {
 				status.CopyTo(ctx.GetItem().(ptrace.Span).Status())
 			}
@@ -515,12 +414,12 @@ func accessStatus() pathGetSetter {
 	}
 }
 
-func accessStatusCode() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+func accessStatusCode() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return int64(ctx.GetItem().(ptrace.Span).Status().Code())
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
 				ctx.GetItem().(ptrace.Span).Status().SetCode(ptrace.StatusCode(i))
 			}
@@ -528,87 +427,16 @@ func accessStatusCode() pathGetSetter {
 	}
 }
 
-func accessStatusMessage() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+func accessStatusMessage() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem().(ptrace.Span).Status().Message()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				ctx.GetItem().(ptrace.Span).Status().SetMessage(str)
 			}
 		},
-	}
-}
-
-func getAttr(attrs pcommon.Map, mapKey string) interface{} {
-	val, ok := attrs.Get(mapKey)
-	if !ok {
-		return nil
-	}
-	switch val.Type() {
-	case pcommon.ValueTypeString:
-		return val.StringVal()
-	case pcommon.ValueTypeBool:
-		return val.BoolVal()
-	case pcommon.ValueTypeInt:
-		return val.IntVal()
-	case pcommon.ValueTypeDouble:
-		return val.DoubleVal()
-	case pcommon.ValueTypeMap:
-		return val.MapVal()
-	case pcommon.ValueTypeSlice:
-		return val.SliceVal()
-	case pcommon.ValueTypeBytes:
-		return val.BytesVal().AsRaw()
-	}
-	return nil
-}
-
-func setAttr(attrs pcommon.Map, mapKey string, val interface{}) {
-	switch v := val.(type) {
-	case string:
-		attrs.UpsertString(mapKey, v)
-	case bool:
-		attrs.UpsertBool(mapKey, v)
-	case int64:
-		attrs.UpsertInt(mapKey, v)
-	case float64:
-		attrs.UpsertDouble(mapKey, v)
-	case []byte:
-		attrs.UpsertBytes(mapKey, pcommon.NewImmutableByteSlice(v))
-	case []string:
-		arr := pcommon.NewValueSlice()
-		for _, str := range v {
-			arr.SliceVal().AppendEmpty().SetStringVal(str)
-		}
-		attrs.Upsert(mapKey, arr)
-	case []bool:
-		arr := pcommon.NewValueSlice()
-		for _, b := range v {
-			arr.SliceVal().AppendEmpty().SetBoolVal(b)
-		}
-		attrs.Upsert(mapKey, arr)
-	case []int64:
-		arr := pcommon.NewValueSlice()
-		for _, i := range v {
-			arr.SliceVal().AppendEmpty().SetIntVal(i)
-		}
-		attrs.Upsert(mapKey, arr)
-	case []float64:
-		arr := pcommon.NewValueSlice()
-		for _, f := range v {
-			arr.SliceVal().AppendEmpty().SetDoubleVal(f)
-		}
-		attrs.Upsert(mapKey, arr)
-	case [][]byte:
-		arr := pcommon.NewValueSlice()
-		for _, b := range v {
-			arr.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice(b))
-		}
-		attrs.Upsert(mapKey, arr)
-	default:
-		// TODO(anuraaga): Support set of map type.
 	}
 }
 
@@ -622,7 +450,7 @@ func parseSpanID(spanIDStr string) (pcommon.SpanID, error) {
 	}
 	var idArr [8]byte
 	copy(idArr[:8], id)
-	return pcommon.NewSpanID(idArr), nil
+	return pcommon.SpanID(idArr), nil
 }
 
 func parseTraceID(traceIDStr string) (pcommon.TraceID, error) {
@@ -635,5 +463,5 @@ func parseTraceID(traceIDStr string) (pcommon.TraceID, error) {
 	}
 	var idArr [16]byte
 	copy(idArr[:16], id)
-	return pcommon.NewTraceID(idArr), nil
+	return pcommon.TraceID(idArr), nil
 }

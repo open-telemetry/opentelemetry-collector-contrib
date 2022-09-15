@@ -121,7 +121,8 @@ func TestTracesSource(t *testing.T) {
 			t.Fatalf("Metrics server handler error: %v", err)
 		}
 		reqs <- buf.Bytes()
-		w.Write([]byte("{\"status\": \"ok\"}")) // nolint:errcheck
+		_, err := w.Write([]byte("{\"status\": \"ok\"}"))
+		assert.NoError(t, err)
 	}))
 	defer metricsServer.Close()
 	tracesServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -149,9 +150,10 @@ func TestTracesSource(t *testing.T) {
 	assert := assert.New(t)
 	params := componenttest.NewNopExporterCreateSettings()
 	reg := featuregate.NewRegistry()
-	reg.Apply(map[string]bool{
+	reg.MustRegister(metadata.HostnamePreviewGate)
+	assert.NoError(reg.Apply(map[string]bool{
 		metadata.HostnamePreviewFeatureGate: true,
-	})
+	}))
 	f := newFactoryWithRegistry(reg)
 	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
 	assert.NoError(err)
@@ -325,11 +327,11 @@ func TestPushTraceData(t *testing.T) {
 }
 
 func simpleTraces() ptrace.Traces {
-	return genTraces(pcommon.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}), nil)
+	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, nil)
 }
 
 func simpleTracesWithAttributes(attrs map[string]interface{}) ptrace.Traces {
-	return genTraces(pcommon.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}), attrs)
+	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, attrs)
 }
 
 func genTraces(traceID pcommon.TraceID, attrs map[string]interface{}) ptrace.Traces {
@@ -337,13 +339,10 @@ func genTraces(traceID pcommon.TraceID, attrs map[string]interface{}) ptrace.Tra
 	rspans := traces.ResourceSpans().AppendEmpty()
 	span := rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(traceID)
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 1, 2, 3, 4}))
+	span.SetSpanID([8]byte{0, 0, 0, 0, 1, 2, 3, 4})
 	if attrs == nil {
 		return traces
 	}
-	pcommon.NewMapFromRaw(attrs).Range(func(k string, v pcommon.Value) bool {
-		rspans.Resource().Attributes().Insert(k, v)
-		return true
-	})
+	rspans.Resource().Attributes().FromRaw(attrs)
 	return traces
 }

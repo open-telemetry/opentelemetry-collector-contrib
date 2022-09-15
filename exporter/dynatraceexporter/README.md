@@ -163,6 +163,8 @@ exporters:
       enabled: true
       num_consumers: 10
       queue_size: 5000
+    resource_to_telemetry_conversion:
+      enabled: false
 service:
   extensions:
   pipelines:
@@ -261,21 +263,75 @@ User should calculate this as `num_seconds * requests_per_second` where:
 
 Default: `5000`
 
+### resource_to_telemetry_conversion (Optional)
+
+When `resource_to_telemetry_conversion.enabled` is set to `true`, all resource
+attributes will be included as metric dimensions in Dynatrace in addition to the
+attributes present on the metric data point.
+
+Default: `false`
+
+> :warning: **Please note** that the Dynatrace API has a limit of `50` attributes
+> per metric data point and any data point which exceeds this limit will be dropped.
+
+If you think you might exceed this limit, you should use the
+[transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor)
+to apply a filter, so only a select subset of your resource attributes are converted.
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+processors:
+  transform:
+    metrics:
+      queries:
+        - keep_keys(resource.attributes, "key1", "key2", "key3")
+exporters:
+  dynatrace:
+    endpoint: https://ab12345.live.dynatrace.com
+    api_token: <api token must have metrics.write permission>
+    resource_to_telemetry_conversion:
+      enabled: true
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [transform]
+      exporters: [dynatrace]
+```
+
 ### tags (Deprecated, Optional)
 
 **Deprecated: Please use [default_dimensions](#default_dimensions-optional) instead**
 
-# Considerations when exporting Cumulative Data Points
+# Temporality
 
-When receiving Sum or Histogram metrics with CUMULATIVE temporality, this exporter
-performs CUMULATIVE to DELTA conversion. This conversion can lead to missing
-or inconsistent data, as described below:
+If possible when configuring your SDK, use DELTA temporality for Counter, Asynchronous Counter, and Histogram metrics.
+Use CUMULATIVE temporality for UpDownCounter and Asynchronous UpDownCounter metrics.
+When using OpenTelemetry SDKs to gather metrics data, setting the
+`OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE` environment variable to `delta`
+should correctly set temporality for all metrics.
+You can check the [spec compliance matrix](https://github.com/open-telemetry/opentelemetry-specification/blob/main/spec-compliance-matrix.md#environment-variables)
+if you are unsure if the SDK you are using supports this configuration.
+You can read more about this and other configurations at
+[OpenTelemetry Metrics Exporter - OTLP](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/sdk_exporters/otlp.md#additional-configuration).
 
-## First Data Points are dropped
+## Considerations when exporting Cumulative Data Points
 
-Due to the conversion, the exporter will drop the first received data point,
-as there is no previous data point to compare it to. This can be circumvented
-by configuring the OpenTelemetry SDK to export DELTA values.
+Histogram metrics with CUMULATIVE temporality are NOT SUPPORTED and will NOT be exported.
+
+When possible, Sum metrics should use DELTA temporality.
+When receiving Sum metrics with CUMULATIVE temporality, this exporter performs CUMULATIVE to DELTA conversion.
+This conversion can lead to missing or inconsistent data, as described below:
+
+### First Data Points are dropped
+
+Due to the conversion, the exporter will drop the first received data point
+after a counter is created or reset as there is no previous data point to compare it to.
+This can be circumvented by configuring the OpenTelemetry SDK to export DELTA values.
 
 ## Multi-instance collector deployment
 

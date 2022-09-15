@@ -30,7 +30,9 @@ import (
 )
 
 func TestFileTracesExporter(t *testing.T) {
-	fe := &fileExporter{path: tempFileName(t)}
+	fe := newFileExporter(&Config{
+		Path: tempFileName(t),
+	})
 	require.NotNil(t, fe)
 
 	td := testdata.GenerateTracesTwoSpansSameResource()
@@ -58,7 +60,9 @@ func TestFileTracesExporterError(t *testing.T) {
 }
 
 func TestFileMetricsExporter(t *testing.T) {
-	fe := &fileExporter{path: tempFileName(t)}
+	fe := newFileExporter(&Config{
+		Path: tempFileName(t),
+	})
 	require.NotNil(t, fe)
 
 	md := testdata.GenerateMetricsTwoMetrics()
@@ -86,7 +90,9 @@ func TestFileMetricsExporterError(t *testing.T) {
 }
 
 func TestFileLogsExporter(t *testing.T) {
-	fe := &fileExporter{path: tempFileName(t)}
+	fe := newFileExporter(&Config{
+		Path: tempFileName(t),
+	})
 	require.NotNil(t, fe)
 
 	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
@@ -111,6 +117,16 @@ func TestFileLogsExporterErrors(t *testing.T) {
 	// Cannot call Start since we inject directly the WriterCloser.
 	assert.Error(t, fe.ConsumeLogs(context.Background(), ld))
 	assert.NoError(t, fe.Shutdown(context.Background()))
+}
+
+func Test_fileExporter_Capabilities(t *testing.T) {
+	fe := newFileExporter(
+		&Config{
+			Path:     tempFileName(t),
+			Rotation: Rotation{MaxMegabytes: 1},
+		})
+	require.NotNil(t, fe)
+	require.NotNil(t, fe.Capabilities())
 }
 
 // tempFileName provides a temporary file name for testing.

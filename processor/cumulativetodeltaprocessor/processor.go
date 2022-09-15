@@ -260,11 +260,13 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in interface{
 			}
 
 			bucketsValid := true
-			rawBucketCounts := dp.BucketCounts().AsRaw()
-			for index := 0; index < len(rawBucketCounts); index++ {
+			updatedBucketCounts := pcommon.NewUInt64Slice()
+			dp.BucketCounts().CopyTo(updatedBucketCounts)
+			for index := 0; index < updatedBucketCounts.Len(); index++ {
 				bucketID := baseIdentities.BucketIdentities[index]
-				bucketDelta, bucketValid := ctdp.convertHistogramIntValue(bucketID, dp, int64(rawBucketCounts[index]))
-				rawBucketCounts[index] = uint64(bucketDelta.IntValue)
+				bucketDelta, bucketValid := ctdp.convertHistogramIntValue(bucketID, dp,
+					int64(updatedBucketCounts.At(index)))
+				updatedBucketCounts.SetAt(index, uint64(bucketDelta.IntValue))
 				bucketsValid = bucketsValid && bucketValid
 			}
 
@@ -274,7 +276,7 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in interface{
 				if hasSum {
 					dp.SetSum(sumDelta.FloatValue)
 				}
-				dp.SetBucketCounts(pcommon.NewImmutableUInt64Slice(rawBucketCounts))
+				updatedBucketCounts.MoveTo(dp.BucketCounts())
 				return false
 			}
 

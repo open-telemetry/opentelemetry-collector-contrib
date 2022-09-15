@@ -55,49 +55,39 @@ func orFuncs(funcs []BoolExpressionEvaluator) BoolExpressionEvaluator {
 	}
 }
 
-func newComparisonEvaluator(comparison *Comparison, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (BoolExpressionEvaluator, error) {
+func (p *Parser) newComparisonEvaluator(comparison *Comparison) (BoolExpressionEvaluator, error) {
 	if comparison == nil {
 		return alwaysTrue, nil
 	}
-	left, err := NewGetter(comparison.Left, functions, pathParser, enumParser)
+	left, err := p.NewGetter(comparison.Left)
 	if err != nil {
 		return nil, err
 	}
-	right, err := NewGetter(comparison.Right, functions, pathParser, enumParser)
-	// TODO(anuraaga): Check if both left and right are literals and const-evaluate
+	right, err := p.NewGetter(comparison.Right)
 	if err != nil {
 		return nil, err
 	}
 
-	switch comparison.Op {
-	case "==":
-		return func(ctx TransformContext) bool {
-			a := left.Get(ctx)
-			b := right.Get(ctx)
-			return a == b
-		}, nil
-	case "!=":
-		return func(ctx TransformContext) bool {
-			a := left.Get(ctx)
-			b := right.Get(ctx)
-			return a != b
-		}, nil
-	}
+	// The parser ensures that we'll never get an invalid comparison.Op, so we don't have to check that case.
+	return func(ctx TransformContext) bool {
+		a := left.Get(ctx)
+		b := right.Get(ctx)
+		return compare(a, b, comparison.Op)
+	}, nil
 
-	return nil, fmt.Errorf("unrecognized boolean operation %v", comparison.Op)
 }
 
-func newBooleanExpressionEvaluator(expr *BooleanExpression, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (BoolExpressionEvaluator, error) {
+func (p *Parser) newBooleanExpressionEvaluator(expr *BooleanExpression) (BoolExpressionEvaluator, error) {
 	if expr == nil {
 		return alwaysTrue, nil
 	}
-	f, err := newBooleanTermEvaluator(expr.Left, functions, pathParser, enumParser)
+	f, err := p.newBooleanTermEvaluator(expr.Left)
 	if err != nil {
 		return nil, err
 	}
 	funcs := []BoolExpressionEvaluator{f}
 	for _, rhs := range expr.Right {
-		f, err := newBooleanTermEvaluator(rhs.Term, functions, pathParser, enumParser)
+		f, err := p.newBooleanTermEvaluator(rhs.Term)
 		if err != nil {
 			return nil, err
 		}
@@ -107,17 +97,17 @@ func newBooleanExpressionEvaluator(expr *BooleanExpression, functions map[string
 	return orFuncs(funcs), nil
 }
 
-func newBooleanTermEvaluator(term *Term, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (BoolExpressionEvaluator, error) {
+func (p *Parser) newBooleanTermEvaluator(term *Term) (BoolExpressionEvaluator, error) {
 	if term == nil {
 		return alwaysTrue, nil
 	}
-	f, err := newBooleanValueEvaluator(term.Left, functions, pathParser, enumParser)
+	f, err := p.newBooleanValueEvaluator(term.Left)
 	if err != nil {
 		return nil, err
 	}
 	funcs := []BoolExpressionEvaluator{f}
 	for _, rhs := range term.Right {
-		f, err := newBooleanValueEvaluator(rhs.Value, functions, pathParser, enumParser)
+		f, err := p.newBooleanValueEvaluator(rhs.Value)
 		if err != nil {
 			return nil, err
 		}
@@ -127,13 +117,13 @@ func newBooleanTermEvaluator(term *Term, functions map[string]interface{}, pathP
 	return andFuncs(funcs), nil
 }
 
-func newBooleanValueEvaluator(value *BooleanValue, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (BoolExpressionEvaluator, error) {
+func (p *Parser) newBooleanValueEvaluator(value *BooleanValue) (BoolExpressionEvaluator, error) {
 	if value == nil {
 		return alwaysTrue, nil
 	}
 	switch {
 	case value.Comparison != nil:
-		comparison, err := newComparisonEvaluator(value.Comparison, functions, pathParser, enumParser)
+		comparison, err := p.newComparisonEvaluator(value.Comparison)
 		if err != nil {
 			return nil, err
 		}
@@ -144,7 +134,7 @@ func newBooleanValueEvaluator(value *BooleanValue, functions map[string]interfac
 		}
 		return alwaysFalse, nil
 	case value.SubExpr != nil:
-		return newBooleanExpressionEvaluator(value.SubExpr, functions, pathParser, enumParser)
+		return p.newBooleanExpressionEvaluator(value.SubExpr)
 	}
 
 	return nil, fmt.Errorf("unhandled boolean operation %v", value)

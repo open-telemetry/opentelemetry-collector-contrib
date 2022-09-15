@@ -26,9 +26,9 @@ import (
 
 func Test_deleteMatchingKeys(t *testing.T) {
 	input := pcommon.NewMap()
-	input.InsertString("test", "hello world")
-	input.InsertInt("test2", 3)
-	input.InsertBool("test3", true)
+	input.PutString("test", "hello world")
+	input.PutInt("test2", 3)
+	input.PutBool("test3", true)
 
 	target := &tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
@@ -57,7 +57,7 @@ func Test_deleteMatchingKeys(t *testing.T) {
 			pattern: "\\d$",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.InsertString("test", "hello world")
+				expectedMap.PutString("test", "hello world")
 			},
 		},
 		{
@@ -66,9 +66,9 @@ func Test_deleteMatchingKeys(t *testing.T) {
 			pattern: "not a matching pattern",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.InsertString("test", "hello world")
-				expectedMap.InsertInt("test2", 3)
-				expectedMap.InsertBool("test3", true)
+				expectedMap.PutString("test", "hello world")
+				expectedMap.PutInt("test2", 3)
+				expectedMap.PutBool("test3", true)
 			},
 		},
 	}

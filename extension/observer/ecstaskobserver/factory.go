@@ -35,7 +35,9 @@ func NewFactory() component.ExtensionFactory {
 	return component.NewExtensionFactory(
 		typeStr,
 		createDefaultConfig,
-		createExtension)
+		createExtension,
+		component.StabilityLevelUndefined,
+	)
 }
 
 func createDefaultConfig() config.Extension {
