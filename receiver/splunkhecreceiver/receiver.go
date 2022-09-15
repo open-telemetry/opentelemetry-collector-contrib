@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 
 import (
@@ -21,7 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -247,7 +246,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 
 		if err != nil {
 			r.failRequest(ctx, resp, http.StatusBadRequest, errGzipReaderRespBody, 0, err)
-			_, _ = ioutil.ReadAll(req.Body)
+			_, _ = io.ReadAll(req.Body)
 			_ = req.Body.Close()
 			return
 		}
@@ -314,7 +313,9 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	}
 
 	if req.ContentLength == 0 {
-		resp.Write(okRespBody)
+		if _, err := resp.Write(okRespBody); err != nil {
+			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, 0, err)
+		}
 		return
 	}
 
@@ -359,7 +360,10 @@ func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Ev
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), decodeErr)
 	} else {
 		resp.WriteHeader(http.StatusAccepted)
-		resp.Write(okRespBody)
+		_, err := resp.Write(okRespBody)
+		if err != nil {
+			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), err)
+		}
 	}
 }
 
@@ -377,7 +381,9 @@ func (r *splunkReceiver) consumeLogs(ctx context.Context, events []*splunk.Event
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), decodeErr)
 	} else {
 		resp.WriteHeader(http.StatusAccepted)
-		resp.Write(okRespBody)
+		if _, err := resp.Write(okRespBody); err != nil {
+			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), err)
+		}
 	}
 }
 
@@ -387,7 +393,7 @@ func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resour
 		if strings.HasPrefix(accessToken, splunk.HECTokenHeader+" ") {
 			accessTokenValue := accessToken[len(splunk.HECTokenHeader)+1:]
 			return func(resource pcommon.Resource) {
-				resource.Attributes().InsertString(splunk.HecTokenLabel, accessTokenValue)
+				resource.Attributes().PutString(splunk.HecTokenLabel, accessTokenValue)
 			}
 		}
 	}

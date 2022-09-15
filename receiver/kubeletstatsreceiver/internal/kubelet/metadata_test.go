@@ -100,6 +100,12 @@ func TestSetExtraLabels(t *testing.T) {
 									ContainerID: "test-container",
 								},
 							},
+							InitContainerStatuses: []v1.ContainerStatus{
+								{
+									Name:        "init-container1",
+									ContainerID: "test-init-container",
+								},
+							},
 						},
 					},
 				},
@@ -107,6 +113,36 @@ func TestSetExtraLabels(t *testing.T) {
 			args: []string{"uid-1234", "container.id", "container1"},
 			want: map[string]interface{}{
 				string(MetadataLabelContainerID): "test-container",
+			},
+		},
+		{
+			name: "set_init_container_id_valid",
+			metadata: NewMetadata([]MetadataLabel{MetadataLabelContainerID}, &v1.PodList{
+				Items: []v1.Pod{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							UID: "uid-1234",
+						},
+						Status: v1.PodStatus{
+							ContainerStatuses: []v1.ContainerStatus{
+								{
+									Name:        "container1",
+									ContainerID: "test-container",
+								},
+							},
+							InitContainerStatuses: []v1.ContainerStatus{
+								{
+									Name:        "init-container1",
+									ContainerID: "test-init-container",
+								},
+							},
+						},
+					},
+				},
+			}, nil),
+			args: []string{"uid-1234", "container.id", "init-container1"},
+			want: map[string]interface{}{
+				string(MetadataLabelContainerID): "test-init-container",
 			},
 		},
 		{

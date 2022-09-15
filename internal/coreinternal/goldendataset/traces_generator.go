@@ -54,9 +54,10 @@ func GenerateTraces(tracePairsFile string, spanPairsFile string) ([]ptrace.Trace
 }
 
 // generateResourceSpan generates a single PData ResourceSpans populated based on the provided inputs. They are:
-//   tracingInputs - the pairwise combination of field value variations for this ResourceSpans
-//   spanPairsFile - the file with the PICT-generated parameter combinations to generate spans for
-//   random - the random number generator to use in generating ID values
+//
+//	tracingInputs - the pairwise combination of field value variations for this ResourceSpans
+//	spanPairsFile - the file with the PICT-generated parameter combinations to generate spans for
+//	random - the random number generator to use in generating ID values
 //
 // The generated resource spans. If err is not nil, some or all of the resource spans fields will be nil.
 func appendResourceSpan(tracingInputs *PICTTracingInputs, spanPairsFile string,

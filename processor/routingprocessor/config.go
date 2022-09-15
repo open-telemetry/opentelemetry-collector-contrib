@@ -21,6 +21,13 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
+var (
+	errEmptyRoute             = errors.New("empty routing attribute provided")
+	errNoExporters            = errors.New("no exporters defined for the route")
+	errNoTableItems           = errors.New("the routing table is empty")
+	errNoMissingFromAttribute = errors.New("the FromAttribute property is empty")
+)
+
 // Config defines configuration for the Routing processor.
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct

@@ -40,7 +40,7 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsProcessorAndStabilityLevel(createMetricsProcessor, stability))
+		component.WithMetricsProcessor(createMetricsProcessor, stability))
 }
 
 func createDefaultConfig() config.Processor {
@@ -51,7 +51,7 @@ func createDefaultConfig() config.Processor {
 
 func createMetricsProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateSettings,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
@@ -60,13 +60,15 @@ func createMetricsProcessor(
 		return nil, err
 	}
 
-	hCfg, err := buildHelperConfig(oCfg, params.BuildInfo.Version)
+	hCfg, err := buildHelperConfig(oCfg, set.BuildInfo.Version)
 	if err != nil {
 		return nil, err
 	}
-	metricsProcessor := newMetricsTransformProcessor(params.Logger, hCfg)
+	metricsProcessor := newMetricsTransformProcessor(set.Logger, hCfg)
 
 	return processorhelper.NewMetricsProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		metricsProcessor.processMetrics,
@@ -77,12 +79,8 @@ func createMetricsProcessor(
 // An error is returned if there are any invalid inputs.
 func validateConfiguration(config *Config) error {
 	for _, transform := range config.Transforms {
-		if transform.MetricIncludeFilter.Include == "" && transform.MetricName == "" {
+		if transform.MetricIncludeFilter.Include == "" {
 			return fmt.Errorf("missing required field %q", IncludeFieldName)
-		}
-
-		if transform.MetricIncludeFilter.Include != "" && transform.MetricName != "" {
-			return fmt.Errorf("cannot supply both %q and %q, use %q with %q match type", IncludeFieldName, MetricNameFieldName, IncludeFieldName, StrictMatchType)
 		}
 
 		if transform.MetricIncludeFilter.MatchType != "" && !transform.MetricIncludeFilter.MatchType.isValid() {
@@ -147,11 +145,6 @@ func buildHelperConfig(config *Config, version string) ([]internalTransform, err
 	helperDataTransforms := make([]internalTransform, len(config.Transforms))
 	for i, t := range config.Transforms {
 
-		// for backwards compatibility, convert metric name to an include filter
-		if t.MetricName != "" {
-			t.MetricIncludeFilter = FilterConfig{Include: t.MetricName}
-			t.MetricName = ""
-		}
 		if t.MetricIncludeFilter.MatchType == "" {
 			t.MetricIncludeFilter.MatchType = StrictMatchType
 		}

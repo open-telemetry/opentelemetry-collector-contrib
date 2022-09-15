@@ -35,23 +35,20 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, stability))
+		component.WithMetricsExporter(createMetricsExporter, stability))
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings:                config.NewExporterSettings(config.NewComponentID(typeStr)),
-		AWSSessionSettings:              awsutil.CreateDefaultSessionConfig(),
-		LogGroupName:                    "",
-		LogStreamName:                   "",
-		Namespace:                       "",
-		DimensionRollupOption:           "ZeroAndSingleDimensionRollup",
-		ParseJSONEncodedAttributeValues: make([]string, 0),
-		MetricDeclarations:              make([]*MetricDeclaration, 0),
-		MetricDescriptors:               make([]MetricDescriptor, 0),
-		OutputDestination:               "cloudwatch",
-		logger:                          nil,
+		ExporterSettings:      config.NewExporterSettings(config.NewComponentID(typeStr)),
+		AWSSessionSettings:    awsutil.CreateDefaultSessionConfig(),
+		LogGroupName:          "",
+		LogStreamName:         "",
+		Namespace:             "",
+		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+		OutputDestination:     "cloudwatch",
+		logger:                nil,
 	}
 }
 

@@ -32,23 +32,22 @@ import (
 //
 // The diagram below illustrates the internal communication inside the FromPdataConverter:
 //
-//            ┌─────────────────────────────────┐
-//            │ Batch()                         │
-//  ┌─────────┤  Ingests plog.Logs, splits up   │
-//  │         │  and places them on workerChan  │
-//  │         └─────────────────────────────────┘
-//  │
-//  │ ┌───────────────────────────────────────────────────┐
-//  ├─► workerLoop()                                      │
-//  │ │ ┌─────────────────────────────────────────────────┴─┐
-//  ├─┼─► workerLoop()                                      │
-//  │ │ │ ┌─────────────────────────────────────────────────┴─┐
-//  └─┼─┼─► workerLoop()                                      │
-//    └─┤ │   consumes sent log entries from workerChan,      │
-//      │ │   translates received logs to entry.Entry,        │
-//      └─┤   and sends them along entriesChan                │
-//        └───────────────────────────────────────────────────┘
-//
+//	          ┌─────────────────────────────────┐
+//	          │ Batch()                         │
+//	┌─────────┤  Ingests plog.Logs, splits up   │
+//	│         │  and places them on workerChan  │
+//	│         └─────────────────────────────────┘
+//	│
+//	│ ┌───────────────────────────────────────────────────┐
+//	├─► workerLoop()                                      │
+//	│ │ ┌─────────────────────────────────────────────────┴─┐
+//	├─┼─► workerLoop()                                      │
+//	│ │ │ ┌─────────────────────────────────────────────────┴─┐
+//	└─┼─┼─► workerLoop()                                      │
+//	  └─┤ │   consumes sent log entries from workerChan,      │
+//	    │ │   translates received logs to entry.Entry,        │
+//	    └─┤   and sends them along entriesChan                │
+//	      └───────────────────────────────────────────────────┘
 type FromPdataConverter struct {
 	// entriesChan is a channel on which converted logs will be sent out of the converter.
 	entriesChan chan []*entry.Entry
@@ -209,16 +208,16 @@ func convertFrom(src plog.LogRecord, ent *entry.Entry) {
 	ent.Body = valueToInterface(src.Body())
 
 	if !src.TraceID().IsEmpty() {
-		buffer := src.TraceID().Bytes()
+		buffer := src.TraceID()
 		ent.TraceID = buffer[:]
 	}
 	if !src.SpanID().IsEmpty() {
-		buffer := src.SpanID().Bytes()
+		buffer := src.SpanID()
 		ent.SpanID = buffer[:]
 	}
 	if src.Flags() != 0 {
 		a := make([]byte, 4)
-		binary.LittleEndian.PutUint32(a, src.Flags())
+		binary.LittleEndian.PutUint32(a, uint32(src.Flags()))
 		ent.TraceFlags = []byte{a[0]}
 	}
 }
@@ -245,7 +244,7 @@ func valueToInterface(value pcommon.Value) interface{} {
 	case pcommon.ValueTypeInt:
 		return value.IntVal()
 	case pcommon.ValueTypeBytes:
-		return value.MBytesVal()
+		return value.BytesVal().AsRaw()
 	case pcommon.ValueTypeMap:
 		return value.MapVal().AsRaw()
 	case pcommon.ValueTypeSlice:
@@ -260,29 +259,29 @@ func valueToInterface(value pcommon.Value) interface{} {
 }
 
 var fromPdataSevMap = map[plog.SeverityNumber]entry.Severity{
-	plog.SeverityNumberUNDEFINED: entry.Default,
-	plog.SeverityNumberTRACE:     entry.Trace,
-	plog.SeverityNumberTRACE2:    entry.Trace2,
-	plog.SeverityNumberTRACE3:    entry.Trace3,
-	plog.SeverityNumberTRACE4:    entry.Trace4,
-	plog.SeverityNumberDEBUG:     entry.Debug,
-	plog.SeverityNumberDEBUG2:    entry.Debug2,
-	plog.SeverityNumberDEBUG3:    entry.Debug3,
-	plog.SeverityNumberDEBUG4:    entry.Debug4,
-	plog.SeverityNumberINFO:      entry.Info,
-	plog.SeverityNumberINFO2:     entry.Info2,
-	plog.SeverityNumberINFO3:     entry.Info3,
-	plog.SeverityNumberINFO4:     entry.Info4,
-	plog.SeverityNumberWARN:      entry.Warn,
-	plog.SeverityNumberWARN2:     entry.Warn2,
-	plog.SeverityNumberWARN3:     entry.Warn3,
-	plog.SeverityNumberWARN4:     entry.Warn4,
-	plog.SeverityNumberERROR:     entry.Error,
-	plog.SeverityNumberERROR2:    entry.Error2,
-	plog.SeverityNumberERROR3:    entry.Error3,
-	plog.SeverityNumberERROR4:    entry.Error4,
-	plog.SeverityNumberFATAL:     entry.Fatal,
-	plog.SeverityNumberFATAL2:    entry.Fatal2,
-	plog.SeverityNumberFATAL3:    entry.Fatal3,
-	plog.SeverityNumberFATAL4:    entry.Fatal4,
+	plog.SeverityNumberUndefined: entry.Default,
+	plog.SeverityNumberTrace:     entry.Trace,
+	plog.SeverityNumberTrace2:    entry.Trace2,
+	plog.SeverityNumberTrace3:    entry.Trace3,
+	plog.SeverityNumberTrace4:    entry.Trace4,
+	plog.SeverityNumberDebug:     entry.Debug,
+	plog.SeverityNumberDebug2:    entry.Debug2,
+	plog.SeverityNumberDebug3:    entry.Debug3,
+	plog.SeverityNumberDebug4:    entry.Debug4,
+	plog.SeverityNumberInfo:      entry.Info,
+	plog.SeverityNumberInfo2:     entry.Info2,
+	plog.SeverityNumberInfo3:     entry.Info3,
+	plog.SeverityNumberInfo4:     entry.Info4,
+	plog.SeverityNumberWarn:      entry.Warn,
+	plog.SeverityNumberWarn2:     entry.Warn2,
+	plog.SeverityNumberWarn3:     entry.Warn3,
+	plog.SeverityNumberWarn4:     entry.Warn4,
+	plog.SeverityNumberError:     entry.Error,
+	plog.SeverityNumberError2:    entry.Error2,
+	plog.SeverityNumberError3:    entry.Error3,
+	plog.SeverityNumberError4:    entry.Error4,
+	plog.SeverityNumberFatal:     entry.Fatal,
+	plog.SeverityNumberFatal2:    entry.Fatal2,
+	plog.SeverityNumberFatal3:    entry.Fatal3,
+	plog.SeverityNumberFatal4:    entry.Fatal4,
 }

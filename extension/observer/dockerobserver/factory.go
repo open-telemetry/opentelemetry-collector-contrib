@@ -32,7 +32,9 @@ func NewFactory() component.ExtensionFactory {
 	return component.NewExtensionFactory(
 		typeStr,
 		createDefaultConfig,
-		createExtension)
+		createExtension,
+		component.StabilityLevelBeta,
+	)
 }
 
 func createDefaultConfig() config.Extension {

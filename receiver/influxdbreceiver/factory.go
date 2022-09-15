@@ -25,14 +25,14 @@ import (
 
 const (
 	typeStr   = "influxdb"
-	stability = component.StabilityLevelBeta
+	stability = component.StabilityLevelUnmaintained
 )
 
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
+		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
 // createDefaultConfig creates the default configuration for receiver.

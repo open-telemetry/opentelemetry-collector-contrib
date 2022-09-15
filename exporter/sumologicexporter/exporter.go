@@ -76,8 +76,9 @@ func newLogsExporter(
 	}
 
 	return exporterhelper.NewLogsExporter(
-		cfg,
+		context.TODO(),
 		set,
+		cfg,
 		se.pushLogsData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
@@ -98,8 +99,9 @@ func newMetricsExporter(
 	}
 
 	return exporterhelper.NewMetricsExporter(
-		cfg,
+		context.TODO(),
 		set,
+		cfg,
 		se.pushMetricsData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
@@ -112,7 +114,7 @@ func newMetricsExporter(
 
 // start starts the exporter
 func (se *sumologicexporter) start(_ context.Context, host component.Host) (err error) {
-	client, err := se.config.HTTPClientSettings.ToClient(host.GetExtensions(), se.settings)
+	client, err := se.config.HTTPClientSettings.ToClient(host, se.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
@@ -163,14 +165,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
 
-				// copy resource attributes into logs attributes
-				// log attributes have precedence over resource attributes
-				rl.Resource().Attributes().Range(func(k string, v pcommon.Value) bool {
-					log.Attributes().Insert(k, v)
-					return true
-				})
-
-				currentMetadata = sdr.filter.filterIn(log.Attributes())
+				currentMetadata = sdr.filter.mergeAndFilterIn(rl.Resource().Attributes(), log.Attributes())
 
 				// If metadata differs from currently buffered, flush the buffer
 				if currentMetadata.string() != previousMetadata.string() && previousMetadata.string() != "" {
@@ -269,7 +264,7 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Met
 					attributes: attributes,
 				}
 
-				currentMetadata = sdr.filter.filterIn(attributes)
+				currentMetadata = sdr.filter.mergeAndFilterIn(attributes)
 
 				// If metadata differs from currently buffered, flush the buffer
 				if currentMetadata.string() != previousMetadata.string() && previousMetadata.string() != "" {

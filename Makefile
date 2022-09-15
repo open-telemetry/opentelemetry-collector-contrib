@@ -56,7 +56,7 @@ all-groups:
 	@echo "\nother: $(OTHER_MODS)"
 
 .PHONY: all
-all: all-common gotest otelcontribcol otelcontribcol-unstable
+all: install-tools all-common gotest otelcontribcol otelcontribcol-unstable
 
 .PHONY: all-common
 all-common:
@@ -101,6 +101,10 @@ gofmt:
 .PHONY: golint
 golint:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="lint"
+
+.PHONY: goimpi
+goimpi:
+	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="impi"
 
 .PHONY: goporto
 goporto:
@@ -260,7 +264,7 @@ generate:
 
 .PHONY: chlog-install
 chlog-install:
-	cd cmd/chloggen && $(GOCMD) install .
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/chloggen
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
@@ -385,6 +389,10 @@ clean:
 	find . -type f -name 'coverage.html' -delete
 	find . -type f -name 'integration-coverage.txt' -delete
 	find . -type f -name 'integration-coverage.html' -delete
+
+.PHONY: genconfigdocs
+genconfigdocs:
+	cd cmd/configschema && $(GOCMD) run ./docsgen all
 
 .PHONY: generate-all-labels
 generate-all-labels:

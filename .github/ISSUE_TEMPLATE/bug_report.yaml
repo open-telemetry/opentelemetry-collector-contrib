@@ -1,0 +1,77 @@
+name: Bug report
+description: Create a report to help us improve
+labels: ["bug", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! Please make sure to fill out the entire form below, providing as much context as you can in order to help us triage and track down your bug as quickly as possible.
+
+        Before filing a bug, please be sure you have searched through [existing bugs](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc+label%3Abug) to see if an existing issue covers your bug.
+  - type: textarea
+    attributes:
+      label: What happened?
+      description: Please provide as much detail as you reasonably can.
+      value: |
+        ## Description
+      
+        ## Steps to Reproduce
+
+        ## Expected Result
+
+        ## Actual Result
+
+      render: Markdown
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Collector version
+      description: What version did you use? (e.g., `v0.4.0`, `1eb551b`, etc)
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Environment information
+      description: Please provide any additional information about your installation.
+      value: |
+        ## Environment
+        OS: (e.g., "Ubuntu 20.04")
+        Compiler(if manually compiled): (e.g., "go 14.2")
+      render: Markdown
+  - type: textarea
+    attributes:
+      label: OpenTelemetry Collector configuration
+      description: Please provide the configuration you are using (e.g. the YAML config file).
+      placeholder: | # Empty Collector config
+        receivers:
+        exporters:
+        processors:
+        extensions:
+        service:
+          pipelines:
+            traces:
+              receivers: []
+              exporters: []
+              processors: []
+            metrics:
+              receivers: []
+              exporters: []
+              processors: []
+            logs:
+              receivers: []
+              exporters: []
+              processors: []
+      render: yaml
+  - type: textarea
+    attributes:
+      label: Log output
+      description: |
+        Please copy and paste any relevant log output.
+      render: shell
+  - type: textarea
+    attributes:
+      label: Additional context
+      description: Any additional information you think may be relevant to this issue.
+      render: Markdown
+

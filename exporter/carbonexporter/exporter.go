@@ -47,8 +47,9 @@ func newCarbonExporter(cfg *Config, set component.ExporterCreateSettings) (compo
 	}
 
 	return exporterhelper.NewMetricsExporter(
-		cfg,
+		context.TODO(),
 		set,
+		cfg,
 		sender.pushMetricsData,
 		exporterhelper.WithShutdown(sender.Shutdown))
 }

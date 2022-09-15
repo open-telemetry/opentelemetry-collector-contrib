@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package prometheus // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 
 import (
@@ -32,17 +31,16 @@ func init() {
 // Returns a new Metric of type "Gauge" with specified name and unit
 func createGauge(name string, unit string) pmetric.Metric {
 	gauge := ilm.Metrics().AppendEmpty()
-	gauge.SetDataType(pmetric.MetricDataTypeGauge)
 	gauge.SetName(name)
 	gauge.SetUnit(unit)
+	gauge.SetEmptyGauge()
 	return gauge
 }
 
 // Returns a new Metric of type Monotonic Sum with specified name and unit
 func createCounter(name string, unit string) pmetric.Metric {
 	counter := ilm.Metrics().AppendEmpty()
-	counter.SetDataType(pmetric.MetricDataTypeSum)
-	counter.Sum().SetIsMonotonic(true)
+	counter.SetEmptySum().SetIsMonotonic(true)
 	counter.SetName(name)
 	counter.SetUnit(unit)
 	return counter

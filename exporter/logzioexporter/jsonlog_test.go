@@ -17,7 +17,7 @@ package logzioexporter
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -91,10 +91,10 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 func TestSetTimeStamp(t *testing.T) {
 	var recordedRequests []byte
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		recordedRequests, _ = ioutil.ReadAll(req.Body)
+		recordedRequests, _ = io.ReadAll(req.Body)
 		rw.WriteHeader(http.StatusOK)
 	}))
-	ld := GenerateLogsOneEmptyTimestamp()
+	ld := generateLogsOneEmptyTimestamp()
 	cfg := &Config{
 		Region:           "us",
 		Token:            "token",

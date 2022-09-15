@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -125,24 +124,21 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	{
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("gauge_double_with_dims")
-		m.SetDataType(pmetric.MetricDataTypeGauge)
-		doublePt := m.Gauge().DataPoints().AppendEmpty()
+		doublePt := m.SetEmptyGauge().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(ts)
 		doublePt.SetDoubleVal(doubleVal)
 	}
 	{
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("gauge_int_with_dims")
-		m.SetDataType(pmetric.MetricDataTypeGauge)
-		int64Pt := m.Gauge().DataPoints().AppendEmpty()
+		int64Pt := m.SetEmptyGauge().DataPoints().AppendEmpty()
 		int64Pt.SetTimestamp(ts)
 		int64Pt.SetIntVal(int64Val)
 	}
 	{
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("cumulative_double_with_dims")
-		m.SetDataType(pmetric.MetricDataTypeSum)
-		m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		m.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		m.Sum().SetIsMonotonic(true)
 		doublePt := m.Sum().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(ts)
@@ -151,8 +147,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	{
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("cumulative_int_with_dims")
-		m.SetDataType(pmetric.MetricDataTypeSum)
-		m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		m.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		m.Sum().SetIsMonotonic(true)
 		int64Pt := m.Sum().DataPoints().AppendEmpty()
 		int64Pt.SetTimestamp(ts)
@@ -355,7 +350,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 			rcv.handleDatapointReq(w, tt.req)
 
 			resp := w.Result()
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 
 			var bodyStr string
@@ -530,7 +525,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 			rcv.handleEventReq(w, tt.req)
 
 			resp := w.Result()
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 
 			var bodyStr string
@@ -570,16 +565,15 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	want := pmetric.NewMetrics()
 	m := want.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 
-	m.SetDataType(pmetric.MetricDataTypeGauge)
 	m.SetName("single")
-	dps := m.Gauge().DataPoints()
+	dps := m.SetEmptyGauge().DataPoints()
 	dp := dps.AppendEmpty()
 	dp.SetTimestamp(pcommon.Timestamp(msec * 1e6))
 	dp.SetIntVal(13)
 
-	dp.Attributes().InsertString("k0", "v0")
-	dp.Attributes().InsertString("k1", "v1")
-	dp.Attributes().InsertString("k2", "v2")
+	dp.Attributes().PutString("k0", "v0")
+	dp.Attributes().PutString("k1", "v1")
+	dp.Attributes().PutString("k2", "v2")
 	dp.Attributes().Sort()
 
 	t.Log("Sending SignalFx metric data Request")
@@ -673,7 +667,7 @@ func Test_sfxReceiver_DatapointAccessTokenPassthrough(t *testing.T) {
 			rcv.handleDatapointReq(w, req)
 
 			resp := w.Result()
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 
 			var bodyStr string
@@ -750,7 +744,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 			rcv.handleEventReq(w, req)
 
 			resp := w.Result()
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 
 			var bodyStr string

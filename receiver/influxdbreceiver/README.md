@@ -2,7 +2,7 @@
 
 | Status                   |           |
 | ------------------------ |-----------|
-| Stability                | [beta]    |
+| Stability                | [unmaintained]    |
 | Supported pipeline types | metrics   |
 | Distributions            | [contrib] |
 
@@ -74,5 +74,5 @@ prometheus,quantile=0.99 rpc_duration_seconds=76656
 prometheus               rpc_duration_seconds_count=1.7560473e+07,rpc_duration_seconds_sum=2693
 ```
 
-[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[unmaintained]: https://github.com/open-telemetry/opentelemetry-collector#unmaintained
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

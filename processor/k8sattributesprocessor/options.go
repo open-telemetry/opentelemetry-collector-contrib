@@ -98,6 +98,24 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.StartTime = true
 			case metadataDeployment, conventions.AttributeK8SDeploymentName:
 				p.rules.Deployment = true
+			case conventions.AttributeK8SReplicaSetName:
+				p.rules.ReplicaSetName = true
+			case conventions.AttributeK8SReplicaSetUID:
+				p.rules.ReplicaSetID = true
+			case conventions.AttributeK8SDaemonSetName:
+				p.rules.DaemonSetName = true
+			case conventions.AttributeK8SDaemonSetUID:
+				p.rules.DaemonSetUID = true
+			case conventions.AttributeK8SStatefulSetName:
+				p.rules.StatefulSetName = true
+			case conventions.AttributeK8SStatefulSetUID:
+				p.rules.StatefulSetUID = true
+			case conventions.AttributeK8SJobName:
+				p.rules.JobName = true
+			case conventions.AttributeK8SJobUID:
+				p.rules.JobUID = true
+			case conventions.AttributeK8SCronJobName:
+				p.rules.CronJobName = true
 			case metadataNode, conventions.AttributeK8SNodeName:
 				p.rules.Node = true
 			case conventions.AttributeContainerID:
@@ -141,7 +159,7 @@ func withExtractAnnotations(annotations ...FieldExtractConfig) option {
 }
 
 func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.FieldExtractionRule, error) {
-	rules := []kube.FieldExtractionRule{}
+	var rules []kube.FieldExtractionRule
 	for _, a := range fields {
 		name := a.TagName
 
@@ -181,7 +199,7 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 		var hasKeyRegexReference bool
 		if a.KeyRegex != "" {
 			var err error
-			keyRegex, err = regexp.Compile(a.KeyRegex)
+			keyRegex, err = regexp.Compile("^(?:" + a.KeyRegex + ")$")
 			if err != nil {
 				return rules, err
 			}
@@ -221,7 +239,7 @@ func withFilterNamespace(ns string) option {
 // withFilterLabels allows specifying options to control filtering pods by pod labels.
 func withFilterLabels(filters ...FieldFilterConfig) option {
 	return func(p *kubernetesprocessor) error {
-		labels := []kube.FieldFilter{}
+		var labels []kube.FieldFilter
 		for _, f := range filters {
 			if f.Op == "" {
 				f.Op = filterOPEquals
@@ -254,7 +272,7 @@ func withFilterLabels(filters ...FieldFilterConfig) option {
 // withFilterFields allows specifying options to control filtering pods by pod fields.
 func withFilterFields(filters ...FieldFilterConfig) option {
 	return func(p *kubernetesprocessor) error {
-		fields := []kube.FieldFilter{}
+		var fields []kube.FieldFilter
 		for _, f := range filters {
 			if f.Op == "" {
 				f.Op = filterOPEquals

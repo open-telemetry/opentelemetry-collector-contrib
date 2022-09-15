@@ -27,14 +27,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "router"
+
 func init() {
-	operator.Register("router", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
 // NewConfig config creates a new router operator config with default values
-func NewConfig(operatorID string) *Config {
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID config creates a new router operator config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		BasicConfig: helper.NewBasicConfig(operatorID, "router"),
+		BasicConfig: helper.NewBasicConfig(operatorID, operatorType),
 	}
 }
 
@@ -182,7 +189,7 @@ func (p *Transformer) SetOutputIDs(opIDs []string) {}
 
 // findOperators will find a subset of operators from a collection.
 func (p *Transformer) findOperators(operators []operator.Operator, operatorIDs []string) ([]operator.Operator, error) {
-	result := make([]operator.Operator, 0)
+	var result []operator.Operator
 	for _, operatorID := range operatorIDs {
 		operator, err := p.findOperator(operators, operatorID)
 		if err != nil {

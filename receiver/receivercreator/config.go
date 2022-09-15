@@ -39,7 +39,8 @@ type receiverConfig struct {
 	id config.ComponentID
 	// config is the map configured by the user in the config file. It is the contents of the map from
 	// the "config" section. The keys and values are arbitrarily configured by the user.
-	config userConfigMap
+	config     userConfigMap
+	endpointID observer.EndpointID
 }
 
 // userConfigMap is an arbitrary map of string keys to arbitrary values as specified by the user
@@ -52,7 +53,10 @@ type receiverTemplate struct {
 	// Rule is the discovery rule that when matched will create a receiver instance
 	// based on receiverTemplate.
 	Rule string `mapstructure:"rule"`
-	rule rule
+	// ResourceAttributes is a map of resource attributes to add to just this receiver's resource metrics.
+	// It can contain expr expressions for endpoint env value expansion
+	ResourceAttributes map[string]interface{} `mapstructure:"resource_attributes"`
+	rule               rule
 }
 
 // resourceAttributes holds a map of default resource attributes for each Endpoint type.
@@ -68,20 +72,21 @@ func newReceiverTemplate(name string, cfg userConfigMap) (receiverTemplate, erro
 
 	return receiverTemplate{
 		receiverConfig: receiverConfig{
-			id:     id,
-			config: cfg,
+			id:         id,
+			config:     cfg,
+			endpointID: observer.EndpointID("endpoint.id"),
 		},
 	}, nil
 }
 
-var _ config.Unmarshallable = (*Config)(nil)
+var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config defines configuration for receiver_creator.
 type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"`
 	receiverTemplates       map[string]receiverTemplate
 	// WatchObservers are the extensions to listen to endpoints from.
-	WatchObservers []config.Type `mapstructure:"watch_observers"`
+	WatchObservers []config.ComponentID `mapstructure:"watch_observers"`
 	// ResourceAttributes is a map of default resource attributes to add to each resource
 	// object received by this receiver from dynamically created receivers.
 	ResourceAttributes resourceAttributes `mapstructure:"resource_attributes"`
@@ -95,6 +100,14 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 
 	if err := componentParser.Unmarshal(cfg); err != nil {
 		return err
+	}
+
+	for endpointType := range cfg.ResourceAttributes {
+		switch endpointType {
+		case observer.ContainerType, observer.HostPortType, observer.K8sNodeType, observer.PodType, observer.PortType:
+		default:
+			return fmt.Errorf("resource attributes for unsupported endpoint type %q", endpointType)
+		}
 	}
 
 	receiversCfg, err := componentParser.Sub(receiversConfigKey)
@@ -121,6 +134,12 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		subreceiver.rule, err = newRule(subreceiver.Rule)
 		if err != nil {
 			return fmt.Errorf("subreceiver %q rule is invalid: %w", subreceiverKey, err)
+		}
+
+		for k, v := range subreceiver.ResourceAttributes {
+			if _, ok := v.(string); !ok {
+				return fmt.Errorf("unsupported `resource_attributes` %q value %v in %s", k, v, subreceiverKey)
+			}
 		}
 
 		cfg.receiverTemplates[subreceiverKey] = subreceiver

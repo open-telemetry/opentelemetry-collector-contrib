@@ -31,7 +31,7 @@ type LogReceiverType interface {
 	Type() config.Type
 	CreateDefaultConfig() config.Receiver
 	BaseConfig(config.Receiver) BaseConfig
-	DecodeInputConfig(config.Receiver) (*operator.Config, error)
+	InputConfig(config.Receiver) operator.Config
 }
 
 // NewFactory creates a factory for a Stanza-based receiver
@@ -39,7 +39,7 @@ func NewFactory(logReceiverType LogReceiverType, sl component.StabilityLevel) co
 	return component.NewReceiverFactory(
 		logReceiverType.Type(),
 		logReceiverType.CreateDefaultConfig,
-		component.WithLogsReceiverAndStabilityLevel(createLogsReceiver(logReceiverType), sl),
+		component.WithLogsReceiver(createLogsReceiver(logReceiverType), sl),
 	)
 }
 
@@ -50,18 +50,14 @@ func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsRec
 		cfg config.Receiver,
 		nextConsumer consumer.Logs,
 	) (component.LogsReceiver, error) {
-		inputCfg, err := logReceiverType.DecodeInputConfig(cfg)
-		if err != nil {
-			return nil, err
-		}
-
+		inputCfg := logReceiverType.InputConfig(cfg)
 		baseCfg := logReceiverType.BaseConfig(cfg)
 		operatorCfgs, err := baseCfg.DecodeOperatorConfigs()
 		if err != nil {
 			return nil, err
 		}
 
-		operators := append([]operator.Config{*inputCfg}, operatorCfgs...)
+		operators := append([]operator.Config{inputCfg}, operatorCfgs...)
 
 		emitterOpts := []LogEmitterOption{
 			LogEmitterWithLogger(params.Logger.Sugar()),
@@ -104,6 +100,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsRec
 			logger:    params.Logger,
 			converter: converter,
 			obsrecv:   obsrecv,
+			storageID: baseCfg.StorageID,
 		}, nil
 	}
 }

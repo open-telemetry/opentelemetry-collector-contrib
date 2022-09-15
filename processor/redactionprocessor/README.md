@@ -1,6 +1,10 @@
 # Redaction processor
 
-Supported pipeline types: traces
+| Status                   |            |
+| ------------------------ |------------|
+| Stability                | [alpha]    |
+| Supported pipeline types | traces     |
+| Distributions            | [contrib]  |
 
 This processor deletes span attributes that don't match a list of allowed span
 attributes. It also masks span attribute values that match a blocked value
@@ -88,3 +92,6 @@ For example, if `notes` is on the list of allowed keys, then the `notes` span
 attribute is retained. However, if there is a value such as a credit card
 number in the `notes` field that matched a regular expression on the list of
 blocked values, then that value is masked.
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

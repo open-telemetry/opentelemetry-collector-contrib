@@ -17,14 +17,13 @@ package k8s // import "github.com/open-telemetry/opentelemetry-collector-contrib
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8s "k8s.io/client-go/kubernetes"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 type nodeNameProvider interface {
@@ -40,7 +39,7 @@ type nodeNameProviderImpl struct {
 
 func (p *nodeNameProviderImpl) namespace() string {
 	namespacePath := "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
-	val, err := ioutil.ReadFile(namespacePath)
+	val, err := os.ReadFile(namespacePath)
 	if err == nil && val != nil {
 		return string(val)
 	}

@@ -185,8 +185,8 @@ func deleteAttributes(attrsForRemoval, targetAttrs pcommon.Map) {
 // extractGroupingAttributes extracts the keys and values of the specified Attributes
 // that match with the attributes keys that is used for grouping
 // Returns:
-//  - whether any attribute matched (true) or none (false)
-//  - the extracted AttributeMap of matching keys and their corresponding values
+//   - whether any attribute matched (true) or none (false)
+//   - the extracted AttributeMap of matching keys and their corresponding values
 func (gap *groupByAttrsProcessor) extractGroupingAttributes(attrMap pcommon.Map) (bool, pcommon.Map) {
 
 	groupingAttributes := pcommon.NewMap()
@@ -195,7 +195,7 @@ func (gap *groupByAttrsProcessor) extractGroupingAttributes(attrMap pcommon.Map)
 	for _, attrKey := range gap.groupByKeys {
 		attrVal, found := attrMap.Get(attrKey)
 		if found {
-			groupingAttributes.Insert(attrKey, attrVal)
+			attrVal.CopyTo(groupingAttributes.PutEmpty(attrKey))
 			foundMatch = true
 		}
 	}
@@ -217,23 +217,28 @@ func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric 
 
 	// We're here, which means that we haven't found our metric, so we need to create a new one, with the same name and type
 	metric := ilm.Metrics().AppendEmpty()
-	metric.SetDataType(searchedMetric.DataType())
 	metric.SetDescription(searchedMetric.Description())
 	metric.SetName(searchedMetric.Name())
 	metric.SetUnit(searchedMetric.Unit())
 
 	// Move other special type specific values
-	switch metric.DataType() {
+	switch searchedMetric.DataType() {
 
 	case pmetric.MetricDataTypeHistogram:
-		metric.Histogram().SetAggregationTemporality(searchedMetric.Histogram().AggregationTemporality())
+		metric.SetEmptyHistogram().SetAggregationTemporality(searchedMetric.Histogram().AggregationTemporality())
 
 	case pmetric.MetricDataTypeExponentialHistogram:
-		metric.ExponentialHistogram().SetAggregationTemporality(searchedMetric.ExponentialHistogram().AggregationTemporality())
+		metric.SetEmptyExponentialHistogram().SetAggregationTemporality(searchedMetric.ExponentialHistogram().AggregationTemporality())
 
 	case pmetric.MetricDataTypeSum:
-		metric.Sum().SetAggregationTemporality(searchedMetric.Sum().AggregationTemporality())
+		metric.SetEmptySum().SetAggregationTemporality(searchedMetric.Sum().AggregationTemporality())
 		metric.Sum().SetIsMonotonic(searchedMetric.Sum().IsMonotonic())
+
+	case pmetric.MetricDataTypeGauge:
+		metric.SetEmptyGauge()
+
+	case pmetric.MetricDataTypeSummary:
+		metric.SetEmptySummary()
 
 	}
 

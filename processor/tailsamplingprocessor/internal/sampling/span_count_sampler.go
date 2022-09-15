@@ -35,18 +35,11 @@ func NewSpanCount(logger *zap.Logger, minSpans int32) PolicyEvaluator {
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (c spanCount) Evaluate(_ pcommon.TraceID, traceData *TraceData) (Decision, error) {
+func (c *spanCount) Evaluate(_ pcommon.TraceID, traceData *TraceData) (Decision, error) {
 	c.logger.Debug("Evaluating spans counts in filter")
 
-	traceData.Lock()
-	batches := traceData.ReceivedBatches
-	traceData.Unlock()
-
-	for i := range batches {
-		trace := batches[i]
-		if trace.SpanCount() >= int(c.minSpans) {
-			return Sampled, nil
-		}
+	if int(traceData.SpanCount.Load()) >= int(c.minSpans) {
+		return Sampled, nil
 	}
 	return NotSampled, nil
 }

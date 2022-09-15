@@ -17,7 +17,7 @@ package internal_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -85,26 +85,21 @@ jvm_memory_pool_bytes_used{pool="CodeHeap 'non-nmethods'"} %.1f`, float64(i))
 	defer scrapeServer.Close()
 
 	serverURL, err := url.Parse(scrapeServer.URL)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// 2. Set up the Prometheus RemoteWrite endpoint.
 	prweUploads := make(chan *prompb.WriteRequest)
 	prweServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// Snappy decode the uploads.
-		payload, rerr := ioutil.ReadAll(req.Body)
-		if err != nil {
-			panic(rerr)
-		}
+		payload, rerr := io.ReadAll(req.Body)
+		require.NoError(t, rerr)
+
 		recv := make([]byte, len(payload))
 		decoded, derr := snappy.Decode(recv, payload)
-		if err != nil {
-			panic(derr)
-		}
+		require.NoError(t, derr)
 
 		writeReq := new(prompb.WriteRequest)
-		if uerr := proto.Unmarshal(decoded, writeReq); uerr != nil {
-			panic(uerr)
-		}
+		require.NoError(t, proto.Unmarshal(decoded, writeReq))
 
 		select {
 		case <-ctx.Done():
@@ -140,7 +135,7 @@ service:
       processors: [batch]
       exporters: [prometheusremotewrite]`, serverURL.Host, prweServer.URL)
 
-	confFile, err := ioutil.TempFile(os.TempDir(), "conf-")
+	confFile, err := os.CreateTemp(os.TempDir(), "conf-")
 	require.Nil(t, err)
 	defer os.Remove(confFile.Name())
 	_, err = confFile.Write([]byte(cfg))
@@ -162,8 +157,10 @@ service:
 	fmp := fileprovider.New()
 	configProvider, err := service.NewConfigProvider(
 		service.ConfigProviderSettings{
-			Locations:    []string{confFile.Name()},
-			MapProviders: map[string]confmap.Provider{fmp.Scheme(): fmp},
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:      []string{confFile.Name()},
+				Providers: map[string]confmap.Provider{fmp.Scheme(): fmp},
+			},
 		})
 	require.NoError(t, err)
 
@@ -187,9 +184,7 @@ service:
 	require.Nil(t, err)
 
 	go func() {
-		if err = app.Run(context.Background()); err != nil {
-			t.Error(err)
-		}
+		assert.NoError(t, app.Run(context.Background()))
 	}()
 	defer app.Shutdown()
 
