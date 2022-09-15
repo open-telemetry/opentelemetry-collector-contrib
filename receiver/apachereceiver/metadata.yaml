@@ -98,20 +98,18 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: [ server_name, cpu_level, cpu_mode ]
-  apache.cpu_load:
+  apache.cpu.load:
     enabled: true
     description: Current load of the CPU.
-    unit: "{load}"
-    sum:
+    unit: "%"
+    gauge:
       value_type: double
       input_type: string
-      monotonic: false
-      aggregation: delta
     attributes: [ server_name ]
   apache.load.1:
     enabled: true
     description: The average server load during the last minute.
-    unit: "{load}"
+    unit: "%"
     gauge:
       value_type: double
       input_type: string
@@ -119,7 +117,7 @@ metrics:
   apache.load.5:
     enabled: true
     description: The average server load during the last 5 minutes.
-    unit: "{load}"
+    unit: "%"
     gauge:
       value_type: double
       input_type: string
@@ -127,7 +125,7 @@ metrics:
   apache.load.15:
     enabled: true
     description: The average server load during the last 15 minutes.
-    unit: "{load}"
+    unit: "%"
     gauge:
       value_type: double
       input_type: string

@@ -253,10 +253,10 @@
                      }
                   },
                   {
-                     "name": "apache.cpu_load",
+                     "name": "apache.cpu.load",
                      "description": "Current load of the CPU.",
-                     "unit": "{load}",
-                     "sum": {
+                     "unit": "%",
+                     "gauge": {
                      "dataPoints": [
                         {
                            "attributes": [
@@ -270,15 +270,13 @@
                            "timeUnixNano": "1632495518500962000",
                            "asDouble": "0.66"
                         }
-                     ],
-                     "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA",
-                     "isMonotonic": false
+                     ]
                      }
                   },
                   {
                      "name": "apache.load.1",
                      "description": "The average server load during the last minute.",
-                     "unit": "{load}",
+                     "unit": "%",
                      "gauge": {
                      "dataPoints": [
                         {
@@ -299,7 +297,7 @@
                   {
                      "name": "apache.load.5",
                      "description": "The average server load during the last 5 minutes.",
-                     "unit": "{load}",
+                     "unit": "%",
                      "gauge": {
                      "dataPoints": [
                         {
@@ -320,7 +318,7 @@
                   {
                      "name": "apache.load.15",
                      "description": "The average server load during the last 15 minutes.",
-                     "unit": "{load}",
+                     "unit": "%",
                      "gauge": {
                      "dataPoints": [
                         {
