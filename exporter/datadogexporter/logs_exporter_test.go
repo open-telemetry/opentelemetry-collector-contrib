@@ -17,7 +17,6 @@ package datadogexporter
 import (
 	"context"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -43,7 +42,7 @@ func Test_logs_exporter_send_logs(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want string
+		want []map[string]interface{}
 	}{
 		{
 			name: "log_with_out_message",
@@ -51,25 +50,22 @@ func Test_logs_exporter_send_logs(t *testing.T) {
 				sendLogRecordBody: false,
 				ld:                lr,
 			},
-			want: func() string {
-				return fmt.Sprintf(`
-            [{
-                "message": "",
-                "app" : "server",
-                "instance_num": "1",
-                "@timestamp" :"%s" ,
-                "status" : "Info",
-                "dd.span_id" :"%d",
-                "dd.trace_id" : "%d",
-                "otel.severity_text":"Info",
-                "otel.severity_number":"9",
-                "otel.span_id":"%s",
-                "otel.trace_id" : "%s",
-                "otel.timestamp" : "%d"
-
-            }]
-            `, testdata.TestLogTime.Format(time.RFC3339), spanIDToUint64(ld.SpanID()), traceIDToUint64(ld.TraceID()), ld.SpanID().HexString(), ld.TraceID().HexString(), testdata.TestLogTime.UnixNano())
-			}(),
+			want: []map[string]interface{}{
+				{
+					"message":              "",
+					"app":                  "server",
+					"instance_num":         "1",
+					"@timestamp":           testdata.TestLogTime.Format(time.RFC3339),
+					"status":               "Info",
+					"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
+					"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
+					"otel.severity_text":   "Info",
+					"otel.severity_number": "9",
+					"otel.span_id":         ld.SpanID().HexString(),
+					"otel.trace_id":        ld.TraceID().HexString(),
+					"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+				},
+			},
 		},
 		{
 			name: "log_with_message",
@@ -77,25 +73,23 @@ func Test_logs_exporter_send_logs(t *testing.T) {
 				sendLogRecordBody: true,
 				ld:                lr,
 			},
-			want: func() string {
-				return fmt.Sprintf(`
-            [{
-                "message": "%s",
-                "app" : "server",
-                "instance_num": "1",
-                "@timestamp" :"%s" ,
-                "status" : "Info",
-                "dd.span_id" :"%d",
-                "dd.trace_id" : "%d",
-                "otel.severity_text":"Info",
-                "otel.severity_number":"9",
-                "otel.span_id":"%s",
-                "otel.trace_id" : "%s",
-                "otel.timestamp" : "%d"
 
-            }]
-            `, ld.Body().AsString(), testdata.TestLogTime.Format(time.RFC3339), spanIDToUint64(ld.SpanID()), traceIDToUint64(ld.TraceID()), ld.SpanID().HexString(), ld.TraceID().HexString(), testdata.TestLogTime.UnixNano())
-			}(),
+			want: []map[string]interface{}{
+				{
+					"message":              ld.Body().AsString(),
+					"app":                  "server",
+					"instance_num":         "1",
+					"@timestamp":           testdata.TestLogTime.Format(time.RFC3339),
+					"status":               "Info",
+					"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
+					"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
+					"otel.severity_text":   "Info",
+					"otel.severity_number": "9",
+					"otel.span_id":         ld.SpanID().HexString(),
+					"otel.trace_id":        ld.TraceID().HexString(),
+					"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -123,13 +117,7 @@ func Test_logs_exporter_send_logs(t *testing.T) {
 			exp, err := f.CreateLogsExporter(ctx, params, cfg)
 			require.NoError(t, err)
 			require.NoError(t, exp.ConsumeLogs(ctx, tt.args.ld))
-			var want []map[string]interface{}
-			err = json.Unmarshal([]byte(tt.want), &want)
-			if err != nil {
-				t.Fatalf("error=%v", err)
-				return
-			}
-			assert.Equal(t, want, server.LogsData)
+			assert.Equal(t, tt.want, server.LogsData)
 		})
 	}
 
