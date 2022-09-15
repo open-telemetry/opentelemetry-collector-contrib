@@ -38,9 +38,7 @@ func NewMockPerfCounterScraperError(scrapeErr, getObjectErr, getValuesErr error)
 }
 
 // start is a no-op
-func (p *MockPerfCounterScraperError) Initialize(objects ...string) error {
-	return nil
-}
+func (p *MockPerfCounterScraperError) Initialize(objects ...string) {}
 
 // scrape returns the specified scrapeErr or an object that will return a subsequent error
 // if scrapeErr is nil
@@ -108,9 +106,7 @@ func NewMockPerfCounterScraper(objectsAndValuesToReturn map[string]map[string][]
 }
 
 // start is a no-op
-func (p *MockPerfCounterScraper) Initialize(objects ...string) error {
-	return nil
-}
+func (p *MockPerfCounterScraper) Initialize(objects ...string) {}
 
 // scrape returns a perf data collection with the supplied object / counter values,
 // according to the supplied order.

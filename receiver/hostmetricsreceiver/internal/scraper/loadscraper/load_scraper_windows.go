@@ -84,10 +84,8 @@ func startSampling(_ context.Context, logger *zap.Logger) error {
 }
 
 func newSampler(logger *zap.Logger) (*sampler, error) {
-	perfCounterScraper := &perfcounters.PerfLibScraper{}
-	if err := perfCounterScraper.Initialize(system); err != nil {
-		return nil, err
-	}
+	perfCounterScraper := perfcounters.NewPerfLibScraper(logger)
+	perfCounterScraper.Initialize(system)
 
 	sampler := &sampler{
 		logger:             logger,

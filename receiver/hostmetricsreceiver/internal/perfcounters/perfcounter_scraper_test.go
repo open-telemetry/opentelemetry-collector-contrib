@@ -23,6 +23,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
@@ -32,7 +33,6 @@ func Test_PerfCounterScraper(t *testing.T) {
 		name string
 		// NewPerfCounter
 		objects       []string
-		newErr        string
 		expectIndices []string
 		// Filter
 		includeFS    filterset.FilterSet
@@ -81,9 +81,11 @@ func Test_PerfCounterScraper(t *testing.T) {
 			excludedInstanceNames: excludedCommonDrives,
 		},
 		{
-			name:    "New Error",
-			objects: []string{"Memory", "Invalid Object 1", "Invalid Object 2"},
-			newErr:  `Failed to retrieve perf counter object "Invalid Object 1"`,
+			name:          "Invalid objects specified",
+			objects:       []string{"Memory", "Invalid Object 1", "Invalid Object 2"},
+			expectIndices: []string{"4"},
+			getObject:     "Invalid Object 2",
+			getObjectErr:  `Unable to find object "Invalid Object 2"`,
 		},
 		{
 			name:          "Get Object Error",
@@ -104,13 +106,8 @@ func Test_PerfCounterScraper(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			s := &PerfLibScraper{}
-			err := s.Initialize(test.objects...)
-			if test.newErr != "" {
-				assert.EqualError(t, err, test.newErr)
-				return
-			}
-			require.NoError(t, err, "Failed to create new perf counter scraper: %v", err)
+			s := NewPerfLibScraper(zaptest.NewLogger(t))
+			s.Initialize(test.objects...)
 
 			assert.ElementsMatch(t, test.expectIndices, strings.Split(s.objectIndices, " "))
 

@@ -64,7 +64,7 @@ func newPagingScraper(_ context.Context, settings component.ReceiverCreateSettin
 	return &scraper{
 		settings:                             settings,
 		config:                               cfg,
-		perfCounterScraper:                   &perfcounters.PerfLibScraper{},
+		perfCounterScraper:                   perfcounters.NewPerfLibScraper(settings.Logger),
 		bootTime:                             host.BootTime,
 		pageFileStats:                        getPageFileStats,
 		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithDirectionAttributeFeatureGateID),
@@ -80,7 +80,8 @@ func (s *scraper) start(context.Context, component.Host) error {
 
 	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 
-	return s.perfCounterScraper.Initialize(memory)
+	s.perfCounterScraper.Initialize(memory)
+	return nil
 }
 
 func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {

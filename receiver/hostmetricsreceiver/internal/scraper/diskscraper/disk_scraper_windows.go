@@ -70,7 +70,7 @@ type scraper struct {
 
 // newDiskScraper creates a Disk Scraper
 func newDiskScraper(_ context.Context, settings component.ReceiverCreateSettings, cfg *Config) (*scraper, error) {
-	scraper := &scraper{settings: settings, config: cfg, perfCounterScraper: &perfcounters.PerfLibScraper{}, bootTime: host.BootTime}
+	scraper := &scraper{settings: settings, config: cfg, perfCounterScraper: perfcounters.NewPerfLibScraper(settings.Logger), bootTime: host.BootTime}
 	scraper.emitMetricsWithDirectionAttribute = featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithDirectionAttributeFeatureGateID)
 	scraper.emitMetricsWithoutDirectionAttribute = featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithoutDirectionAttributeFeatureGateID)
 
@@ -102,7 +102,8 @@ func (s *scraper) start(context.Context, component.Host) error {
 	s.startTime = pcommon.Timestamp(bootTime * 1e9)
 	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo, metadata.WithStartTime(s.startTime))
 
-	return s.perfCounterScraper.Initialize(logicalDisk)
+	s.perfCounterScraper.Initialize(logicalDisk)
+	return nil
 }
 
 func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
