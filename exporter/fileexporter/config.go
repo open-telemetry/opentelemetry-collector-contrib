@@ -29,6 +29,12 @@ type Config struct {
 
 	// Rotation defines an option about rotation of telemetry files
 	Rotation Rotation `mapstructure:"rotation"`
+
+	// MarshalType defines the type of marshaler which encodes telemetry data
+	// Options:
+	// - json[default]: Marshals to OTLP json bytes.
+	// - proto: Marshals to OTLP binary protobuf bytes.
+	MarshalType string `mapstructure:"marshal"`
 }
 
 // Rotation an option to rolling log files
