@@ -34,7 +34,7 @@ var errExporterNotFound = errors.New("exporter not found")
 // component.LogsExporter type arguments.
 type router[E component.Exporter] struct {
 	logger *zap.Logger
-	tqlp   tql.Parser
+	parser tql.Parser
 
 	defaultExporterIDs []string
 	table              []RoutingTableItem
@@ -52,11 +52,11 @@ func newRouter[E component.Exporter](
 ) router[E] {
 	return router[E]{
 		logger: logger,
-		tqlp: tql.NewParser(
+		parser: tql.NewParser(
 			common.Functions(),
 			tqllogs.ParsePath,
 			tqllogs.ParseEnum,
-			common.NewTQLLogger(logger),
+			common.NewOTTLLogger(logger),
 		),
 
 		table:              table,
@@ -133,13 +133,13 @@ func (r *router[E]) registerRouteExporters(available map[config.ComponentID]comp
 	return nil
 }
 
-// routingExpression builds a routing TQL expressions from provided
+// routingExpression builds a routing OTTL expressions from provided
 // routing table entry configuration. If routing table entry configuration
-// does not contain a TQL expressions then nil is returned.
+// does not contain a OTTL expressions then nil is returned.
 func (r *router[E]) routingExpression(item RoutingTableItem) (tql.Query, error) {
 	var e tql.Query
 	if item.Expression != "" {
-		queries, err := r.tqlp.ParseQueries([]string{item.Expression})
+		queries, err := r.parser.ParseQueries([]string{item.Expression})
 		if err != nil {
 			return e, err
 		}

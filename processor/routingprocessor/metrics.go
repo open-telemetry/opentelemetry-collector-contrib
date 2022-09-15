@@ -39,7 +39,7 @@ type metricsProcessor struct {
 }
 
 func newMetricProcessor(logger *zap.Logger, config config.Processor) *metricsProcessor {
-	cfg := rewriteRoutingEntriesToTQL(config.(*Config))
+	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
 	return &metricsProcessor{
 		logger: logger,

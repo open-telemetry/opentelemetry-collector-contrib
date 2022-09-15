@@ -22,12 +22,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-type TQLLogger struct {
+type OTTLLogger struct {
 	logger *zap.Logger
 }
 
-func NewTQLLogger(logger *zap.Logger) TQLLogger {
-	return TQLLogger{
+func NewOTTLLogger(logger *zap.Logger) OTTLLogger {
+	return OTTLLogger{
 		logger: logger,
 	}
 }
@@ -35,7 +35,7 @@ func NewTQLLogger(logger *zap.Logger) TQLLogger {
 // WithFields creates a new logger that will include the specified fields
 // in all subsequent logs in addition to fields attached to the context
 // of the parent logger. Note that fields are not deduplicated.
-func (t TQLLogger) WithFields(fields map[string]any) tql.Logger {
+func (t OTTLLogger) WithFields(fields map[string]any) tql.Logger {
 	newFields := make([]zap.Field, len(fields))
 	i := 0
 
@@ -50,15 +50,15 @@ func (t TQLLogger) WithFields(fields map[string]any) tql.Logger {
 		i++
 	}
 
-	return TQLLogger{
+	return OTTLLogger{
 		logger: t.logger.With(newFields...),
 	}
 }
 
-func (t TQLLogger) Info(msg string) {
+func (t OTTLLogger) Info(msg string) {
 	t.logger.Info(msg)
 }
 
-func (t TQLLogger) Error(msg string) {
+func (t OTTLLogger) Error(msg string) {
 	t.logger.Error(msg)
 }

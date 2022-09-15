@@ -5,7 +5,7 @@ change_type: enhancement
 component: processor/routingprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add support for using Telemetry Query Language expressions as routing conditions.
+note: Add support for using OpenTelemetry Transformation Language (OTTL) expressions as routing conditions.
 
 # One or more tracking issues related to the change
 issues: [13158]

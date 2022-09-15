@@ -116,7 +116,7 @@ type RoutingTableItem struct {
 	// Required when 'Expression' isn't provided.
 	Value string `mapstructure:"value"`
 
-	// Expression is a TQL expression on which signals routing is based.
+	// Expression is a OTTL expression on which signals routing is based.
 	// Required when 'Value' isn't provided.
 	Expression string `mapstructure:"expression"`
 
@@ -127,8 +127,8 @@ type RoutingTableItem struct {
 	Exporters []string `mapstructure:"exporters"`
 }
 
-// rewriteRoutingItemsToTQL translates the attributes-based routing into TQL
-func rewriteRoutingEntriesToTQL(cfg *Config) *Config {
+// rewriteRoutingEntriesToOTTL translates the attributes-based routing into OTTL
+func rewriteRoutingEntriesToOTTL(cfg *Config) *Config {
 	if cfg.AttributeSource != resourceAttributeSource {
 		return cfg
 	}

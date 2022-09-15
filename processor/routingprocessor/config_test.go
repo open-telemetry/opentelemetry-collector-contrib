@@ -164,7 +164,7 @@ func TestValidateConfig(t *testing.T) {
 	}
 }
 
-func TestRewriteLegacyConfigToTQL(t *testing.T) {
+func TestRewriteLegacyConfigToOTTL(t *testing.T) {
 	tests := []struct {
 		name   string
 		config Config
@@ -266,7 +266,7 @@ func TestRewriteLegacyConfigToTQL(t *testing.T) {
 			},
 		},
 		{
-			name: "rewrite routing by resource attribute with mixed tql entries",
+			name: "rewrite routing by resource attribute with mixed routing entries",
 			config: Config{
 				FromAttribute:   "attr",
 				AttributeSource: resourceAttributeSource,
@@ -297,7 +297,7 @@ func TestRewriteLegacyConfigToTQL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, *rewriteRoutingEntriesToTQL(&tt.config))
+			assert.Equal(t, tt.want, *rewriteRoutingEntriesToOTTL(&tt.config))
 		})
 	}
 }

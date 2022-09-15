@@ -39,7 +39,7 @@ type tracesProcessor struct {
 }
 
 func newTracesProcessor(logger *zap.Logger, config config.Processor) *tracesProcessor {
-	cfg := rewriteRoutingEntriesToTQL(config.(*Config))
+	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
 	return &tracesProcessor{
 		logger: logger,

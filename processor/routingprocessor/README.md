@@ -51,14 +51,14 @@ exporters:
     endpoint: localhost:24250
 ```
 
-### Tech Preview: Telemetry Query Language expressions as routing conditions
+### Tech Preview: OpenTelemetry Transformation Language expressions as routing conditions
 
-Alternatively, it is possible to use subset of the [Telemetry Query Language (TQL)](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#telemetry-query-language) expressions as routing conditions.
+Alternatively, it is possible to use subset of the [OpenTelemetry Transformation Language (OTTL)](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#telemetry-query-language) expressions as routing conditions.
 
-To configure the routing processor with [TQL] routing conditions use the following options:
+To configure the routing processor with [OTTL] routing conditions use the following options:
 
 - `table (required)`: the routing table for this processor.
-- `table.expression (required)`: the routing condition provided as the [TQL] expression.
+- `table.expression (required)`: the routing condition provided as the [OTTL] expression.
 - `table.exporters (required)`: the list of exporters to use when the routing condition is met.
 - `default_exporters (optional)`: contains the list of exporters to use when a record
 does not meet any of specified conditions.
@@ -87,13 +87,13 @@ exporters:
 A signal may get matched by routing conditions of more than one routing table entry. In this case, the signal will be routed to all exporters of matching routes.
 Respectively, if none of the routing conditions met, then a signal is routed to default exporters.
 
-It is also possible to use both the conventional routing items configuration and the routing items with [TQL] conditions.
+It is also possible to use both the conventional routing items configuration and the routing items with [OTTL] conditions.
 
 #### Limitations:
 
-- [TQL] expressions can be applied only to resource attributes.
+- [OTTL] expressions can be applied only to resource attributes.
 - Currently, it is not possible to specify the boolean expression without function invocation as the routing condition. It is required to provide the NOOP `route()` or any other supported function as part of the routing expression, see [#13545](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13545) for more information.
-- Supported [TQL] functions:
+- Supported [OTTL] functions:
   - [IsMatch](../../pkg/telemetryquerylanguage/functions/tqlcommon/README.md#IsMatch)
   - [delete_key](../../pkg/telemetryquerylanguage/functions/tqlotel/README.md#delete_key)
   - [delete_matching_keys](../../pkg/telemetryquerylanguage/functions/tqlotel/README.md#delete_matching_keys)
@@ -106,4 +106,4 @@ The full list of settings exposed for this processor are documented [here](./con
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [context_docs]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/README.md
-[TQL]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#telemetry-query-language
+[OTTL]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#telemetry-query-language
