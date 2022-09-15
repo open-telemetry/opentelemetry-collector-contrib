@@ -2,10 +2,13 @@ go 1.18
 
 use (
 	.
+	./cmd/chloggen
 	./cmd/configschema
 	./cmd/mdatagen
 	./cmd/telemetrygen
 	./cmd/tracegen
+	./examples/demo/client
+	./examples/demo/server
 	./exporter/alibabacloudlogserviceexporter
 	./exporter/awscloudwatchlogsexporter
 	./exporter/awsemfexporter
@@ -58,6 +61,8 @@ use (
 	./extension/jaegerremotesampling
 	./extension/oauth2clientauthextension
 	./extension/observer
+	./extension/observer/dockerobserver
+	./extension/observer/ecsobserver
 	./extension/observer/ecstaskobserver
 	./extension/observer/hostobserver
 	./extension/observer/k8sobserver
@@ -73,6 +78,8 @@ use (
 	./internal/aws/metrics
 	./internal/aws/proxy
 	./internal/aws/xray
+	./internal/aws/xray/testdata/sampleapp
+	./internal/aws/xray/testdata/sampleserver
 	./internal/common
 	./internal/containertest
 	./internal/coreinternal
@@ -104,13 +111,16 @@ use (
 	./processor/groupbyattrsprocessor
 	./processor/groupbytraceprocessor
 	./processor/k8sattributesprocessor
+	./processor/logstransformprocessor
 	./processor/metricsgenerationprocessor
 	./processor/metricstransformprocessor
 	./processor/probabilisticsamplerprocessor
+	./processor/redactionprocessor
 	./processor/resourcedetectionprocessor
 	./processor/resourceprocessor
 	./processor/routingprocessor
 	./processor/schemaprocessor
+	./processor/servicegraphprocessor
 	./processor/spanmetricsprocessor
 	./processor/spanprocessor
 	./processor/tailsamplingprocessor
@@ -122,6 +132,7 @@ use (
 	./receiver/awsecscontainermetricsreceiver
 	./receiver/awsfirehosereceiver
 	./receiver/awsxrayreceiver
+	./receiver/azureblobreceiver
 	./receiver/azureeventhubreceiver
 	./receiver/bigipreceiver
 	./receiver/carbonreceiver
@@ -170,6 +181,7 @@ use (
 	./receiver/sapmreceiver
 	./receiver/signalfxreceiver
 	./receiver/simpleprometheusreceiver
+	./receiver/simpleprometheusreceiver/examples/federation/prom-counter
 	./receiver/skywalkingreceiver
 	./receiver/solacereceiver
 	./receiver/splunkhecreceiver
@@ -185,4 +197,6 @@ use (
 	./receiver/windowsperfcountersreceiver
 	./receiver/zipkinreceiver
 	./receiver/zookeeperreceiver
+	./testbed
+	./testbed/mockdatareceivers/mockawsxrayreceiver
 )
