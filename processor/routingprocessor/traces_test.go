@@ -334,7 +334,7 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 	assert.Equal(t, "acme", v.StringVal())
 }
 
-func TestTracesAreCorrectlySplitPerResourceAttributeWithTQL(t *testing.T) {
+func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	defaultExp := &mockTracesExporter{}
 	firstExp := &mockTracesExporter{}
 	secondExp := &mockTracesExporter{}
@@ -353,59 +353,112 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithTQL(t *testing.T) {
 	}
 
 	exp := newTracesProcessor(zap.NewNop(), &Config{
-		FromAttribute:    "X-Tenant",
-		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
 		Table: []RoutingTableItem{
 			{
-				Expression: `route() where resource.attributes["value"] > 0 and resource.attributes["value"] < 3`,
+				Expression: `route() where resource.attributes["value"] > 0 and resource.attributes["value"] < 4`,
 				Exporters:  []string{"otlp/1"},
 			},
 			{
-				Expression: `route() where resource.attributes["value"] > 1 and resource.attributes["value"] < 3`,
+				Expression: `route() where resource.attributes["value"] > 1 and resource.attributes["value"] < 4`,
 				Exporters:  []string{"otlp/2"},
 			},
 		},
 	})
+	require.NoError(t, exp.Start(context.Background(), host))
 
-	tr := ptrace.NewTraces()
+	t.Run("span by matched no expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
 
-	rl := tr.ResourceSpans().AppendEmpty()
-	rl.Resource().Attributes().UpsertInt("value", 1)
-	span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	span.SetName("span")
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 10)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
 
-	rl = tr.ResourceSpans().AppendEmpty()
-	rl.Resource().Attributes().UpsertInt("value", 2)
-	span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	span.SetName("span1")
+		require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
 
-	rl = tr.ResourceSpans().AppendEmpty()
-	rl.Resource().Attributes().UpsertInt("value", 4)
-	span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	span.SetName("span2")
+		assert.Len(t, defaultExp.AllTraces(), 1)
+		assert.Len(t, firstExp.AllTraces(), 0)
+		assert.Len(t, secondExp.AllTraces(), 0)
+	})
 
-	ctx := context.Background()
-	require.NoError(t, exp.Start(ctx, host))
-	require.NoError(t, exp.ConsumeTraces(ctx, tr))
+	t.Run("span matched by one of two expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
 
-	// The numbers below stem from the fact that data is routed and grouped
-	// per resource attribute which is used for routing.
-	// The first 2 traces are grouped together under one ptrace.Traces.
-	assert.Len(t, firstExp.AllTraces(), 1, "one trace should be routed to non default exporter")
-	assert.Equal(t, firstExp.AllTraces()[0].SpanCount(), 2)
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 1)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
 
-	assert.Len(t, secondExp.AllTraces(), 1, "one trace should be routed to non default exporter")
-	assert.Equal(t, secondExp.AllTraces()[0].SpanCount(), 1)
-	attr, ok := secondExp.AllTraces()[0].ResourceSpans().At(0).Resource().Attributes().Get("value")
-	assert.True(t, ok, "routing attribute must exists")
-	assert.Equal(t, attr.IntVal(), int64(2), "invalid routing attribute value")
+		require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
 
-	assert.Len(t, defaultExp.AllTraces(), 1, "one trace should be routed to default exporter")
-	assert.Equal(t, defaultExp.AllTraces()[0].SpanCount(), 1)
-	attr, ok = defaultExp.AllTraces()[0].ResourceSpans().At(0).Resource().Attributes().Get("value")
-	assert.True(t, ok, "routing attribute must exists")
-	assert.Equal(t, attr.IntVal(), int64(4), "invalid routing attribute value")
+		assert.Len(t, defaultExp.AllTraces(), 0)
+		assert.Len(t, firstExp.AllTraces(), 1)
+		assert.Len(t, secondExp.AllTraces(), 0)
+	})
+
+	t.Run("spans matched by all expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 2)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		rl = tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 3)
+		span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span1")
+
+		require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+
+		assert.Len(t, defaultExp.AllTraces(), 0)
+		assert.Len(t, firstExp.AllTraces(), 1)
+		assert.Len(t, secondExp.AllTraces(), 1)
+
+		assert.Equal(t, firstExp.AllTraces()[0].SpanCount(), 2)
+		assert.Equal(t, secondExp.AllTraces()[0].SpanCount(), 2)
+		assert.Equal(t, firstExp.AllTraces(), secondExp.AllTraces())
+	})
+
+	t.Run("one span matched by all expressions, other matched by none", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 2)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		rl = tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", -1)
+		span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span1")
+
+		require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+
+		assert.Len(t, defaultExp.AllTraces(), 1)
+		assert.Len(t, firstExp.AllTraces(), 1)
+		assert.Len(t, secondExp.AllTraces(), 1)
+
+		assert.Equal(t, firstExp.AllTraces(), secondExp.AllTraces())
+
+		rspan := defaultExp.AllTraces()[0].ResourceSpans().At(0)
+		attr, ok := rspan.Resource().Attributes().Get("value")
+		assert.True(t, ok, "routing attribute must exists")
+		assert.Equal(t, attr.IntVal(), int64(-1))
+	})
 }
 
 func TestTraceProcessorCapabilities(t *testing.T) {
