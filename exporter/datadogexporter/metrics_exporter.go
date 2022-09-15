@@ -184,6 +184,14 @@ func (exp *metricsExporter) prependSystemMetrics(ms []datadog.Metric) {
 		if exp.infraTransformer.Has(name) {
 			// it is a system metric, but it's a Datadog native one,
 			// so we skip it
+			switch name {
+			case "system.net.bytes_rcvd", "system.net.bytes_sent":
+				// These two metrics are reported in Datadog as Gauges, but OpenTelemetry
+				// sends them as Counts, so we need to fix this inconsistency here to avoid
+				// bugs in mixed deployments.
+				newtype := "gauge"
+				ms[i].Type = &newtype
+			}
 			continue
 		}
 		newname := otelNamespacePrefix + name

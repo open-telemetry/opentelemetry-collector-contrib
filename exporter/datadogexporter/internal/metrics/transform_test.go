@@ -198,12 +198,6 @@ func TestYAML(t *testing.T) {
 			},
 			Action:  "insert",
 			NewName: "system.net.bytes_rcvd",
-			Operations: []metricstransformprocessor.Operation{
-				{
-					Action: "experimental_scale_value",
-					Scale:  0.001,
-				},
-			},
 		},
 		{
 			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
@@ -213,12 +207,6 @@ func TestYAML(t *testing.T) {
 			},
 			Action:  "insert",
 			NewName: "system.net.bytes_sent",
-			Operations: []metricstransformprocessor.Operation{
-				{
-					Action: "experimental_scale_value",
-					Scale:  0.001,
-				},
-			},
 		},
 		{
 			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
@@ -369,8 +357,8 @@ func TestTransformFunc(t *testing.T) {
 		{N: "system.mem.usable", V: 0.000012, A: map[string]interface{}{"state": "usable"}},
 		{N: "system.mem.usable", V: 0.000013, A: map[string]interface{}{"state": "usable"}},
 		{N: "system.mem.usable", V: 0.000014, A: map[string]interface{}{"state": "usable"}},
-		{N: "system.net.bytes_rcvd", V: 0.013000000000000001, A: map[string]interface{}{"direction": "receive"}},
-		{N: "system.net.bytes_sent", V: 0.014, A: map[string]interface{}{"direction": "transmit"}},
+		{N: "system.net.bytes_rcvd", V: 13, A: map[string]interface{}{"direction": "receive"}},
+		{N: "system.net.bytes_sent", V: 14, A: map[string]interface{}{"direction": "transmit"}},
 		{N: "system.swap.free", V: 55, A: map[string]interface{}{"state": "free"}},
 		{N: "system.swap.used", V: 66, A: map[string]interface{}{"state": "used"}},
 		{N: "system.disk.in_use", V: 15},

@@ -186,17 +186,11 @@ transforms:
   match_type: strict
   action: insert
   new_name: system.net.bytes_rcvd
-  operations:
-  - action: experimental_scale_value
-    experimental_scale: 0.001
 - include: system.network.io
   experimental_match_labels: {"direction": "transmit"}
   match_type: strict
   action: insert
   new_name: system.net.bytes_sent
-  operations:
-  - action: experimental_scale_value
-    experimental_scale: 0.001
 - include: system.paging.usage
   experimental_match_labels: {"state": "free"}
   match_type: strict
