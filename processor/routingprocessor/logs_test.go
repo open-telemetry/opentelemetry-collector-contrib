@@ -273,6 +273,131 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	)
 }
 
+func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
+	defaultExp := &mockLogsExporter{}
+	firstExp := &mockLogsExporter{}
+	secondExp := &mockLogsExporter{}
+
+	host := &mockHost{
+		Host: componenttest.NewNopHost(),
+		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
+			return map[config.DataType]map[config.ComponentID]component.Exporter{
+				config.LogsDataType: {
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "1"): firstExp,
+					config.NewComponentIDWithName("otlp", "2"): secondExp,
+				},
+			}
+		},
+	}
+
+	exp := newLogProcessor(zap.NewNop(), &Config{
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Expression: `route() where IsMatch(resource.attributes["X-Tenant"], ".*acme") == true`,
+				Exporters:  []string{"otlp/1"},
+			},
+			{
+				Expression: `route() where IsMatch(resource.attributes["X-Tenant"], "_acme") == true`,
+				Exporters:  []string{"otlp/2"},
+			},
+		},
+	})
+
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	t.Run("logs matched by no expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		l := plog.NewLogs()
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutString("X-Tenant", "something-else")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
+
+		assert.Len(t, defaultExp.AllLogs(), 1)
+		assert.Len(t, firstExp.AllLogs(), 0)
+		assert.Len(t, secondExp.AllLogs(), 0)
+	})
+
+	t.Run("logs matched one of two expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		l := plog.NewLogs()
+
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutString("X-Tenant", "xacme")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
+
+		assert.Len(t, defaultExp.AllLogs(), 0)
+		assert.Len(t, firstExp.AllLogs(), 1)
+		assert.Len(t, secondExp.AllLogs(), 0)
+	})
+
+	t.Run("logs matched by all expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		l := plog.NewLogs()
+
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutString("X-Tenant", "x_acme")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		rl = l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutString("X-Tenant", "_acme")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
+
+		assert.Len(t, defaultExp.AllLogs(), 0)
+		assert.Len(t, firstExp.AllLogs(), 1)
+		assert.Len(t, secondExp.AllLogs(), 1)
+
+		assert.Equal(t, firstExp.AllLogs()[0].LogRecordCount(), 2)
+		assert.Equal(t, secondExp.AllLogs()[0].LogRecordCount(), 2)
+		assert.Equal(t, firstExp.AllLogs(), secondExp.AllLogs())
+	})
+
+	t.Run("one log matched by all expressions, other matched none", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		l := plog.NewLogs()
+
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutString("X-Tenant", "_acme")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		rl = l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutString("X-Tenant", "something-else")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
+
+		assert.Len(t, defaultExp.AllLogs(), 1)
+		assert.Len(t, firstExp.AllLogs(), 1)
+		assert.Len(t, secondExp.AllLogs(), 1)
+
+		assert.Equal(t, firstExp.AllLogs(), secondExp.AllLogs())
+
+		rspan := defaultExp.AllLogs()[0].ResourceLogs().At(0)
+		attr, ok := rspan.Resource().Attributes().Get("X-Tenant")
+		assert.True(t, ok, "routing attribute must exists")
+		assert.Equal(t, attr.AsString(), "something-else")
+	})
+}
+
 type mockLogsExporter struct {
 	mockComponent
 	consumertest.LogsSink
