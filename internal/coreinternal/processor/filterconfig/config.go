@@ -18,6 +18,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
@@ -135,6 +136,14 @@ var (
 	ErrMissingRequiredField    = errors.New(`at least one of "attributes", "libraries",  or "resources" field must be specified`)
 	ErrInvalidLogField         = errors.New("services, span_names, and span_kinds are not valid for log records")
 	ErrMissingRequiredLogField = errors.New(`at least one of "attributes", "libraries", "span_kinds", "resources", "log_bodies", "log_severity_texts" or "log_severity_number" field must be specified`)
+
+	spanKinds = map[string]bool{
+		ptrace.SpanKindInternal.String(): true,
+		ptrace.SpanKindClient.String():   true,
+		ptrace.SpanKindServer.String():   true,
+		ptrace.SpanKindConsumer.String(): true,
+		ptrace.SpanKindProducer.String(): true,
+	}
 )
 
 // ValidateForSpans validates properties for spans.
@@ -154,6 +163,14 @@ func (mp *MatchProperties) ValidateForSpans() error {
 	if len(mp.Services) == 0 && len(mp.SpanNames) == 0 && len(mp.Attributes) == 0 &&
 		len(mp.Libraries) == 0 && len(mp.Resources) == 0 && len(mp.SpanKinds) == 0 {
 		return ErrMissingRequiredField
+	}
+
+	if len(mp.SpanKinds) > 0 && mp.MatchType == "strict" {
+		for _, kind := range mp.SpanKinds {
+			if !spanKinds[kind] {
+				return errors.New("span_kinds string must match one of the standard span kinds when match_type=strict ")
+			}
+		}
 	}
 
 	return nil
