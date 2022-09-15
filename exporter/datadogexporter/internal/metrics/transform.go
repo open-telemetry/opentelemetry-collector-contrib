@@ -197,6 +197,16 @@ transforms:
   operations:
   - action: experimental_scale_value
     experimental_scale: 0.001
+- include: system.paging.usage
+  experimental_match_labels: {"state": "free"}
+  match_type: strict
+  action: insert
+  new_name: system.swap.free
+- include: system.paging.usage
+  experimental_match_labels: {"state": "used"}
+  match_type: strict
+  action: insert
+  new_name: system.swap.used
 - include: system.filesystem.utilization
   match_type: strict
   action: insert

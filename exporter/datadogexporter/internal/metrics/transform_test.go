@@ -222,6 +222,24 @@ func TestYAML(t *testing.T) {
 		},
 		{
 			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
+				Include:     "system.paging.usage",
+				MatchType:   "strict",
+				MatchLabels: map[string]string{"state": "free"},
+			},
+			Action:  "insert",
+			NewName: "system.swap.free",
+		},
+		{
+			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
+				Include:     "system.paging.usage",
+				MatchType:   "strict",
+				MatchLabels: map[string]string{"state": "used"},
+			},
+			Action:  "insert",
+			NewName: "system.swap.used",
+		},
+		{
+			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
 				Include:   "system.filesystem.utilization",
 				MatchType: "strict",
 			},
@@ -260,6 +278,11 @@ func TestTransformFunc(t *testing.T) {
 		{Name: "system.cpu.load_average.1m", DataPoints: []testutils.DataPoint{{Value: 4}}},
 		{Name: "system.cpu.load_average.5m", DataPoints: []testutils.DataPoint{{Value: 5}}},
 		{Name: "system.cpu.load_average.15m", DataPoints: []testutils.DataPoint{{Value: 6}}},
+		{Name: "system.paging.usage", DataPoints: []testutils.DataPoint{
+			{Value: 55, Attributes: map[string]string{"state": "free"}},
+			{Value: 66, Attributes: map[string]string{"state": "used"}},
+			{Value: 77},
+		}},
 		{Name: "system.cpu.utilization", DataPoints: []testutils.DataPoint{
 			{Value: 7, Attributes: map[string]string{"state": "idle"}},
 			{Value: 8, Attributes: map[string]string{"state": "user"}},
@@ -312,6 +335,9 @@ func TestTransformFunc(t *testing.T) {
 		{N: "system.cpu.load_average.1m", V: 4},
 		{N: "system.cpu.load_average.5m", V: 5},
 		{N: "system.cpu.load_average.15m", V: 6},
+		{N: "system.paging.usage", V: 55, A: map[string]interface{}{"state": "free"}},
+		{N: "system.paging.usage", V: 66, A: map[string]interface{}{"state": "used"}},
+		{N: "system.paging.usage", V: 77},
 		{N: "system.cpu.utilization", V: 7, A: map[string]interface{}{"state": "idle"}},
 		{N: "system.cpu.utilization", V: 8, A: map[string]interface{}{"state": "user"}},
 		{N: "system.cpu.utilization", V: 9, A: map[string]interface{}{"state": "wait"}},
@@ -345,6 +371,8 @@ func TestTransformFunc(t *testing.T) {
 		{N: "system.mem.usable", V: 0.000014, A: map[string]interface{}{"state": "usable"}},
 		{N: "system.net.bytes_rcvd", V: 0.013000000000000001, A: map[string]interface{}{"direction": "receive"}},
 		{N: "system.net.bytes_sent", V: 0.014, A: map[string]interface{}{"direction": "transmit"}},
+		{N: "system.swap.free", V: 55, A: map[string]interface{}{"state": "free"}},
+		{N: "system.swap.used", V: 66, A: map[string]interface{}{"state": "used"}},
 		{N: "system.disk.in_use", V: 15},
 	})
 	require.EqualValues(t, transformer.names, map[string]struct{}{
@@ -361,5 +389,7 @@ func TestTransformFunc(t *testing.T) {
 		"system.mem.usable":     {},
 		"system.net.bytes_rcvd": {},
 		"system.net.bytes_sent": {},
+		"system.swap.free":      {},
+		"system.swap.used":      {},
 	})
 }
