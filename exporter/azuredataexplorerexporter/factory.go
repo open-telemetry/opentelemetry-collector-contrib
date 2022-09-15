@@ -36,6 +36,8 @@ const (
 	metricsType        = 1
 	logsType           = 2
 	tracesType         = 3
+	// The stability level of the exporter.
+	stability = component.StabilityLevelAlpha
 )
 
 // Creates a factory for the ADX Exporter
@@ -43,9 +45,9 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter),
-		component.WithLogsExporter(createLogsExporter),
+		component.WithTracesExporter(createTracesExporter, stability),
+		component.WithMetricsExporter(createMetricsExporter, stability),
+		component.WithLogsExporter(createLogsExporter, stability),
 	)
 }
 
@@ -62,7 +64,7 @@ func createDefaultConfig() config.Exporter {
 }
 
 func createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	config config.Exporter,
 ) (component.MetricsExporter, error) {
@@ -81,8 +83,9 @@ func createMetricsExporter(
 	}
 
 	exporter, err := exporterhelper.NewMetricsExporter(
-		adxCfg,
+		ctx,
 		set,
+		adxCfg,
 		adp.metricsDataPusher,
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithShutdown(adp.Close))
@@ -94,7 +97,7 @@ func createMetricsExporter(
 }
 
 func createTracesExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	config config.Exporter,
 ) (component.TracesExporter, error) {
@@ -110,8 +113,9 @@ func createTracesExporter(
 	}
 
 	exporter, err := exporterhelper.NewTracesExporter(
-		adxCfg,
+		ctx,
 		set,
+		adxCfg,
 		adp.tracesDataPusher,
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithShutdown(adp.Close))
@@ -123,7 +127,7 @@ func createTracesExporter(
 }
 
 func createLogsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	config config.Exporter,
 ) (exp component.LogsExporter, err error) {
@@ -139,8 +143,9 @@ func createLogsExporter(
 	}
 
 	exporter, err := exporterhelper.NewLogsExporter(
-		adxCfg,
+		ctx,
 		set,
+		adxCfg,
 		adp.logsDataPusher,
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithShutdown(adp.Close))

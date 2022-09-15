@@ -114,8 +114,8 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 		var adxMetrics []*AdxMetric
 		for gi := 0; gi < dataPoints.Len(); gi++ {
 			dataPoint := dataPoints.At(gi)
-			bounds := dataPoint.MExplicitBounds()
-			counts := dataPoint.MBucketCounts()
+			bounds := dataPoint.ExplicitBounds()
+			counts := dataPoint.BucketCounts()
 			// first, add one event for sum, and one for count
 			{
 				adxMetrics = append(adxMetrics,
@@ -136,18 +136,18 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			}
 			// Spec says counts is optional but if present it must have one more
 			// element than the bounds array.
-			if len(counts) == 0 || len(counts) != len(bounds)+1 {
+			if counts.Len() == 0 || counts.Len() != bounds.Len()+1 {
 				continue
 			}
 			value := uint64(0)
 			// now create buckets for each bound.
-			for bi := 0; bi < len(bounds); bi++ {
+			for bi := 0; bi < bounds.Len(); bi++ {
 				customMap :=
 					copyMap(map[string]interface{}{
-						"le": float64ToDimValue(bounds[bi]),
+						"le": float64ToDimValue(bounds.At(bi)),
 					}, dataPoint.Attributes().AsRaw())
 
-				value += counts[bi]
+				value += counts.At(bi)
 				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(), pcommon.NewMapFromRaw(customMap), func() float64 {
 					// Change int to float. The value is a float64 in the table
 					return float64(value)
@@ -165,7 +165,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 					}, dataPoint.Attributes().AsRaw())
 				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(), pcommon.NewMapFromRaw(customMap), func() float64 {
 					// Change int to float. The value is a float64 in the table
-					return float64(value + counts[len(counts)-1])
+					return float64(value + counts.At(counts.Len()-1))
 				},
 					fmt.Sprintf("%s_bucket", md.Name()),
 					"",
