@@ -1,0 +1,5 @@
+change_type: enhancement
+component: apachereceiver
+note: The receiver now supports 6 more metrics, more information in the linked issue.
+issues: [14095]
+subtext:

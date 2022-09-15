@@ -92,7 +92,7 @@ func TestFlinkIntegration(t *testing.T) {
 	require.NoError(t, err)
 
 	// required to start the StateMachineExample job
-	code, err := masterContainer.Exec(context.Background(), []string{"/setup.sh"})
+	code, _, err := masterContainer.Exec(context.Background(), []string{"/setup.sh"})
 	require.NoError(t, err)
 	require.Equal(t, 0, code)
 

@@ -283,7 +283,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, send fu
 			}
 
 			if err != nil {
-				return consumererror.NewLogs(err, *c.subLogs(&ld, bufState.bufFront, profilingBufState.bufFront))
+				return consumererror.NewLogs(err, c.subLogs(ld, bufState.bufFront, profilingBufState.bufFront))
 			}
 
 			permanentErrors = append(permanentErrors, newPermanentErrors...)
@@ -300,7 +300,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, send fu
 	// There's some leftover unsent non-profiling data
 	if bufState.buf.Len() > 0 {
 		if err := send(ctx, bufState.buf, nil); err != nil {
-			return consumererror.NewLogs(err, *c.subLogs(&ld, bufState.bufFront, profilingBufState.bufFront))
+			return consumererror.NewLogs(err, c.subLogs(ld, bufState.bufFront, profilingBufState.bufFront))
 		}
 	}
 
@@ -308,7 +308,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, send fu
 	if profilingBufState.buf.Len() > 0 {
 		if err := send(ctx, profilingBufState.buf, profilingHeaders); err != nil {
 			// Non-profiling bufFront is set to nil because all non-profiling data was flushed successfully above.
-			return consumererror.NewLogs(err, *c.subLogs(&ld, nil, profilingBufState.bufFront))
+			return consumererror.NewLogs(err, c.subLogs(ld, nil, profilingBufState.bufFront))
 		}
 	}
 
@@ -539,7 +539,7 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 			newPermanentErrors, err = c.pushMetricsRecords(ctx, rms, &bufState, send)
 
 			if err != nil {
-				return consumererror.NewMetrics(err, *subMetrics(&md, bufState.bufFront))
+				return consumererror.NewMetrics(err, subMetrics(md, bufState.bufFront))
 			}
 
 			permanentErrors = append(permanentErrors, newPermanentErrors...)
@@ -549,7 +549,7 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 	// There's some leftover unsent metrics
 	if bufState.buf.Len() > 0 {
 		if err := send(ctx, bufState.buf); err != nil {
-			return consumererror.NewMetrics(err, *subMetrics(&md, bufState.bufFront))
+			return consumererror.NewMetrics(err, subMetrics(md, bufState.bufFront))
 		}
 	}
 
@@ -574,7 +574,7 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, 
 			newPermanentErrors, err = c.pushTracesData(ctx, rts, &bufState, send)
 
 			if err != nil {
-				return consumererror.NewTraces(err, *subTraces(&td, bufState.bufFront))
+				return consumererror.NewTraces(err, subTraces(td, bufState.bufFront))
 			}
 
 			permanentErrors = append(permanentErrors, newPermanentErrors...)
@@ -584,7 +584,7 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, 
 	// There's some leftover unsent traces
 	if bufState.buf.Len() > 0 {
 		if err := send(ctx, bufState.buf); err != nil {
-			return consumererror.NewTraces(err, *subTraces(&td, bufState.bufFront))
+			return consumererror.NewTraces(err, subTraces(td, bufState.bufFront))
 		}
 	}
 
@@ -628,47 +628,35 @@ func (c *client) postEvents(ctx context.Context, events io.Reader, headers map[s
 
 // subLogs returns a subset of `ld` starting from `profilingBufFront` for profiling data
 // plus starting from `bufFront` for non-profiling data. Both can be nil, in which case they are ignored
-func (c *client) subLogs(ld *plog.Logs, bufFront *index, profilingBufFront *index) *plog.Logs {
-	if ld == nil {
-		return ld
-	}
-
+func (c *client) subLogs(ld plog.Logs, bufFront *index, profilingBufFront *index) plog.Logs {
 	subset := plog.NewLogs()
 	if c.config.LogDataEnabled {
-		subLogsByType(ld, bufFront, &subset, false)
+		subLogsByType(ld, bufFront, subset, false)
 	}
 	if c.config.ProfilingDataEnabled {
-		subLogsByType(ld, profilingBufFront, &subset, true)
+		subLogsByType(ld, profilingBufFront, subset, true)
 	}
 
-	return &subset
+	return subset
 }
 
 // subMetrics returns a subset of `md`starting from `bufFront`. It can be nil, in which case it is ignored
-func subMetrics(md *pmetric.Metrics, bufFront *index) *pmetric.Metrics {
-	if md == nil {
-		return md
-	}
-
+func subMetrics(md pmetric.Metrics, bufFront *index) pmetric.Metrics {
 	subset := pmetric.NewMetrics()
-	subMetricsByType(md, bufFront, &subset)
+	subMetricsByType(md, bufFront, subset)
 
-	return &subset
+	return subset
 }
 
 // subTraces returns a subset of `td`starting from `bufFront`. It can be nil, in which case it is ignored
-func subTraces(td *ptrace.Traces, bufFront *index) *ptrace.Traces {
-	if td == nil {
-		return td
-	}
-
+func subTraces(td ptrace.Traces, bufFront *index) ptrace.Traces {
 	subset := ptrace.NewTraces()
-	subTracesByType(td, bufFront, &subset)
+	subTracesByType(td, bufFront, subset)
 
-	return &subset
+	return subset
 }
 
-func subLogsByType(src *plog.Logs, from *index, dst *plog.Logs, profiling bool) {
+func subLogsByType(src plog.Logs, from *index, dst plog.Logs, profiling bool) {
 	if from == nil {
 		return // All the data of this type was sent successfully
 	}
@@ -715,7 +703,7 @@ func subLogsByType(src *plog.Logs, from *index, dst *plog.Logs, profiling bool) 
 	}
 }
 
-func subMetricsByType(src *pmetric.Metrics, from *index, dst *pmetric.Metrics) {
+func subMetricsByType(src pmetric.Metrics, from *index, dst pmetric.Metrics) {
 	if from == nil {
 		return // All the data of this type was sent successfully
 	}
@@ -757,7 +745,7 @@ func subMetricsByType(src *pmetric.Metrics, from *index, dst *pmetric.Metrics) {
 	}
 }
 
-func subTracesByType(src *ptrace.Traces, from *index, dst *ptrace.Traces) {
+func subTracesByType(src ptrace.Traces, from *index, dst ptrace.Traces) {
 	if from == nil {
 		return // All the data of this type was sent successfully
 	}

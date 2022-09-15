@@ -40,11 +40,11 @@ func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric, startTime pc
 	}
 	attrs := dataPoint.Attributes()
 	for k, v := range cfg.StaticAttributes {
-		attrs.UpsertString(k, v)
+		attrs.PutString(k, v)
 	}
 	for _, columnName := range cfg.AttributeColumns {
 		if attrVal, found := row[columnName]; found {
-			attrs.UpsertString(columnName, attrVal)
+			attrs.PutString(columnName, attrVal)
 		} else {
 			return fmt.Errorf("rowToMetric: attribute_column not found: '%s'", columnName)
 		}

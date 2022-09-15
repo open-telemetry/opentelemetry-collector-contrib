@@ -333,12 +333,12 @@ func (p *processor) updateDurationMetrics(key string, duration float64) {
 
 func buildDimensions(e *store.Edge) pcommon.Map {
 	dims := pcommon.NewMap()
-	dims.UpsertString("client", e.ClientService)
-	dims.UpsertString("server", e.ServerService)
-	dims.UpsertString("connection_type", string(e.ConnectionType))
-	dims.UpsertBool("failed", e.Failed)
+	dims.PutString("client", e.ClientService)
+	dims.PutString("server", e.ServerService)
+	dims.PutString("connection_type", string(e.ConnectionType))
+	dims.PutBool("failed", e.Failed)
 	for k, v := range e.Dimensions {
-		dims.UpsertString(k, v)
+		dims.PutString(k, v)
 	}
 	return dims
 }
@@ -419,8 +419,8 @@ func (p *processor) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 		dpDuration := mDuration.Histogram().DataPoints().AppendEmpty()
 		dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 		dpDuration.SetTimestamp(timestamp)
-		dpDuration.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(p.reqDurationBounds))
-		dpDuration.SetBucketCounts(pcommon.NewImmutableUInt64Slice(p.reqDurationSecondsBucketCounts[key]))
+		dpDuration.ExplicitBounds().FromRaw(p.reqDurationBounds)
+		dpDuration.BucketCounts().FromRaw(p.reqDurationSecondsBucketCounts[key])
 		dpDuration.SetCount(p.reqDurationSecondsCount[key])
 		dpDuration.SetSum(p.reqDurationSecondsSum[key])
 

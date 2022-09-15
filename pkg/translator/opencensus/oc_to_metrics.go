@@ -218,7 +218,7 @@ func fillAttributesMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocme
 		if !ocLabelValues[i].GetHasValue() {
 			continue
 		}
-		attributesMap.UpsertString(ocLabelsKeys[i].Key, ocLabelValues[i].Value)
+		attributesMap.PutString(ocLabelsKeys[i].Key, ocLabelValues[i].Value)
 	}
 }
 
@@ -274,8 +274,7 @@ func fillDoubleHistogramDataPoint(ocMetric *ocmetrics.Metric, dps pmetric.Histog
 			dp.SetSum(distributionValue.GetSum())
 			dp.SetCount(uint64(distributionValue.GetCount()))
 			ocHistogramBucketsToMetrics(distributionValue.GetBuckets(), dp)
-			dp.SetExplicitBounds(
-				pcommon.NewImmutableFloat64Slice(distributionValue.GetBucketOptions().GetExplicit().GetBounds()))
+			dp.ExplicitBounds().FromRaw(distributionValue.GetBucketOptions().GetExplicit().GetBounds())
 		}
 	}
 }
@@ -319,7 +318,7 @@ func ocHistogramBucketsToMetrics(ocBuckets []*ocmetrics.DistributionValue_Bucket
 			exemplarToMetrics(ocBuckets[i].GetExemplar(), exemplar)
 		}
 	}
-	dp.SetBucketCounts(pcommon.NewImmutableUInt64Slice(buckets))
+	dp.BucketCounts().FromRaw(buckets)
 }
 
 func ocSummaryPercentilesToMetrics(ocPercentiles []*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile, dp pmetric.SummaryDataPoint) {
@@ -349,7 +348,7 @@ func exemplarToMetrics(ocExemplar *ocmetrics.DistributionValue_Exemplar, exempla
 	filteredAttributes.Clear()
 	filteredAttributes.EnsureCapacity(len(ocAttachments))
 	for k, v := range ocAttachments {
-		filteredAttributes.UpsertString(k, v)
+		filteredAttributes.PutString(k, v)
 	}
 }
 

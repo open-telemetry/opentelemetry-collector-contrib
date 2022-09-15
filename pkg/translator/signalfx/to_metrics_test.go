@@ -222,7 +222,7 @@ func TestToMetrics(t *testing.T) {
 			}(),
 			wantMetrics: func() pmetric.Metrics {
 				md := buildDefaultMetrics(pmetric.MetricDataTypeGauge, 13, now)
-				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().UpsertString("k0", "")
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().PutString("k0", "")
 				return md
 			}(),
 		},
@@ -304,9 +304,9 @@ func buildDefaultMetrics(typ pmetric.MetricDataType, value interface{}, now time
 	}
 
 	dp := dps.AppendEmpty()
-	dp.Attributes().UpsertString("k0", "v0")
-	dp.Attributes().UpsertString("k1", "v1")
-	dp.Attributes().UpsertString("k2", "v2")
+	dp.Attributes().PutString("k0", "v0")
+	dp.Attributes().PutString("k1", "v1")
+	dp.Attributes().PutString("k2", "v2")
 	dp.Attributes().Sort()
 
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Truncate(time.Millisecond)))

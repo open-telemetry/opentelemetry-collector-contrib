@@ -141,11 +141,13 @@ func TestParseStats(t *testing.T) {
 ReqPerSec: 719.771
 IdleWorkers: 227
 ConnsTotal: 110
+BytesPerSec: 73.12
 		`
 		want := map[string]string{
 			"ReqPerSec":   "719.771",
 			"IdleWorkers": "227",
 			"ConnsTotal":  "110",
+			"BytesPerSec": "73.12",
 		}
 		require.EqualValues(t, want, parseStats(got))
 	})
@@ -172,6 +174,15 @@ Total kBytes: 20910
 BusyWorkers: 13
 IdleWorkers: 227
 ConnsTotal: 110
+CPUChildrenSystem: 0.01
+CPUChildrenUser: 0.02
+CPUSystem: 0.03
+CPUUser: 0.04
+CPULoad: 0.66
+Load1: 0.9
+Load5: 0.4
+Load15: 0.3
+Total Duration: 1501
 Scoreboard: S_DD_L_GGG_____W__IIII_C________________W__________________________________.........................____WR______W____W________________________C______________________________________W_W____W______________R_________R________C_________WK_W________K_____W__C__________W___R______.............................................................................................................................
 `))
 			require.NoError(t, err)

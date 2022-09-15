@@ -345,7 +345,7 @@ func verifySingleSpan(
 	// Send one span.
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().UpsertString(conventions.AttributeServiceName, serviceName)
+	rs.Resource().Attributes().PutString(conventions.AttributeServiceName, serviceName)
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(idutils.UInt64ToTraceID(0, 1))
 	span.SetSpanID(idutils.UInt64ToSpanID(1))

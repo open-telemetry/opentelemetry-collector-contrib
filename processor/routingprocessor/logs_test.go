@@ -78,7 +78,7 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 
 	l := plog.NewLogs()
 	rl := l.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().UpsertString("X-Tenant", "acme")
+	rl.Resource().Attributes().PutString("X-Tenant", "acme")
 
 	t.Run("non default route is properly used", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeLogs(
@@ -143,7 +143,7 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 	t.Run("non default route is properly used", func(t *testing.T) {
 		l := plog.NewLogs()
 		rl := l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().UpsertString("X-Tenant", "acme")
+		rl.Resource().Attributes().PutString("X-Tenant", "acme")
 
 		assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
 		assert.Len(t, defaultExp.AllLogs(), 0,
@@ -157,7 +157,7 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
 		l := plog.NewLogs()
 		rl := l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().UpsertString("X-Tenant", "some-custom-value")
+		rl.Resource().Attributes().PutString("X-Tenant", "some-custom-value")
 
 		assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
 		assert.Len(t, defaultExp.AllLogs(), 1,
@@ -201,8 +201,8 @@ func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T)
 
 	l := plog.NewLogs()
 	rm := l.ResourceLogs().AppendEmpty()
-	rm.Resource().Attributes().UpsertString("X-Tenant", "acme")
-	rm.Resource().Attributes().UpsertString("attr", "acme")
+	rm.Resource().Attributes().PutString("X-Tenant", "acme")
+	rm.Resource().Attributes().PutString("attr", "acme")
 
 	assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
 	logs := lExp.AllLogs()
@@ -247,15 +247,15 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	l := plog.NewLogs()
 
 	rl := l.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().UpsertString("X-Tenant", "acme")
+	rl.Resource().Attributes().PutString("X-Tenant", "acme")
 	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	rl = l.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().UpsertString("X-Tenant", "acme")
+	rl.Resource().Attributes().PutString("X-Tenant", "acme")
 	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	rl = l.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().UpsertString("X-Tenant", "something-else")
+	rl.Resource().Attributes().PutString("X-Tenant", "something-else")
 	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	ctx := context.Background()
@@ -271,6 +271,131 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	assert.Len(t, lExp.AllLogs(), 1,
 		"one log should be routed to non default exporter",
 	)
+}
+
+func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
+	defaultExp := &mockLogsExporter{}
+	firstExp := &mockLogsExporter{}
+	secondExp := &mockLogsExporter{}
+
+	host := &mockHost{
+		Host: componenttest.NewNopHost(),
+		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
+			return map[config.DataType]map[config.ComponentID]component.Exporter{
+				config.LogsDataType: {
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "1"): firstExp,
+					config.NewComponentIDWithName("otlp", "2"): secondExp,
+				},
+			}
+		},
+	}
+
+	exp := newLogProcessor(zap.NewNop(), &Config{
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Expression: `route() where IsMatch(resource.attributes["X-Tenant"], ".*acme") == true`,
+				Exporters:  []string{"otlp/1"},
+			},
+			{
+				Expression: `route() where IsMatch(resource.attributes["X-Tenant"], "_acme") == true`,
+				Exporters:  []string{"otlp/2"},
+			},
+		},
+	})
+
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	t.Run("logs matched by no expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		l := plog.NewLogs()
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutString("X-Tenant", "something-else")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
+
+		assert.Len(t, defaultExp.AllLogs(), 1)
+		assert.Len(t, firstExp.AllLogs(), 0)
+		assert.Len(t, secondExp.AllLogs(), 0)
+	})
+
+	t.Run("logs matched one of two expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		l := plog.NewLogs()
+
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutString("X-Tenant", "xacme")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
+
+		assert.Len(t, defaultExp.AllLogs(), 0)
+		assert.Len(t, firstExp.AllLogs(), 1)
+		assert.Len(t, secondExp.AllLogs(), 0)
+	})
+
+	t.Run("logs matched by all expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		l := plog.NewLogs()
+
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutString("X-Tenant", "x_acme")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		rl = l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutString("X-Tenant", "_acme")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
+
+		assert.Len(t, defaultExp.AllLogs(), 0)
+		assert.Len(t, firstExp.AllLogs(), 1)
+		assert.Len(t, secondExp.AllLogs(), 1)
+
+		assert.Equal(t, firstExp.AllLogs()[0].LogRecordCount(), 2)
+		assert.Equal(t, secondExp.AllLogs()[0].LogRecordCount(), 2)
+		assert.Equal(t, firstExp.AllLogs(), secondExp.AllLogs())
+	})
+
+	t.Run("one log matched by all expressions, other matched none", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		l := plog.NewLogs()
+
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutString("X-Tenant", "_acme")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		rl = l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutString("X-Tenant", "something-else")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
+
+		assert.Len(t, defaultExp.AllLogs(), 1)
+		assert.Len(t, firstExp.AllLogs(), 1)
+		assert.Len(t, secondExp.AllLogs(), 1)
+
+		assert.Equal(t, firstExp.AllLogs(), secondExp.AllLogs())
+
+		rspan := defaultExp.AllLogs()[0].ResourceLogs().At(0)
+		attr, ok := rspan.Resource().Attributes().Get("X-Tenant")
+		assert.True(t, ok, "routing attribute must exists")
+		assert.Equal(t, attr.AsString(), "something-else")
+	})
 }
 
 type mockLogsExporter struct {

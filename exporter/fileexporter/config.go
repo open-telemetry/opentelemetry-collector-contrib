@@ -26,6 +26,32 @@ type Config struct {
 
 	// Path of the file to write to. Path is relative to current directory.
 	Path string `mapstructure:"path"`
+
+	// Rotation defines an option about rotation of telemetry files
+	Rotation Rotation `mapstructure:"rotation"`
+}
+
+// Rotation an option to rolling log files
+type Rotation struct {
+	// MaxMegabytes is the maximum size in megabytes of the file before it gets
+	// rotated. It defaults to 100 megabytes.
+	MaxMegabytes int `mapstructure:"max_megabytes"`
+
+	// MaxDays is the maximum number of days to retain old log files based on the
+	// timestamp encoded in their filename.  Note that a day is defined as 24
+	// hours and may not exactly correspond to calendar days due to daylight
+	// savings, leap seconds, etc. The default is not to remove old log files
+	// based on age.
+	MaxDays int `mapstructure:"max_days" `
+
+	// MaxBackups is the maximum number of old log files to retain. The default
+	// is to 100 files.
+	MaxBackups int `mapstructure:"max_backups" `
+
+	// LocalTime determines if the time used for formatting the timestamps in
+	// backup files is the computer's local time.  The default is to use UTC
+	// time.
+	LocalTime bool `mapstructure:"localtime"`
 }
 
 var _ config.Exporter = (*Config)(nil)

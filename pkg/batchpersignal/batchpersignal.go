@@ -46,11 +46,12 @@ func SplitTraces(batch ptrace.Traces) []ptrace.Traces {
 					// currently, the ResourceSpans implementation has only a Resource and an ILS. We'll copy the Resource
 					// and set our own ILS
 					rs.Resource().CopyTo(newRS.Resource())
-
+					newRS.SetSchemaUrl(rs.SchemaUrl())
 					newILS := newRS.ScopeSpans().AppendEmpty()
 					// currently, the ILS implementation has only an InstrumentationLibrary and spans. We'll copy the library
 					// and set our own spans
 					ils.Scope().CopyTo(newILS.Scope())
+					newILS.SetSchemaUrl(ils.SchemaUrl())
 					batches[key] = newRS
 
 					result = append(result, trace)
@@ -92,11 +93,12 @@ func SplitLogs(batch plog.Logs) []plog.Logs {
 					// currently, the ResourceLogs implementation has only a Resource and an ILL. We'll copy the Resource
 					// and set our own ILL
 					rs.Resource().CopyTo(newRL.Resource())
-
+					newRL.SetSchemaUrl(rs.SchemaUrl())
 					newILL := newRL.ScopeLogs().AppendEmpty()
 					// currently, the ILL implementation has only an InstrumentationLibrary and logs. We'll copy the library
 					// and set our own logs
 					sl.Scope().CopyTo(newILL.Scope())
+					newILL.SetSchemaUrl(sl.SchemaUrl())
 					batches[key] = newRL
 
 					result = append(result, logs)

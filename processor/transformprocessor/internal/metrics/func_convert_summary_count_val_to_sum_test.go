@@ -60,18 +60,25 @@ func getTestGaugeMetric() pmetric.Metric {
 }
 
 func fillTestAttributes(attrs pcommon.Map) {
-	attrs.UpsertString("test", "hello world")
-	attrs.UpsertInt("test2", 3)
-	attrs.UpsertBool("test3", true)
+	attrs.PutString("test", "hello world")
+	attrs.PutInt("test2", 3)
+	attrs.PutBool("test3", true)
 }
 
 func summaryTest(tests []summaryTestCase, t *testing.T) {
+	tqlp := tql.NewParser(
+		Functions(),
+		tqlmetrics.ParsePath,
+		tqlmetrics.ParseEnum,
+		tql.NoOpLogger{},
+	)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			actualMetrics := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetrics.AppendEmpty())
 
-			evaluate, err := tql.NewFunctionCall(tt.inv, Functions(), tqlmetrics.ParsePath, tqlmetrics.ParseEnum)
+			evaluate, err := tqlp.NewFunctionCall(tt.inv)
 			assert.NoError(t, err)
 
 			evaluate(tqlmetrics.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))

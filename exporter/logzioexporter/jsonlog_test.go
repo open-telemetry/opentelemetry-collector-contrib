@@ -94,7 +94,7 @@ func TestSetTimeStamp(t *testing.T) {
 		recordedRequests, _ = io.ReadAll(req.Body)
 		rw.WriteHeader(http.StatusOK)
 	}))
-	ld := GenerateLogsOneEmptyTimestamp()
+	ld := generateLogsOneEmptyTimestamp()
 	cfg := &Config{
 		Region:           "us",
 		Token:            "token",

@@ -52,7 +52,7 @@ type metricGroup struct {
 	complexValue []*dataPoint
 }
 
-func newMetricFamily(metricName string, mc MetadataCache, logger *zap.Logger) *metricFamily {
+func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *zap.Logger) *metricFamily {
 	metadata, familyName := metadataForMetric(metricName, mc)
 	mtype, isMonotonic := convToMetricType(metadata.Type)
 	if mtype == pmetric.MetricDataTypeNone {
@@ -133,8 +133,8 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 		}
 	}
 
-	point.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(bounds))
-	point.SetBucketCounts(pcommon.NewImmutableUInt64Slice(bucketCounts))
+	point.ExplicitBounds().FromRaw(bounds)
+	point.BucketCounts().FromRaw(bucketCounts)
 
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := timestampFromMs(mg.ts)
@@ -218,7 +218,7 @@ func populateAttributes(mType pmetric.MetricDataType, ls labels.Labels, dest pco
 			// empty label values should be omitted
 			continue
 		}
-		dest.UpsertString(ls[i].Name, ls[i].Value)
+		dest.PutString(ls[i].Name, ls[i].Value)
 	}
 }
 

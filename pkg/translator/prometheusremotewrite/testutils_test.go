@@ -106,8 +106,8 @@ var (
 		lb1Sig: getTimeSeries(getPromLabels(label11, value11, label12, value12),
 			nil...),
 	}
-	bounds  = pcommon.NewImmutableFloat64Slice([]float64{0.1, 0.5, 0.99})
-	buckets = pcommon.NewImmutableUInt64Slice([]uint64{1, 2, 3})
+	bounds  = []float64{0.1, 0.5, 0.99}
+	buckets = []uint64{1, 2, 3}
 
 	quantileBounds = []float64{0.15, 0.9, 0.99}
 	quantileValues = []float64{7, 8, 9}
@@ -161,7 +161,7 @@ var (
 func getAttributes(labels ...string) pcommon.Map {
 	attributeMap := pcommon.NewMap()
 	for i := 0; i < len(labels); i += 2 {
-		attributeMap.UpsertString(labels[i], labels[i+1])
+		attributeMap.PutString(labels[i], labels[i+1])
 	}
 	return attributeMap
 }
@@ -214,13 +214,13 @@ func getTimeSeriesWithSamplesAndExemplars(labels []prompb.Label, samples []promp
 	}
 }
 
-func getHistogramDataPointWithExemplars(t *testing.T, time time.Time, value float64, traceID string, spanID string, attributeKey string, attributeValue string) *pmetric.HistogramDataPoint {
+func getHistogramDataPointWithExemplars(t *testing.T, time time.Time, value float64, traceID string, spanID string, attributeKey string, attributeValue string) pmetric.HistogramDataPoint {
 	h := pmetric.NewHistogramDataPoint()
 
 	e := h.Exemplars().AppendEmpty()
 	e.SetDoubleVal(value)
 	e.SetTimestamp(pcommon.NewTimestampFromTime(time))
-	e.FilteredAttributes().UpsertString(attributeKey, attributeValue)
+	e.FilteredAttributes().PutString(attributeKey, attributeValue)
 
 	if traceID != "" {
 		var traceIDBytes [16]byte
@@ -237,13 +237,7 @@ func getHistogramDataPointWithExemplars(t *testing.T, time time.Time, value floa
 		e.SetSpanID(spanIDBytes)
 	}
 
-	return &h
-}
-
-func getHistogramDataPoint() *pmetric.HistogramDataPoint {
-	h := pmetric.NewHistogramDataPoint()
-
-	return &h
+	return h
 }
 
 func getQuantiles(bounds []float64, values []float64) pmetric.ValueAtQuantileSlice {
@@ -356,8 +350,8 @@ func getEmptyCumulativeHistogramMetric(name string) pmetric.Metric {
 	return metric
 }
 
-func getHistogramMetric(name string, attributes pcommon.Map, ts uint64, sum float64, count uint64, bounds pcommon.ImmutableFloat64Slice,
-	buckets pcommon.ImmutableUInt64Slice) pmetric.Metric {
+func getHistogramMetric(name string, attributes pcommon.Map, ts uint64, sum float64, count uint64, bounds []float64,
+	buckets []uint64) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -367,8 +361,8 @@ func getHistogramMetric(name string, attributes pcommon.Map, ts uint64, sum floa
 	}
 	dp.SetCount(count)
 	dp.SetSum(sum)
-	dp.SetBucketCounts(buckets)
-	dp.SetExplicitBounds(bounds)
+	dp.BucketCounts().FromRaw(buckets)
+	dp.ExplicitBounds().FromRaw(bounds)
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetTimestamp(pcommon.Timestamp(ts))
@@ -392,7 +386,7 @@ func getSummaryMetric(name string, attributes pcommon.Map, ts uint64, sum float6
 	dp.SetCount(count)
 	dp.SetSum(sum)
 	attributes.Range(func(k string, v pcommon.Value) bool {
-		v.CopyTo(dp.Attributes().UpsertEmpty(k))
+		v.CopyTo(dp.Attributes().PutEmpty(k))
 		return true
 	})
 

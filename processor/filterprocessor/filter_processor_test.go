@@ -385,7 +385,7 @@ func testResourceMetrics(mwrs []metricWithResource) pmetric.Metrics {
 
 	for _, mwr := range mwrs {
 		rm := md.ResourceMetrics().AppendEmpty()
-		pcommon.NewMapFromRaw(mwr.resourceAttributes).CopyTo(rm.Resource().Attributes())
+		rm.Resource().Attributes().FromRaw(mwr.resourceAttributes)
 		ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 		for _, name := range mwr.metricNames {
 			m := ms.AppendEmpty()

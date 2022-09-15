@@ -26,9 +26,9 @@ import (
 
 func Test_deleteKey(t *testing.T) {
 	input := pcommon.NewMap()
-	input.UpsertString("test", "hello world")
-	input.UpsertInt("test2", 3)
-	input.UpsertBool("test3", true)
+	input.PutString("test", "hello world")
+	input.PutInt("test2", 3)
+	input.PutBool("test3", true)
 
 	target := &tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
@@ -48,8 +48,8 @@ func Test_deleteKey(t *testing.T) {
 			key:    "test",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.UpsertBool("test3", true)
-				expectedMap.UpsertInt("test2", 3)
+				expectedMap.PutBool("test3", true)
+				expectedMap.PutInt("test2", 3)
 			},
 		},
 		{
@@ -58,8 +58,8 @@ func Test_deleteKey(t *testing.T) {
 			key:    "test2",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.UpsertString("test", "hello world")
-				expectedMap.UpsertBool("test3", true)
+				expectedMap.PutString("test", "hello world")
+				expectedMap.PutBool("test3", true)
 			},
 		},
 		{
@@ -68,9 +68,9 @@ func Test_deleteKey(t *testing.T) {
 			key:    "not a valid key",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.UpsertString("test", "hello world")
-				expectedMap.UpsertInt("test2", 3)
-				expectedMap.UpsertBool("test3", true)
+				expectedMap.PutString("test", "hello world")
+				expectedMap.PutInt("test2", 3)
+				expectedMap.PutBool("test3", true)
 			},
 		},
 	}

@@ -40,8 +40,8 @@ func Test_FromMetrics(t *testing.T) {
 		"k1": "v1",
 	}
 	attrMap := pcommon.NewMap()
-	attrMap.UpsertString("k0", "v0")
-	attrMap.UpsertString("k1", "v1")
+	attrMap.PutString("k0", "v0")
+	attrMap.PutString("k1", "v1")
 
 	ts := pcommon.NewTimestampFromTime(time.Unix(unixSecs, unixNSecs))
 
@@ -70,8 +70,8 @@ func Test_FromMetrics(t *testing.T) {
 	initHistDPNoOptional := func(dp pmetric.HistogramDataPoint) {
 		dp.SetTimestamp(ts)
 		dp.SetCount(16)
-		dp.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1, 2, 4}))
-		dp.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{4, 2, 3, 7}))
+		dp.ExplicitBounds().FromRaw([]float64{1, 2, 4})
+		dp.BucketCounts().FromRaw([]uint64{4, 2, 3, 7})
 		attrMap.CopyTo(dp.Attributes())
 	}
 
@@ -201,10 +201,10 @@ func Test_FromMetrics(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().UpsertString("k_r0", "v_r0")
-				res.Attributes().UpsertString("k_r1", "v_r1")
-				res.Attributes().UpsertString("k_n0", "v_n0")
-				res.Attributes().UpsertString("k_n1", "v_n1")
+				res.Attributes().PutString("k_r0", "v_r0")
+				res.Attributes().PutString("k_r1", "v_r1")
+				res.Attributes().PutString("k_n0", "v_n0")
+				res.Attributes().PutString("k_n1", "v_n1")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(2)
