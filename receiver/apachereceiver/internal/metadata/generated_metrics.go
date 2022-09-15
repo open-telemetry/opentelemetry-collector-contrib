@@ -19,7 +19,13 @@ type MetricSettings struct {
 
 // MetricsSettings provides settings for apachereceiver metrics.
 type MetricsSettings struct {
+	ApacheCPULoad            MetricSettings `mapstructure:"apache.cpu.load"`
+	ApacheCPUTime            MetricSettings `mapstructure:"apache.cpu.time"`
 	ApacheCurrentConnections MetricSettings `mapstructure:"apache.current_connections"`
+	ApacheLoad1              MetricSettings `mapstructure:"apache.load.1"`
+	ApacheLoad15             MetricSettings `mapstructure:"apache.load.15"`
+	ApacheLoad5              MetricSettings `mapstructure:"apache.load.5"`
+	ApacheRequestTime        MetricSettings `mapstructure:"apache.request.time"`
 	ApacheRequests           MetricSettings `mapstructure:"apache.requests"`
 	ApacheScoreboard         MetricSettings `mapstructure:"apache.scoreboard"`
 	ApacheTraffic            MetricSettings `mapstructure:"apache.traffic"`
@@ -29,7 +35,25 @@ type MetricsSettings struct {
 
 func DefaultMetricsSettings() MetricsSettings {
 	return MetricsSettings{
+		ApacheCPULoad: MetricSettings{
+			Enabled: true,
+		},
+		ApacheCPUTime: MetricSettings{
+			Enabled: true,
+		},
 		ApacheCurrentConnections: MetricSettings{
+			Enabled: true,
+		},
+		ApacheLoad1: MetricSettings{
+			Enabled: true,
+		},
+		ApacheLoad15: MetricSettings{
+			Enabled: true,
+		},
+		ApacheLoad5: MetricSettings{
+			Enabled: true,
+		},
+		ApacheRequestTime: MetricSettings{
 			Enabled: true,
 		},
 		ApacheRequests: MetricSettings{
@@ -48,6 +72,58 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 	}
+}
+
+// AttributeCPULevel specifies the a value cpu_level attribute.
+type AttributeCPULevel int
+
+const (
+	_ AttributeCPULevel = iota
+	AttributeCPULevelSelf
+	AttributeCPULevelChildren
+)
+
+// String returns the string representation of the AttributeCPULevel.
+func (av AttributeCPULevel) String() string {
+	switch av {
+	case AttributeCPULevelSelf:
+		return "self"
+	case AttributeCPULevelChildren:
+		return "children"
+	}
+	return ""
+}
+
+// MapAttributeCPULevel is a helper map of string to AttributeCPULevel attribute value.
+var MapAttributeCPULevel = map[string]AttributeCPULevel{
+	"self":     AttributeCPULevelSelf,
+	"children": AttributeCPULevelChildren,
+}
+
+// AttributeCPUMode specifies the a value cpu_mode attribute.
+type AttributeCPUMode int
+
+const (
+	_ AttributeCPUMode = iota
+	AttributeCPUModeSystem
+	AttributeCPUModeUser
+)
+
+// String returns the string representation of the AttributeCPUMode.
+func (av AttributeCPUMode) String() string {
+	switch av {
+	case AttributeCPUModeSystem:
+		return "system"
+	case AttributeCPUModeUser:
+		return "user"
+	}
+	return ""
+}
+
+// MapAttributeCPUMode is a helper map of string to AttributeCPUMode attribute value.
+var MapAttributeCPUMode = map[string]AttributeCPUMode{
+	"system": AttributeCPUModeSystem,
+	"user":   AttributeCPUModeUser,
 }
 
 // AttributeScoreboardState specifies the a value scoreboard_state attribute.
@@ -142,6 +218,112 @@ var MapAttributeWorkersState = map[string]AttributeWorkersState{
 	"idle": AttributeWorkersStateIdle,
 }
 
+type metricApacheCPULoad struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills apache.cpu.load metric with initial data.
+func (m *metricApacheCPULoad) init() {
+	m.data.SetName("apache.cpu.load")
+	m.data.SetDescription("Current load of the CPU.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricApacheCPULoad) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, serverNameAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleVal(val)
+	dp.Attributes().PutString("server_name", serverNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricApacheCPULoad) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricApacheCPULoad) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricApacheCPULoad(settings MetricSettings) metricApacheCPULoad {
+	m := metricApacheCPULoad{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricApacheCPUTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills apache.cpu.time metric with initial data.
+func (m *metricApacheCPUTime) init() {
+	m.data.SetName("apache.cpu.time")
+	m.data.SetDescription("Jiffs used by processes of given category.")
+	m.data.SetUnit("{jiff}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricApacheCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, serverNameAttributeValue string, cpuLevelAttributeValue string, cpuModeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleVal(val)
+	dp.Attributes().PutString("server_name", serverNameAttributeValue)
+	dp.Attributes().PutString("level", cpuLevelAttributeValue)
+	dp.Attributes().PutString("mode", cpuModeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricApacheCPUTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricApacheCPUTime) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricApacheCPUTime(settings MetricSettings) metricApacheCPUTime {
+	m := metricApacheCPUTime{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricApacheCurrentConnections struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -188,6 +370,212 @@ func (m *metricApacheCurrentConnections) emit(metrics pmetric.MetricSlice) {
 
 func newMetricApacheCurrentConnections(settings MetricSettings) metricApacheCurrentConnections {
 	m := metricApacheCurrentConnections{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricApacheLoad1 struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills apache.load.1 metric with initial data.
+func (m *metricApacheLoad1) init() {
+	m.data.SetName("apache.load.1")
+	m.data.SetDescription("The average server load during the last minute.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricApacheLoad1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, serverNameAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleVal(val)
+	dp.Attributes().PutString("server_name", serverNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricApacheLoad1) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricApacheLoad1) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricApacheLoad1(settings MetricSettings) metricApacheLoad1 {
+	m := metricApacheLoad1{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricApacheLoad15 struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills apache.load.15 metric with initial data.
+func (m *metricApacheLoad15) init() {
+	m.data.SetName("apache.load.15")
+	m.data.SetDescription("The average server load during the last 15 minutes.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricApacheLoad15) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, serverNameAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleVal(val)
+	dp.Attributes().PutString("server_name", serverNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricApacheLoad15) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricApacheLoad15) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricApacheLoad15(settings MetricSettings) metricApacheLoad15 {
+	m := metricApacheLoad15{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricApacheLoad5 struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills apache.load.5 metric with initial data.
+func (m *metricApacheLoad5) init() {
+	m.data.SetName("apache.load.5")
+	m.data.SetDescription("The average server load during the last 5 minutes.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricApacheLoad5) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, serverNameAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleVal(val)
+	dp.Attributes().PutString("server_name", serverNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricApacheLoad5) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricApacheLoad5) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricApacheLoad5(settings MetricSettings) metricApacheLoad5 {
+	m := metricApacheLoad5{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricApacheRequestTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills apache.request.time metric with initial data.
+func (m *metricApacheRequestTime) init() {
+	m.data.SetName("apache.request.time")
+	m.data.SetDescription("Total time spent on handling requests.")
+	m.data.SetUnit("ms")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricApacheRequestTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serverNameAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().PutString("server_name", serverNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricApacheRequestTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricApacheRequestTime) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricApacheRequestTime(settings MetricSettings) metricApacheRequestTime {
+	m := metricApacheRequestTime{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -470,7 +858,13 @@ type MetricsBuilder struct {
 	resourceCapacity               int                 // maximum observed number of resource attributes.
 	metricsBuffer                  pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                      component.BuildInfo // contains version information
+	metricApacheCPULoad            metricApacheCPULoad
+	metricApacheCPUTime            metricApacheCPUTime
 	metricApacheCurrentConnections metricApacheCurrentConnections
+	metricApacheLoad1              metricApacheLoad1
+	metricApacheLoad15             metricApacheLoad15
+	metricApacheLoad5              metricApacheLoad5
+	metricApacheRequestTime        metricApacheRequestTime
 	metricApacheRequests           metricApacheRequests
 	metricApacheScoreboard         metricApacheScoreboard
 	metricApacheTraffic            metricApacheTraffic
@@ -493,7 +887,13 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                  pmetric.NewMetrics(),
 		buildInfo:                      buildInfo,
+		metricApacheCPULoad:            newMetricApacheCPULoad(settings.ApacheCPULoad),
+		metricApacheCPUTime:            newMetricApacheCPUTime(settings.ApacheCPUTime),
 		metricApacheCurrentConnections: newMetricApacheCurrentConnections(settings.ApacheCurrentConnections),
+		metricApacheLoad1:              newMetricApacheLoad1(settings.ApacheLoad1),
+		metricApacheLoad15:             newMetricApacheLoad15(settings.ApacheLoad15),
+		metricApacheLoad5:              newMetricApacheLoad5(settings.ApacheLoad5),
+		metricApacheRequestTime:        newMetricApacheRequestTime(settings.ApacheRequestTime),
 		metricApacheRequests:           newMetricApacheRequests(settings.ApacheRequests),
 		metricApacheScoreboard:         newMetricApacheScoreboard(settings.ApacheScoreboard),
 		metricApacheTraffic:            newMetricApacheTraffic(settings.ApacheTraffic),
@@ -551,7 +951,13 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetName("otelcol/apachereceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricApacheCPULoad.emit(ils.Metrics())
+	mb.metricApacheCPUTime.emit(ils.Metrics())
 	mb.metricApacheCurrentConnections.emit(ils.Metrics())
+	mb.metricApacheLoad1.emit(ils.Metrics())
+	mb.metricApacheLoad15.emit(ils.Metrics())
+	mb.metricApacheLoad5.emit(ils.Metrics())
+	mb.metricApacheRequestTime.emit(ils.Metrics())
 	mb.metricApacheRequests.emit(ils.Metrics())
 	mb.metricApacheScoreboard.emit(ils.Metrics())
 	mb.metricApacheTraffic.emit(ils.Metrics())
@@ -576,6 +982,26 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	return metrics
 }
 
+// RecordApacheCPULoadDataPoint adds a data point to apache.cpu.load metric.
+func (mb *MetricsBuilder) RecordApacheCPULoadDataPoint(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
+	val, err := strconv.ParseFloat(inputVal, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse float64 for ApacheCPULoad, value was %s: %w", inputVal, err)
+	}
+	mb.metricApacheCPULoad.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
+	return nil
+}
+
+// RecordApacheCPUTimeDataPoint adds a data point to apache.cpu.time metric.
+func (mb *MetricsBuilder) RecordApacheCPUTimeDataPoint(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string, cpuLevelAttributeValue AttributeCPULevel, cpuModeAttributeValue AttributeCPUMode) error {
+	val, err := strconv.ParseFloat(inputVal, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse float64 for ApacheCPUTime, value was %s: %w", inputVal, err)
+	}
+	mb.metricApacheCPUTime.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue, cpuLevelAttributeValue.String(), cpuModeAttributeValue.String())
+	return nil
+}
+
 // RecordApacheCurrentConnectionsDataPoint adds a data point to apache.current_connections metric.
 func (mb *MetricsBuilder) RecordApacheCurrentConnectionsDataPoint(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
@@ -583,6 +1009,46 @@ func (mb *MetricsBuilder) RecordApacheCurrentConnectionsDataPoint(ts pcommon.Tim
 		return fmt.Errorf("failed to parse int64 for ApacheCurrentConnections, value was %s: %w", inputVal, err)
 	}
 	mb.metricApacheCurrentConnections.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
+	return nil
+}
+
+// RecordApacheLoad1DataPoint adds a data point to apache.load.1 metric.
+func (mb *MetricsBuilder) RecordApacheLoad1DataPoint(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
+	val, err := strconv.ParseFloat(inputVal, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse float64 for ApacheLoad1, value was %s: %w", inputVal, err)
+	}
+	mb.metricApacheLoad1.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
+	return nil
+}
+
+// RecordApacheLoad15DataPoint adds a data point to apache.load.15 metric.
+func (mb *MetricsBuilder) RecordApacheLoad15DataPoint(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
+	val, err := strconv.ParseFloat(inputVal, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse float64 for ApacheLoad15, value was %s: %w", inputVal, err)
+	}
+	mb.metricApacheLoad15.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
+	return nil
+}
+
+// RecordApacheLoad5DataPoint adds a data point to apache.load.5 metric.
+func (mb *MetricsBuilder) RecordApacheLoad5DataPoint(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
+	val, err := strconv.ParseFloat(inputVal, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse float64 for ApacheLoad5, value was %s: %w", inputVal, err)
+	}
+	mb.metricApacheLoad5.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
+	return nil
+}
+
+// RecordApacheRequestTimeDataPoint adds a data point to apache.request.time metric.
+func (mb *MetricsBuilder) RecordApacheRequestTimeDataPoint(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for ApacheRequestTime, value was %s: %w", inputVal, err)
+	}
+	mb.metricApacheRequestTime.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
 	return nil
 }
 
