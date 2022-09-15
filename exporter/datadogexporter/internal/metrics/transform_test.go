@@ -88,6 +88,21 @@ func TestYAML(t *testing.T) {
 			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
 				Include:     "system.cpu.utilization",
 				MatchType:   "strict",
+				MatchLabels: map[string]string{"state": "system"},
+			},
+			Action:  "insert",
+			NewName: "system.cpu.system",
+			Operations: []metricstransformprocessor.Operation{
+				{
+					Action: "experimental_scale_value",
+					Scale:  100,
+				},
+			},
+		},
+		{
+			MetricIncludeFilter: metricstransformprocessor.FilterConfig{
+				Include:     "system.cpu.utilization",
+				MatchType:   "strict",
 				MatchLabels: map[string]string{"state": "wait"},
 			},
 			Action:  "insert",
@@ -250,6 +265,7 @@ func TestTransformFunc(t *testing.T) {
 			{Value: 8, Attributes: map[string]string{"state": "user"}},
 			{Value: 9, Attributes: map[string]string{"state": "wait"}},
 			{Value: 10, Attributes: map[string]string{"state": "steal"}},
+			{Value: 20, Attributes: map[string]string{"state": "system"}},
 			{Value: 100},
 		}},
 		{Name: "system.memory.usage", DataPoints: []testutils.DataPoint{
@@ -300,6 +316,7 @@ func TestTransformFunc(t *testing.T) {
 		{N: "system.cpu.utilization", V: 8, A: map[string]interface{}{"state": "user"}},
 		{N: "system.cpu.utilization", V: 9, A: map[string]interface{}{"state": "wait"}},
 		{N: "system.cpu.utilization", V: 10, A: map[string]interface{}{"state": "steal"}},
+		{N: "system.cpu.utilization", V: 20, A: map[string]interface{}{"state": "system"}},
 		{N: "system.cpu.utilization", V: 100},
 		{N: "system.memory.usage", V: 11},
 		{N: "system.memory.usage", V: 12, A: map[string]interface{}{"state": "free"}},
@@ -315,6 +332,7 @@ func TestTransformFunc(t *testing.T) {
 		{N: "system.load.15", V: 6},
 		{N: "system.cpu.idle", V: 700, A: map[string]interface{}{"state": "idle"}},
 		{N: "system.cpu.user", V: 800, A: map[string]interface{}{"state": "user"}},
+		{N: "system.cpu.system", V: 2000, A: map[string]interface{}{"state": "system"}},
 		{N: "system.cpu.iowait", V: 900, A: map[string]interface{}{"state": "wait"}},
 		{N: "system.cpu.stolen", V: 1000, A: map[string]interface{}{"state": "steal"}},
 		{N: "system.mem.total", V: 0.000011},
@@ -334,6 +352,7 @@ func TestTransformFunc(t *testing.T) {
 		"system.cpu.iowait":     {},
 		"system.cpu.stolen":     {},
 		"system.cpu.user":       {},
+		"system.cpu.system":     {},
 		"system.disk.in_use":    {},
 		"system.load.1":         {},
 		"system.load.15":        {},

@@ -125,6 +125,14 @@ transforms:
   - action: experimental_scale_value
     experimental_scale: 100
 - include: system.cpu.utilization
+  experimental_match_labels: {"state": "system"}
+  match_type: strict
+  action: insert
+  new_name: system.cpu.system
+  operations:
+  - action: experimental_scale_value
+    experimental_scale: 100
+- include: system.cpu.utilization
   experimental_match_labels: {"state": "wait"}
   match_type: strict
   action: insert
