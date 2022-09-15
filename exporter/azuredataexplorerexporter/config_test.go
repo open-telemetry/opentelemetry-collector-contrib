@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(
 		t,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName("", "")),
 			ClusterURI:       "https://CLUSTER.kusto.windows.net",
 			ApplicationID:    "f80da32c-108c-415c-a19e-643f461a677a",
 			ApplicationKey:   "xx-xx-xx-xx",
