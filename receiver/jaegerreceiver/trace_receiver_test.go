@@ -262,10 +262,10 @@ func expectedTraceData(t1, t2, t3 time.Time) ptrace.Traces {
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().UpsertString(conventions.AttributeServiceName, "issaTest")
-	rs.Resource().Attributes().UpsertBool("bool", true)
-	rs.Resource().Attributes().UpsertString("string", "yes")
-	rs.Resource().Attributes().UpsertInt("int64", 10000000)
+	rs.Resource().Attributes().PutString(conventions.AttributeServiceName, "issaTest")
+	rs.Resource().Attributes().PutBool("bool", true)
+	rs.Resource().Attributes().PutString("string", "yes")
+	rs.Resource().Attributes().PutInt("int64", 10000000)
 	spans := rs.ScopeSpans().AppendEmpty().Spans()
 
 	span0 := spans.AppendEmpty()

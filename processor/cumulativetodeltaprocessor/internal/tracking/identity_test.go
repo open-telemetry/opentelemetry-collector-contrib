@@ -25,14 +25,14 @@ import (
 
 func TestMetricIdentity_Write(t *testing.T) {
 	resource := pcommon.NewResource()
-	resource.Attributes().UpsertBool("resource", true)
+	resource.Attributes().PutBool("resource", true)
 
 	il := pcommon.NewInstrumentationScope()
 	il.SetName("ilm_name")
 	il.SetVersion("ilm_version")
 
 	attributes := pcommon.NewMap()
-	attributes.UpsertString("label", "value")
+	attributes.PutString("label", "value")
 	type fields struct {
 		Resource               pcommon.Resource
 		InstrumentationLibrary pcommon.InstrumentationScope

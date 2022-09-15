@@ -50,13 +50,13 @@ func CreateResource(job, instance string, serviceDiscoveryLabels labels.Labels) 
 	}
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
-	attrs.UpsertString(conventions.AttributeServiceName, job)
+	attrs.PutString(conventions.AttributeServiceName, job)
 	if isDiscernibleHost(host) {
-		attrs.UpsertString(conventions.AttributeNetHostName, host)
+		attrs.PutString(conventions.AttributeNetHostName, host)
 	}
-	attrs.UpsertString(conventions.AttributeServiceInstanceID, instance)
-	attrs.UpsertString(conventions.AttributeNetHostPort, port)
-	attrs.UpsertString(conventions.AttributeHTTPScheme, serviceDiscoveryLabels.Get(model.SchemeLabel))
+	attrs.PutString(conventions.AttributeServiceInstanceID, instance)
+	attrs.PutString(conventions.AttributeNetHostPort, port)
+	attrs.PutString(conventions.AttributeHTTPScheme, serviceDiscoveryLabels.Get(model.SchemeLabel))
 
 	addKubernetesResource(attrs, serviceDiscoveryLabels)
 
@@ -82,7 +82,7 @@ var kubernetesDiscoveryToResourceAttributes = map[string]string{
 func addKubernetesResource(attrs pcommon.Map, serviceDiscoveryLabels labels.Labels) {
 	for sdKey, attributeKey := range kubernetesDiscoveryToResourceAttributes {
 		if attr := serviceDiscoveryLabels.Get(sdKey); attr != "" {
-			attrs.UpsertString(attributeKey, attr)
+			attrs.PutString(attributeKey, attr)
 		}
 	}
 	controllerName := serviceDiscoveryLabels.Get("__meta_kubernetes_pod_controller_name")
@@ -90,15 +90,15 @@ func addKubernetesResource(attrs pcommon.Map, serviceDiscoveryLabels labels.Labe
 	if controllerKind != "" && controllerName != "" {
 		switch controllerKind {
 		case "ReplicaSet":
-			attrs.UpsertString(conventions.AttributeK8SReplicaSetName, controllerName)
+			attrs.PutString(conventions.AttributeK8SReplicaSetName, controllerName)
 		case "DaemonSet":
-			attrs.UpsertString(conventions.AttributeK8SDaemonSetName, controllerName)
+			attrs.PutString(conventions.AttributeK8SDaemonSetName, controllerName)
 		case "StatefulSet":
-			attrs.UpsertString(conventions.AttributeK8SStatefulSetName, controllerName)
+			attrs.PutString(conventions.AttributeK8SStatefulSetName, controllerName)
 		case "Job":
-			attrs.UpsertString(conventions.AttributeK8SJobName, controllerName)
+			attrs.PutString(conventions.AttributeK8SJobName, controllerName)
 		case "CronJob":
-			attrs.UpsertString(conventions.AttributeK8SCronJobName, controllerName)
+			attrs.PutString(conventions.AttributeK8SCronJobName, controllerName)
 		}
 	}
 }

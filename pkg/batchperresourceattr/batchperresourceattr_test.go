@@ -248,8 +248,8 @@ func sortTraces(tds []ptrace.Traces, attrKey string) {
 }
 
 func fillResourceSpans(rs ptrace.ResourceSpans, key string, val string) {
-	rs.Resource().Attributes().UpsertString(key, val)
-	rs.Resource().Attributes().UpsertInt("__other_key__", 123)
+	rs.Resource().Attributes().PutString(key, val)
+	rs.Resource().Attributes().PutInt("__other_key__", 123)
 	ils := rs.ScopeSpans().AppendEmpty()
 	firstSpan := ils.Spans().AppendEmpty()
 	firstSpan.SetName("first-span")
@@ -282,8 +282,8 @@ func sortMetrics(tds []pmetric.Metrics, attrKey string) {
 }
 
 func fillResourceMetrics(rs pmetric.ResourceMetrics, key string, val string) {
-	rs.Resource().Attributes().UpsertString(key, val)
-	rs.Resource().Attributes().UpsertInt("__other_key__", 123)
+	rs.Resource().Attributes().PutString(key, val)
+	rs.Resource().Attributes().PutInt("__other_key__", 123)
 	ils := rs.ScopeMetrics().AppendEmpty()
 	firstMetric := ils.Metrics().AppendEmpty()
 	firstMetric.SetName("first-metric")
@@ -316,8 +316,8 @@ func sortLogs(tds []plog.Logs, attrKey string) {
 }
 
 func fillResourceLogs(rs plog.ResourceLogs, key string, val string) {
-	rs.Resource().Attributes().UpsertString(key, val)
-	rs.Resource().Attributes().UpsertInt("__other_key__", 123)
+	rs.Resource().Attributes().PutString(key, val)
+	rs.Resource().Attributes().PutInt("__other_key__", 123)
 	ils := rs.ScopeLogs().AppendEmpty()
 	firstLogRecord := ils.LogRecords().AppendEmpty()
 	firstLogRecord.SetFlags(plog.LogRecordFlags(rand.Int31()))

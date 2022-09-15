@@ -40,6 +40,7 @@ var (
 type elasticsearchClient interface {
 	NodeStats(ctx context.Context, nodes []string) (*model.NodeStats, error)
 	ClusterHealth(ctx context.Context) (*model.ClusterHealth, error)
+	Version(ctx context.Context) (*model.VersionResponse, error)
 }
 
 // defaultElasticsearchClient is the main implementation of elasticsearchClient.
@@ -116,6 +117,17 @@ func (c defaultElasticsearchClient) ClusterHealth(ctx context.Context) (*model.C
 	clusterHealth := model.ClusterHealth{}
 	err = json.Unmarshal(body, &clusterHealth)
 	return &clusterHealth, err
+}
+
+func (c defaultElasticsearchClient) Version(ctx context.Context) (*model.VersionResponse, error) {
+	body, err := c.doRequest(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	versionResponse := model.VersionResponse{}
+	err = json.Unmarshal(body, &versionResponse)
+	return &versionResponse, err
 }
 
 func (c defaultElasticsearchClient) doRequest(ctx context.Context, path string) ([]byte, error) {

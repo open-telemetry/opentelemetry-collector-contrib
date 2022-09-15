@@ -28,25 +28,25 @@ const (
 )
 
 func initMetricAttachment(dest pcommon.Map) {
-	dest.UpsertString(TestAttachmentKey, TestAttachmentValue)
+	dest.PutString(TestAttachmentKey, TestAttachmentValue)
 }
 
 func initMetricAttributes1(dest pcommon.Map) {
-	dest.UpsertString(TestLabelKey1, TestLabelValue1)
+	dest.PutString(TestLabelKey1, TestLabelValue1)
 }
 
 func initMetricAttributes12(dest pcommon.Map) {
-	dest.UpsertString(TestLabelKey1, TestLabelValue1)
-	dest.UpsertString(TestLabelKey2, TestLabelValue2)
+	dest.PutString(TestLabelKey1, TestLabelValue1)
+	dest.PutString(TestLabelKey2, TestLabelValue2)
 	dest.Sort()
 }
 
 func initMetricAttributes13(dest pcommon.Map) {
-	dest.UpsertString(TestLabelKey1, TestLabelValue1)
-	dest.UpsertString(TestLabelKey3, TestLabelValue3)
+	dest.PutString(TestLabelKey1, TestLabelValue1)
+	dest.PutString(TestLabelKey3, TestLabelValue3)
 	dest.Sort()
 }
 
 func initMetricAttributes2(dest pcommon.Map) {
-	dest.UpsertString(TestLabelKey2, TestLabelValue2)
+	dest.PutString(TestLabelKey2, TestLabelValue2)
 }

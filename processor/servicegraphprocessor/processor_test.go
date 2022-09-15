@@ -206,7 +206,7 @@ func sampleTraces() ptrace.Traces {
 	traces := ptrace.NewTraces()
 
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
-	resourceSpans.Resource().Attributes().UpsertString(semconv.AttributeServiceName, "some-service")
+	resourceSpans.Resource().Attributes().PutString(semconv.AttributeServiceName, "some-service")
 
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 
@@ -220,7 +220,7 @@ func sampleTraces() ptrace.Traces {
 	clientSpan.SetKind(ptrace.SpanKindClient)
 	clientSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
 	clientSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
-	clientSpan.Attributes().UpsertString("some-attribute", "val") // Attribute selected as dimension for metrics
+	clientSpan.Attributes().PutString("some-attribute", "val") // Attribute selected as dimension for metrics
 
 	serverSpan := scopeSpans.Spans().AppendEmpty()
 	serverSpan.SetName("server span")

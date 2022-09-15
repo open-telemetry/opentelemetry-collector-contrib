@@ -93,8 +93,9 @@ func (t *traceTransformer) Span(orig ptrace.Span) (span, error) {
 		tags[k] = v
 	}
 
-	if len(orig.TraceState()) > 0 {
-		tags[tracetranslator.TagW3CTraceState] = string(orig.TraceState())
+	traceState := orig.TraceStateStruct().AsRaw()
+	if orig.TraceStateStruct().AsRaw() != "" {
+		tags[tracetranslator.TagW3CTraceState] = traceState
 	}
 
 	return span{
@@ -229,7 +230,7 @@ func attributesToTagsReplaceSource(attributes ...pcommon.Map) map[string]string 
 func newMap(tags map[string]string) pcommon.Map {
 	m := pcommon.NewMap()
 	for key, value := range tags {
-		m.UpsertString(key, value)
+		m.PutString(key, value)
 	}
 	return m
 }

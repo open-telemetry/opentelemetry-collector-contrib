@@ -411,7 +411,7 @@ func upsertToAttributeVal(value interface{}, dest pcommon.Value) {
 func upsertToMap(obsMap map[string]interface{}, dest pcommon.Map) {
 	dest.EnsureCapacity(len(obsMap))
 	for k, v := range obsMap {
-		upsertToAttributeVal(v, dest.UpsertEmpty(k))
+		upsertToAttributeVal(v, dest.PutEmpty(k))
 	}
 }
 

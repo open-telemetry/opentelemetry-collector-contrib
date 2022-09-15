@@ -27,7 +27,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "influxdb"
 	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
+	stability = component.StabilityLevelUnmaintained
 )
 
 // Config defines configuration for the InfluxDB exporter.

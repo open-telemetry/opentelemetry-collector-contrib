@@ -31,9 +31,6 @@ const (
 	InstanaSpanKindConsumer = "consumer"
 	InstanaSpanKindInternal = "internal"
 
-	InstanaDataService     = "service"
-	InstanaDataOperation   = "operation"
-	InstanaDataTraceState  = "trace_state"
 	InstanaDataError       = "error"
 	InstanaDataErrorDetail = "error_detail"
 )
@@ -122,9 +119,7 @@ func ConvertPDataSpanToInstanaSpan(fromS FromS, otelSpan ptrace.Span, serviceNam
 
 	instanaSpan.Data.Operation = otelSpan.Name()
 
-	if otelSpan.TraceState() != ptrace.TraceStateEmpty {
-		instanaSpan.Data.TraceState = string(otelSpan.TraceState())
-	}
+	instanaSpan.Data.TraceState = otelSpan.TraceStateStruct().AsRaw()
 
 	otelSpan.Attributes().Sort().Range(func(k string, v pcommon.Value) bool {
 		instanaSpan.Data.Tags[k] = v.AsString()

@@ -28,11 +28,11 @@ func addAWSToResource(aws *awsxray.AWSData, attrs pcommon.Map) {
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/aws.go#L121
 		// this implies that the current segment being processed is not generated
 		// by an AWS entity.
-		attrs.UpsertString(conventions.AttributeCloudProvider, "unknown")
+		attrs.PutString(conventions.AttributeCloudProvider, "unknown")
 		return
 	}
 
-	attrs.UpsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	addString(aws.AccountID, conventions.AttributeCloudAccountID, attrs)
 
 	// based on https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html#api-segmentdocuments-aws
@@ -53,7 +53,7 @@ func addAWSToResource(aws *awsxray.AWSData, attrs pcommon.Map) {
 	if bs := aws.Beanstalk; bs != nil {
 		addString(bs.Environment, conventions.AttributeServiceNamespace, attrs)
 		if bs.DeploymentID != nil {
-			attrs.UpsertString(conventions.AttributeServiceInstanceID, strconv.FormatInt(*bs.DeploymentID, 10))
+			attrs.PutString(conventions.AttributeServiceInstanceID, strconv.FormatInt(*bs.DeploymentID, 10))
 		}
 		addString(bs.VersionLabel, conventions.AttributeServiceVersion, attrs)
 	}

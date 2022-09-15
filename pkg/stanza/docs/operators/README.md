@@ -24,6 +24,7 @@ Parsers:
 - [time_parser](./time_parser.md)
 - [trace_parser](./trace_parser.md)
 - [uri_parser](./uri_parser.md)
+- [key_value_parser](./key_value_parser.md)
 
 Outputs:
 - [file_output](./file_output.md)

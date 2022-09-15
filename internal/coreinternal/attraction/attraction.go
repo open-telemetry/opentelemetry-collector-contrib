@@ -313,7 +313,7 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 			if _, found = attrs.Get(action.Key); found {
 				continue
 			}
-			av.CopyTo(attrs.UpsertEmpty(action.Key))
+			av.CopyTo(attrs.PutEmpty(action.Key))
 		case UPDATE:
 			av, found := getSourceAttributeValue(ctx, action, attrs)
 			if !found {
@@ -333,7 +333,7 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 			if found {
 				av.CopyTo(val)
 			} else {
-				av.CopyTo(attrs.UpsertEmpty(action.Key))
+				av.CopyTo(attrs.PutEmpty(action.Key))
 			}
 		case HASH:
 			hashAttribute(action.Key, attrs)
@@ -434,7 +434,7 @@ func extractAttributes(action attributeAction, attrs pcommon.Map) {
 	// Start from index 1, which is the first submatch (index 0 is the entire
 	// match).
 	for i := 1; i < len(matches); i++ {
-		attrs.UpsertString(action.AttrNames[i], matches[i])
+		attrs.PutString(action.AttrNames[i], matches[i])
 	}
 }
 

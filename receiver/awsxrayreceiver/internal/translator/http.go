@@ -35,7 +35,7 @@ func addHTTP(seg *awsxray.Segment, span ptrace.Span) {
 		if req.ClientIP != nil {
 			// since the ClientIP is not nil, this means that this segment is generated
 			// by a server serving an incoming request
-			attrs.UpsertString(conventions.AttributeHTTPClientIP, *req.ClientIP)
+			attrs.PutString(conventions.AttributeHTTPClientIP, *req.ClientIP)
 		}
 
 		addString(req.UserAgent, conventions.AttributeHTTPUserAgent, attrs)
@@ -51,7 +51,7 @@ func addHTTP(seg *awsxray.Segment, span ptrace.Span) {
 			// then the span status. Since we are also setting the span attribute
 			// below, the span status code here will not be actually used
 			span.Status().SetCode(otStatus)
-			attrs.UpsertInt(conventions.AttributeHTTPStatusCode, *resp.Status)
+			attrs.PutInt(conventions.AttributeHTTPStatusCode, *resp.Status)
 		}
 
 		switch val := resp.ContentLength.(type) {
