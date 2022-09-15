@@ -41,7 +41,7 @@ type ParserConfig struct {
 	ParseTo         entry.Field      `mapstructure:"parse_to"            json:"parse_to"            yaml:"parse_to"`
 	BodyField       *entry.Field     `mapstructure:"body"                json:"body"                yaml:"body"`
 	TimeParser      *TimeParser      `mapstructure:"timestamp,omitempty" json:"timestamp,omitempty" yaml:"timestamp,omitempty"`
-	Config          *SeverityConfig  `mapstructure:"severity,omitempty"  json:"severity,omitempty"  yaml:"severity,omitempty"`
+	SeverityConfig  *SeverityConfig  `mapstructure:"severity,omitempty"  json:"severity,omitempty"  yaml:"severity,omitempty"`
 	TraceParser     *TraceParser     `mapstructure:"trace,omitempty"     json:"trace,omitempty"     yaml:"trace,omitempty"`
 	ScopeNameParser *ScopeNameParser `mapstructure:"scope_name,omitempty"     json:"scope_name,omitempty"     yaml:"scope_name,omitempty"`
 }
@@ -71,8 +71,8 @@ func (c ParserConfig) Build(logger *zap.SugaredLogger) (ParserOperator, error) {
 		parserOperator.TimeParser = c.TimeParser
 	}
 
-	if c.Config != nil {
-		severityParser, err := c.Config.Build(logger)
+	if c.SeverityConfig != nil {
+		severityParser, err := c.SeverityConfig.Build(logger)
 		if err != nil {
 			return ParserOperator{}, err
 		}

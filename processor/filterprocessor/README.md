@@ -136,6 +136,8 @@ Made available to the expression environment are the following:
 
 * `MetricName`
     a variable containing the current Metric's name
+* `MetricType`
+    a variable containing the current Metric's type: "Gauge", "Sum", "Histogram", "ExponentialHistogram" or "Summary".
 * `Label(name)`
     a function that takes a label name string as an argument and returns a string: the value of a label with that
     name if one exists, or ""
@@ -153,6 +155,7 @@ processors:
         match_type: expr
         expressions:
         - MetricName == "my.metric" && Label("my_label") == "abc123"
+        - MetricType == "Histogram"
 ```
 
 The above config will filter out any Metric that both has the name "my.metric" and has at least one datapoint

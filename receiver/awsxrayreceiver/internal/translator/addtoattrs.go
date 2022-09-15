@@ -18,18 +18,18 @@ import "go.opentelemetry.io/collector/pdata/pcommon"
 
 func addBool(val *bool, attrKey string, attrs pcommon.Map) {
 	if val != nil {
-		attrs.UpsertBool(attrKey, *val)
+		attrs.PutBool(attrKey, *val)
 	}
 }
 
 func addString(val *string, attrKey string, attrs pcommon.Map) {
 	if val != nil {
-		attrs.UpsertString(attrKey, *val)
+		attrs.PutString(attrKey, *val)
 	}
 }
 
 func addInt64(val *int64, attrKey string, attrs pcommon.Map) {
 	if val != nil {
-		attrs.UpsertInt(attrKey, *val)
+		attrs.PutInt(attrKey, *val)
 	}
 }

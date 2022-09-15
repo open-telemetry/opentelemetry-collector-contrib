@@ -35,8 +35,8 @@ func addSQLToSpan(sql *awsxray.SQLData, attrs pcommon.Map) error {
 		if err != nil {
 			return err
 		}
-		attrs.UpsertString(conventions.AttributeDBConnectionString, dbURL)
-		attrs.UpsertString(conventions.AttributeDBName, dbName)
+		attrs.PutString(conventions.AttributeDBConnectionString, dbURL)
+		attrs.PutString(conventions.AttributeDBName, dbName)
 	}
 	// not handling sql.ConnectionString for now because the X-Ray exporter
 	// does not support it

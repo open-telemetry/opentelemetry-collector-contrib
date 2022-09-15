@@ -39,10 +39,10 @@ func containerStatsToMetrics(ts time.Time, container container, stats *container
 	rs := md.ResourceMetrics().AppendEmpty()
 
 	resourceAttr := rs.Resource().Attributes()
-	resourceAttr.UpsertString(conventions.AttributeContainerRuntime, "podman")
-	resourceAttr.UpsertString(conventions.AttributeContainerName, stats.Name)
-	resourceAttr.UpsertString(conventions.AttributeContainerID, stats.ContainerID)
-	resourceAttr.UpsertString(conventions.AttributeContainerImageName, container.Image)
+	resourceAttr.PutString(conventions.AttributeContainerRuntime, "podman")
+	resourceAttr.PutString(conventions.AttributeContainerName, stats.Name)
+	resourceAttr.PutString(conventions.AttributeContainerID, stats.ContainerID)
+	resourceAttr.PutString(conventions.AttributeContainerImageName, container.Image)
 
 	ms := rs.ScopeMetrics().AppendEmpty().Metrics()
 	appendIOMetrics(ms, stats, pbts)
@@ -137,6 +137,6 @@ func gaugeF(ms pmetric.MetricSlice, metricName string, unit string, points []poi
 
 func setDataPointAttributes(dataPoint pmetric.NumberDataPoint, attributes map[string]string) {
 	for k, v := range attributes {
-		dataPoint.Attributes().UpsertString(k, v)
+		dataPoint.Attributes().PutString(k, v)
 	}
 }

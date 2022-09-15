@@ -59,7 +59,7 @@ func newTraceWithKV(traceID pcommon.TraceID, key string, val int64) *TraceData {
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(
 		time.Date(2020, 1, 1, 12, 0, 16, 0, time.UTC),
 	))
-	span.Attributes().UpsertInt(key, val)
+	span.Attributes().PutInt(key, val)
 
 	traceBatches = append(traceBatches, traces)
 	return &TraceData{

@@ -180,7 +180,7 @@ func ConvertToOTLPMetrics(fields map[string]interface{}, tags map[string]string,
 			// convert from nanosecond to millisecond (as emf log use millisecond timestamp)
 			tagValue = strconv.FormatUint(timeNs/uint64(time.Millisecond), 10)
 		}
-		resource.Attributes().UpsertString(tagKey, tagValue)
+		resource.Attributes().PutString(tagKey, tagValue)
 	}
 
 	ilms := rm.ScopeMetrics()

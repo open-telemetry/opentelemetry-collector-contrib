@@ -247,7 +247,7 @@ func newClientUDP(hostPort string, binary bool) (*agent.AgentClient, error) {
 func generateTraceData() ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().UpsertString(conventions.AttributeServiceName, "test")
+	rs.Resource().Attributes().PutString(conventions.AttributeServiceName, "test")
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
 	span.SetTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0})

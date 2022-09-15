@@ -321,11 +321,9 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 	var bucketBounds []bucketBoundsData
 
 	// process each bound, based on histograms proto definition, # of buckets = # of explicit bounds + 1
-	for index, bound := range pt.ExplicitBounds().AsRaw() {
-		if index >= pt.BucketCounts().Len() {
-			break
-		}
-		cumulativeCount += pt.BucketCounts().At(index)
+	for i := 0; i < pt.ExplicitBounds().Len() && i < pt.BucketCounts().Len(); i++ {
+		bound := pt.ExplicitBounds().At(i)
+		cumulativeCount += pt.BucketCounts().At(i)
 		bucket := &prompb.Sample{
 			Value:     float64(cumulativeCount),
 			Timestamp: time,

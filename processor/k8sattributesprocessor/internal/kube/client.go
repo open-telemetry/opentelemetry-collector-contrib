@@ -476,6 +476,9 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 					attr = pod.PodUID
 				case conventions.AttributeHostName:
 					attr = pod.Address
+				// k8s.pod.ip is set by passthrough mode
+				case K8sIPLabelName:
+					attr = pod.Address
 				default:
 					if v, ok := pod.Attributes[source.Name]; ok {
 						attr = v
@@ -505,6 +508,10 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 	if pod.Address != "" && !pod.HostNetwork {
 		ids = append(ids, PodIdentifier{
 			PodIdentifierAttributeFromConnection(pod.Address),
+		})
+		// k8s.pod.ip is set by passthrough mode
+		ids = append(ids, PodIdentifier{
+			PodIdentifierAttributeFromResourceAttribute(K8sIPLabelName, pod.Address),
 		})
 	}
 

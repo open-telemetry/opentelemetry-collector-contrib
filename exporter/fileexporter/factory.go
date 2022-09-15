@@ -29,6 +29,8 @@ const (
 	typeStr = "file"
 	// The stability level of the exporter.
 	stability = component.StabilityLevelAlpha
+	// the number of old log files to retain
+	defaultMaxBackups = 100
 )
 
 // NewFactory creates a factory for OTLP exporter.
@@ -44,6 +46,7 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		Rotation:         Rotation{MaxBackups: defaultMaxBackups},
 	}
 }
 
@@ -53,7 +56,7 @@ func createTracesExporter(
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{path: cfg.(*Config).Path}
+		return newFileExporter(cfg.(*Config))
 	})
 	return exporterhelper.NewTracesExporter(
 		ctx,
@@ -71,7 +74,7 @@ func createMetricsExporter(
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{path: cfg.(*Config).Path}
+		return newFileExporter(cfg.(*Config))
 	})
 	return exporterhelper.NewMetricsExporter(
 		ctx,
@@ -89,7 +92,7 @@ func createLogsExporter(
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{path: cfg.(*Config).Path}
+		return newFileExporter(cfg.(*Config))
 	})
 	return exporterhelper.NewLogsExporter(
 		ctx,

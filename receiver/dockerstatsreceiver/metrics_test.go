@@ -63,7 +63,7 @@ func metricsData(
 	rs.SetSchemaUrl(conventions.SchemaURL)
 	rsAttr := rs.Resource().Attributes()
 	for k, v := range rLabels {
-		rsAttr.UpsertString(k, v)
+		rsAttr.PutString(k, v)
 	}
 	rsAttr.Sort()
 

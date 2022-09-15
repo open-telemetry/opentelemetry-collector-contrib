@@ -60,9 +60,9 @@ func getTestGaugeMetric() pmetric.Metric {
 }
 
 func fillTestAttributes(attrs pcommon.Map) {
-	attrs.UpsertString("test", "hello world")
-	attrs.UpsertInt("test2", 3)
-	attrs.UpsertBool("test3", true)
+	attrs.PutString("test", "hello world")
+	attrs.PutInt("test2", 3)
+	attrs.PutBool("test3", true)
 }
 
 func summaryTest(tests []summaryTestCase, t *testing.T) {

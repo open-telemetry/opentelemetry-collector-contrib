@@ -133,7 +133,7 @@ func TestTranslation(t *testing.T) {
 			},
 			propsPerSpan: func(testCase string, t *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				rootSpanAttrs := pcommon.NewMap()
-				rootSpanAttrs.UpsertString(conventions.AttributeEnduserID, *seg.User)
+				rootSpanAttrs.PutString(conventions.AttributeEnduserID, *seg.User)
 				rootSpanEvts := initExceptionEvents(seg)
 				assert.Len(t, rootSpanEvts, 1, testCase+": rootSpanEvts has incorrect size")
 				rootSpan := perSpanProperties{
@@ -154,12 +154,12 @@ func TestTranslation(t *testing.T) {
 				subseg7df6 := seg.Subsegments[0]
 				childSpan7df6Attrs := pcommon.NewMap()
 				for k, v := range subseg7df6.Annotations {
-					childSpan7df6Attrs.UpsertString(k, v.(string))
+					childSpan7df6Attrs.PutString(k, v.(string))
 				}
 				for k, v := range subseg7df6.Metadata {
 					m, err := json.Marshal(v)
 					assert.NoError(t, err, "metadata marshaling failed")
-					childSpan7df6Attrs.UpsertString(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
+					childSpan7df6Attrs.PutString(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
 				}
 				assert.Equal(t, 2, childSpan7df6Attrs.Len(), testCase+": childSpan7df6Attrs has incorrect size")
 				childSpan7df6Evts := initExceptionEvents(&subseg7df6)
@@ -244,7 +244,7 @@ func TestTranslation(t *testing.T) {
 				for k, v := range subseg417b.Metadata {
 					m, err := json.Marshal(v)
 					assert.NoError(t, err, "metadata marshaling failed")
-					childSpan417bAttrs.UpsertString(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
+					childSpan417bAttrs.PutString(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
 				}
 				childSpan417b := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -266,7 +266,7 @@ func TestTranslation(t *testing.T) {
 				for k, v := range subseg0cab.Metadata {
 					m, err := json.Marshal(v)
 					assert.NoError(t, err, "metadata marshaling failed")
-					childSpan0cabAttrs.UpsertString(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
+					childSpan0cabAttrs.PutString(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
 				}
 				childSpan0cab := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -288,7 +288,7 @@ func TestTranslation(t *testing.T) {
 				for k, v := range subsegF8db.Metadata {
 					m, err := json.Marshal(v)
 					assert.NoError(t, err, "metadata marshaling failed")
-					childSpanF8dbAttrs.UpsertString(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
+					childSpanF8dbAttrs.PutString(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
 				}
 				childSpanF8db := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -310,7 +310,7 @@ func TestTranslation(t *testing.T) {
 				for k, v := range subsegE2de.Metadata {
 					m, err := json.Marshal(v)
 					assert.NoError(t, err, "metadata marshaling failed")
-					childSpanE2deAttrs.UpsertString(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
+					childSpanE2deAttrs.PutString(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
 				}
 				childSpanE2de := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -578,7 +578,7 @@ func TestTranslation(t *testing.T) {
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				attrs := defaultServerSpanAttrs(seg)
-				attrs.UpsertString(awsxray.AWSAccountAttribute, *seg.AWS.AccountID)
+				attrs.PutString(awsxray.AWSAccountAttribute, *seg.AWS.AccountID)
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
 					spanID:       *seg.ID,
@@ -885,33 +885,33 @@ func initExceptionEvents(expectedSeg *awsxray.Segment) []eventProps {
 	res := make([]eventProps, 0, len(expectedSeg.Cause.Exceptions))
 	for _, excp := range expectedSeg.Cause.Exceptions {
 		attrs := pcommon.NewMap()
-		attrs.UpsertString(awsxray.AWSXrayExceptionIDAttribute, *excp.ID)
+		attrs.PutString(awsxray.AWSXrayExceptionIDAttribute, *excp.ID)
 		if excp.Message != nil {
-			attrs.UpsertString(conventions.AttributeExceptionMessage, *excp.Message)
+			attrs.PutString(conventions.AttributeExceptionMessage, *excp.Message)
 		}
 
 		if excp.Type != nil {
-			attrs.UpsertString(conventions.AttributeExceptionType, *excp.Type)
+			attrs.PutString(conventions.AttributeExceptionType, *excp.Type)
 		}
 
 		if excp.Remote != nil {
-			attrs.UpsertBool(awsxray.AWSXrayExceptionRemoteAttribute, *excp.Remote)
+			attrs.PutBool(awsxray.AWSXrayExceptionRemoteAttribute, *excp.Remote)
 		}
 
 		if excp.Truncated != nil {
-			attrs.UpsertInt(awsxray.AWSXrayExceptionTruncatedAttribute, *excp.Truncated)
+			attrs.PutInt(awsxray.AWSXrayExceptionTruncatedAttribute, *excp.Truncated)
 		}
 
 		if excp.Skipped != nil {
-			attrs.UpsertInt(awsxray.AWSXrayExceptionSkippedAttribute, *excp.Skipped)
+			attrs.PutInt(awsxray.AWSXrayExceptionSkippedAttribute, *excp.Skipped)
 		}
 
 		if excp.Cause != nil {
-			attrs.UpsertString(awsxray.AWSXrayExceptionCauseAttribute, *excp.Cause)
+			attrs.PutString(awsxray.AWSXrayExceptionCauseAttribute, *excp.Cause)
 		}
 
 		if len(excp.Stack) > 0 {
-			attrs.UpsertString(conventions.AttributeExceptionStacktrace, convertStackFramesToStackTraceStr(excp))
+			attrs.PutString(conventions.AttributeExceptionStacktrace, convertStackFramesToStackTraceStr(excp))
 		}
 		res = append(res, eventProps{
 			name:  ExceptionEventName,
