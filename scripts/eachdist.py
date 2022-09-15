@@ -83,7 +83,7 @@ def parse_args(args=None):
         commands according to `format` and `--all`.
 
         Target paths are initially all Python distribution root paths
-        (as determined by the existence of setup.py, etc. files).
+        (as determined by the existence of pyproject.toml, etc. files).
         They are then augmented according to the section of the
         `PROJECT_ROOT/eachdist.ini` config file specified by the `--mode` option.
 
@@ -282,7 +282,7 @@ def find_targets_unordered(rootpath):
             continue
         if any(
             (subdir / marker).exists()
-            for marker in ("setup.py", "pyproject.toml")
+            for marker in ("pyproject.toml")
         ):
             yield subdir
         else:

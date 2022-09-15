@@ -5,3 +5,6 @@ markupsafe==2.0.1
 isort
 black
 requests
+tomli
+tomli_w
+hatch

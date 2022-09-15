@@ -60,7 +60,7 @@ class BaseInstrumentor(ABC):
     def instrumentation_dependencies(self) -> Collection[str]:
         """Return a list of python packages with versions that the will be instrumented.
 
-        The format should be the same as used in requirements.txt or setup.py.
+        The format should be the same as used in requirements.txt or pyproject.toml.
 
         For example, if an instrumentation instruments requests 1.x, this method should look
         like:

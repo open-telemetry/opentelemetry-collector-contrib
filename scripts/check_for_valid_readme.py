@@ -36,7 +36,6 @@ def main():
                 print("FAILED: RST syntax errors in", readme)
                 continue
         except FileNotFoundError:
-            error = True
             print("FAILED: README.rst not found in", path)
             continue
         if args.verbose:

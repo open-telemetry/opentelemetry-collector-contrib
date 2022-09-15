@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import os
 import subprocess
+
+import tomli
 
 scripts_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.dirname(scripts_path)
@@ -27,13 +28,24 @@ def get_instrumentation_packages():
         if not os.path.isdir(pkg_path):
             continue
 
-        out = subprocess.check_output(
-            "python setup.py meta",
+        version = subprocess.check_output(
+            "hatch version",
             shell=True,
             cwd=pkg_path,
             universal_newlines=True,
         )
-        instrumentation = json.loads(out.splitlines()[1])
+        pyproject_toml_path = os.path.join(pkg_path, "pyproject.toml")
+
+        with open(pyproject_toml_path, "rb") as file:
+            pyproject_toml = tomli.load(file)
+
+        instrumentation = {
+            "name": pyproject_toml["project"]["name"],
+            "version": version.strip(),
+            "instruments": pyproject_toml["project"]["optional-dependencies"][
+                "instruments"
+            ],
+        }
         instrumentation["requirement"] = "==".join(
             (
                 instrumentation["name"],
