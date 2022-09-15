@@ -1,5 +1,0 @@
-change_type: enhancement
-component: processor/filter
-note: Added ability to filter by metric type using expression `MetricType` keyword.
-issues:
-  - 14107

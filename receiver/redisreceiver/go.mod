@@ -4,10 +4,10 @@ go 1.18
 
 require (
 	github.com/go-redis/redis/v7 v7.4.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.59.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.60.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.59.1-0.20220914173239-9df807d51dad
-	go.opentelemetry.io/collector/pdata v0.59.1-0.20220914173239-9df807d51dad
+	go.opentelemetry.io/collector v0.60.0
+	go.opentelemetry.io/collector/pdata v0.60.0
 	go.uber.org/zap v1.23.0
 )
 
