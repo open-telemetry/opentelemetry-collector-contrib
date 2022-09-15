@@ -1,4 +1,0 @@
-change_type: enhancement
-component: receiver/k8scluster
-note: Moving initialization of k8s client from receiver init to receiver start phase.
-issues: [12582]
