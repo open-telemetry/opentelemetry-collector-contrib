@@ -21,9 +21,9 @@ import (
 )
 
 type AdxTrace struct {
-	TraceID            string                 // TraceId associated to the Trace
-	SpanID             string                 // SpanId associated to the Trace
-	ParentID           string                 // ParentId associated to the Trace
+	TraceID            string                 // TraceID associated to the Trace
+	SpanID             string                 // SpanID associated to the Trace
+	ParentID           string                 // ParentID associated to the Trace
 	SpanName           string                 // The SpanName of the Trace
 	SpanStatus         string                 // The SpanStatus associated to the Trace
 	SpanKind           string                 // The SpanKind of the Trace

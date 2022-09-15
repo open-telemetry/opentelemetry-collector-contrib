@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	// There are 3 stanzas in the exporter.
-	assert.Equal(t, len(cfg.Exporters), 2)
+	assert.Equal(t, len(cfg.Exporters), 3)
 
 	exporter := cfg.Exporters[config.NewComponentID(typeStr)]
 
@@ -62,6 +62,14 @@ func TestLoadConfig(t *testing.T) {
 	// The second one has a validation error
 	exporter = cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")].(*Config)
 	require.NotNil(t, exporter)
-	err2 := cfg.Validate()
-	assert.EqualError(t, err2, `exporter "azuredataexplorer/2" has invalid configuration: mandatory configurations "cluster_uri" ,"application_id" , "application_key" and "tenant_id" are missing or empty `)
+	err2 := exporter.Validate()
+	require.NotNil(t, err2)
+	assert.EqualError(t, err2, `mandatory configurations "cluster_uri" ,"application_id" , "application_key" and "tenant_id" are missing or empty `)
+
+	// The third one has an error wrto ingest type
+	exporter = cfg.Exporters[config.NewComponentIDWithName(typeStr, "3")].(*Config)
+	require.NotNil(t, exporter)
+	err3 := exporter.Validate()
+	require.NotNil(t, err3)
+	assert.EqualError(t, err3, `unsupported configuration for ingestion_type. Accepted types [managed, queued] Provided [streaming]`)
 }

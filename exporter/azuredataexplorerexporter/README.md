@@ -2,9 +2,9 @@
 
 | Status                   |           |
 | ------------------------ | --------- |
-| Stability                | [alpha]   |
+| Stability                | [alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha    |
 | Supported pipeline types | logs,metrics,traces  |
-| Distributions            | [contrib] |
+| Distributions            | [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib  |
 
 This exporter sends metrics, logs and trace data to [Azure Data Explorer](https://azure.microsoft.com/services/data-explorer/).
 

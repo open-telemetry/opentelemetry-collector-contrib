@@ -35,7 +35,7 @@ func Test_mapToAdxTrace(t *testing.T) {
 
 	tests := []struct {
 		name             string             // name of the test
-		spanDatafn       func() ptrace.Span // function that generates the
+		spanDatafn       func() ptrace.Span // function that generates the required spans for the test
 		resourceFn       func() pcommon.Resource
 		insScopeFn       func() pcommon.InstrumentationScope
 		expectedAdxTrace *AdxTrace
