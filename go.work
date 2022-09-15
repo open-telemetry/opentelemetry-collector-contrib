@@ -2,7 +2,6 @@ go 1.18
 
 use (
 	.
-	./cmd/chloggen
 	./cmd/configschema
 	./cmd/mdatagen
 	./cmd/telemetrygen

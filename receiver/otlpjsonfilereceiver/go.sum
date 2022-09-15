@@ -217,11 +217,11 @@ github.com/observiq/ctimefmt v1.0.0 h1:r7vTJ+Slkrt9fZ67mkf+mA6zAdR5nGIJRMTzkUyvi
 github.com/observiq/ctimefmt v1.0.0/go.mod h1:mxi62//WbSpG/roCO1c6MqZ7zQTvjVtYheqHN3eOjvc=
 github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc h1:49ewVBwLcy+eYqI4R0ICilCI4dPjddpFXWv3liXzUxM=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
-github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.59.0 h1:4q/OSem2GysnN9c+oGMhrtGXScspG6B0J/0PzPPhVo8=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.59.0 h1:lOTqHGCcUkWqQfVlH4rqy5aTtpPkeiQS/32gIgKLpHY=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.59.0/go.mod h1:kJwfosjjegfcMAtC/p6PeHy+x3vfiQYpdP48ctv3r8c=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.59.0 h1:ctZkiE/pLk6F16GtQjuKrzDO4dYY6KIolDMP67FrFHw=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.59.0/go.mod h1:DZnbVTIDiIq3Mqyp1Pa2ycLDvy673R9IeEi3QRj2lr0=
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.60.0 h1:Zr5jBMp/zsV6Hr2DyCGCcwO4uRBm6ZhPjD1gkISHwWI=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.60.0 h1:L5ug/ZKhVnyh1Bmygph/6dKS32VhsJeb7ggYbEV9EmY=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.60.0/go.mod h1:XJ02iUcUxcP94hMUkwofboLNoUHKkrb/yb1S/cNL/Nk=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.60.0 h1:FDXqFZPdpHwL/T55lwkMVH859qaHG/Oj8M2T4TIBhaQ=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.60.0/go.mod h1:QdiGYvCDIIIDZ89rH6/6kQmSuiBTFhmyPIaWujBieXk=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pascaldekloe/goe v0.1.0/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pelletier/go-toml v1.7.0/go.mod h1:vwGMzjaWMwyfHwgIBhI2YUM4fB6nL6lVAvS1LBMMhTE=

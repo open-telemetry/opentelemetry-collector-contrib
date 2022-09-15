@@ -65,8 +65,8 @@ github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd h1:TRLaZ9cD/w
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9Gz0M=
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.59.0 h1:lOTqHGCcUkWqQfVlH4rqy5aTtpPkeiQS/32gIgKLpHY=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.59.0/go.mod h1:kJwfosjjegfcMAtC/p6PeHy+x3vfiQYpdP48ctv3r8c=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.60.0 h1:L5ug/ZKhVnyh1Bmygph/6dKS32VhsJeb7ggYbEV9EmY=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.60.0/go.mod h1:XJ02iUcUxcP94hMUkwofboLNoUHKkrb/yb1S/cNL/Nk=
 github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e/go.mod h1:pJLUxLENpZxwdsKMEsNbx1VGcRFpLqf3715MtcvvzbA=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
@@ -90,7 +90,6 @@ go.opentelemetry.io/collector/pdata v0.60.0 h1:jCNR5jtUom2FcUu30h4tw7enZytwGnXX6
 go.opentelemetry.io/collector/pdata v0.60.0/go.mod h1:0hqgNMRneVXaLNelv3q0XKJbyBW9aMDwyC15pKd30+E=
 go.opentelemetry.io/collector/semconv v0.60.0 h1:xy6HSukzA5CC8SR4DvFyLd28EFEOnQgxtpU1bSCM0qY=
 go.opentelemetry.io/collector/semconv v0.60.0/go.mod h1:aRkHuJ/OshtDFYluKEtnG5nkKTsy1HZuvZVHmakx+Vo=
-go.opentelemetry.io/proto/otlp v0.7.0/go.mod h1:PqfVotwruBrMGOCsRd/89rSnXhoiJIqeYNgFYFoEGnI=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
 golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=

@@ -99,7 +99,8 @@ github.com/google/go-cmp v0.5.4/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/
 github.com/google/go-cmp v0.5.5/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/go-cmp v0.5.6/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/go-cmp v0.5.7/go.mod h1:n+brtR0CgQNWTVd5ZUFpTBC8YFBDLK/h/bpaJ8/DtOE=
-github.com/google/go-cmp v0.5.8 h1:e6P7q2lk1O+qJJb4BtCQXlK8vWEO8V1ZeuEdJNOqZyg=
+github.com/google/go-cmp v0.5.9 h1:O2Tfq5qg4qc4AmwVlvv0oLiVAGB7enBSJ2x2DqQFi38=
+github.com/google/go-cmp v0.5.9/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
 github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/google/uuid v1.3.0 h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I=
@@ -208,10 +209,10 @@ github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRW
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/npillmayer/nestext v0.1.3/go.mod h1:h2lrijH8jpicr25dFY+oAJLyzlya6jhnuG+zWp9L0Uk=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.59.0 h1:VBIHtoJ1wDcA1VeZZuh0ab+WUWJ2dDB+eRJPwR7ZIbg=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.59.0/go.mod h1:9Ytx+lxZvEoTZLeN7g8tDIl/jQ1AZRrmiSuVY9JaCh4=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.59.0 h1:1HxaLisN++5FjYAd8Ngs8lDFgOAR+jrirUfdyr4A2j0=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.59.0/go.mod h1:j/AxytkEFXQNbV+qDZJMneDNErirgrjJuB/rq9Kk0H4=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.60.0 h1:rMq3zGRgxor/Cy44sD18UeegO9NmWu+x0BzhQA7nYic=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.60.0/go.mod h1:N/9xv3LYpkrdRGxIBm8Os+7UFma2CK7czByBs0NyujE=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.60.0 h1:RqkHiBXIIwzJ02JocvuvDSBeo+bjzNpBJjV5mROP2ps=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.60.0/go.mod h1:l3j1pKh+nTUdvmVIERds/JPJVcYhR3K9itnrWXTKYvc=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pascaldekloe/goe v0.1.0/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pelletier/go-toml v1.7.0/go.mod h1:vwGMzjaWMwyfHwgIBhI2YUM4fB6nL6lVAvS1LBMMhTE=

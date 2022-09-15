@@ -1,7 +1,8 @@
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
-github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
+github.com/BurntSushi/toml v1.2.0 h1:Rt8g24XnyGTyglgET/PRUNlrUeu9F5L+7FilkXfZgs0=
+github.com/BurntSushi/toml v1.2.0/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
@@ -203,10 +204,10 @@ github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRW
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/npillmayer/nestext v0.1.3/go.mod h1:h2lrijH8jpicr25dFY+oAJLyzlya6jhnuG+zWp9L0Uk=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.59.0 h1:lOTqHGCcUkWqQfVlH4rqy5aTtpPkeiQS/32gIgKLpHY=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.59.0/go.mod h1:kJwfosjjegfcMAtC/p6PeHy+x3vfiQYpdP48ctv3r8c=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.59.0 h1:kaSqabTOdLy7E+5vC8K0xCJVPFANa4LMJvpaTo8MV6o=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.59.0/go.mod h1:24Z7QmC7MW0nV6/wHEOMIeDCMFfj7t/Qi5PPwotVIfo=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.60.0 h1:L5ug/ZKhVnyh1Bmygph/6dKS32VhsJeb7ggYbEV9EmY=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.60.0/go.mod h1:XJ02iUcUxcP94hMUkwofboLNoUHKkrb/yb1S/cNL/Nk=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.60.0 h1:+EfJ4drpwogrh/lQF1d6oYFAxpeNVNnM6ns5mnqkJso=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.60.0/go.mod h1:U3XqSGrTAjnsafQg0xvxUOUm0zbyND7WEor4nnBx2/k=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pascaldekloe/goe v0.1.0/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pelletier/go-toml v1.7.0/go.mod h1:vwGMzjaWMwyfHwgIBhI2YUM4fB6nL6lVAvS1LBMMhTE=

@@ -160,11 +160,11 @@ github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9G
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.59.0 h1:5QsiEdu28e71NzVAAbIZ75RzsPRHMWjiaamERv25xms=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.59.0 h1:lOTqHGCcUkWqQfVlH4rqy5aTtpPkeiQS/32gIgKLpHY=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.59.0/go.mod h1:kJwfosjjegfcMAtC/p6PeHy+x3vfiQYpdP48ctv3r8c=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.59.0 h1:q93i8ABbyVsMV/0YJvozDlnGaMyzO8OKuyz4/eU2BOA=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.59.0/go.mod h1:V/9zi/5ThZEh2CX61XFg3ObrQvCWcGoFNq8EQr3kAzE=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.60.0 h1:rmwITDHPgpZ1US1AjHrPp1qUsox+OEwQ+PHsQkbO9v0=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.60.0 h1:L5ug/ZKhVnyh1Bmygph/6dKS32VhsJeb7ggYbEV9EmY=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.60.0/go.mod h1:XJ02iUcUxcP94hMUkwofboLNoUHKkrb/yb1S/cNL/Nk=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.60.0 h1:2l/uxdfAb/8hW7UW36IvJPd3HjWH4/0jidE0f8kLWGs=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.60.0/go.mod h1:1r0L4iFcnxpJy23BiadqwZjTLYNd06oGUib8/WW2DqM=
 github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e/go.mod h1:pJLUxLENpZxwdsKMEsNbx1VGcRFpLqf3715MtcvvzbA=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=

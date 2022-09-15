@@ -22,7 +22,7 @@ require gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 require (
 	github.com/basgys/goxml2json v1.1.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.60.0
-	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664 // indirect
+	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab // indirect
 )
 
 require (
@@ -30,6 +30,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf v1.4.3 // indirect
