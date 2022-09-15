@@ -21,9 +21,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/opentelemetrytransformationlanguage/contexts/ottlmetrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/opentelemetrytransformationlanguage/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/opentelemetrytransformationlanguage/ottl/ottltest"
 )
 
 func getTestSummaryMetric() pmetric.Metric {
@@ -66,11 +66,11 @@ func fillTestAttributes(attrs pcommon.Map) {
 }
 
 func summaryTest(tests []summaryTestCase, t *testing.T) {
-	tqlp := tql.NewParser(
+	ottlp := ottl.NewParser(
 		Functions(),
-		tqlmetrics.ParsePath,
-		tqlmetrics.ParseEnum,
-		tql.NoOpLogger{},
+		ottlmetrics.ParsePath,
+		ottlmetrics.ParseEnum,
+		ottl.NoOpLogger{},
 	)
 
 	for _, tt := range tests {
@@ -78,10 +78,10 @@ func summaryTest(tests []summaryTestCase, t *testing.T) {
 			actualMetrics := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetrics.AppendEmpty())
 
-			evaluate, err := tqlp.NewFunctionCall(tt.inv)
+			evaluate, err := ottlp.NewFunctionCall(tt.inv)
 			assert.NoError(t, err)
 
-			evaluate(tqlmetrics.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			evaluate(ottlmetrics.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
 
 			expected := pmetric.NewMetricSlice()
 			tt.want(expected)
@@ -93,7 +93,7 @@ func summaryTest(tests []summaryTestCase, t *testing.T) {
 type summaryTestCase struct {
 	name  string
 	input pmetric.Metric
-	inv   tql.Invocation
+	inv   ottl.Invocation
 	want  func(pmetric.MetricSlice)
 }
 
@@ -102,14 +102,14 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 		{
 			name:  "convert_summary_sum_val_to_sum",
 			input: getTestSummaryMetric(),
-			inv: tql.Invocation{
+			inv: ottl.Invocation{
 				Function: "convert_summary_sum_val_to_sum",
-				Arguments: []tql.Value{
+				Arguments: []ottl.Value{
 					{
-						String: tqltest.Strp("delta"),
+						String: ottltest.Strp("delta"),
 					},
 					{
-						Bool: (*tql.Boolean)(tqltest.Boolp(false)),
+						Bool: (*ottl.Boolean)(ottltest.Boolp(false)),
 					},
 				},
 			},
@@ -130,14 +130,14 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 		{
 			name:  "convert_summary_sum_val_to_sum (monotonic)",
 			input: getTestSummaryMetric(),
-			inv: tql.Invocation{
+			inv: ottl.Invocation{
 				Function: "convert_summary_sum_val_to_sum",
-				Arguments: []tql.Value{
+				Arguments: []ottl.Value{
 					{
-						String: tqltest.Strp("delta"),
+						String: ottltest.Strp("delta"),
 					},
 					{
-						Bool: (*tql.Boolean)(tqltest.Boolp(true)),
+						Bool: (*ottl.Boolean)(ottltest.Boolp(true)),
 					},
 				},
 			},
@@ -158,14 +158,14 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 		{
 			name:  "convert_summary_sum_val_to_sum (cumulative)",
 			input: getTestSummaryMetric(),
-			inv: tql.Invocation{
+			inv: ottl.Invocation{
 				Function: "convert_summary_sum_val_to_sum",
-				Arguments: []tql.Value{
+				Arguments: []ottl.Value{
 					{
-						String: tqltest.Strp("cumulative"),
+						String: ottltest.Strp("cumulative"),
 					},
 					{
-						Bool: (*tql.Boolean)(tqltest.Boolp(false)),
+						Bool: (*ottl.Boolean)(ottltest.Boolp(false)),
 					},
 				},
 			},
@@ -186,14 +186,14 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 		{
 			name:  "convert_summary_sum_val_to_sum (no op)",
 			input: getTestGaugeMetric(),
-			inv: tql.Invocation{
+			inv: ottl.Invocation{
 				Function: "convert_summary_sum_val_to_sum",
-				Arguments: []tql.Value{
+				Arguments: []ottl.Value{
 					{
-						String: tqltest.Strp("delta"),
+						String: ottltest.Strp("delta"),
 					},
 					{
-						Bool: (*tql.Boolean)(tqltest.Boolp(false)),
+						Bool: (*ottl.Boolean)(ottltest.Boolp(false)),
 					},
 				},
 			},
