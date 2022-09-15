@@ -63,7 +63,7 @@ func (fmp *provider) Retrieve(ctx context.Context, uri string, _ confmap.Watcher
 	if fmp.client == nil {
 		cfg, err := config.LoadDefaultConfig(context.Background())
 		if err != nil {
-			fmt.Println("Failed to load configurations to initialize an AWS SDK client, error: %w", err)
+			return nil, fmt.Errorf("failed to load configurations to initialize an AWS SDK client, error: %w", err)
 		}
 		fmp.client = s3.NewFromConfig(cfg)
 	}
