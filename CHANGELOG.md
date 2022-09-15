@@ -419,7 +419,7 @@ This version has been skipped.
       - `system.disk.merged.write`
 
 ### 🚀 New components 🚀
-- `telemetryquerylanguage`: Expose the OpenTelemetry Transformation Language as a package. (#11751)
+- `telemetryquerylanguage`: Expose the telemetry query language as a package. (#11751)
 - `chronyreceiver`: -| This component is a pure go implementation for capturing data from [chrony](https://chrony.tuxfamily.org/) (#11789)
 - `otlpjsonfilereceiver`: Add a new file receiver reading JSON-encoded OTLP data, after [serialization specification](https://github.com/open-telemetry/opentelemetry-specification/blob/main/experimental/serialization/json.md) (#10836)
 - `pulsarexporter`: Add Apache Pulsar exporter (#9795)
@@ -437,7 +437,7 @@ This version has been skipped.
 - `hostmetricsreceiver`: New config setting scrape_process_delay is used to indicate the minimum amount of time a process must be running before process metrics can be scraped for it. The default value is 0 seconds ("0s"). (#8976)
 - `transformprocessor`: Add ability to interact with enums via sybmols. (#10349)
 - `telemetryquerylanguage`: Adds to the grammar the ability to interpret Enums. (#11751)
-- `transformprocessor`: Update the transform processor to use the OpenTelemetry Transformation Language package (#11751)
+- `transformprocessor`: Update the transform processor to use the Telemetry Query Language package (#11751)
 - `transformprocessor`: Add `delete_key` and `delete_matching_keys` which allow deleting keys from maps. (#11823)
 - `receiver/jaeger`: Handle spans with own process (#10186)
 - `k8sobserver`: incorporate observer.EndpointsWatcher in preparation for multiple event subscribers (#10830, #11544)
