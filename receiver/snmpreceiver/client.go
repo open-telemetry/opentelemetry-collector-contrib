@@ -29,13 +29,23 @@ import (
 
 // custom errors
 var (
-	errCollectedNoPoolMembers = errors.New(`all pool member requests have failed`)
+	errNoGetOIDs        = errors.New(`all GET OIDs requests have failed`)
+	errNoProcessGetOIDs = errors.New(`all attempts to process GET OIDs have failed`)
+	errNoWalkOIDs       = errors.New(`all WALK OIDs requests have failed`)
 )
+
+type snmpData struct {
+	parentOID string // optional
+	oid       string
+	value     interface{}
+}
+
+type processFunc func(data snmpData) error
 
 // client is used for retrieving data about a Big-IP environment
 type client interface {
-	// HasToken checks if the client currently has an auth token
-	GetData(oids []string) ([]gosnmp.SnmpPDU, error)
+	GetScalarData(oids []string, processFn processFunc) error
+	GetIndexedData(oids []string, processFn processFunc) error
 	Connect() error
 }
 
@@ -110,16 +120,93 @@ func newClient(cfg *Config, host component.Host, settings component.TelemetrySet
 	}, nil
 }
 
-// GetData
-func (c *snmpClient) GetData(oids []string) ([]gosnmp.SnmpPDU, error) {
-	packets, err := c.client.Get(oids)
-	if err != nil {
-		return nil, err
-	}
-
-	return packets.Variables, nil
-}
-
 func (c *snmpClient) Connect() error {
 	return c.client.Connect()
+}
+
+// GetScalarData expects OIDs to end with ".0" for scalar metrics
+// We can just say this is required in the config for now
+func (c *snmpClient) GetScalarData(oids []string, processFn processFunc) error {
+	// Make sure no single call has over our max limit of input OIDs
+	chunkedOIDs := chunkArray(oids, c.client.MaxOids)
+	getOIDsSuccess := false
+	processOIDSuccess := false
+
+	for _, oids := range chunkedOIDs {
+		// Having issues trying to get BulkGet to work right
+		packets, err := c.client.Get(oids)
+		if err != nil {
+			c.logger.Warn("Problem with GET oids", zap.Error(err))
+			continue
+		} else {
+			getOIDsSuccess = true
+		}
+
+		for _, data := range packets.Variables {
+			snmpData := snmpData{
+				oid:   data.Name,
+				value: data.Value,
+			}
+			if err := processFn(snmpData); err != nil {
+				c.logger.Warn(fmt.Sprintf("Problem with processing data for OID: %s", snmpData.oid), zap.Error(err))
+			} else {
+				processOIDSuccess = true
+			}
+		}
+	}
+
+	if !getOIDsSuccess {
+		return errNoGetOIDs
+	}
+
+	if !processOIDSuccess {
+		return errNoProcessGetOIDs
+	}
+
+	return nil
+}
+
+func (c *snmpClient) GetIndexedData(oids []string, processFn processFunc) error {
+	walkOIDsSuccess := false
+
+	for _, oid := range oids {
+		walkFn := func(data gosnmp.SnmpPDU) error {
+			snmpData := snmpData{
+				parentOID: oid,
+				oid:       data.Name,
+				value:     data.Value,
+			}
+
+			return processFn(snmpData)
+		}
+		// TODO: Determine if we can use BulkWalk
+		err := c.client.Walk(oid, walkFn)
+		if err != nil {
+			c.logger.Warn("Problem with WALK oids", zap.Error(err))
+			continue
+		} else {
+			walkOIDsSuccess = true
+		}
+	}
+
+	if !walkOIDsSuccess {
+		return errNoWalkOIDs
+	}
+
+	return nil
+}
+
+func chunkArray(initArray []string, chunkSize int) [][]string {
+	var chunkedArrays [][]string
+
+	for i := 0; i < len(initArray); i += chunkSize {
+		end := i + chunkSize
+
+		if end > len(initArray) {
+			end = len(initArray)
+		}
+
+		chunkedArrays = append(chunkedArrays, initArray[i:end])
+	}
+	return chunkedArrays
 }
