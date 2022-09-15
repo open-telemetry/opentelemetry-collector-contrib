@@ -89,7 +89,7 @@ func (z *zookeeperMetricsScraper) Name() string {
 }
 
 func logDeprecatedFeatureGateForDirection(log *zap.Logger, gate featuregate.Gate) {
-	log.Info("WARNING: The " + gate.ID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
+	log.Warn("WARNING: The " + gate.ID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
 		"the direction attribute has been reverted in the specification. See https://github.com/open-telemetry/opentelemetry-specification/issues/2726 " +
 		"for additional details.")
 }

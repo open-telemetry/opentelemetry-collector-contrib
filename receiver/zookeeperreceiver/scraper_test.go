@@ -56,7 +56,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			msg: "WARNING: The " + emitMetricsWithDirectionAttributeFeatureGate.ID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
 				"the direction attribute has been reverted in the specification. See https://github.com/open-telemetry/opentelemetry-specification/issues/2726 " +
 				"for additional details.",
-			level: zapcore.InfoLevel,
+			level: zapcore.WarnLevel,
 		},
 	}
 
@@ -65,7 +65,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			msg: "WARNING: The " + emitMetricsWithoutDirectionAttributeFeatureGate.ID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
 				"the direction attribute has been reverted in the specification. See https://github.com/open-telemetry/opentelemetry-specification/issues/2726 " +
 				"for additional details.",
-			level: zapcore.InfoLevel,
+			level: zapcore.WarnLevel,
 		},
 	}
 
