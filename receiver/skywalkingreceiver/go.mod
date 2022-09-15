@@ -6,9 +6,9 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.59.1-0.20220914173239-9df807d51dad
-	go.opentelemetry.io/collector/pdata v0.59.1-0.20220914173239-9df807d51dad
-	go.opentelemetry.io/collector/semconv v0.59.1-0.20220914173239-9df807d51dad
+	go.opentelemetry.io/collector v0.60.0
+	go.opentelemetry.io/collector/pdata v0.60.0
+	go.opentelemetry.io/collector/semconv v0.60.0
 	go.uber.org/multierr v1.8.0
 	google.golang.org/grpc v1.49.0
 	google.golang.org/protobuf v1.28.1
