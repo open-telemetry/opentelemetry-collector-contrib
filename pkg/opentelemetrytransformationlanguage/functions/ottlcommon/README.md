@@ -1,6 +1,6 @@
 # Common Functions
 
-The following functions can be used in any implementation of the OpenTelemetry Transformation Language.  Although they are tested using [pdata](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata) for convenience, the function implementation only interact with native Go types or types defined in the [OTTL package](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/opentelemetrytransformationlanguage/OTTL).
+The following functions can be used in any implementation of the OpenTelemetry Transformation Language.  Although they are tested using [pdata](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata) for convenience, the function implementation only interact with native Go types or types defined in the [OTTL package](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/opentelemetrytransformationlanguage/ottl).
 
 Factory Functions
 - [Join](#join)
@@ -80,7 +80,7 @@ The `set` function allows users to set a telemetry field using a value.
 
 `target` is a path expression to a telemetry field. `value` is any value type. If `value` resolves to `nil`, e.g. it references an unset map value, there will be no action.
 
-How the underlying telemetry field is updated is decided by the path expression implementation provided by the user to the `OTTL.ParseQueries`.
+How the underlying telemetry field is updated is decided by the path expression implementation provided by the user to the `ottl.ParseQueries`.
 
 Examples:
 
