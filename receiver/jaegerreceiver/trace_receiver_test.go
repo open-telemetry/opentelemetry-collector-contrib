@@ -33,7 +33,6 @@ import (
 	jaegerthrift "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -414,22 +413,4 @@ func sendToCollector(endpoint string, batch *jaegerthrift.Batch) error {
 		return fmt.Errorf("failed to upload traces; HTTP status code: %d", resp.StatusCode)
 	}
 	return nil
-}
-
-// assertNoErrorHost implements a component.Host that asserts that there were no errors.
-type assertNoErrorHost struct {
-	component.Host
-	*testing.T
-}
-
-// newAssertNoErrorHost returns a new instance of assertNoErrorHost.
-func newAssertNoErrorHost(t *testing.T) component.Host {
-	return &assertNoErrorHost{
-		Host: componenttest.NewNopHost(),
-		T:    t,
-	}
-}
-
-func (aneh *assertNoErrorHost) ReportFatalError(err error) {
-	assert.NoError(aneh, err)
 }
