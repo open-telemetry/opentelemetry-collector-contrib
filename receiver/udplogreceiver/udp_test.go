@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
 )
 
@@ -94,7 +95,7 @@ func testdataConfigYaml() *UDPLogConfig {
 	return &UDPLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("udplog")),
-			Operators:        adapter.OperatorConfigs{},
+			Operators:        []operator.Config{},
 		},
 		InputConfig: func() udp.Config {
 			c := udp.NewConfig()
@@ -110,7 +111,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 	badCfg := &UDPLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("udplog")),
-			Operators:        adapter.OperatorConfigs{},
+			Operators:        []operator.Config{},
 		},
 		InputConfig: func() udp.Config {
 			c := udp.NewConfig()
