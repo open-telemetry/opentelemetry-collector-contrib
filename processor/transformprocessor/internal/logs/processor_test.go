@@ -179,9 +179,7 @@ func TestProcess(t *testing.T) {
 		},
 		{
 			query: `set(attributes["test"], Split(attributes["not_exist"], "|"))`,
-			want: func(td plog.Logs) {
-				return
-			},
+			want:  func(td plog.Logs) {},
 		},
 	}
 

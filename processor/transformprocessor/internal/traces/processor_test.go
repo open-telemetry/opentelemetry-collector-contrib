@@ -219,9 +219,7 @@ func TestProcess(t *testing.T) {
 		},
 		{
 			query: `set(attributes["test"], Split(attributes["not_exist"], "|"))`,
-			want: func(td ptrace.Traces) {
-				return
-			},
+			want:  func(td ptrace.Traces) {},
 		},
 	}
 

@@ -305,9 +305,7 @@ func TestProcess(t *testing.T) {
 		},
 		{
 			query: []string{`set(attributes["test"], Split(attributes["not_exist"], "|"))`},
-			want: func(td pmetric.Metrics) {
-				return
-			},
+			want:  func(td pmetric.Metrics) {},
 		},
 	}
 
