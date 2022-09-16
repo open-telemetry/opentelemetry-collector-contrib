@@ -4,8 +4,8 @@ go 1.18
 
 require (
 	github.com/vmware/govmomi v0.29.0
-	go.opentelemetry.io/collector v0.60.0
-	go.opentelemetry.io/collector/pdata v0.60.0
+	go.opentelemetry.io/collector v0.60.1-0.20220916163348-84621e483dfb
+	go.opentelemetry.io/collector/pdata v0.60.1-0.20220916163348-84621e483dfb
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 )
