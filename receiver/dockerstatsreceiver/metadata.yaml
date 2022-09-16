@@ -86,7 +86,7 @@ metrics:
     attributes:
       - core
   container.cpu.throttling_data.periods:
-    enabled: true
+    enabled: false
     description: "Number of periods with throttling active."
     unit: "{periods}"
     sum:
@@ -94,7 +94,7 @@ metrics:
       monotonic: true
       aggregation: cumulative
   container.cpu.throttling_data.throttled_periods:
-    enabled: true
+    enabled: false
     description: "Number of periods when the container hits its throttling limit."
     unit: "{periods}"
     sum:
@@ -102,7 +102,7 @@ metrics:
       monotonic: true
       aggregation: cumulative
   container.cpu.throttling_data.throttled_time:
-    enabled: true
+    enabled: false
     description: "Aggregate time the container was throttled."
     unit: ns
     sum:
@@ -135,7 +135,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.usage.max:
-    enabled: true
+    enabled: false
     description: "Maximum memory usage."
     unit: By
     sum:
@@ -149,7 +149,7 @@ metrics:
     gauge:
       value_type: double
   container.memory.cache:
-    enabled: true
+    enabled: false
     description: "The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device."
     unit: By
     sum:
@@ -157,7 +157,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.rss:
-    enabled: true
+    enabled: false
     description: "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps."
     unit: By
     sum:
@@ -165,7 +165,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.rss_huge:
-    enabled: true
+    enabled: false
     description: "Number of bytes of anonymous transparent hugepages in this cgroup."
     unit: By
     sum:
@@ -173,7 +173,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.dirty:
-    enabled: true
+    enabled: false
     description: "Bytes that are waiting to get written back to the disk, from this cgroup."
     unit: By
     sum:
@@ -181,7 +181,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.writeback:
-    enabled: true
+    enabled: false
     description: "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup."
     unit: By
     sum:
@@ -189,7 +189,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.mapped_file:
-    enabled: true
+    enabled: false
     description: "Indicates the amount of memory mapped by the processes in the control group."
     unit: By
     sum:
@@ -197,7 +197,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.pgpgin:
-    enabled: true
+    enabled: false
     description: "Number of pages read from disk by the cgroup."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt)."
     unit: "{operations}"
@@ -206,7 +206,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
   container.memory.pgpgout:
-    enabled: true
+    enabled: false
     description: "Number of pages written to disk by the cgroup."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt)."
     unit: "{operations}"
@@ -215,7 +215,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
   container.memory.swap:
-    enabled: true
+    enabled: false
     description: "The amount of swap currently used by the processes in this cgroup."
     unit: By
     sum:
@@ -223,7 +223,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.pgfault:
-    enabled: true
+    enabled: false
     description: "Indicate the number of times that a process of the cgroup triggered a page fault."
     unit: "{faults}"
     sum:
@@ -231,7 +231,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
   container.memory.pgmajfault:
-    enabled: true
+    enabled: false
     description: "Indicate the number of times that a process of the cgroup triggered a major fault."
     unit: "{faults}"
     sum:
@@ -239,7 +239,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
   container.memory.inactive_anon:
-    enabled: true
+    enabled: false
     description: "The amount of anonymous memory that has been identified as inactive by the kernel."
     unit: By
     sum:
@@ -247,7 +247,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.active_anon:
-    enabled: true
+    enabled: false
     description: "The amount of anonymous memory that has been identified as active by the kernel."
     unit: By
     sum:
@@ -255,7 +255,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.inactive_file:
-    enabled: true
+    enabled: false
     description: "Cache memory that has been identified as inactive by the kernel."
     extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)"
     unit: By
@@ -264,7 +264,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.active_file:
-    enabled: true
+    enabled: false
     description: "Cache memory that has been identified as active by the kernel."
     extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)"
     unit: By
@@ -273,7 +273,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.unevictable:
-    enabled: true
+    enabled: false
     description: "The amount of memory that cannot be reclaimed."
     unit: By
     sum:
@@ -281,7 +281,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.hierarchical_memory_limit:
-    enabled: true
+    enabled: false
     description: "The maximum amount of physical memory that can be used by the processes of this control group."
     unit: By
     sum:
@@ -289,7 +289,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.hierarchical_memsw_limit:
-    enabled: true
+    enabled: false
     description: "The maximum amount of RAM + swap that can be used by the processes of this control group."
     unit: By
     sum:
@@ -305,7 +305,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.total_rss:
-    enabled: true
+    enabled: false
     description: "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups."
     unit: By
     sum:
@@ -313,7 +313,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.total_rss_huge:
-    enabled: true
+    enabled: false
     description: "Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups."
     unit: By
     sum:
@@ -321,7 +321,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.total_dirty:
-    enabled: true
+    enabled: false
     description: "Bytes that are waiting to get written back to the disk, from this cgroup and descendants."
     unit: By
     sum:
@@ -329,7 +329,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.total_writeback:
-    enabled: true
+    enabled: false
     description: "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants."
     unit: By
     sum:
@@ -337,7 +337,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.total_mapped_file:
-    enabled: true
+    enabled: false
     description: "Indicates the amount of memory mapped by the processes in the control group and descendant groups."
     unit: By
     sum:
@@ -345,7 +345,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.total_pgpgin:
-    enabled: true
+    enabled: false
     description: "Number of pages read from disk by the cgroup and descendant groups."
     unit: "{operations}"
     sum:
@@ -353,7 +353,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
   container.memory.total_pgpgout:
-    enabled: true
+    enabled: false
     description: "Number of pages written to disk by the cgroup and descendant groups."
     unit: "{operations}"
     sum:
@@ -361,7 +361,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
   container.memory.total_swap:
-    enabled: true
+    enabled: false
     description: "The amount of swap currently used by the processes in this cgroup and descendant groups."
     unit: By
     sum:
@@ -369,7 +369,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.total_pgfault:
-    enabled: true
+    enabled: false
     description: "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault."
     unit: "{faults}"
     sum:
@@ -377,7 +377,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
   container.memory.total_pgmajfault:
-    enabled: true
+    enabled: false
     description: "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault."
     unit: "{faults}"
     sum:
@@ -385,7 +385,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
   container.memory.total_inactive_anon:
-    enabled: true
+    enabled: false
     description: "The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups."
     unit: By
     sum:
@@ -393,7 +393,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.total_active_anon:
-    enabled: true
+    enabled: false
     description: "The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups."
     unit: By
     sum:
@@ -401,7 +401,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.total_inactive_file:
-    enabled: true
+    enabled: false
     description: "Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups."
     extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)."
     unit: By
@@ -410,7 +410,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.total_active_file:
-    enabled: true
+    enabled: false
     description: "Cache memory that has been identified as active by the kernel. Includes descendant cgroups."
     extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)."
     unit: By
@@ -419,7 +419,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
   container.memory.total_unevictable:
-    enabled: true
+    enabled: false
     description: "The amount of memory that cannot be reclaimed. Includes descendant cgroups."
     unit: By
     sum:
@@ -430,7 +430,7 @@ metrics:
 
   # BlockIO
   container.blockio.io_merged_recursive:
-    enabled: true
+    enabled: false
     description: "Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: "{operations}"
@@ -444,7 +444,7 @@ metrics:
       - operation
 
   container.blockio.io_queued_recursive:
-    enabled: true
+    enabled: false
     description: "Number of requests queued up for this cgroup and its descendant cgroups."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: "{operations}"
@@ -472,7 +472,7 @@ metrics:
       - operation
 
   container.blockio.io_service_time_recursive:
-    enabled: true
+    enabled: false
     description: "Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: ns
@@ -486,7 +486,7 @@ metrics:
       - operation
 
   container.blockio.io_serviced_recursive:
-    enabled: true
+    enabled: false
     description: "Number of IOs (bio) issued to the disk by the group and descendant groups."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: "{operations}"
@@ -500,7 +500,7 @@ metrics:
       - operation
 
   container.blockio.io_time_recursive:
-    enabled: true
+    enabled: false
     description: "Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: ms
@@ -514,7 +514,7 @@ metrics:
       - operation
 
   container.blockio.io_wait_time_recursive:
-    enabled: true
+    enabled: false
     description: "Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: ns
@@ -528,7 +528,7 @@ metrics:
       - operation
 
   container.blockio.sectors_recursive:
-    enabled: true
+    enabled: false
     description: "Number of sectors transferred to/from disk by the group and descendant groups."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: "{sectors}"
@@ -583,7 +583,7 @@ metrics:
     attributes:
       - interface
   container.network.io.usage.rx_errors:
-    enabled: true
+    enabled: false
     description: "Received errors."
     unit: "{errors}"
     sum:
@@ -593,7 +593,7 @@ metrics:
     attributes:
       - interface
   container.network.io.usage.tx_errors:
-    enabled: true
+    enabled: false
     description: "Sent errors."
     unit: "{errors}"
     sum:
@@ -603,7 +603,7 @@ metrics:
     attributes:
       - interface
   container.network.io.usage.rx_packets:
-    enabled: true
+    enabled: false
     description: "Packets received."
     unit: "{packets}"
     sum:
@@ -613,7 +613,7 @@ metrics:
     attributes:
       - interface
   container.network.io.usage.tx_packets:
-    enabled: true
+    enabled: false
     description: "Packets sent."
     unit: "{packets}"
     sum:
