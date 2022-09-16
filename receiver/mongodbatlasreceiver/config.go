@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strings"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -46,6 +47,10 @@ type AlertConfig struct {
 	Endpoint string                      `mapstructure:"endpoint"`
 	Secret   string                      `mapstructure:"secret"`
 	TLS      *configtls.TLSServerSetting `mapstructure:"tls"`
+	Mode     string                      `mapstructure:"mode"`
+
+	// these parameters are only relevant in retrieval mode
+	Projects []ProjectConfig `mapstructure:"projects"`
 }
 
 type LogConfig struct {
@@ -76,7 +81,7 @@ func (c *Config) Validate() error {
 	var errs error
 
 	errs = multierr.Append(errs, c.ScraperControllerSettings.Validate())
-	errs = multierr.Append(errs, c.Alerts.validate())
+	errs = multierr.Append(errs, c.Alerts.validate(c))
 	errs = multierr.Append(errs, c.Logs.validate())
 
 	return errs
@@ -101,14 +106,42 @@ func (l *LogConfig) validate() error {
 	return errs
 }
 
-func (a *AlertConfig) validate() error {
-	var errs error
-
+func (a *AlertConfig) validate(c *Config) error {
 	if !a.Enabled {
 		// No need to further validate, receiving alerts is disabled.
 		return nil
 	}
 
+	if a.Mode == string(alertModeRetrieval) {
+		return a.validateRetrieval()
+	}
+
+	if a.Mode == string(alertModeListen) {
+		return a.validateListen()
+	}
+
+	return fmt.Errorf("alert mode not recognized for mode: %s. Known alert modes are: %s", a.Mode, strings.Join([]string{
+		string(alertModeListen),
+		string(alertModeRetrieval),
+	}, ","))
+}
+
+func (a AlertConfig) validateRetrieval() error {
+	var errs error
+	if len(a.Projects) == 0 {
+		errs = multierr.Append(errs, errNoProjects)
+	}
+
+	for _, project := range a.Projects {
+		if len(project.ExcludeClusters) != 0 && len(project.IncludeClusters) != 0 {
+			errs = multierr.Append(errs, errClusterConfig)
+		}
+	}
+	return errs
+}
+
+func (a AlertConfig) validateListen() error {
+	var errs error
 	if a.Endpoint == "" {
 		errs = multierr.Append(errs, errNoEndpoint)
 	}
@@ -131,6 +164,5 @@ func (a *AlertConfig) validate() error {
 			errs = multierr.Append(errs, errNoKey)
 		}
 	}
-
 	return errs
 }

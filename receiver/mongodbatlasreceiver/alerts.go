@@ -31,14 +31,18 @@ import (
 	"sync"
 	"time"
 
+	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
+	"github.com/tidwall/buntdb"
 )
 
 // maxContentLength is the maximum payload size we will accept from incoming requests.
@@ -47,19 +51,35 @@ import (
 const (
 	maxContentLength    int64  = 16384
 	signatureHeaderName string = "X-MMS-Signature"
+
+	alertModeListen    alertMode = "listen"
+	alertModeRetrieval alertMode = "retrieve"
 )
+
+type alertMode string
 
 type alertsReceiver struct {
 	addr        string
 	secret      string
 	server      *http.Server
+	mode        alertMode
 	tlsSettings *configtls.TLSServerSetting
 	consumer    consumer.Logs
 	wg          *sync.WaitGroup
 	logger      *zap.Logger
+
+	// only relevant in `retrieval` mode
+	projects      []ProjectConfig
+	client        *internal.MongoDBAtlasClient
+	privateKey    string
+	publicKey     string
+	retrySettings exporterhelper.RetrySettings
+	pollInterval  time.Duration
+	cache         buntdb.DB
 }
 
-func newAlertsReceiver(logger *zap.Logger, cfg AlertConfig, consumer consumer.Logs) (*alertsReceiver, error) {
+func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer.Logs) (*alertsReceiver, error) {
+	cfg := baseConfig.Alerts
 	var tlsConfig *tls.Config
 
 	if cfg.TLS != nil {
@@ -72,12 +92,17 @@ func newAlertsReceiver(logger *zap.Logger, cfg AlertConfig, consumer consumer.Lo
 	}
 
 	recv := &alertsReceiver{
-		addr:        cfg.Endpoint,
-		secret:      cfg.Secret,
-		tlsSettings: cfg.TLS,
-		consumer:    consumer,
-		wg:          &sync.WaitGroup{},
-		logger:      logger,
+		addr:          cfg.Endpoint,
+		secret:        cfg.Secret,
+		tlsSettings:   cfg.TLS,
+		consumer:      consumer,
+		mode:          alertMode(cfg.Mode),
+		projects:      cfg.Projects,
+		retrySettings: baseConfig.RetrySettings,
+		publicKey:     baseConfig.PublicKey,
+		privateKey:    baseConfig.PrivateKey,
+		wg:            &sync.WaitGroup{},
+		logger:        logger,
 	}
 
 	s := &http.Server{
@@ -91,6 +116,45 @@ func newAlertsReceiver(logger *zap.Logger, cfg AlertConfig, consumer consumer.Lo
 }
 
 func (a alertsReceiver) Start(ctx context.Context, host component.Host) error {
+	switch a.mode {
+	case alertModeListen:
+		return a.startListening(ctx, host)
+	case alertModeRetrieval:
+		return a.startRetrieving(ctx, host)
+	default:
+		return fmt.Errorf("receiver attempted to start without a known mode: %s", a.mode)
+	}
+}
+
+func (a alertsReceiver) startRetrieving(ctx context.Context, host component.Host) error {
+	client, err := internal.NewMongoDBAtlasClient(a.publicKey, a.privateKey, a.retrySettings, a.logger)
+	if err != nil {
+		return err
+	}
+	a.client = client
+
+	// may want to consider using disk storage for tracking which alerts have been sent
+	// or may want to revisit how we get alerts
+	// this is a memory cache used to keep track of unupdated alerts
+	a.cache = buntdb.Open(":memory:")
+
+	var alerts []mongodbatlas.Alert
+	for _, p := range a.projects {
+		projectAlerts, err := a.client.GetAlerts(ctx, p.Name)
+		if err != nil {
+			return fmt.Errorf("unable to get alerts for project: %w", err)
+		}
+		alerts = append(alerts, projectAlerts...)
+	}
+	now := pcommon.NewTimestampFromTime(time.Now())
+	logs, err := a.convertAlerts(now, alerts)
+	if err != nil {
+		return err
+	}
+	return a.consumer.ConsumeLogs(ctx, logs)
+}
+
+func (a alertsReceiver) startListening(ctx context.Context, host component.Host) error {
 	// We use a.server.Serve* over a.server.ListenAndServe*
 	// So that we can catch and return errors relating to binding to network interface on start.
 	var lc net.ListenConfig
@@ -135,7 +199,6 @@ func (a alertsReceiver) Start(ctx context.Context, host component.Host) error {
 			}
 		}()
 	}
-
 	return nil
 }
 
@@ -193,6 +256,17 @@ func (a alertsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request)
 }
 
 func (a alertsReceiver) Shutdown(ctx context.Context) error {
+	switch a.mode {
+	case alertModeListen:
+		return a.shutdownListener(ctx)
+	case alertModeRetrieval:
+		return a.shutdownRetriever(ctx)
+	default:
+		return errors.New("alert receiver mode not set, unable to shutdown")
+	}
+}
+
+func (a alertsReceiver) shutdownListener(ctx context.Context) error {
 	a.logger.Debug("Shutting down server")
 	err := a.server.Shutdown(ctx)
 	if err != nil {
@@ -202,6 +276,39 @@ func (a alertsReceiver) Shutdown(ctx context.Context) error {
 	a.logger.Debug("Waiting for shutdown to complete.")
 	a.wg.Wait()
 	return nil
+}
+
+func (a alertsReceiver) shutdownRetriever(ctx context.Context) error {
+	a.logger.Debug("Shutting down clients")
+	a.wg.Wait()
+	return nil
+}
+
+func (a alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatlas.Alert) (plog.Logs, error) {
+	logs := plog.NewLogs()
+
+	for _, alert := range alerts {
+		if a.hasProcessed(alert) {
+
+		}
+
+		resourceLogs := logs.ResourceLogs().AppendEmpty()
+		logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		logRecord.SetObservedTimestamp(now)
+
+		var ts pcommon.Timestamp
+		// Possible values are: TRACKING, OPEN, CLOSED, CANCELLED
+		switch alert.Status {
+			case ""
+		}
+		parsedTime := time.Parse("", alert.Created)
+		logRecord.SetTimestamp(pcommon.NewTimestampFromTime()
+		logRecord.SetSeverityNumber(severityFromAlert(alert))
+		// this could be fairly expensive to do, maybe should evaulate
+		logRecord.Body().SetStringVal(string(payload))
+
+	}
+
 }
 
 func verifyHMACSignature(secret string, payload []byte, signatureHeader string) error {
@@ -287,6 +394,22 @@ func payloadToLogs(now time.Time, payload []byte) (plog.Logs, error) {
 	}
 
 	return logs, nil
+}
+
+func (a *alertsReceiver) hasProcessed(alert mongodbatlas.Alert) bool {
+	err := a.cache.View(func(tx *buntdb.Tx) error {
+		_, err := tx.Get(alertKey(alert))
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	return err == nil
+}
+
+// alertKey is a key to index the alert to see if it has already been processed.
+func alertKey(alert mongodbatlas.Alert) string {
+	return fmt.Sprintf("%s|%s", alert.ID, alert.Status)
 }
 
 func timestampFromAlert(a model.Alert) pcommon.Timestamp {

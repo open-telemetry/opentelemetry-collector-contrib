@@ -38,6 +38,7 @@ func TestValidate(t *testing.T) {
 					Enabled:  true,
 					Endpoint: "0.0.0.0:7706",
 					Secret:   "some_secret",
+					Mode:     string(alertModeListen),
 				},
 			},
 		},
@@ -47,6 +48,7 @@ func TestValidate(t *testing.T) {
 				Alerts: AlertConfig{
 					Enabled: true,
 					Secret:  "some_secret",
+					Mode:    string(alertModeListen),
 				},
 			},
 			expectedErr: errNoEndpoint.Error(),
@@ -57,6 +59,7 @@ func TestValidate(t *testing.T) {
 				Alerts: AlertConfig{
 					Enabled:  true,
 					Endpoint: "0.0.0.0:7706",
+					Mode:     string(alertModeListen),
 				},
 			},
 			expectedErr: errNoSecret.Error(),
@@ -68,6 +71,7 @@ func TestValidate(t *testing.T) {
 					Enabled:  true,
 					Endpoint: "7706",
 					Secret:   "some_secret",
+					Mode:     string(alertModeListen),
 				},
 			},
 			expectedErr: "failed to split endpoint into 'host:port' pair",
@@ -79,6 +83,7 @@ func TestValidate(t *testing.T) {
 					Enabled:  true,
 					Endpoint: "0.0.0.0:7706",
 					Secret:   "some_secret",
+					Mode:     string(alertModeListen),
 					TLS: &configtls.TLSServerSetting{
 						TLSSetting: configtls.TLSSetting{
 							CertFile: "some_cert_file",
@@ -95,6 +100,7 @@ func TestValidate(t *testing.T) {
 					Enabled:  true,
 					Endpoint: "0.0.0.0:7706",
 					Secret:   "some_secret",
+					Mode:     string(alertModeListen),
 					TLS: &configtls.TLSServerSetting{
 						TLSSetting: configtls.TLSSetting{
 							KeyFile: "some_key_file",

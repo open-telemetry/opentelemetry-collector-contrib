@@ -82,7 +82,7 @@ func createCombinedLogReceiver(
 	recv := &combindedLogsReceiver{}
 
 	if cfg.Alerts.Enabled {
-		recv.alerts, err = newAlertsReceiver(params.Logger, cfg.Alerts, consumer)
+		recv.alerts, err = newAlertsReceiver(params.Logger, cfg, consumer)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create a MongoDB Atlas Alerts Receiver instance: %w", err)
 		}
@@ -106,6 +106,7 @@ func createDefaultConfig() config.Receiver {
 		Metrics:                   metadata.DefaultMetricsSettings(),
 		Alerts: AlertConfig{
 			Enabled: defaultAlertsEnabled,
+			Mode:    string(alertModeListen),
 		},
 		Logs: LogConfig{
 			Enabled:  defaultLogsEnabled,

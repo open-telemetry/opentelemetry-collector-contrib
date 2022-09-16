@@ -626,6 +626,38 @@ func (s *MongoDBAtlasClient) GetClusters(ctx context.Context, groupID string) ([
 	return clusters, nil
 }
 
+// GetAlerts returns the alerts specified for the set projects
+func (s *MongoDBAtlasClient) GetAlerts(ctx context.Context, groupID string) ([]mongodbatlas.Alert, error) {
+	pageNum := 1
+	alertsResult := []mongodbatlas.Alert{}
+	for {
+		lo := mongodbatlas.ListOptions{PageNum: pageNum}
+		options := mongodbatlas.AlertsListOptions{ListOptions: lo}
+		alerts, response, err := s.client.Alerts.List(ctx, groupID, &options)
+		err = checkMongoDBClientErr(err, response)
+		if err != nil {
+			return nil, err
+		}
+		alertsResult = append(alertsResult, alerts.Results...)
+		if !hasNext(alerts.Links) {
+			break
+		}
+		pageNum++
+	}
+	return alertsResult, nil
+}
+
+func (s *MongoDBAtlasClient) retrieveAlerts(ctx context.Context, groupID string) ([]mongodbatlas.Alert, error) {
+	lo := mongodbatlas.ListOptions{}
+	options := mongodbatlas.AlertsListOptions{ListOptions: lo}
+	alerts, response, err := s.client.Alerts.List(ctx, groupID, &options)
+	err = checkMongoDBClientErr(err, response)
+	if err != nil {
+		return nil, err
+	}
+	return alerts.Results, nil
+}
+
 func toUnixString(t time.Time) string {
 	return strconv.Itoa(int(t.Unix()))
 }

@@ -403,9 +403,12 @@ func TestHandleRequest(t *testing.T) {
 				consumer = &consumertest.LogsSink{}
 			}
 
-			ar, err := newAlertsReceiver(zaptest.NewLogger(t), AlertConfig{
-				Secret: "some_secret",
-			}, consumer)
+			ar, err := newAlertsReceiver(zaptest.NewLogger(t),
+				&Config{
+					Alerts: AlertConfig{
+						Secret: "some_secret",
+					},
+				}, consumer)
 
 			require.NoError(t, err, "Failed to create alerts receiver")
 
