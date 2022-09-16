@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package lokiexporter
+package loki // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 
 import (
 	"testing"
@@ -41,7 +41,7 @@ func exampleLog() (plog.LogRecord, pcommon.Resource) {
 func TestConvertWithStringBody(t *testing.T) {
 	in := `{"body":"Example log","traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resources":{"host.name":"something"}}`
 
-	out, err := encodeJSON(exampleLog())
+	out, err := Encode(exampleLog())
 	assert.NoError(t, err)
 	assert.Equal(t, in, out)
 }
@@ -55,7 +55,7 @@ func TestConvertWithMapBody(t *testing.T) {
 	mapVal.MapVal().PutString("key2", "value")
 	mapVal.CopyTo(log.Body())
 
-	out, err := encodeJSON(log, resource)
+	out, err := Encode(log, resource)
 	assert.NoError(t, err)
 	assert.Equal(t, in, out)
 }

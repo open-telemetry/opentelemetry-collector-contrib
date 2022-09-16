@@ -49,7 +49,7 @@ exporter/jaegerthrifthttpexporter/                   @open-telemetry/collector-c
 exporter/kafkaexporter/                              @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 exporter/loadbalancingexporter/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logzioexporter/                             @open-telemetry/collector-contrib-approvers @jkowall @Doron-Bargo @yotamloe
-exporter/lokiexporter/                               @open-telemetry/collector-contrib-approvers @gramidt @jpkrohling
+exporter/lokiexporter/                               @open-telemetry/collector-contrib-approvers @gramidt @gouthamve @jpkrohling @kovrus @mar4uk
 exporter/mezmoexporter/                              @open-telemetry/collector-contrib-approvers @dashpole @billmeyer @gjanco
 exporter/opencensusexporter/                         @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 exporter/prometheusexporter/                         @open-telemetry/collector-contrib-approvers @Aneurysm9
@@ -99,6 +99,7 @@ pkg/resourcetotelemetry/                             @open-telemetry/collector-c
 pkg/stanza/                                          @open-telemetry/collector-contrib-approvers @djaglowski
 pkg/telemetryquerylanguage/                          @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu
 pkg/translator/jaeger/                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
+pkg/translator/loki/                                 @open-telemetry/collector-contrib-approvers @gouthamve @jpkrohling @kovrus @mar4uk
 pkg/translator/opencensus/                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 pkg/translator/prometheus/                           @open-telemetry/collector-contrib-approvers @dashpole @bertysentry
 pkg/translator/prometheusremotewrite/                @open-telemetry/collector-contrib-approvers @Aneurysm9
