@@ -132,7 +132,7 @@ func (f *factory) createDefaultConfig() config.Exporter {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://http-intake.logs.datadoghq.com",
 			},
-			SendLogRecordBody: false,
+			SendLogRecordBody: true,
 		},
 
 		HostMetadata: HostMetadataConfig{
@@ -268,7 +268,7 @@ func (f *factory) createTracesExporter(
 		pusher,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
-		// We don't do retries on logs as it may cause duplicates in the backend confusing the user
+		// We don't do retries on traces as it may cause duplicates in the backend confusing the user
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(stop),
@@ -313,7 +313,6 @@ func (f *factory) createLogsExporter(
 		set,
 		cfg,
 		pusher,
-		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithQueue(cfg.QueueSettings),
