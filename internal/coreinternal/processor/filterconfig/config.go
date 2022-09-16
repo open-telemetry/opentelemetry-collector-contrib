@@ -131,6 +131,7 @@ type MatchProperties struct {
 
 	// SpanKinds specify the list of items to match the span kind against.
 	// A match occurs if the span's span kind matches at least one item in this list.
+	// This is an optional field
 	SpanKinds []string `mapstructure:"span_kinds"`
 }
 
