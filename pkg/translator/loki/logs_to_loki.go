@@ -22,12 +22,27 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
+// PushReport contains the summary for the outcome of a LogsToLoki operation
 type PushReport struct {
 	Errors       []error
 	NumSubmitted int
 	NumDropped   int
 }
 
+// LogsToLoki converts a Logs pipeline data into a Loki PushRequest.
+// Labels for each record are inferred based on the hints "loki.attribute.labels"
+// and "loki.resource.labels". Each hint might contain a comma-separated list of
+// attributes (resource or record) that should be promoted to a Loki label. Those
+// attributes are removed from the body as a result, otherwise they would be shown
+// in duplicity in Loki.
+// PushStreams are created based on the labels: all records containing the same
+// set of labels are part of the same stream. All streams are then packed within
+// the resulting PushRequest.
+// When this function isn't able to marshal a log record, the log record is dropped
+// and processing continues, so that the caller can decide to either skip the entire
+// batch or send only the data that could be parsed. The caller can use the PushReport
+// to make this decision, as it includes all of the errors that were encountered,
+// as well as the number of items dropped and submitted.
 func LogsToLoki(ld plog.Logs) (*logproto.PushRequest, *PushReport) {
 	report := &PushReport{}
 
