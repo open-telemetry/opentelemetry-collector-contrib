@@ -14,14 +14,14 @@ Aggregates Request, Error and Duration (R.E.D) metrics from span data.
 **Request** counts are computed as the number of spans seen per unique set of dimensions, including Errors.
 For example, the following metric shows 142 calls:
 ```
-calls{http_method="GET",http_status_code="200",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET"} 142
+calls_total{http_method="GET",http_status_code="200",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET"} 142
 ```
 Multiple metrics can be aggregated if, for instance, a user wishes to view call counts just on `service_name` and `operation`.
 
 **Error** counts are computed from the Request counts which have an "Error" Status Code metric dimension.
 For example, the following metric indicates 220 errors:
 ```
-calls{http_method="GET",http_status_code="503",operation="/checkout",service_name="frontend",span_kind="SPAN_KIND_CLIENT",status_code="STATUS_CODE_ERROR"} 220
+calls_total{http_method="GET",http_status_code="503",operation="/checkout",service_name="frontend",span_kind="SPAN_KIND_CLIENT",status_code="STATUS_CODE_ERROR"} 220
 ```
 
 **Duration** is computed from the difference between the span start and end times and inserted into the

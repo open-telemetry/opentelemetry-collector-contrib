@@ -69,7 +69,7 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	// verify
-	assert.Contains(t, exp.router.exporters["acme"], otlpExp)
+	assert.Contains(t, exp.router.getExporters("acme"), otlpExp)
 }
 
 func TestTraces_InvalidExporter(t *testing.T) {
@@ -332,6 +332,133 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 	v, ok := attrs.Get("attr")
 	assert.True(t, ok, "non-routing attributes shouldn't have been dropped")
 	assert.Equal(t, "acme", v.StringVal())
+}
+
+func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
+	defaultExp := &mockTracesExporter{}
+	firstExp := &mockTracesExporter{}
+	secondExp := &mockTracesExporter{}
+
+	host := &mockHost{
+		Host: componenttest.NewNopHost(),
+		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
+			return map[config.DataType]map[config.ComponentID]component.Exporter{
+				config.TracesDataType: {
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "1"): firstExp,
+					config.NewComponentIDWithName("otlp", "2"): secondExp,
+				},
+			}
+		},
+	}
+
+	exp := newTracesProcessor(zap.NewNop(), &Config{
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Expression: `route() where resource.attributes["value"] > 0 and resource.attributes["value"] < 4`,
+				Exporters:  []string{"otlp/1"},
+			},
+			{
+				Expression: `route() where resource.attributes["value"] > 1 and resource.attributes["value"] < 4`,
+				Exporters:  []string{"otlp/2"},
+			},
+		},
+	})
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	t.Run("span by matched no expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 10)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+
+		assert.Len(t, defaultExp.AllTraces(), 1)
+		assert.Len(t, firstExp.AllTraces(), 0)
+		assert.Len(t, secondExp.AllTraces(), 0)
+	})
+
+	t.Run("span matched by one of two expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 1)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+
+		assert.Len(t, defaultExp.AllTraces(), 0)
+		assert.Len(t, firstExp.AllTraces(), 1)
+		assert.Len(t, secondExp.AllTraces(), 0)
+	})
+
+	t.Run("spans matched by all expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 2)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		rl = tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 3)
+		span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span1")
+
+		require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+
+		assert.Len(t, defaultExp.AllTraces(), 0)
+		assert.Len(t, firstExp.AllTraces(), 1)
+		assert.Len(t, secondExp.AllTraces(), 1)
+
+		assert.Equal(t, firstExp.AllTraces()[0].SpanCount(), 2)
+		assert.Equal(t, secondExp.AllTraces()[0].SpanCount(), 2)
+		assert.Equal(t, firstExp.AllTraces(), secondExp.AllTraces())
+	})
+
+	t.Run("one span matched by all expressions, other matched by none", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 2)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		rl = tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", -1)
+		span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span1")
+
+		require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+
+		assert.Len(t, defaultExp.AllTraces(), 1)
+		assert.Len(t, firstExp.AllTraces(), 1)
+		assert.Len(t, secondExp.AllTraces(), 1)
+
+		assert.Equal(t, firstExp.AllTraces(), secondExp.AllTraces())
+
+		rspan := defaultExp.AllTraces()[0].ResourceSpans().At(0)
+		attr, ok := rspan.Resource().Attributes().Get("value")
+		assert.True(t, ok, "routing attribute must exists")
+		assert.Equal(t, attr.IntVal(), int64(-1))
+	})
 }
 
 func TestTraceProcessorCapabilities(t *testing.T) {
