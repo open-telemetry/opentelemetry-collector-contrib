@@ -168,7 +168,8 @@ func (mp *MatchProperties) ValidateForSpans() error {
 	if len(mp.SpanKinds) > 0 && mp.MatchType == "strict" {
 		for _, kind := range mp.SpanKinds {
 			if !spanKinds[kind] {
-				return errors.New("span_kinds string must match one of the standard span kinds when match_type=strict ")
+                               // TODO: loop over `spanKinds` and create a `validSpanKinds` slice
+				return fmt.Errorf("span_kinds string must match one of the standard span kinds when match_type=strict: %v", validSpanKinds)
 			}
 		}
 	}
