@@ -43,7 +43,10 @@ func createDefaultConfig() config.Exporter {
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 		// Traces GRPC client
-		GRPCClientSettings: configgrpc.GRPCClientSettings{Endpoint: "https://"},
+		Traces: configgrpc.GRPCClientSettings{
+			Endpoint: "https://",
+			Headers:  map[string]string{},
+		},
 		Metrics: configgrpc.GRPCClientSettings{
 			Endpoint: "https://",
 			Headers:  map[string]string{},
@@ -55,7 +58,6 @@ func createDefaultConfig() config.Exporter {
 			Endpoint: "https://",
 			Headers:  map[string]string{},
 		},
-
 		PrivateKey: "",
 		AppName:    "",
 	}
@@ -63,7 +65,29 @@ func createDefaultConfig() config.Exporter {
 
 func createTraceExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
 	cfg := config.(*Config)
-	exporter, err := newCoralogixExporter(cfg, set)
+
+	// Use deprecated jaeger endpoint if it's not empty
+	if !isEmpty(cfg.Endpoint) {
+		set.Logger.Warn("endpoint field is deprecated.Please use the new `traces.endpoint` field with OpenTelemtry endpoint.")
+
+		exporter, err := newCoralogixExporter(cfg, set)
+		if err != nil {
+			return nil, err
+		}
+
+		return exporterhelper.NewTracesExporter(
+			ctx,
+			set,
+			config,
+			exporter.tracesPusher,
+			exporterhelper.WithQueue(cfg.QueueSettings),
+			exporterhelper.WithRetry(cfg.RetrySettings),
+			exporterhelper.WithTimeout(cfg.TimeoutSettings),
+			exporterhelper.WithStart(exporter.client.startConnection),
+		)
+	}
+
+	exporter, err := newTracesExporter(cfg, set)
 	if err != nil {
 		return nil, err
 	}
@@ -72,11 +96,13 @@ func createTraceExporter(ctx context.Context, set component.ExporterCreateSettin
 		ctx,
 		set,
 		config,
-		exporter.tracesPusher,
-		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporter.pushTraces,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
-		exporterhelper.WithStart(exporter.client.startConnection),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithStart(exporter.start),
+		exporterhelper.WithShutdown(exporter.shutdown),
 	)
 }
 

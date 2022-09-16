@@ -48,8 +48,7 @@ func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (tql.ExprFu
 		sumMetric.SetDescription(metric.Description())
 		sumMetric.SetName(metric.Name() + "_sum")
 		sumMetric.SetUnit(metric.Unit())
-		sumMetric.SetDataType(pmetric.MetricDataTypeSum)
-		sumMetric.Sum().SetAggregationTemporality(aggTemp)
+		sumMetric.SetEmptySum().SetAggregationTemporality(aggTemp)
 		sumMetric.Sum().SetIsMonotonic(monotonic)
 
 		sumDps := sumMetric.Sum().DataPoints()

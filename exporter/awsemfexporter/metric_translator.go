@@ -99,7 +99,7 @@ func newMetricTranslator(config Config) metricTranslator {
 }
 
 // translateOTelToGroupedMetric converts OT metrics to Grouped Metric format.
-func (mt metricTranslator) translateOTelToGroupedMetric(rm *pmetric.ResourceMetrics, groupedMetrics map[interface{}]*groupedMetric, config *Config) error {
+func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetrics, groupedMetrics map[interface{}]*groupedMetric, config *Config) error {
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 	var instrumentationLibName string
 	cWNamespace := getNamespace(rm, config.Namespace)
@@ -132,7 +132,7 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm *pmetric.ResourceMetr
 				receiver:                   metricReceiver,
 				metricDataType:             metric.DataType(),
 			}
-			err := addToGroupedMetric(&metric, groupedMetrics, metadata, patternReplaceSucceeded, config.logger, mt.metricDescriptor, config)
+			err := addToGroupedMetric(metric, groupedMetrics, metadata, patternReplaceSucceeded, config.logger, mt.metricDescriptor, config)
 			if err != nil {
 				return err
 			}
@@ -250,7 +250,7 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 	// If the whole batch of metrics don't match any metric declarations, drop them
 	if len(metricDeclarations) == 0 {
 		labelsStr, _ := json.Marshal(labels)
-		metricNames := make([]string, 0)
+		var metricNames []string
 		for metricName := range groupedMetric.metrics {
 			metricNames = append(metricNames, metricName)
 		}

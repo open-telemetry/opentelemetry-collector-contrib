@@ -38,13 +38,13 @@ func Test_newPathGetSetter(t *testing.T) {
 	refSpan, refIS, refResource := createTelemetry()
 
 	newAttrs := pcommon.NewMap()
-	newAttrs.UpsertString("hello", "world")
+	newAttrs.PutString("hello", "world")
 
 	newEvents := ptrace.NewSpanEventSlice()
 	newEvents.AppendEmpty().SetName("new event")
 
 	newLinks := ptrace.NewSpanLinkSlice()
-	newLinks.AppendEmpty().SetSpanID(pcommon.NewSpanID(spanID2))
+	newLinks.AppendEmpty().SetSpanID(spanID2)
 
 	newStatus := ptrace.NewSpanStatus()
 	newStatus.SetMessage("new status")
@@ -63,10 +63,10 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "trace_id",
 				},
 			},
-			orig:   pcommon.NewTraceID(traceID),
-			newVal: pcommon.NewTraceID(traceID2),
+			orig:   pcommon.TraceID(traceID),
+			newVal: pcommon.TraceID(traceID2),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.SetTraceID(pcommon.NewTraceID(traceID2))
+				span.SetTraceID(traceID2)
 			},
 		},
 		{
@@ -76,10 +76,10 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "span_id",
 				},
 			},
-			orig:   pcommon.NewSpanID(spanID),
-			newVal: pcommon.NewSpanID(spanID2),
+			orig:   pcommon.SpanID(spanID),
+			newVal: pcommon.SpanID(spanID2),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.SetSpanID(pcommon.NewSpanID(spanID2))
+				span.SetSpanID(spanID2)
 			},
 		},
 		{
@@ -95,7 +95,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   hex.EncodeToString(traceID[:]),
 			newVal: hex.EncodeToString(traceID2[:]),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.SetTraceID(pcommon.NewTraceID(traceID2))
+				span.SetTraceID(traceID2)
 			},
 		},
 		{
@@ -111,7 +111,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   hex.EncodeToString(spanID[:]),
 			newVal: hex.EncodeToString(spanID2[:]),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.SetSpanID(pcommon.NewSpanID(spanID2))
+				span.SetSpanID(spanID2)
 			},
 		},
 		{
@@ -124,7 +124,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   "key1=val1,key2=val2",
 			newVal: "key=newVal",
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.SetTraceState("key=newVal")
+				span.TraceStateStruct().FromRaw("key=newVal")
 			},
 		},
 		{
@@ -138,7 +138,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   "val1",
 			newVal: "newVal",
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.SetTraceState("key1=newVal,key2=val2")
+				span.TraceStateStruct().FromRaw("key1=newVal,key2=val2")
 			},
 		},
 		{
@@ -148,10 +148,10 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "parent_span_id",
 				},
 			},
-			orig:   pcommon.NewSpanID(spanID2),
-			newVal: pcommon.NewSpanID(spanID),
+			orig:   pcommon.SpanID(spanID2),
+			newVal: pcommon.SpanID(spanID),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.SetParentSpanID(pcommon.NewSpanID(spanID))
+				span.SetParentSpanID(spanID)
 			},
 		},
 		{
@@ -231,7 +231,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertString("str", "newVal")
+				span.Attributes().PutString("str", "newVal")
 			},
 		},
 		{
@@ -245,7 +245,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   true,
 			newVal: false,
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertBool("bool", false)
+				span.Attributes().PutBool("bool", false)
 			},
 		},
 		{
@@ -259,7 +259,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   int64(10),
 			newVal: int64(20),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertInt("int", 20)
+				span.Attributes().PutInt("int", 20)
 			},
 		},
 		{
@@ -273,7 +273,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   float64(1.2),
 			newVal: float64(2.4),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertDouble("double", 2.4)
+				span.Attributes().PutDouble("double", 2.4)
 			},
 		},
 		{
@@ -287,7 +287,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
+				span.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
 		},
 		{
@@ -304,7 +304,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []string{"new"},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertEmptySlice("arr_str").AppendEmpty().SetStringVal("new")
+				span.Attributes().PutEmptySlice("arr_str").AppendEmpty().SetStringVal("new")
 			},
 		},
 		{
@@ -321,7 +321,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []bool{false},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertEmptySlice("arr_bool").AppendEmpty().SetBoolVal(false)
+				span.Attributes().PutEmptySlice("arr_bool").AppendEmpty().SetBoolVal(false)
 			},
 		},
 		{
@@ -338,7 +338,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []int64{20},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertEmptySlice("arr_int").AppendEmpty().SetIntVal(20)
+				span.Attributes().PutEmptySlice("arr_int").AppendEmpty().SetIntVal(20)
 			},
 		},
 		{
@@ -355,7 +355,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []float64{2.0},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertEmptySlice("arr_float").AppendEmpty().SetDoubleVal(2.0)
+				span.Attributes().PutEmptySlice("arr_float").AppendEmpty().SetDoubleVal(2.0)
 			},
 		},
 		{
@@ -372,7 +372,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: [][]byte{{9, 6, 4}},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertEmptySlice("arr_bytes").AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{9, 6, 4}))
+				span.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{9, 6, 4})
 			},
 		},
 		{
@@ -542,46 +542,46 @@ func Test_newPathGetSetter(t *testing.T) {
 
 func createTelemetry() (ptrace.Span, pcommon.InstrumentationScope, pcommon.Resource) {
 	span := ptrace.NewSpan()
-	span.SetTraceID(pcommon.NewTraceID(traceID))
-	span.SetSpanID(pcommon.NewSpanID(spanID))
-	span.SetTraceState("key1=val1,key2=val2")
-	span.SetParentSpanID(pcommon.NewSpanID(spanID2))
+	span.SetTraceID(traceID)
+	span.SetSpanID(spanID)
+	span.TraceStateStruct().FromRaw("key1=val1,key2=val2")
+	span.SetParentSpanID(spanID2)
 	span.SetName("bear")
 	span.SetKind(ptrace.SpanKindServer)
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
-	span.Attributes().UpsertString("str", "val")
-	span.Attributes().UpsertBool("bool", true)
-	span.Attributes().UpsertInt("int", 10)
-	span.Attributes().UpsertDouble("double", 1.2)
-	span.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{1, 3, 2}))
+	span.Attributes().PutString("str", "val")
+	span.Attributes().PutBool("bool", true)
+	span.Attributes().PutInt("int", 10)
+	span.Attributes().PutDouble("double", 1.2)
+	span.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{1, 3, 2})
 
-	arrStr := span.Attributes().UpsertEmptySlice("arr_str")
+	arrStr := span.Attributes().PutEmptySlice("arr_str")
 	arrStr.AppendEmpty().SetStringVal("one")
 	arrStr.AppendEmpty().SetStringVal("two")
 
-	arrBool := span.Attributes().UpsertEmptySlice("arr_bool")
+	arrBool := span.Attributes().PutEmptySlice("arr_bool")
 	arrBool.AppendEmpty().SetBoolVal(true)
 	arrBool.AppendEmpty().SetBoolVal(false)
 
-	arrInt := span.Attributes().UpsertEmptySlice("arr_int")
+	arrInt := span.Attributes().PutEmptySlice("arr_int")
 	arrInt.AppendEmpty().SetIntVal(2)
 	arrInt.AppendEmpty().SetIntVal(3)
 
-	arrFloat := span.Attributes().UpsertEmptySlice("arr_float")
+	arrFloat := span.Attributes().PutEmptySlice("arr_float")
 	arrFloat.AppendEmpty().SetDoubleVal(1.0)
 	arrFloat.AppendEmpty().SetDoubleVal(2.0)
 
-	arrBytes := span.Attributes().UpsertEmptySlice("arr_bytes")
-	arrBytes.AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{1, 2, 3}))
-	arrBytes.AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
+	arrBytes := span.Attributes().PutEmptySlice("arr_bytes")
+	arrBytes.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{1, 2, 3})
+	arrBytes.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
 
 	span.SetDroppedAttributesCount(10)
 
 	span.Events().AppendEmpty().SetName("event")
 	span.SetDroppedEventsCount(20)
 
-	span.Links().AppendEmpty().SetTraceID(pcommon.NewTraceID(traceID))
+	span.Links().AppendEmpty().SetTraceID(traceID)
 	span.SetDroppedLinksCount(30)
 
 	span.Status().SetCode(ptrace.StatusCodeOk)

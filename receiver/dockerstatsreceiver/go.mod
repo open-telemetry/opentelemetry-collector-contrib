@@ -3,14 +3,14 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/docker
 go 1.18
 
 require (
-	github.com/docker/docker v20.10.17+incompatible
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.58.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.58.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.58.0
+	github.com/docker/docker v20.10.18+incompatible
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.60.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.60.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.60.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.58.1-0.20220829231818-9ba35cd40b46
-	go.opentelemetry.io/collector/pdata v0.58.1-0.20220829231818-9ba35cd40b46
-	go.opentelemetry.io/collector/semconv v0.58.1-0.20220829231818-9ba35cd40b46
+	go.opentelemetry.io/collector v0.60.0
+	go.opentelemetry.io/collector/pdata v0.60.0
+	go.opentelemetry.io/collector/semconv v0.60.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 )

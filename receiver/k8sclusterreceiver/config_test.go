@@ -71,3 +71,25 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 }
+
+func TestInvalidConfig(t *testing.T) {
+	// No APIConfig
+	cfg := &Config{
+		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "all_settings")),
+		Distribution:       distributionKubernetes,
+		CollectionInterval: 30 * time.Second,
+	}
+	err := cfg.Validate()
+	assert.NotNil(t, err)
+	assert.Equal(t, "invalid authType for kubernetes: ", err.Error())
+
+	// Wrong distro
+	cfg = &Config{
+		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "all_settings")),
+		Distribution:       "wrong",
+		CollectionInterval: 30 * time.Second,
+	}
+	err = cfg.Validate()
+	assert.NotNil(t, err)
+	assert.Equal(t, "\"wrong\" is not a supported distribution. Must be one of: \"openshift\", \"kubernetes\"", err.Error())
+}

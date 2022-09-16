@@ -38,15 +38,36 @@ var _ config.Processor = (*Config)(nil)
 
 func (c *Config) Validate() error {
 	var errors error
-	_, err := tql.ParseQueries(c.Traces.Queries, traces.Functions(), tqltraces.ParsePath, tqltraces.ParseEnum)
+
+	tqlp := tql.NewParser(
+		traces.Functions(),
+		tqltraces.ParsePath,
+		tqltraces.ParseEnum,
+		tql.NoOpLogger{},
+	)
+	_, err := tqlp.ParseQueries(c.Traces.Queries)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
-	_, err = tql.ParseQueries(c.Metrics.Queries, metrics.Functions(), tqlmetrics.ParsePath, tqlmetrics.ParseEnum)
+
+	tqlp = tql.NewParser(
+		metrics.Functions(),
+		tqlmetrics.ParsePath,
+		tqlmetrics.ParseEnum,
+		tql.NoOpLogger{},
+	)
+	_, err = tqlp.ParseQueries(c.Metrics.Queries)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
-	_, err = tql.ParseQueries(c.Logs.Queries, logs.Functions(), tqllogs.ParsePath, tqllogs.ParseEnum)
+
+	tqlp = tql.NewParser(
+		logs.Functions(),
+		tqllogs.ParsePath,
+		tqllogs.ParseEnum,
+		tql.NoOpLogger{},
+	)
+	_, err = tqlp.ParseQueries(c.Logs.Queries)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}

@@ -35,6 +35,9 @@ func TestUnsuccessfulScrape(t *testing.T) {
 	cfg.Endpoint = "fake:11111"
 
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &defaultClientFactory{})
+	scraper.emitMetricsWithResourceAttributes = false
+	scraper.emitMetricsWithoutResourceAttributes = true
+
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.Error(t, err)
 
@@ -48,6 +51,8 @@ func TestScraper(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{"otel"}
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, factory)
+	scraper.emitMetricsWithResourceAttributes = false
+	scraper.emitMetricsWithoutResourceAttributes = true
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -65,6 +70,8 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, factory)
+	scraper.emitMetricsWithResourceAttributes = false
+	scraper.emitMetricsWithoutResourceAttributes = true
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -82,6 +89,8 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
+	scraper.emitMetricsWithResourceAttributes = false
+	scraper.emitMetricsWithoutResourceAttributes = true
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -99,8 +108,6 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
-	scraper.emitMetricsWithResourceAttributes = true
-	scraper.emitMetricsWithoutResourceAttributes = false
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -118,8 +125,6 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
-	scraper.emitMetricsWithResourceAttributes = true
-	scraper.emitMetricsWithoutResourceAttributes = false
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)

@@ -158,7 +158,7 @@
                         {
                             "name": "vcenter.host.disk.throughput.read",
                             "description": "Average number of kilobytes read from the disk each second.",
-                            "unit": "{KBy/s}",
+                            "unit": "{KiBy/s}",
                             "sum": {
                                 "dataPoints": [
                                     {
@@ -418,7 +418,7 @@
                         {
                             "name": "vcenter.host.disk.throughput.write",
                             "description": "Average number of kilobytes written to the disk each second.",
-                            "unit": "{KBy/s}",
+                            "unit": "{KiBy/s}",
                             "sum": {
                                 "dataPoints": [
                                     {
@@ -453,7 +453,7 @@
                         {
                             "name": "vcenter.host.memory.usage",
                             "description": "The amount of memory the host system is using.",
-                            "unit": "MBy",
+                            "unit": "MiBy",
                             "sum": {
                                 "dataPoints": [
                                     {
@@ -1022,7 +1022,7 @@
                         {
                             "name": "vcenter.host.network.throughput.transmit",
                             "description": "The amount of data that was transmitted over the network by the host.",
-                            "unit": "{KBy/s}",
+                            "unit": "{KiBy/s}",
                             "sum": {
                                 "dataPoints": [
                                     {
@@ -1157,7 +1157,7 @@
                         {
                             "name": "vcenter.host.network.throughput.receive",
                             "description": "The amount of data that was received over the network by the host.",
-                            "unit": "{KBy/s}",
+                            "unit": "{KiBy/s}",
                             "sum": {
                                 "dataPoints": [
                                     {
@@ -1292,7 +1292,7 @@
                         {
                             "name": "vcenter.host.network.usage",
                             "description": "The sum of the data transmitted and received for all the NIC instances of the host.",
-                            "unit": "{KBy/s}",
+                            "unit": "{KiBy/s}",
                             "sum": {
                                 "dataPoints": [
                                     {
@@ -1668,7 +1668,7 @@
                         {
                             "name": "vcenter.vm.memory.usage",
                             "description": "The amount of memory that is used by the virtual machine.",
-                            "unit": "MBy",
+                            "unit": "MiBy",
                             "sum": {
                                 "dataPoints": [
                                     {
@@ -1843,7 +1843,7 @@
                         {
                             "name": "vcenter.vm.network.usage",
                             "description": "The network utilization combined transmit and receive rates during an interval.",
-                            "unit": "{KBy/s}",
+                            "unit": "{KiBy/s}",
                             "sum": {
                                 "dataPoints": [
                                     {
@@ -2104,7 +2104,7 @@
                         {
                             "name": "vcenter.resource_pool.memory.usage",
                             "description": "The usage of the memory by the resource pool.",
-                            "unit": "MBy",
+                            "unit": "MiBy",
                             "sum": {
                                 "dataPoints": [
                                     {

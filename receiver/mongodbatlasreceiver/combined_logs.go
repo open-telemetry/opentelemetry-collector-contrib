@@ -17,8 +17,8 @@ package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 
-	"github.com/hashicorp/go-multierror"
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/multierr"
 )
 
 // combindedLogsReceiver wraps alerts and log receivers in a single log receiver to be consumed by the factory
@@ -33,13 +33,13 @@ func (c *combindedLogsReceiver) Start(ctx context.Context, host component.Host) 
 
 	if c.alerts != nil {
 		if err := c.alerts.Start(ctx, host); err != nil {
-			errs = multierror.Append(errs, err)
+			errs = multierr.Append(errs, err)
 		}
 	}
 
 	if c.logs != nil {
 		if err := c.logs.Start(ctx, host); err != nil {
-			errs = multierror.Append(errs, err)
+			errs = multierr.Append(errs, err)
 		}
 	}
 
@@ -52,13 +52,13 @@ func (c *combindedLogsReceiver) Shutdown(ctx context.Context) error {
 
 	if c.alerts != nil {
 		if err := c.alerts.Shutdown(ctx); err != nil {
-			errs = multierror.Append(errs, err)
+			errs = multierr.Append(errs, err)
 		}
 	}
 
 	if c.logs != nil {
 		if err := c.logs.Shutdown(ctx); err != nil {
-			errs = multierror.Append(errs, err)
+			errs = multierr.Append(errs, err)
 		}
 	}
 

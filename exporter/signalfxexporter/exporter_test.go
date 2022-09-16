@@ -124,10 +124,9 @@ func TestConsumeMetrics(t *testing.T) {
 	m := ilm.Metrics().AppendEmpty()
 
 	m.SetName("test_gauge")
-	m.SetDataType(pmetric.MetricDataTypeGauge)
-	dp := m.Gauge().DataPoints().AppendEmpty()
-	dp.Attributes().InsertString("k0", "v0")
-	dp.Attributes().InsertString("k1", "v1")
+	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.Attributes().PutString("k0", "v0")
+	dp.Attributes().PutString("k1", "v1")
 	dp.SetDoubleVal(123)
 
 	tests := []struct {
@@ -255,18 +254,17 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		rm := out.ResourceMetrics().AppendEmpty()
 
 		if includeToken {
-			rm.Resource().Attributes().InsertString("com.splunk.signalfx.access_token", token)
+			rm.Resource().Attributes().PutString("com.splunk.signalfx.access_token", token)
 		}
 
 		ilm := rm.ScopeMetrics().AppendEmpty()
 		m := ilm.Metrics().AppendEmpty()
 
 		m.SetName("test_gauge")
-		m.SetDataType(pmetric.MetricDataTypeGauge)
 
-		dp := m.Gauge().DataPoints().AppendEmpty()
-		dp.Attributes().InsertString("k0", "v0")
-		dp.Attributes().InsertString("k1", "v1")
+		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp.Attributes().PutString("k0", "v0")
+		dp.Attributes().PutString("k1", "v1")
 		dp.SetDoubleVal(123)
 		return out
 	}
@@ -326,10 +324,9 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				m := ilm.Metrics().AppendEmpty()
 
 				m.SetName("test_gauge")
-				m.SetDataType(pmetric.MetricDataTypeGauge)
-				dp := m.Gauge().DataPoints().AppendEmpty()
-				dp.Attributes().InsertString("k0", "v0")
-				dp.Attributes().InsertString("k1", "v1")
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.Attributes().PutString("k0", "v0")
+				dp.Attributes().PutString("k1", "v1")
 				dp.SetDoubleVal(123)
 
 				return out
@@ -487,20 +484,18 @@ func makeSampleResourceLogs() plog.Logs {
 	l.SetTimestamp(pcommon.Timestamp(1000))
 	attrs := l.Attributes()
 
-	attrs.InsertString("k0", "v0")
-	attrs.InsertString("k1", "v1")
-	attrs.InsertString("k2", "v2")
+	attrs.PutString("k0", "v0")
+	attrs.PutString("k1", "v1")
+	attrs.PutString("k2", "v2")
 
-	propMapVal := pcommon.NewValueMap()
-	propMap := propMapVal.MapVal()
-	propMap.InsertString("env", "prod")
-	propMap.InsertBool("isActive", true)
-	propMap.InsertInt("rack", 5)
-	propMap.InsertDouble("temp", 40.5)
+	propMap := attrs.PutEmptyMap("com.splunk.signalfx.event_properties")
+	propMap.PutString("env", "prod")
+	propMap.PutBool("isActive", true)
+	propMap.PutInt("rack", 5)
+	propMap.PutDouble("temp", 40.5)
 	propMap.Sort()
-	attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
-	attrs.UpsertInt("com.splunk.signalfx.event_category", int64(sfxpb.EventCategory_USER_DEFINED))
-	attrs.UpsertString("com.splunk.signalfx.event_type", "shutdown")
+	attrs.PutInt("com.splunk.signalfx.event_category", int64(sfxpb.EventCategory_USER_DEFINED))
+	attrs.PutString("com.splunk.signalfx.event_type", "shutdown")
 
 	l.Attributes().Sort()
 
@@ -541,11 +536,10 @@ func TestConsumeEventData(t *testing.T) {
 				out := makeSampleResourceLogs()
 
 				attrs := out.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
-				mapAttr := pcommon.NewValueMap()
-				attrs.Insert("map", mapAttr)
+				attrs.PutEmptyMap("map")
 
 				propsAttrs, _ := attrs.Get("com.splunk.signalfx.event_properties")
-				propsAttrs.MapVal().Insert("map", mapAttr)
+				propsAttrs.MapVal().PutEmptyMap("map")
 
 				return out
 			}(),
@@ -617,8 +611,8 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 		makeSampleResourceLogs().ResourceLogs().At(0).CopyTo(out.ResourceLogs().AppendEmpty())
 
 		if includeToken {
-			out.ResourceLogs().At(0).Resource().Attributes().InsertString("com.splunk.signalfx.access_token", fromLabels)
-			out.ResourceLogs().At(1).Resource().Attributes().InsertString("com.splunk.signalfx.access_token", fromLabels)
+			out.ResourceLogs().At(0).Resource().Attributes().PutString("com.splunk.signalfx.access_token", fromLabels)
+			out.ResourceLogs().At(1).Resource().Attributes().PutString("com.splunk.signalfx.access_token", fromLabels)
 		}
 		return out
 	}
@@ -707,12 +701,11 @@ func generateLargeDPBatch() pmetric.Metrics {
 		m := ilm.Metrics().AppendEmpty()
 
 		m.SetName("test_" + strconv.Itoa(i))
-		m.SetDataType(pmetric.MetricDataTypeGauge)
 
-		dp := m.Gauge().DataPoints().AppendEmpty()
+		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
-		dp.Attributes().InsertString("k0", "v0")
-		dp.Attributes().InsertString("k1", "v1")
+		dp.Attributes().PutString("k0", "v0")
+		dp.Attributes().PutString("k1", "v1")
 		dp.SetIntVal(int64(i))
 	}
 
@@ -728,8 +721,8 @@ func generateLargeEventBatch() plog.Logs {
 	ts := time.Now()
 	for i := 0; i < batchSize; i++ {
 		lr := logs.AppendEmpty()
-		lr.Attributes().InsertString("k0", "k1")
-		lr.Attributes().Insert("com.splunk.signalfx.event_category", pcommon.NewValueEmpty())
+		lr.Attributes().PutString("k0", "k1")
+		lr.Attributes().PutEmpty("com.splunk.signalfx.event_category")
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 	}
 

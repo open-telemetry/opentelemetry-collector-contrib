@@ -1,4 +1,0 @@
-change_type: bug_fix
-component: exporter/sumologic
-note: Mark the exporter as mutating.
-issues: [13647]

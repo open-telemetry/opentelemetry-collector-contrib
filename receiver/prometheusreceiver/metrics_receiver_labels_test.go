@@ -574,10 +574,10 @@ func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []pmetric.ResourceMet
 
 	// job and instance label values should be honored from honorLabelsTarget
 	expectedAttributes := td.attributes
-	expectedAttributes.UpdateString("service.name", "honor_labels_test")
-	expectedAttributes.UpdateString("service.instance.id", "hostname:8080")
-	expectedAttributes.UpdateString("net.host.port", "8080")
-	expectedAttributes.InsertString("net.host.name", "hostname")
+	expectedAttributes.PutString("service.name", "honor_labels_test")
+	expectedAttributes.PutString("service.instance.id", "hostname:8080")
+	expectedAttributes.PutString("net.host.port", "8080")
+	expectedAttributes.PutString("net.host.name", "hostname")
 
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
 	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
@@ -661,10 +661,10 @@ func verifyRelabelJobInstance(t *testing.T, td *testData, rms []pmetric.Resource
 	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
 
 	wantAttributes := td.attributes
-	wantAttributes.UpdateString("service.name", "not-target1")
-	wantAttributes.UpdateString("service.instance.id", "relabeled-instance")
-	wantAttributes.UpdateString("net.host.port", "")
-	wantAttributes.InsertString("net.host.name", "relabeled-instance")
+	wantAttributes.PutString("service.name", "not-target1")
+	wantAttributes.PutString("service.instance.id", "relabeled-instance")
+	wantAttributes.PutString("net.host.port", "")
+	wantAttributes.PutString("net.host.name", "relabeled-instance")
 
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
 	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
@@ -711,8 +711,8 @@ func verifyTargetInfoResourceAttributes(t *testing.T, td *testData, rms []pmetri
 	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
 
 	wantAttributes := td.attributes
-	wantAttributes.InsertString("foo", "bar")
-	wantAttributes.InsertString("team", "infra")
+	wantAttributes.PutString("foo", "bar")
+	wantAttributes.PutString("team", "infra")
 
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
 	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()

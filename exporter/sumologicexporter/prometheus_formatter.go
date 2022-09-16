@@ -56,7 +56,7 @@ func (f *prometheusFormatter) tags2String(attr pcommon.Map, labels pcommon.Map) 
 	mergedAttributes := pcommon.NewMap()
 	attr.CopyTo(mergedAttributes)
 	labels.Range(func(k string, v pcommon.Value) bool {
-		mergedAttributes.UpsertString(k, v.StringVal())
+		mergedAttributes.PutString(k, v.StringVal())
 		return true
 	})
 	length := mergedAttributes.Len()
@@ -228,7 +228,7 @@ func (f *prometheusFormatter) summary2Strings(record metricPair) []string {
 			q := qs.At(i)
 			newAttr := pcommon.NewMap()
 			record.attributes.CopyTo(newAttr)
-			newAttr.UpsertDouble(prometheusQuantileTag, q.Quantile())
+			newAttr.PutDouble(prometheusQuantileTag, q.Quantile())
 			line := f.doubleValueLine(
 				record.metric.Name(),
 				q.Value(),
@@ -276,7 +276,7 @@ func (f *prometheusFormatter) histogram2Strings(record metricPair) []string {
 			cumulative += dp.BucketCounts().At(i)
 			newAttr := pcommon.NewMap()
 			record.attributes.CopyTo(newAttr)
-			newAttr.UpsertDouble(prometheusLeTag, explicitBounds.At(i))
+			newAttr.PutDouble(prometheusLeTag, explicitBounds.At(i))
 
 			line := f.uintValueLine(
 				record.metric.Name(),
@@ -290,7 +290,7 @@ func (f *prometheusFormatter) histogram2Strings(record metricPair) []string {
 		cumulative += dp.BucketCounts().At(explicitBounds.Len())
 		newAttr := pcommon.NewMap()
 		record.attributes.CopyTo(newAttr)
-		newAttr.UpsertString(prometheusLeTag, prometheusInfValue)
+		newAttr.PutString(prometheusLeTag, prometheusInfValue)
 		line := f.uintValueLine(
 			record.metric.Name(),
 			cumulative,

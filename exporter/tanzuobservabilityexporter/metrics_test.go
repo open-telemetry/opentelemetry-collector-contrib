@@ -664,9 +664,9 @@ func TestCumulativeHistogramDataPointConsumer(t *testing.T) {
 	histogramDataPoint := pmetric.NewHistogramDataPoint()
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
 	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
-	histogramDataPoint.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{2.0, 5.0, 10.0}))
-	histogramDataPoint.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{5, 1, 3, 2}))
-	histogramDataPoint.Attributes().UpsertString("foo", "bar")
+	histogramDataPoint.ExplicitBounds().FromRaw([]float64{2.0, 5.0, 10.0})
+	histogramDataPoint.BucketCounts().FromRaw([]uint64{5, 1, 3, 2})
+	histogramDataPoint.Attributes().PutString("foo", "bar")
 	sender := &mockGaugeSender{}
 	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
 	consumer := newCumulativeHistogramDataPointConsumer(sender)
@@ -712,8 +712,8 @@ func TestCumulativeHistogramDataPointConsumerError(t *testing.T) {
 	histogramDataPoint := pmetric.NewHistogramDataPoint()
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
 	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
-	histogramDataPoint.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{2.0, 5.0, 10.0}))
-	histogramDataPoint.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{5, 1, 3, 2}))
+	histogramDataPoint.ExplicitBounds().FromRaw([]float64{2.0, 5.0, 10.0})
+	histogramDataPoint.BucketCounts().FromRaw([]uint64{5, 1, 3, 2})
 	sender := &mockGaugeSender{errorOnSend: true}
 	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
 	consumer := newCumulativeHistogramDataPointConsumer(sender)
@@ -729,9 +729,9 @@ func TestCumulativeHistogramDataPointConsumerLeInUse(t *testing.T) {
 	metric := newMetric("a.metric", pmetric.MetricDataTypeHistogram)
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
 	histogramDataPoint := pmetric.NewHistogramDataPoint()
-	histogramDataPoint.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{10.0}))
-	histogramDataPoint.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{4, 12}))
-	histogramDataPoint.Attributes().UpsertInt("le", 8)
+	histogramDataPoint.ExplicitBounds().FromRaw([]float64{10.0})
+	histogramDataPoint.BucketCounts().FromRaw([]uint64{4, 12})
+	histogramDataPoint.Attributes().PutInt("le", 8)
 	sender := &mockGaugeSender{}
 	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
 	consumer := newCumulativeHistogramDataPointConsumer(sender)
@@ -781,10 +781,10 @@ func TestDeltaHistogramDataPointConsumer(t *testing.T) {
 	histogramDataPoint := pmetric.NewHistogramDataPoint()
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
 	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
-	histogramDataPoint.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{2.0, 5.0, 10.0}))
-	histogramDataPoint.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{5, 1, 3, 2}))
+	histogramDataPoint.ExplicitBounds().FromRaw([]float64{2.0, 5.0, 10.0})
+	histogramDataPoint.BucketCounts().FromRaw([]uint64{5, 1, 3, 2})
 	setDataPointTimestamp(1631234567, histogramDataPoint)
-	histogramDataPoint.Attributes().UpsertString("bar", "baz")
+	histogramDataPoint.Attributes().PutString("bar", "baz")
 	sender := &mockDistributionSender{}
 	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
 	consumer := newDeltaHistogramDataPointConsumer(sender)
@@ -820,8 +820,8 @@ func TestDeltaHistogramDataPointConsumer_OneBucket(t *testing.T) {
 	histogramDataPoint := pmetric.NewHistogramDataPoint()
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
 	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
-	histogramDataPoint.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{}))
-	histogramDataPoint.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{17}))
+	histogramDataPoint.ExplicitBounds().FromRaw([]float64{})
+	histogramDataPoint.BucketCounts().FromRaw([]uint64{17})
 	setDataPointTimestamp(1641234567, histogramDataPoint)
 	sender := &mockDistributionSender{}
 	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
@@ -853,8 +853,8 @@ func TestDeltaHistogramDataPointConsumerError(t *testing.T) {
 	histogramDataPoint := pmetric.NewHistogramDataPoint()
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
 	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
-	histogramDataPoint.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{2.0, 5.0, 10.0}))
-	histogramDataPoint.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{5, 1, 3, 2}))
+	histogramDataPoint.ExplicitBounds().FromRaw([]float64{2.0, 5.0, 10.0})
+	histogramDataPoint.BucketCounts().FromRaw([]uint64{5, 1, 3, 2})
 	sender := &mockDistributionSender{errorOnSend: true}
 	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
 	consumer := newDeltaHistogramDataPointConsumer(sender)
@@ -890,14 +890,14 @@ func TestSummaries(t *testing.T) {
 	mi := metricInfo{Metric: summaryMetric, Source: "test_source", SourceKey: "host.name"}
 	dataPoint := dataPoints.AppendEmpty()
 	setQuantileValues(dataPoint, 0.1, 100.0, 0.5, 200.0, 0.9, 300.0, 0.99, 400.0)
-	dataPoint.Attributes().UpsertString("foo", "bar")
+	dataPoint.Attributes().PutString("foo", "bar")
 	dataPoint.SetCount(10)
 	dataPoint.SetSum(5000.0)
 	setDataPointTimestamp(1645123456, dataPoint)
 
 	dataPoint = dataPoints.AppendEmpty()
 	setQuantileValues(dataPoint, 0.2, 75.0, 0.5, 125.0, 0.8, 175.0, 0.95, 225.0)
-	dataPoint.Attributes().UpsertString("bar", "baz")
+	dataPoint.Attributes().PutString("bar", "baz")
 	dataPoint.SetCount(15)
 	dataPoint.SetSum(3000.0)
 	setDataPointTimestamp(1645123556, dataPoint)
@@ -1010,7 +1010,7 @@ func TestSummaries_QuantileTagExists(t *testing.T) {
 	mi := metricInfo{Metric: summaryMetric, Source: "test_source", SourceKey: "host.name"}
 	dataPoint := dataPoints.AppendEmpty()
 	setQuantileValues(dataPoint, 0.5, 300.0)
-	dataPoint.Attributes().UpsertString("quantile", "exists")
+	dataPoint.Attributes().PutString("quantile", "exists")
 	dataPoint.SetCount(12)
 	dataPoint.SetSum(4000.0)
 	setDataPointTimestamp(1650123456, dataPoint)
@@ -1105,12 +1105,12 @@ func TestExponentialHistogramDataPoint(t *testing.T) {
 	dataPoint := pmetric.NewExponentialHistogramDataPoint()
 	dataPoint.SetScale(1)
 	dataPoint.Negative().SetOffset(6)
-	dataPoint.Negative().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{15, 16, 17}))
+	dataPoint.Negative().BucketCounts().FromRaw([]uint64{15, 16, 17})
 	dataPoint.Positive().SetOffset(3)
-	dataPoint.Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{5, 6, 7, 8}))
+	dataPoint.Positive().BucketCounts().FromRaw([]uint64{5, 6, 7, 8})
 	dataPoint.SetZeroCount(2)
-	dataPoint.Attributes().UpsertString("foo", "bar")
-	dataPoint.Attributes().UpsertString("baz", "7")
+	dataPoint.Attributes().PutString("foo", "bar")
+	dataPoint.Attributes().PutString("baz", "7")
 	setDataPointTimestamp(1640198765, dataPoint)
 	point := fromOtelExponentialHistogramDataPoint(dataPoint)
 	assertBuckets(
@@ -1208,8 +1208,8 @@ func newHistogramMetricWithDataPoints(
 	aHistogram.DataPoints().EnsureCapacity(len(numBucketCountsForEachDataPoint))
 	for _, count := range numBucketCountsForEachDataPoint {
 		point := aHistogram.DataPoints().AppendEmpty()
-		point.SetBucketCounts(pcommon.NewImmutableUInt64Slice(make([]uint64, count)))
-		point.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(make([]float64, count-1)))
+		point.BucketCounts().FromRaw(make([]uint64, count))
+		point.ExplicitBounds().FromRaw(make([]float64, count-1))
 	}
 	return result
 }
@@ -1226,8 +1226,8 @@ func newExponentialHistogramMetricWithDataPoints(
 	aHistogram.DataPoints().EnsureCapacity(len(positiveAndNegativeBucketCountsForEachDataPoint))
 	for _, count := range positiveAndNegativeBucketCountsForEachDataPoint {
 		point := aHistogram.DataPoints().AppendEmpty()
-		point.Negative().SetBucketCounts(pcommon.NewImmutableUInt64Slice(make([]uint64, count)))
-		point.Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice(make([]uint64, count)))
+		point.Negative().BucketCounts().FromRaw(make([]uint64, count))
+		point.Positive().BucketCounts().FromRaw(make([]uint64, count))
 	}
 	return result
 }
@@ -1297,7 +1297,7 @@ func constructMetricsWithTags(tags map[string]string, metricList ...pmetric.Metr
 	result.ResourceMetrics().EnsureCapacity(1)
 	rm := result.ResourceMetrics().AppendEmpty()
 	for key, val := range tags {
-		rm.Resource().Attributes().InsertString(key, val)
+		rm.Resource().Attributes().PutString(key, val)
 	}
 	rm.ScopeMetrics().EnsureCapacity(1)
 	ilm := rm.ScopeMetrics().AppendEmpty()
@@ -1311,7 +1311,18 @@ func constructMetricsWithTags(tags map[string]string, metricList ...pmetric.Metr
 func newMetric(name string, typ pmetric.MetricDataType) pmetric.Metric {
 	result := pmetric.NewMetric()
 	result.SetName(name)
-	result.SetDataType(typ)
+	switch typ {
+	case pmetric.MetricDataTypeGauge:
+		result.SetEmptyGauge()
+	case pmetric.MetricDataTypeSum:
+		result.SetEmptySum()
+	case pmetric.MetricDataTypeHistogram:
+		result.SetEmptyHistogram()
+	case pmetric.MetricDataTypeExponentialHistogram:
+		result.SetEmptyExponentialHistogram()
+	case pmetric.MetricDataTypeSummary:
+		result.SetEmptySummary()
+	}
 	return result
 }
 
@@ -1326,7 +1337,7 @@ func addDataPoint(
 		setDataPointValue(value, dataPoint)
 	}
 	setDataPointTimestamp(ts, dataPoint)
-	pcommon.NewMapFromRaw(tags).CopyTo(dataPoint.Attributes())
+	dataPoint.Attributes().FromRaw(tags)
 }
 
 type dataPointWithTimestamp interface {

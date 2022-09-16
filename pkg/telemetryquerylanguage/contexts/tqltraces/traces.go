@@ -211,11 +211,11 @@ func accessStringSpanID() tql.StandardGetSetter {
 func accessTraceState() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return (string)(ctx.GetItem().(ptrace.Span).TraceState())
+			return ctx.GetItem().(ptrace.Span).TraceStateStruct().AsRaw()
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.GetItem().(ptrace.Span).SetTraceState(ptrace.TraceState(str))
+				ctx.GetItem().(ptrace.Span).TraceStateStruct().FromRaw(str)
 			}
 		},
 	}
@@ -224,16 +224,16 @@ func accessTraceState() tql.StandardGetSetter {
 func accessTraceStateKey(mapKey *string) tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			if ts, err := trace.ParseTraceState(string(ctx.GetItem().(ptrace.Span).TraceState())); err == nil {
+			if ts, err := trace.ParseTraceState(ctx.GetItem().(ptrace.Span).TraceStateStruct().AsRaw()); err == nil {
 				return ts.Get(*mapKey)
 			}
 			return nil
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				if ts, err := trace.ParseTraceState(string(ctx.GetItem().(ptrace.Span).TraceState())); err == nil {
+				if ts, err := trace.ParseTraceState(ctx.GetItem().(ptrace.Span).TraceStateStruct().AsRaw()); err == nil {
 					if updated, err := ts.Insert(*mapKey, str); err == nil {
-						ctx.GetItem().(ptrace.Span).SetTraceState(ptrace.TraceState(updated.String()))
+						ctx.GetItem().(ptrace.Span).TraceStateStruct().FromRaw(updated.String())
 					}
 				}
 			}
@@ -450,7 +450,7 @@ func parseSpanID(spanIDStr string) (pcommon.SpanID, error) {
 	}
 	var idArr [8]byte
 	copy(idArr[:8], id)
-	return pcommon.NewSpanID(idArr), nil
+	return pcommon.SpanID(idArr), nil
 }
 
 func parseTraceID(traceIDStr string) (pcommon.TraceID, error) {
@@ -463,5 +463,5 @@ func parseTraceID(traceIDStr string) (pcommon.TraceID, error) {
 	}
 	var idArr [16]byte
 	copy(idArr[:16], id)
-	return pcommon.NewTraceID(idArr), nil
+	return pcommon.TraceID(idArr), nil
 }

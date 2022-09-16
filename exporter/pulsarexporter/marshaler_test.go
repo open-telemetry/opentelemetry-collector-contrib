@@ -97,8 +97,8 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 	span.SetName(t.Name())
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(time.Second)))
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7}))
-	span.SetParentSpanID(pcommon.NewSpanID([8]byte{8, 9, 10, 11, 12, 13, 14}))
+	span.SetSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
+	span.SetParentSpanID([8]byte{8, 9, 10, 11, 12, 13, 14})
 
 	marshaler, ok := tracesMarshalers()["otlp_json"]
 	require.True(t, ok, "Must have otlp json marshaller")

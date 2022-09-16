@@ -26,8 +26,9 @@ import (
 // BaseConfig is the common configuration of a stanza-based receiver
 type BaseConfig struct {
 	config.ReceiverSettings `mapstructure:",squash"`
-	Operators               OperatorConfigs `mapstructure:"operators"`
-	Converter               ConverterConfig `mapstructure:"converter"`
+	Operators               OperatorConfigs     `mapstructure:"operators"`
+	Converter               ConverterConfig     `mapstructure:"converter"`
+	StorageID               *config.ComponentID `mapstructure:"storage"`
 }
 
 // OperatorConfigs is an alias that allows for unmarshaling outside of mapstructure
@@ -50,10 +51,6 @@ type ConverterConfig struct {
 	WorkerCount int `mapstructure:"worker_count"`
 }
 
-// InputConfig is an alias that allows unmarshaling outside of mapstructure
-// This is meant to be used only for the input operator
-type InputConfig map[string]interface{}
-
 // decodeOperatorConfigs is an unmarshaling workaround for stanza operators
 // This is needed only until stanza operators are migrated to mapstructure
 func (cfg BaseConfig) DecodeOperatorConfigs() ([]operator.Config, error) {
@@ -62,7 +59,7 @@ func (cfg BaseConfig) DecodeOperatorConfigs() ([]operator.Config, error) {
 	}
 
 	yamlBytes, _ := yaml.Marshal(cfg.Operators)
-	operatorCfgs := []operator.Config{}
+	var operatorCfgs []operator.Config
 	if err := yaml.Unmarshal(yamlBytes, &operatorCfgs); err != nil {
 		return nil, err
 	}

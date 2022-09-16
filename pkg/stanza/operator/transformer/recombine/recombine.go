@@ -30,7 +30,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-const operatorType = "recombine"
+const (
+	operatorType       = "recombine"
+	defaultCombineWith = "\n"
+)
 
 func init() {
 	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
@@ -47,7 +50,7 @@ func NewConfigWithID(operatorID string) *Config {
 		TransformerConfig: helper.NewTransformerConfig(operatorID, operatorType),
 		MaxBatchSize:      1000,
 		MaxSources:        1000,
-		CombineWith:       "\n",
+		CombineWith:       defaultCombineWith,
 		OverwriteWith:     "oldest",
 		ForceFlushTimeout: 5 * time.Second,
 		SourceIdentifier:  entry.NewAttributeField("file.path"),
@@ -56,16 +59,16 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a recombine operator
 type Config struct {
-	helper.TransformerConfig `yaml:",inline"`
-	IsFirstEntry             string        `json:"is_first_entry"     yaml:"is_first_entry"`
-	IsLastEntry              string        `json:"is_last_entry"      yaml:"is_last_entry"`
-	MaxBatchSize             int           `json:"max_batch_size"     yaml:"max_batch_size"`
-	CombineField             entry.Field   `json:"combine_field"      yaml:"combine_field"`
-	CombineWith              string        `json:"combine_with"       yaml:"combine_with"`
-	SourceIdentifier         entry.Field   `json:"source_identifier"  yaml:"source_identifier"`
-	OverwriteWith            string        `json:"overwrite_with"     yaml:"overwrite_with"`
-	ForceFlushTimeout        time.Duration `json:"force_flush_period" yaml:"force_flush_period"`
-	MaxSources               int           `json:"max_sources"        yaml:"max_sources"`
+	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
+	IsFirstEntry             string        `mapstructure:"is_first_entry"     json:"is_first_entry"     yaml:"is_first_entry"`
+	IsLastEntry              string        `mapstructure:"is_last_entry"      json:"is_last_entry"      yaml:"is_last_entry"`
+	MaxBatchSize             int           `mapstructure:"max_batch_size"     json:"max_batch_size"     yaml:"max_batch_size"`
+	CombineField             entry.Field   `mapstructure:"combine_field"      json:"combine_field"      yaml:"combine_field"`
+	CombineWith              string        `mapstructure:"combine_with"       json:"combine_with"       yaml:"combine_with"`
+	SourceIdentifier         entry.Field   `mapstructure:"source_identifier"  json:"source_identifier"  yaml:"source_identifier"`
+	OverwriteWith            string        `mapstructure:"overwrite_with"     json:"overwrite_with"     yaml:"overwrite_with"`
+	ForceFlushTimeout        time.Duration `mapstructure:"force_flush_period" json:"force_flush_period" yaml:"force_flush_period"`
+	MaxSources               int           `mapstructure:"max_sources"        json:"max_sources"        yaml:"max_sources"`
 }
 
 // Build creates a new Transformer from a config

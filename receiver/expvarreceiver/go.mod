@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvar
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.58.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.60.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.58.1-0.20220829231818-9ba35cd40b46
-	go.opentelemetry.io/collector/pdata v0.58.1-0.20220829231818-9ba35cd40b46
+	go.opentelemetry.io/collector v0.60.0
+	go.opentelemetry.io/collector/pdata v0.60.0
 )
 
 require (

@@ -99,7 +99,7 @@ func TestNewECSInfo(t *testing.T) {
 	taskinfoCreatorOpt := func(ei *EcsInfo) {
 		ei.ecsTaskInfoCreator = func(context.Context, hostIPProvider, time.Duration, *zap.Logger, doer,
 			chan bool) ecsTaskInfoProvider {
-			tasks := []ECSTask{}
+			var tasks []ECSTask
 			return &MockTaskInfo{
 				tasks:            tasks,
 				runningTaskCount: int64(2),

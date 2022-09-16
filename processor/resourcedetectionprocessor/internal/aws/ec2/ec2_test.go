@@ -139,15 +139,15 @@ func TestDetector_Detect(t *testing.T) {
 			want: func() pcommon.Resource {
 				res := pcommon.NewResource()
 				attr := res.Attributes()
-				attr.InsertString("cloud.account.id", "account1234")
-				attr.InsertString("cloud.provider", "aws")
-				attr.InsertString("cloud.platform", "aws_ec2")
-				attr.InsertString("cloud.region", "us-west-2")
-				attr.InsertString("cloud.availability_zone", "us-west-2a")
-				attr.InsertString("host.id", "i-abcd1234")
-				attr.InsertString("host.image.id", "abcdef")
-				attr.InsertString("host.type", "c4.xlarge")
-				attr.InsertString("host.name", "example-hostname")
+				attr.PutString("cloud.account.id", "account1234")
+				attr.PutString("cloud.provider", "aws")
+				attr.PutString("cloud.platform", "aws_ec2")
+				attr.PutString("cloud.region", "us-west-2")
+				attr.PutString("cloud.availability_zone", "us-west-2a")
+				attr.PutString("host.id", "i-abcd1234")
+				attr.PutString("host.image.id", "abcdef")
+				attr.PutString("host.type", "c4.xlarge")
+				attr.PutString("host.name", "example-hostname")
 				return res
 			}()},
 		{
