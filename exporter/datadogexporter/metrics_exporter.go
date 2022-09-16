@@ -114,7 +114,7 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 		return nil, err
 	}
 
-	transformer, err := metrics.NewInfraTransformer(ctx, params)
+	transformer, err := metrics.NewInfraTransformer(ctx, params, cfg.ExporterSettings.ID())
 	if err != nil {
 		return nil, err
 	}

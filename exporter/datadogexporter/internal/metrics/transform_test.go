@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
@@ -27,7 +28,8 @@ import (
 )
 
 func TestYAML(t *testing.T) {
-	cfg, err := yamlToConfig()
+	var cfg metricstransformprocessor.Config
+	err := yamlToConfig(&cfg)
 	require.NoError(t, err)
 	require.EqualValues(t, cfg.Transforms, []metricstransformprocessor.Transform{
 		{
@@ -255,7 +257,7 @@ func TestTransformer(t *testing.T) {
 
 func TestTransformFunc(t *testing.T) {
 	ctx := context.Background()
-	transformer, err := NewInfraTransformer(ctx, component.ExporterCreateSettings{})
+	transformer, err := NewInfraTransformer(ctx, component.ExporterCreateSettings{}, config.NewComponentID("test"))
 	if err != nil {
 		t.Fatal(err)
 	}

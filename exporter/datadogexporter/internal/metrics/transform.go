@@ -47,11 +47,15 @@ func (t *Transformer) Has(name string) bool {
 	return ok
 }
 
-// NewInfraTransformFunc returns a new TransformFunc which converts OpenTelemetry system and process metrics
-// to Datadog compatible ones.
-func NewInfraTransformer(ctx context.Context, set component.ExporterCreateSettings) (*Transformer, error) {
-	cfg, err := yamlToConfig()
-	if err != nil {
+// NewInfraTransformer returns a new Transformer which converts OpenTelemetry system and process metrics
+// to Datadog compatible ones. It is be based on the given ExporterCreateSettings and its name is derived
+// from the given component id.
+func NewInfraTransformer(ctx context.Context, set component.ExporterCreateSettings, id config.ComponentID) (*Transformer, error) {
+	cid := config.NewComponentIDWithName(config.MetricsDataType, id.String()+"/infra-metricstransformer")
+	cfg := &metricstransformprocessor.Config{
+		ProcessorSettings: config.NewProcessorSettings(cid),
+	}
+	if err := yamlToConfig(cfg); err != nil {
 		return nil, fmt.Errorf("error unmarshalling yaml to config: %w", err)
 	}
 	pset := component.ProcessorCreateSettings(set)
@@ -79,19 +83,12 @@ func NewInfraTransformer(ctx context.Context, set component.ExporterCreateSettin
 	return &transformer, err
 }
 
-func yamlToConfig() (*metricstransformprocessor.Config, error) {
+func yamlToConfig(cfg *metricstransformprocessor.Config) error {
 	var raw map[string]interface{}
 	if err := yaml.Unmarshal(transformYaml, &raw); err != nil {
-		return nil, err
+		return err
 	}
-	cid := config.NewComponentIDWithName(config.MetricsDataType, "dd-infra-metricstransformer")
-	cfg := &metricstransformprocessor.Config{
-		ProcessorSettings: config.NewProcessorSettings(cid),
-	}
-	if err := confmap.NewFromStringMap(raw).Unmarshal(&cfg); err != nil {
-		return nil, err
-	}
-	return cfg, nil
+	return confmap.NewFromStringMap(raw).Unmarshal(&cfg)
 }
 
 var transformYaml = []byte(`
