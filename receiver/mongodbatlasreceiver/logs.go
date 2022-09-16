@@ -15,9 +15,7 @@
 package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 
 import (
-	"compress/gzip"
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
 	"net"
@@ -219,26 +217,8 @@ func (s *logsReceiver) getHostAuditLogs(groupID, hostname, logName string) ([]mo
 	if err != nil {
 		return nil, err
 	}
-	reader, err := gzip.NewReader(buf)
-	if err != nil {
-		return nil, err
-	}
 
-	dec := json.NewDecoder(reader)
-
-	var entries []model.AuditLog
-	for {
-		var entry model.AuditLog
-		err := dec.Decode(&entry)
-		if errors.Is(err, io.EOF) {
-			return entries, nil
-		}
-		if err != nil {
-			s.log.Error("Entry could not be decoded into LogEntry", zap.Error(err))
-		}
-
-		entries = append(entries, entry)
-	}
+	return decodeAuditJSON(buf)
 }
 
 func (s *logsReceiver) collectLogs(pc ProjectContext, hostname, logName, clusterName, clusterMajorVersion string) {
