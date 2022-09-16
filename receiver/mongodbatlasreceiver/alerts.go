@@ -38,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
@@ -75,7 +76,7 @@ type alertsReceiver struct {
 	publicKey     string
 	retrySettings exporterhelper.RetrySettings
 	pollInterval  time.Duration
-	cache         buntdb.DB
+	cache         *buntdb.DB
 }
 
 func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer.Logs) (*alertsReceiver, error) {
@@ -136,7 +137,11 @@ func (a alertsReceiver) startRetrieving(ctx context.Context, host component.Host
 	// may want to consider using disk storage for tracking which alerts have been sent
 	// or may want to revisit how we get alerts
 	// this is a memory cache used to keep track of unupdated alerts
-	a.cache = buntdb.Open(":memory:")
+	cache, err := buntdb.Open(":memory:")
+	if err != nil {
+		return fmt.Errorf("unable to initialize cache for retrieval client: %w", err)
+	}
+	a.cache = cache
 
 	var alerts []mongodbatlas.Alert
 	for _, p := range a.projects {
@@ -287,28 +292,87 @@ func (a alertsReceiver) shutdownRetriever(ctx context.Context) error {
 func (a alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatlas.Alert) (plog.Logs, error) {
 	logs := plog.NewLogs()
 
+	var errs error
 	for _, alert := range alerts {
 		if a.hasProcessed(alert) {
-
+			continue
 		}
 
 		resourceLogs := logs.ResourceLogs().AppendEmpty()
 		logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		logRecord.SetObservedTimestamp(now)
 
-		var ts pcommon.Timestamp
-		// Possible values are: TRACKING, OPEN, CLOSED, CANCELLED
-		switch alert.Status {
-			case ""
+		ts, err := time.Parse(time.RFC3339, alert.Updated)
+		if err != nil {
+			a.logger.Warn(fmt.Sprintf("unable to interpret updated time for alert with timestamp: %s. Expecting a RFC3339 timestamp", alert.Updated))
+			continue
 		}
-		parsedTime := time.Parse("", alert.Created)
-		logRecord.SetTimestamp(pcommon.NewTimestampFromTime()
-		logRecord.SetSeverityNumber(severityFromAlert(alert))
-		// this could be fairly expensive to do, maybe should evaulate
-		logRecord.Body().SetStringVal(string(payload))
 
+		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+		logRecord.SetSeverityNumber(severityFromAPIAlert(alert))
+		// this could be fairly expensive to do, maybe should evaulate
+		bodyBytes, err := json.Marshal(alert)
+		if err != nil {
+			a.logger.Warn(fmt.Sprintf("unable to marshal alert into a body string"))
+			continue
+		}
+
+		logRecord.Body().SetStringVal(string(bodyBytes))
+
+		resourceAttrs := resourceLogs.Resource().Attributes()
+		resourceAttrs.PutString("mongodbatlas.group.id", alert.GroupID)
+		resourceAttrs.PutString("mongodbatlas.alert.config.id", alert.AlertConfigID)
+		putStringToMapNotNil(resourceAttrs, "mongodbatlas.cluster.name", &alert.ClusterName)
+		putStringToMapNotNil(resourceAttrs, "mongodbatlas.replica_set.name", &alert.ReplicaSetName)
+
+		attrs := logRecord.Attributes()
+		// These attributes are always present
+		attrs.PutString("event.domain", "mongodbatlas")
+		attrs.PutString("event.name", alert.EventTypeName)
+		attrs.PutString("status", alert.Status)
+		attrs.PutString("created", alert.Created)
+		attrs.PutString("updated", alert.Updated)
+		attrs.PutString("id", alert.ID)
+
+		// These attributes are optional and may not be present, depending on the alert type.
+		putStringToMapNotNil(attrs, "metric.name", &alert.MetricName)
+		putStringToMapNotNil(attrs, "type_name", &alert.EventTypeName)
+		putStringToMapNotNil(attrs, "last_notified", &alert.LastNotified)
+		putStringToMapNotNil(attrs, "resolved", &alert.Resolved)
+		putStringToMapNotNil(attrs, "acknowledgement.comment", &alert.AcknowledgementComment)
+		putStringToMapNotNil(attrs, "acknowledgement.username", &alert.AcknowledgingUsername)
+		putStringToMapNotNil(attrs, "acknowledgement.until", &alert.AcknowledgedUntil)
+
+		if alert.CurrentValue != nil {
+			attrs.PutDouble("metric.value", *alert.CurrentValue.Number)
+			attrs.PutString("metric.units", alert.CurrentValue.Units)
+		}
+
+		host, portStr, err := net.SplitHostPort(*&alert.HostnameAndPort)
+		if err != nil {
+			errs = multierr.Append(errs, fmt.Errorf("failed to split host:port %s: %w", *&alert.HostnameAndPort, err))
+			continue
+		}
+
+		port, err := strconv.ParseInt(portStr, 10, 64)
+		if err != nil {
+			errs = multierr.Append(errs, fmt.Errorf("failed to parse port %s: %w", portStr, err))
+			continue
+		}
+
+		attrs.PutString("net.peer.name", host)
+		attrs.PutInt("net.peer.port", port)
+
+		errs = multierr.Append(errs, a.cache.Update(func(tx *buntdb.Tx) error {
+			_, _, err := tx.Set(alertKey(alert), "processed", &buntdb.SetOptions{
+				Expires: true,
+				TTL:     30 * time.Minute,
+			})
+			return err
+		}))
 	}
 
+	return logs, errs
 }
 
 func verifyHMACSignature(secret string, payload []byte, signatureHeader string) error {
@@ -425,6 +489,16 @@ func timestampFromAlert(a model.Alert) pcommon.Timestamp {
 func severityFromAlert(a model.Alert) plog.SeverityNumber {
 	// Status is defined here: https://www.mongodb.com/docs/atlas/reference/api/alerts-get-alert/#response-elements
 	// It may also be "INFORMATIONAL" for single-fire alerts (events)
+	switch a.Status {
+	case "OPEN":
+		return plog.SeverityNumberWarn
+	default:
+		return plog.SeverityNumberInfo
+	}
+}
+
+// severityFromAPIAlert is a workaround for shared types between the API and the model
+func severityFromAPIAlert(a mongodbatlas.Alert) plog.SeverityNumber {
 	switch a.Status {
 	case "OPEN":
 		return plog.SeverityNumberWarn
