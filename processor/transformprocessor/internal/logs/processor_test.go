@@ -133,7 +133,7 @@ func TestProcess(t *testing.T) {
 					"get")
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("http.path",
 					"/health")
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString("flags",
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("flags",
 					"A|B|C")
 			},
 		},
@@ -143,7 +143,7 @@ func TestProcess(t *testing.T) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("http.url",
 					"http://localhost/health")
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString("flags",
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("flags",
 					"A|B|C")
 			},
 		},
@@ -156,25 +156,22 @@ func TestProcess(t *testing.T) {
 		{
 			query: `set(attributes["test"], Split(attributes["flags"], "|"))`,
 			want: func(td plog.Logs) {
-				v1 := pcommon.NewValueSlice()
-				v1.SliceVal().AppendEmpty().SetStringVal("A")
-				v1.SliceVal().AppendEmpty().SetStringVal("B")
-				v1.SliceVal().AppendEmpty().SetStringVal("C")
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Insert("test", v1)
-				v2 := pcommon.NewValueSlice()
-				v2.SliceVal().AppendEmpty().SetStringVal("C")
-				v2.SliceVal().AppendEmpty().SetStringVal("D")
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().Insert("test", v2)
+				v1 := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutEmptySlice("test")
+				v1.AppendEmpty().SetStringVal("A")
+				v1.AppendEmpty().SetStringVal("B")
+				v1.AppendEmpty().SetStringVal("C")
+				v2 := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutEmptySlice("test")
+				v2.AppendEmpty().SetStringVal("C")
+				v2.AppendEmpty().SetStringVal("D")
 			},
 		},
 		{
 			query: `set(attributes["test"], Split(attributes["flags"], "|")) where body == "operationA"`,
 			want: func(td plog.Logs) {
-				newValue := pcommon.NewValueSlice()
-				newValue.SliceVal().AppendEmpty().SetStringVal("A")
-				newValue.SliceVal().AppendEmpty().SetStringVal("B")
-				newValue.SliceVal().AppendEmpty().SetStringVal("C")
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Insert("test", newValue)
+				newValue := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutEmptySlice("test")
+				newValue.AppendEmpty().SetStringVal("A")
+				newValue.AppendEmpty().SetStringVal("B")
+				newValue.AppendEmpty().SetStringVal("C")
 			},
 		},
 		{

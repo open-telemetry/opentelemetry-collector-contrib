@@ -276,28 +276,33 @@ func TestProcess(t *testing.T) {
 		{
 			query: []string{`set(attributes["test"], Split(attributes["flags"], "|"))`},
 			want: func(td pmetric.Metrics) {
-				v1 := pcommon.NewValueSlice()
-				v1.SliceVal().AppendEmpty().SetStringVal("A")
-				v1.SliceVal().AppendEmpty().SetStringVal("B")
-				v1.SliceVal().AppendEmpty().SetStringVal("C")
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Insert("test", v1)
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().Insert("test", v1)
-				v2 := pcommon.NewValueSlice()
-				v2.SliceVal().AppendEmpty().SetStringVal("C")
-				v2.SliceVal().AppendEmpty().SetStringVal("D")
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().Insert("test", v2)
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().Insert("test", v2)
+				v00 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutEmptySlice("test")
+				v00.AppendEmpty().SetStringVal("A")
+				v00.AppendEmpty().SetStringVal("B")
+				v00.AppendEmpty().SetStringVal("C")
+				v01 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutEmptySlice("test")
+				v01.AppendEmpty().SetStringVal("A")
+				v01.AppendEmpty().SetStringVal("B")
+				v01.AppendEmpty().SetStringVal("C")
+				v10 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().PutEmptySlice("test")
+				v10.AppendEmpty().SetStringVal("C")
+				v10.AppendEmpty().SetStringVal("D")
+				v11 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().PutEmptySlice("test")
+				v11.AppendEmpty().SetStringVal("C")
+				v11.AppendEmpty().SetStringVal("D")
 			},
 		},
 		{
 			query: []string{`set(attributes["test"], Split(attributes["flags"], "|")) where metric.name == "operationA"`},
 			want: func(td pmetric.Metrics) {
-				v := pcommon.NewValueSlice()
-				v.SliceVal().AppendEmpty().SetStringVal("A")
-				v.SliceVal().AppendEmpty().SetStringVal("B")
-				v.SliceVal().AppendEmpty().SetStringVal("C")
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Insert("test", v)
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().Insert("test", v)
+				v00 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutEmptySlice("test")
+				v00.AppendEmpty().SetStringVal("A")
+				v00.AppendEmpty().SetStringVal("B")
+				v00.AppendEmpty().SetStringVal("C")
+				v01 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutEmptySlice("test")
+				v01.AppendEmpty().SetStringVal("A")
+				v01.AppendEmpty().SetStringVal("B")
+				v01.AppendEmpty().SetStringVal("C")
 			},
 		},
 		{

@@ -196,25 +196,22 @@ func TestProcess(t *testing.T) {
 		{
 			query: `set(attributes["test"], Split(attributes["flags"], "|"))`,
 			want: func(td ptrace.Traces) {
-				v1 := pcommon.NewValueSlice()
-				v1.SliceVal().AppendEmpty().SetStringVal("A")
-				v1.SliceVal().AppendEmpty().SetStringVal("B")
-				v1.SliceVal().AppendEmpty().SetStringVal("C")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Insert("test", v1)
-				v2 := pcommon.NewValueSlice()
-				v2.SliceVal().AppendEmpty().SetStringVal("C")
-				v2.SliceVal().AppendEmpty().SetStringVal("D")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().Insert("test", v2)
+				v1 := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutEmptySlice("test")
+				v1.AppendEmpty().SetStringVal("A")
+				v1.AppendEmpty().SetStringVal("B")
+				v1.AppendEmpty().SetStringVal("C")
+				v2 := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutEmptySlice("test")
+				v2.AppendEmpty().SetStringVal("C")
+				v2.AppendEmpty().SetStringVal("D")
 			},
 		},
 		{
 			query: `set(attributes["test"], Split(attributes["flags"], "|")) where name == "operationA"`,
 			want: func(td ptrace.Traces) {
-				v := pcommon.NewValueSlice()
-				v.SliceVal().AppendEmpty().SetStringVal("A")
-				v.SliceVal().AppendEmpty().SetStringVal("B")
-				v.SliceVal().AppendEmpty().SetStringVal("C")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Insert("test", v)
+				v1 := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutEmptySlice("test")
+				v1.AppendEmpty().SetStringVal("A")
+				v1.AppendEmpty().SetStringVal("B")
+				v1.AppendEmpty().SetStringVal("C")
 			},
 		},
 		{
@@ -361,7 +358,7 @@ func fillSpanOne(span ptrace.Span) {
 	span.SetDroppedLinksCount(1)
 	span.SetDroppedEventsCount(1)
 	span.SetKind(1)
-	span.SetTraceState("new")
+	span.TraceStateStruct().FromRaw("new")
 	span.Attributes().PutString("http.method", "get")
 	span.Attributes().PutString("http.path", "/health")
 	span.Attributes().PutString("http.url", "http://localhost/health")
