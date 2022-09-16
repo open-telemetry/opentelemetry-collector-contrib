@@ -283,8 +283,8 @@ func Test_mapToAdxMetric(t *testing.T) {
 				histogram.SetDescription("measures the duration of the inbound HTTP request")
 				histogram.SetDataType(pmetric.MetricDataTypeHistogram)
 				histogramPt := histogram.Histogram().DataPoints().AppendEmpty()
-				histogramPt.SetMExplicitBounds(distributionBounds)
-				histogramPt.SetMBucketCounts(distributionCounts)
+				histogramPt.ExplicitBounds().FromRaw(distributionBounds)
+				histogramPt.BucketCounts().FromRaw(distributionCounts)
 				histogramPt.SetSum(23)  //
 				histogramPt.SetCount(7) // sum of distributionBounds
 				histogramPt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
@@ -629,8 +629,8 @@ func newMetrics(metricType pmetric.MetricDataType, ts pcommon.Timestamp) pmetric
 		histogram.SetDescription("measures the duration of the inbound HTTP request")
 		histogram.SetDataType(pmetric.MetricDataTypeHistogram)
 		histogramPt := histogram.Histogram().DataPoints().AppendEmpty()
-		histogramPt.SetMExplicitBounds(distributionBounds)
-		histogramPt.SetMBucketCounts(distributionCounts)
+		histogramPt.ExplicitBounds().FromRaw(distributionBounds)
+		histogramPt.BucketCounts().FromRaw(distributionCounts)
 		histogramPt.Attributes().InsertString("k1", "v1")
 		histogramPt.SetSum(23)  //
 		histogramPt.SetCount(7) // sum of distributionBounds

@@ -53,7 +53,7 @@ func Test_mapToAdxLog(t *testing.T) {
 				logRecord.SetObservedTimestamp(ts)
 				logRecord.SetSpanID(pcommon.NewSpanID(spanID))
 				logRecord.SetTraceID(pcommon.NewTraceID(traceID))
-				logRecord.SetSeverityNumber(plog.SeverityNumberDEBUG)
+				logRecord.SetSeverityNumber(plog.SeverityNumberDebug)
 				logRecord.SetSeverityText("DEBUG")
 				return logRecord
 			},
@@ -67,7 +67,7 @@ func Test_mapToAdxLog(t *testing.T) {
 					TraceID:            "00000000000000000000000000000064",
 					Body:               "mylogsample",
 					SeverityText:       "DEBUG",
-					SeverityNumber:     int32(plog.SeverityNumberDEBUG),
+					SeverityNumber:     int32(plog.SeverityNumberDebug),
 					ResourceAttributes: tmap,
 
 					LogsAttributes: newMapFromAttr(`{"test":"value", "scope.name":"testscope", "scope.version":"1.0"}`),
@@ -110,7 +110,7 @@ func Test_mapToAdxLog(t *testing.T) {
 				logRecord.SetObservedTimestamp(ts)
 				logRecord.SetSpanID(pcommon.NewSpanID(spanID))
 				logRecord.SetTraceID(pcommon.NewTraceID(traceID))
-				logRecord.SetSeverityNumber(plog.SeverityNumberDEBUG)
+				logRecord.SetSeverityNumber(plog.SeverityNumberDebug)
 				logRecord.SetSeverityText("DEBUG")
 				return logRecord
 			},
@@ -123,7 +123,7 @@ func Test_mapToAdxLog(t *testing.T) {
 					SpanID:             "0000000000000032",
 					TraceID:            "00000000000000000000000000000064",
 					SeverityText:       "DEBUG",
-					SeverityNumber:     int32(plog.SeverityNumberDEBUG),
+					SeverityNumber:     int32(plog.SeverityNumberDebug),
 					ResourceAttributes: tmap,
 
 					LogsAttributes: newMapFromAttr(`{"test":"value", "scope.name":"testscope", "scope.version":"1.0"}`),
@@ -144,7 +144,7 @@ func Test_mapToAdxLog(t *testing.T) {
 				logRecord.SetObservedTimestamp(ts)
 				logRecord.SetSpanID(pcommon.NewSpanID(spanID))
 				logRecord.SetTraceID(pcommon.NewTraceID(traceID))
-				logRecord.SetSeverityNumber(plog.SeverityNumberDEBUG)
+				logRecord.SetSeverityNumber(plog.SeverityNumberDebug)
 				logRecord.SetSeverityText("DEBUG")
 				return logRecord
 			},
@@ -158,7 +158,7 @@ func Test_mapToAdxLog(t *testing.T) {
 					TraceID:            "00000000000000000000000000000064",
 					Body:               `{"23":45,"foo":"bar"}`,
 					SeverityText:       "DEBUG",
-					SeverityNumber:     int32(plog.SeverityNumberDEBUG),
+					SeverityNumber:     int32(plog.SeverityNumberDebug),
 					ResourceAttributes: tmap,
 
 					LogsAttributes: newMapFromAttr(`{"test":"value", "scope.name":"testscope", "scope.version":"1.0"}`),

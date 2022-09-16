@@ -234,7 +234,7 @@ func createLogsData() plog.Logs {
 	log.SetTimestamp(ts)
 	log.SetSpanID(pcommon.NewSpanID(spanID))
 	log.SetTraceID(pcommon.NewTraceID(traceID))
-	log.SetSeverityNumber(plog.SeverityNumberDEBUG)
+	log.SetSeverityNumber(plog.SeverityNumberDebug)
 	log.SetSeverityText("DEBUG")
 	return logs
 
