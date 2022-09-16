@@ -19,6 +19,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 )
 
 func TestConvertResourceToAttributes(t *testing.T) {
@@ -29,8 +31,122 @@ func TestConvertResourceToAttributes(t *testing.T) {
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
 
-	cloneMd := convertToMetricsAttributes(md)
+	cloneMd, _ := convertToMetricsAttributes(md, MatchAttributes{})
 
+	// After converting resource to labels
+	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 2, cloneMd.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
+
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
+
+}
+
+func TestConvertResourceToAttributesExcludeByRegexpExact(t *testing.T) {
+	md := testdata.GenerateMetricsTwoMetrics()
+	assert.NotNil(t, md)
+
+	// Before converting resource to labels
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
+
+	cloneMd, _ := convertToMetricsAttributes(md, MatchAttributes{
+		Filter: filterset.Config{
+			MatchType: "regexp",
+		},
+		Exclude: []filterconfig.Attribute{{Key: "resource-attr", Value: "resource-attr-val-1"}}})
+
+	// After converting resource to labels
+	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
+
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
+
+}
+
+func TestConvertResourceToAttributesExcludeByRegexpAll(t *testing.T) {
+	md := testdata.GenerateMetricsTwoMetrics()
+	assert.NotNil(t, md)
+
+	// Before converting resource to labels
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
+
+	cloneMd, _ := convertToMetricsAttributes(md, MatchAttributes{
+		Filter: filterset.Config{
+			MatchType: "regexp",
+		},
+		Exclude: []filterconfig.Attribute{{Key: "resource-attr", Value: ".*"}}})
+
+	// After converting resource to labels
+	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
+
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
+
+}
+
+func TestConvertResourceToAttributesExcludeByRegexpUnmatched(t *testing.T) {
+	md := testdata.GenerateMetricsTwoMetrics()
+	assert.NotNil(t, md)
+
+	// Before converting resource to labels
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
+
+	cloneMd, _ := convertToMetricsAttributes(md, MatchAttributes{
+		Filter: filterset.Config{
+			MatchType: "regexp",
+		},
+		Exclude: []filterconfig.Attribute{{Key: "resource-attr", Value: ".*not-existent-foo-value.*"}}})
+
+	// After converting resource to labels
+	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 2, cloneMd.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
+
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
+
+}
+
+func TestConvertResourceToAttributesExcludeByStrict(t *testing.T) {
+	md := testdata.GenerateMetricsTwoMetrics()
+	assert.NotNil(t, md)
+
+	// Before converting resource to labels
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
+
+	cloneMd, _ := convertToMetricsAttributes(md, MatchAttributes{
+		Filter: filterset.Config{
+			MatchType: "strict",
+		},
+		Exclude: []filterconfig.Attribute{{Key: "resource-attr", Value: "resource-attr-val-1"}}})
+
+	// After converting resource to labels
+	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
+
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
+
+}
+
+func TestConvertResourceToAttributesExcludeByStrictFalseValue(t *testing.T) {
+	md := testdata.GenerateMetricsTwoMetrics()
+	assert.NotNil(t, md)
+
+	// Before converting resource to labels
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
+
+	cloneMd, _ := convertToMetricsAttributes(md, MatchAttributes{
+		Filter: filterset.Config{
+			MatchType: "strict",
+		},
+		Exclude: []filterconfig.Attribute{{Key: "resource-attr", Value: "resource-attr-val-2"}}})
 	// After converting resource to labels
 	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).Resource().Attributes().Len())
 	assert.Equal(t, 2, cloneMd.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
@@ -54,7 +170,7 @@ func TestConvertResourceToAttributesAllDataTypesEmptyDataPoint(t *testing.T) {
 	assert.Equal(t, 0, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(5).Summary().DataPoints().At(0).Attributes().Len())
 	assert.Equal(t, 0, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(6).ExponentialHistogram().DataPoints().At(0).Attributes().Len())
 
-	cloneMd := convertToMetricsAttributes(md)
+	cloneMd, _ := convertToMetricsAttributes(md, MatchAttributes{})
 
 	// After converting resource to labels
 	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).Resource().Attributes().Len())

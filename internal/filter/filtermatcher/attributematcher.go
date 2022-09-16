@@ -118,6 +118,32 @@ func (ma AttributesMatcher) Match(attrs pcommon.Map) bool {
 	return true
 }
 
+// MatchAny matches any single attributes against any attributes' specification.
+func (ma AttributesMatcher) MatchAny(key string, attr pcommon.Value) bool {
+	// If there are no attributes to match against, the span/log matches.
+	if len(ma) == 0 {
+		return false
+	}
+
+	// Check that all expected properties are set.
+	for _, property := range ma {
+		value, err := attributeStringValue(attr)
+		if key == property.Key {
+			if property.AttributeValue != nil {
+				if property.AttributeValue.AsString() == value {
+					return true
+				}
+			}
+			if property.StringFilter != nil {
+				if err == nil && property.StringFilter.Matches(value) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 func attributeStringValue(attr pcommon.Value) (string, error) {
 	switch attr.Type() {
 	case pcommon.ValueTypeStr:
