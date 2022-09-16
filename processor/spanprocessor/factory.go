@@ -80,6 +80,7 @@ func createTracesProcessor(
 		oCfg.SetStatus == nil {
 		return nil, errMissingRequiredField
 	}
+
 	if oCfg.SetStatus != nil {
 		if oCfg.SetStatus.Code != statusCodeUnset && oCfg.SetStatus.Code != statusCodeError && oCfg.SetStatus.Code != statusCodeOk {
 			return nil, errIncorrectStatusCode

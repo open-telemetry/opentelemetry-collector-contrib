@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package popularityfilterprocessor
+package spanbatchfilterprocessor
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -25,10 +24,9 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "popularity_filter"
-
-	defaultSendBatchSize = uint32(8192)
-	defaultTimeout       = 200 * time.Millisecond
+	typeStr       = "span_batch_filter"
+	defaultTokens = 100
+	stability     = component.StabilityLevelAlpha
 )
 
 // NewFactory returns a new factory for the Batch processor.
@@ -36,12 +34,13 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor, component.StabilityLevelStable))
+		component.WithTracesProcessor(createTracesProcessor, stability))
 }
 
 func createDefaultConfig() config.Processor {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		TokensPerBatch:    defaultTokens,
 	}
 }
 
@@ -52,5 +51,5 @@ func createTracesProcessor(
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	level := set.MetricsLevel
-	return newTracesProcessor(set, nextConsumer, cfg.(*Config), level)
+	return newBatchFilterProcessor(set, nextConsumer, cfg.(*Config), level)
 }

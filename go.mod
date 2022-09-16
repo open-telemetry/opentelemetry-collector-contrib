@@ -478,6 +478,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.61.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.61.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.61.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanbatchfilterprocessor v0.61.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.3-0.20211202183452-c5a74bcca799 // indirect
 	github.com/opencontainers/runc v1.1.3 // indirect
@@ -843,7 +844,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/rout
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor => ./processor/spanmetricsprocessor/
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/popularityfilterprocessor => ./processor/popularityfilterprocessor/
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanbatchfilterprocessor => ./processor/spanbatchfilterprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor => ./processor/spanprocessor/
 

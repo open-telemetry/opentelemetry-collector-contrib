@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package popularityfilterprocessor
+package spanbatchfilterprocessor
 
 import (
-	"time"
+	"fmt"
 
 	"go.opentelemetry.io/collector/config"
 )
@@ -23,16 +23,15 @@ import (
 // Config defines configuration for processor.
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-
-	// Timeout sets the time after which data will be sent out.
-	Timeout time.Duration `mapstructure:"timeout"`
-
-	Tokens uint32 `mapstructure:"tokens"`
+	// TokensPerBatch determines how many requests to send in each batch
+	TokensPerBatch int  `mapstructure:"tokens"`
+	MostPopular    bool `mapstructure:"most_popular"`
 }
-
-var _ config.Processor = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
+	if cfg.TokensPerBatch <= 0 {
+		return fmt.Errorf("tokens (%d) must be greater then zero", cfg.TokensPerBatch)
+	}
 	return nil
 }
