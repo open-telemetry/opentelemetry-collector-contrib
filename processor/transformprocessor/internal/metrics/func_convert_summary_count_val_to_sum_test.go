@@ -35,7 +35,7 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 				summaryMetric := getTestSummaryMetric()
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
+				sumMetric.SetEmptySum()
 				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(false)
 
@@ -56,7 +56,7 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 				summaryMetric := getTestSummaryMetric()
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
+				sumMetric.SetEmptySum()
 				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(true)
 
@@ -77,7 +77,7 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 				summaryMetric := getTestSummaryMetric()
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
+				sumMetric.SetEmptySum()
 				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				sumMetric.Sum().SetIsMonotonic(false)
 

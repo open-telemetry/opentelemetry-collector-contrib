@@ -26,7 +26,7 @@ import (
 
 func getTestSummaryMetric() pmetric.Metric {
 	metricInput := pmetric.NewMetric()
-	metricInput.SetDataType(pmetric.MetricDataTypeSummary)
+	metricInput.SetEmptySummary()
 	metricInput.SetName("summary_metric")
 	input := metricInput.Summary().DataPoints().AppendEmpty()
 	input.SetCount(100)
@@ -51,7 +51,7 @@ func getTestSummaryMetric() pmetric.Metric {
 
 func getTestGaugeMetric() pmetric.Metric {
 	metricInput := pmetric.NewMetric()
-	metricInput.SetDataType(pmetric.MetricDataTypeGauge)
+	metricInput.SetEmptyGauge()
 	metricInput.SetName("gauge_metric")
 	input := metricInput.Gauge().DataPoints().AppendEmpty()
 	input.SetIntVal(12)
@@ -63,9 +63,9 @@ func getTestGaugeMetric() pmetric.Metric {
 
 func getTestAttributes() pcommon.Map {
 	attrs := pcommon.NewMap()
-	attrs.InsertString("test", "hello world")
-	attrs.InsertInt("test2", 3)
-	attrs.InsertBool("test3", true)
+	attrs.PutString("test", "hello world")
+	attrs.PutInt("test2", 3)
+	attrs.PutBool("test3", true)
 	return attrs
 }
 
@@ -88,7 +88,7 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 				summaryMetric := getTestSummaryMetric()
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
+				sumMetric.SetEmptySum()
 				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(false)
 
@@ -109,7 +109,7 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 				summaryMetric := getTestSummaryMetric()
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
+				sumMetric.SetEmptySum()
 				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(true)
 
@@ -130,7 +130,7 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 				summaryMetric := getTestSummaryMetric()
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
+				sumMetric.SetEmptySum()
 				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				sumMetric.Sum().SetIsMonotonic(false)
 
