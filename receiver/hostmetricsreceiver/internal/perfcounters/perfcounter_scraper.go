@@ -63,7 +63,7 @@ func (p *PerfLibScraper) Initialize(objects ...string) {
 	for _, name := range objects {
 		index := nameTable.LookupIndex(name)
 		if index == 0 {
-			p.logger.Error("Failed to retrieve perf counter object, performance data from this object will not be scraped", zap.String("name", name))
+			p.logger.Error("Failed to retrieve perf counter object, performance data from this object will fail to be scraped", zap.String("counter", name))
 			continue
 		}
 
