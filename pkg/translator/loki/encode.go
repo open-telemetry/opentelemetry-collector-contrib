@@ -35,7 +35,7 @@ type lokiEntry struct {
 
 // Encode converts an OTLP log record and its resource attributes into a JSON
 // string representing a Loki entry. An error is returned when the record can't
-// be marshalled into JSON.
+// be marshaled into JSON.
 func Encode(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 	var logRecord lokiEntry
 	var jsonRecord []byte
