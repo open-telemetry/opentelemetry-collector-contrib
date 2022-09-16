@@ -1,4 +1,0 @@
-change_type: enhancement
-component: telemetryquerylanguage
-note: Add the Int factory function.
-issues: [11810]

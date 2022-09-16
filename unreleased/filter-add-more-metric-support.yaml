@@ -1,4 +1,0 @@
-change_type: enhancement
-component: processor/filer
-note: Add support for ExponentialHistogram and Summary metrics
-issues: [14116]
