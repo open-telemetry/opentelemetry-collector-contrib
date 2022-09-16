@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"testing"
 	"time"
 
@@ -161,7 +161,7 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			metrics := tt.metricsDataFn(tt.metricDataType, ts)
 			actualMetrics := rawMetricsToAdxMetrics(context.Background(), metrics, zap.NewNop())
-			encoder := json.NewEncoder(ioutil.Discard)
+			encoder := json.NewEncoder(io.Discard)
 			for i, expectedMetric := range tt.expectedAdxMetrics {
 				assert.Equal(t, expectedMetric.Timestamp, actualMetrics[i].Timestamp)
 				// Metric assertions
@@ -561,7 +561,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 			md := tt.metricDataFn()
 			emptyscopemap := make(map[string]interface{}, 2)
 			actualMetrics := mapToAdxMetric(res, md, emptyscopemap, zap.NewNop())
-			encoder := json.NewEncoder(ioutil.Discard)
+			encoder := json.NewEncoder(io.Discard)
 			for i, expectedMetric := range tt.expectedAdxMetrics {
 				assert.Equal(t, expectedMetric.Timestamp, actualMetrics[i].Timestamp)
 				// Metric assertions

@@ -15,7 +15,7 @@ package azuredataexplorerexporter // import "github.com/open-telemetry/opentelem
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"testing"
 	"time"
 
@@ -187,7 +187,7 @@ func Test_mapToAdxLog(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			for _, want := range tt.expectedAdxLogs {
 				got := mapToAdxLog(tt.logResourceFn(), tt.logScopeFn(), tt.logRecordFn(), logger)
-				encoder := json.NewEncoder(ioutil.Discard)
+				encoder := json.NewEncoder(io.Discard)
 				assert.EqualValues(t, want, got)
 				err := encoder.Encode(got)
 				assert.NoError(t, err)
