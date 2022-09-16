@@ -13,4 +13,4 @@ issues: [7931]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: "Please remove the `endpoint` field and use the new `traces.endpoint` field with your OpenTelemtry endpoint."
+subtext: "Please remove the `endpoint` field and use the new `traces.endpoint` field with your OpenTelemetry endpoint."

@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
@@ -174,4 +175,19 @@ func TestTraceExporter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 	assert.NoError(t, te.start(context.Background(), componenttest.NewNopHost()))
+}
+
+func TestJaegerBasedTraceExporter(t *testing.T) {
+	factories, _ := componenttest.NopFactories()
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, _ := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-trace.yaml"), factories)
+	apiConfig := cfg.Exporters[config.NewComponentID(typeStr)].(*Config)
+	params := componenttest.NewNopExporterCreateSettings()
+	te, err := newCoralogixExporter(apiConfig, params)
+	assert.NoError(t, err)
+	assert.NotNil(t, te, "failed to create trace exporter")
+	assert.NoError(t, te.client.startConnection(context.Background(), componenttest.NewNopHost()))
+	td := ptrace.NewTraces()
+	assert.NoError(t, te.tracesPusher(context.Background(), td))
 }
