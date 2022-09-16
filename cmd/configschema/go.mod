@@ -356,7 +356,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.60.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.60.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.60.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/opentelemetrytransformationlanguage v0.60.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage v0.60.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.60.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.60.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.60.0 // indirect
@@ -755,7 +755,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourceto
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/opentelemetrytransformationlanguage => ../../pkg/opentelemetrytransformationlanguage
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage => ../../pkg/oteltransformationlanguage
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../../pkg/translator/jaeger
 

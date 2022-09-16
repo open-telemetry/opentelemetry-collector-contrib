@@ -21,9 +21,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/opentelemetrytransformationlanguage/contexts/ottlmetrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/opentelemetrytransformationlanguage/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/opentelemetrytransformationlanguage/ottl/ottltest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottlmetrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottl/ottltest"
 )
 
 func getTestSummaryMetric() pmetric.Metric {

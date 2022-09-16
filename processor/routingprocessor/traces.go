@@ -25,7 +25,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/opentelemetrytransformationlanguage/contexts/ottltraces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottltraces"
 )
 
 var _ component.TracesProcessor = (*tracesProcessor)(nil)

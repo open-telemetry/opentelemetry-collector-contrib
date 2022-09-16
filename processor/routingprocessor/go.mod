@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/routi
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/opentelemetrytransformationlanguage v0.60.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage v0.60.0
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.60.0
 	go.opentelemetry.io/collector/pdata v0.60.0
@@ -59,4 +59,4 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/corei
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../../pkg/translator/jaeger
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/opentelemetrytransformationlanguage => ../../pkg/opentelemetrytransformationlanguage
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage => ../../pkg/oteltransformationlanguage

@@ -14,8 +14,8 @@
 
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 import (
-	ottlcommon "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/opentelemetrytransformationlanguage/functions/ottlcommon"
-	ottlotel "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/opentelemetrytransformationlanguage/functions/ottlotel"
+	ottlcommon "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/functions/ottlcommon"
+	ottlotel "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/functions/ottlotel"
 )
 
 var registry = map[string]interface{}{
