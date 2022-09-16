@@ -16,6 +16,8 @@ package filterconfig // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"errors"
+	"fmt"
+	"sort"
 
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -168,7 +170,11 @@ func (mp *MatchProperties) ValidateForSpans() error {
 	if len(mp.SpanKinds) > 0 && mp.MatchType == "strict" {
 		for _, kind := range mp.SpanKinds {
 			if !spanKinds[kind] {
-                               // TODO: loop over `spanKinds` and create a `validSpanKinds` slice
+				validSpanKinds := make([]string, len(spanKinds))
+				for k := range spanKinds {
+					validSpanKinds = append(validSpanKinds, k)
+				}
+				sort.Strings(validSpanKinds)
 				return fmt.Errorf("span_kinds string must match one of the standard span kinds when match_type=strict: %v", validSpanKinds)
 			}
 		}

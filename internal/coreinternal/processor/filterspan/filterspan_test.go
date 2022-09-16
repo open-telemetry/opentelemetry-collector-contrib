@@ -90,6 +90,17 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 			},
 			errorString: "error creating span name filters: error parsing regexp: missing closing ]: `[`",
 		},
+		{
+			name: "invalid_strict_span_kind_match",
+			property: filterconfig.MatchProperties{
+				Config: *createConfig(filterset.Strict),
+				SpanKinds: []string{
+					"test_invalid_span_kind",
+				},
+				Attributes: []filterconfig.Attribute{},
+			},
+			errorString: "span_kinds string must match one of the standard span kinds when match_type=strict: [     SPAN_KIND_CLIENT SPAN_KIND_CONSUMER SPAN_KIND_INTERNAL SPAN_KIND_PRODUCER SPAN_KIND_SERVER]",
+		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
