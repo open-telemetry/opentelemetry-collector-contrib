@@ -89,23 +89,49 @@ func TestUnknownSeverity(t *testing.T) {
 	assert.Equal(t, logEntry.SeverityText(), "")
 }
 
-func TestMongoEventToAuditLogData(t *testing.T) {
-	mongoevent := GetTestAuditEvent()
+func TestMongoEventToAuditLogData4_4(t *testing.T) {
+	mongoevent := GetTestAuditEvent4_4()
 	pc := ProjectContext{
 		orgName: "Org",
 		Project: mongodbatlas.Project{Name: "Project"},
 	}
 
-	ld := mongodbAuditEventToLogData(zap.NewNop(), []model.AuditLog{mongoevent}, pc, "hostname", "clusterName", "logName")
+	ld := mongodbAuditEventToLogData(zap.NewNop(), []model.AuditLog{mongoevent}, pc, "hostname", "clusterName", "logName", "4.4")
 	rl := ld.ResourceLogs().At(0)
 	resourceAttrs := rl.Resource().Attributes()
-	lr := rl.ScopeLogs().At(0)
-	attrs := lr.LogRecords().At(0).Attributes()
+	sl := rl.ScopeLogs().At(0)
+	lr := sl.LogRecords().At(0)
+	attrs := lr.Attributes()
+
 	assert.Equal(t, ld.ResourceLogs().Len(), 1)
 	assert.Equal(t, resourceAttrs.Len(), 4)
 	assert.Equal(t, 12, attrs.Len())
+	assert.Equal(t, pcommon.Timestamp(1663342012563000000), lr.Timestamp())
 
-	ld = mongodbAuditEventToLogData(zap.NewNop(), []model.AuditLog{mongoevent}, pc, "hostname", "clusterName", "logName")
+	ld = mongodbAuditEventToLogData(zap.NewNop(), []model.AuditLog{mongoevent}, pc, "hostname", "clusterName", "logName", "4.4")
+	assert.Equal(t, 12, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len())
+}
+
+func TestMongoEventToAuditLogData4_2(t *testing.T) {
+	mongoevent := GetTestEventAuditEvent4_2()
+	pc := ProjectContext{
+		orgName: "Org",
+		Project: mongodbatlas.Project{Name: "Project"},
+	}
+
+	ld := mongodbAuditEventToLogData(zap.NewNop(), []model.AuditLog{mongoevent}, pc, "hostname", "clusterName", "logName", "4.2")
+	rl := ld.ResourceLogs().At(0)
+	resourceAttrs := rl.Resource().Attributes()
+	sl := rl.ScopeLogs().At(0)
+	lr := sl.LogRecords().At(0)
+	attrs := lr.Attributes()
+
+	assert.Equal(t, ld.ResourceLogs().Len(), 1)
+	assert.Equal(t, resourceAttrs.Len(), 4)
+	assert.Equal(t, 12, attrs.Len())
+	assert.Equal(t, pcommon.Timestamp(1663342012563000000), lr.Timestamp())
+
+	ld = mongodbAuditEventToLogData(zap.NewNop(), []model.AuditLog{mongoevent}, pc, "hostname", "clusterName", "logName", "4.2")
 	assert.Equal(t, 12, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len())
 }
 
@@ -135,8 +161,38 @@ func GetTestEvent4_2() model.LogEntry {
 	}
 }
 
-func GetTestAuditEvent() model.AuditLog {
+func GetTestAuditEvent4_4() model.AuditLog {
 	return model.AuditLog{
+		Timestamp: model.LogTimestamp{
+			Date: "2022-09-16T15:26:52.563+00:00",
+		},
+		AuthType: "authtype",
+		ID: model.ID{
+			Type:   "type",
+			Binary: "binary",
+		},
+		Local: model.Address{
+			IP:   "Ip",
+			Port: 12345,
+		},
+		Remote: model.Address{
+			IP:   "Ip",
+			Port: 12345,
+		},
+		Result: 40,
+		Param: model.Param{
+			User:      "name",
+			Database:  "db",
+			Mechanism: "mechanism",
+		},
+	}
+}
+
+func GetTestEventAuditEvent4_2() model.AuditLog {
+	return model.AuditLog{
+		Timestamp: model.LogTimestamp{
+			Date: "2022-09-16T15:26:52.563+0000",
+		},
 		AuthType: "authtype",
 		ID: model.ID{
 			Type:   "type",

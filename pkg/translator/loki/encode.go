@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package lokiexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
+package loki // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 
 import (
 	"encoding/json"
@@ -23,7 +23,6 @@ import (
 )
 
 // JSON representation of the LogRecord as described by https://developers.google.com/protocol-buffers/docs/proto3#json
-
 type lokiEntry struct {
 	Name       string                 `json:"name,omitempty"`
 	Body       json.RawMessage        `json:"body,omitempty"`
@@ -32,6 +31,35 @@ type lokiEntry struct {
 	Severity   string                 `json:"severity,omitempty"`
 	Attributes map[string]interface{} `json:"attributes,omitempty"`
 	Resources  map[string]interface{} `json:"resources,omitempty"`
+}
+
+// Encode converts an OTLP log record and its resource attributes into a JSON
+// string representing a Loki entry. An error is returned when the record can't
+// be marshaled into JSON.
+func Encode(lr plog.LogRecord, res pcommon.Resource) (string, error) {
+	var logRecord lokiEntry
+	var jsonRecord []byte
+	var err error
+	var body []byte
+
+	body, err = serializeBody(lr.Body())
+	if err != nil {
+		return "", err
+	}
+	logRecord = lokiEntry{
+		Body:       body,
+		TraceID:    lr.TraceID().HexString(),
+		SpanID:     lr.SpanID().HexString(),
+		Severity:   lr.SeverityText(),
+		Attributes: lr.Attributes().AsRaw(),
+		Resources:  res.Attributes().AsRaw(),
+	}
+
+	jsonRecord, err = json.Marshal(logRecord)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonRecord), nil
 }
 
 func serializeBody(body pcommon.Value) ([]byte, error) {
@@ -66,31 +94,4 @@ func serializeBody(body pcommon.Value) ([]byte, error) {
 		err = fmt.Errorf("unsuported body type to serialize")
 	}
 	return str, err
-}
-
-func encodeJSON(lr plog.LogRecord, res pcommon.Resource) (string, error) {
-	var logRecord lokiEntry
-	var jsonRecord []byte
-	var err error
-	var body []byte
-
-	body, err = serializeBody(lr.Body())
-	if err != nil {
-		return "", err
-	}
-	logRecord = lokiEntry{
-		Body:       body,
-		TraceID:    lr.TraceID().HexString(),
-		SpanID:     lr.SpanID().HexString(),
-		Severity:   lr.SeverityText(),
-		Attributes: lr.Attributes().AsRaw(),
-		Resources:  res.Attributes().AsRaw(),
-	}
-	lr.Body().Type()
-
-	jsonRecord, err = json.Marshal(logRecord)
-	if err != nil {
-		return "", err
-	}
-	return string(jsonRecord), nil
 }

@@ -727,7 +727,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			resAttr := pcommon.NewMap()
 			resAttr.FromRaw(tc.resourceAttrMap)
 			span0 := ptrace.NewSpan()
-			pcommon.NewMapFromRaw(tc.spanAttrMap).CopyTo(span0.Attributes())
+			span0.Attributes().FromRaw(tc.spanAttrMap)
 			span0.SetName("c")
 			k := buildKey("ab", span0, tc.optionalDims, resAttr)
 

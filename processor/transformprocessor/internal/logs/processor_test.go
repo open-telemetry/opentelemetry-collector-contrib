@@ -133,6 +133,8 @@ func TestProcess(t *testing.T) {
 					"get")
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("http.path",
 					"/health")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("flags",
+					"A|B|C")
 			},
 		},
 		{
@@ -141,6 +143,8 @@ func TestProcess(t *testing.T) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("http.url",
 					"http://localhost/health")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("flags",
+					"A|B|C")
 			},
 		},
 		{
@@ -148,6 +152,31 @@ func TestProcess(t *testing.T) {
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("test", "get: http://localhost/health")
 			},
+		},
+		{
+			query: `set(attributes["test"], Split(attributes["flags"], "|"))`,
+			want: func(td plog.Logs) {
+				v1 := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutEmptySlice("test")
+				v1.AppendEmpty().SetStringVal("A")
+				v1.AppendEmpty().SetStringVal("B")
+				v1.AppendEmpty().SetStringVal("C")
+				v2 := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutEmptySlice("test")
+				v2.AppendEmpty().SetStringVal("C")
+				v2.AppendEmpty().SetStringVal("D")
+			},
+		},
+		{
+			query: `set(attributes["test"], Split(attributes["flags"], "|")) where body == "operationA"`,
+			want: func(td plog.Logs) {
+				newValue := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutEmptySlice("test")
+				newValue.AppendEmpty().SetStringVal("A")
+				newValue.AppendEmpty().SetStringVal("B")
+				newValue.AppendEmpty().SetStringVal("C")
+			},
+		},
+		{
+			query: `set(attributes["test"], Split(attributes["not_exist"], "|"))`,
+			want:  func(td plog.Logs) {},
 		},
 	}
 
@@ -190,6 +219,8 @@ func fillLogOne(log plog.LogRecord) {
 	log.Attributes().PutString("http.method", "get")
 	log.Attributes().PutString("http.path", "/health")
 	log.Attributes().PutString("http.url", "http://localhost/health")
+	log.Attributes().PutString("flags", "A|B|C")
+
 }
 
 func fillLogTwo(log plog.LogRecord) {
@@ -199,4 +230,6 @@ func fillLogTwo(log plog.LogRecord) {
 	log.Attributes().PutString("http.method", "get")
 	log.Attributes().PutString("http.path", "/health")
 	log.Attributes().PutString("http.url", "http://localhost/health")
+	log.Attributes().PutString("flags", "C|D")
+
 }

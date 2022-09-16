@@ -13,9 +13,10 @@
 // limitations under the License.
 
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+
 import (
-	ottlcommon "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/functions/ottlcommon"
-	ottlotel "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/functions/ottlotel"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/functions/ottlcommon"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/functions/ottlotel"
 )
 
 var registry = map[string]interface{}{
@@ -23,6 +24,7 @@ var registry = map[string]interface{}{
 	"SpanID":               ottlotel.SpanID,
 	"IsMatch":              ottlcommon.IsMatch,
 	"Concat":               ottlcommon.Concat,
+	"Split":                ottlotel.Split,
 	"keep_keys":            ottlotel.KeepKeys,
 	"set":                  ottlcommon.Set,
 	"truncate_all":         ottlotel.TruncateAll,
