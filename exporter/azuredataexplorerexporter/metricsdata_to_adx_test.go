@@ -205,7 +205,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				sumV := pmetric.NewMetric()
 				sumV.SetName("page_faults")
 				sumV.SetDescription("process page faults") // Only description and no units. Count units are just "number of / count of"
-				sumV.SetDataType(pmetric.MetricDataTypeSum)
+				sumV.SetEmptySum()
 				dp := sumV.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(22.0)
 				dp.SetTimestamp(ts)
@@ -235,7 +235,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				sumV := pmetric.NewMetric()
 				sumV.SetName("page_faults")
 				sumV.SetDescription("process page faults")
-				sumV.SetDataType(pmetric.MetricDataTypeSum)
+				sumV.SetEmptySum()
 				dp := sumV.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(221)
 				dp.SetTimestamp(ts)
@@ -265,7 +265,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 			metricDataFn: func() pmetric.Metric {
 				sumV := pmetric.NewMetric()
 				sumV.SetName("page_faults")
-				sumV.SetDataType(pmetric.MetricDataTypeSum)
+				sumV.SetEmptySum()
 				return sumV
 			},
 			configFn: func() *Config {
@@ -281,7 +281,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				histogram.SetName("http.server.duration")
 				histogram.SetUnit("milliseconds")
 				histogram.SetDescription("measures the duration of the inbound HTTP request")
-				histogram.SetDataType(pmetric.MetricDataTypeHistogram)
+				histogram.SetEmptyHistogram()
 				histogramPt := histogram.Histogram().DataPoints().AppendEmpty()
 				histogramPt.ExplicitBounds().FromRaw(distributionBounds)
 				histogramPt.BucketCounts().FromRaw(distributionCounts)
@@ -375,7 +375,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				gauge.SetName("cpu.frequency")
 				gauge.SetUnit("GHz")
 				gauge.SetDescription("the real-time CPU clock speed")
-				gauge.SetDataType(pmetric.MetricDataTypeGauge)
+				gauge.SetEmptyGauge()
 				return gauge
 			},
 			configFn: func() *Config {
@@ -390,7 +390,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				gauge.SetName("cpu.frequency")
 				gauge.SetUnit("GHz")
 				gauge.SetDescription("the real-time CPU clock speed")
-				gauge.SetDataType(pmetric.MetricDataTypeGauge)
+				gauge.SetEmptyGauge()
 				dp := gauge.Gauge().DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
 				dp.SetIntVal(5)
@@ -421,7 +421,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				gauge.SetName("cpu.frequency")
 				gauge.SetUnit("GHz")
 				gauge.SetDescription("the real-time CPU clock speed")
-				gauge.SetDataType(pmetric.MetricDataTypeGauge)
+				gauge.SetEmptyGauge()
 				dp := gauge.Gauge().DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
 				dp.SetDoubleVal(5.32)
@@ -452,7 +452,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				summary.SetName("http.server.duration")
 				summary.SetDescription("measures the duration of the inbound HTTP request")
 				summary.SetUnit("milliseconds")
-				summary.SetDataType(pmetric.MetricDataTypeSummary)
+				summary.SetEmptySummary()
 				summaryPt := summary.Summary().DataPoints().AppendEmpty()
 				summaryPt.SetTimestamp(ts)
 				summaryPt.SetStartTimestamp(ts)
@@ -522,7 +522,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 			metricDataFn: func() pmetric.Metric {
 				summary := pmetric.NewMetric()
 				summary.SetName("nil_summary")
-				summary.SetDataType(pmetric.MetricDataTypeSummary)
+				summary.SetEmptySummary()
 				summaryPt := summary.Summary().DataPoints().AppendEmpty()
 				summaryPt.SetTimestamp(ts)
 				summaryPt.SetStartTimestamp(ts)
@@ -547,7 +547,6 @@ func Test_mapToAdxMetric(t *testing.T) {
 			metricDataFn: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("unknown_with_dims")
-				metric.SetDataType(pmetric.MetricDataTypeNone)
 				return metric
 			},
 			expectedAdxMetrics: nil,
@@ -585,8 +584,8 @@ func Test_mapToAdxMetric(t *testing.T) {
 
 func newDummyResource() pcommon.Resource {
 	res := pcommon.NewResource()
-	res.Attributes().InsertString("key", "value")
-	res.Attributes().InsertString(hostkey, testhost)
+	res.Attributes().PutString("key", "value")
+	res.Attributes().PutString(hostkey, testhost)
 	return res
 }
 
@@ -604,8 +603,8 @@ func newMetrics(metricType pmetric.MetricDataType, ts pcommon.Timestamp) pmetric
 	// Create metrics
 	metrics := pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics().AppendEmpty()
-	rms.Resource().Attributes().InsertString("key", "value")
-	rms.Resource().Attributes().InsertString(hostkey, testhost)
+	rms.Resource().Attributes().PutString("key", "value")
+	rms.Resource().Attributes().PutString(hostkey, testhost)
 	// // Scope metric in a metric
 	sms := rms.ScopeMetrics().AppendEmpty()
 	scope := sms.Scope()
@@ -618,7 +617,7 @@ func newMetrics(metricType pmetric.MetricDataType, ts pcommon.Timestamp) pmetric
 		sumV := sms.Metrics().AppendEmpty()
 		sumV.SetName("page_faults")
 		sumV.SetDescription("process page faults") // Only description and no units. Count units are just "number of / count of"
-		sumV.SetDataType(pmetric.MetricDataTypeSum)
+		sumV.SetEmptySum()
 		dp := sumV.Sum().DataPoints().AppendEmpty()
 		dp.SetDoubleVal(22.0)
 		dp.SetTimestamp(ts)
@@ -627,11 +626,11 @@ func newMetrics(metricType pmetric.MetricDataType, ts pcommon.Timestamp) pmetric
 		histogram.SetName("http.server.duration")
 		histogram.SetUnit("milliseconds")
 		histogram.SetDescription("measures the duration of the inbound HTTP request")
-		histogram.SetDataType(pmetric.MetricDataTypeHistogram)
+		histogram.SetEmptyHistogram()
 		histogramPt := histogram.Histogram().DataPoints().AppendEmpty()
 		histogramPt.ExplicitBounds().FromRaw(distributionBounds)
 		histogramPt.BucketCounts().FromRaw(distributionCounts)
-		histogramPt.Attributes().InsertString("k1", "v1")
+		histogramPt.Attributes().PutString("k1", "v1")
 		histogramPt.SetSum(23)  //
 		histogramPt.SetCount(7) // sum of distributionBounds
 		histogramPt.SetTimestamp(pcommon.NewTimestampFromTime(ts.AsTime()))

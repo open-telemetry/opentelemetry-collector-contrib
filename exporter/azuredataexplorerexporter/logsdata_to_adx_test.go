@@ -48,11 +48,11 @@ func Test_mapToAdxLog(t *testing.T) {
 			logRecordFn: func() plog.LogRecord {
 				logRecord := plog.NewLogRecord()
 				logRecord.Body().SetStringVal("mylogsample")
-				logRecord.Attributes().InsertString("test", "value")
+				logRecord.Attributes().PutString("test", "value")
 				logRecord.SetTimestamp(ts)
 				logRecord.SetObservedTimestamp(ts)
-				logRecord.SetSpanID(pcommon.NewSpanID(spanID))
-				logRecord.SetTraceID(pcommon.NewTraceID(traceID))
+				logRecord.SetSpanID(pcommon.SpanID(spanID))
+				logRecord.SetTraceID(pcommon.TraceID(traceID))
 				logRecord.SetSeverityNumber(plog.SeverityNumberDebug)
 				logRecord.SetSeverityText("DEBUG")
 				return logRecord
@@ -79,11 +79,11 @@ func Test_mapToAdxLog(t *testing.T) {
 			logRecordFn: func() plog.LogRecord {
 				logRecord := plog.NewLogRecord()
 				logRecord.Body().SetStringVal("mylogsample")
-				logRecord.Attributes().InsertString("test", "value")
+				logRecord.Attributes().PutString("test", "value")
 				logRecord.SetTimestamp(ts)
 				logRecord.SetObservedTimestamp(ts)
-				logRecord.SetSpanID(pcommon.NewSpanID(spanID))
-				logRecord.SetTraceID(pcommon.NewTraceID(traceID))
+				logRecord.SetSpanID(pcommon.SpanID(spanID))
+				logRecord.SetTraceID(pcommon.TraceID(traceID))
 				return logRecord
 			},
 			logResourceFn: newDummyResource,
@@ -105,11 +105,11 @@ func Test_mapToAdxLog(t *testing.T) {
 			name: "with nil body",
 			logRecordFn: func() plog.LogRecord {
 				logRecord := plog.NewLogRecord()
-				logRecord.Attributes().InsertString("test", "value")
+				logRecord.Attributes().PutString("test", "value")
 				logRecord.SetTimestamp(ts)
 				logRecord.SetObservedTimestamp(ts)
-				logRecord.SetSpanID(pcommon.NewSpanID(spanID))
-				logRecord.SetTraceID(pcommon.NewTraceID(traceID))
+				logRecord.SetSpanID(pcommon.SpanID(spanID))
+				logRecord.SetTraceID(pcommon.TraceID(traceID))
 				logRecord.SetSeverityNumber(plog.SeverityNumberDebug)
 				logRecord.SetSeverityText("DEBUG")
 				return logRecord
@@ -136,14 +136,14 @@ func Test_mapToAdxLog(t *testing.T) {
 				logRecord := plog.NewLogRecord()
 				attVal := pcommon.NewValueMap()
 				attMap := attVal.MapVal()
-				attMap.InsertDouble("23", 45)
-				attMap.InsertString("foo", "bar")
+				attMap.PutDouble("23", 45)
+				attMap.PutString("foo", "bar")
 				attVal.CopyTo(logRecord.Body())
-				logRecord.Attributes().InsertString("test", "value")
+				logRecord.Attributes().PutString("test", "value")
 				logRecord.SetTimestamp(ts)
 				logRecord.SetObservedTimestamp(ts)
-				logRecord.SetSpanID(pcommon.NewSpanID(spanID))
-				logRecord.SetTraceID(pcommon.NewTraceID(traceID))
+				logRecord.SetSpanID(pcommon.SpanID(spanID))
+				logRecord.SetTraceID(pcommon.TraceID(traceID))
 				logRecord.SetSeverityNumber(plog.SeverityNumberDebug)
 				logRecord.SetSeverityText("DEBUG")
 				return logRecord

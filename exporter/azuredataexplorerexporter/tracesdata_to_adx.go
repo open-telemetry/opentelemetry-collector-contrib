@@ -90,7 +90,7 @@ func getLinksData(sd ptrace.Span) []*Link {
 		link := &Link{
 			TraceID:            sd.Links().At(i).TraceID().HexString(),
 			SpanID:             sd.Links().At(i).SpanID().HexString(),
-			TraceState:         string(sd.Links().At(i).TraceState()),
+			TraceState:         sd.Links().At(i).TraceStateStruct().AsRaw(),
 			SpanLinkAttributes: sd.Links().At(i).Attributes().AsRaw(),
 		}
 		links[i] = link

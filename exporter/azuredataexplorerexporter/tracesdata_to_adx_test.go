@@ -47,12 +47,12 @@ func Test_mapToAdxTrace(t *testing.T) {
 				span := ptrace.NewSpan()
 				span.SetName("spanname")
 				span.Status().SetCode(ptrace.StatusCodeUnset)
-				span.SetTraceID(pcommon.NewTraceID(traceID))
-				span.SetSpanID(pcommon.NewSpanID(spanID))
+				span.SetTraceID(pcommon.TraceID(traceID))
+				span.SetSpanID(pcommon.SpanID(spanID))
 				span.SetKind(ptrace.SpanKindServer)
 				span.SetStartTimestamp(ts)
 				span.SetEndTimestamp(ts)
-				span.Attributes().InsertString("traceAttribKey", "traceAttribVal")
+				span.Attributes().PutString("traceAttribKey", "traceAttribVal")
 
 				return span
 			},
@@ -98,21 +98,21 @@ func Test_mapToAdxTrace(t *testing.T) {
 				span := ptrace.NewSpan()
 				span.SetName("spanname")
 				span.Status().SetCode(ptrace.StatusCodeUnset)
-				span.SetTraceID(pcommon.NewTraceID(traceID))
-				span.SetSpanID(pcommon.NewSpanID(spanID))
+				span.SetTraceID(pcommon.TraceID(traceID))
+				span.SetSpanID(pcommon.SpanID(spanID))
 				span.SetKind(ptrace.SpanKindServer)
 				span.SetStartTimestamp(ts)
 				span.SetEndTimestamp(ts)
-				span.Attributes().InsertString("traceAttribKey", "traceAttribVal")
+				span.Attributes().PutString("traceAttribKey", "traceAttribVal")
 				event := span.Events().AppendEmpty()
 				event.SetName("eventName")
 				event.SetTimestamp(ts)
-				event.Attributes().InsertString("eventkey", "eventvalue")
+				event.Attributes().PutString("eventkey", "eventvalue")
 
 				link := span.Links().AppendEmpty()
-				link.SetSpanID(pcommon.NewSpanID(spanID))
-				link.SetTraceID(pcommon.NewTraceID(traceID))
-				link.SetTraceState(ptrace.TraceStateEmpty)
+				link.SetSpanID(pcommon.SpanID(spanID))
+				link.SetTraceID(pcommon.TraceID(traceID))
+				link.TraceStateStruct().FromRaw("")
 
 				return span
 			},
@@ -139,7 +139,7 @@ func Test_mapToAdxTrace(t *testing.T) {
 				Links: []*Link{{
 					TraceID:            "00000000000000000000000000000064",
 					SpanID:             "0000000000000032",
-					TraceState:         string(ptrace.TraceStateEmpty),
+					TraceState:         "",
 					SpanLinkAttributes: newMapFromAttr(`{}`),
 				}},
 			},
