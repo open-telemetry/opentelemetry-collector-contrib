@@ -86,40 +86,40 @@ type MetricsSettings struct {
 func DefaultMetricsSettings() MetricsSettings {
 	return MetricsSettings{
 		ContainerBlockioIoMergedRecursive: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerBlockioIoQueuedRecursive: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerBlockioIoServiceBytesRecursive: MetricSettings{
 			Enabled: true,
 		},
 		ContainerBlockioIoServiceTimeRecursive: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerBlockioIoServicedRecursive: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerBlockioIoTimeRecursive: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerBlockioIoWaitTimeRecursive: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerBlockioSectorsRecursive: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerCPUPercent: MetricSettings{
 			Enabled: true,
 		},
 		ContainerCPUThrottlingDataPeriods: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerCPUThrottlingDataThrottledPeriods: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerCPUThrottlingDataThrottledTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerCPUUsageKernelmode: MetricSettings{
 			Enabled: true,
@@ -137,118 +137,118 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		ContainerMemoryActiveAnon: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryActiveFile: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryCache: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryDirty: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryHierarchicalMemoryLimit: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryHierarchicalMemswLimit: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryInactiveAnon: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryInactiveFile: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryMappedFile: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryPercent: MetricSettings{
 			Enabled: true,
 		},
 		ContainerMemoryPgfault: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryPgmajfault: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryPgpgin: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryPgpgout: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryRss: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryRssHuge: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemorySwap: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalActiveAnon: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalActiveFile: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalCache: MetricSettings{
 			Enabled: true,
 		},
 		ContainerMemoryTotalDirty: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalInactiveAnon: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalInactiveFile: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalMappedFile: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalPgfault: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalPgmajfault: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalPgpgin: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalPgpgout: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalRss: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalRssHuge: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalSwap: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalUnevictable: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalWriteback: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryUnevictable: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryUsageLimit: MetricSettings{
 			Enabled: true,
 		},
 		ContainerMemoryUsageMax: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryUsageTotal: MetricSettings{
 			Enabled: true,
 		},
 		ContainerMemoryWriteback: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerNetworkIoUsageRxBytes: MetricSettings{
 			Enabled: true,
@@ -257,10 +257,10 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		ContainerNetworkIoUsageRxErrors: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerNetworkIoUsageRxPackets: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerNetworkIoUsageTxBytes: MetricSettings{
 			Enabled: true,
@@ -269,10 +269,10 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		ContainerNetworkIoUsageTxErrors: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerNetworkIoUsageTxPackets: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 	}
 }
