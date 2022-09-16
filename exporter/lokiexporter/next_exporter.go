@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 )
@@ -47,9 +48,16 @@ func newNextExporter(config *Config, settings component.TelemetrySettings) *next
 }
 
 func (l *nextLokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
-	pushReq := loki.LogsToLoki(l.settings.Logger, ld)
+	pushReq, report := loki.LogsToLoki(ld)
 	if len(pushReq.Streams) == 0 {
 		return consumererror.NewPermanent(fmt.Errorf("failed to transform logs into Loki log streams"))
+	}
+	if len(report.Errors) > 0 {
+		l.settings.Logger.Info(
+			"not all log entries were converted to Loki",
+			zap.Int("dropped", report.NumDropped),
+			zap.Int("submitted", report.NumSubmitted),
+		)
 	}
 
 	buf, err := encode(pushReq)
