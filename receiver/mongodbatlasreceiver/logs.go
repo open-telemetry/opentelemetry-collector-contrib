@@ -180,8 +180,8 @@ func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, proje
 			s.collectLogs(pc, hostname, "mongos.gz", cluster.Name, cluster.MongoDBMajorVersion)
 
 			if projectCfg.EnableAuditLogs {
-				s.collectAuditLogs(pc, hostname, "mongodb-audit-log.gz", cluster.Name)
-				s.collectAuditLogs(pc, hostname, "mongos-audit-log.gz", cluster.Name)
+				s.collectAuditLogs(pc, hostname, "mongodb-audit-log.gz", cluster.Name, cluster.MongoDBMajorVersion)
+				s.collectAuditLogs(pc, hostname, "mongos-audit-log.gz", cluster.Name, cluster.MongoDBMajorVersion)
 			}
 		}
 	}
@@ -260,7 +260,7 @@ func (s *logsReceiver) collectLogs(pc ProjectContext, hostname, logName, cluster
 	}
 }
 
-func (s *logsReceiver) collectAuditLogs(pc ProjectContext, hostname, logName, clusterName string) {
+func (s *logsReceiver) collectAuditLogs(pc ProjectContext, hostname, logName, clusterName, clusterMajorVersion string) {
 	logs, err := s.getHostAuditLogs(
 		pc.Project.ID,
 		hostname,
@@ -276,7 +276,8 @@ func (s *logsReceiver) collectAuditLogs(pc ProjectContext, hostname, logName, cl
 		pc,
 		hostname,
 		logName,
-		clusterName)
+		clusterName,
+		clusterMajorVersion)
 	err = s.consumer.ConsumeLogs(context.Background(), plog)
 	if err != nil {
 		s.log.Error("Failed to consume logs", zap.Error(err))

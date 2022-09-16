@@ -52,7 +52,7 @@ var severityMap = map[string]plog.SeverityNumber{
 }
 
 // mongoAuditEventToLogRecord converts model.AuditLog event to plog.LogRecordSlice and adds the resource attributes.
-func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc ProjectContext, hostname, logName, clusterName string) plog.Logs {
+func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc ProjectContext, hostname, logName, clusterName, clusterMajorVersion string) plog.Logs {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
@@ -72,10 +72,13 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 		if err != nil {
 			logger.Warn("failed to marshal", zap.Error(err))
 		}
-		t, err := time.Parse(jsonTimestampLayout, log.Timestamp.Date)
+
+		logTsFormat := tsLayout(clusterMajorVersion)
+		t, err := time.Parse(logTsFormat, log.Timestamp.Date)
 		if err != nil {
 			logger.Warn("Time failed to parse correctly", zap.Error(err))
 		}
+
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(t))
 		lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		// Insert Raw Log message into Body of LogRecord
