@@ -29,11 +29,30 @@ func TestConvertResourceToAttributes(t *testing.T) {
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
 
-	cloneMd := convertToMetricsAttributes(md)
+	cloneMd := convertToMetricsAttributes(md, map[string]bool{})
 
 	// After converting resource to labels
 	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).Resource().Attributes().Len())
 	assert.Equal(t, 2, cloneMd.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
+
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
+
+}
+
+func TestConvertResourceToAttributesExclude(t *testing.T) {
+	md := testdata.GenerateMetricsTwoMetrics()
+	assert.NotNil(t, md)
+
+	// Before converting resource to labels
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
+
+	cloneMd := convertToMetricsAttributes(md, map[string]bool{"resource-attr": true})
+
+	// After converting resource to labels
+	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
 
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
@@ -54,7 +73,7 @@ func TestConvertResourceToAttributesAllDataTypesEmptyDataPoint(t *testing.T) {
 	assert.Equal(t, 0, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(5).Summary().DataPoints().At(0).Attributes().Len())
 	assert.Equal(t, 0, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(6).ExponentialHistogram().DataPoints().At(0).Attributes().Len())
 
-	cloneMd := convertToMetricsAttributes(md)
+	cloneMd := convertToMetricsAttributes(md, map[string]bool{})
 
 	// After converting resource to labels
 	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).Resource().Attributes().Len())

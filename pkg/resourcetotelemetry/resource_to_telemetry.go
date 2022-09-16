@@ -32,15 +32,17 @@ import (
 //	}
 type Settings struct {
 	// Enabled indicates whether to convert resource attributes to telemetry attributes. Default is `false`.
-	Enabled bool `mapstructure:"enabled"`
+	Enabled           bool     `mapstructure:"enabled"`
+	ExcludeAttributes []string `mapstructure:"exclude_attributes"`
 }
 
 type wrapperMetricsExporter struct {
 	component.MetricsExporter
+	ExcludeAttributes map[string]bool
 }
 
 func (wme *wrapperMetricsExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	return wme.MetricsExporter.ConsumeMetrics(ctx, convertToMetricsAttributes(md))
+	return wme.MetricsExporter.ConsumeMetrics(ctx, convertToMetricsAttributes(md, wme.ExcludeAttributes))
 }
 
 func (wme *wrapperMetricsExporter) Capabilities() consumer.Capabilities {
@@ -54,25 +56,46 @@ func WrapMetricsExporter(set Settings, exporter component.MetricsExporter) compo
 	if !set.Enabled {
 		return exporter
 	}
-	return &wrapperMetricsExporter{MetricsExporter: exporter}
+	return &wrapperMetricsExporter{MetricsExporter: exporter, ExcludeAttributes: sliceToStringSet(set.ExcludeAttributes)}
 }
 
-func convertToMetricsAttributes(md pmetric.Metrics) pmetric.Metrics {
+func convertToMetricsAttributes(md pmetric.Metrics, excludeAttributes map[string]bool) pmetric.Metrics {
 	cloneMd := md.Clone()
 	rms := cloneMd.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		resource := rms.At(i).Resource()
+
+		labelMap := extractLabelsFromResource(&resource, excludeAttributes)
 
 		ilms := rms.At(i).ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
 			metricSlice := ilm.Metrics()
 			for k := 0; k < metricSlice.Len(); k++ {
-				addAttributesToMetric(metricSlice.At(k), resource.Attributes())
+				addAttributesToMetric(metricSlice.At(k), labelMap)
 			}
 		}
 	}
 	return cloneMd
+}
+
+// extractAttributesFromResource extracts the attributes from a given resource and
+// returns them as a StringMap.
+func extractLabelsFromResource(resource *pcommon.Resource, excludeAttributes map[string]bool) pcommon.Map {
+	if len(excludeAttributes) == 0 {
+		return resource.Attributes()
+	}
+	labelMap := pcommon.NewMap()
+	attributes := resource.Attributes()
+	attrMap := attributes.AsRaw()
+	for k := range attrMap {
+		shouldBeSkipped := excludeAttributes[k]
+		if !shouldBeSkipped {
+			stringLabel, _ := attributes.Get(k)
+			labelMap.UpsertString(k, stringLabel.AsString())
+		}
+	}
+	return labelMap
 }
 
 // addAttributesToMetric adds additional labels to the given metric
@@ -120,4 +143,14 @@ func joinAttributeMaps(from, to pcommon.Map) {
 		v.CopyTo(to.PutEmpty(k))
 		return true
 	})
+}
+
+// sliceToSet converts slice of strings to set of strings
+// Returns the set of strings
+func sliceToStringSet(slice []string) map[string]bool {
+	set := make(map[string]bool, len(slice))
+	for _, s := range slice {
+		set[s] = true
+	}
+	return set
 }

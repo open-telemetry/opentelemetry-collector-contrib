@@ -11,3 +11,4 @@ The following configuration options can be modified:
 
 - `resource_to_telemetry_conversion`
     - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
+    - `exclude_attributes`: (default empty list) Some attributes can be excluded during conversion to labels.
