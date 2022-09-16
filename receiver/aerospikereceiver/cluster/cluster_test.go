@@ -17,7 +17,7 @@ package cluster // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"testing"
 
-	as "github.com/aerospike/aerospike-client-go/v5"
+	as "github.com/aerospike/aerospike-client-go/v6"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/cluster/mocks"

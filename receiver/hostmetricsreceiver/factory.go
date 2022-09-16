@@ -22,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/service/featuregate"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
@@ -101,6 +103,12 @@ func createMetricsReceiver(
 	)
 }
 
+func logDeprecatedFeatureGateForDirection(log *zap.Logger, gateID string) {
+	log.Warn("WARNING: The " + gateID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
+		"the direction attribute has been reverted in the specification. See https://github.com/open-telemetry/opentelemetry-specification/issues/2726 " +
+		"for additional details.")
+}
+
 func createAddScraperOptions(
 	ctx context.Context,
 	set component.ReceiverCreateSettings,
@@ -121,6 +129,13 @@ func createAddScraperOptions(
 		}
 
 		return nil, fmt.Errorf("host metrics scraper factory not found for key: %q", key)
+	}
+
+	if !featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithDirectionAttributeFeatureGateID) {
+		logDeprecatedFeatureGateForDirection(set.Logger, internal.EmitMetricsWithDirectionAttributeFeatureGateID)
+	}
+	if featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithoutDirectionAttributeFeatureGateID) {
+		logDeprecatedFeatureGateForDirection(set.Logger, internal.EmitMetricsWithoutDirectionAttributeFeatureGateID)
 	}
 
 	return scraperControllerOptions, nil

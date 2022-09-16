@@ -288,7 +288,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "coralogix",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["coralogix"].CreateDefaultConfig().(*coralogixexporter.Config)
-				cfg.Endpoint = endpoint
+				cfg.Traces.Endpoint = endpoint
 				return cfg
 			},
 		},

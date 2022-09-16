@@ -278,6 +278,15 @@ func TestPodCreate(t *testing.T) {
 
 func TestPodAddOutOfSync(t *testing.T) {
 	c, _ := newTestClient(t)
+	c.Associations = append(c.Associations, Association{
+		Name: "name",
+		Sources: []AssociationSource{
+			{
+				From: ResourceSource,
+				Name: "k8s.pod.name",
+			},
+		},
+	})
 	assert.Equal(t, len(c.Pods), 0)
 
 	pod := &api_v1.Pod{}
@@ -286,21 +295,27 @@ func TestPodAddOutOfSync(t *testing.T) {
 	startTime := meta_v1.NewTime(time.Now())
 	pod.Status.StartTime = &startTime
 	c.handlePodAdd(pod)
-	assert.Equal(t, len(c.Pods), 2)
+	assert.Equal(t, len(c.Pods), 3)
 	got := c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")]
+	assert.Equal(t, got.Address, "1.1.1.1")
+	assert.Equal(t, got.Name, "podA")
+	got = c.Pods[newPodIdentifier(ResourceSource, "k8s.pod.name", "podA")]
 	assert.Equal(t, got.Address, "1.1.1.1")
 	assert.Equal(t, got.Name, "podA")
 
 	pod2 := &api_v1.Pod{}
 	pod2.Name = "podB"
-	pod.Status.PodIP = "1.1.1.1"
+	pod2.Status.PodIP = "1.1.1.1"
 	startTime2 := meta_v1.NewTime(time.Now().Add(-time.Second * 10))
-	pod.Status.StartTime = &startTime2
-	c.handlePodAdd(pod)
-	assert.Equal(t, len(c.Pods), 2)
+	pod2.Status.StartTime = &startTime2
+	c.handlePodAdd(pod2)
+	assert.Equal(t, len(c.Pods), 4)
 	got = c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")]
 	assert.Equal(t, got.Address, "1.1.1.1")
 	assert.Equal(t, got.Name, "podA")
+	got = c.Pods[newPodIdentifier(ResourceSource, "k8s.pod.name", "podB")]
+	assert.Equal(t, got.Address, "1.1.1.1")
+	assert.Equal(t, got.Name, "podB")
 }
 
 func TestPodUpdate(t *testing.T) {

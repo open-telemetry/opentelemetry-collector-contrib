@@ -8,7 +8,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/quantile v0.38.0-rc.3.0.20220804102556-2fec6abdb5f7
 	github.com/DataDog/datadog-agent/pkg/trace v0.38.0-rc.3.0.20220804102556-2fec6abdb5f7
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.7
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.8
 	github.com/aws/aws-sdk-go v1.44.96
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.60.0
