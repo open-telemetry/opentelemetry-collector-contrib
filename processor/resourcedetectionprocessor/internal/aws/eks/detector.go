@@ -77,8 +77,8 @@ func (detector *detector) Detect(ctx context.Context) (resource pcommon.Resource
 	}
 
 	attr := res.Attributes()
-	attr.UpsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attr.UpsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEKS)
+	attr.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attr.PutString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEKS)
 
 	return res, conventions.SchemaURL, nil
 }

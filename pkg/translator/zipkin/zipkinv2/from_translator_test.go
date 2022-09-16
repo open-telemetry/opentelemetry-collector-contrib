@@ -131,7 +131,7 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 	}
 }
 
-func findSpanByID(rs ptrace.ResourceSpansSlice, spanID pcommon.SpanID) *ptrace.Span {
+func findSpanByID(rs ptrace.ResourceSpansSlice, spanID pcommon.SpanID) ptrace.Span {
 	for i := 0; i < rs.Len(); i++ {
 		instSpans := rs.At(i).ScopeSpans()
 		for j := 0; j < instSpans.Len(); j++ {
@@ -139,12 +139,12 @@ func findSpanByID(rs ptrace.ResourceSpansSlice, spanID pcommon.SpanID) *ptrace.S
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				if span.SpanID() == spanID {
-					return &span
+					return span
 				}
 			}
 		}
 	}
-	return nil
+	return ptrace.Span{}
 }
 
 func generateTraceOneSpanOneTraceID(status ptrace.StatusCode) ptrace.Traces {

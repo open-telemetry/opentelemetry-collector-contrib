@@ -61,15 +61,13 @@ func (b *metricsFromDataPointBuilder) Build(dataPoints []*MetricsDataPoint) (pme
 		metric := ilm.Metrics().AppendEmpty()
 		metric.SetName(key.MetricName)
 		metric.SetUnit(key.MetricUnit)
-		metric.SetDataType(key.MetricDataType.MetricDataType())
 
 		var dataPointSlice pmetric.NumberDataPointSlice
-
 		switch key.MetricDataType.MetricDataType() {
 		case pmetric.MetricDataTypeGauge:
-			dataPointSlice = metric.Gauge().DataPoints()
+			dataPointSlice = metric.SetEmptyGauge().DataPoints()
 		case pmetric.MetricDataTypeSum:
-			metric.Sum().SetAggregationTemporality(key.MetricDataType.AggregationTemporality())
+			metric.SetEmptySum().SetAggregationTemporality(key.MetricDataType.AggregationTemporality())
 			metric.Sum().SetIsMonotonic(key.MetricDataType.IsMonotonic())
 			dataPointSlice = metric.Sum().DataPoints()
 		}

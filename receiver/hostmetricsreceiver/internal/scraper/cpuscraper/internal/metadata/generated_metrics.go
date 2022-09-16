@@ -94,7 +94,7 @@ func (m *metricSystemCPUTime) init() {
 	m.data.SetName("system.cpu.time")
 	m.data.SetDescription("Total CPU seconds broken down by different states.")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -108,8 +108,8 @@ func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().UpsertString("cpu", cpuAttributeValue)
-	dp.Attributes().UpsertString("state", stateAttributeValue)
+	dp.Attributes().PutString("cpu", cpuAttributeValue)
+	dp.Attributes().PutString("state", stateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -148,7 +148,7 @@ func (m *metricSystemCPUUtilization) init() {
 	m.data.SetName("system.cpu.utilization")
 	m.data.SetDescription("Percentage of CPU time broken down by different states.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -160,8 +160,8 @@ func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().UpsertString("cpu", cpuAttributeValue)
-	dp.Attributes().UpsertString("state", stateAttributeValue)
+	dp.Attributes().PutString("cpu", cpuAttributeValue)
+	dp.Attributes().PutString("state", stateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

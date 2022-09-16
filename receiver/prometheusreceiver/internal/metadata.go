@@ -19,15 +19,6 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 )
 
-// MetadataCache is a subset of the prometheus' scrape.MetricMetadataStore that provide only the functionality which is needed.
-type MetadataCache interface {
-	GetMetadata(metricName string) (scrape.MetricMetadata, bool)
-}
-
-type ScrapeManager interface {
-	TargetsAll() map[string][]*scrape.Target
-}
-
 type dataPoint struct {
 	value    float64
 	boundary float64
@@ -63,7 +54,7 @@ var internalMetricMetadata = map[string]*scrape.MetricMetadata{
 	},
 }
 
-func metadataForMetric(metricName string, mc MetadataCache) (*scrape.MetricMetadata, string) {
+func metadataForMetric(metricName string, mc scrape.MetricMetadataStore) (*scrape.MetricMetadata, string) {
 	if metadata, ok := internalMetricMetadata[metricName]; ok {
 		return metadata, metricName
 	}

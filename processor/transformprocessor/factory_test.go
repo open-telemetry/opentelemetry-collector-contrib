@@ -120,9 +120,8 @@ func TestFactoryCreateMetricsProcessor(t *testing.T) {
 	metrics := pmetric.NewMetrics()
 	metric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetName("operationA")
-	metric.SetDataType(pmetric.MetricDataTypeSum)
 
-	_, ok := metric.Sum().DataPoints().AppendEmpty().Attributes().Get("test")
+	_, ok := metric.SetEmptySum().DataPoints().AppendEmpty().Attributes().Get("test")
 	assert.False(t, ok)
 
 	err = metricsProcessor.ConsumeMetrics(context.Background(), metrics)

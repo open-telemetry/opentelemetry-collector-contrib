@@ -68,8 +68,7 @@ func convertToMetricsAttributes(md pmetric.Metrics) pmetric.Metrics {
 			ilm := ilms.At(j)
 			metricSlice := ilm.Metrics()
 			for k := 0; k < metricSlice.Len(); k++ {
-				metric := metricSlice.At(k)
-				addAttributesToMetric(&metric, resource.Attributes())
+				addAttributesToMetric(metricSlice.At(k), resource.Attributes())
 			}
 		}
 	}
@@ -77,7 +76,7 @@ func convertToMetricsAttributes(md pmetric.Metrics) pmetric.Metrics {
 }
 
 // addAttributesToMetric adds additional labels to the given metric
-func addAttributesToMetric(metric *pmetric.Metric, labelMap pcommon.Map) {
+func addAttributesToMetric(metric pmetric.Metric, labelMap pcommon.Map) {
 	switch metric.DataType() {
 	case pmetric.MetricDataTypeGauge:
 		addAttributesToNumberDataPoints(metric.Gauge().DataPoints(), labelMap)
@@ -118,7 +117,7 @@ func addAttributesToExponentialHistogramDataPoints(ps pmetric.ExponentialHistogr
 
 func joinAttributeMaps(from, to pcommon.Map) {
 	from.Range(func(k string, v pcommon.Value) bool {
-		v.CopyTo(to.UpsertEmpty(k))
+		v.CopyTo(to.PutEmpty(k))
 		return true
 	})
 }

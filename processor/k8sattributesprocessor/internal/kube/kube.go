@@ -40,6 +40,7 @@ const (
 
 	ResourceSource   = "resource_attribute"
 	ConnectionSource = "connection"
+	K8sIPLabelName   = "k8s.pod.ip"
 )
 
 // PodIdentifierAttribute represents AssociationSource with matching value for pod

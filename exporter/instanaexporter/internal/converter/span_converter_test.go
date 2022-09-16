@@ -38,7 +38,7 @@ type SpanOptions struct {
 	EndTimestamp   time.Duration
 }
 
-func setupSpan(span *ptrace.Span, opts SpanOptions) {
+func setupSpan(span ptrace.Span, opts SpanOptions) {
 	var empty16 [16]byte
 	var empty8 [8]byte
 
@@ -81,27 +81,28 @@ func setupSpan(span *ptrace.Span, opts SpanOptions) {
 	span.SetSpanID(spanID)
 	span.SetKind(ptrace.SpanKindClient)
 	span.SetName("my_operation")
-	span.SetTraceState(ptrace.TraceStateEmpty)
+	span.TraceStateStruct().FromRaw("")
 	span.SetTraceID(traceID)
 
 	// adding attributes (tags in the instana side)
-	span.Attributes().UpsertBool("some_key", true)
+	span.Attributes().PutBool("some_key", true)
 }
 
 func generateAttrs() pcommon.Map {
-	rawmap := map[string]interface{}{
-		"some_boolean_key": true,
-		"custom_attribute": "ok",
-		// test non empty pid
-		conventions.AttributeProcessPID: "1234",
-		// test non empty service name
-		conventions.AttributeServiceName: "myservice",
-		// test non empty instana host id
-		backend.AttributeInstanaHostID: "myhost1",
-	}
+	attrs := pcommon.NewMap()
+	attrs.PutBool("some_boolean_key", true)
+	attrs.PutString("custom_attribute", "ok")
 
-	attrs := pcommon.NewMapFromRaw(rawmap)
-	attrs.UpsertBool("itistrue", true)
+	// test non empty pid
+	attrs.PutString(conventions.AttributeProcessPID, "1234")
+
+	// test non empty service name
+	attrs.PutString(conventions.AttributeServiceName, "myservice")
+
+	// test non empty instana host id
+	attrs.PutString(backend.AttributeInstanaHostID, "myhost1")
+
+	attrs.PutBool("itistrue", true)
 
 	return attrs
 }
@@ -182,7 +183,7 @@ func TestSpanBasics(t *testing.T) {
 
 	sp1 := spanSlice.AppendEmpty()
 
-	setupSpan(&sp1, SpanOptions{})
+	setupSpan(sp1, SpanOptions{})
 
 	attrs := generateAttrs()
 	conv := SpanConverter{}
@@ -199,20 +200,20 @@ func TestSpanCorrelation(t *testing.T) {
 	spanSlice := ptrace.NewSpanSlice()
 
 	sp1 := spanSlice.AppendEmpty()
-	setupSpan(&sp1, SpanOptions{})
+	setupSpan(sp1, SpanOptions{})
 
 	sp2 := spanSlice.AppendEmpty()
-	setupSpan(&sp2, SpanOptions{
+	setupSpan(sp2, SpanOptions{
 		ParentID: sp1.SpanID(),
 	})
 
 	sp3 := spanSlice.AppendEmpty()
-	setupSpan(&sp3, SpanOptions{
+	setupSpan(sp3, SpanOptions{
 		ParentID: sp2.SpanID(),
 	})
 
 	sp4 := spanSlice.AppendEmpty()
-	setupSpan(&sp4, SpanOptions{
+	setupSpan(sp4, SpanOptions{
 		ParentID: sp1.SpanID(),
 	})
 
@@ -238,7 +239,7 @@ func TestSpanWithError(t *testing.T) {
 	spanSlice := ptrace.NewSpanSlice()
 
 	sp1 := spanSlice.AppendEmpty()
-	setupSpan(&sp1, SpanOptions{
+	setupSpan(sp1, SpanOptions{
 		Error: "some error",
 	})
 

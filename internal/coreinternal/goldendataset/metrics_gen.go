@@ -95,7 +95,7 @@ func (g *metricGenerator) genMetricFromCfg(cfg MetricsCfg) pmetric.Metrics {
 		rm := rms.AppendEmpty()
 		resource := rm.Resource()
 		for j := 0; j < cfg.NumResourceAttrs; j++ {
-			resource.Attributes().UpsertString(
+			resource.Attributes().PutString(
 				fmt.Sprintf("resource-attr-name-%d", j),
 				fmt.Sprintf("resource-attr-val-%d", j),
 			)
@@ -122,22 +122,18 @@ func (g *metricGenerator) populateMetrics(cfg MetricsCfg, ilm pmetric.ScopeMetri
 		g.populateMetricDesc(cfg, metric)
 		switch cfg.MetricDescriptorType {
 		case pmetric.MetricDataTypeGauge:
-			metric.SetDataType(pmetric.MetricDataTypeGauge)
-			populateNumberPoints(cfg, metric.Gauge().DataPoints())
+			populateNumberPoints(cfg, metric.SetEmptyGauge().DataPoints())
 		case pmetric.MetricDataTypeSum:
-			metric.SetDataType(pmetric.MetricDataTypeSum)
-			sum := metric.Sum()
+			sum := metric.SetEmptySum()
 			sum.SetIsMonotonic(cfg.IsMonotonicSum)
 			sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 			populateNumberPoints(cfg, sum.DataPoints())
 		case pmetric.MetricDataTypeHistogram:
-			metric.SetDataType(pmetric.MetricDataTypeHistogram)
-			histo := metric.Histogram()
+			histo := metric.SetEmptyHistogram()
 			histo.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 			populateDoubleHistogram(cfg, histo)
 		case pmetric.MetricDataTypeExponentialHistogram:
-			metric.SetDataType(pmetric.MetricDataTypeExponentialHistogram)
-			histo := metric.ExponentialHistogram()
+			histo := metric.SetEmptyExponentialHistogram()
 			histo.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 			populateExpoHistogram(cfg, histo)
 		}
@@ -189,30 +185,29 @@ func populateDoubleHistogram(cfg MetricsCfg, dh pmetric.Histogram) {
 
 func setDoubleHistogramBounds(hdp pmetric.HistogramDataPoint, bounds ...float64) {
 	counts := make([]uint64, len(bounds))
-	hdp.SetBucketCounts(pcommon.NewImmutableUInt64Slice(counts))
-	hdp.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(bounds))
+	hdp.BucketCounts().FromRaw(counts)
+	hdp.ExplicitBounds().FromRaw(bounds)
 }
 
 func addDoubleHistogramVal(hdp pmetric.HistogramDataPoint, val float64) {
 	hdp.SetCount(hdp.Count() + 1)
 	hdp.SetSum(hdp.Sum() + val)
-	buckets := hdp.BucketCounts().AsRaw()
+	buckets := hdp.BucketCounts()
 	bounds := hdp.ExplicitBounds()
 	for i := 0; i < bounds.Len(); i++ {
 		bound := bounds.At(i)
 		if val <= bound {
-			buckets[i]++
+			buckets.SetAt(i, buckets.At(i)+1)
 			break
 		}
 	}
-	hdp.SetBucketCounts(pcommon.NewImmutableUInt64Slice(buckets))
 }
 
 func populatePtAttributes(cfg MetricsCfg, lm pcommon.Map) {
 	for i := 0; i < cfg.NumPtLabels; i++ {
 		k := fmt.Sprintf("pt-label-key-%d", i)
 		v := fmt.Sprintf("pt-label-val-%d", i)
-		lm.UpsertString(k, v)
+		lm.PutString(k, v)
 	}
 }
 
@@ -235,6 +230,6 @@ func populateExpoHistogram(cfg MetricsCfg, dh pmetric.ExponentialHistogram) {
 		pt.SetScale(0)
 		pt.SetZeroCount(0)
 		pt.Positive().SetOffset(int32(cfg.PtVal))
-		pt.Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{uint64(cfg.PtVal)}))
+		pt.Positive().BucketCounts().FromRaw([]uint64{uint64(cfg.PtVal)})
 	}
 }

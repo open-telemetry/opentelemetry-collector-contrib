@@ -355,7 +355,7 @@ func assertCPUMetricValid(t *testing.T, metric pmetric.Metric, startTime pcommon
 	expected.SetName("system.cpu.time")
 	expected.SetDescription("Total CPU seconds broken down by different states.")
 	expected.SetUnit("s")
-	expected.SetDataType(pmetric.MetricDataTypeSum)
+	expected.SetEmptySum()
 	internal.AssertDescriptorEqual(t, expected, metric)
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
@@ -388,7 +388,7 @@ func assertCPUUtilizationMetricValid(t *testing.T, metric pmetric.Metric, startT
 	expected.SetName("system.cpu.utilization")
 	expected.SetDescription("Percentage of CPU time broken down by different states.")
 	expected.SetUnit("1")
-	expected.SetDataType(pmetric.MetricDataTypeGauge)
+	expected.SetEmptyGauge()
 	internal.AssertDescriptorEqual(t, expected, metric)
 	if startTime != 0 {
 		internal.AssertGaugeMetricStartTimeEquals(t, metric, startTime)

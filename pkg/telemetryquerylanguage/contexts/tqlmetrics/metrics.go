@@ -591,7 +591,7 @@ func accessExplicitBounds() tql.StandardGetSetter {
 			if newExplicitBounds, ok := val.([]float64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.HistogramDataPoint:
-					ctx.GetItem().(pmetric.HistogramDataPoint).SetExplicitBounds(pcommon.NewImmutableFloat64Slice(newExplicitBounds))
+					ctx.GetItem().(pmetric.HistogramDataPoint).ExplicitBounds().FromRaw(newExplicitBounds)
 				}
 			}
 		},
@@ -611,7 +611,7 @@ func accessBucketCounts() tql.StandardGetSetter {
 			if newBucketCount, ok := val.([]uint64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.HistogramDataPoint:
-					ctx.GetItem().(pmetric.HistogramDataPoint).SetBucketCounts(pcommon.NewImmutableUInt64Slice(newBucketCount))
+					ctx.GetItem().(pmetric.HistogramDataPoint).BucketCounts().FromRaw(newBucketCount)
 				}
 			}
 		},
@@ -711,7 +711,7 @@ func accessPositiveBucketCounts() tql.StandardGetSetter {
 			if newPositiveBucketCounts, ok := val.([]uint64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice(newPositiveBucketCounts))
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().BucketCounts().FromRaw(newPositiveBucketCounts)
 				}
 			}
 		},
@@ -771,7 +771,7 @@ func accessNegativeBucketCounts() tql.StandardGetSetter {
 			if newNegativeBucketCounts, ok := val.([]uint64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().SetBucketCounts(pcommon.NewImmutableUInt64Slice(newNegativeBucketCounts))
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().BucketCounts().FromRaw(newNegativeBucketCounts)
 				}
 			}
 		},

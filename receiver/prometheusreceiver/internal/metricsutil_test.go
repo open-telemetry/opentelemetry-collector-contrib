@@ -41,7 +41,7 @@ func histogramPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Times
 
 	attrs := hdp.Attributes()
 	for _, kv := range attributes {
-		attrs.UpsertString(kv.Key, kv.Value)
+		attrs.PutString(kv.Key, kv.Value)
 	}
 
 	return hdp
@@ -49,8 +49,8 @@ func histogramPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Times
 
 func histogramPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, bounds []float64, counts []uint64) pmetric.HistogramDataPoint {
 	hdp := histogramPointRaw(attributes, startTimestamp, timestamp)
-	hdp.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(bounds))
-	hdp.SetBucketCounts(pcommon.NewImmutableUInt64Slice(counts))
+	hdp.ExplicitBounds().FromRaw(bounds)
+	hdp.BucketCounts().FromRaw(counts)
 
 	var sum float64
 	var count uint64
@@ -76,8 +76,7 @@ func histogramPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.T
 func histogramMetric(name string, points ...pmetric.HistogramDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pmetric.MetricDataTypeHistogram)
-	histogram := metric.Histogram()
+	histogram := metric.SetEmptyHistogram()
 	histogram.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 
 	destPointL := histogram.DataPoints()
@@ -96,7 +95,7 @@ func doublePointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timestam
 	ndp.SetTimestamp(timestamp)
 
 	for _, kv := range attributes {
-		ndp.Attributes().UpsertString(kv.Key, kv.Value)
+		ndp.Attributes().PutString(kv.Key, kv.Value)
 	}
 
 	return ndp
@@ -117,9 +116,7 @@ func doublePointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Time
 func gaugeMetric(name string, points ...pmetric.NumberDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
-
-	destPointL := metric.Gauge().DataPoints()
+	destPointL := metric.SetEmptyGauge().DataPoints()
 	for _, point := range points {
 		destPoint := destPointL.AppendEmpty()
 		point.CopyTo(destPoint)
@@ -131,8 +128,7 @@ func gaugeMetric(name string, points ...pmetric.NumberDataPoint) pmetric.Metric 
 func sumMetric(name string, points ...pmetric.NumberDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pmetric.MetricDataTypeSum)
-	sum := metric.Sum()
+	sum := metric.SetEmptySum()
 	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	sum.SetIsMonotonic(true)
 
@@ -151,7 +147,7 @@ func summaryPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timesta
 	sdp.SetTimestamp(timestamp)
 
 	for _, kv := range attributes {
-		sdp.Attributes().UpsertString(kv.Key, kv.Value)
+		sdp.Attributes().PutString(kv.Key, kv.Value)
 	}
 
 	return sdp
@@ -182,9 +178,7 @@ func summaryPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Tim
 func summaryMetric(name string, points ...pmetric.SummaryDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pmetric.MetricDataTypeSummary)
-
-	destPointL := metric.Summary().DataPoints()
+	destPointL := metric.SetEmptySummary().DataPoints()
 	for _, point := range points {
 		destPoint := destPointL.AppendEmpty()
 		point.CopyTo(destPoint)

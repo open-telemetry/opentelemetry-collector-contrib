@@ -78,7 +78,7 @@ func (m *metricSystemFilesystemInodesUsage) init() {
 	m.data.SetName("system.filesystem.inodes.usage")
 	m.data.SetDescription("FileSystem inodes used.")
 	m.data.SetUnit("{inodes}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -92,11 +92,11 @@ func (m *metricSystemFilesystemInodesUsage) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("device", deviceAttributeValue)
-	dp.Attributes().UpsertString("mode", modeAttributeValue)
-	dp.Attributes().UpsertString("mountpoint", mountpointAttributeValue)
-	dp.Attributes().UpsertString("type", typeAttributeValue)
-	dp.Attributes().UpsertString("state", stateAttributeValue)
+	dp.Attributes().PutString("device", deviceAttributeValue)
+	dp.Attributes().PutString("mode", modeAttributeValue)
+	dp.Attributes().PutString("mountpoint", mountpointAttributeValue)
+	dp.Attributes().PutString("type", typeAttributeValue)
+	dp.Attributes().PutString("state", stateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -135,7 +135,7 @@ func (m *metricSystemFilesystemUsage) init() {
 	m.data.SetName("system.filesystem.usage")
 	m.data.SetDescription("Filesystem bytes used.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -149,11 +149,11 @@ func (m *metricSystemFilesystemUsage) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("device", deviceAttributeValue)
-	dp.Attributes().UpsertString("mode", modeAttributeValue)
-	dp.Attributes().UpsertString("mountpoint", mountpointAttributeValue)
-	dp.Attributes().UpsertString("type", typeAttributeValue)
-	dp.Attributes().UpsertString("state", stateAttributeValue)
+	dp.Attributes().PutString("device", deviceAttributeValue)
+	dp.Attributes().PutString("mode", modeAttributeValue)
+	dp.Attributes().PutString("mountpoint", mountpointAttributeValue)
+	dp.Attributes().PutString("type", typeAttributeValue)
+	dp.Attributes().PutString("state", stateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -192,7 +192,7 @@ func (m *metricSystemFilesystemUtilization) init() {
 	m.data.SetName("system.filesystem.utilization")
 	m.data.SetDescription("Fraction of filesystem bytes used.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -204,10 +204,10 @@ func (m *metricSystemFilesystemUtilization) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().UpsertString("device", deviceAttributeValue)
-	dp.Attributes().UpsertString("mode", modeAttributeValue)
-	dp.Attributes().UpsertString("mountpoint", mountpointAttributeValue)
-	dp.Attributes().UpsertString("type", typeAttributeValue)
+	dp.Attributes().PutString("device", deviceAttributeValue)
+	dp.Attributes().PutString("mode", modeAttributeValue)
+	dp.Attributes().PutString("mountpoint", mountpointAttributeValue)
+	dp.Attributes().PutString("type", typeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

@@ -109,14 +109,16 @@ func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {
 	start := time.Now()
 	err = le.ConsumeLogs(ctx, ld)
 	duration := time.Since(start)
-	ctx, _ = tag.New(ctx, tag.Upsert(tag.MustNewKey("endpoint"), endpoint))
-
 	if err == nil {
-		sCtx, _ := tag.New(ctx, tag.Upsert(tag.MustNewKey("success"), "true"))
-		stats.Record(sCtx, mBackendLatency.M(duration.Milliseconds()))
+		_ = stats.RecordWithTags(
+			ctx,
+			[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successTrueMutator},
+			mBackendLatency.M(duration.Milliseconds()))
 	} else {
-		fCtx, _ := tag.New(ctx, tag.Upsert(tag.MustNewKey("success"), "false"))
-		stats.Record(fCtx, mBackendLatency.M(duration.Milliseconds()))
+		_ = stats.RecordWithTags(
+			ctx,
+			[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successFalseMutator},
+			mBackendLatency.M(duration.Milliseconds()))
 	}
 
 	return err

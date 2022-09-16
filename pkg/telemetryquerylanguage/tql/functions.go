@@ -24,9 +24,9 @@ type PathExpressionParser func(*Path) (GetSetter, error)
 type EnumParser func(*EnumSymbol) (*Enum, error)
 
 // NewFunctionCall Visible for testing
-func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (ExprFunc, error) {
-	if f, ok := functions[inv.Function]; ok {
-		args, err := buildArgs(inv, reflect.TypeOf(f), functions, pathParser, enumParser)
+func (p *Parser) NewFunctionCall(inv Invocation) (ExprFunc, error) {
+	if f, ok := p.functions[inv.Function]; ok {
+		args, err := p.buildArgs(inv, reflect.TypeOf(f))
 		if err != nil {
 			return nil, err
 		}
@@ -44,33 +44,52 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 	return nil, fmt.Errorf("undefined function %v", inv.Function)
 }
 
-func buildArgs(inv Invocation, fType reflect.Type, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) ([]reflect.Value, error) {
+func (p *Parser) buildArgs(inv Invocation, fType reflect.Type) ([]reflect.Value, error) {
 	var args []reflect.Value
+	// Some function arguments may be intended to take values from the calling processor
+	// instead of being passed by the caller of the TQL function, so we have to keep
+	// track of the index of the argument passed within the DSL.
+	// e.g. Logger, which is provided by the processor to the TQL Parser struct.
+	DSLArgumentIndex := 0
 	for i := 0; i < fType.NumIn(); i++ {
 		argType := fType.In(i)
 
-		if argType.Kind() == reflect.Slice {
-			err := buildSliceArg(inv, argType, i, &args, functions, pathParser, enumParser)
+		switch argType.Kind() {
+		case reflect.Slice:
+			err := p.buildSliceArg(inv, argType, i, &args)
 			if err != nil {
 				return nil, err
 			}
-		} else {
-			if i >= len(inv.Arguments) {
+			// Slice arguments must be the final argument in an invocation.
+			return args, nil
+		default:
+			isInternalArg := p.buildInternalArg(argType, &args)
+
+			if isInternalArg {
+				continue
+			}
+
+			if DSLArgumentIndex >= len(inv.Arguments) {
 				return nil, fmt.Errorf("not enough arguments for function %v", inv.Function)
 			}
 
-			argDef := inv.Arguments[i]
-			err := buildArg(argDef, argType, i, &args, functions, pathParser, enumParser)
+			argDef := inv.Arguments[DSLArgumentIndex]
+			err := p.buildArg(argDef, argType, DSLArgumentIndex, &args)
+			DSLArgumentIndex++
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
+
+	if len(inv.Arguments) > DSLArgumentIndex {
+		return nil, fmt.Errorf("too many arguments for function %v", inv.Function)
+	}
+
 	return args, nil
 }
 
-func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args *[]reflect.Value,
-	functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) error {
+func (p *Parser) buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args *[]reflect.Value) error {
 	switch argType.Elem().Name() {
 	case reflect.String.String():
 		var arg []string
@@ -107,7 +126,7 @@ func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args
 	case "Getter":
 		var arg []Getter
 		for j := startingIndex; j < len(inv.Arguments); j++ {
-			val, err := NewGetter(inv.Arguments[j], functions, pathParser, enumParser)
+			val, err := p.NewGetter(inv.Arguments[j])
 			if err != nil {
 				return err
 			}
@@ -120,25 +139,25 @@ func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args
 	return nil
 }
 
-func buildArg(argDef Value, argType reflect.Type, index int, args *[]reflect.Value,
-	functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) error {
+// Handle interfaces that can be passed as arguments to TQL function invocations.
+func (p *Parser) buildArg(argDef Value, argType reflect.Type, index int, args *[]reflect.Value) error {
 	switch argType.Name() {
 	case "Setter":
 		fallthrough
 	case "GetSetter":
-		arg, err := pathParser(argDef.Path)
+		arg, err := p.pathParser(argDef.Path)
 		if err != nil {
 			return fmt.Errorf("invalid argument at position %v %w", index, err)
 		}
 		*args = append(*args, reflect.ValueOf(arg))
 	case "Getter":
-		arg, err := NewGetter(argDef, functions, pathParser, enumParser)
+		arg, err := p.NewGetter(argDef)
 		if err != nil {
 			return fmt.Errorf("invalid argument at position %v %w", index, err)
 		}
 		*args = append(*args, reflect.ValueOf(arg))
 	case "Enum":
-		arg, err := enumParser(argDef.Enum)
+		arg, err := p.enumParser(argDef.Enum)
 		if err != nil {
 			return fmt.Errorf("invalid argument at position %v must be an Enum", index)
 		}
@@ -165,4 +184,17 @@ func buildArg(argDef Value, argType reflect.Type, index int, args *[]reflect.Val
 		*args = append(*args, reflect.ValueOf(bool(*argDef.Bool)))
 	}
 	return nil
+}
+
+// Handle interfaces that can be declared as parameters to a TQL function, but will
+// never be called in an invocation. Returns whether the arg is an internal arg.
+func (p *Parser) buildInternalArg(argType reflect.Type, args *[]reflect.Value) bool {
+	switch argType.Name() {
+	case "Logger":
+		*args = append(*args, reflect.ValueOf(p.logger))
+	default:
+		return false
+	}
+
+	return true
 }

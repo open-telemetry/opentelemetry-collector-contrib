@@ -80,7 +80,7 @@ func (sr *sapmReceiver) handleRequest(req *http.Request) error {
 			for i := 0; i < rSpans.Len(); i++ {
 				rSpan := rSpans.At(i)
 				attrs := rSpan.Resource().Attributes()
-				attrs.UpsertString(splunk.SFxAccessTokenLabel, accessToken)
+				attrs.PutString(splunk.SFxAccessTokenLabel, accessToken)
 			}
 		}
 	}
