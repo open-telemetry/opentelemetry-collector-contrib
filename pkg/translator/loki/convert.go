@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package lokiexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
+package loki // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 
 import (
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/grafana/loki/pkg/logproto"
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
 )
 
 const (
@@ -97,7 +97,7 @@ func removeAttributes(attrs pcommon.Map, labels model.LabelSet) {
 }
 
 func convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource) (*logproto.Entry, error) {
-	line, err := encodeJSON(lr, res)
+	line, err := Encode(lr, res)
 	if err != nil {
 		return nil, err
 	}
@@ -105,4 +105,16 @@ func convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource) (*logproto.E
 		Timestamp: timestampFromLogRecord(lr),
 		Line:      line,
 	}, nil
+}
+
+func timestampFromLogRecord(lr plog.LogRecord) time.Time {
+	if lr.Timestamp() != 0 {
+		return time.Unix(0, int64(lr.Timestamp()))
+	}
+
+	if lr.ObservedTimestamp() != 0 {
+		return time.Unix(0, int64(lr.ObservedTimestamp()))
+	}
+
+	return time.Unix(0, int64(pcommon.NewTimestampFromTime(timeNow())))
 }
