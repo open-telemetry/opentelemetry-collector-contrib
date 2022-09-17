@@ -17,11 +17,11 @@ import (
 	"bufio"
 	"context"
 	"errors"
-	"github.com/spf13/cast"
 	"io"
 	"os"
 	"testing"
 
+	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
