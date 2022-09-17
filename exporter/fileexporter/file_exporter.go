@@ -20,6 +20,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/spf13/cast"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -28,11 +29,20 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
+const (
+	marshalTypeProto    = "proto"
+	marshalTypeProtobuf = "protobuf"
+)
+
 // fileExporter is the implementation of file exporter that writes telemetry data to a file
 type fileExporter struct {
-	path             string
-	file             io.WriteCloser
-	mutex            sync.Mutex
+	path  string
+	file  io.WriteCloser
+	mutex sync.Mutex
+
+	// isJSON defines whether the exported data is in json format
+	isJSON bool
+
 	tracesMarshaler  ptrace.Marshaler
 	metricsMarshaler pmetric.Marshaler
 	logsMarshaler    plog.Marshaler
@@ -49,6 +59,7 @@ func newFileExporter(conf *Config) *fileExporter {
 			MaxBackups: conf.Rotation.MaxBackups,
 			LocalTime:  conf.Rotation.LocalTime,
 		},
+		isJSON:           isJSONData(conf),
 		tracesMarshaler:  tracesMarshaler,
 		metricsMarshaler: metricsMarshaler,
 		logsMarshaler:    logsMarshaler,
@@ -63,7 +74,7 @@ func (e *fileExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error 
 	if err != nil {
 		return err
 	}
-	return exportMessageAsLine(e, buf)
+	return exportMessage(e, buf)
 }
 
 func (e *fileExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
@@ -71,13 +82,20 @@ func (e *fileExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) err
 	if err != nil {
 		return err
 	}
-	return exportMessageAsLine(e, buf)
+	return exportMessage(e, buf)
 }
 
 func (e *fileExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	buf, err := e.logsMarshaler.MarshalLogs(ld)
 	if err != nil {
 		return err
+	}
+	return exportMessage(e, buf)
+}
+
+func exportMessage(e *fileExporter, buf []byte) error {
+	if !e.isJSON {
+		return exportMessageAsBuffer(e, buf)
 	}
 	return exportMessageAsLine(e, buf)
 }
@@ -95,6 +113,20 @@ func exportMessageAsLine(e *fileExporter, buf []byte) error {
 	return nil
 }
 
+func exportMessageAsBuffer(e *fileExporter, buf []byte) error {
+	// Ensure only one write operation happens at a time.
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+	// write the size of each message before writing the message itself.
+	if _, err := e.file.Write([]byte(cast.ToString(len(buf)) + "\n")); err != nil {
+		return err
+	}
+	if _, err := e.file.Write(buf); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (e *fileExporter) Start(context.Context, component.Host) error {
 	return nil
 }
@@ -105,8 +137,17 @@ func (e *fileExporter) Shutdown(context.Context) error {
 }
 
 func buildMarshaler(marshalType string) (ptrace.Marshaler, pmetric.Marshaler, plog.Marshaler) {
-	if strings.ToLower(marshalType) == "proto" {
-		return ptrace.NewProtoMarshaler(), pmetric.NewProtoMarshaler(), plog.NewJSONMarshaler()
+	if strings.ToLower(marshalType) == marshalTypeProto ||
+		strings.ToLower(marshalType) == marshalTypeProtobuf {
+		return ptrace.NewProtoMarshaler(), pmetric.NewProtoMarshaler(), plog.NewProtoMarshaler()
 	}
 	return ptrace.NewJSONMarshaler(), pmetric.NewJSONMarshaler(), plog.NewJSONMarshaler()
+}
+
+func isJSONData(conf *Config) bool {
+	if strings.ToLower(conf.MarshalType) == marshalTypeProto ||
+		strings.ToLower(conf.MarshalType) == marshalTypeProtobuf {
+		return false
+	}
+	return true
 }

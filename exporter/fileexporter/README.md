@@ -8,10 +8,9 @@
 
 Exporter supports the following features：
 
-+ Support for writing pipeline data to a JSON file.
-+ Support for rotation of telemetry files.
++ Support for writing pipeline data to a file.
 
-The data is written in.[Protobuf JSON encoding](https://developers.google.com/protocol-buffers/docs/proto3#json). using [OpenTelemetry protocol](https://github.com/open-telemetry/opentelemetry-proto).
++ Support for rotation of telemetry files.
 
 
 
@@ -21,16 +20,24 @@ This intended for primarily for debugging Collector without setting up backends.
 ## Getting Started
 
 The following settings are required:
+
 - `path` (no default): where to write information.
 
 The following settings are optional:
+
 - `rotation` settings to rotate telemetry files.
-    - max_megabytes:  [default: 100]: the maximum size in megabytes of the telemetry file before it is rotated.
-    - max_days: [no default (unlimited)]: the maximum number of days to retain telemetry files based on the timestamp encoded in their filename.
-    - max_backups: [default: 100]: the maximum number of old telemetry files to retain.
-    - localtime : [default: false (use UTC)] whether or not the timestamps in backup files is formatted according to the host's local time.
+
+  - max_megabytes:  [default: 100]: the maximum size in megabytes of the telemetry file before it is rotated.
+  - max_days: [no default (unlimited)]: the maximum number of days to retain telemetry files based on the timestamp encoded in their filename.
+  - max_backups: [default: 100]: the maximum number of old telemetry files to retain.
+  - localtime : [default: false (use UTC)] whether or not the timestamps in backup files is formatted according to the host's local time.
+
+- `marshaler`[default: json] :the type of marshaler which encodes telemetry data. The setting can be overridden with `proto` or `protobuf`.
+
+
 
 ## File Rotation
+
 Telemetry is first written to a file that exactly matches the `path` setting. When the file size exceeds `max_megabytes` or age exceeds `max_days`, the file will be rotated.
 
 When a file is rotated, **it is renamed by putting the current time in a timestamp**
@@ -43,7 +50,8 @@ For example, if your `path` is `data.json` and rotation is triggered, this file 
 ```yaml
 exporters:
   file:
-    path: ./file.json
+    path: ./file
+    marshaler: proto
   file/2:
     path: ./filename.json
     rotation:
@@ -51,6 +59,14 @@ exporters:
       max_days: 3
       max_backups: 3
       localtime: true
+  file/3:
+    path: ./filename
+    rotation:
+      max_megabytes: 10
+      max_days: 3
+      max_backups: 3
+      localtime: true
+    marshaler: proto
 ```
 
 

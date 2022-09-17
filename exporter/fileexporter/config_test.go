@@ -50,4 +50,17 @@ func TestLoadConfig(t *testing.T) {
 				LocalTime:    true,
 			},
 		})
+	e2 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "3")]
+	assert.Equal(t, e2,
+		&Config{
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "3")),
+			Path:             "./filename",
+			Rotation: Rotation{
+				MaxMegabytes: 10,
+				MaxDays:      3,
+				MaxBackups:   3,
+				LocalTime:    true,
+			},
+			MarshalType: marshalTypeProto,
+		})
 }

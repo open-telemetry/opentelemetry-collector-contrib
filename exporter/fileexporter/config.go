@@ -34,7 +34,8 @@ type Config struct {
 	// Options:
 	// - json[default]: Marshals to OTLP json bytes.
 	// - proto: Marshals to OTLP binary protobuf bytes.
-	MarshalType string `mapstructure:"marshal"`
+	// - protobuf: Marshals to OTLP binary protobuf bytes.
+	MarshalType string `mapstructure:"marshaler"`
 }
 
 // Rotation an option to rolling log files

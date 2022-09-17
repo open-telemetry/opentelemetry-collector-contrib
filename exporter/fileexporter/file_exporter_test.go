@@ -14,8 +14,11 @@
 package fileexporter
 
 import (
+	"bufio"
 	"context"
 	"errors"
+	"github.com/spf13/cast"
+	"io"
 	"os"
 	"testing"
 
@@ -30,27 +33,94 @@ import (
 )
 
 func TestFileTracesExporter(t *testing.T) {
-	fe := newFileExporter(&Config{
-		Path: tempFileName(t),
-	})
-	require.NotNil(t, fe)
+	type args struct {
+		conf        *Config
+		unmarshaler ptrace.Unmarshaler
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "json: default configuration",
+			args: args{
+				conf: &Config{
+					Path: tempFileName(t),
+				},
+				unmarshaler: ptrace.NewJSONUnmarshaler(),
+			},
+		},
+		{
+			name: "Proto: default configuration",
+			args: args{
+				conf: &Config{
+					Path:        tempFileName(t),
+					MarshalType: "proto",
+				},
+				unmarshaler: ptrace.NewProtoUnmarshaler(),
+			},
+		},
+		{
+			name: "proto: MarshalType is protobuf",
+			args: args{
+				conf: &Config{
+					Path:        tempFileName(t),
+					MarshalType: "protobuf",
+				},
+				unmarshaler: ptrace.NewProtoUnmarshaler(),
+			},
+		},
+		{
+			name: "proto: MarshalType is Protobuf",
+			args: args{
+				conf: &Config{
+					Path:        tempFileName(t),
+					MarshalType: "Protobuf",
+				},
+				unmarshaler: ptrace.NewProtoUnmarshaler(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fe := newFileExporter(tt.args.conf)
+			require.NotNil(t, fe)
 
-	td := testdata.GenerateTracesTwoSpansSameResource()
-	assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, fe.ConsumeTraces(context.Background(), td))
-	assert.NoError(t, fe.Shutdown(context.Background()))
+			td := testdata.GenerateTracesTwoSpansSameResource()
+			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, fe.ConsumeTraces(context.Background(), td))
+			assert.NoError(t, fe.ConsumeTraces(context.Background(), td))
+			assert.NoError(t, fe.Shutdown(context.Background()))
 
-	unmarshaler := ptrace.NewJSONUnmarshaler()
-	buf, err := os.ReadFile(fe.path)
-	assert.NoError(t, err)
-	got, err := unmarshaler.UnmarshalTraces(buf)
-	assert.NoError(t, err)
-	assert.EqualValues(t, td, got)
+			fi, err := os.Open(fe.path)
+			assert.NoError(t, err)
+			defer fi.Close()
+			br := bufio.NewReader(fi)
+			for {
+				buf, isEnd, err := func() ([]byte, bool, error) {
+					if fe.isJSON {
+						return readJSONMessage(br)
+					}
+					return readMessageFromStream(br)
+				}()
+				assert.NoError(t, err)
+				if isEnd {
+					break
+				}
+				got, err := tt.args.unmarshaler.UnmarshalTraces(buf)
+				assert.NoError(t, err)
+				assert.EqualValues(t, td, got)
+			}
+		})
+	}
 }
 
 func TestFileTracesExporterError(t *testing.T) {
 	mf := &errorWriter{}
-	fe := &fileExporter{file: mf}
+	fe := &fileExporter{
+		file:            mf,
+		tracesMarshaler: errorMarshaler{},
+	}
 	require.NotNil(t, fe)
 
 	td := testdata.GenerateTracesTwoSpansSameResource()
@@ -60,27 +130,75 @@ func TestFileTracesExporterError(t *testing.T) {
 }
 
 func TestFileMetricsExporter(t *testing.T) {
-	fe := newFileExporter(&Config{
-		Path: tempFileName(t),
-	})
-	require.NotNil(t, fe)
+	type args struct {
+		conf        *Config
+		unmarshaler pmetric.Unmarshaler
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "json: default configuration",
+			args: args{
+				conf: &Config{
+					Path: tempFileName(t),
+				},
+				unmarshaler: pmetric.NewJSONUnmarshaler(),
+			},
+		},
+		{
+			name: "Proto: default configuration",
+			args: args{
+				conf: &Config{
+					Path:        tempFileName(t),
+					MarshalType: "protobuf",
+				},
+				unmarshaler: pmetric.NewProtoUnmarshaler(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fe := newFileExporter(tt.args.conf)
+			require.NotNil(t, fe)
 
-	md := testdata.GenerateMetricsTwoMetrics()
-	assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, fe.ConsumeMetrics(context.Background(), md))
-	assert.NoError(t, fe.Shutdown(context.Background()))
+			md := testdata.GenerateMetricsTwoMetrics()
+			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, fe.ConsumeMetrics(context.Background(), md))
+			assert.NoError(t, fe.ConsumeMetrics(context.Background(), md))
+			assert.NoError(t, fe.Shutdown(context.Background()))
 
-	unmarshaler := pmetric.NewJSONUnmarshaler()
-	buf, err := os.ReadFile(fe.path)
-	assert.NoError(t, err)
-	got, err := unmarshaler.UnmarshalMetrics(buf)
-	assert.NoError(t, err)
-	assert.EqualValues(t, md, got)
+			fi, err := os.Open(fe.path)
+			assert.NoError(t, err)
+			defer fi.Close()
+			br := bufio.NewReader(fi)
+			for {
+				buf, isEnd, err := func() ([]byte, bool, error) {
+					if fe.isJSON {
+						return readJSONMessage(br)
+					}
+					return readMessageFromStream(br)
+				}()
+				assert.NoError(t, err)
+				if isEnd {
+					break
+				}
+				got, err := tt.args.unmarshaler.UnmarshalMetrics(buf)
+				assert.NoError(t, err)
+				assert.EqualValues(t, md, got)
+			}
+		})
+	}
+
 }
 
 func TestFileMetricsExporterError(t *testing.T) {
 	mf := &errorWriter{}
-	fe := &fileExporter{file: mf}
+	fe := &fileExporter{
+		file:             mf,
+		metricsMarshaler: errorMarshaler{},
+	}
 	require.NotNil(t, fe)
 
 	md := testdata.GenerateMetricsTwoMetrics()
@@ -90,27 +208,74 @@ func TestFileMetricsExporterError(t *testing.T) {
 }
 
 func TestFileLogsExporter(t *testing.T) {
-	fe := newFileExporter(&Config{
-		Path: tempFileName(t),
-	})
-	require.NotNil(t, fe)
+	type args struct {
+		conf        *Config
+		unmarshaler plog.Unmarshaler
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "json: default configuration",
+			args: args{
+				conf: &Config{
+					Path: tempFileName(t),
+				},
+				unmarshaler: plog.NewJSONUnmarshaler(),
+			},
+		},
+		{
+			name: "Proto: default configuration",
+			args: args{
+				conf: &Config{
+					Path:        tempFileName(t),
+					MarshalType: "Protobuf",
+				},
+				unmarshaler: plog.NewProtoUnmarshaler(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fe := newFileExporter(tt.args.conf)
+			require.NotNil(t, fe)
 
-	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
-	assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, fe.ConsumeLogs(context.Background(), ld))
-	assert.NoError(t, fe.Shutdown(context.Background()))
+			ld := testdata.GenerateLogsTwoLogRecordsSameResource()
+			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, fe.ConsumeLogs(context.Background(), ld))
+			assert.NoError(t, fe.ConsumeLogs(context.Background(), ld))
+			assert.NoError(t, fe.Shutdown(context.Background()))
 
-	unmarshaler := plog.NewJSONUnmarshaler()
-	buf, err := os.ReadFile(fe.path)
-	assert.NoError(t, err)
-	got, err := unmarshaler.UnmarshalLogs(buf)
-	assert.NoError(t, err)
-	assert.EqualValues(t, ld, got)
+			fi, err := os.Open(fe.path)
+			assert.NoError(t, err)
+			defer fi.Close()
+			br := bufio.NewReader(fi)
+			for {
+				buf, isEnd, err := func() ([]byte, bool, error) {
+					if fe.isJSON {
+						return readJSONMessage(br)
+					}
+					return readMessageFromStream(br)
+				}()
+				assert.NoError(t, err)
+				if isEnd {
+					break
+				}
+				got, err := tt.args.unmarshaler.UnmarshalLogs(buf)
+				assert.NoError(t, err)
+				assert.EqualValues(t, ld, got)
+			}
+		})
+	}
 }
 
 func TestFileLogsExporterErrors(t *testing.T) {
 	mf := &errorWriter{}
-	fe := &fileExporter{file: mf}
+	fe := &fileExporter{
+		file:          mf,
+		logsMarshaler: errorMarshaler{},
+	}
 	require.NotNil(t, fe)
 
 	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
@@ -129,9 +294,28 @@ func Test_fileExporter_Capabilities(t *testing.T) {
 	require.NotNil(t, fe.Capabilities())
 }
 
+func TestExportMessageAsBuffer(t *testing.T) {
+	fe := newFileExporter(&Config{
+		Path: tempFileName(t),
+		Rotation: Rotation{
+			MaxMegabytes: 1,
+		},
+		MarshalType: "proto",
+	})
+	require.NotNil(t, fe)
+	//
+	ld := testdata.GenerateLogsManyLogRecordsSameResource(15000)
+	marshaler := plog.NewProtoMarshaler()
+	buf, err := marshaler.MarshalLogs(ld)
+	assert.NoError(t, err)
+	assert.Error(t, exportMessageAsBuffer(fe, buf))
+	assert.NoError(t, fe.Shutdown(context.Background()))
+
+}
+
 // tempFileName provides a temporary file name for testing.
 func tempFileName(t *testing.T) string {
-	tmpfile, err := os.CreateTemp("", "*.json")
+	tmpfile, err := os.CreateTemp("", "*")
 	require.NoError(t, err)
 	require.NoError(t, tmpfile.Close())
 	socket := tmpfile.Name()
@@ -149,4 +333,42 @@ func (e errorWriter) Write([]byte) (n int, err error) {
 
 func (e *errorWriter) Close() error {
 	return nil
+}
+
+func readMessageFromStream(br *bufio.Reader) ([]byte, bool, error) {
+	var buf []byte
+	line, _, c := br.ReadLine()
+	if c == io.EOF {
+		return nil, true, nil
+	}
+	size := cast.ToInt(string(line))
+	buf = make([]byte, size)
+	if _, err := br.Read(buf); err != nil {
+		return nil, false, err
+	}
+	return buf, false, nil
+}
+
+func readJSONMessage(br *bufio.Reader) ([]byte, bool, error) {
+	buf, _, c := br.ReadLine()
+	if c == io.EOF {
+		return nil, true, nil
+	}
+	return buf, false, nil
+}
+
+// errorMarshaler is an Marshaler that will return an error all ways
+type errorMarshaler struct {
+}
+
+func (m errorMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
+	return nil, errors.New("all ways return error")
+}
+
+func (m errorMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error) {
+	return nil, errors.New("all ways return error")
+}
+
+func (m errorMarshaler) MarshalLogs(md plog.Logs) ([]byte, error) {
+	return nil, errors.New("all ways return error")
 }
