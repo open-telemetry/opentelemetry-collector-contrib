@@ -52,6 +52,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetter v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder v0.60.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/lumigoauthextension v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver v0.60.0
@@ -728,6 +729,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/heal
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder => ./extension/httpforwarder
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling => ./extension/jaegerremotesampling
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/lumigoauthextension => ./extension/lumigoauthextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension => ./extension/oauth2clientauthextension
 

@@ -40,6 +40,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/lumigoauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
@@ -167,6 +168,13 @@ func TestDefaultExtensions(t *testing.T) {
 				cfg := extFactories["http_forwarder"].CreateDefaultConfig().(*httpforwarder.Config)
 				cfg.Egress.Endpoint = "http://" + endpoint
 				cfg.Ingress.Endpoint = testutil.GetAvailableLocalAddress(t)
+				return cfg
+			},
+		},
+		{
+			extension: "lumigoauth",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["lumigoauth"].CreateDefaultConfig().(*lumigoauthextension.Config)
 				return cfg
 			},
 		},
