@@ -162,7 +162,7 @@ func jProcessToInternalResource(process *model.Process, dest pcommon.Resource) {
 	attrs.Clear()
 	if serviceName != "" {
 		attrs.EnsureCapacity(len(tags) + 1)
-		attrs.UpsertString(conventions.AttributeServiceName, serviceName)
+		attrs.PutString(conventions.AttributeServiceName, serviceName)
 	} else {
 		attrs.EnsureCapacity(len(tags))
 	}
@@ -178,7 +178,7 @@ func translateHostnameAttr(attrs pcommon.Map) {
 	hostname, hostnameFound := attrs.Get("hostname")
 	_, convHostNameFound := attrs.Get(conventions.AttributeHostName)
 	if hostnameFound && !convHostNameFound {
-		hostname.CopyTo(attrs.UpsertEmpty(conventions.AttributeHostName))
+		hostname.CopyTo(attrs.PutEmpty(conventions.AttributeHostName))
 		attrs.Remove("hostname")
 	}
 }
@@ -188,7 +188,7 @@ func translateJaegerVersionAttr(attrs pcommon.Map) {
 	jaegerVersion, jaegerVersionFound := attrs.Get("jaeger.version")
 	_, exporterVersionFound := attrs.Get(occonventions.AttributeExporterVersion)
 	if jaegerVersionFound && !exporterVersionFound {
-		attrs.UpsertString(occonventions.AttributeExporterVersion, "Jaeger-"+jaegerVersion.StringVal())
+		attrs.PutString(occonventions.AttributeExporterVersion, "Jaeger-"+jaegerVersion.StringVal())
 		attrs.Remove("jaeger.version")
 	}
 }
@@ -253,17 +253,17 @@ func jTagsToInternalAttributes(tags []model.KeyValue, dest pcommon.Map) {
 	for _, tag := range tags {
 		switch tag.GetVType() {
 		case model.ValueType_STRING:
-			dest.UpsertString(tag.Key, tag.GetVStr())
+			dest.PutString(tag.Key, tag.GetVStr())
 		case model.ValueType_BOOL:
-			dest.UpsertBool(tag.Key, tag.GetVBool())
+			dest.PutBool(tag.Key, tag.GetVBool())
 		case model.ValueType_INT64:
-			dest.UpsertInt(tag.Key, tag.GetVInt64())
+			dest.PutInt(tag.Key, tag.GetVInt64())
 		case model.ValueType_FLOAT64:
-			dest.UpsertDouble(tag.Key, tag.GetVFloat64())
+			dest.PutDouble(tag.Key, tag.GetVFloat64())
 		case model.ValueType_BINARY:
-			dest.UpsertString(tag.Key, base64.StdEncoding.EncodeToString(tag.GetVBinary()))
+			dest.PutString(tag.Key, base64.StdEncoding.EncodeToString(tag.GetVBinary()))
 		default:
-			dest.UpsertString(tag.Key, fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
+			dest.PutString(tag.Key, fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
 		}
 	}
 }

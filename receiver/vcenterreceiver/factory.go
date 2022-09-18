@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/service/featuregate"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
@@ -55,6 +57,12 @@ func createDefaultConfig() config.Receiver {
 
 var errConfigNotVcenter = errors.New("config was not an vcenter receiver config")
 
+func logDeprecatedFeatureGateForDirection(log *zap.Logger, gate featuregate.Gate) {
+	log.Warn("WARNING: The " + gate.ID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
+		"the direction attribute has been reverted in the specification. See https://github.com/open-telemetry/opentelemetry-specification/issues/2726 " +
+		"for additional details.")
+}
+
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
@@ -66,6 +74,14 @@ func createMetricsReceiver(
 		return nil, errConfigNotVcenter
 	}
 	vr := newVmwareVcenterScraper(params.Logger, cfg, params)
+
+	if !vr.emitMetricsWithDirectionAttribute {
+		logDeprecatedFeatureGateForDirection(vr.logger, emitMetricsWithDirectionAttributeFeatureGate)
+	}
+
+	if vr.emitMetricsWithoutDirectionAttribute {
+		logDeprecatedFeatureGateForDirection(vr.logger, emitMetricsWithoutDirectionAttributeFeatureGate)
+	}
 	scraper, err := scraperhelper.NewScraper(
 		typeStr,
 		vr.scrape,

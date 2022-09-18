@@ -84,7 +84,8 @@ func (e *logExporter) PushLogData(ctx context.Context, lg plog.Logs) (er error) 
 				log := logs.At(k)
 				// Copying resource attributes to log attributes
 				resourceLog.Resource().Attributes().Range(func(k string, v pcommon.Value) bool {
-					log.Attributes().Insert(k, v)
+					logAttributes := log.Attributes()
+					e.mergeAttributes(k, v, logAttributes)
 					return true
 				})
 				attributesMap := log.Attributes()
@@ -103,4 +104,31 @@ func (e *logExporter) PushLogData(ctx context.Context, lg plog.Logs) (er error) 
 		}
 	}
 	return nil
+}
+
+func (e *logExporter) mergeAttributes(k string, value pcommon.Value, logAttr pcommon.Map) {
+	switch value.Type() {
+	case pcommon.ValueTypeInt:
+		logAttr.PutInt(k, value.IntVal())
+	case pcommon.ValueTypeBool:
+		logAttr.PutBool(k, value.BoolVal())
+	case pcommon.ValueTypeDouble:
+		logAttr.PutDouble(k, value.DoubleVal())
+	case pcommon.ValueTypeString:
+		logAttr.PutString(k, value.StringVal())
+	case pcommon.ValueTypeMap:
+		values := map[string]interface{}{}
+		value.MapVal().Range(func(k string, v pcommon.Value) bool {
+			values[k] = v
+			return true
+		})
+	case pcommon.ValueTypeSlice:
+		arrayVal := value.SliceVal()
+		values := make([]interface{}, arrayVal.Len())
+		for i := 0; i < arrayVal.Len(); i++ {
+			values[i] = arrayVal.At(i)
+		}
+	default:
+		e.logger.Debug("Unhandled value type", zap.String("type", value.Type().String()))
+	}
 }

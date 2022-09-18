@@ -56,9 +56,9 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 		logs := plog.NewLogs()
 		resourceLogs := logs.ResourceLogs()
 		resourceLog := resourceLogs.AppendEmpty()
-		resourceLog.Resource().Attributes().UpsertString("k0", "should use ILL attr value instead")
-		resourceLog.Resource().Attributes().UpsertString("k3", "v3")
-		resourceLog.Resource().Attributes().UpsertInt("k4", 123)
+		resourceLog.Resource().Attributes().PutString("k0", "should use ILL attr value instead")
+		resourceLog.Resource().Attributes().PutString("k3", "v3")
+		resourceLog.Resource().Attributes().PutInt("k4", 123)
 
 		ilLogs := resourceLog.ScopeLogs()
 		logSlice := ilLogs.AppendEmpty().LogRecords()
@@ -67,17 +67,17 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 		l.SetTimestamp(pcommon.NewTimestampFromTime(now.Truncate(time.Millisecond)))
 		attrs := l.Attributes()
 
-		attrs.UpsertString("k0", "v0")
-		attrs.UpsertString("k1", "v1")
-		attrs.UpsertString("k2", "v2")
-		attrs.UpsertInt("com.splunk.signalfx.event_category", int64(sfxpb.EventCategory_USER_DEFINED))
-		attrs.UpsertString("com.splunk.signalfx.event_type", "shutdown")
+		attrs.PutString("k0", "v0")
+		attrs.PutString("k1", "v1")
+		attrs.PutString("k2", "v2")
+		attrs.PutInt("com.splunk.signalfx.event_category", int64(sfxpb.EventCategory_USER_DEFINED))
+		attrs.PutString("com.splunk.signalfx.event_type", "shutdown")
 
-		propMap := attrs.UpsertEmptyMap("com.splunk.signalfx.event_properties")
-		propMap.UpsertString("env", "prod")
-		propMap.UpsertBool("isActive", true)
-		propMap.UpsertInt("rack", 5)
-		propMap.UpsertDouble("temp", 40.5)
+		propMap := attrs.PutEmptyMap("com.splunk.signalfx.event_properties")
+		propMap.PutString("env", "prod")
+		propMap.PutBool("isActive", true)
+		propMap.PutInt("rack", 5)
+		propMap.PutDouble("temp", 40.5)
 		propMap.Sort()
 
 		l.Attributes().Sort()
@@ -106,7 +106,7 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 			logData: func() plog.Logs {
 				logs := buildDefaultLogs()
 				lrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-				lrs.At(0).Attributes().UpsertEmpty("com.splunk.signalfx.event_category")
+				lrs.At(0).Attributes().PutEmpty("com.splunk.signalfx.event_category")
 				return logs
 			}(),
 		},

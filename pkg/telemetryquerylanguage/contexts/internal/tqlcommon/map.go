@@ -36,5 +36,5 @@ func SetMapValue(attrs pcommon.Map, mapKey string, val interface{}) {
 	}
 
 	SetValue(value, val)
-	value.CopyTo(attrs.UpsertEmpty(mapKey))
+	value.CopyTo(attrs.PutEmpty(mapKey))
 }

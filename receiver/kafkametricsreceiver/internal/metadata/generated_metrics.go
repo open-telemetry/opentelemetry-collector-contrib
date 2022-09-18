@@ -140,9 +140,9 @@ func (m *metricKafkaConsumerGroupLag) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("group", groupAttributeValue)
-	dp.Attributes().UpsertString("topic", topicAttributeValue)
-	dp.Attributes().UpsertInt("partition", partitionAttributeValue)
+	dp.Attributes().PutString("group", groupAttributeValue)
+	dp.Attributes().PutString("topic", topicAttributeValue)
+	dp.Attributes().PutInt("partition", partitionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -193,8 +193,8 @@ func (m *metricKafkaConsumerGroupLagSum) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("group", groupAttributeValue)
-	dp.Attributes().UpsertString("topic", topicAttributeValue)
+	dp.Attributes().PutString("group", groupAttributeValue)
+	dp.Attributes().PutString("topic", topicAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -245,7 +245,7 @@ func (m *metricKafkaConsumerGroupMembers) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("group", groupAttributeValue)
+	dp.Attributes().PutString("group", groupAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -296,9 +296,9 @@ func (m *metricKafkaConsumerGroupOffset) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("group", groupAttributeValue)
-	dp.Attributes().UpsertString("topic", topicAttributeValue)
-	dp.Attributes().UpsertInt("partition", partitionAttributeValue)
+	dp.Attributes().PutString("group", groupAttributeValue)
+	dp.Attributes().PutString("topic", topicAttributeValue)
+	dp.Attributes().PutInt("partition", partitionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -349,8 +349,8 @@ func (m *metricKafkaConsumerGroupOffsetSum) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("group", groupAttributeValue)
-	dp.Attributes().UpsertString("topic", topicAttributeValue)
+	dp.Attributes().PutString("group", groupAttributeValue)
+	dp.Attributes().PutString("topic", topicAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -401,8 +401,8 @@ func (m *metricKafkaPartitionCurrentOffset) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("topic", topicAttributeValue)
-	dp.Attributes().UpsertInt("partition", partitionAttributeValue)
+	dp.Attributes().PutString("topic", topicAttributeValue)
+	dp.Attributes().PutInt("partition", partitionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -453,8 +453,8 @@ func (m *metricKafkaPartitionOldestOffset) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("topic", topicAttributeValue)
-	dp.Attributes().UpsertInt("partition", partitionAttributeValue)
+	dp.Attributes().PutString("topic", topicAttributeValue)
+	dp.Attributes().PutInt("partition", partitionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -505,8 +505,8 @@ func (m *metricKafkaPartitionReplicas) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("topic", topicAttributeValue)
-	dp.Attributes().UpsertInt("partition", partitionAttributeValue)
+	dp.Attributes().PutString("topic", topicAttributeValue)
+	dp.Attributes().PutInt("partition", partitionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -557,8 +557,8 @@ func (m *metricKafkaPartitionReplicasInSync) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("topic", topicAttributeValue)
-	dp.Attributes().UpsertInt("partition", partitionAttributeValue)
+	dp.Attributes().PutString("topic", topicAttributeValue)
+	dp.Attributes().PutInt("partition", partitionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -609,7 +609,7 @@ func (m *metricKafkaTopicPartitions) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("topic", topicAttributeValue)
+	dp.Attributes().PutString("topic", topicAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

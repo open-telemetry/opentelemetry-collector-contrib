@@ -75,7 +75,7 @@ func TestParserConfigBuildValid(t *testing.T) {
 	}
 
 	sevField := entry.NewBodyField("timestamp")
-	cfg.Config = &SeverityConfig{
+	cfg.SeverityConfig = &SeverityConfig{
 		ParseFrom: &sevField,
 	}
 
@@ -663,7 +663,7 @@ func NewTestParserConfig() ParserConfig {
 		"info": "3xx",
 		"warn": "4xx",
 	}
-	expect.Config = &sp
+	expect.SeverityConfig = &sp
 
 	lnp := NewScopeNameParser()
 	lnp.ParseFrom = entry.NewBodyField("logger")

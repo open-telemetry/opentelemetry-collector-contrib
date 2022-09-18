@@ -53,21 +53,19 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 	// additional temporary log messages expected while transitioning to metrics without a direction attribute
 	expectedLogsWithDirectionAttribute := []logMsg{
 		{
-			msg:   "WARNING - Breaking Change: " + emitMetricsWithDirectionAttributeFeatureGate.Description,
-			level: zapcore.InfoLevel,
-		},
-		{
-			msg: "The feature gate " + emitMetricsWithDirectionAttributeFeatureGate.ID + " is enabled. This " +
-				"otel collector will report metrics with a direction attribute, be aware this will not be supported in the future",
-			level: zapcore.InfoLevel,
+			msg: "WARNING: The " + emitMetricsWithDirectionAttributeFeatureGate.ID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
+				"the direction attribute has been reverted in the specification. See https://github.com/open-telemetry/opentelemetry-specification/issues/2726 " +
+				"for additional details.",
+			level: zapcore.WarnLevel,
 		},
 	}
 
 	expectedLogsWithoutDirectionAttribute := []logMsg{
 		{
-			msg: "The " + emitMetricsWithoutDirectionAttributeFeatureGate.ID + " feature gate is enabled. This " +
-				"otel collector will report metrics without a direction attribute, which is good for future support",
-			level: zapcore.InfoLevel,
+			msg: "WARNING: The " + emitMetricsWithoutDirectionAttributeFeatureGate.ID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
+				"the direction attribute has been reverted in the specification. See https://github.com/open-telemetry/opentelemetry-specification/issues/2726 " +
+				"for additional details.",
+			level: zapcore.WarnLevel,
 		},
 	}
 
@@ -318,12 +316,12 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 
 			var expectedLogs []logMsg
 
-			if tt.emitMetricsWithoutDirectionAttribute {
-				expectedLogs = append(expectedLogs, expectedLogsWithoutDirectionAttribute...)
+			if !tt.emitMetricsWithDirectionAttribute {
+				expectedLogs = append(expectedLogs, expectedLogsWithDirectionAttribute...)
 			}
 
-			if tt.emitMetricsWithDirectionAttribute {
-				expectedLogs = append(expectedLogs, expectedLogsWithDirectionAttribute...)
+			if tt.emitMetricsWithoutDirectionAttribute {
+				expectedLogs = append(expectedLogs, expectedLogsWithoutDirectionAttribute...)
 			}
 
 			expectedLogs = append(expectedLogs, tt.expectedLogs...)

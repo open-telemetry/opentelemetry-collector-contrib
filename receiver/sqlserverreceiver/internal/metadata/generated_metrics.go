@@ -594,7 +594,7 @@ func (m *metricSqlserverPageOperationRate) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().UpsertString("type", pageOperationsAttributeValue)
+	dp.Attributes().PutString("type", pageOperationsAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1204,7 +1204,7 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithSqlserverDatabaseName sets provided value as "sqlserver.database.name" attribute for current resource.
 func WithSqlserverDatabaseName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("sqlserver.database.name", val)
+		rm.Resource().Attributes().PutString("sqlserver.database.name", val)
 	}
 }
 

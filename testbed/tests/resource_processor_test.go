@@ -29,8 +29,8 @@ var (
 	mockedConsumedResourceWithType = func() pmetric.Metrics {
 		md := pmetric.NewMetrics()
 		rm := md.ResourceMetrics().AppendEmpty()
-		rm.Resource().Attributes().UpsertString("opencensus.resourcetype", "host")
-		rm.Resource().Attributes().UpsertString("label-key", "label-value")
+		rm.Resource().Attributes().PutString("opencensus.resourcetype", "host")
+		rm.Resource().Attributes().PutString("label-key", "label-value")
 		m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 		m.SetName("metric-name")
 		m.SetDescription("metric-description")
@@ -79,8 +79,8 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
 			expectedMetrics: func() pmetric.Metrics {
 				md := pmetric.NewMetrics()
 				rm := md.ResourceMetrics().AppendEmpty()
-				rm.Resource().Attributes().UpsertString("resource-type", "host")
-				rm.Resource().Attributes().UpsertString("label-key", "new-label-value")
+				rm.Resource().Attributes().PutString("resource-type", "host")
+				rm.Resource().Attributes().PutString("label-key", "new-label-value")
 				return md
 			}(),
 		},
@@ -98,7 +98,7 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
 			expectedMetrics: func() pmetric.Metrics {
 				md := pmetric.NewMetrics()
 				rm := md.ResourceMetrics().AppendEmpty()
-				rm.Resource().Attributes().UpsertString("additional-label-key", "additional-label-value")
+				rm.Resource().Attributes().PutString("additional-label-key", "additional-label-value")
 				return md
 			}(),
 		},

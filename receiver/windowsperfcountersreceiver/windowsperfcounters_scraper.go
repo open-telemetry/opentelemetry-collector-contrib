@@ -172,11 +172,11 @@ func initializeMetricDps(metric pmetric.Metric, now pcommon.Timestamp, counterVa
 
 	dp := dps.AppendEmpty()
 	if counterValue.InstanceName != "" {
-		dp.Attributes().UpsertString(instanceLabelName, counterValue.InstanceName)
+		dp.Attributes().PutString(instanceLabelName, counterValue.InstanceName)
 	}
 	if attributes != nil {
 		for attKey, attVal := range attributes {
-			dp.Attributes().UpsertString(attKey, attVal)
+			dp.Attributes().PutString(attKey, attVal)
 		}
 	}
 

@@ -145,7 +145,7 @@ var (
 func getAttributes(labels ...string) pcommon.Map {
 	attributeMap := pcommon.NewMap()
 	for i := 0; i < len(labels); i += 2 {
-		attributeMap.UpsertString(labels[i], labels[i+1])
+		attributeMap.PutString(labels[i], labels[i+1])
 	}
 	return attributeMap
 }
@@ -341,7 +341,7 @@ func getSummaryMetric(name string, attributes pcommon.Map, ts uint64, sum float6
 	dp.SetCount(count)
 	dp.SetSum(sum)
 	attributes.Range(func(k string, v pcommon.Value) bool {
-		v.CopyTo(dp.Attributes().UpsertEmpty(k))
+		v.CopyTo(dp.Attributes().PutEmpty(k))
 		return true
 	})
 

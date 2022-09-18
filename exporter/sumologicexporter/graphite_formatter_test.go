@@ -48,9 +48,9 @@ func TestGraphiteMetricDataTypeIntGauge(t *testing.T) {
 	gf := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 
 	metric := exampleIntGaugeMetric()
-	metric.attributes.UpsertString("cluster", "my_cluster")
-	metric.attributes.UpsertString("namespace", "default")
-	metric.attributes.UpsertString("pod", "some pod")
+	metric.attributes.PutString("cluster", "my_cluster")
+	metric.attributes.PutString("namespace", "default")
+	metric.attributes.PutString("pod", "some pod")
 
 	result := gf.metric2String(metric)
 	expected := `my_cluster.default.some_pod.gauge_metric_name 124 1608124661
@@ -62,9 +62,9 @@ func TestGraphiteMetricDataTypeDoubleGauge(t *testing.T) {
 	gf := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 
 	metric := exampleDoubleGaugeMetric()
-	metric.attributes.UpsertString("cluster", "my_cluster")
-	metric.attributes.UpsertString("namespace", "default")
-	metric.attributes.UpsertString("pod", "some pod")
+	metric.attributes.PutString("cluster", "my_cluster")
+	metric.attributes.PutString("namespace", "default")
+	metric.attributes.PutString("pod", "some pod")
 
 	result := gf.metric2String(metric)
 	expected := `my_cluster.default.some_pod.gauge_metric_name_double_test 33.4 1608124661
@@ -76,8 +76,8 @@ func TestGraphiteNoattribute(t *testing.T) {
 	gf := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 
 	metric := exampleDoubleGaugeMetric()
-	metric.attributes.UpsertString("cluster", "my_cluster")
-	metric.attributes.UpsertString("pod", "some pod")
+	metric.attributes.PutString("cluster", "my_cluster")
+	metric.attributes.PutString("pod", "some pod")
 
 	result := gf.metric2String(metric)
 	expected := `my_cluster..some_pod.gauge_metric_name_double_test 33.4 1608124661
@@ -89,9 +89,9 @@ func TestGraphiteMetricDataTypeIntSum(t *testing.T) {
 	gf := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 
 	metric := exampleIntSumMetric()
-	metric.attributes.UpsertString("cluster", "my_cluster")
-	metric.attributes.UpsertString("namespace", "default")
-	metric.attributes.UpsertString("pod", "some pod")
+	metric.attributes.PutString("cluster", "my_cluster")
+	metric.attributes.PutString("namespace", "default")
+	metric.attributes.PutString("pod", "some pod")
 
 	result := gf.metric2String(metric)
 	expected := `my_cluster.default.some_pod.sum_metric_int_test 45 1608124444
@@ -103,9 +103,9 @@ func TestGraphiteMetricDataTypeDoubleSum(t *testing.T) {
 	gf := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 
 	metric := exampleDoubleSumMetric()
-	metric.attributes.UpsertString("cluster", "my_cluster")
-	metric.attributes.UpsertString("namespace", "default")
-	metric.attributes.UpsertString("pod", "some pod")
+	metric.attributes.PutString("cluster", "my_cluster")
+	metric.attributes.PutString("namespace", "default")
+	metric.attributes.PutString("pod", "some pod")
 
 	result := gf.metric2String(metric)
 	expected := `my_cluster.default.some_pod.sum_metric_double_test 45.6 1618124444
@@ -117,9 +117,9 @@ func TestGraphiteMetricDataTypeSummary(t *testing.T) {
 	gf := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 
 	metric := exampleSummaryMetric()
-	metric.attributes.UpsertString("cluster", "my_cluster")
-	metric.attributes.UpsertString("namespace", "default")
-	metric.attributes.UpsertString("pod", "some pod")
+	metric.attributes.PutString("cluster", "my_cluster")
+	metric.attributes.PutString("namespace", "default")
+	metric.attributes.PutString("pod", "some pod")
 
 	result := gf.metric2String(metric)
 	expected := ``
@@ -134,9 +134,9 @@ func TestGraphiteMetricDataTypeHistogram(t *testing.T) {
 	gf := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 
 	metric := exampleHistogramMetric()
-	metric.attributes.UpsertString("cluster", "my_cluster")
-	metric.attributes.UpsertString("namespace", "default")
-	metric.attributes.UpsertString("pod", "some pod")
+	metric.attributes.PutString("cluster", "my_cluster")
+	metric.attributes.PutString("namespace", "default")
+	metric.attributes.PutString("pod", "some pod")
 
 	result := gf.metric2String(metric)
 	expected := ``

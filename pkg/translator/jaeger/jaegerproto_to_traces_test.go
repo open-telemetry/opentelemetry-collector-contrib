@@ -164,11 +164,11 @@ func TestJTagsToInternalAttributes(t *testing.T) {
 	}
 
 	expected := pcommon.NewMap()
-	expected.UpsertBool("bool-val", true)
-	expected.UpsertInt("int-val", 123)
-	expected.UpsertString("string-val", "abc")
-	expected.UpsertDouble("double-val", 1.23)
-	expected.UpsertString("binary-val", "AAAAAABkfZg=")
+	expected.PutBool("bool-val", true)
+	expected.PutInt("int-val", 123)
+	expected.PutString("string-val", "abc")
+	expected.PutDouble("double-val", 1.23)
+	expected.PutString("binary-val", "AAAAAABkfZg=")
 
 	got := pcommon.NewMap()
 	jTagsToInternalAttributes(tags, got)
@@ -570,8 +570,8 @@ func TestChecksum(t *testing.T) {
 func generateTracesResourceOnly() ptrace.Traces {
 	td := testdata.GenerateTracesOneEmptyResourceSpans()
 	rs := td.ResourceSpans().At(0).Resource()
-	rs.Attributes().UpsertString(conventions.AttributeServiceName, "service-1")
-	rs.Attributes().UpsertInt("int-attr-1", 123)
+	rs.Attributes().PutString(conventions.AttributeServiceName, "service-1")
+	rs.Attributes().PutInt("int-attr-1", 123)
 	return td
 }
 
@@ -609,7 +609,7 @@ func generateTracesOneSpanNoResource() ptrace.Traces {
 	span.Events().At(1).SetTimestamp(testSpanEventTimestamp)
 	span.Events().At(1).SetDroppedAttributesCount(0)
 	span.Events().At(1).SetName("")
-	span.Events().At(1).Attributes().UpsertInt("attr-int", 123)
+	span.Events().At(1).Attributes().PutInt("attr-int", 123)
 	return td
 }
 
@@ -787,7 +787,7 @@ func generateTracesTwoSpansChildParent() ptrace.Traces {
 	span.SetStartTimestamp(spans.At(0).StartTimestamp())
 	span.SetEndTimestamp(spans.At(0).EndTimestamp())
 	span.Status().SetCode(ptrace.StatusCodeError)
-	span.Attributes().UpsertInt(conventions.AttributeHTTPStatusCode, 404)
+	span.Attributes().PutInt(conventions.AttributeHTTPStatusCode, 404)
 	return td
 }
 

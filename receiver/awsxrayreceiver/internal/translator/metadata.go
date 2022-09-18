@@ -28,7 +28,7 @@ func addMetadata(meta map[string]map[string]interface{}, attrs pcommon.Map) erro
 		if err != nil {
 			return err
 		}
-		attrs.UpsertString(
+		attrs.PutString(
 			awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(val))
 	}
 	return nil

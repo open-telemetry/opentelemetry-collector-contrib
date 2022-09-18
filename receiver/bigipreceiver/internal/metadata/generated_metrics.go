@@ -263,7 +263,7 @@ func (m *metricBigipNodeAvailability) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("status", availabilityStatusAttributeValue)
+	dp.Attributes().PutString("status", availabilityStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -367,7 +367,7 @@ func (m *metricBigipNodeDataTransmitted) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", directionAttributeValue)
+	dp.Attributes().PutString("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -418,7 +418,7 @@ func (m *metricBigipNodeEnabled) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("status", enabledStatusAttributeValue)
+	dp.Attributes().PutString("status", enabledStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -471,7 +471,7 @@ func (m *metricBigipNodePacketCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", directionAttributeValue)
+	dp.Attributes().PutString("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -624,7 +624,7 @@ func (m *metricBigipPoolAvailability) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("status", availabilityStatusAttributeValue)
+	dp.Attributes().PutString("status", availabilityStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -728,7 +728,7 @@ func (m *metricBigipPoolDataTransmitted) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", directionAttributeValue)
+	dp.Attributes().PutString("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -779,7 +779,7 @@ func (m *metricBigipPoolEnabled) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("status", enabledStatusAttributeValue)
+	dp.Attributes().PutString("status", enabledStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -832,7 +832,7 @@ func (m *metricBigipPoolMemberCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("status", activeStatusAttributeValue)
+	dp.Attributes().PutString("status", activeStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -885,7 +885,7 @@ func (m *metricBigipPoolPacketCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", directionAttributeValue)
+	dp.Attributes().PutString("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -987,7 +987,7 @@ func (m *metricBigipPoolMemberAvailability) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("status", availabilityStatusAttributeValue)
+	dp.Attributes().PutString("status", availabilityStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1091,7 +1091,7 @@ func (m *metricBigipPoolMemberDataTransmitted) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", directionAttributeValue)
+	dp.Attributes().PutString("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1142,7 +1142,7 @@ func (m *metricBigipPoolMemberEnabled) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("status", enabledStatusAttributeValue)
+	dp.Attributes().PutString("status", enabledStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1195,7 +1195,7 @@ func (m *metricBigipPoolMemberPacketCount) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", directionAttributeValue)
+	dp.Attributes().PutString("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1348,7 +1348,7 @@ func (m *metricBigipVirtualServerAvailability) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("status", availabilityStatusAttributeValue)
+	dp.Attributes().PutString("status", availabilityStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1452,7 +1452,7 @@ func (m *metricBigipVirtualServerDataTransmitted) recordDataPoint(start pcommon.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", directionAttributeValue)
+	dp.Attributes().PutString("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1503,7 +1503,7 @@ func (m *metricBigipVirtualServerEnabled) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("status", enabledStatusAttributeValue)
+	dp.Attributes().PutString("status", enabledStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1556,7 +1556,7 @@ func (m *metricBigipVirtualServerPacketCount) recordDataPoint(start pcommon.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("direction", directionAttributeValue)
+	dp.Attributes().PutString("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1737,49 +1737,49 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithBigipNodeIPAddress sets provided value as "bigip.node.ip_address" attribute for current resource.
 func WithBigipNodeIPAddress(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("bigip.node.ip_address", val)
+		rm.Resource().Attributes().PutString("bigip.node.ip_address", val)
 	}
 }
 
 // WithBigipNodeName sets provided value as "bigip.node.name" attribute for current resource.
 func WithBigipNodeName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("bigip.node.name", val)
+		rm.Resource().Attributes().PutString("bigip.node.name", val)
 	}
 }
 
 // WithBigipPoolName sets provided value as "bigip.pool.name" attribute for current resource.
 func WithBigipPoolName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("bigip.pool.name", val)
+		rm.Resource().Attributes().PutString("bigip.pool.name", val)
 	}
 }
 
 // WithBigipPoolMemberIPAddress sets provided value as "bigip.pool_member.ip_address" attribute for current resource.
 func WithBigipPoolMemberIPAddress(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("bigip.pool_member.ip_address", val)
+		rm.Resource().Attributes().PutString("bigip.pool_member.ip_address", val)
 	}
 }
 
 // WithBigipPoolMemberName sets provided value as "bigip.pool_member.name" attribute for current resource.
 func WithBigipPoolMemberName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("bigip.pool_member.name", val)
+		rm.Resource().Attributes().PutString("bigip.pool_member.name", val)
 	}
 }
 
 // WithBigipVirtualServerDestination sets provided value as "bigip.virtual_server.destination" attribute for current resource.
 func WithBigipVirtualServerDestination(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("bigip.virtual_server.destination", val)
+		rm.Resource().Attributes().PutString("bigip.virtual_server.destination", val)
 	}
 }
 
 // WithBigipVirtualServerName sets provided value as "bigip.virtual_server.name" attribute for current resource.
 func WithBigipVirtualServerName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("bigip.virtual_server.name", val)
+		rm.Resource().Attributes().PutString("bigip.virtual_server.name", val)
 	}
 }
 

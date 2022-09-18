@@ -5,7 +5,7 @@ package mocks
 import (
 	time "time"
 
-	aerospike "github.com/aerospike/aerospike-client-go/v5"
+	aerospike "github.com/aerospike/aerospike-client-go/v6"
 	mock "github.com/stretchr/testify/mock"
 )
 

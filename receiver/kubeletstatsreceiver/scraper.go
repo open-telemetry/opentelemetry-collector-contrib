@@ -86,6 +86,12 @@ type kubletScraper struct {
 	emitMetricsWithoutDirectionAttribute bool
 }
 
+func logDeprecatedFeatureGateForDirection(log *zap.Logger, gate featuregate.Gate) {
+	log.Warn("WARNING: The " + gate.ID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
+		"the direction attribute has been reverted in the specification. See https://github.com/open-telemetry/opentelemetry-specification/issues/2726 " +
+		"for additional details.")
+}
+
 func newKubletScraper(
 	restClient kubelet.RestClient,
 	set component.ReceiverCreateSettings,
@@ -108,6 +114,13 @@ func newKubletScraper(
 		},
 		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(emitMetricsWithDirectionAttributeFeatureGateID),
 		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(emitMetricsWithoutDirectionAttributeFeatureGateID),
+	}
+	if !ks.emitMetricsWithDirectionAttribute {
+		logDeprecatedFeatureGateForDirection(ks.logger, emitMetricsWithDirectionAttributeFeatureGate)
+	}
+
+	if ks.emitMetricsWithoutDirectionAttribute {
+		logDeprecatedFeatureGateForDirection(ks.logger, emitMetricsWithoutDirectionAttributeFeatureGate)
 	}
 	return scraperhelper.NewScraper(typeStr, ks.scrape)
 }

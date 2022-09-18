@@ -163,8 +163,12 @@ func createLogData(numberOfLogs int) plog.Logs {
 	logs := plog.NewLogs()
 	logs.ResourceLogs().AppendEmpty() // Add an empty ResourceLogs
 	rl := logs.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().InsertString("service.name", "myapp")
-	rl.Resource().Attributes().InsertString("host.name", "myhost")
+	rl.Resource().Attributes().PutString("service.name", "myapp")
+	rl.Resource().Attributes().PutInt("http.statusCode", 200)
+	rl.Resource().Attributes().PutBool("isTest", true)
+	rl.Resource().Attributes().PutDouble("value", 20.00)
+	rl.Resource().Attributes().PutEmptySlice("values")
+	rl.Resource().Attributes().PutEmptyMap("valueMap")
 	rl.ScopeLogs().AppendEmpty() // Add an empty InstrumentationLibraryLogs
 	ill := rl.ScopeLogs().AppendEmpty()
 
@@ -172,8 +176,8 @@ func createLogData(numberOfLogs int) plog.Logs {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := ill.LogRecords().AppendEmpty()
 		logRecord.Body().SetStringVal("mylog")
-		logRecord.Attributes().InsertString("my-label", "myapp-type")
-		logRecord.Attributes().InsertString("custom", "custom")
+		logRecord.Attributes().PutString("my-label", "myapp-type")
+		logRecord.Attributes().PutString("custom", "custom")
 		logRecord.SetTimestamp(ts)
 	}
 	ill.LogRecords().AppendEmpty()

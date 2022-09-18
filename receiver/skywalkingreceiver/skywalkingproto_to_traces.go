@@ -66,9 +66,9 @@ func SkywalkingToTraces(segment *agentV3.SegmentObject) ptrace.Traces {
 		swTagsToInternalResource(span, rs)
 	}
 
-	rs.Attributes().UpsertString(conventions.AttributeServiceName, segment.GetService())
-	rs.Attributes().UpsertString(conventions.AttributeServiceInstanceID, segment.GetServiceInstance())
-	rs.Attributes().UpsertString(AttributeSkywalkingTraceID, segment.GetTraceId())
+	rs.Attributes().PutString(conventions.AttributeServiceName, segment.GetService())
+	rs.Attributes().PutString(conventions.AttributeServiceInstanceID, segment.GetServiceInstance())
+	rs.Attributes().PutString(AttributeSkywalkingTraceID, segment.GetTraceId())
 
 	il := resourceSpan.ScopeSpans().AppendEmpty()
 	swSpansToSpanSlice(segment.GetTraceId(), segment.GetTraceSegmentId(), swSpans, il.Spans())
@@ -92,7 +92,7 @@ func swTagsToInternalResource(span *agentV3.SpanObject, dest pcommon.Resource) {
 	for _, tag := range tags {
 		otKey, ok := otSpanTagsMapping[tag.Key]
 		if ok {
-			attrs.UpsertString(otKey, tag.Value)
+			attrs.PutString(otKey, tag.Value)
 		}
 	}
 }
@@ -134,7 +134,7 @@ func swSpanToSpan(traceID string, segmentID string, span *agentV3.SpanObject, de
 		attrs.Clear()
 	}
 
-	attrs.UpsertString(AttributeSkywalkingSegmentID, segmentID)
+	attrs.PutString(AttributeSkywalkingSegmentID, segmentID)
 	setSwSpanIDToAttributes(span, attrs)
 	setInternalSpanStatus(span, dest.Status())
 
@@ -221,9 +221,9 @@ func setInternalSpanStatus(span *agentV3.SpanObject, dest ptrace.SpanStatus) {
 }
 
 func setSwSpanIDToAttributes(span *agentV3.SpanObject, dest pcommon.Map) {
-	dest.UpsertInt(AttributeSkywalkingSpanID, int64(span.GetSpanId()))
+	dest.PutInt(AttributeSkywalkingSpanID, int64(span.GetSpanId()))
 	if span.ParentSpanId != -1 {
-		dest.UpsertInt(AttributeSkywalkingParentSpanID, int64(span.GetParentSpanId()))
+		dest.PutInt(AttributeSkywalkingParentSpanID, int64(span.GetParentSpanId()))
 	}
 }
 
@@ -260,7 +260,7 @@ func swKvPairsToInternalAttributes(pairs []*common.KeyStringValuePair, dest pcom
 	}
 
 	for _, pair := range pairs {
-		dest.UpsertString(pair.Key, pair.Value)
+		dest.PutString(pair.Key, pair.Value)
 	}
 }
 

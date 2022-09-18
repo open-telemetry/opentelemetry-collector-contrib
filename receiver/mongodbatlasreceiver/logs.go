@@ -15,9 +15,7 @@
 package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 
 import (
-	"compress/gzip"
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
 	"net"
@@ -180,8 +178,8 @@ func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, proje
 			s.collectLogs(pc, hostname, "mongos.gz", cluster.Name, cluster.MongoDBMajorVersion)
 
 			if projectCfg.EnableAuditLogs {
-				s.collectAuditLogs(pc, hostname, "mongodb-audit-log.gz", cluster.Name)
-				s.collectAuditLogs(pc, hostname, "mongos-audit-log.gz", cluster.Name)
+				s.collectAuditLogs(pc, hostname, "mongodb-audit-log.gz", cluster.Name, cluster.MongoDBMajorVersion)
+				s.collectAuditLogs(pc, hostname, "mongos-audit-log.gz", cluster.Name, cluster.MongoDBMajorVersion)
 			}
 		}
 	}
@@ -219,26 +217,8 @@ func (s *logsReceiver) getHostAuditLogs(groupID, hostname, logName string) ([]mo
 	if err != nil {
 		return nil, err
 	}
-	reader, err := gzip.NewReader(buf)
-	if err != nil {
-		return nil, err
-	}
 
-	dec := json.NewDecoder(reader)
-
-	var entries []model.AuditLog
-	for {
-		var entry model.AuditLog
-		err := dec.Decode(&entry)
-		if errors.Is(err, io.EOF) {
-			return entries, nil
-		}
-		if err != nil {
-			s.log.Error("Entry could not be decoded into LogEntry", zap.Error(err))
-		}
-
-		entries = append(entries, entry)
-	}
+	return decodeAuditJSON(buf)
 }
 
 func (s *logsReceiver) collectLogs(pc ProjectContext, hostname, logName, clusterName, clusterMajorVersion string) {
@@ -260,7 +240,7 @@ func (s *logsReceiver) collectLogs(pc ProjectContext, hostname, logName, cluster
 	}
 }
 
-func (s *logsReceiver) collectAuditLogs(pc ProjectContext, hostname, logName, clusterName string) {
+func (s *logsReceiver) collectAuditLogs(pc ProjectContext, hostname, logName, clusterName, clusterMajorVersion string) {
 	logs, err := s.getHostAuditLogs(
 		pc.Project.ID,
 		hostname,
@@ -276,7 +256,8 @@ func (s *logsReceiver) collectAuditLogs(pc ProjectContext, hostname, logName, cl
 		pc,
 		hostname,
 		logName,
-		clusterName)
+		clusterName,
+		clusterMajorVersion)
 	err = s.consumer.ConsumeLogs(context.Background(), plog)
 	if err != nil {
 		s.log.Error("Failed to consume logs", zap.Error(err))
