@@ -47,14 +47,14 @@ TLDR: The processor will try to find spans belonging to requests as seen from th
 
 The following metrics are emitted by the processor:
 
-| Metric                                      | Type      | Labels                          | Description                                                  |
-|---------------------------------------------|-----------|---------------------------------|--------------------------------------------------------------|
-| traces_service_graph_request_total          | Counter   | client, server, connection_type | Total count of requests between two nodes                    |
-| traces_service_graph_request_failed_total   | Counter   | client, server, connection_type | Total count of failed requests between two nodes             |
-| traces_service_graph_request_server_seconds | Histogram | client, server, connection_type | Time for a request between two nodes as seen from the server |
-| traces_service_graph_request_client_seconds | Histogram | client, server, connection_type | Time for a request between two nodes as seen from the client |
-| traces_service_graph_unpaired_spans_total   | Counter   | client, server, connection_type | Total count of unpaired spans                                |
-| traces_service_graph_dropped_spans_total    | Counter   | client, server, connection_type | Total count of dropped spans                                 |
+| Metric                                      | Type      | Labels                          | Description                                                  | Status  |
+|---------------------------------------------|-----------|---------------------------------|--------------------------------------------------------------|---------|
+| traces_service_graph_request_total          | Counter   | client, server, connection_type | Total count of requests between two nodes                    | &check; |
+| traces_service_graph_request_failed_total   | Counter   | client, server, connection_type | Total count of failed requests between two nodes             | &check; |
+| traces_service_graph_request_server_seconds | Histogram | client, server, connection_type | Time for a request between two nodes as seen from the server | &check; |
+| traces_service_graph_request_client_seconds | Histogram | client, server, connection_type | Time for a request between two nodes as seen from the client | TODO    |
+| traces_service_graph_unpaired_spans_total   | Counter   | client, server, connection_type | Total count of unpaired spans                                | TODO    |
+| traces_service_graph_dropped_spans_total    | Counter   | client, server, connection_type | Total count of dropped spans                                 | TODO    |
 
 Duration is measured both from the client and the server sides.
 

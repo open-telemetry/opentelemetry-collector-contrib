@@ -298,7 +298,7 @@ func (p *processor) aggregateMetricsForEdge(e *store.Edge) {
 	if e.Failed {
 		p.updateErrorMetrics(metricKey)
 	}
-	p.updateDurationMetrics(metricKey, duration)
+	p.updateServerDurationMetrics(metricKey, duration)
 }
 
 func (p *processor) updateSeries(key string, dimensions pcommon.Map) {
@@ -321,7 +321,7 @@ func (p *processor) updateCountMetrics(key string) { p.reqTotal[key]++ }
 
 func (p *processor) updateErrorMetrics(key string) { p.reqFailedTotal[key]++ }
 
-func (p *processor) updateDurationMetrics(key string, duration float64) {
+func (p *processor) updateServerDurationMetrics(key string, duration float64) {
 	index := sort.SearchFloat64s(p.reqDurationBounds, duration) // Search bucket index
 	if _, ok := p.reqDurationSecondsBucketCounts[key]; !ok {
 		p.reqDurationSecondsBucketCounts[key] = make([]uint64, len(p.reqDurationBounds))
@@ -356,7 +356,7 @@ func (p *processor) buildMetrics() (pmetric.Metrics, error) {
 		return m, err
 	}
 
-	if err := p.collectLatencyMetrics(ilm); err != nil {
+	if err := p.collectServerLatencyMetrics(ilm); err != nil {
 		return m, err
 	}
 
@@ -366,7 +366,7 @@ func (p *processor) buildMetrics() (pmetric.Metrics, error) {
 func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 	for key, c := range p.reqTotal {
 		mCount := ilm.Metrics().AppendEmpty()
-		mCount.SetName("request_total")
+		mCount.SetName("traces_service_graph_request_total")
 		mCount.SetEmptySum().SetIsMonotonic(true)
 		// TODO: Support other aggregation temporalities
 		mCount.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -386,7 +386,7 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 
 	for key, c := range p.reqFailedTotal {
 		mCount := ilm.Metrics().AppendEmpty()
-		mCount.SetName("request_failed_total")
+		mCount.SetName("traces_service_graph_request_failed_total")
 		mCount.SetEmptySum().SetIsMonotonic(true)
 		// TODO: Support other aggregation temporalities
 		mCount.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -407,10 +407,10 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 	return nil
 }
 
-func (p *processor) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
+func (p *processor) collectServerLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 	for key := range p.reqDurationSecondsCount {
 		mDuration := ilm.Metrics().AppendEmpty()
-		mDuration.SetName("request_duration_seconds")
+		mDuration.SetName("traces_service_graph_request_server_seconds")
 		// TODO: Support other aggregation temporalities
 		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 
