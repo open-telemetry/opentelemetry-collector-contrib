@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xr
 go 1.18
 
 require (
-	github.com/aws/aws-xray-sdk-go v1.7.0
+	github.com/aws/aws-xray-sdk-go v1.7.1
 	github.com/google/go-cmp v0.5.9 // indirect
 	golang.org/x/sys v0.0.0-20220227234510-4e6760a101f9 // indirect
 	google.golang.org/genproto v0.0.0-20210604141403-392c879c8b08 // indirect
