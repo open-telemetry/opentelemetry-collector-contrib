@@ -63,8 +63,8 @@ cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9
 cloud.google.com/go/storage v1.22.1/go.mod h1:S8N1cAStu7BOeFfE8KAQzmyyLkK8p/vmRq6kuBTW58Y=
 cloud.google.com/go/trace v1.2.0 h1:oIaB4KahkIUOpLSAAjEJ8y2desbjY/x/RfP4O3KAtTI=
 cloud.google.com/go/trace v1.2.0/go.mod h1:Wc8y/uYyOhPy12KEnXG9XGrvfMz5F5SrYecQlbW1rwM=
-contrib.go.opencensus.io/exporter/stackdriver v0.13.13 h1:3KLhsPyyFp1pfZPicg8e1VMSeztIyWm+aE+iZQ8b9Kg=
-contrib.go.opencensus.io/exporter/stackdriver v0.13.13/go.mod h1:5pSSGY0Bhuk7waTHuDf4aQ8D2DrhgETRo9fy6k3Xlzc=
+contrib.go.opencensus.io/exporter/stackdriver v0.13.14 h1:zBakwHardp9Jcb8sQHcHpXy/0+JIb1M8KjigCJzx7+4=
+contrib.go.opencensus.io/exporter/stackdriver v0.13.14/go.mod h1:5pSSGY0Bhuk7waTHuDf4aQ8D2DrhgETRo9fy6k3Xlzc=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
