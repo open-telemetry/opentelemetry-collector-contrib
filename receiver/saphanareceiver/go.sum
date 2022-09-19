@@ -2,8 +2,8 @@ cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMT
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
-github.com/SAP/go-hdb v0.108.1 h1:KcIU0Sjwbr01EgdpA2L1ytEJE6bOzSG1mUaDXMuOxgU=
-github.com/SAP/go-hdb v0.108.1/go.mod h1:7uX6xWAbTJUg2qI+skGqF0UevHJ77VBdI5H5r9JQFws=
+github.com/SAP/go-hdb v0.108.2 h1:Gokz3nfB3IfcLeeCRD4X5rHTRndkcl67CR/3uAinjus=
+github.com/SAP/go-hdb v0.108.2/go.mod h1:7uX6xWAbTJUg2qI+skGqF0UevHJ77VBdI5H5r9JQFws=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
