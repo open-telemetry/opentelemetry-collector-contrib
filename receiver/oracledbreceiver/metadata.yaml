@@ -1,0 +1,302 @@
+name: oracledbreceiver
+
+# TODO: Need to check last active time values, if that should be some kind of attribute
+# TODO: deadlock variable documentation isn't clear, need to confirm correct types.
+
+resource_attributes:
+  oracledb.table.name:
+    description: The name of the table that data is coming from.
+    type: string
+  oracledb.view.name:
+    description: The name of the view that data is coming from.
+    type: string
+  oracledb.query.id:
+    description: Unique ID for SQL statements.
+    type: string
+  oracledb.session.id:
+    description: Session identifier.
+    type: int
+
+attributes:
+  oracledb.query.fulltext:
+    description: Full text for the SQL statement.
+    type: string
+  oracledb.session.type:
+    description: Session type
+    type: string
+
+metrics:
+  oracledb.query.elapsed_time:
+    enabled: true
+    description: Elapsed time (in microseconds) used by this cursor.
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: us
+    attributes:
+      - oracledb.query.fulltext
+  oracledb.query.executions:
+    enabled: true
+    description: Number of executions that have taken place on this object.
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: 1
+    attributes:
+      - oracledb.query.fulltext
+  oracledb.query.parse_calls:
+    enabled: true
+    description: Number of parse calls for all cursors with this SQL text and plan.
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: 1
+    attributes:
+      - oracledb.query.fulltext
+  oracledb.query.physical_read_bytes:
+    enabled: true
+    description: Number of bytes read from disks by the monitored SQL.
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: By
+    attributes:
+      - oracledb.query.fulltext
+  oracledb.query.physical_read_requests:
+    enabled: true
+    description: Number of physical read I/O requests issued by the monitored SQL. The requests may not be disk reads.
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: 1
+    attributes:
+      - oracledb.query.fulltext
+  oracledb.query.physical_write_bytes:
+    enabled: true
+    description: Number of bytes written to disks by the monitored SQL.
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: By
+    attributes:
+      - oracledb.query.fulltext
+  oracledb.query.physical_write_requests:
+    enabled: true
+    description: Number of physical write I/O requests issued by the monitored SQL.
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: 1
+    attributes:
+      - oracledb.query.fulltext
+  oracledb.query.cpu_time:
+    enabled: true
+    description: CPU time (in microseconds) used by this cursor for parsing, executing, and fetching.
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: us
+    attributes:
+      - oracledb.query.fulltext
+  oracledb.query.total_sharable_mem:
+    enabled: true
+    description: Total shared memory (in bytes) occupied by all cursors with this SQL text and plan if they were to be fully loaded in the shared pool (that is, cursor size).
+    gauge:
+      value_type: int
+    unit: By
+    attributes:
+      - oracledb.query.fulltext
+
+  oracledb.system.parse_count_total:
+    enabled: true
+    description: Total number of parse calls (hard, soft, and describe). A soft parse is a check on an object already in the shared pool, to verify that the permissions on the underlying object have not changed.
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: 1
+  oracledb.system.execute_count:
+    enabled: true
+    description: Total number of calls (user and recursive) that executed SQL statements
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: 1
+  oracledb.system.user_commits:
+    enabled: true
+    description: Number of user commits. When a user commits a transaction, the redo generated that reflects the changes made to database blocks must be written to disk. Commits often represent the closest thing to a user transaction rate.
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: 1
+  oracledb.system.user_rollbacks:
+    enabled: true
+    description: Number of times users manually issue the ROLLBACK statement or an error occurs during a user's transactions
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: 1
+  oracledb.system.query_elapsed_time_95p:
+    enabled: true
+    description: The 95th percentile value of elapsed times for all queries.
+    gauge:
+      value_type: double
+    unit: 1
+  oracledb.system.query_elapsed_time_99p:
+    enabled: true
+    description: The 99th percentile value of elapsed times for all queries.
+    gauge:
+      value_type: double
+    unit: 1
+  oracledb.system.query_returned_rows_95p:
+    enabled: true
+    description: The 95th percentile value of most returned rows for all queries.
+    gauge:
+      value_type: int
+    unit: 1
+  oracledb.system.query_returned_rows_99p:
+    enabled: true
+    description: The 99th percentile value of most returned rows for all queries.
+    gauge:
+      value_type: int
+    unit: 1
+  oracledb.system.active_session_total:
+    enabled: true
+    description: Total number of active sessions.
+    gauge:
+      value_type: int
+    unit: 1
+    attributes:
+      - oracledb.session.type
+  oracledb.system.inactive_session_total:
+    enabled: true
+    description: Total number of sessions that are inactive and either has no configured limits or has not yet exceeded the configured limits.
+    gauge:
+      value_type: int
+    unit: 1
+    attributes:
+      - oracledb.session.type
+  oracledb.system.killed_session_total:
+    enabled: true
+    description: Total number of sessions that are marked to be killed.
+    gauge:
+      value_type: int
+    unit: 1
+    attributes:
+      - oracledb.session.type
+  oracledb.system.cached_session_total:
+    enabled: true
+    description: Total number of sessions that are temporarily cached for use by Oracle*XA.
+    gauge:
+      value_type: int
+    unit: 1
+    attributes:
+      - oracledb.session.type
+  oracledb.system.sniped_session_total:
+    enabled: true
+    description: Total number of sessions that are inactive and have exceeded some configured limits (for example, resource limits specified for the resource manager consumer group or idle_time specified in the user's profile). Such sessions will not be allowed to become active again.
+    gauge:
+      value_type: int
+    unit: 1
+    attributes:
+      - oracledb.session.type
+
+  oracledb.session.parse_count_total:
+    enabled: true
+    description: Total number of parse calls (hard, soft, and describe). A soft parse is a check on an object already in the shared pool, to verify that the permissions on the underlying object have not changed.
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: 1
+  oracledb.session.execute_count:
+    enabled: true
+    description: Total number of calls (user and recursive) that executed SQL statements
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: 1
+  oracledb.session.user_commits:
+    enabled: true
+    description: Number of user commits. When a user commits a transaction, the redo generated that reflects the changes made to database blocks must be written to disk. Commits often represent the closest thing to a user transaction rate.
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: 1
+  oracledb.session.user_rollbacks:
+    enabled: true
+    description: Number of times users manually issue the ROLLBACK statement or an error occurs during a user's transactions
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: 1
+  oracledb.session.enqueue_deadlocks:
+    enabled: true
+    description: Total number of deadlocks between table or row locks in different sessions.
+    gauge:
+      value_type: int
+    unit: 1
+  oracledb.session.exchange_deadlocks:
+    enabled: true
+    description: Number of times that a process detected a potential deadlock when exchanging two buffers and raised an internal, restartable error. Index scans are the only operations that perform exchanges.
+    gauge:
+      value_type: int
+    unit: 1
+  oracledb.session.cpu_usage:
+    enabled: true
+    description: CPU usage (%)
+    gauge:
+      value_type: double
+    unit: 1
+  oracledb.session.pga_memory:
+    enabled: true
+    description: PGA size at the end of the interval
+    gauge:
+      value_type: int
+    unit: By
+  oracledb.session.physical_reads:
+    enabled: true
+    description: Number of physical reads
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: 1
+  oracledb.session.logical_reads:
+    enabled: true
+    description: Number of logical reads
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: 1
+  oracledb.session.hard_parses:
+    enabled: true
+    description: Number of hard parses
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: 1
+  oracledb.session.soft_parses:
+    enabled: true
+    description: Number of soft parses
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: 1
