@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/google/go-cmp v0.5.9
-	github.com/jaegertracing/jaeger v1.37.0
+	github.com/jaegertracing/jaeger v1.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.60.0
 	github.com/openzipkin/zipkin-go v0.4.0
