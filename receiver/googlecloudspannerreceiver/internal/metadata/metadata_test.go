@@ -22,10 +22,11 @@ const (
 	labelName       = "LabelName"
 	labelColumnName = "LabelColumnName"
 
-	stringValue  = "stringValue"
-	int64Value   = int64(64)
-	float64Value = float64(64.64)
-	boolValue    = true
+	stringValue             = "stringValue"
+	int64Value              = int64(64)
+	float64Value            = float64(64.64)
+	defaultNullFloat64Value = float64(0)
+	boolValue               = true
 
 	metricName       = "metricName"
 	metricColumnName = "metricColumnName"
