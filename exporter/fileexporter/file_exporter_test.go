@@ -16,12 +16,12 @@ package fileexporter
 import (
 	"bufio"
 	"context"
+	"encoding/binary"
 	"errors"
 	"io"
 	"os"
 	"testing"
 
-	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -336,17 +336,25 @@ func (e *errorWriter) Close() error {
 }
 
 func readMessageFromStream(br *bufio.Reader) ([]byte, bool, error) {
-	var buf []byte
-	line, _, c := br.ReadLine()
-	if c == io.EOF {
+	var length int32
+	// read length
+	err := binary.Read(br, binary.BigEndian, &length)
+	if err != nil {
+		if err == io.EOF {
+			return nil, true, nil
+		} else {
+			return nil, false, err
+		}
+	}
+	buf := make([]byte, length)
+	err = binary.Read(br, binary.BigEndian, &buf)
+	if err == nil {
+		return buf, false, nil
+	}
+	if err == io.EOF {
 		return nil, true, nil
 	}
-	size := cast.ToInt(string(line))
-	buf = make([]byte, size)
-	if _, err := br.Read(buf); err != nil {
-		return nil, false, err
-	}
-	return buf, false, nil
+	return nil, false, err
 }
 
 func readJSONMessage(br *bufio.Reader) ([]byte, bool, error) {

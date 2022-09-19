@@ -16,11 +16,11 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"encoding/binary"
 	"io"
 	"strings"
 	"sync"
 
-	"github.com/spf13/cast"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -118,10 +118,10 @@ func exportMessageAsBuffer(e *fileExporter, buf []byte) error {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 	// write the size of each message before writing the message itself.
-	if _, err := e.file.Write([]byte(cast.ToString(len(buf)) + "\n")); err != nil {
+	if err := binary.Write(e.file, binary.BigEndian, int32(len(buf))); err != nil {
 		return err
 	}
-	if _, err := e.file.Write(buf); err != nil {
+	if err := binary.Write(e.file, binary.BigEndian, buf); err != nil {
 		return err
 	}
 	return nil
