@@ -169,38 +169,6 @@ func TestFieldUnmarshalJSONFailure(t *testing.T) {
 	}
 }
 
-func TestFieldMarshalJSON(t *testing.T) {
-	cases := []struct {
-		name     string
-		input    Field
-		expected []byte
-	}{
-		{
-			"BodyRoot",
-			NewBodyField(),
-			[]byte(`"body"`),
-		},
-		{
-			"SimpleField",
-			NewBodyField("test1"),
-			[]byte(`"body.test1"`),
-		},
-		{
-			"ComplexField",
-			NewBodyField("test1", "test2"),
-			[]byte(`"body.test1.test2"`),
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			res, err := json.Marshal(tc.input)
-			require.NoError(t, err)
-			require.Equal(t, tc.expected, res)
-		})
-	}
-}
-
 func TestFieldUnmarshalYAML(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -274,74 +242,6 @@ func TestFieldUnmarshalYAMLFailure(t *testing.T) {
 			err := yaml.UnmarshalStrict(tc.input, &f)
 			require.Error(t, err)
 			require.Contains(t, err.Error(), tc.expected)
-		})
-	}
-}
-
-func TestFieldMarshalYAML(t *testing.T) {
-	cases := []struct {
-		name     string
-		input    interface{}
-		expected string
-	}{
-		{
-			"BodyRoot",
-			NewBodyField(),
-			"body\n",
-		},
-		{
-			"SimpleField",
-			NewBodyField("test1"),
-			"body.test1\n",
-		},
-		{
-			"ComplexField",
-			NewBodyField("test1", "test2"),
-			"body.test1.test2\n",
-		},
-		{
-			"FieldWithDots",
-			NewBodyField("test.1"),
-			"body['test.1']\n",
-		},
-		{
-			"FieldWithDotsThenNone",
-			NewBodyField("test.1", "test2"),
-			"body['test.1']['test2']\n",
-		},
-		{
-			"FieldWithNoDotsThenDots",
-			NewBodyField("test1", "test.2"),
-			"body['test1']['test.2']\n",
-		},
-		{
-			"AttributeField",
-			NewAttributeField("test1"),
-			"attributes.test1\n",
-		},
-		{
-			"AttributeFieldWithDots",
-			NewAttributeField("test.1"),
-			"attributes['test.1']\n",
-		},
-		{
-			"ResourceField",
-			NewResourceField("test1"),
-			"resource.test1\n",
-		},
-		{
-			"ResourceFieldWithDots",
-			NewResourceField("test.1"),
-			"resource['test.1']\n",
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			res, err := yaml.Marshal(tc.input)
-			require.NoError(t, err)
-
-			require.Equal(t, tc.expected, string(res))
 		})
 	}
 }
