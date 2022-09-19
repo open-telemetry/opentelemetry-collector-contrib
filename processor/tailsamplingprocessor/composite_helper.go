@@ -15,19 +15,20 @@
 package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 
 import (
-	"fmt"
-
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
-func getNewCompositePolicy(logger *zap.Logger, config CompositeCfg) (sampling.PolicyEvaluator, error) {
+func getNewCompositePolicy(logger *zap.Logger, config *CompositeCfg) (sampling.PolicyEvaluator, error) {
 	var subPolicyEvalParams []sampling.SubPolicyEvalParams
 	rateAllocationsMap := getRateAllocationMap(config)
 	for i := range config.SubPolicyCfg {
-		policyCfg := config.SubPolicyCfg[i]
-		policy, _ := getSubPolicyEvaluator(logger, &policyCfg)
+		policyCfg := &config.SubPolicyCfg[i]
+		policy, err := getCompositeSubPolicyEvaluator(logger, policyCfg)
+		if err != nil {
+			return nil, err
+		}
 
 		evalParams := sampling.SubPolicyEvalParams{
 			Evaluator:         policy,
@@ -39,7 +40,7 @@ func getNewCompositePolicy(logger *zap.Logger, config CompositeCfg) (sampling.Po
 }
 
 // Apply rate allocations to the sub-policies
-func getRateAllocationMap(config CompositeCfg) map[string]float64 {
+func getRateAllocationMap(config *CompositeCfg) map[string]float64 {
 	rateAllocationsMap := make(map[string]float64)
 	maxTotalSPS := float64(config.MaxTotalSpansPerSecond)
 	// Default SPS determined by equally diving number of sub policies
@@ -55,37 +56,11 @@ func getRateAllocationMap(config CompositeCfg) map[string]float64 {
 }
 
 // Return instance of composite sub-policy
-func getSubPolicyEvaluator(logger *zap.Logger, cfg *SubPolicyCfg) (sampling.PolicyEvaluator, error) {
+func getCompositeSubPolicyEvaluator(logger *zap.Logger, cfg *CompositeSubPolicyCfg) (sampling.PolicyEvaluator, error) {
 	switch cfg.Type {
-	case AlwaysSample:
-		return sampling.NewAlwaysSample(logger), nil
-	case Latency:
-		lfCfg := cfg.LatencyCfg
-		return sampling.NewLatency(logger, lfCfg.ThresholdMs), nil
-	case NumericAttribute:
-		nafCfg := cfg.NumericAttributeCfg
-		return sampling.NewNumericAttributeFilter(logger, nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue), nil
-	case Probabilistic:
-		pfCfg := cfg.ProbabilisticCfg
-		return sampling.NewProbabilisticSampler(logger, pfCfg.HashSalt, pfCfg.SamplingPercentage), nil
-	case StatusCode:
-		scCfg := cfg.StatusCodeCfg
-		return sampling.NewStatusCodeFilter(logger, scCfg.StatusCodes)
-	case StringAttribute:
-		safCfg := cfg.StringAttributeCfg
-		return sampling.NewStringAttributeFilter(logger, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize, safCfg.InvertMatch), nil
-	case RateLimiting:
-		rlfCfg := cfg.RateLimitingCfg
-		return sampling.NewRateLimiting(logger, rlfCfg.SpansPerSecond), nil
 	case And:
-		return getNewAndPolicy(logger, cfg.AndCfg)
-	case SpanCount:
-		scCfg := cfg.SpanCountCfg
-		return sampling.NewSpanCount(logger, scCfg.MinSpans), nil
-	case TraceState:
-		tsfCfg := cfg.TraceStateCfg
-		return sampling.NewTraceStateFilter(logger, tsfCfg.Key, tsfCfg.Values), nil
+		return getNewAndPolicy(logger, &cfg.AndCfg)
 	default:
-		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
+		return getSharedPolicyEvaluator(logger, &cfg.sharedPolicyCfg)
 	}
 }

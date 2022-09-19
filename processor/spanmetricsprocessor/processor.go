@@ -242,7 +242,7 @@ func (p *processorImp) tracesToMetrics(ctx context.Context, traces ptrace.Traces
 		return err
 	}
 
-	if err = p.metricsExporter.ConsumeMetrics(ctx, *m); err != nil {
+	if err = p.metricsExporter.ConsumeMetrics(ctx, m); err != nil {
 		return err
 	}
 
@@ -251,17 +251,17 @@ func (p *processorImp) tracesToMetrics(ctx context.Context, traces ptrace.Traces
 
 // buildMetrics collects the computed raw metrics data, builds the metrics object and
 // writes the raw metrics data into the metrics object.
-func (p *processorImp) buildMetrics() (*pmetric.Metrics, error) {
+func (p *processorImp) buildMetrics() (pmetric.Metrics, error) {
 	m := pmetric.NewMetrics()
 	ilm := m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Scope().SetName("spanmetricsprocessor")
 
 	if err := p.collectCallMetrics(ilm); err != nil {
-		return nil, err
+		return pmetric.Metrics{}, err
 	}
 
 	if err := p.collectLatencyMetrics(ilm); err != nil {
-		return nil, err
+		return pmetric.Metrics{}, err
 	}
 
 	p.metricKeyToDimensions.RemoveEvictedItems()
@@ -272,7 +272,7 @@ func (p *processorImp) buildMetrics() (*pmetric.Metrics, error) {
 	}
 	p.resetExemplarData()
 
-	return &m, nil
+	return m, nil
 }
 
 // collectLatencyMetrics collects the raw latency metrics, writing the data
@@ -280,18 +280,17 @@ func (p *processorImp) buildMetrics() (*pmetric.Metrics, error) {
 func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 	for key := range p.latencyCount {
 		mLatency := ilm.Metrics().AppendEmpty()
-		mLatency.SetDataType(pmetric.MetricDataTypeHistogram)
 		mLatency.SetName("latency")
 		mLatency.SetUnit("ms")
-		mLatency.Histogram().SetAggregationTemporality(p.config.GetAggregationTemporality())
+		mLatency.SetEmptyHistogram().SetAggregationTemporality(p.config.GetAggregationTemporality())
 
 		timestamp := pcommon.NewTimestampFromTime(time.Now())
 
 		dpLatency := mLatency.Histogram().DataPoints().AppendEmpty()
 		dpLatency.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 		dpLatency.SetTimestamp(timestamp)
-		dpLatency.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(p.latencyBounds))
-		dpLatency.SetBucketCounts(pcommon.NewImmutableUInt64Slice(p.latencyBucketCounts[key]))
+		dpLatency.ExplicitBounds().FromRaw(p.latencyBounds)
+		dpLatency.BucketCounts().FromRaw(p.latencyBucketCounts[key])
 		dpLatency.SetCount(p.latencyCount[key])
 		dpLatency.SetSum(p.latencySum[key])
 
@@ -313,9 +312,8 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) error {
 	for key := range p.callSum {
 		mCalls := ilm.Metrics().AppendEmpty()
-		mCalls.SetDataType(pmetric.MetricDataTypeSum)
 		mCalls.SetName("calls_total")
-		mCalls.Sum().SetIsMonotonic(true)
+		mCalls.SetEmptySum().SetIsMonotonic(true)
 		mCalls.Sum().SetAggregationTemporality(p.config.GetAggregationTemporality())
 
 		dpCalls := mCalls.Sum().DataPoints().AppendEmpty()
@@ -442,13 +440,13 @@ func (p *processorImp) updateLatencyMetrics(key metricKey, latency float64, inde
 
 func (p *processorImp) buildDimensionKVs(serviceName string, span ptrace.Span, optionalDims []Dimension, resourceAttrs pcommon.Map) pcommon.Map {
 	dims := pcommon.NewMap()
-	dims.UpsertString(serviceNameKey, serviceName)
-	dims.UpsertString(operationKey, span.Name())
-	dims.UpsertString(spanKindKey, span.Kind().String())
-	dims.UpsertString(statusCodeKey, span.Status().Code().String())
+	dims.PutString(serviceNameKey, serviceName)
+	dims.PutString(operationKey, span.Name())
+	dims.PutString(spanKindKey, span.Kind().String())
+	dims.PutString(statusCodeKey, span.Status().Code().String())
 	for _, d := range optionalDims {
 		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
-			v.CopyTo(dims.UpsertEmpty(d.Name))
+			v.CopyTo(dims.PutEmpty(d.Name))
 		}
 	}
 	return dims
@@ -570,7 +568,7 @@ func setLatencyExemplars(exemplarsData []exemplarData, timestamp pcommon.Timesta
 
 		exemplar.SetDoubleVal(value)
 		exemplar.SetTimestamp(timestamp)
-		exemplar.FilteredAttributes().UpsertString(traceIDKey, traceID.HexString())
+		exemplar.FilteredAttributes().PutString(traceIDKey, traceID.HexString())
 	}
 
 	es.CopyTo(exemplars)

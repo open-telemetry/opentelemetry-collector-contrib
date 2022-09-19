@@ -44,19 +44,18 @@ processors:
     # - span.kind
     # - status.code
     dimensions:
-
       # If the span is missing http.method, the processor will insert
       # the http.method dimension with value 'GET'.
       # For example, in the following scenario, http.method is not present in a span and so will be added as a dimension to the metric with value "GET":
-      # - calls{http_method="GET",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET"} 1
+      # - calls_total{http_method="GET",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET"} 1
       - name: http.method
         default: GET
 
       # If a default is not provided, the http.status_code dimension will be omitted
       # if the span does not contain http.status_code.
       # For example, consider a scenario with two spans, one span having http.status_code=200 and another missing http.status_code. Two metrics would result with this configuration, one with the http_status_code omitted and the other included:
-      # - calls{http_status_code="200",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET"} 1
-      # - calls{operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET"} 1
+      # - calls_total{http_status_code="200",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET"} 1
+      # - calls_total{operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET"} 1
       - name: http.status_code
 
     # The aggregation temporality of the generated metrics.

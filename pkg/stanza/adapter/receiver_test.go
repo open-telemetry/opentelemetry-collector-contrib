@@ -71,7 +71,7 @@ func TestHandleStartError(t *testing.T) {
 	factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
 
 	cfg := factory.CreateDefaultConfig().(*TestConfig)
-	cfg.Input = newUnstartableParams()
+	cfg.Input = NewUnstartableConfig()
 
 	receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")

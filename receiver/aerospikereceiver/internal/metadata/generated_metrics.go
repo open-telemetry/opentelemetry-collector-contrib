@@ -425,7 +425,7 @@ func (m *metricAerospikeNamespaceDiskAvailable) init() {
 	m.data.SetName("aerospike.namespace.disk.available")
 	m.data.SetDescription("Minimum percentage of contiguous disk space free to the namespace across all devices")
 	m.data.SetUnit("%")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricAerospikeNamespaceDiskAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -474,7 +474,7 @@ func (m *metricAerospikeNamespaceGeojsonRegionQueryCells) init() {
 	m.data.SetName("aerospike.namespace.geojson.region_query_cells")
 	m.data.SetDescription("Number of cell coverings for query region queried")
 	m.data.SetUnit("{cells}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -525,7 +525,7 @@ func (m *metricAerospikeNamespaceGeojsonRegionQueryFalsePositive) init() {
 	m.data.SetName("aerospike.namespace.geojson.region_query_false_positive")
 	m.data.SetDescription("Number of points outside the region.")
 	m.data.SetUnit("{points}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -576,7 +576,7 @@ func (m *metricAerospikeNamespaceGeojsonRegionQueryPoints) init() {
 	m.data.SetName("aerospike.namespace.geojson.region_query_points")
 	m.data.SetDescription("Number of points within the region.")
 	m.data.SetUnit("{points}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -627,7 +627,7 @@ func (m *metricAerospikeNamespaceGeojsonRegionQueryRequests) init() {
 	m.data.SetName("aerospike.namespace.geojson.region_query_requests")
 	m.data.SetDescription("Number of geojson queries on the system since the uptime of the node.")
 	m.data.SetUnit("{queries}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -678,7 +678,7 @@ func (m *metricAerospikeNamespaceMemoryFree) init() {
 	m.data.SetName("aerospike.namespace.memory.free")
 	m.data.SetDescription("Percentage of the namespace's memory which is still free")
 	m.data.SetUnit("%")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricAerospikeNamespaceMemoryFree) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -727,7 +727,7 @@ func (m *metricAerospikeNamespaceMemoryUsage) init() {
 	m.data.SetName("aerospike.namespace.memory.usage")
 	m.data.SetDescription("Memory currently used by each component of the namespace")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -741,7 +741,7 @@ func (m *metricAerospikeNamespaceMemoryUsage) recordDataPoint(start pcommon.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("component", namespaceComponentAttributeValue)
+	dp.Attributes().PutString("component", namespaceComponentAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -780,7 +780,7 @@ func (m *metricAerospikeNamespaceQueryCount) init() {
 	m.data.SetName("aerospike.namespace.query.count")
 	m.data.SetDescription("Number of query operations performed on the namespace")
 	m.data.SetUnit("{queries}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -794,9 +794,9 @@ func (m *metricAerospikeNamespaceQueryCount) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("index", indexTypeAttributeValue)
-	dp.Attributes().UpsertString("result", queryResultAttributeValue)
+	dp.Attributes().PutString("type", queryTypeAttributeValue)
+	dp.Attributes().PutString("index", indexTypeAttributeValue)
+	dp.Attributes().PutString("result", queryResultAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -835,7 +835,7 @@ func (m *metricAerospikeNamespaceScanCount) init() {
 	m.data.SetName("aerospike.namespace.scan.count")
 	m.data.SetDescription("Number of scan operations performed on the namespace")
 	m.data.SetUnit("{scans}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -849,8 +849,8 @@ func (m *metricAerospikeNamespaceScanCount) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("type", scanTypeAttributeValue)
-	dp.Attributes().UpsertString("result", scanResultAttributeValue)
+	dp.Attributes().PutString("type", scanTypeAttributeValue)
+	dp.Attributes().PutString("result", scanResultAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -889,7 +889,7 @@ func (m *metricAerospikeNamespaceTransactionCount) init() {
 	m.data.SetName("aerospike.namespace.transaction.count")
 	m.data.SetDescription("Number of transactions performed on the namespace")
 	m.data.SetUnit("{transactions}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -903,8 +903,8 @@ func (m *metricAerospikeNamespaceTransactionCount) recordDataPoint(start pcommon
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("type", transactionTypeAttributeValue)
-	dp.Attributes().UpsertString("result", transactionResultAttributeValue)
+	dp.Attributes().PutString("type", transactionTypeAttributeValue)
+	dp.Attributes().PutString("result", transactionResultAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -943,7 +943,7 @@ func (m *metricAerospikeNodeConnectionCount) init() {
 	m.data.SetName("aerospike.node.connection.count")
 	m.data.SetDescription("Number of connections opened and closed to the node")
 	m.data.SetUnit("{connections}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -957,8 +957,8 @@ func (m *metricAerospikeNodeConnectionCount) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("type", connectionTypeAttributeValue)
-	dp.Attributes().UpsertString("operation", connectionOpAttributeValue)
+	dp.Attributes().PutString("type", connectionTypeAttributeValue)
+	dp.Attributes().PutString("operation", connectionOpAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -997,7 +997,7 @@ func (m *metricAerospikeNodeConnectionOpen) init() {
 	m.data.SetName("aerospike.node.connection.open")
 	m.data.SetDescription("Current number of open connections to the node")
 	m.data.SetUnit("{connections}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1011,7 +1011,7 @@ func (m *metricAerospikeNodeConnectionOpen) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("type", connectionTypeAttributeValue)
+	dp.Attributes().PutString("type", connectionTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1050,7 +1050,7 @@ func (m *metricAerospikeNodeMemoryFree) init() {
 	m.data.SetName("aerospike.node.memory.free")
 	m.data.SetDescription("Percentage of the node's memory which is still free")
 	m.data.SetUnit("%")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricAerospikeNodeMemoryFree) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1099,7 +1099,7 @@ func (m *metricAerospikeNodeQueryTracked) init() {
 	m.data.SetName("aerospike.node.query.tracked")
 	m.data.SetDescription("Number of queries tracked by the system.")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1215,14 +1215,14 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithAerospikeNamespace sets provided value as "aerospike.namespace" attribute for current resource.
 func WithAerospikeNamespace(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("aerospike.namespace", val)
+		rm.Resource().Attributes().PutString("aerospike.namespace", val)
 	}
 }
 
 // WithAerospikeNodeName sets provided value as "aerospike.node.name" attribute for current resource.
 func WithAerospikeNodeName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("aerospike.node.name", val)
+		rm.Resource().Attributes().PutString("aerospike.node.name", val)
 	}
 }
 

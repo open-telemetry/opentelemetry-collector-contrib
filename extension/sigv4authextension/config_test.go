@@ -61,5 +61,5 @@ func TestLoadConfigError(t *testing.T) {
 	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "missing_credentials").String())
 	require.NoError(t, err)
 	require.NoError(t, config.UnmarshalExtension(sub, cfg))
-	assert.ErrorIs(t, cfg.Validate(), errBadCreds)
+	assert.Error(t, cfg.Validate())
 }

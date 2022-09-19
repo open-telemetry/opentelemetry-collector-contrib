@@ -26,9 +26,9 @@ import (
 
 func Test_replaceAllMatches(t *testing.T) {
 	input := pcommon.NewMap()
-	input.UpsertString("test", "hello world")
-	input.UpsertString("test2", "hello")
-	input.UpsertString("test3", "goodbye")
+	input.PutString("test", "hello world")
+	input.PutString("test2", "hello")
+	input.PutString("test3", "goodbye")
 
 	target := &tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
@@ -54,9 +54,9 @@ func Test_replaceAllMatches(t *testing.T) {
 			replacement: "hello {universe}",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.UpsertString("test", "hello {universe}")
-				expectedMap.UpsertString("test2", "hello {universe}")
-				expectedMap.UpsertString("test3", "goodbye")
+				expectedMap.PutString("test", "hello {universe}")
+				expectedMap.PutString("test2", "hello {universe}")
+				expectedMap.PutString("test3", "goodbye")
 			},
 		},
 		{
@@ -66,9 +66,9 @@ func Test_replaceAllMatches(t *testing.T) {
 			replacement: "nothing {matches}",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.UpsertString("test", "hello world")
-				expectedMap.UpsertString("test2", "hello")
-				expectedMap.UpsertString("test3", "goodbye")
+				expectedMap.PutString("test", "hello world")
+				expectedMap.PutString("test2", "hello")
+				expectedMap.PutString("test3", "goodbye")
 			},
 		},
 	}

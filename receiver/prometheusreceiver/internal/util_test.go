@@ -16,6 +16,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"testing"
+	"time"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
@@ -23,13 +24,8 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-)
-
-const (
-	startTs                 = int64(1555366610000)
-	interval                = int64(15 * 1000)
-	defaultBuilderStartTime = float64(1.0)
 )
 
 var testMetadata = map[string]scrape.MetricMetadata{
@@ -50,8 +46,19 @@ var testMetadata = map[string]scrape.MetricMetadata{
 		Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
 	"process_start_time_seconds": {Metric: "process_start_time_seconds",
 		Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
-	"badprocess_start_time_seconds": {Metric: "badprocess_start_time_seconds",
+	"subprocess_start_time_seconds": {Metric: "subprocess_start_time_seconds",
 		Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
+}
+
+func TestTimestampFromMs(t *testing.T) {
+	assert.Equal(t, pcommon.Timestamp(0), timestampFromMs(0))
+	assert.Equal(t, pcommon.NewTimestampFromTime(time.UnixMilli(1662679535432)), timestampFromMs(1662679535432))
+}
+
+func TestTimestampFromFloat64(t *testing.T) {
+	assert.Equal(t, pcommon.Timestamp(0), timestampFromFloat64(0))
+	// Because of float64 conversion, we check only that we are within 100ns error.
+	assert.InEpsilon(t, uint64(1662679535040000000), uint64(timestampFromFloat64(1662679535.040)), 100)
 }
 
 func TestConvToMetricType(t *testing.T) {

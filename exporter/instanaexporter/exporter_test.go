@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -53,9 +52,9 @@ func TestPushConvertedTraces(t *testing.T) {
 func newTestTraces() ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rspans := traces.ResourceSpans().AppendEmpty()
-	rspans.Resource().Attributes().UpsertString("instana.agent", "agent1")
+	rspans.Resource().Attributes().PutString("instana.agent", "agent1")
 	span := rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	span.SetTraceID(pcommon.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}))
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 1, 2, 3, 4}))
+	span.SetTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4})
+	span.SetSpanID([8]byte{0, 0, 0, 0, 1, 2, 3, 4})
 	return traces
 }

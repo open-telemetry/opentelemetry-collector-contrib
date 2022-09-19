@@ -16,16 +16,15 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
-	"regexp"
+	"fmt"
 	"sort"
-	"time"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/metadata"
+	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/storage"
 	"go.opentelemetry.io/collector/component"
@@ -38,49 +37,42 @@ import (
 
 const (
 	targetMetricName = "target_info"
-	traceIDKey       = "trace_id"
-	spanIDKey        = "span_id"
 )
 
 type transaction struct {
-	isNew                bool
-	ctx                  context.Context
-	useStartTimeMetric   bool
-	startTimeMetricRegex *regexp.Regexp
-	sink                 consumer.Metrics
-	externalLabels       labels.Labels
-	nodeResource         pcommon.Resource
-	logger               *zap.Logger
-	metricBuilder        *metricBuilder
-	job, instance        string
-	jobsMap              *JobsMap
-	obsrecv              *obsreport.Receiver
+	isNew          bool
+	ctx            context.Context
+	families       map[string]*metricFamily
+	mc             scrape.MetricMetadataStore
+	sink           consumer.Metrics
+	externalLabels labels.Labels
+	nodeResource   pcommon.Resource
+	logger         *zap.Logger
+	metricAdjuster MetricsAdjuster
+	obsrecv        *obsreport.Receiver
 }
 
 func newTransaction(
 	ctx context.Context,
-	jobsMap *JobsMap,
-	useStartTimeMetric bool,
-	startTimeMetricRegex *regexp.Regexp,
+	metricAdjuster MetricsAdjuster,
 	sink consumer.Metrics,
 	externalLabels labels.Labels,
 	settings component.ReceiverCreateSettings,
 	obsrecv *obsreport.Receiver) *transaction {
 	return &transaction{
-		ctx:                  ctx,
-		isNew:                true,
-		sink:                 sink,
-		jobsMap:              jobsMap,
-		useStartTimeMetric:   useStartTimeMetric,
-		startTimeMetricRegex: startTimeMetricRegex,
-		externalLabels:       externalLabels,
-		logger:               settings.Logger,
-		obsrecv:              obsrecv,
+		ctx:            ctx,
+		families:       make(map[string]*metricFamily),
+		isNew:          true,
+		sink:           sink,
+		metricAdjuster: metricAdjuster,
+		externalLabels: externalLabels,
+		logger:         settings.Logger,
+		obsrecv:        obsrecv,
 	}
 }
 
 // Append always returns 0 to disable label caching.
-func (t *transaction) Append(ref storage.SeriesRef, labels labels.Labels, atMs int64, value float64) (pointCount storage.SeriesRef, err error) {
+func (t *transaction) Append(ref storage.SeriesRef, ls labels.Labels, atMs int64, val float64) (storage.SeriesRef, error) {
 	select {
 	case <-t.ctx.Done():
 		return 0, errTransactionAborted
@@ -88,63 +80,88 @@ func (t *transaction) Append(ref storage.SeriesRef, labels labels.Labels, atMs i
 	}
 
 	if len(t.externalLabels) != 0 {
-		labels = append(labels, t.externalLabels...)
-		sort.Sort(labels)
+		ls = append(ls, t.externalLabels...)
+		sort.Sort(ls)
 	}
 
 	if t.isNew {
-		if err := t.initTransaction(labels); err != nil {
+		if err := t.initTransaction(ls); err != nil {
 			return 0, err
 		}
 	}
 
-	// For the `target_info` metric we need to convert it to resource attributes.
-	metricName := labels.Get(model.MetricNameLabel)
-	if metricName == targetMetricName {
-		return 0, t.AddTargetInfo(labels)
+	// Any datapoint with duplicate labels MUST be rejected per:
+	// * https://github.com/open-telemetry/wg-prometheus/issues/44
+	// * https://github.com/open-telemetry/opentelemetry-collector/issues/3407
+	// as Prometheus rejects such too as of version 2.16.0, released on 2020-02-13.
+	if dupLabel, hasDup := ls.HasDuplicateLabelNames(); hasDup {
+		return 0, fmt.Errorf("invalid sample: non-unique label names: %q", dupLabel)
 	}
 
-	return 0, t.metricBuilder.AddDataPoint(labels, atMs, value)
+	metricName := ls.Get(model.MetricNameLabel)
+	if metricName == "" {
+		return 0, errMetricNameNotFound
+	}
+
+	// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
+	// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
+	// But it can also be a staleNaN, which is inserted when the target goes away.
+	if metricName == scrapeUpMetricName && val != 1.0 && !value.IsStaleNaN(val) {
+		if val == 0.0 {
+			t.logger.Warn("Failed to scrape Prometheus endpoint",
+				zap.Int64("scrape_timestamp", atMs),
+				zap.Stringer("target_labels", ls))
+		} else {
+			t.logger.Warn("The 'up' metric contains invalid value",
+				zap.Float64("value", val),
+				zap.Int64("scrape_timestamp", atMs),
+				zap.Stringer("target_labels", ls))
+		}
+	}
+
+	// For the `target_info` metric we need to convert it to resource attributes.
+	if metricName == targetMetricName {
+		return 0, t.AddTargetInfo(ls)
+	}
+
+	curMF, ok := t.families[metricName]
+	if !ok {
+		familyName := metricName
+		if _, ok := t.mc.GetMetadata(metricName); !ok {
+			familyName = normalizeMetricName(metricName)
+		}
+		if mf, ok := t.families[familyName]; ok && mf.includesMetric(metricName) {
+			curMF = mf
+		} else {
+			curMF = newMetricFamily(metricName, t.mc, t.logger)
+			t.families[curMF.name] = curMF
+		}
+	}
+
+	return 0, curMF.Add(metricName, ls, atMs, val)
 }
 
 func (t *transaction) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e exemplar.Exemplar) (storage.SeriesRef, error) {
-	metricName := l.Get(model.MetricNameLabel)
-	familyName := normalizeMetricName(metricName)
-	if f, ok := t.metricBuilder.families[familyName]; ok {
-		gk := f.getGroupKey(l)
-		mg := f.groups[gk]
-		_, exists := mg.exemplars[e.Value]
-		if exists {
-			return 0, nil
-		}
-		exemplar := pmetric.NewExemplar()
-		exemplar.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(e.Ts)))
-		exemplar.SetDoubleVal(e.Value)
-		for _, lb := range e.Labels {
-			switch lb.Name {
-			case traceIDKey:
-				var tid [16]byte
-				b, _ := hex.DecodeString(lb.Value)
-				copyToLowerBytes(tid[:], b)
-				exemplar.SetTraceID(pcommon.NewTraceID(tid))
-			case spanIDKey:
-				var sid [8]byte
-				b, _ := hex.DecodeString(lb.Value)
-				copyToLowerBytes(sid[:], b)
-				exemplar.SetSpanID(pcommon.NewSpanID(sid))
-			default:
-				exemplar.FilteredAttributes().UpsertString(lb.Name, lb.Value)
-			}
-		}
-		t.metricBuilder.families[familyName].groups[gk].exemplars[e.Value] = exemplar
-	}
 	return 0, nil
 }
 
-func copyToLowerBytes(dst []byte, src []byte) {
-	for i := 1; i <= len(src); i++ {
-		dst[len(dst)-i] = src[len(src)-i]
+// getMetrics returns all metrics to the given slice.
+// The only error returned by this function is errNoDataToBuild.
+func (t *transaction) getMetrics(resource pcommon.Resource) (pmetric.Metrics, error) {
+	if len(t.families) == 0 {
+		return pmetric.Metrics{}, errNoDataToBuild
 	}
+
+	md := pmetric.NewMetrics()
+	rms := md.ResourceMetrics().AppendEmpty()
+	resource.CopyTo(rms.Resource())
+	metrics := rms.ScopeMetrics().AppendEmpty().Metrics()
+
+	for _, mf := range t.families {
+		mf.appendMetric(metrics)
+	}
+
+	return md, nil
 }
 
 func (t *transaction) initTransaction(labels labels.Labels) error {
@@ -152,7 +169,7 @@ func (t *transaction) initTransaction(labels labels.Labels) error {
 	if !ok {
 		return errors.New("unable to find target in context")
 	}
-	metaStore, ok := scrape.MetricMetadataStoreFromContext(t.ctx)
+	t.mc, ok = scrape.MetricMetadataStoreFromContext(t.ctx)
 	if !ok {
 		return errors.New("unable to find MetricMetadataStore in context")
 	}
@@ -161,12 +178,7 @@ func (t *transaction) initTransaction(labels labels.Labels) error {
 	if job == "" || instance == "" {
 		return errNoJobInstance
 	}
-	if t.jobsMap != nil {
-		t.job = job
-		t.instance = instance
-	}
 	t.nodeResource = CreateResource(job, instance, target.DiscoveredLabels())
-	t.metricBuilder = newMetricBuilder(metaStore, t.useStartTimeMetric, t.startTimeMetricRegex, t.logger)
 	t.isNew = false
 	return nil
 }
@@ -177,39 +189,25 @@ func (t *transaction) Commit() error {
 	}
 
 	ctx := t.obsrecv.StartMetricsOp(t.ctx)
-
-	md := pmetric.NewMetrics()
-	rms := md.ResourceMetrics().AppendEmpty()
-	t.nodeResource.CopyTo(rms.Resource())
-	metrics := rms.ScopeMetrics().AppendEmpty().Metrics()
-
-	err := t.metricBuilder.appendMetrics(metrics)
+	md, err := t.getMetrics(t.nodeResource)
 	if err != nil {
 		t.obsrecv.EndMetricsOp(ctx, dataformat, 0, err)
 		return err
 	}
 
-	if t.useStartTimeMetric {
-		if t.metricBuilder.startTime == 0.0 {
-			err = errNoStartTimeMetrics
-			t.obsrecv.EndMetricsOp(ctx, dataformat, 0, err)
-			return err
-		}
-		// Otherwise adjust the startTimestamp for all the metrics.
-		t.adjustStartTimestamp(metrics)
-	} else {
-		NewMetricsAdjuster(t.jobsMap.get(t.job, t.instance), t.logger).AdjustMetrics(md)
-	}
-
 	numPoints := md.DataPointCount()
-	if numPoints > 0 {
-		if err = t.sink.ConsumeMetrics(ctx, md); err != nil {
-			return err
-		}
+	if numPoints == 0 {
+		return nil
 	}
 
-	t.obsrecv.EndMetricsOp(ctx, dataformat, numPoints, nil)
-	return nil
+	if err = t.metricAdjuster.AdjustMetrics(md); err != nil {
+		t.obsrecv.EndMetricsOp(ctx, dataformat, numPoints, err)
+		return err
+	}
+
+	err = t.sink.ConsumeMetrics(ctx, md)
+	t.obsrecv.EndMetricsOp(ctx, dataformat, numPoints, err)
+	return err
 }
 
 func (t *transaction) Rollback() error {
@@ -229,49 +227,8 @@ func (t *transaction) AddTargetInfo(labels labels.Labels) error {
 			continue
 		}
 
-		attrs.UpsertString(lbl.Name, lbl.Value)
+		attrs.PutString(lbl.Name, lbl.Value)
 	}
 
 	return nil
-}
-
-func pdataTimestampFromFloat64(ts float64) pcommon.Timestamp {
-	secs := int64(ts)
-	nanos := int64((ts - float64(secs)) * 1e9)
-	return pcommon.NewTimestampFromTime(time.Unix(secs, nanos))
-}
-
-func (t *transaction) adjustStartTimestamp(metricsL pmetric.MetricSlice) {
-	startTimeTs := pdataTimestampFromFloat64(t.metricBuilder.startTime)
-	for i := 0; i < metricsL.Len(); i++ {
-		metric := metricsL.At(i)
-		switch metric.DataType() {
-		case pmetric.MetricDataTypeGauge:
-			continue
-
-		case pmetric.MetricDataTypeSum:
-			dataPoints := metric.Sum().DataPoints()
-			for j := 0; j < dataPoints.Len(); j++ {
-				dp := dataPoints.At(j)
-				dp.SetStartTimestamp(startTimeTs)
-			}
-
-		case pmetric.MetricDataTypeSummary:
-			dataPoints := metric.Summary().DataPoints()
-			for j := 0; j < dataPoints.Len(); j++ {
-				dp := dataPoints.At(j)
-				dp.SetStartTimestamp(startTimeTs)
-			}
-
-		case pmetric.MetricDataTypeHistogram:
-			dataPoints := metric.Histogram().DataPoints()
-			for j := 0; j < dataPoints.Len(); j++ {
-				dp := dataPoints.At(j)
-				dp.SetStartTimestamp(startTimeTs)
-			}
-
-		default:
-			t.logger.Warn("Unknown metric type", zap.String("type", metric.DataType().String()))
-		}
-	}
 }

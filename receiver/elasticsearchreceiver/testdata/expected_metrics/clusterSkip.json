@@ -466,82 +466,6 @@
                               "timeUnixNano": "1661811026805343000"
                            },
                            {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "unchanged"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "context_construction"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811026803971000",
-                              "timeUnixNano": "1661811026805343000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "unchanged"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "commit"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811026803971000",
-                              "timeUnixNano": "1661811026805343000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "unchanged"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "completion"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811026803971000",
-                              "timeUnixNano": "1661811026805343000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "unchanged"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "master_apply"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811026803971000",
-                              "timeUnixNano": "1661811026805343000"
-                           },
-                           {
                               "asInt": "40",
                               "attributes": [
                                  {
@@ -870,6 +794,42 @@
                      "unit": "By"
                   },
                   {
+                     "description": "Total count of query cache misses across all shards assigned to selected nodes.",
+                     "name": "elasticsearch.node.cache.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "333",
+                              "attributes": [
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "hit"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1662952760849369000",
+                              "timeUnixNano": "1662952760851518000"
+                           },
+                           {
+                              "asInt": "5324",
+                              "attributes": [
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "miss"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1662952760849369000",
+                              "timeUnixNano": "1662952760851518000"
+                           }
+                        ]
+                     },
+                     "unit": "{count}"
+                  },
+                  {
                      "description": "The number of evictions from the cache.",
                      "name": "elasticsearch.node.cache.evictions",
                      "sum": {
@@ -1075,7 +1035,7 @@
                      },
                      "unit": "By"
                   },
-		                    {
+                  {
                      "description": "The amount of unallocated disk space across all file stores for this node.",
                      "name": "elasticsearch.node.fs.disk.free",
                      "sum": {

@@ -43,5 +43,11 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
 			Path:             "./filename.json",
+			Rotation: Rotation{
+				MaxMegabytes: 10,
+				MaxDays:      3,
+				MaxBackups:   3,
+				LocalTime:    true,
+			},
 		})
 }

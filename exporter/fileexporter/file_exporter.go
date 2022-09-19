@@ -17,7 +17,6 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"io"
-	"os"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -25,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 // Marshaler configuration used for marhsaling Protobuf to JSON.
@@ -40,6 +40,18 @@ type fileExporter struct {
 	mutex sync.Mutex
 }
 
+func newFileExporter(conf *Config) *fileExporter {
+	return &fileExporter{
+		path: conf.Path,
+		file: &lumberjack.Logger{
+			Filename:   conf.Path,
+			MaxSize:    conf.Rotation.MaxMegabytes,
+			MaxAge:     conf.Rotation.MaxDays,
+			MaxBackups: conf.Rotation.MaxBackups,
+			LocalTime:  conf.Rotation.LocalTime,
+		},
+	}
+}
 func (e *fileExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
@@ -82,9 +94,7 @@ func exportMessageAsLine(e *fileExporter, buf []byte) error {
 }
 
 func (e *fileExporter) Start(context.Context, component.Host) error {
-	var err error
-	e.file, err = os.OpenFile(e.path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-	return err
+	return nil
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.

@@ -15,7 +15,6 @@
 package internal
 
 import (
-	"encoding/hex"
 	"math"
 	"testing"
 	"time"
@@ -96,35 +95,12 @@ var mc = testMetadataStore{
 	},
 }
 
-func createNewExemplar(value float64, timestamp int64, traceid string) map[float64]pmetric.Exemplar {
-	var (
-		tid   [16]byte
-		sid   [8]byte
-		exMap = make(map[float64]pmetric.Exemplar)
-	)
-	ex := pmetric.NewExemplar()
-	ex.SetDoubleVal(value)
-	ex.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(timestamp)))
-
-	t, _ := hex.DecodeString(traceid)
-	copyToLowerBytes(tid[:], t)
-	ex.SetTraceID(pcommon.NewTraceID(tid))
-
-	s, _ := hex.DecodeString(traceid)
-	copyToLowerBytes(sid[:], s)
-	ex.SetSpanID(pcommon.NewSpanID(sid))
-
-	exMap[value] = ex
-
-	return exMap
-}
 func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 	type scrape struct {
 		at         int64
 		value      float64
 		metric     string
 		extraLabel labels.Label
-		exemplars  map[float64]pmetric.Exemplar
 	}
 	tests := []struct {
 		name                string
@@ -143,48 +119,21 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			scrapes: []*scrape{
 				{at: 11, value: 66, metric: "histogram_count"},
 				{at: 11, value: 1004.78, metric: "histogram_sum"},
-				{at: 11, value: 33, metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "0.75"}, exemplars: createNewExemplar(33, 11, "0000c5bd3caea93d")},
-				{at: 11, value: 55, metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "2.75"}, exemplars: createNewExemplar(55, 11, "0006f0ea595fa831")},
+				{at: 11, value: 33, metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "0.75"}},
+				{at: 11, value: 55, metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "2.75"}},
 				{at: 11, value: 66, metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "+Inf"}},
 			},
 			want: func() pmetric.HistogramDataPoint {
-				var (
-					tid1, tid2 [16]byte
-					sid1, sid2 [8]byte
-				)
 				point := pmetric.NewHistogramDataPoint()
 				point.SetCount(66)
 				point.SetSum(1004.78)
 				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
-				point.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0.75, 2.75}))
-				point.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{33, 22, 11}))
+				point.ExplicitBounds().FromRaw([]float64{0.75, 2.75})
+				point.BucketCounts().FromRaw([]uint64{33, 22, 11})
 				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
-				attributes.UpsertString("a", "A")
-				attributes.UpsertString("b", "B")
-
-				// add exemplars
-				exemplars := pmetric.NewExemplarSlice()
-
-				e1 := exemplars.AppendEmpty()
-				e1.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(11)))
-				e1.SetDoubleVal(33)
-				tr, _ := hex.DecodeString("0000c5bd3caea93d")
-				copyToLowerBytes(tid1[:], tr)
-				sp, _ := hex.DecodeString("0000c5bd3caea93d")
-				copyToLowerBytes(sid1[:], sp)
-				e1.SetTraceID(pcommon.NewTraceID(tid1))
-				e1.SetSpanID(pcommon.NewSpanID(sid1))
-
-				e2 := exemplars.AppendEmpty()
-				e2.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(11)))
-				e2.SetDoubleVal(55)
-				tr1, _ := hex.DecodeString("0006f0ea595fa831")
-				copyToLowerBytes(tid2[:], tr1)
-				sp1, _ := hex.DecodeString("0006f0ea595fa831")
-				copyToLowerBytes(sid2[:], sp1)
-				e2.SetTraceID(pcommon.NewTraceID(tid2))
-				e2.SetSpanID(pcommon.NewSpanID(sid2))
+				attributes.PutString("a", "A")
+				attributes.PutString("b", "B")
 				return point
 			},
 		},
@@ -203,13 +152,13 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			want: func() pmetric.HistogramDataPoint {
 				point := pmetric.NewHistogramDataPoint()
 				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
-				point.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
-				point.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0.75, 2.75}))
-				point.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 0, 0}))
+				point.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+				point.ExplicitBounds().FromRaw([]float64{0.75, 2.75})
+				point.BucketCounts().FromRaw([]uint64{0, 0, 0})
 				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
-				attributes.UpsertString("a", "A")
-				attributes.UpsertString("b", "B")
+				attributes.PutString("a", "A")
+				attributes.PutString("b", "B")
 				return point
 			},
 		},
@@ -354,8 +303,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				point.SetTimestamp(pcommon.Timestamp(14 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(pcommon.Timestamp(14 * time.Millisecond)) // the time in milliseconds -> nanoseconds
 				attributes := point.Attributes()
-				attributes.UpsertString("a", "A")
-				attributes.UpsertString("b", "B")
+				attributes.PutString("a", "A")
+				attributes.PutString("b", "B")
 				return point
 			},
 		},
@@ -407,7 +356,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				point := pmetric.NewSummaryDataPoint()
 				qtL := point.QuantileValues()
 				qn0 := qtL.AppendEmpty()
-				point.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+				point.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 				qn0.SetQuantile(0)
 				qn0.SetValue(0)
 				qn50 := qtL.AppendEmpty()
@@ -425,8 +374,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				point.SetTimestamp(pcommon.Timestamp(14 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(pcommon.Timestamp(14 * time.Millisecond)) // the time in milliseconds -> nanoseconds
 				attributes := point.Attributes()
-				attributes.UpsertString("a", "A")
-				attributes.UpsertString("b", "B")
+				attributes.PutString("a", "A")
+				attributes.PutString("b", "B")
 				return point
 			},
 		},
@@ -516,8 +465,8 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 				point.SetTimestamp(pcommon.Timestamp(13 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(pcommon.Timestamp(13 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
-				attributes.UpsertString("a", "A")
-				attributes.UpsertString("b", "B")
+				attributes.PutString("a", "A")
+				attributes.PutString("b", "B")
 				return point
 			},
 		},
@@ -535,8 +484,8 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 				point.SetTimestamp(pcommon.Timestamp(28 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(pcommon.Timestamp(28 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
-				attributes.UpsertString("a", "A")
-				attributes.UpsertString("b", "B")
+				attributes.PutString("a", "A")
+				attributes.PutString("b", "B")
 				return point
 			},
 		},

@@ -350,18 +350,18 @@ func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 	if ent.TraceID != nil {
 		var buffer [16]byte
 		copy(buffer[0:16], ent.TraceID)
-		dest.SetTraceID(pcommon.NewTraceID(buffer))
+		dest.SetTraceID(buffer)
 	}
 	if ent.SpanID != nil {
 		var buffer [8]byte
 		copy(buffer[0:8], ent.SpanID)
-		dest.SetSpanID(pcommon.NewSpanID(buffer))
+		dest.SetSpanID(buffer)
 	}
 	if ent.TraceFlags != nil {
 		// The 8 least significant bits are the trace flags as defined in W3C Trace
 		// Context specification. Don't override the 24 reserved bits.
 		flags := uint32(ent.TraceFlags[0])
-		dest.SetFlagsStruct(plog.LogRecordFlags(flags))
+		dest.SetFlags(plog.LogRecordFlags(flags))
 	}
 }
 
@@ -374,7 +374,7 @@ func upsertToAttributeVal(value interface{}, dest pcommon.Value) {
 	case []string:
 		upsertStringsToSlice(t, dest.SetEmptySliceVal())
 	case []byte:
-		dest.SetBytesVal(pcommon.NewImmutableByteSlice(t))
+		dest.SetEmptyBytesVal().FromRaw(t)
 	case int64:
 		dest.SetIntVal(t)
 	case int32:
@@ -411,7 +411,7 @@ func upsertToAttributeVal(value interface{}, dest pcommon.Value) {
 func upsertToMap(obsMap map[string]interface{}, dest pcommon.Map) {
 	dest.EnsureCapacity(len(obsMap))
 	for k, v := range obsMap {
-		upsertToAttributeVal(v, dest.UpsertEmpty(k))
+		upsertToAttributeVal(v, dest.PutEmpty(k))
 	}
 }
 

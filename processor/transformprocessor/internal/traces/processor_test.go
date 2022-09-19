@@ -45,21 +45,21 @@ func TestProcess(t *testing.T) {
 		{
 			query: `set(attributes["test"], "pass") where name == "operationA"`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
 			query: `set(attributes["test"], "pass") where resource.attributes["host.name"] == "localhost"`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("test", "pass")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().UpsertString("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutString("test", "pass")
 			},
 		},
 		{
 			query: `keep_keys(attributes, "http.method") where name == "operationA"`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Clear()
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("http.method", "get")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("http.method", "get")
 			},
 		},
 		{
@@ -72,91 +72,93 @@ func TestProcess(t *testing.T) {
 		{
 			query: `set(attributes["test"], "pass") where dropped_attributes_count == 1`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
 			query: `set(attributes["test"], "pass") where dropped_events_count == 1`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
 			query: `set(attributes["test"], "pass") where dropped_links_count == 1`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
 			query: `set(attributes["test"], "pass") where span_id == SpanID(0x0102030405060708)`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
 			query: `set(attributes["test"], "pass") where parent_span_id == SpanID(0x0807060504030201)`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
 			query: `set(attributes["test"], "pass") where trace_id == TraceID(0x0102030405060708090a0b0c0d0e0f10)`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
 			query: `set(attributes["test"], "pass") where trace_state == "new"`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
 			query: `replace_pattern(attributes["http.method"], "get", "post")`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("http.method", "post")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().UpsertString("http.method", "post")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("http.method", "post")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutString("http.method", "post")
 			},
 		},
 		{
 			query: `replace_all_patterns(attributes, "get", "post")`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("http.method", "post")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().UpsertString("http.method", "post")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("http.method", "post")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutString("http.method", "post")
 			},
 		},
 		{
 			query: `set(attributes["test"], "pass") where IsMatch(name, "operation[AC]") == true`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
 			query: `set(attributes["test"], "pass") where attributes["doesnt exist"] == nil`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("test", "pass")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().UpsertString("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutString("test", "pass")
 			},
 		},
 		{
 			query: `delete_key(attributes, "http.url") where name == "operationA"`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Clear()
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("http.method", "get")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("http.path", "/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("http.method", "get")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("http.path", "/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("flags", "A|B|C")
 			},
 		},
 		{
 			query: `delete_matching_keys(attributes, "http.*t.*") where name == "operationA"`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Clear()
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("http.url", "http://localhost/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("http.url", "http://localhost/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("flags", "A|B|C")
 			},
 		},
 		{
 			query: `set(attributes["test"], "pass") where kind == SPAN_KIND_INTERNAL`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
@@ -168,28 +170,53 @@ func TestProcess(t *testing.T) {
 		{
 			query: `set(attributes["test"], Concat(": ", attributes["http.method"], attributes["http.url"]))`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("test", "get: http://localhost/health")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().UpsertString("test", "get: http://localhost/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("test", "get: http://localhost/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutString("test", "get: http://localhost/health")
 			},
 		},
 		{
 			query: `set(attributes["test"], Concat("", attributes["http.method"], ": ", attributes["http.url"]))`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("test", "get: http://localhost/health")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().UpsertString("test", "get: http://localhost/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("test", "get: http://localhost/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutString("test", "get: http://localhost/health")
 			},
 		},
 		{
 			query: `set(attributes["test"], Concat(": ", attributes["http.method"], attributes["http.url"])) where name == Concat("", "operation", "A")`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("test", "get: http://localhost/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("test", "get: http://localhost/health")
 			},
 		},
 		{
 			query: `set(attributes["kind"], Concat("", "kind", ": ", kind)) where kind == 1`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("kind", "kind: 1")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("kind", "kind: 1")
 			},
+		},
+		{
+			query: `set(attributes["test"], Split(attributes["flags"], "|"))`,
+			want: func(td ptrace.Traces) {
+				v1 := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutEmptySlice("test")
+				v1.AppendEmpty().SetStringVal("A")
+				v1.AppendEmpty().SetStringVal("B")
+				v1.AppendEmpty().SetStringVal("C")
+				v2 := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutEmptySlice("test")
+				v2.AppendEmpty().SetStringVal("C")
+				v2.AppendEmpty().SetStringVal("D")
+			},
+		},
+		{
+			query: `set(attributes["test"], Split(attributes["flags"], "|")) where name == "operationA"`,
+			want: func(td ptrace.Traces) {
+				v1 := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutEmptySlice("test")
+				v1.AppendEmpty().SetStringVal("A")
+				v1.AppendEmpty().SetStringVal("B")
+				v1.AppendEmpty().SetStringVal("C")
+			},
+		},
+		{
+			query: `set(attributes["test"], Split(attributes["not_exist"], "|"))`,
+			want:  func(td ptrace.Traces) {},
 		},
 	}
 
@@ -303,7 +330,7 @@ func BenchmarkHundredSpans(b *testing.B) {
 func constructTraces() ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs0 := td.ResourceSpans().AppendEmpty()
-	rs0.Resource().Attributes().UpsertString("host.name", "localhost")
+	rs0.Resource().Attributes().PutString("host.name", "localhost")
 	rs0ils0 := rs0.ScopeSpans().AppendEmpty()
 	fillSpanOne(rs0ils0.Spans().AppendEmpty())
 	fillSpanTwo(rs0ils0.Spans().AppendEmpty())
@@ -322,19 +349,20 @@ func constructTracesNum(num int) ptrace.Traces {
 
 func fillSpanOne(span ptrace.Span) {
 	span.SetName("operationA")
-	span.SetSpanID(pcommon.NewSpanID(spanID))
-	span.SetParentSpanID(pcommon.NewSpanID(spanID2))
-	span.SetTraceID(pcommon.NewTraceID(traceID))
+	span.SetSpanID(spanID)
+	span.SetParentSpanID(spanID2)
+	span.SetTraceID(traceID)
 	span.SetStartTimestamp(TestSpanStartTimestamp)
 	span.SetEndTimestamp(TestSpanEndTimestamp)
 	span.SetDroppedAttributesCount(1)
 	span.SetDroppedLinksCount(1)
 	span.SetDroppedEventsCount(1)
 	span.SetKind(1)
-	span.SetTraceState("new")
-	span.Attributes().UpsertString("http.method", "get")
-	span.Attributes().UpsertString("http.path", "/health")
-	span.Attributes().UpsertString("http.url", "http://localhost/health")
+	span.TraceStateStruct().FromRaw("new")
+	span.Attributes().PutString("http.method", "get")
+	span.Attributes().PutString("http.path", "/health")
+	span.Attributes().PutString("http.url", "http://localhost/health")
+	span.Attributes().PutString("flags", "A|B|C")
 	status := span.Status()
 	status.SetCode(ptrace.StatusCodeError)
 	status.SetMessage("status-cancelled")
@@ -344,9 +372,10 @@ func fillSpanTwo(span ptrace.Span) {
 	span.SetName("operationB")
 	span.SetStartTimestamp(TestSpanStartTimestamp)
 	span.SetEndTimestamp(TestSpanEndTimestamp)
-	span.Attributes().UpsertString("http.method", "get")
-	span.Attributes().UpsertString("http.path", "/health")
-	span.Attributes().UpsertString("http.url", "http://localhost/health")
+	span.Attributes().PutString("http.method", "get")
+	span.Attributes().PutString("http.path", "/health")
+	span.Attributes().PutString("http.url", "http://localhost/health")
+	span.Attributes().PutString("flags", "C|D")
 	link0 := span.Links().AppendEmpty()
 	link0.SetDroppedAttributesCount(4)
 	link1 := span.Links().AppendEmpty()

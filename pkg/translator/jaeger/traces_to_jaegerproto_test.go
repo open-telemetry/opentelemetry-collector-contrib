@@ -177,11 +177,11 @@ func TestGetTagFromSpanKind(t *testing.T) {
 func TestAttributesToJaegerProtoTags(t *testing.T) {
 
 	attributes := pcommon.NewMap()
-	attributes.UpsertBool("bool-val", true)
-	attributes.UpsertInt("int-val", 123)
-	attributes.UpsertString("string-val", "abc")
-	attributes.UpsertDouble("double-val", 1.23)
-	attributes.UpsertString(conventions.AttributeServiceName, "service-name")
+	attributes.PutBool("bool-val", true)
+	attributes.PutInt("int-val", 123)
+	attributes.PutString("string-val", "abc")
+	attributes.PutDouble("double-val", 1.23)
+	attributes.PutString(conventions.AttributeServiceName, "service-name")
 
 	expected := []model.KeyValue{
 		{
@@ -351,7 +351,7 @@ func generateTracesOneSpanNoResourceWithEventAttribute() ptrace.Traces {
 	td := generateTracesOneSpanNoResource()
 	event := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().At(0)
 	event.SetName("must-be-ignorred")
-	event.Attributes().UpsertString("event", "must-be-used-instead-of-event-name")
+	event.Attributes().PutString("event", "must-be-used-instead-of-event-name")
 	return td
 }
 

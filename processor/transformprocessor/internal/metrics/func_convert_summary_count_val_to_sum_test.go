@@ -28,9 +28,8 @@ import (
 
 func getTestSummaryMetric() pmetric.Metric {
 	metricInput := pmetric.NewMetric()
-	metricInput.SetDataType(pmetric.MetricDataTypeSummary)
 	metricInput.SetName("summary_metric")
-	input := metricInput.Summary().DataPoints().AppendEmpty()
+	input := metricInput.SetEmptySummary().DataPoints().AppendEmpty()
 	input.SetCount(100)
 	input.SetSum(12.34)
 
@@ -52,9 +51,8 @@ func getTestSummaryMetric() pmetric.Metric {
 
 func getTestGaugeMetric() pmetric.Metric {
 	metricInput := pmetric.NewMetric()
-	metricInput.SetDataType(pmetric.MetricDataTypeGauge)
 	metricInput.SetName("gauge_metric")
-	input := metricInput.Gauge().DataPoints().AppendEmpty()
+	input := metricInput.SetEmptyGauge().DataPoints().AppendEmpty()
 	input.SetIntVal(12)
 
 	fillTestAttributes(input.Attributes())
@@ -62,18 +60,25 @@ func getTestGaugeMetric() pmetric.Metric {
 }
 
 func fillTestAttributes(attrs pcommon.Map) {
-	attrs.UpsertString("test", "hello world")
-	attrs.UpsertInt("test2", 3)
-	attrs.UpsertBool("test3", true)
+	attrs.PutString("test", "hello world")
+	attrs.PutInt("test2", 3)
+	attrs.PutBool("test3", true)
 }
 
 func summaryTest(tests []summaryTestCase, t *testing.T) {
+	tqlp := tql.NewParser(
+		Functions(),
+		tqlmetrics.ParsePath,
+		tqlmetrics.ParseEnum,
+		tql.NoOpLogger{},
+	)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			actualMetrics := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetrics.AppendEmpty())
 
-			evaluate, err := tql.NewFunctionCall(tt.inv, Functions(), tqlmetrics.ParsePath, tqlmetrics.ParseEnum)
+			evaluate, err := tqlp.NewFunctionCall(tt.inv)
 			assert.NoError(t, err)
 
 			evaluate(tqlmetrics.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
@@ -112,8 +117,7 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 				summaryMetric := getTestSummaryMetric()
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				sumMetric.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(false)
 
 				sumMetric.SetName("summary_metric_sum")
@@ -141,8 +145,7 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 				summaryMetric := getTestSummaryMetric()
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				sumMetric.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(true)
 
 				sumMetric.SetName("summary_metric_sum")
@@ -170,8 +173,7 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 				summaryMetric := getTestSummaryMetric()
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				sumMetric.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				sumMetric.Sum().SetIsMonotonic(false)
 
 				sumMetric.SetName("summary_metric_sum")

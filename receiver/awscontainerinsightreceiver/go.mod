@@ -3,18 +3,18 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.91
+	github.com/aws/aws-sdk-go v1.44.96
 	github.com/google/cadvisor v0.45.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.59.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.59.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.59.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.59.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.59.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.59.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.60.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.60.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.60.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.60.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.60.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.60.0
 	github.com/shirou/gopsutil/v3 v3.22.8
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.59.0
-	go.opentelemetry.io/collector/pdata v0.59.0
+	go.opentelemetry.io/collector v0.60.1-0.20220916163348-84621e483dfb
+	go.opentelemetry.io/collector/pdata v0.60.1-0.20220916163348-84621e483dfb
 	go.uber.org/zap v1.23.0
 	k8s.io/api v0.25.0
 	k8s.io/apimachinery v0.25.0
@@ -35,7 +35,7 @@ require (
 	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
-	github.com/docker/docker v20.10.17+incompatible // indirect
+	github.com/docker/docker v20.10.18+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.8.0 // indirect
@@ -55,7 +55,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
-	github.com/google/go-cmp v0.5.8 // indirect
+	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
@@ -78,7 +78,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mrunalp/fileutils v0.5.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.59.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.60.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.1.3 // indirect

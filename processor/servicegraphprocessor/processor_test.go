@@ -206,12 +206,12 @@ func sampleTraces() ptrace.Traces {
 	traces := ptrace.NewTraces()
 
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
-	resourceSpans.Resource().Attributes().UpsertString(semconv.AttributeServiceName, "some-service")
+	resourceSpans.Resource().Attributes().PutString(semconv.AttributeServiceName, "some-service")
 
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 
-	traceID := pcommon.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
-	clientSpanID := pcommon.NewSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
+	traceID := pcommon.TraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+	clientSpanID := pcommon.SpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
 
 	clientSpan := scopeSpans.Spans().AppendEmpty()
 	clientSpan.SetName("client span")
@@ -220,11 +220,11 @@ func sampleTraces() ptrace.Traces {
 	clientSpan.SetKind(ptrace.SpanKindClient)
 	clientSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
 	clientSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
-	clientSpan.Attributes().UpsertString("some-attribute", "val") // Attribute selected as dimension for metrics
+	clientSpan.Attributes().PutString("some-attribute", "val") // Attribute selected as dimension for metrics
 
 	serverSpan := scopeSpans.Spans().AppendEmpty()
 	serverSpan.SetName("server span")
-	serverSpan.SetSpanID(pcommon.NewSpanID([8]byte{0x19, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26}))
+	serverSpan.SetSpanID([8]byte{0x19, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26})
 	serverSpan.SetTraceID(traceID)
 	serverSpan.SetParentSpanID(clientSpanID)
 	serverSpan.SetKind(ptrace.SpanKindServer)

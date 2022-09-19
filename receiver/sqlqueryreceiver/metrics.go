@@ -40,11 +40,11 @@ func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric, startTime pc
 	}
 	attrs := dataPoint.Attributes()
 	for k, v := range cfg.StaticAttributes {
-		attrs.UpsertString(k, v)
+		attrs.PutString(k, v)
 	}
 	for _, columnName := range cfg.AttributeColumns {
 		if attrVal, found := row[columnName]; found {
-			attrs.UpsertString(columnName, attrVal)
+			attrs.PutString(columnName, attrVal)
 		} else {
 			return fmt.Errorf("rowToMetric: attribute_column not found: '%s'", columnName)
 		}
@@ -70,11 +70,9 @@ func setMetricFields(cfg MetricCfg, dest pmetric.Metric) pmetric.NumberDataPoint
 	var out pmetric.NumberDataPointSlice
 	switch cfg.DataType {
 	case MetricDataTypeUnspecified, MetricDataTypeGauge:
-		dest.SetDataType(pmetric.MetricDataTypeGauge)
-		out = dest.Gauge().DataPoints()
+		out = dest.SetEmptyGauge().DataPoints()
 	case MetricDataTypeSum:
-		dest.SetDataType(pmetric.MetricDataTypeSum)
-		sum := dest.Sum()
+		sum := dest.SetEmptySum()
 		sum.SetIsMonotonic(cfg.Monotonic)
 		sum.SetAggregationTemporality(cfgToAggregationTemporality(cfg.Aggregation))
 		out = sum.DataPoints()
