@@ -19,6 +19,7 @@ package pagingscraper // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -50,7 +51,8 @@ type scraper struct {
 	config   *Config
 	mb       *metadata.MetricsBuilder
 
-	perfCounterScraper perfcounters.PerfCounterScraper
+	perfCounterScraper    perfcounters.PerfCounterScraper
+	perfCounterInitFailed bool
 
 	// for mocking
 	bootTime                             func() (uint64, error)
@@ -80,11 +82,23 @@ func (s *scraper) start(context.Context, component.Host) error {
 
 	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 
-	s.perfCounterScraper.Initialize(memory)
+	err = s.perfCounterScraper.Initialize(memory)
+	switch {
+	case errors.Is(err, perfcounters.ErrAllObjectsUnavailable):
+		// If the counters simply aren't available, we want to skip scraping and avoid crashing the collector on startup
+		s.perfCounterInitFailed = true
+	case err != nil:
+		// Unknown error; fail to start if this is the case
+		return err
+	}
 	return nil
 }
 
 func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
+	if s.perfCounterInitFailed {
+		return pmetric.NewMetrics(), nil
+	}
+
 	var errors scrapererror.ScrapeErrors
 
 	err := s.scrapePagingUsageMetric()

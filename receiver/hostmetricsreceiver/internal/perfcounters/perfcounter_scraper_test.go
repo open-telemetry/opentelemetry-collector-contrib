@@ -81,11 +81,16 @@ func Test_PerfCounterScraper(t *testing.T) {
 			excludedInstanceNames: excludedCommonDrives,
 		},
 		{
-			name:          "Invalid objects specified",
+			name:          "Initialize partially fails",
 			objects:       []string{"Memory", "Invalid Object 1", "Invalid Object 2"},
 			expectIndices: []string{"4"},
-			getObject:     "Invalid Object 2",
-			getObjectErr:  `Unable to find object "Invalid Object 2"`,
+			getObject:     "Invalid Object 1",
+			getObjectErr:  `Unable to find object "Invalid Object 1"`,
+		},
+		{
+			name:    "Initialize fully fails",
+			objects: []string{"Invalid Object 1", "Invalid Object 2"},
+			newErr:  ErrAllObjectsUnavailable.Error(),
 		},
 		{
 			name:          "Get Object Error",

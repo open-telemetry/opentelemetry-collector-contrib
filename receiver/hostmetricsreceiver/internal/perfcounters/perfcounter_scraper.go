@@ -53,21 +53,34 @@ func NewPerfLibScraper(logger *zap.Logger) *PerfLibScraper {
 	}
 }
 
+func NewPerfLibScraper(logger *zap.Logger) *PerfLibScraper {
+	return &PerfLibScraper{
+		logger: logger,
+	}
+}
+
 func (p *PerfLibScraper) Initialize(objects ...string) {
 	// "Counter 009" reads perf counter names in English.
 	// This is always present regardless of the OS language.
 	nameTable := perflib.QueryNameTable("Counter 009")
 
+	failedObjects := 0
 	// lookup object indices from name table
 	objectIndicesMap := map[uint32]struct{}{}
 	for _, name := range objects {
 		index := nameTable.LookupIndex(name)
 		if index == 0 {
 			p.logger.Error("Failed to retrieve perf counter object, performance data from this object will fail to be scraped", zap.String("counter", name))
+			failedObjects++
 			continue
 		}
 
 		objectIndicesMap[index] = struct{}{}
+	}
+
+	if len(objects) == failedObjects {
+		// all objects failed to initialize, unable to even partially scrape
+		return ErrAllObjectsUnavailable
 	}
 
 	// convert to a space-separated string
@@ -76,6 +89,8 @@ func (p *PerfLibScraper) Initialize(objects ...string) {
 		objectIndicesSlice = append(objectIndicesSlice, strconv.Itoa(int(k)))
 	}
 	p.objectIndices = strings.Join(objectIndicesSlice, " ")
+
+	return nil
 }
 
 func (p *PerfLibScraper) Scrape() (PerfDataCollection, error) {
