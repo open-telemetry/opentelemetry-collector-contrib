@@ -102,3 +102,28 @@ func decode4_2(logger *zap.Logger, r io.Reader) ([]model.LogEntry, error) {
 		entries = append(entries, entry)
 	}
 }
+
+func decodeAuditJSON(r io.Reader) ([]model.AuditLog, error) {
+	// Pass this into a gzip reader for decoding
+	reader, err := gzip.NewReader(r)
+	if err != nil {
+		return nil, err
+	}
+
+	// Logs are in JSON format so create a JSON decoder to process them
+	dec := json.NewDecoder(reader)
+
+	var entries []model.AuditLog
+	for {
+		var entry model.AuditLog
+		err := dec.Decode(&entry)
+		if errors.Is(err, io.EOF) {
+			return entries, nil
+		}
+		if err != nil {
+			return entries, fmt.Errorf("entry could not be decoded into AuditLog: %w", err)
+		}
+
+		entries = append(entries, entry)
+	}
+}

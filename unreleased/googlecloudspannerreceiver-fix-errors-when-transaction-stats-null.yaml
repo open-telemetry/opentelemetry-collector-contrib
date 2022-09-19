@@ -1,0 +1,5 @@
+change_type: enhancement
+component: googlecloudspannerreceiver
+note: Fixed errors when transaction-stats columns are NULL
+issues: [14189]
+subtext:

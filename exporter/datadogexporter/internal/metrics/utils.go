@@ -16,7 +16,6 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"fmt"
-	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"gopkg.in/zorkian/go-datadog-api.v2"
@@ -28,8 +27,7 @@ const (
 	// Gauge is the Datadog Gauge metric type
 	Gauge MetricDataType = "gauge"
 	// Count is the Datadog Count metric type
-	Count               MetricDataType = "count"
-	otelNamespacePrefix string         = "otel"
+	Count MetricDataType = "count"
 )
 
 // newMetric creates a new Datadog metric given a name, a Unix nanoseconds timestamp
@@ -88,35 +86,4 @@ func DefaultMetrics(exporterType string, hostname string, timestamp uint64, buil
 	}
 
 	return metrics
-}
-
-// ProcessMetrics adds the hostname to the metric and prefixes it with the "otel"
-// namespace as the Datadog backend expects
-func ProcessMetrics(ms []datadog.Metric) {
-	addNamespace(ms, otelNamespacePrefix)
-}
-
-// shouldPrepend decides if a given metric name should be prepended by `otel.`.
-// By default, this happens for
-// - hostmetrics receiver metrics (since they clash with Datadog Agent system check) and
-// - running metrics
-func shouldPrepend(name string) bool {
-	namespaces := [...]string{"system.", "process."}
-	for _, ns := range namespaces {
-		if strings.HasPrefix(name, ns) {
-			return true
-		}
-	}
-	return false
-}
-
-// addNamespace prepends some metric names with a given namespace.
-// This is used to namespace metrics that clash with the Datadog Agent
-func addNamespace(metrics []datadog.Metric, namespace string) {
-	for i := range metrics {
-		if shouldPrepend(*metrics[i].Metric) {
-			newName := namespace + "." + *metrics[i].Metric
-			metrics[i].Metric = &newName
-		}
-	}
 }
