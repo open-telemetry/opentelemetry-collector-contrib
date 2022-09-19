@@ -6,7 +6,7 @@ require (
 	github.com/apache/pulsar-client-go v0.8.1
 	github.com/apache/thrift v0.16.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger v1.37.0
+	github.com/jaegertracing/jaeger v1.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.60.0
 	github.com/openzipkin/zipkin-go v0.4.0
@@ -69,7 +69,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.9.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
+	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
 	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2 // indirect
 	golang.org/x/oauth2 v0.0.0-20220223155221-ee480838109b // indirect
 	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664 // indirect
