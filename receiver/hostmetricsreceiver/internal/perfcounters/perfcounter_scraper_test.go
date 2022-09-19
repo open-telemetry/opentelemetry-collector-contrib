@@ -34,6 +34,7 @@ func Test_PerfCounterScraper(t *testing.T) {
 		// NewPerfCounter
 		objects       []string
 		expectIndices []string
+		newErr        string
 		// Filter
 		includeFS    filterset.FilterSet
 		excludeFS    filterset.FilterSet

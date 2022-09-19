@@ -35,7 +35,7 @@ type PerfCounterScraper interface {
 	// start initializes the PerfCounterScraper so that subsequent calls
 	// to scrape will return performance counter data for the specified set.
 	// of objects
-	Initialize(objects ...string)
+	Initialize(objects ...string) error
 	// scrape returns performance data for the initialized objects.
 	Scrape() (PerfDataCollection, error)
 }
@@ -53,13 +53,7 @@ func NewPerfLibScraper(logger *zap.Logger) *PerfLibScraper {
 	}
 }
 
-func NewPerfLibScraper(logger *zap.Logger) *PerfLibScraper {
-	return &PerfLibScraper{
-		logger: logger,
-	}
-}
-
-func (p *PerfLibScraper) Initialize(objects ...string) {
+func (p *PerfLibScraper) Initialize(objects ...string) error {
 	// "Counter 009" reads perf counter names in English.
 	// This is always present regardless of the OS language.
 	nameTable := perflib.QueryNameTable("Counter 009")

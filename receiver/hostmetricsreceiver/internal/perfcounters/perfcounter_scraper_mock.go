@@ -112,7 +112,9 @@ func NewMockPerfCounterScraper(objectsAndValuesToReturn map[string]map[string][]
 }
 
 // start is a no-op
-func (p *MockPerfCounterScraper) Initialize(objects ...string) {}
+func (p *MockPerfCounterScraper) Initialize(objects ...string) error {
+	return nil
+}
 
 // scrape returns a perf data collection with the supplied object / counter values,
 // according to the supplied order.
