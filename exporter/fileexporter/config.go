@@ -30,12 +30,11 @@ type Config struct {
 	// Rotation defines an option about rotation of telemetry files
 	Rotation Rotation `mapstructure:"rotation"`
 
-	// MarshalType defines the type of marshaler which encodes telemetry data
+	// FormatType define the data format of encoded telemetry data
 	// Options:
-	// - json[default]: Marshals to OTLP json bytes.
-	// - proto: Marshals to OTLP binary protobuf bytes.
-	// - protobuf: Marshals to OTLP binary protobuf bytes.
-	MarshalType string `mapstructure:"marshaler"`
+	// - json[default]:  OTLP json bytes.
+	// - proto:  OTLP binary protobuf bytes.
+	FormatType string `mapstructure:"format"`
 }
 
 // Rotation an option to rolling log files
@@ -68,6 +67,8 @@ func (cfg *Config) Validate() error {
 	if cfg.Path == "" {
 		return errors.New("path must be non-empty")
 	}
-
+	if cfg.FormatType != "" && cfg.FormatType != formatTypeJSON && cfg.FormatType != formatTypeProto {
+		return errors.New("format type is not supported")
+	}
 	return nil
 }

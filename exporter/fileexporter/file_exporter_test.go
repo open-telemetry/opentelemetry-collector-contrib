@@ -54,28 +54,8 @@ func TestFileTracesExporter(t *testing.T) {
 			name: "Proto: default configuration",
 			args: args{
 				conf: &Config{
-					Path:        tempFileName(t),
-					MarshalType: "proto",
-				},
-				unmarshaler: ptrace.NewProtoUnmarshaler(),
-			},
-		},
-		{
-			name: "proto: MarshalType is protobuf",
-			args: args{
-				conf: &Config{
-					Path:        tempFileName(t),
-					MarshalType: "protobuf",
-				},
-				unmarshaler: ptrace.NewProtoUnmarshaler(),
-			},
-		},
-		{
-			name: "proto: MarshalType is Protobuf",
-			args: args{
-				conf: &Config{
-					Path:        tempFileName(t),
-					MarshalType: "Protobuf",
+					Path:       tempFileName(t),
+					FormatType: "proto",
 				},
 				unmarshaler: ptrace.NewProtoUnmarshaler(),
 			},
@@ -98,7 +78,7 @@ func TestFileTracesExporter(t *testing.T) {
 			br := bufio.NewReader(fi)
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
-					if fe.isJSON {
+					if fe.formatType == formatTypeJSON {
 						return readJSONMessage(br)
 					}
 					return readMessageFromStream(br)
@@ -118,8 +98,9 @@ func TestFileTracesExporter(t *testing.T) {
 func TestFileTracesExporterError(t *testing.T) {
 	mf := &errorWriter{}
 	fe := &fileExporter{
-		file:            mf,
-		tracesMarshaler: errorMarshaler{},
+		file:       mf,
+		formatType: formatTypeJSON,
+		exportFunc: exportMessageAsLine,
 	}
 	require.NotNil(t, fe)
 
@@ -151,8 +132,8 @@ func TestFileMetricsExporter(t *testing.T) {
 			name: "Proto: default configuration",
 			args: args{
 				conf: &Config{
-					Path:        tempFileName(t),
-					MarshalType: "protobuf",
+					Path:       tempFileName(t),
+					FormatType: "proto",
 				},
 				unmarshaler: pmetric.NewProtoUnmarshaler(),
 			},
@@ -175,7 +156,7 @@ func TestFileMetricsExporter(t *testing.T) {
 			br := bufio.NewReader(fi)
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
-					if fe.isJSON {
+					if fe.formatType == formatTypeJSON {
 						return readJSONMessage(br)
 					}
 					return readMessageFromStream(br)
@@ -196,8 +177,9 @@ func TestFileMetricsExporter(t *testing.T) {
 func TestFileMetricsExporterError(t *testing.T) {
 	mf := &errorWriter{}
 	fe := &fileExporter{
-		file:             mf,
-		metricsMarshaler: errorMarshaler{},
+		file:       mf,
+		formatType: formatTypeJSON,
+		exportFunc: exportMessageAsLine,
 	}
 	require.NotNil(t, fe)
 
@@ -229,8 +211,8 @@ func TestFileLogsExporter(t *testing.T) {
 			name: "Proto: default configuration",
 			args: args{
 				conf: &Config{
-					Path:        tempFileName(t),
-					MarshalType: "Protobuf",
+					Path:       tempFileName(t),
+					FormatType: "proto",
 				},
 				unmarshaler: plog.NewProtoUnmarshaler(),
 			},
@@ -253,7 +235,7 @@ func TestFileLogsExporter(t *testing.T) {
 			br := bufio.NewReader(fi)
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
-					if fe.isJSON {
+					if fe.formatType == formatTypeJSON {
 						return readJSONMessage(br)
 					}
 					return readMessageFromStream(br)
@@ -273,8 +255,9 @@ func TestFileLogsExporter(t *testing.T) {
 func TestFileLogsExporterErrors(t *testing.T) {
 	mf := &errorWriter{}
 	fe := &fileExporter{
-		file:          mf,
-		logsMarshaler: errorMarshaler{},
+		file:       mf,
+		formatType: formatTypeJSON,
+		exportFunc: exportMessageAsLine,
 	}
 	require.NotNil(t, fe)
 
@@ -300,7 +283,7 @@ func TestExportMessageAsBuffer(t *testing.T) {
 		Rotation: Rotation{
 			MaxMegabytes: 1,
 		},
-		MarshalType: "proto",
+		FormatType: "proto",
 	})
 	require.NotNil(t, fe)
 	//
@@ -363,20 +346,4 @@ func readJSONMessage(br *bufio.Reader) ([]byte, bool, error) {
 		return nil, true, nil
 	}
 	return buf, false, nil
-}
-
-// errorMarshaler is an Marshaler that will return an error all ways
-type errorMarshaler struct {
-}
-
-func (m errorMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
-	return nil, errors.New("all ways return error")
-}
-
-func (m errorMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error) {
-	return nil, errors.New("all ways return error")
-}
-
-func (m errorMarshaler) MarshalLogs(md plog.Logs) ([]byte, error) {
-	return nil, errors.New("all ways return error")
 }

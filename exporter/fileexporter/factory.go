@@ -47,6 +47,7 @@ func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		Rotation:         Rotation{MaxBackups: defaultMaxBackups},
+		FormatType:       formatTypeJSON,
 	}
 }
 

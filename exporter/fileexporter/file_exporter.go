@@ -17,8 +17,8 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"encoding/binary"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
-	"strings"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -26,13 +26,26 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 const (
-	marshalTypeProto    = "proto"
-	marshalTypeProtobuf = "protobuf"
+	formatTypeProto = "proto"
+	formatTypeJSON  = "json"
 )
+
+// Marshaler configuration used for marhsaling Protobuf
+var tracesMarshalers = map[string]ptrace.Marshaler{
+	formatTypeJSON:  ptrace.NewJSONMarshaler(),
+	formatTypeProto: ptrace.NewProtoMarshaler(),
+}
+var metricsMarshalers = map[string]pmetric.Marshaler{
+	formatTypeJSON:  pmetric.NewJSONMarshaler(),
+	formatTypeProto: pmetric.NewProtoMarshaler(),
+}
+var logsMarshalers = map[string]plog.Marshaler{
+	formatTypeJSON:  plog.NewJSONMarshaler(),
+	formatTypeProto: plog.NewProtoMarshaler(),
+}
 
 // fileExporter is the implementation of file exporter that writes telemetry data to a file
 type fileExporter struct {
@@ -40,29 +53,29 @@ type fileExporter struct {
 	file  io.WriteCloser
 	mutex sync.Mutex
 
-	// isJSON defines whether the exported data is in json format
-	isJSON bool
-
-	tracesMarshaler  ptrace.Marshaler
-	metricsMarshaler pmetric.Marshaler
-	logsMarshaler    plog.Marshaler
+	formatType string
+	//
+	exportFunc func(e *fileExporter, buf []byte) error
 }
 
-func newFileExporter(conf *Config) *fileExporter {
-	tracesMarshaler, metricsMarshaler, logsMarshaler := buildMarshaler(conf.MarshalType)
+func newFileExporter(cfg *Config) *fileExporter {
+	format := func() string {
+		if cfg.FormatType == "" {
+			return formatTypeJSON
+		}
+		return cfg.FormatType
+	}()
 	return &fileExporter{
-		path: conf.Path,
+		path:       cfg.Path,
+		formatType: format,
 		file: &lumberjack.Logger{
-			Filename:   conf.Path,
-			MaxSize:    conf.Rotation.MaxMegabytes,
-			MaxAge:     conf.Rotation.MaxDays,
-			MaxBackups: conf.Rotation.MaxBackups,
-			LocalTime:  conf.Rotation.LocalTime,
+			Filename:   cfg.Path,
+			MaxSize:    cfg.Rotation.MaxMegabytes,
+			MaxAge:     cfg.Rotation.MaxDays,
+			MaxBackups: cfg.Rotation.MaxBackups,
+			LocalTime:  cfg.Rotation.LocalTime,
 		},
-		isJSON:           isJSONData(conf),
-		tracesMarshaler:  tracesMarshaler,
-		metricsMarshaler: metricsMarshaler,
-		logsMarshaler:    logsMarshaler,
+		exportFunc: buildExportFunc(cfg),
 	}
 }
 func (e *fileExporter) Capabilities() consumer.Capabilities {
@@ -70,34 +83,27 @@ func (e *fileExporter) Capabilities() consumer.Capabilities {
 }
 
 func (e *fileExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
-	buf, err := e.tracesMarshaler.MarshalTraces(td)
+	buf, err := tracesMarshalers[e.formatType].MarshalTraces(td)
 	if err != nil {
 		return err
 	}
-	return exportMessage(e, buf)
+	return e.exportFunc(e, buf)
 }
 
 func (e *fileExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
-	buf, err := e.metricsMarshaler.MarshalMetrics(md)
+	buf, err := metricsMarshalers[e.formatType].MarshalMetrics(md)
 	if err != nil {
 		return err
 	}
-	return exportMessage(e, buf)
+	return e.exportFunc(e, buf)
 }
 
 func (e *fileExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
-	buf, err := e.logsMarshaler.MarshalLogs(ld)
+	buf, err := logsMarshalers[e.formatType].MarshalLogs(ld)
 	if err != nil {
 		return err
 	}
-	return exportMessage(e, buf)
-}
-
-func exportMessage(e *fileExporter, buf []byte) error {
-	if !e.isJSON {
-		return exportMessageAsBuffer(e, buf)
-	}
-	return exportMessageAsLine(e, buf)
+	return e.exportFunc(e, buf)
 }
 
 func exportMessageAsLine(e *fileExporter, buf []byte) error {
@@ -117,7 +123,7 @@ func exportMessageAsBuffer(e *fileExporter, buf []byte) error {
 	// Ensure only one write operation happens at a time.
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
-	// write the size of each message before writing the message itself.
+	// write the size of each message before writing the message itself.  https://developers.google.com/protocol-buffers/docs/techniques
 	if err := binary.Write(e.file, binary.BigEndian, int32(len(buf))); err != nil {
 		return err
 	}
@@ -136,18 +142,9 @@ func (e *fileExporter) Shutdown(context.Context) error {
 	return e.file.Close()
 }
 
-func buildMarshaler(marshalType string) (ptrace.Marshaler, pmetric.Marshaler, plog.Marshaler) {
-	if strings.ToLower(marshalType) == marshalTypeProto ||
-		strings.ToLower(marshalType) == marshalTypeProtobuf {
-		return ptrace.NewProtoMarshaler(), pmetric.NewProtoMarshaler(), plog.NewProtoMarshaler()
+func buildExportFunc(cfg *Config) func(e *fileExporter, buf []byte) error {
+	if cfg.FormatType == formatTypeProto {
+		return exportMessageAsBuffer
 	}
-	return ptrace.NewJSONMarshaler(), pmetric.NewJSONMarshaler(), plog.NewJSONMarshaler()
-}
-
-func isJSONData(conf *Config) bool {
-	if strings.ToLower(conf.MarshalType) == marshalTypeProto ||
-		strings.ToLower(conf.MarshalType) == marshalTypeProtobuf {
-		return false
-	}
-	return true
+	return exportMessageAsLine
 }

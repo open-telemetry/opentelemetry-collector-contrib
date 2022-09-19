@@ -26,7 +26,7 @@ exporters:
       max_days: 3
       max_backups: 3
       localtime: true
-    marshaler: proto
+    format: proto
 
 service:
   pipelines:

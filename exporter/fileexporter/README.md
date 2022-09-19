@@ -32,7 +32,7 @@ The following settings are optional:
   - max_backups: [default: 100]: the maximum number of old telemetry files to retain.
   - localtime : [default: false (use UTC)] whether or not the timestamps in backup files is formatted according to the host's local time.
 
-- `marshaler`[default: json] :the type of marshaler which encodes telemetry data. The setting can be overridden with `proto` or `protobuf`.
+- `format`[default: json] :define the data format of encoded telemetry data. The setting can be overridden with `proto`.
 
 
 

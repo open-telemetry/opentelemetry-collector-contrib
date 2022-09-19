@@ -49,6 +49,7 @@ func TestLoadConfig(t *testing.T) {
 				MaxBackups:   3,
 				LocalTime:    true,
 			},
+			FormatType: formatTypeJSON,
 		})
 	e2 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "3")]
 	assert.Equal(t, e2,
@@ -61,6 +62,18 @@ func TestLoadConfig(t *testing.T) {
 				MaxBackups:   3,
 				LocalTime:    true,
 			},
-			MarshalType: marshalTypeProto,
+			FormatType: formatTypeProto,
 		})
+}
+
+func TestLoadConfigFormatError(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-format-error.yaml"), factories)
+	require.EqualError(t, err, "exporter \"file\" has invalid configuration: format type is not supported")
+	require.NotNil(t, cfg)
+
 }
