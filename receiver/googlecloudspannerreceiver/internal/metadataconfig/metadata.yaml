@@ -371,13 +371,13 @@ metadata:
         unit: "one"
       - name: "avg_participants"
         column_name: "AVG_PARTICIPANTS"
-        value_type: "float"
+        value_type: "null_float"
         data:
           type: "gauge"
         unit: "one"
       - name: "avg_total_latency_seconds"
         column_name: "AVG_TOTAL_LATENCY_SECONDS"
-        value_type: "float"
+        value_type: "null_float"
         data:
           type: "gauge"
         unit: "second"
@@ -425,13 +425,13 @@ metadata:
         unit: "one"
       - name: "avg_participants"
         column_name: "AVG_PARTICIPANTS"
-        value_type: "float"
+        value_type: "null_float"
         data:
           type: "gauge"
         unit: "one"
       - name: "avg_total_latency_seconds"
         column_name: "AVG_TOTAL_LATENCY_SECONDS"
-        value_type: "float"
+        value_type: "null_float"
         data:
           type: "gauge"
         unit: "second"
