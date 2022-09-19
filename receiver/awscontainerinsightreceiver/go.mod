@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.96
+	github.com/aws/aws-sdk-go v1.44.101
 	github.com/google/cadvisor v0.45.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.60.0
@@ -16,9 +16,9 @@ require (
 	go.opentelemetry.io/collector v0.60.1-0.20220916163348-84621e483dfb
 	go.opentelemetry.io/collector/pdata v0.60.1-0.20220916163348-84621e483dfb
 	go.uber.org/zap v1.23.0
-	k8s.io/api v0.25.0
-	k8s.io/apimachinery v0.25.0
-	k8s.io/client-go v0.25.0
+	k8s.io/api v0.25.1
+	k8s.io/apimachinery v0.25.1
+	k8s.io/client-go v0.25.1
 	k8s.io/klog v1.0.0
 )
 
@@ -104,9 +104,9 @@ require (
 	github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.34.0 // indirect
-	go.opentelemetry.io/otel v1.9.0 // indirect
+	go.opentelemetry.io/otel v1.10.0 // indirect
 	go.opentelemetry.io/otel/metric v0.31.0 // indirect
-	go.opentelemetry.io/otel/trace v1.9.0 // indirect
+	go.opentelemetry.io/otel/trace v1.10.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
