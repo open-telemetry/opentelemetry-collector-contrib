@@ -77,7 +77,7 @@ func comparison(left any, right any, op string) *Comparison {
 
 func Test_newComparisonEvaluator(t *testing.T) {
 	p := NewParser(
-		DefaultFunctionsForTests(),
+		defaultFunctionsForTests(),
 		testParsePath,
 		testParseEnum,
 		NoOpLogger{},
@@ -128,7 +128,7 @@ func Test_newComparisonEvaluator(t *testing.T) {
 
 func Test_newConditionEvaluator_invalid(t *testing.T) {
 	p := NewParser(
-		DefaultFunctionsForTests(),
+		defaultFunctionsForTests(),
 		testParsePath,
 		testParseEnum,
 		NoOpLogger{},
@@ -161,7 +161,7 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 
 func Test_newBooleanExpressionEvaluator(t *testing.T) {
 	p := NewParser(
-		DefaultFunctionsForTests(),
+		defaultFunctionsForTests(),
 		testParsePath,
 		testParseEnum,
 		NoOpLogger{},

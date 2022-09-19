@@ -118,7 +118,7 @@ func Test_newGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reader, err := p.NewGetter(tt.val)
+			reader, err := p.newGetter(tt.val)
 			assert.NoError(t, err)
 			val := reader.Get(tqltest.TestTransformContext{
 				Item: tt.want,
@@ -128,7 +128,7 @@ func Test_newGetter(t *testing.T) {
 	}
 
 	t.Run("empty value", func(t *testing.T) {
-		_, err := p.NewGetter(Value{})
+		_, err := p.newGetter(Value{})
 		assert.Error(t, err)
 	})
 }
