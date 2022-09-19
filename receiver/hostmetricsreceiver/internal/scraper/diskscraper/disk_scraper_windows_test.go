@@ -62,7 +62,7 @@ func TestScrape_Error(t *testing.T) {
 			scraper, err := newDiskScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{})
 			require.NoError(t, err, "Failed to create disk scraper: %v", err)
 
-			scraper.perfCounterScraper = perfcounters.NewMockPerfCounterScraperError(test.scrapeErr, test.getObjectErr, test.getValuesErr)
+			scraper.perfCounterScraper = perfcounters.NewMockPerfCounterScraperError(test.scrapeErr, test.getObjectErr, test.getValuesErr, nil)
 
 			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
@@ -77,6 +77,48 @@ func TestScrape_Error(t *testing.T) {
 				require.ErrorAs(t, err, &scraperErr)
 				assert.Equal(t, metricsLen, scraperErr.Failed)
 			}
+		})
+	}
+}
+
+func TestStart_Error(t *testing.T) {
+	testCases := []struct {
+		name                          string
+		initError                     error
+		expectedPerfCounterInitFailed bool
+		expectedErr                   string
+	}{
+		{
+			name:                          "Perfcounter partially fails to init",
+			expectedPerfCounterInitFailed: false,
+		},
+		{
+			name:                          "Perfcounter fully fails to init",
+			initError:                     perfcounters.ErrAllObjectsUnavailable,
+			expectedPerfCounterInitFailed: true,
+		},
+		{
+			name:        "Perfcounter init returns unknown error",
+			initError:   errors.New("failed to init counters"),
+			expectedErr: "failed to init counters",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			scraper, err := newDiskScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{})
+			require.NoError(t, err, "Failed to create disk scraper: %v", err)
+
+			scraper.perfCounterScraper = perfcounters.NewMockPerfCounterScraperError(nil, nil, nil, tc.initError)
+
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			if tc.expectedErr == "" {
+				require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
+			} else {
+				require.ErrorContains(t, err, tc.expectedErr)
+			}
+
+			require.Equal(t, tc.expectedPerfCounterInitFailed, scraper.perfCounterInitFailed)
 		})
 	}
 }

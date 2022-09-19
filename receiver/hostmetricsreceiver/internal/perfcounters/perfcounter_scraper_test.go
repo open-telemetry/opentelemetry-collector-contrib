@@ -112,7 +112,12 @@ func Test_PerfCounterScraper(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			s := NewPerfLibScraper(zaptest.NewLogger(t))
-			s.Initialize(test.objects...)
+			err := s.Initialize(test.objects...)
+			if test.newErr != "" {
+				assert.EqualError(t, err, test.newErr)
+				return
+			}
+			require.NoError(t, err, "Failed to create new perf counter scraper: %v", err)
 
 			assert.ElementsMatch(t, test.expectIndices, strings.Split(s.objectIndices, " "))
 
