@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/gorilla/mux v1.8.0
-	github.com/jaegertracing/jaeger v1.37.0
+	github.com/jaegertracing/jaeger v1.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.60.0
