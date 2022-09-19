@@ -274,16 +274,11 @@ class TestFastAPIManualInstrumentation(TestBase):
                     self.assertEqual(point.value, 0)
 
     def test_metric_uninstrument(self):
-        # instrumenting class and creating app to send request
-        self._instrumentor.instrument()
-        app = self._create_fastapi_app()
-        client = TestClient(app)
-        client.get("/foobar")
-        # uninstrumenting class and creating the app again
+        if not isinstance(self, TestAutoInstrumentation):
+            self._instrumentor.instrument()
+        self._client.get("/foobar")
         self._instrumentor.uninstrument()
-        app = self._create_fastapi_app()
-        client = TestClient(app)
-        client.get("/foobar")
+        self._client.get("/foobar")
 
         metrics_list = self.memory_metrics_reader.get_metrics_data()
         for metric in (
@@ -415,6 +410,15 @@ class TestAutoInstrumentation(TestFastAPIManualInstrumentation):
             if middleware.cls is OpenTelemetryMiddleware:
                 count += 1
         self.assertEqual(count, 1)
+
+    def test_uninstrument_after_instrument(self):
+        app = self._create_fastapi_app()
+        client = TestClient(app)
+        client.get("/foobar")
+        self._instrumentor.uninstrument()
+        client.get("/foobar")
+        spans = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(spans), 3)
 
     def tearDown(self):
         self._instrumentor.uninstrument()
