@@ -26,8 +26,10 @@ import (
 )
 
 const (
-	// Number of log attributes to add to the plog.LogRecordSlice.
+	// Number of log attributes to add to the plog.LogRecordSlice for host logs.
 	totalLogAttributes = 11
+	// Number of log attributes to add to the plog.LogRecordSlice for audit logs.
+	totalAuditLogAttributes = 12
 
 	// Number of resource attributes to add to the plog.ResourceLogs.
 	totalResourceAttributes = 4
@@ -88,23 +90,36 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 		lr.SetSeverityNumber(plog.SeverityNumberInfo)
 		lr.SetSeverityText("INFO")
 		attrs := lr.Attributes()
-		attrs.EnsureCapacity(totalLogAttributes)
-		if log.AuthType != "" {
-			attrs.PutString("authtype", log.AuthType)
-		}
+		attrs.EnsureCapacity(totalAuditLogAttributes)
+
+		attrs.PutString("atype", log.Type)
+
 		attrs.PutString("local.ip", log.Local.IP)
 		attrs.PutInt("local.port", int64(log.Local.Port))
+
 		attrs.PutString("remote.ip", log.Remote.IP)
 		attrs.PutInt("remote.port", int64(log.Remote.Port))
+
 		attrs.PutString("uuid.binary", log.ID.Binary)
 		attrs.PutString("uuid.type", log.ID.Type)
+
 		attrs.PutInt("result", int64(log.Result))
-		attrs.PutString("log_name", logName)
-		if log.Param.User != "" {
-			attrs.PutString("param.user", log.Param.User)
-			attrs.PutString("param.database", log.Param.Database)
-			attrs.PutString("param.mechanism", log.Param.Mechanism)
+
+		attrs.PutEmptyMap("param").FromRaw(log.Param)
+
+		usersSlice := attrs.PutEmptySlice("users")
+		usersSlice.EnsureCapacity(len(log.Users))
+		for _, user := range log.Users {
+			user.Pdata().CopyTo(usersSlice.AppendEmpty().SetEmptyMapVal())
 		}
+
+		rolesSlice := attrs.PutEmptySlice("roles")
+		rolesSlice.EnsureCapacity(len(log.Roles))
+		for _, roles := range log.Roles {
+			roles.Pdata().CopyTo(rolesSlice.AppendEmpty().SetEmptyMapVal())
+		}
+
+		attrs.PutString("log_name", logName)
 	}
 
 	return ld

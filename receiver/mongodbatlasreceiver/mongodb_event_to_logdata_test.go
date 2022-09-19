@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -96,7 +97,7 @@ func TestMongoEventToAuditLogData4_4(t *testing.T) {
 		Project: mongodbatlas.Project{Name: "Project"},
 	}
 
-	ld := mongodbAuditEventToLogData(zap.NewNop(), []model.AuditLog{mongoevent}, pc, "hostname", "clusterName", "logName", "4.4")
+	ld := mongodbAuditEventToLogData(zaptest.NewLogger(t), []model.AuditLog{mongoevent}, pc, "hostname", "logName", "clusterName", "5.0")
 	rl := ld.ResourceLogs().At(0)
 	resourceAttrs := rl.Resource().Attributes()
 	sl := rl.ScopeLogs().At(0)
@@ -105,10 +106,43 @@ func TestMongoEventToAuditLogData4_4(t *testing.T) {
 
 	assert.Equal(t, ld.ResourceLogs().Len(), 1)
 	assert.Equal(t, resourceAttrs.Len(), 4)
-	assert.Equal(t, 12, attrs.Len())
-	assert.Equal(t, pcommon.Timestamp(1663342012563000000), lr.Timestamp())
+	assertString(t, resourceAttrs, "mongodb_atlas.org", "Org")
+	assertString(t, resourceAttrs, "mongodb_atlas.project", "Project")
+	assertString(t, resourceAttrs, "mongodb_atlas.cluster", "clusterName")
+	assertString(t, resourceAttrs, "mongodb_atlas.host.name", "hostname")
 
-	ld = mongodbAuditEventToLogData(zap.NewNop(), []model.AuditLog{mongoevent}, pc, "hostname", "clusterName", "logName", "4.4")
+	assert.Equal(t, 12, attrs.Len())
+	assertString(t, attrs, "atype", "authtype")
+	assertString(t, attrs, "local.ip", "0.0.0.0")
+	assertInt(t, attrs, "local.port", 3000)
+	assertString(t, attrs, "remote.ip", "192.168.1.237")
+	assertInt(t, attrs, "remote.port", 4000)
+	assertString(t, attrs, "uuid.binary", "binary")
+	assertString(t, attrs, "uuid.type", "type")
+	assertString(t, attrs, "log_name", "logName")
+	assertInt(t, attrs, "result", 40)
+
+	roles, ok := attrs.Get("roles")
+	require.True(t, ok, "roles key does not exist")
+	require.Equal(t, roles.SliceVal().Len(), 1)
+	assertString(t, roles.SliceVal().At(0).MapVal(), "role", "test_role")
+	assertString(t, roles.SliceVal().At(0).MapVal(), "db", "test_db")
+
+	users, ok := attrs.Get("users")
+	require.True(t, ok, "users key does not exist")
+	require.Equal(t, users.SliceVal().Len(), 1)
+	assertString(t, users.SliceVal().At(0).MapVal(), "user", "mongo_user")
+	assertString(t, users.SliceVal().At(0).MapVal(), "db", "my_db")
+
+	param, ok := attrs.Get("param")
+	require.True(t, ok, "param key does not exist")
+	assert.Equal(t, mongoevent.Param, param.MapVal().AsRaw())
+
+	assert.Equal(t, pcommon.Timestamp(1663342012563000000), lr.Timestamp())
+	assert.Equal(t, plog.SeverityNumberInfo, lr.SeverityNumber())
+	assert.Equal(t, "INFO", lr.SeverityText())
+
+	ld = mongodbAuditEventToLogData(zap.NewNop(), []model.AuditLog{mongoevent}, pc, "hostname", "clusterName", "logName", "4.2")
 	assert.Equal(t, 12, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len())
 }
 
@@ -128,6 +162,7 @@ func TestMongoEventToAuditLogData4_2(t *testing.T) {
 
 	assert.Equal(t, ld.ResourceLogs().Len(), 1)
 	assert.Equal(t, resourceAttrs.Len(), 4)
+
 	assert.Equal(t, 12, attrs.Len())
 	assert.Equal(t, pcommon.Timestamp(1663342012563000000), lr.Timestamp())
 
@@ -166,24 +201,36 @@ func GetTestAuditEvent4_4() model.AuditLog {
 		Timestamp: model.LogTimestamp{
 			Date: "2022-09-16T15:26:52.563+00:00",
 		},
-		AuthType: "authtype",
+		Type: "authtype",
 		ID: model.ID{
 			Type:   "type",
 			Binary: "binary",
 		},
 		Local: model.Address{
-			IP:   "Ip",
-			Port: 12345,
+			IP:   "0.0.0.0",
+			Port: 3000,
 		},
 		Remote: model.Address{
-			IP:   "Ip",
-			Port: 12345,
+			IP:   "192.168.1.237",
+			Port: 4000,
+		},
+		Roles: []model.AuditRole{
+			{
+				Role:     "test_role",
+				Database: "test_db",
+			},
+		},
+		Users: []model.AuditUser{
+			{
+				User:     "mongo_user",
+				Database: "my_db",
+			},
 		},
 		Result: 40,
-		Param: model.Param{
-			User:      "name",
-			Database:  "db",
-			Mechanism: "mechanism",
+		Param: map[string]any{
+			"user":      "name",
+			"db":        "db",
+			"mechanism": "mechanism",
 		},
 	}
 }
@@ -193,7 +240,7 @@ func GetTestEventAuditEvent4_2() model.AuditLog {
 		Timestamp: model.LogTimestamp{
 			Date: "2022-09-16T15:26:52.563+0000",
 		},
-		AuthType: "authtype",
+		Type: "authtype",
 		ID: model.ID{
 			Type:   "type",
 			Binary: "binary",
@@ -207,10 +254,42 @@ func GetTestEventAuditEvent4_2() model.AuditLog {
 			Port: 12345,
 		},
 		Result: 40,
-		Param: model.Param{
-			User:      "name",
-			Database:  "db",
-			Mechanism: "mechanism",
+		Param: map[string]any{
+			"user":      "name",
+			"db":        "db",
+			"mechanism": "mechanism",
 		},
 	}
+}
+
+func assertString(t *testing.T, m pcommon.Map, key, expected string) {
+	t.Helper()
+
+	v, ok := m.Get(key)
+	if !ok {
+		assert.Fail(t, "Couldn't find key %s in map", key)
+		return
+	}
+
+	if v.Type() != pcommon.ValueTypeString {
+		assert.Fail(t, "Value for key %s was expected be STRING but was %s", key, v.Type().String())
+	}
+
+	assert.Equal(t, expected, v.StringVal())
+}
+
+func assertInt(t *testing.T, m pcommon.Map, key string, expected int64) {
+	t.Helper()
+
+	v, ok := m.Get(key)
+	if !ok {
+		assert.Fail(t, "Couldn't find key %s in map", key)
+		return
+	}
+
+	if v.Type() != pcommon.ValueTypeInt {
+		assert.Fail(t, "Value for key %s was expected be INT but was %s", key, v.Type().String())
+	}
+
+	assert.Equal(t, expected, v.IntVal())
 }
