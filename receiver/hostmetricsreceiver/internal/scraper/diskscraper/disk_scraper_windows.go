@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/service/featuregate"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -61,6 +62,7 @@ type scraper struct {
 	excludeFS filterset.FilterSet
 
 	perfCounterScraper perfcounters.PerfCounterScraper
+	skipScrape         bool
 
 	// for mocking
 	bootTime                             func() (uint64, error)
@@ -102,10 +104,19 @@ func (s *scraper) start(context.Context, component.Host) error {
 	s.startTime = pcommon.Timestamp(bootTime * 1e9)
 	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo, metadata.WithStartTime(s.startTime))
 
-	return s.perfCounterScraper.Initialize(logicalDisk)
+	if err = s.perfCounterScraper.Initialize(logicalDisk); err != nil {
+		s.settings.Logger.Error("Failed to initialize performance counter, disk metrics will not be scraped", zap.Error(err))
+		s.skipScrape = true
+	}
+
+	return nil
 }
 
 func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+	if s.skipScrape {
+		return pmetric.NewMetrics(), nil
+	}
+
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	counters, err := s.perfCounterScraper.Scrape()
