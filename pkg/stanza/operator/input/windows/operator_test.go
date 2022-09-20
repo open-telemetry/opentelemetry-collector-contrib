@@ -23,7 +23,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
 )
 
 func TestConfig(t *testing.T) {
@@ -40,7 +40,7 @@ func TestConfig(t *testing.T) {
 	}
 
 	var actual Config
-	err := helper.UnmarshalMapstructure(input, &actual)
+	err := operatortest.UnmarshalMapstructure(input, &actual)
 	require.NoError(t, err)
 	require.Equal(t, expect, &actual)
 }

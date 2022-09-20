@@ -25,6 +25,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -581,7 +582,7 @@ func severityConfigFromFileViaMapstructure(file string, result *SeverityConfig) 
 		return fmt.Errorf("failed to read data from yaml: %w", err)
 	}
 
-	err = UnmarshalMapstructure(raw, result)
+	err = operatortest.UnmarshalMapstructure(raw, result)
 	return err
 }
 

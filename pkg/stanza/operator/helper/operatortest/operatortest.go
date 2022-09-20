@@ -23,8 +23,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v2"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
 func configFromFileViaYaml(file string, config interface{}) error {
@@ -55,7 +53,7 @@ func configFromFileViaMapstructure(file string, config interface{}) error {
 		Result: config,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			mapstructure.StringToTimeDurationHookFunc(),
-			helper.JSONUnmarshalerHook(),
+			JSONUnmarshalerHook(),
 		),
 	}
 	ms, err := mapstructure.NewDecoder(dc)
