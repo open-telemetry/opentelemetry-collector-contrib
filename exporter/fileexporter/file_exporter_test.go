@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
@@ -45,7 +46,8 @@ func TestFileTracesExporter(t *testing.T) {
 			name: "json: default configuration",
 			args: args{
 				conf: &Config{
-					Path: tempFileName(t),
+					Path:       tempFileName(t),
+					FormatType: "json",
 				},
 				unmarshaler: ptrace.NewJSONUnmarshaler(),
 			},
@@ -63,7 +65,20 @@ func TestFileTracesExporter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fe := newFileExporter(tt.args.conf)
+			conf := tt.args.conf
+			fe := &fileExporter{
+				path:       conf.Path,
+				formatType: conf.FormatType,
+				file: &lumberjack.Logger{
+					Filename:   conf.Path,
+					MaxSize:    conf.Rotation.MaxMegabytes,
+					MaxAge:     conf.Rotation.MaxDays,
+					MaxBackups: conf.Rotation.MaxBackups,
+					LocalTime:  conf.Rotation.LocalTime,
+				},
+				tracesMarshaler: tracesMarshalers[conf.FormatType],
+				exporter:        buildExportFunc(conf),
+			}
 			require.NotNil(t, fe)
 
 			td := testdata.GenerateTracesTwoSpansSameResource()
@@ -98,9 +113,10 @@ func TestFileTracesExporter(t *testing.T) {
 func TestFileTracesExporterError(t *testing.T) {
 	mf := &errorWriter{}
 	fe := &fileExporter{
-		file:       mf,
-		formatType: formatTypeJSON,
-		exportFunc: exportMessageAsLine,
+		file:            mf,
+		formatType:      formatTypeJSON,
+		exporter:        exportMessageAsLine,
+		tracesMarshaler: tracesMarshalers[formatTypeJSON],
 	}
 	require.NotNil(t, fe)
 
@@ -123,7 +139,8 @@ func TestFileMetricsExporter(t *testing.T) {
 			name: "json: default configuration",
 			args: args{
 				conf: &Config{
-					Path: tempFileName(t),
+					Path:       tempFileName(t),
+					FormatType: "json",
 				},
 				unmarshaler: pmetric.NewJSONUnmarshaler(),
 			},
@@ -141,7 +158,20 @@ func TestFileMetricsExporter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fe := newFileExporter(tt.args.conf)
+			conf := tt.args.conf
+			fe := &fileExporter{
+				path:       conf.Path,
+				formatType: conf.FormatType,
+				file: &lumberjack.Logger{
+					Filename:   conf.Path,
+					MaxSize:    conf.Rotation.MaxMegabytes,
+					MaxAge:     conf.Rotation.MaxDays,
+					MaxBackups: conf.Rotation.MaxBackups,
+					LocalTime:  conf.Rotation.LocalTime,
+				},
+				metricsMarshaler: metricsMarshalers[conf.FormatType],
+				exporter:         buildExportFunc(conf),
+			}
 			require.NotNil(t, fe)
 
 			md := testdata.GenerateMetricsTwoMetrics()
@@ -177,9 +207,10 @@ func TestFileMetricsExporter(t *testing.T) {
 func TestFileMetricsExporterError(t *testing.T) {
 	mf := &errorWriter{}
 	fe := &fileExporter{
-		file:       mf,
-		formatType: formatTypeJSON,
-		exportFunc: exportMessageAsLine,
+		file:             mf,
+		formatType:       formatTypeJSON,
+		exporter:         exportMessageAsLine,
+		metricsMarshaler: metricsMarshalers[formatTypeJSON],
 	}
 	require.NotNil(t, fe)
 
@@ -202,7 +233,8 @@ func TestFileLogsExporter(t *testing.T) {
 			name: "json: default configuration",
 			args: args{
 				conf: &Config{
-					Path: tempFileName(t),
+					Path:       tempFileName(t),
+					FormatType: "json",
 				},
 				unmarshaler: plog.NewJSONUnmarshaler(),
 			},
@@ -220,7 +252,20 @@ func TestFileLogsExporter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fe := newFileExporter(tt.args.conf)
+			conf := tt.args.conf
+			fe := &fileExporter{
+				path:       conf.Path,
+				formatType: conf.FormatType,
+				file: &lumberjack.Logger{
+					Filename:   conf.Path,
+					MaxSize:    conf.Rotation.MaxMegabytes,
+					MaxAge:     conf.Rotation.MaxDays,
+					MaxBackups: conf.Rotation.MaxBackups,
+					LocalTime:  conf.Rotation.LocalTime,
+				},
+				logsMarshaler: logsMarshalers[conf.FormatType],
+				exporter:      buildExportFunc(conf),
+			}
 			require.NotNil(t, fe)
 
 			ld := testdata.GenerateLogsTwoLogRecordsSameResource()
@@ -255,9 +300,10 @@ func TestFileLogsExporter(t *testing.T) {
 func TestFileLogsExporterErrors(t *testing.T) {
 	mf := &errorWriter{}
 	fe := &fileExporter{
-		file:       mf,
-		formatType: formatTypeJSON,
-		exportFunc: exportMessageAsLine,
+		file:          mf,
+		formatType:    formatTypeJSON,
+		exporter:      exportMessageAsLine,
+		logsMarshaler: logsMarshalers[formatTypeJSON],
 	}
 	require.NotNil(t, fe)
 
@@ -268,23 +314,32 @@ func TestFileLogsExporterErrors(t *testing.T) {
 }
 
 func Test_fileExporter_Capabilities(t *testing.T) {
-	fe := newFileExporter(
-		&Config{
-			Path:     tempFileName(t),
-			Rotation: Rotation{MaxMegabytes: 1},
-		})
+	path := tempFileName(t)
+	fe := &fileExporter{
+		path:       path,
+		formatType: formatTypeJSON,
+		file: &lumberjack.Logger{
+			Filename: path,
+		},
+		metricsMarshaler: metricsMarshalers[formatTypeJSON],
+		exporter:         exportMessageAsLine,
+	}
 	require.NotNil(t, fe)
 	require.NotNil(t, fe.Capabilities())
 }
 
 func TestExportMessageAsBuffer(t *testing.T) {
-	fe := newFileExporter(&Config{
-		Path: tempFileName(t),
-		Rotation: Rotation{
-			MaxMegabytes: 1,
+	path := tempFileName(t)
+	fe := &fileExporter{
+		path:       path,
+		formatType: formatTypeProto,
+		file: &lumberjack.Logger{
+			Filename: path,
+			MaxSize:  1,
 		},
-		FormatType: "proto",
-	})
+		logsMarshaler: logsMarshalers[formatTypeProto],
+		exporter:      exportMessageAsBuffer,
+	}
 	require.NotNil(t, fe)
 	//
 	ld := testdata.GenerateLogsManyLogRecordsSameResource(15000)

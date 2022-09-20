@@ -52,43 +52,10 @@ For example, if your `path` is `data.json` and rotation is triggered, this file 
 
 Telemetry data is encoded according to the `format` setting and then written to the file.
 
-When `format` is json,  telemetry data is written to file in JSON format. A line in the file is a JSON encoded data.
-
-When `format`  is proto,  encoded telemetry data can't be written row by row like in JSON format. It's hard to keep track of where one message ends and the next begins. The easiest way to solve this problem is to write the size of each message before you write the message itself.
-
-```go
-  data := make([]byte, 4, 4+len(buf))
-	binary.BigEndian.PutUint32(data, uint32(len(buf)))
-	data = append(data, buf...)
-	if err := binary.Write(e.file, binary.BigEndian, data); err != nil {
-		return err
-	}
-```
+When `format` is json, telemetry data is written to file in JSON format. Each line in the file is a JSON object.
+When `format` is proto, each encoded object is preceded by 4 bytes (an unsigned 32 bit integer) which represent the number of bytes contained in the encoded object.
 
 When we need read the messages back in, we read the size, then read the bytes into a separate buffer, then parse from that buffer.
-
-```go
-func readMessageFromStream(br *bufio.Reader) ([]byte,  error) {
-	var length int32
-	// read length
-	err := binary.Read(br, binary.BigEndian, &length)
-	if err != nil {
-		if errors.Is(err, io.EOF) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	buf := make([]byte, length)
-	err = binary.Read(br, binary.BigEndian, &buf)
-	if err == nil {
-		return buf, nil
-	}
-	if errors.Is(err, io.EOF) {
-		return nil, nil
-	}
-	return nil, err
-}
-```
 
 ## Example:
 

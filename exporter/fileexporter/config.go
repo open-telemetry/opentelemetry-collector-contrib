@@ -67,7 +67,7 @@ func (cfg *Config) Validate() error {
 	if cfg.Path == "" {
 		return errors.New("path must be non-empty")
 	}
-	if cfg.FormatType != "" && cfg.FormatType != formatTypeJSON && cfg.FormatType != formatTypeProto {
+	if cfg.FormatType != formatTypeJSON && cfg.FormatType != formatTypeProto {
 		return errors.New("format type is not supported")
 	}
 	return nil

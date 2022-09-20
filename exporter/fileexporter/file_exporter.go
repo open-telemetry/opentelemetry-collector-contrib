@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 const (
@@ -47,62 +46,49 @@ var logsMarshalers = map[string]plog.Marshaler{
 	formatTypeProto: plog.NewProtoMarshaler(),
 }
 
+// exportFunc defines how to export encoded telemetry data.
+type exportFunc func(e *fileExporter, buf []byte) error
+
 // fileExporter is the implementation of file exporter that writes telemetry data to a file
 type fileExporter struct {
 	path  string
 	file  io.WriteCloser
 	mutex sync.Mutex
 
+	tracesMarshaler  ptrace.Marshaler
+	metricsMarshaler pmetric.Marshaler
+	logsMarshaler    plog.Marshaler
+
 	formatType string
-	exportFunc func(e *fileExporter, buf []byte) error
+	exporter   exportFunc
 }
 
-func newFileExporter(cfg *Config) *fileExporter {
-	format := func() string {
-		if cfg.FormatType == "" {
-			return formatTypeJSON
-		}
-		return cfg.FormatType
-	}()
-	return &fileExporter{
-		path:       cfg.Path,
-		formatType: format,
-		file: &lumberjack.Logger{
-			Filename:   cfg.Path,
-			MaxSize:    cfg.Rotation.MaxMegabytes,
-			MaxAge:     cfg.Rotation.MaxDays,
-			MaxBackups: cfg.Rotation.MaxBackups,
-			LocalTime:  cfg.Rotation.LocalTime,
-		},
-		exportFunc: buildExportFunc(cfg),
-	}
-}
 func (e *fileExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
 func (e *fileExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
-	buf, err := tracesMarshalers[e.formatType].MarshalTraces(td)
+	buf, err := e.tracesMarshaler.MarshalTraces(td)
 	if err != nil {
 		return err
 	}
-	return e.exportFunc(e, buf)
+	return e.exporter(e, buf)
 }
 
 func (e *fileExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
-	buf, err := metricsMarshalers[e.formatType].MarshalMetrics(md)
+	buf, err := e.metricsMarshaler.MarshalMetrics(md)
 	if err != nil {
 		return err
 	}
-	return e.exportFunc(e, buf)
+	return e.exporter(e, buf)
 }
 
 func (e *fileExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
-	buf, err := logsMarshalers[e.formatType].MarshalLogs(ld)
+	buf, err := e.logsMarshaler.MarshalLogs(ld)
 	if err != nil {
 		return err
 	}
-	return e.exportFunc(e, buf)
+	return e.exporter(e, buf)
 }
 
 func exportMessageAsLine(e *fileExporter, buf []byte) error {
@@ -123,6 +109,7 @@ func exportMessageAsBuffer(e *fileExporter, buf []byte) error {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 	// write the size of each message before writing the message itself.  https://developers.google.com/protocol-buffers/docs/techniques
+	// each encoded object is preceded by 4 bytes (an unsigned 32 bit integer)
 	data := make([]byte, 4, 4+len(buf))
 	binary.BigEndian.PutUint32(data, uint32(len(buf)))
 	data = append(data, buf...)
