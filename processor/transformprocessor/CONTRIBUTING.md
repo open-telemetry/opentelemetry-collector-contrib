@@ -4,6 +4,7 @@ This guide is specific to the transform processor.  All guidelines in [Collector
 
 ## New Functions
 
+<!-- markdown-link-check-disable-next-line -->
 If a new function is not specific to the transform processor it should be added to the [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/oteltransformationlanguage) instead.
 
 All new functions must be added via a new file.  Function files must start with `func_`.  Functions that are usable in multiple pipelines must be placed in `internal/common`.  Functions that are specific to a pipeline must be placed in `internal/<pipeline>`.
