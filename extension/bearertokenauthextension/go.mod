@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/beare
 go 1.18
 
 require (
+	github.com/fsnotify/fsnotify v1.5.4
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.60.1-0.20220916163348-84621e483dfb
 	go.uber.org/zap v1.23.0
@@ -11,7 +12,6 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

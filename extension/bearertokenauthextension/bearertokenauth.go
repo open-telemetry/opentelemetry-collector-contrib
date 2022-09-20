@@ -18,7 +18,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"sync"
 
+	"github.com/fsnotify/fsnotify"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.uber.org/zap"
@@ -44,26 +47,99 @@ func (c *PerRPCAuth) RequireTransportSecurity() bool {
 
 // BearerTokenAuth is an implementation of configauth.GRPCClientAuthenticator. It embeds a static authorization "bearer" token in every rpc call.
 type BearerTokenAuth struct {
-	tokenString string
-	logger      *zap.Logger
+	muTokenString sync.RWMutex
+	tokenString   string
+
+	shutdownCH chan struct{}
+
+	tokenFilename string
+	logger        *zap.Logger
 }
 
 var _ configauth.ClientAuthenticator = (*BearerTokenAuth)(nil)
 
 func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
+	if cfg.BearerTokenFilename != "" && cfg.BearerToken != "" {
+		logger.Warn("a filename is specified. Configured token is ignored!")
+	}
 	return &BearerTokenAuth{
-		tokenString: cfg.BearerToken,
-		logger:      logger,
+		tokenString:   cfg.BearerToken,
+		tokenFilename: cfg.BearerTokenFilename,
+		logger:        logger,
 	}
 }
 
-// Start of BearerTokenAuth does nothing and returns nil
+// Start of BearerTokenAuth does nothing and returns nil if no tokenFilename
+// is specified. Otherwise a routine is started to monitor the file containing
+// the token to be transferred.
 func (b *BearerTokenAuth) Start(ctx context.Context, host component.Host) error {
-	return nil
+	if b.tokenFilename == "" {
+		return nil
+	}
+
+	if b.shutdownCH != nil {
+		return fmt.Errorf("bearerToken file monitoring is already running")
+	}
+
+	// Read file once
+	tokenStr, err := os.ReadFile(b.tokenFilename)
+	if err != nil {
+		return err
+	}
+	b.muTokenString.Lock()
+	b.tokenString = string(tokenStr)
+	b.muTokenString.Unlock()
+
+	b.shutdownCH = make(chan struct{})
+
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return err
+	}
+
+	// start file watcher
+	go func(ctx context.Context) {
+		defer watcher.Close()
+		for {
+			select {
+			case _, ok := <-b.shutdownCH:
+				_ = ok
+				return
+			case <-ctx.Done():
+				return
+			case event, ok := <-watcher.Events:
+				if !ok {
+					continue
+				}
+				if event.Op == fsnotify.Write {
+					token, err := os.ReadFile(b.tokenFilename)
+					if err != nil {
+						b.logger.Error(err.Error())
+						continue
+					}
+					b.muTokenString.Lock()
+					b.tokenString = string(token)
+					b.muTokenString.Unlock()
+				}
+			}
+		}
+	}(ctx)
+
+	return watcher.Add(b.tokenFilename)
 }
 
 // Shutdown of BearerTokenAuth does nothing and returns nil
 func (b *BearerTokenAuth) Shutdown(ctx context.Context) error {
+	if b.tokenFilename == "" {
+		return nil
+	}
+
+	if b.shutdownCH == nil {
+		return fmt.Errorf("bearerToken file monitoring is not running")
+	}
+	b.shutdownCH <- struct{}{}
+	close(b.shutdownCH)
+	b.shutdownCH = nil
 	return nil
 }
 
@@ -75,7 +151,10 @@ func (b *BearerTokenAuth) PerRPCCredentials() (credentials.PerRPCCredentials, er
 }
 
 func (b *BearerTokenAuth) bearerToken() string {
-	return fmt.Sprintf("Bearer %s", b.tokenString)
+	b.muTokenString.RLock()
+	token := fmt.Sprintf("Bearer %s", b.tokenString)
+	b.muTokenString.RUnlock()
+	return token
 }
 
 // RoundTripper is not implemented by BearerTokenAuth

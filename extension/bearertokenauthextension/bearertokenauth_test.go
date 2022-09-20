@@ -18,7 +18,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -103,4 +105,53 @@ func TestBearerAuthenticator(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expectedHeaders, resp.Header)
 	assert.Nil(t, bauth.Shutdown(context.Background()))
+}
+
+func TestBearerStartWatchStop(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.BearerTokenFilename = "test.token"
+
+	bauth := newBearerTokenAuth(cfg, nil)
+	assert.NotNil(t, bauth)
+
+	assert.Nil(t, bauth.Start(context.Background(), componenttest.NewNopHost()))
+	assert.Error(t, bauth.Start(context.Background(), componenttest.NewNopHost()))
+
+	credential, err := bauth.PerRPCCredentials()
+	assert.NoError(t, err)
+	assert.NotNil(t, credential)
+
+	token, err := os.ReadFile(bauth.tokenFilename)
+	assert.NoError(t, err)
+
+	tokenStr := fmt.Sprintf("Bearer %s", token)
+	md, err := credential.GetRequestMetadata(context.Background())
+	expectedMd := map[string]string{
+		"authorization": tokenStr,
+	}
+	assert.Equal(t, md, expectedMd)
+	assert.NoError(t, err)
+	assert.True(t, credential.RequireTransportSecurity())
+
+	// change file content once
+	assert.Nil(t, os.WriteFile(bauth.tokenFilename, []byte(fmt.Sprintf("%stest", token)), 0600))
+	time.Sleep(5 * time.Second)
+	credential, _ = bauth.PerRPCCredentials()
+	md, err = credential.GetRequestMetadata(context.Background())
+	expectedMd["authorization"] = tokenStr + "test"
+	assert.Equal(t, md, expectedMd)
+	assert.NoError(t, err)
+
+	// change file content back
+	assert.Nil(t, os.WriteFile(bauth.tokenFilename, token, 0600))
+	time.Sleep(5 * time.Second)
+	credential, _ = bauth.PerRPCCredentials()
+	md, err = credential.GetRequestMetadata(context.Background())
+	expectedMd["authorization"] = tokenStr
+	time.Sleep(5 * time.Second)
+	assert.Equal(t, md, expectedMd)
+	assert.NoError(t, err)
+
+	assert.Nil(t, bauth.Shutdown(context.Background()))
+	assert.Nil(t, bauth.shutdownCH)
 }

@@ -26,6 +26,9 @@ type Config struct {
 
 	// BearerToken specifies the bearer token to use for every RPC.
 	BearerToken string `mapstructure:"token,omitempty"`
+
+	// BearerTokenFile points to a file that contains the bearer token to use for every RPC.
+	BearerTokenFilename string `mapstructure:"tokenfile,omitempty"`
 }
 
 var _ config.Extension = (*Config)(nil)
