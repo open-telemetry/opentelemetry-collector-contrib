@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -30,7 +29,7 @@ func TestLogsToLoki(t *testing.T) {
 		attrs         map[string]interface{}
 		res           map[string]interface{}
 		expectedLabel string
-		expectedLine  string
+		expectedLines []string
 	}{
 		{
 			desc: "with attribute to label and regular attribute",
@@ -42,7 +41,11 @@ func TestLogsToLoki(t *testing.T) {
 				hintAttributes: "host.name",
 			},
 			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
-			expectedLine:  `{"traceid":"01020304000000000000000000000000","attributes":{"http.status":200}}`,
+			expectedLines: []string{
+				`{"traceid":"01000000000000000000000000000000","attributes":{"http.status":200}}`,
+				`{"traceid":"02000000000000000000000000000000","attributes":{"http.status":200}}`,
+				`{"traceid":"03000000000000000000000000000000","attributes":{"http.status":200}}`,
+			},
 		},
 		{
 			desc: "with resource to label and regular resource",
@@ -54,7 +57,11 @@ func TestLogsToLoki(t *testing.T) {
 				hintResources: "host.name",
 			},
 			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
-			expectedLine:  `{"traceid":"01020304000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
+			expectedLines: []string{
+				`{"traceid":"01000000000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
+				`{"traceid":"02000000000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
+				`{"traceid":"03000000000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
+			},
 		},
 	}
 	for _, tC := range testCases {
@@ -62,21 +69,33 @@ func TestLogsToLoki(t *testing.T) {
 			// prepare
 			ld := plog.NewLogs()
 			ld.ResourceLogs().AppendEmpty()
-			ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty()
-			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().AppendEmpty()
-			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
-
-			// copy the attributes from the test case to the log entry
-			if len(tC.attrs) > 0 {
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().FromRaw(tC.attrs)
+			for i := 0; i < 3; i++ {
+				ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty()
+				ld.ResourceLogs().At(0).ScopeLogs().At(i).LogRecords().AppendEmpty()
+				ld.ResourceLogs().At(0).ScopeLogs().At(i).LogRecords().At(0).SetTraceID([16]byte{byte(i + 1)})
 			}
+
 			if len(tC.res) > 0 {
 				ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(tC.res)
 			}
 
-			// we can't use copy here, as the value (Value) will be used as string lookup later, so, we need to convert it to string now
-			for k, v := range tC.hints {
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString(k, fmt.Sprintf("%v", v))
+			rlogs := ld.ResourceLogs()
+			for i := 0; i < rlogs.Len(); i++ {
+				slogs := rlogs.At(i).ScopeLogs()
+				for j := 0; j < slogs.Len(); j++ {
+					logs := slogs.At(j).LogRecords()
+					for k := 0; k < logs.Len(); k++ {
+						log := logs.At(k)
+
+						if len(tC.attrs) > 0 {
+							log.Attributes().FromRaw(tC.attrs)
+						}
+
+						for k, v := range tC.hints {
+							log.Attributes().PutString(k, fmt.Sprintf("%v", v))
+						}
+					}
+				}
 			}
 
 			// test
@@ -86,12 +105,14 @@ func TestLogsToLoki(t *testing.T) {
 			// end of the test function
 			assert.Empty(t, report.Errors)
 			assert.Equal(t, 0, report.NumDropped)
-			assert.Equal(t, 1, report.NumSubmitted)
+			assert.Equal(t, ld.LogRecordCount(), report.NumSubmitted)
 			assert.Len(t, pushRequest.Streams, 1)
 			assert.Equal(t, tC.expectedLabel, pushRequest.Streams[0].Labels)
 
-			assert.Len(t, pushRequest.Streams[0].Entries, 1)
-			assert.Equal(t, tC.expectedLine, pushRequest.Streams[0].Entries[0].Line)
+			entries := pushRequest.Streams[0].Entries
+			for i := 0; i < len(entries); i++ {
+				assert.Equal(t, tC.expectedLines[i], entries[i].Line)
+			}
 		})
 	}
 }
