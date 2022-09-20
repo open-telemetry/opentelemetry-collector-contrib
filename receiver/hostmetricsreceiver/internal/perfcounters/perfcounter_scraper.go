@@ -64,16 +64,16 @@ func (p *PerfLibScraper) Initialize(objects ...string) error {
 		objectIndicesMap[index] = struct{}{}
 	}
 
-	if len(initErr.FailedObjects) > 0 {
-		return initErr
-	}
-
 	// convert to a space-separated string
 	objectIndicesSlice := make([]string, 0, len(objectIndicesMap))
 	for k := range objectIndicesMap {
 		objectIndicesSlice = append(objectIndicesSlice, strconv.Itoa(int(k)))
 	}
 	p.objectIndices = strings.Join(objectIndicesSlice, " ")
+
+	if len(initErr.FailedObjects) > 0 {
+		return initErr
+	}
 
 	return nil
 }
