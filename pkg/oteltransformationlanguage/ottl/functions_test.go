@@ -202,7 +202,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := p.NewFunctionCall(tt.inv)
+			_, err := p.newFunctionCall(tt.inv)
 			assert.Error(t, err)
 		})
 	}
@@ -210,7 +210,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 
 func Test_NewFunctionCall(t *testing.T) {
 	p := NewParser(
-		DefaultFunctionsForTests(),
+		defaultFunctionsForTests(),
 		testParsePath,
 		testParseEnum,
 		NoOpLogger{},
@@ -533,7 +533,7 @@ func Test_NewFunctionCall(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := p.NewFunctionCall(tt.inv)
+			_, err := p.newFunctionCall(tt.inv)
 			assert.NoError(t, err)
 		})
 	}
@@ -648,7 +648,7 @@ func functionWithLoggerLast(_ string, _ string, _ int64, _ Logger) (ExprFunc, er
 	}, nil
 }
 
-func DefaultFunctionsForTests() map[string]interface{} {
+func defaultFunctionsForTests() map[string]interface{} {
 	functions := make(map[string]interface{})
 	functions["testing_string_slice"] = functionWithStringSlice
 	functions["testing_float_slice"] = functionWithFloatSlice

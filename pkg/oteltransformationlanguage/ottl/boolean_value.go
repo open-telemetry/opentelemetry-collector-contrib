@@ -18,8 +18,8 @@ import (
 	"fmt"
 )
 
-// BoolExpressionEvaluator is a function that returns the result.
-type BoolExpressionEvaluator = func(ctx TransformContext) bool
+// boolExpressionEvaluator is a function that returns the result.
+type boolExpressionEvaluator = func(ctx TransformContext) bool
 
 var alwaysTrue = func(ctx TransformContext) bool {
 	return true
@@ -30,8 +30,8 @@ var alwaysFalse = func(ctx TransformContext) bool {
 }
 
 // builds a function that returns a short-circuited result of ANDing
-// BoolExpressionEvaluator funcs
-func andFuncs(funcs []BoolExpressionEvaluator) BoolExpressionEvaluator {
+// boolExpressionEvaluator funcs
+func andFuncs(funcs []boolExpressionEvaluator) boolExpressionEvaluator {
 	return func(ctx TransformContext) bool {
 		for _, f := range funcs {
 			if !f(ctx) {
@@ -43,8 +43,8 @@ func andFuncs(funcs []BoolExpressionEvaluator) BoolExpressionEvaluator {
 }
 
 // builds a function that returns a short-circuited result of ORing
-// BoolExpressionEvaluator funcs
-func orFuncs(funcs []BoolExpressionEvaluator) BoolExpressionEvaluator {
+// boolExpressionEvaluator funcs
+func orFuncs(funcs []boolExpressionEvaluator) boolExpressionEvaluator {
 	return func(ctx TransformContext) bool {
 		for _, f := range funcs {
 			if f(ctx) {
@@ -55,15 +55,15 @@ func orFuncs(funcs []BoolExpressionEvaluator) BoolExpressionEvaluator {
 	}
 }
 
-func (p *Parser) newComparisonEvaluator(comparison *Comparison) (BoolExpressionEvaluator, error) {
+func (p *Parser) newComparisonEvaluator(comparison *Comparison) (boolExpressionEvaluator, error) {
 	if comparison == nil {
 		return alwaysTrue, nil
 	}
-	left, err := p.NewGetter(comparison.Left)
+	left, err := p.newGetter(comparison.Left)
 	if err != nil {
 		return nil, err
 	}
-	right, err := p.NewGetter(comparison.Right)
+	right, err := p.newGetter(comparison.Right)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (p *Parser) newComparisonEvaluator(comparison *Comparison) (BoolExpressionE
 
 }
 
-func (p *Parser) newBooleanExpressionEvaluator(expr *BooleanExpression) (BoolExpressionEvaluator, error) {
+func (p *Parser) newBooleanExpressionEvaluator(expr *BooleanExpression) (boolExpressionEvaluator, error) {
 	if expr == nil {
 		return alwaysTrue, nil
 	}
@@ -85,7 +85,7 @@ func (p *Parser) newBooleanExpressionEvaluator(expr *BooleanExpression) (BoolExp
 	if err != nil {
 		return nil, err
 	}
-	funcs := []BoolExpressionEvaluator{f}
+	funcs := []boolExpressionEvaluator{f}
 	for _, rhs := range expr.Right {
 		f, err := p.newBooleanTermEvaluator(rhs.Term)
 		if err != nil {
@@ -97,7 +97,7 @@ func (p *Parser) newBooleanExpressionEvaluator(expr *BooleanExpression) (BoolExp
 	return orFuncs(funcs), nil
 }
 
-func (p *Parser) newBooleanTermEvaluator(term *Term) (BoolExpressionEvaluator, error) {
+func (p *Parser) newBooleanTermEvaluator(term *Term) (boolExpressionEvaluator, error) {
 	if term == nil {
 		return alwaysTrue, nil
 	}
@@ -105,7 +105,7 @@ func (p *Parser) newBooleanTermEvaluator(term *Term) (BoolExpressionEvaluator, e
 	if err != nil {
 		return nil, err
 	}
-	funcs := []BoolExpressionEvaluator{f}
+	funcs := []boolExpressionEvaluator{f}
 	for _, rhs := range term.Right {
 		f, err := p.newBooleanValueEvaluator(rhs.Value)
 		if err != nil {
@@ -117,7 +117,7 @@ func (p *Parser) newBooleanTermEvaluator(term *Term) (BoolExpressionEvaluator, e
 	return andFuncs(funcs), nil
 }
 
-func (p *Parser) newBooleanValueEvaluator(value *BooleanValue) (BoolExpressionEvaluator, error) {
+func (p *Parser) newBooleanValueEvaluator(value *BooleanValue) (boolExpressionEvaluator, error) {
 	if value == nil {
 		return alwaysTrue, nil
 	}

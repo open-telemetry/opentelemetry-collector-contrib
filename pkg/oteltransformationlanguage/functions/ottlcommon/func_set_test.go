@@ -42,7 +42,11 @@ func Test_set(t *testing.T) {
 		{
 			name:   "set name",
 			setter: target,
-			getter: ottl.Literal{Value: "new name"},
+			getter: ottl.StandardGetSetter{
+				Getter: func(ctx ottl.TransformContext) interface{} {
+					return "new name"
+				},
+			},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStringVal("new name")
 			},
@@ -50,7 +54,11 @@ func Test_set(t *testing.T) {
 		{
 			name:   "set nil value",
 			setter: target,
-			getter: ottl.Literal{Value: nil},
+			getter: ottl.StandardGetSetter{
+				Getter: func(ctx ottl.TransformContext) interface{} {
+					return nil
+				},
+			},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStringVal("original name")
 			},

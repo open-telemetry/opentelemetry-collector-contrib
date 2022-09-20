@@ -155,6 +155,36 @@ func NewAttributeMap(mp map[string]string) pcommon.Map {
 	return attrs
 }
 
+// TestGauge holds the definition of a basic gauge.
+type TestGauge struct {
+	Name       string
+	DataPoints []DataPoint
+}
+
+// DataPoint specifies a DoubleVal data point and its attributes.
+type DataPoint struct {
+	Value      float64
+	Attributes map[string]string
+}
+
+// NewGaugeMetrics creates a set of pmetric.Metrics containing all the specified
+// test gauges.
+func NewGaugeMetrics(tgs []TestGauge) pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
+	all := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+	for _, tg := range tgs {
+		m := all.AppendEmpty()
+		m.SetName(tg.Name)
+		g := m.SetEmptyGauge()
+		for _, dp := range tg.DataPoints {
+			d := g.DataPoints().AppendEmpty()
+			d.SetDoubleVal(dp.Value)
+			fillAttributeMap(d.Attributes(), dp.Attributes)
+		}
+	}
+	return metrics
+}
+
 func newMetricsWithAttributeMap(mp map[string]string) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	fillAttributeMap(md.ResourceMetrics().AppendEmpty().Resource().Attributes(), mp)

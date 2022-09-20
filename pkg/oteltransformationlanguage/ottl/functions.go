@@ -23,8 +23,9 @@ type PathExpressionParser func(*Path) (GetSetter, error)
 
 type EnumParser func(*EnumSymbol) (*Enum, error)
 
-// NewFunctionCall Visible for testing
-func (p *Parser) NewFunctionCall(inv Invocation) (ExprFunc, error) {
+type Enum int64
+
+func (p *Parser) newFunctionCall(inv Invocation) (ExprFunc, error) {
 	if f, ok := p.functions[inv.Function]; ok {
 		args, err := p.buildArgs(inv, reflect.TypeOf(f))
 		if err != nil {
@@ -126,7 +127,7 @@ func (p *Parser) buildSliceArg(inv Invocation, argType reflect.Type, startingInd
 	case "Getter":
 		var arg []Getter
 		for j := startingIndex; j < len(inv.Arguments); j++ {
-			val, err := p.NewGetter(inv.Arguments[j])
+			val, err := p.newGetter(inv.Arguments[j])
 			if err != nil {
 				return err
 			}
@@ -151,7 +152,7 @@ func (p *Parser) buildArg(argDef Value, argType reflect.Type, index int, args *[
 		}
 		*args = append(*args, reflect.ValueOf(arg))
 	case "Getter":
-		arg, err := p.NewGetter(argDef)
+		arg, err := p.newGetter(argDef)
 		if err != nil {
 			return fmt.Errorf("invalid argument at position %v %w", index, err)
 		}

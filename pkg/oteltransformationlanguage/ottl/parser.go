@@ -158,7 +158,7 @@ type Field struct {
 // invocation and the expression to match telemetry for invoking the function.
 type Query struct {
 	Function  ExprFunc
-	Condition BoolExpressionEvaluator
+	Condition boolExpressionEvaluator
 }
 
 // Bytes type for capturing byte arrays
@@ -218,7 +218,7 @@ func (p *Parser) ParseQueries(statements []string) ([]Query, error) {
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		function, err := p.NewFunctionCall(parsed.Invocation)
+		function, err := p.newFunctionCall(parsed.Invocation)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
