@@ -54,7 +54,6 @@ type fileExporter struct {
 	mutex sync.Mutex
 
 	formatType string
-	//
 	exportFunc func(e *fileExporter, buf []byte) error
 }
 
