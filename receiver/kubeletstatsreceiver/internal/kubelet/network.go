@@ -34,12 +34,14 @@ func addNetworkMetrics(mb *metadata.MetricsBuilder, networkMetrics metadata.Netw
 
 func recordNetworkDataPoint(mb *metadata.MetricsBuilder, r metadata.NetworkMetricsRecorder, s *stats.NetworkStats, getData getNetworkDataFunc, currentTime pcommon.Timestamp) {
 	rx, tx := getData(s)
-	if rx == nil && tx == nil {
-		return
+
+	if rx != nil {
+		r.RecordReceiveDataPoint(mb, currentTime, int64(*rx), s.Name)
 	}
 
-	r.RecordReceiveDataPoint(mb, currentTime, int64(*rx), s.Name)
-	r.RecordTransmitDataPoint(mb, currentTime, int64(*tx), s.Name)
+	if tx != nil {
+		r.RecordTransmitDataPoint(mb, currentTime, int64(*tx), s.Name)
+	}
 }
 
 func addNetworkMetricsWithDirection(mb *metadata.MetricsBuilder, networkMetrics metadata.NetworkMetricsWithDirection, s *stats.NetworkStats, currentTime pcommon.Timestamp) {
@@ -53,12 +55,14 @@ func addNetworkMetricsWithDirection(mb *metadata.MetricsBuilder, networkMetrics 
 
 func recordNetworkDataPointWithDirection(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordIntDataPointWithDirectionFunc, s *stats.NetworkStats, getData getNetworkDataFunc, currentTime pcommon.Timestamp) {
 	rx, tx := getData(s)
-	if rx == nil && tx == nil {
-		return
+
+	if rx != nil {
+		recordDataPoint(mb, currentTime, int64(*rx), s.Name, metadata.AttributeDirectionReceive)
 	}
 
-	recordDataPoint(mb, currentTime, int64(*rx), s.Name, metadata.AttributeDirectionReceive)
-	recordDataPoint(mb, currentTime, int64(*tx), s.Name, metadata.AttributeDirectionTransmit)
+	if tx != nil {
+		recordDataPoint(mb, currentTime, int64(*tx), s.Name, metadata.AttributeDirectionTransmit)
+	}
 }
 
 func getNetworkIO(s *stats.NetworkStats) (*uint64, *uint64) {
