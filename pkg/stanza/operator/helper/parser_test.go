@@ -21,14 +21,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -670,64 +668,6 @@ func NewTestParserConfig() ParserConfig {
 	lnp.ParseFrom = entry.NewBodyField("logger")
 	expect.ScopeNameParser = &lnp
 	return expect
-}
-
-func TestMapStructureDecodeParserConfigWithHook(t *testing.T) {
-	expect := NewTestParserConfig()
-	input := map[string]interface{}{
-		"id":         "parser_config",
-		"type":       "test_type",
-		"on_error":   "send",
-		"parse_from": "body.from",
-		"parse_to":   "body.to",
-		"timestamp": map[string]interface{}{
-			"layout_type": "strptime",
-		},
-		"severity": map[string]interface{}{
-			"mapping": map[interface{}]interface{}{
-				"info": "3xx",
-				"warn": "4xx",
-			},
-		},
-		"scope_name": map[string]interface{}{
-			"parse_from": "body.logger",
-		},
-	}
-
-	var actual ParserConfig
-	dc := &mapstructure.DecoderConfig{Result: &actual, DecodeHook: operatortest.JSONUnmarshalerHook()}
-	ms, err := mapstructure.NewDecoder(dc)
-	require.NoError(t, err)
-	err = ms.Decode(input)
-	require.NoError(t, err)
-	require.Equal(t, expect, actual)
-}
-
-func TestMapStructureDecodeParserConfig(t *testing.T) {
-	expect := NewTestParserConfig()
-	input := map[string]interface{}{
-		"id":         "parser_config",
-		"type":       "test_type",
-		"on_error":   "send",
-		"parse_from": "body.from",
-		"parse_to":   "body.to",
-		"timestamp": map[string]interface{}{
-			"layout_type": "strptime",
-		},
-		"severity": map[string]interface{}{
-			"mapping": map[interface{}]interface{}{
-				"info": "3xx",
-				"warn": "4xx",
-			},
-		},
-		"scope_name": map[string]interface{}{
-			"parse_from": "body.logger",
-		},
-	}
-
-	var actual ParserConfig
-	require.NoError(t, UnmarshalMapstructure(input, &actual))
-	require.Equal(t, expect, actual)
 }
 
 func writerWithFakeOut(t *testing.T) (*WriterOperator, *testutil.FakeOutput) {
