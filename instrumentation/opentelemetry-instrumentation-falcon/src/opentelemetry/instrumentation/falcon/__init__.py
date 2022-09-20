@@ -194,14 +194,16 @@ else:
 
 
 class _InstrumentedFalconAPI(getattr(falcon, _instrument_app)):
+    _instrumented_falcon_apps = set()
+
     def __init__(self, *args, **kwargs):
         otel_opts = kwargs.pop("_otel_opts", {})
 
         # inject trace middleware
-        middlewares = kwargs.pop("middleware", [])
+        self._middlewares_list = kwargs.pop("middleware", [])
         tracer_provider = otel_opts.pop("tracer_provider", None)
-        if not isinstance(middlewares, (list, tuple)):
-            middlewares = [middlewares]
+        if not isinstance(self._middlewares_list, (list, tuple)):
+            self._middlewares_list = [self._middlewares_list]
 
         self._otel_tracer = trace.get_tracer(
             __name__, __version__, tracer_provider
@@ -215,11 +217,17 @@ class _InstrumentedFalconAPI(getattr(falcon, _instrument_app)):
             otel_opts.pop("request_hook", None),
             otel_opts.pop("response_hook", None),
         )
-        middlewares.insert(0, trace_middleware)
-        kwargs["middleware"] = middlewares
+        self._middlewares_list.insert(0, trace_middleware)
+        kwargs["middleware"] = self._middlewares_list
 
         self._otel_excluded_urls = get_excluded_urls("FALCON")
+        self._is_instrumented_by_opentelemetry = True
+        _InstrumentedFalconAPI._instrumented_falcon_apps.add(self)
         super().__init__(*args, **kwargs)
+
+    def __del__(self):
+        if self in _InstrumentedFalconAPI._instrumented_falcon_apps:
+            _InstrumentedFalconAPI._instrumented_falcon_apps.remove(self)
 
     def _handle_exception(
         self, arg1, arg2, arg3, arg4
@@ -229,6 +237,9 @@ class _InstrumentedFalconAPI(getattr(falcon, _instrument_app)):
 
         # Translation layer for handling the changed arg position of "ex" in Falcon > 2 vs
         # Falcon < 2
+        if not self._is_instrumented_by_opentelemetry:
+            return super()._handle_exception(arg1, arg2, arg3, arg4)
+
         if _falcon_version == 1:
             ex = arg1
             req = arg2
@@ -251,6 +262,9 @@ class _InstrumentedFalconAPI(getattr(falcon, _instrument_app)):
     def __call__(self, env, start_response):
         # pylint: disable=E1101
         if self._otel_excluded_urls.url_disabled(env.get("PATH_INFO", "/")):
+            return super().__call__(env, start_response)
+
+        if not self._is_instrumented_by_opentelemetry:
             return super().__call__(env, start_response)
 
         start_time = time_ns()
@@ -414,6 +428,33 @@ class FalconInstrumentor(BaseInstrumentor):
     def instrumentation_dependencies(self) -> Collection[str]:
         return _instruments
 
+    def _remove_instrumented_middleware(self, app):
+        if (
+            hasattr(app, "_is_instrumented_by_opentelemetry")
+            and app._is_instrumented_by_opentelemetry
+        ):
+            if _falcon_version == 3:
+                app._unprepared_middleware = [
+                    x
+                    for x in app._unprepared_middleware
+                    if not isinstance(x, _TraceMiddleware)
+                ]
+                app._middleware = app._prepare_middleware(
+                    app._unprepared_middleware,
+                    independent_middleware=app._independent_middleware,
+                )
+            else:
+                app._middlewares_list = [
+                    x
+                    for x in app._middlewares_list
+                    if not isinstance(x, _TraceMiddleware)
+                ]
+                app._middleware = falcon.api_helpers.prepare_middleware(
+                    app._middlewares_list,
+                    independent_middleware=app._independent_middleware,
+                )
+            app._is_instrumented_by_opentelemetry = False
+
     def _instrument(self, **opts):
         self._original_falcon_api = getattr(falcon, _instrument_app)
 
@@ -425,4 +466,7 @@ class FalconInstrumentor(BaseInstrumentor):
         setattr(falcon, _instrument_app, FalconAPI)
 
     def _uninstrument(self, **kwargs):
+        for app in _InstrumentedFalconAPI._instrumented_falcon_apps:
+            self._remove_instrumented_middleware(app)
+        _InstrumentedFalconAPI._instrumented_falcon_apps.clear()
         setattr(falcon, _instrument_app, self._original_falcon_api)
