@@ -323,18 +323,17 @@ func readMessageFromStream(br *bufio.Reader) ([]byte, bool, error) {
 	// read length
 	err := binary.Read(br, binary.BigEndian, &length)
 	if err != nil {
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return nil, true, nil
-		} else {
-			return nil, false, err
 		}
+		return nil, false, err
 	}
 	buf := make([]byte, length)
 	err = binary.Read(br, binary.BigEndian, &buf)
 	if err == nil {
 		return buf, false, nil
 	}
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		return nil, true, nil
 	}
 	return nil, false, err

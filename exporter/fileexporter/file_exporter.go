@@ -17,7 +17,6 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"encoding/binary"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
 	"sync"
 
@@ -26,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 const (
@@ -124,10 +124,10 @@ func exportMessageAsBuffer(e *fileExporter, buf []byte) error {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 	// write the size of each message before writing the message itself.  https://developers.google.com/protocol-buffers/docs/techniques
-	if err := binary.Write(e.file, binary.BigEndian, int32(len(buf))); err != nil {
-		return err
-	}
-	if err := binary.Write(e.file, binary.BigEndian, buf); err != nil {
+	data := make([]byte, 4, 4+len(buf))
+	binary.BigEndian.PutUint32(data, uint32(len(buf)))
+	data = append(data, buf...)
+	if err := binary.Write(e.file, binary.BigEndian, data); err != nil {
 		return err
 	}
 	return nil
