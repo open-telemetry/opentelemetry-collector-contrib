@@ -236,7 +236,7 @@ class TestFastAPIManualInstrumentation(TestBase):
                         dict(point.attributes),
                     )
                     self.assertEqual(point.count, 1)
-                    self.assertAlmostEqual(duration, point.sum, delta=20)
+                    self.assertAlmostEqual(duration, point.sum, delta=30)
                 if isinstance(point, NumberDataPoint):
                     self.assertDictEqual(
                         expected_requests_count_attributes,
