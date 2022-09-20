@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
+package sqlquery // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sqlquery"
 
 import (
 	"context"
@@ -30,9 +30,11 @@ import (
 	"go.uber.org/zap"
 )
 
-type dbClient interface {
-	metricRows(ctx context.Context) ([]metricRow, error)
+type DbClient interface {
+	MetricRows(ctx context.Context) ([]MetricRow, error)
 }
+
+type MetricRow map[string]string
 
 type dbSQLClient struct {
 	db     *sql.DB
@@ -40,7 +42,7 @@ type dbSQLClient struct {
 	sql    string
 }
 
-func newDbClient(db *sql.DB, sql string, logger *zap.Logger) dbClient {
+func NewDbClient(db *sql.DB, sql string, logger *zap.Logger) DbClient {
 	return dbSQLClient{
 		db:     db,
 		sql:    sql,
@@ -48,14 +50,12 @@ func newDbClient(db *sql.DB, sql string, logger *zap.Logger) dbClient {
 	}
 }
 
-type metricRow map[string]string
-
-func (cl dbSQLClient) metricRows(ctx context.Context) ([]metricRow, error) {
+func (cl dbSQLClient) MetricRows(ctx context.Context) ([]MetricRow, error) {
 	sqlRows, err := cl.db.QueryContext(ctx, cl.sql)
 	if err != nil {
 		return nil, err
 	}
-	var out []metricRow
+	var out []MetricRow
 	row := reusableRow{
 		attrs: map[string]func() string{},
 	}
@@ -93,8 +93,8 @@ type reusableRow struct {
 	scanDest []interface{}
 }
 
-func (row reusableRow) toMetricRow() metricRow {
-	out := metricRow{}
+func (row reusableRow) toMetricRow() MetricRow {
+	out := MetricRow{}
 	for k, f := range row.attrs {
 		out[k] = f()
 	}

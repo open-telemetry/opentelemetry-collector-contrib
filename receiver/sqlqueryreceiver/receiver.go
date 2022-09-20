@@ -23,36 +23,26 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sqlquery"
 )
 
 type sqlOpenerFunc func(driverName, dataSourceName string) (*sql.DB, error)
 
-type dbProviderFunc func() (*sql.DB, error)
-
-type clientProviderFunc func(*sql.DB, string, *zap.Logger) dbClient
-
-func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) component.CreateMetricsReceiverFunc {
+func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc sqlquery.ClientProviderFunc) component.CreateMetricsReceiverFunc {
 	return func(
 		ctx context.Context,
 		settings component.ReceiverCreateSettings,
 		cfg config.Receiver,
 		consumer consumer.Metrics,
 	) (component.MetricsReceiver, error) {
-		sqlCfg := cfg.(*Config)
+		sqlCfg := cfg.(*sqlquery.Config)
 		var opts []scraperhelper.ScraperControllerOption
 		for i, query := range sqlCfg.Queries {
 			id := config.NewComponentIDWithName("sqlqueryreceiver", fmt.Sprintf("query-%d: %s", i, query.SQL))
-			mp := &scraper{
-				id:        id,
-				query:     query,
-				scrapeCfg: sqlCfg.ScraperControllerSettings,
-				logger:    settings.TelemetrySettings.Logger,
-				dbProviderFunc: func() (*sql.DB, error) {
-					return sqlOpenerFunc(sqlCfg.Driver, sqlCfg.DataSource)
-				},
-				clientProviderFunc: clientProviderFunc,
-			}
+			mp := sqlquery.NewScraper(id, query, sqlCfg.ScraperControllerSettings, settings.TelemetrySettings.Logger, func() (*sql.DB, error) {
+				return sqlOpenerFunc(sqlCfg.Driver, sqlCfg.DataSource)
+			}, clientProviderFunc)
 			opt := scraperhelper.AddScraper(mp)
 			opts = append(opts, opt)
 		}

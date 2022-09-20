@@ -32,6 +32,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sqlquery"
 )
 
 func TestPostgresIntegration(t *testing.T) {
@@ -58,75 +60,75 @@ func TestPostgresIntegration(t *testing.T) {
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	config := factory.CreateDefaultConfig().(*Config)
+	config := factory.CreateDefaultConfig().(*sqlquery.Config)
 	config.Driver = "postgres"
 	config.DataSource = fmt.Sprintf("host=localhost port=%s user=otel password=otel sslmode=disable", externalPort)
 	genreKey := "genre"
-	config.Queries = []Query{
+	config.Queries = []sqlquery.Query{
 		{
 			SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre",
-			Metrics: []MetricCfg{
+			Metrics: []sqlquery.MetricCfg{
 				{
 					MetricName:       "genre.count",
 					ValueColumn:      "count",
 					AttributeColumns: []string{genreKey},
-					ValueType:        MetricValueTypeInt,
-					DataType:         MetricTypeGauge,
+					ValueType:        sqlquery.MetricValueTypeInt,
+					DataType:         sqlquery.MetricTypeGauge,
 				},
 				{
 					MetricName:       "genre.imdb",
 					ValueColumn:      "avg",
 					AttributeColumns: []string{genreKey},
-					ValueType:        MetricValueTypeDouble,
-					DataType:         MetricTypeGauge,
+					ValueType:        sqlquery.MetricValueTypeDouble,
+					DataType:         sqlquery.MetricTypeGauge,
 				},
 			},
 		},
 		{
 			SQL: "select 1::smallint as a, 2::integer as b, 3::bigint as c, 4.1::decimal as d," +
 				" 4.2::numeric as e, 4.3::real as f, 4.4::double precision as g",
-			Metrics: []MetricCfg{
+			Metrics: []sqlquery.MetricCfg{
 				{
 					MetricName:  "a",
 					ValueColumn: "a",
-					ValueType:   MetricValueTypeInt,
-					DataType:    MetricTypeGauge,
+					ValueType:   sqlquery.MetricValueTypeInt,
+					DataType:    sqlquery.MetricTypeGauge,
 				},
 				{
 					MetricName:  "b",
 					ValueColumn: "b",
-					ValueType:   MetricValueTypeInt,
-					DataType:    MetricTypeGauge,
+					ValueType:   sqlquery.MetricValueTypeInt,
+					DataType:    sqlquery.MetricTypeGauge,
 				},
 				{
 					MetricName:  "c",
 					ValueColumn: "c",
-					ValueType:   MetricValueTypeInt,
-					DataType:    MetricTypeGauge,
+					ValueType:   sqlquery.MetricValueTypeInt,
+					DataType:    sqlquery.MetricTypeGauge,
 				},
 				{
 					MetricName:  "d",
 					ValueColumn: "d",
-					ValueType:   MetricValueTypeDouble,
-					DataType:    MetricTypeGauge,
+					ValueType:   sqlquery.MetricValueTypeDouble,
+					DataType:    sqlquery.MetricTypeGauge,
 				},
 				{
 					MetricName:  "e",
 					ValueColumn: "e",
-					ValueType:   MetricValueTypeDouble,
-					DataType:    MetricTypeGauge,
+					ValueType:   sqlquery.MetricValueTypeDouble,
+					DataType:    sqlquery.MetricTypeGauge,
 				},
 				{
 					MetricName:  "f",
 					ValueColumn: "f",
-					ValueType:   MetricValueTypeDouble,
-					DataType:    MetricTypeGauge,
+					ValueType:   sqlquery.MetricValueTypeDouble,
+					DataType:    sqlquery.MetricTypeGauge,
 				},
 				{
 					MetricName:  "g",
 					ValueColumn: "g",
-					ValueType:   MetricValueTypeDouble,
-					DataType:    MetricTypeGauge,
+					ValueType:   sqlquery.MetricValueTypeDouble,
+					DataType:    sqlquery.MetricTypeGauge,
 				},
 			},
 		},
@@ -193,26 +195,26 @@ func TestOracleDBIntegration(t *testing.T) {
 
 	genreKey := "GENRE"
 	factory := NewFactory()
-	config := factory.CreateDefaultConfig().(*Config)
+	config := factory.CreateDefaultConfig().(*sqlquery.Config)
 	config.Driver = "oracle"
 	config.DataSource = "oracle://otel:password@localhost:51521/XE"
-	config.Queries = []Query{
+	config.Queries = []sqlquery.Query{
 		{
 			SQL: "select genre, count(*) as count, avg(imdb_rating) as avg from sys.movie group by genre",
-			Metrics: []MetricCfg{
+			Metrics: []sqlquery.MetricCfg{
 				{
 					MetricName:       "genre.count",
 					ValueColumn:      "COUNT",
 					AttributeColumns: []string{genreKey},
-					ValueType:        MetricValueTypeInt,
-					DataType:         MetricTypeGauge,
+					ValueType:        sqlquery.MetricValueTypeInt,
+					DataType:         sqlquery.MetricTypeGauge,
 				},
 				{
 					MetricName:       "genre.imdb",
 					ValueColumn:      "AVG",
 					AttributeColumns: []string{genreKey},
-					ValueType:        MetricValueTypeDouble,
-					DataType:         MetricTypeGauge,
+					ValueType:        sqlquery.MetricValueTypeDouble,
+					DataType:         sqlquery.MetricTypeGauge,
 				},
 			},
 		},

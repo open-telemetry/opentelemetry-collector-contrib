@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
+package sqlquery // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sqlquery"
 
 import (
 	"errors"
@@ -157,7 +157,7 @@ func (a MetricAggregation) Validate() error {
 	return fmt.Errorf("metric config has unsupported aggregation: '%s'", a)
 }
 
-func createDefaultConfig() config.Receiver {
+func CreateDefaultConfig(typeStr config.Type) config.Receiver {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),

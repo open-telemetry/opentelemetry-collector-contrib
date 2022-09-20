@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sqlqueryreceiver
+package sqlquery // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sqlquery"
 
 import (
 	"context"
@@ -27,7 +27,7 @@ import (
 )
 
 func TestScraper_ErrorOnStart(t *testing.T) {
-	scrpr := scraper{
+	scrpr := Scraper{
 		dbProviderFunc: func() (*sql.DB, error) {
 			return nil, errors.New("oops")
 		},
@@ -37,10 +37,10 @@ func TestScraper_ErrorOnStart(t *testing.T) {
 }
 
 func TestScraper_ClientErrorOnScrape(t *testing.T) {
-	client := &fakeDBClient{
-		err: errors.New("oops"),
+	client := &FakeDBClient{
+		Err: errors.New("oops"),
 	}
-	scrpr := scraper{
+	scrpr := Scraper{
 		client: client,
 	}
 	_, err := scrpr.Scrape(context.Background())
@@ -48,12 +48,12 @@ func TestScraper_ClientErrorOnScrape(t *testing.T) {
 }
 
 func TestScraper_RowToMetricErrorOnScrape_Float(t *testing.T) {
-	client := &fakeDBClient{
-		responses: [][]metricRow{
+	client := &FakeDBClient{
+		Responses: [][]MetricRow{
 			{{"myfloat": "blah"}},
 		},
 	}
-	scrpr := scraper{
+	scrpr := Scraper{
 		client: client,
 		query: Query{
 			Metrics: []MetricCfg{{
@@ -66,19 +66,19 @@ func TestScraper_RowToMetricErrorOnScrape_Float(t *testing.T) {
 		},
 	}
 	_, err := scrpr.Scrape(context.Background())
-	const expected = "scraper.Scrape row conversion errors: row 0: rowToMetric: " +
+	const expected = "Scraper.Scrape row conversion errors: row 0: rowToMetric: " +
 		"setDataPointValue: error converting to double: " +
 		"strconv.ParseFloat: parsing \"blah\": invalid syntax"
 	assert.EqualError(t, err, expected)
 }
 
 func TestScraper_RowToMetricErrorOnScrape_Int(t *testing.T) {
-	client := &fakeDBClient{
-		responses: [][]metricRow{
+	client := &FakeDBClient{
+		Responses: [][]MetricRow{
 			{{"myint": "blah"}},
 		},
 	}
-	scrpr := scraper{
+	scrpr := Scraper{
 		client: client,
 		query: Query{
 			Metrics: []MetricCfg{{
@@ -91,20 +91,20 @@ func TestScraper_RowToMetricErrorOnScrape_Int(t *testing.T) {
 		},
 	}
 	_, err := scrpr.Scrape(context.Background())
-	const expected = "scraper.Scrape row conversion errors: row 0: rowToMetric: " +
+	const expected = "Scraper.Scrape row conversion errors: row 0: rowToMetric: " +
 		"setDataPointValue: error converting to integer: " +
 		"strconv.Atoi: parsing \"blah\": invalid syntax"
 	assert.EqualError(t, err, expected)
 }
 
 func TestScraper_RowToMetricMultiErrorsOnScrape(t *testing.T) {
-	client := &fakeDBClient{
-		responses: [][]metricRow{{
+	client := &FakeDBClient{
+		Responses: [][]MetricRow{{
 			{"myint": "foo"},
 			{"myint": "bar"},
 		}},
 	}
-	scrpr := scraper{
+	scrpr := Scraper{
 		client: client,
 		query: Query{
 			Metrics: []MetricCfg{{
@@ -117,16 +117,16 @@ func TestScraper_RowToMetricMultiErrorsOnScrape(t *testing.T) {
 		},
 	}
 	_, err := scrpr.Scrape(context.Background())
-	const expected = "scraper.Scrape row conversion errors: " +
+	const expected = "Scraper.Scrape row conversion errors: " +
 		"row 0: rowToMetric: value_column 'mycol' not found in result set; " +
 		"row 1: rowToMetric: value_column 'mycol' not found in result set"
 	assert.EqualError(t, err, expected)
 }
 
 func TestScraper_SingleRow_MultiMetrics(t *testing.T) {
-	scrpr := scraper{
-		client: &fakeDBClient{
-			responses: [][]metricRow{{{
+	scrpr := Scraper{
+		client: &FakeDBClient{
+			Responses: [][]MetricRow{{{
 				"count":    "42",
 				"foo_name": "baz",
 				"bar_name": "quux",
@@ -195,8 +195,8 @@ func TestScraper_SingleRow_MultiMetrics(t *testing.T) {
 }
 
 func TestScraper_MultiRow(t *testing.T) {
-	client := &fakeDBClient{
-		responses: [][]metricRow{{
+	client := &FakeDBClient{
+		Responses: [][]MetricRow{{
 			{
 				"count": "42",
 				"genre": "action",
@@ -207,7 +207,7 @@ func TestScraper_MultiRow(t *testing.T) {
 			},
 		}},
 	}
-	scrpr := scraper{
+	scrpr := Scraper{
 		client: client,
 		query: Query{
 			Metrics: []MetricCfg{
@@ -241,13 +241,13 @@ func TestScraper_MultiRow(t *testing.T) {
 }
 
 func TestScraper_MultiResults_CumulativeSum(t *testing.T) {
-	client := &fakeDBClient{
-		responses: [][]metricRow{
+	client := &FakeDBClient{
+		Responses: [][]MetricRow{
 			{{"count": "42"}},
 			{{"count": "43"}},
 		},
 	}
-	scrpr := scraper{
+	scrpr := Scraper{
 		client: client,
 		query: Query{
 			Metrics: []MetricCfg{{
@@ -264,13 +264,13 @@ func TestScraper_MultiResults_CumulativeSum(t *testing.T) {
 }
 
 func TestScraper_MultiResults_DeltaSum(t *testing.T) {
-	client := &fakeDBClient{
-		responses: [][]metricRow{
+	client := &FakeDBClient{
+		Responses: [][]MetricRow{
 			{{"count": "42"}},
 			{{"count": "43"}},
 		},
 	}
-	scrpr := scraper{
+	scrpr := Scraper{
 		client: client,
 		query: Query{
 			Metrics: []MetricCfg{{
@@ -286,7 +286,7 @@ func TestScraper_MultiResults_DeltaSum(t *testing.T) {
 	assertTransactionCount(t, scrpr, 43, pmetric.MetricAggregationTemporalityDelta)
 }
 
-func assertTransactionCount(t *testing.T, scrpr scraper, expected int, agg pmetric.MetricAggregationTemporality) {
+func assertTransactionCount(t *testing.T, scrpr Scraper, expected int, agg pmetric.MetricAggregationTemporality) {
 	metrics, err := scrpr.Scrape(context.Background())
 	require.NoError(t, err)
 	metric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
@@ -301,12 +301,12 @@ func assertTransactionCount(t *testing.T, scrpr scraper, expected int, agg pmetr
 }
 
 func TestScraper_Float(t *testing.T) {
-	client := &fakeDBClient{
-		responses: [][]metricRow{
+	client := &FakeDBClient{
+		Responses: [][]MetricRow{
 			{{"myfloat": "123.4"}},
 		},
 	}
-	scrpr := scraper{
+	scrpr := Scraper{
 		client: client,
 		query: Query{
 			Metrics: []MetricCfg{{
@@ -325,12 +325,12 @@ func TestScraper_Float(t *testing.T) {
 }
 
 func TestScraper_DescriptionAndUnit(t *testing.T) {
-	client := &fakeDBClient{
-		responses: [][]metricRow{
+	client := &FakeDBClient{
+		Responses: [][]MetricRow{
 			{{"mycol": "123"}},
 		},
 	}
-	scrpr := scraper{
+	scrpr := Scraper{
 		client: client,
 		query: Query{
 			Metrics: []MetricCfg{{

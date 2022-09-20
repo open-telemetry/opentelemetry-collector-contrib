@@ -27,6 +27,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sqlquery"
 )
 
 func TestCreateReceiver(t *testing.T) {
@@ -39,15 +41,15 @@ func TestCreateReceiver(t *testing.T) {
 				TracerProvider: trace.NewNoopTracerProvider(),
 			},
 		},
-		&Config{
+		&sqlquery.Config{
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 				CollectionInterval: 10 * time.Second,
 			},
 			Driver:     "mydriver",
 			DataSource: "my-datasource",
-			Queries: []Query{{
+			Queries: []sqlquery.Query{{
 				SQL: "select * from foo",
-				Metrics: []MetricCfg{{
+				Metrics: []sqlquery.MetricCfg{{
 					MetricName:  "my-metric",
 					ValueColumn: "my-column",
 				}},
@@ -64,6 +66,6 @@ func fakeDBConnect(string, string) (*sql.DB, error) {
 	return nil, nil
 }
 
-func mkFakeClient(db *sql.DB, s string, logger *zap.Logger) dbClient {
-	return &fakeDBClient{responses: [][]metricRow{{{"foo": "111"}}}}
+func mkFakeClient(db *sql.DB, s string, logger *zap.Logger) sqlquery.DbClient {
+	return &sqlquery.FakeDBClient{Responses: [][]sqlquery.MetricRow{{{"foo": "111"}}}}
 }

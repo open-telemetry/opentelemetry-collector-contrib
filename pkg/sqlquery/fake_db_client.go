@@ -12,21 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sqlqueryreceiver
+package sqlquery // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sqlquery"
 
-import "context"
+import (
+	"context"
+)
 
-type fakeDBClient struct {
-	requestCounter int
-	responses      [][]metricRow
-	err            error
+type FakeDBClient struct {
+	RequestCounter int
+	Responses      [][]MetricRow
+	Err            error
 }
 
-func (c *fakeDBClient) metricRows(context.Context) ([]metricRow, error) {
-	if c.err != nil {
-		return nil, c.err
+func (c *FakeDBClient) MetricRows(context.Context) ([]MetricRow, error) {
+	if c.Err != nil {
+		return nil, c.Err
 	}
-	idx := c.requestCounter
-	c.requestCounter++
-	return c.responses[idx], nil
+	idx := c.RequestCounter
+	c.RequestCounter++
+	return c.Responses[idx], nil
 }

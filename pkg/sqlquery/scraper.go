@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
+package sqlquery // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sqlquery"
 
 import (
 	"context"
@@ -29,25 +29,40 @@ import (
 	"go.uber.org/zap"
 )
 
-type scraper struct {
+type DbProviderFunc func() (*sql.DB, error)
+
+type ClientProviderFunc func(*sql.DB, string, *zap.Logger) DbClient
+
+type Scraper struct {
 	id                 config.ComponentID
 	query              Query
 	scrapeCfg          scraperhelper.ScraperControllerSettings
 	startTime          pcommon.Timestamp
-	clientProviderFunc clientProviderFunc
-	dbProviderFunc     dbProviderFunc
+	clientProviderFunc ClientProviderFunc
+	dbProviderFunc     DbProviderFunc
 	logger             *zap.Logger
-	client             dbClient
+	client             DbClient
 	db                 *sql.DB
 }
 
-var _ scraperhelper.Scraper = (*scraper)(nil)
+func NewScraper(id config.ComponentID, query Query, scrapeCfg scraperhelper.ScraperControllerSettings, logger *zap.Logger, providerFunc DbProviderFunc, clientProviderFunc ClientProviderFunc) *Scraper {
+	return &Scraper{
+		id:                 id,
+		query:              query,
+		scrapeCfg:          scrapeCfg,
+		logger:             logger,
+		dbProviderFunc:     providerFunc,
+		clientProviderFunc: clientProviderFunc,
+	}
+}
 
-func (s scraper) ID() config.ComponentID {
+var _ scraperhelper.Scraper = (*Scraper)(nil)
+
+func (s Scraper) ID() config.ComponentID {
 	return s.id
 }
 
-func (s *scraper) Start(context.Context, component.Host) error {
+func (s *Scraper) Start(context.Context, component.Host) error {
 	var err error
 	s.db, err = s.dbProviderFunc()
 	if err != nil {
@@ -59,9 +74,9 @@ func (s *scraper) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s Scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	out := pmetric.NewMetrics()
-	rows, err := s.client.metricRows(ctx)
+	rows, err := s.client.MetricRows(ctx)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	if err != nil {
 		return out, fmt.Errorf("scraper: %w", err)
@@ -81,11 +96,11 @@ func (s scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 	}
 	if errs != nil {
-		errs = fmt.Errorf("scraper.Scrape row conversion errors: %w", errs)
+		errs = fmt.Errorf("Scraper.Scrape row conversion errors: %w", errs)
 	}
 	return out, errs
 }
 
-func (s scraper) Shutdown(ctx context.Context) error {
+func (s Scraper) Shutdown(ctx context.Context) error {
 	return s.db.Close()
 }

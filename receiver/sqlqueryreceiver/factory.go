@@ -18,6 +18,9 @@ import (
 	"database/sql"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sqlquery"
 )
 
 const (
@@ -28,7 +31,9 @@ const (
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
-		createDefaultConfig,
-		component.WithMetricsReceiver(createReceiverFunc(sql.Open, newDbClient), stability),
+		func() config.Receiver {
+			return sqlquery.CreateDefaultConfig(typeStr)
+		},
+		component.WithMetricsReceiver(createReceiverFunc(sql.Open, sqlquery.NewDbClient), stability),
 	)
 }
