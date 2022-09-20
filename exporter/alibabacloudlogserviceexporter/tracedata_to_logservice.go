@@ -121,7 +121,7 @@ func spanToLogServiceData(span ptrace.Span, resourceContents, instrumentationLib
 	})
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(traceStateField),
-		Value: proto.String(string(span.TraceState())),
+		Value: proto.String(span.TraceStateStruct().AsRaw()),
 	})
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(startTimeField),

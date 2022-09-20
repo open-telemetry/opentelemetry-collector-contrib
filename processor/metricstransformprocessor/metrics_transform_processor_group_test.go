@@ -79,7 +79,7 @@ func TestMetricsGrouping(t *testing.T) {
 					otlpDataModelGateEnabled: useOTLP,
 				}
 
-				mtp, err := processorhelper.NewMetricsProcessorWithCreateSettings(
+				mtp, err := processorhelper.NewMetricsProcessor(
 					context.Background(),
 					componenttest.NewNopProcessorCreateSettings(),
 					&Config{

@@ -48,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, testdataConfigYaml(), cfg.Receivers[config.NewComponentID("journald")])
 }
 
-func TestDecodeInputConfigFailure(t *testing.T) {
+func TestInputConfigFailure(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	factory := NewFactory()
 	badCfg := &JournaldConfig{
@@ -56,7 +56,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        adapter.OperatorConfigs{},
 		},
-		Config: func() journald.Config {
+		InputConfig: func() journald.Config {
 			c := journald.NewConfig()
 			c.StartAt = "middle"
 			return *c
@@ -73,7 +73,7 @@ func testdataConfigYaml() *JournaldConfig {
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        adapter.OperatorConfigs{},
 		},
-		Config: func() journald.Config {
+		InputConfig: func() journald.Config {
 			c := journald.NewConfig()
 			c.Units = []string{"ssh"}
 			c.Priority = "info"

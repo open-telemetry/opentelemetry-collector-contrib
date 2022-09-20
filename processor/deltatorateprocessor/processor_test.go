@@ -203,9 +203,7 @@ func generateSumMetrics(tm testMetric) pmetric.Metrics {
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()
 		m.SetName(name)
-		m.SetDataType(pmetric.MetricDataTypeSum)
-
-		sum := m.Sum()
+		sum := m.SetEmptySum()
 		sum.SetIsMonotonic(true)
 
 		if tm.isDelta[i] {
@@ -244,17 +242,17 @@ func generateGaugeMetrics(tm testMetric) pmetric.Metrics {
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()
 		m.SetName(name)
-		m.SetDataType(pmetric.MetricDataTypeGauge)
+		dps := m.SetEmptyGauge().DataPoints()
 		if i < len(tm.metricValues) {
 			for _, value := range tm.metricValues[i] {
-				dp := m.Gauge().DataPoints().AppendEmpty()
+				dp := dps.AppendEmpty()
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(120 * time.Second)))
 				dp.SetDoubleVal(value)
 			}
 		}
 		if i < len(tm.metricIntValues) {
 			for _, value := range tm.metricIntValues[i] {
-				dp := m.Gauge().DataPoints().AppendEmpty()
+				dp := dps.AppendEmpty()
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(120 * time.Second)))
 				dp.SetIntVal(value)
 			}

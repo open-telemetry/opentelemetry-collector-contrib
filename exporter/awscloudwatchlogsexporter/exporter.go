@@ -84,7 +84,7 @@ func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSe
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewLogsExporterWithContext(
+	return exporterhelper.NewLogsExporter(
 		context.TODO(),
 		params,
 		config,
@@ -144,7 +144,7 @@ func logsToCWLogs(logger *zap.Logger, ld plog.Logs) ([]*cloudwatchlogs.InputLogE
 	}
 
 	var dropped int
-	out := make([]*cloudwatchlogs.InputLogEvent, 0) // TODO(jbd): set a better capacity
+	var out []*cloudwatchlogs.InputLogEvent
 
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
@@ -190,7 +190,7 @@ func logToCWLog(resourceAttrs map[string]interface{}, log plog.LogRecord) (*clou
 		SeverityNumber:         int32(log.SeverityNumber()),
 		SeverityText:           log.SeverityText(),
 		DroppedAttributesCount: log.DroppedAttributesCount(),
-		Flags:                  log.Flags(),
+		Flags:                  uint32(log.Flags()),
 	}
 	if traceID := log.TraceID(); !traceID.IsEmpty() {
 		body.TraceID = traceID.HexString()

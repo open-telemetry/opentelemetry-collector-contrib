@@ -39,10 +39,10 @@ func containerStatsToMetrics(ts time.Time, container container, stats *container
 	rs := md.ResourceMetrics().AppendEmpty()
 
 	resourceAttr := rs.Resource().Attributes()
-	resourceAttr.InsertString(conventions.AttributeContainerRuntime, "podman")
-	resourceAttr.InsertString(conventions.AttributeContainerName, stats.Name)
-	resourceAttr.InsertString(conventions.AttributeContainerID, stats.ContainerID)
-	resourceAttr.InsertString(conventions.AttributeContainerImageName, container.Image)
+	resourceAttr.PutString(conventions.AttributeContainerRuntime, "podman")
+	resourceAttr.PutString(conventions.AttributeContainerName, stats.Name)
+	resourceAttr.PutString(conventions.AttributeContainerID, stats.ContainerID)
+	resourceAttr.PutString(conventions.AttributeContainerImageName, container.Image)
 
 	ms := rs.ScopeMetrics().AppendEmpty().Metrics()
 	appendIOMetrics(ms, stats, pbts)
@@ -95,9 +95,7 @@ func initMetric(ms pmetric.MetricSlice, name, unit string) pmetric.Metric {
 
 func sum(ilm pmetric.MetricSlice, metricName string, unit string, points []point, ts pcommon.Timestamp) {
 	metric := initMetric(ilm, metricName, unit)
-
-	metric.SetDataType(pmetric.MetricDataTypeSum)
-	sum := metric.Sum()
+	sum := metric.SetEmptySum()
 	sum.SetIsMonotonic(true)
 	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 
@@ -113,9 +111,7 @@ func sum(ilm pmetric.MetricSlice, metricName string, unit string, points []point
 
 func gauge(ms pmetric.MetricSlice, metricName string, unit string) pmetric.NumberDataPointSlice {
 	metric := initMetric(ms, metricName, unit)
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
-
-	gauge := metric.Gauge()
+	gauge := metric.SetEmptyGauge()
 	return gauge.DataPoints()
 }
 
@@ -141,6 +137,6 @@ func gaugeF(ms pmetric.MetricSlice, metricName string, unit string, points []poi
 
 func setDataPointAttributes(dataPoint pmetric.NumberDataPoint, attributes map[string]string) {
 	for k, v := range attributes {
-		dataPoint.Attributes().InsertString(k, v)
+		dataPoint.Attributes().PutString(k, v)
 	}
 }

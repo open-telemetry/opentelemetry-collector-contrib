@@ -276,7 +276,7 @@ func loadTopAsMap() (bson.M, error) {
 }
 
 func loadIndexStatsAsMap(collectionName string) ([]bson.M, error) {
-	indexStats := []bson.M{}
+	var indexStats []bson.M
 	switch collectionName {
 	case "products":
 		indexStats0, _ := loadTestFileAsMap("./testdata/productsIndexStats0.json")

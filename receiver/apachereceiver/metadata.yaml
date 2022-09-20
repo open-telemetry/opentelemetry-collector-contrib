@@ -9,6 +9,18 @@ attributes:
     enum:
       - busy
       - idle
+  cpu_level:
+    value: level
+    description: Level of processes.
+    enum:
+      - self
+      - children
+  cpu_mode:
+    value: mode
+    description: Mode of processes.
+    enum:
+    - system
+    - user
   scoreboard_state:
     value: state
     description: The state of a connection.
@@ -73,6 +85,58 @@ metrics:
     unit: By
     sum:
       value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: [ server_name ]
+  apache.cpu.time:
+    enabled: true
+    description: Jiffs used by processes of given category.
+    unit: "{jiff}"
+    sum:
+      value_type: double
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+    attributes: [ server_name, cpu_level, cpu_mode ]
+  apache.cpu.load:
+    enabled: true
+    description: Current load of the CPU.
+    unit: "%"
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: [ server_name ]
+  apache.load.1:
+    enabled: true
+    description: The average server load during the last minute.
+    unit: "%"
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: [ server_name ]
+  apache.load.5:
+    enabled: true
+    description: The average server load during the last 5 minutes.
+    unit: "%"
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: [ server_name ]
+  apache.load.15:
+    enabled: true
+    description: The average server load during the last 15 minutes.
+    unit: "%"
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: [ server_name ]
+  apache.request.time:
+    enabled: true
+    description: Total time spent on handling requests.
+    unit: ms
+    sum:
+      value_type: int
+      input_type: string
       monotonic: true
       aggregation: cumulative
     attributes: [ server_name ]

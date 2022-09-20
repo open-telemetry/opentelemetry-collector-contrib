@@ -32,6 +32,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
@@ -53,33 +54,49 @@ type resourceWatcher struct {
 	initialTimeout      time.Duration
 	initialSyncDone     *atomic.Bool
 	initialSyncTimedOut *atomic.Bool
+	config              *Config
+
+	// For mocking.
+	makeClient               func(apiConf k8sconfig.APIConfig) (kubernetes.Interface, error)
+	makeOpenShiftQuotaClient func(apiConf k8sconfig.APIConfig) (quotaclientset.Interface, error)
 }
 
 type metadataConsumer func(metadata []*metadata.MetadataUpdate) error
 
 // newResourceWatcher creates a Kubernetes resource watcher.
-func newResourceWatcher(
-	logger *zap.Logger, client kubernetes.Interface, osQuotaClient quotaclientset.Interface,
-	nodeConditionTypesToReport, allocatableTypesToReport []string,
-	initialSyncTimeout time.Duration,
-) (*resourceWatcher, error) {
-	rw := &resourceWatcher{
-		client:              client,
-		osQuotaClient:       osQuotaClient,
-		informerFactories:   []sharedInformer{},
-		logger:              logger,
-		dataCollector:       collection.NewDataCollector(logger, nodeConditionTypesToReport, allocatableTypesToReport),
-		initialSyncDone:     atomic.NewBool(false),
-		initialSyncTimedOut: atomic.NewBool(false),
-		initialTimeout:      initialSyncTimeout,
+func newResourceWatcher(logger *zap.Logger, cfg *Config) *resourceWatcher {
+	return &resourceWatcher{
+		logger:                   logger,
+		dataCollector:            collection.NewDataCollector(logger, cfg.NodeConditionTypesToReport, cfg.AllocatableTypesToReport),
+		initialSyncDone:          atomic.NewBool(false),
+		initialSyncTimedOut:      atomic.NewBool(false),
+		initialTimeout:           defaultInitialSyncTimeout,
+		config:                   cfg,
+		makeClient:               k8sconfig.MakeClient,
+		makeOpenShiftQuotaClient: k8sconfig.MakeOpenShiftQuotaClient,
 	}
+}
 
-	err := rw.prepareSharedInformerFactory()
+func (rw *resourceWatcher) initialize() error {
+	client, err := rw.makeClient(rw.config.APIConfig)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("Failed to create Kubernnetes client: %w", err)
+	}
+	rw.client = client
+
+	if rw.config.Distribution == distributionOpenShift {
+		rw.osQuotaClient, err = rw.makeOpenShiftQuotaClient(rw.config.APIConfig)
+		if err != nil {
+			return fmt.Errorf("Failed to create OpenShift quota API client: %w", err)
+		}
 	}
 
-	return rw, nil
+	err = rw.prepareSharedInformerFactory()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (rw *resourceWatcher) prepareSharedInformerFactory() error {

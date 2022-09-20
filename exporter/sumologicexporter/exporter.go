@@ -75,7 +75,7 @@ func newLogsExporter(
 		return nil, fmt.Errorf("failed to initialize the logs exporter: %w", err)
 	}
 
-	return exporterhelper.NewLogsExporterWithContext(
+	return exporterhelper.NewLogsExporter(
 		context.TODO(),
 		set,
 		cfg,
@@ -98,7 +98,7 @@ func newMetricsExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporterWithContext(
+	return exporterhelper.NewMetricsExporter(
 		context.TODO(),
 		set,
 		cfg,
@@ -165,14 +165,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
 
-				// copy resource attributes into logs attributes
-				// log attributes have precedence over resource attributes
-				rl.Resource().Attributes().Range(func(k string, v pcommon.Value) bool {
-					log.Attributes().Insert(k, v)
-					return true
-				})
-
-				currentMetadata = sdr.filter.filterIn(log.Attributes())
+				currentMetadata = sdr.filter.mergeAndFilterIn(rl.Resource().Attributes(), log.Attributes())
 
 				// If metadata differs from currently buffered, flush the buffer
 				if currentMetadata.string() != previousMetadata.string() && previousMetadata.string() != "" {
@@ -271,7 +264,7 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Met
 					attributes: attributes,
 				}
 
-				currentMetadata = sdr.filter.filterIn(attributes)
+				currentMetadata = sdr.filter.mergeAndFilterIn(attributes)
 
 				// If metadata differs from currently buffered, flush the buffer
 				if currentMetadata.string() != previousMetadata.string() && previousMetadata.string() != "" {

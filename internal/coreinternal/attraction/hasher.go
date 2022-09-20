@@ -61,7 +61,7 @@ func sha1Hasher(attr pcommon.Value) {
 	if len(val) > 0 {
 		// #nosec
 		h := sha1.New()
-		h.Write(val) // nolint: errcheck
+		_, _ = h.Write(val)
 		val = h.Sum(nil)
 		hashedBytes := make([]byte, hex.EncodedLen(len(val)))
 		hex.Encode(hashedBytes, val)

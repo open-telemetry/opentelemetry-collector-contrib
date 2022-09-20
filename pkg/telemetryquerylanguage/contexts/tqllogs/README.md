@@ -7,18 +7,20 @@ In general, the Logs Context supports accessing pdata using the field names from
 
 The following fields are the exception.
 
-| path                          | field accessed                                                  | type                                                                    |
-|-------------------------------|-----------------------------------------------------------------|-------------------------------------------------------------------------|
-| resource                      | resource of the log being processed                             | pcommon.Resource                                                        |
-| resource.attributes           | resource attributes of the log being processed                  | pcommon.Map                                                             |
-| resource.attributes\[""\]     | the value of the resource attribute of the log being processed  | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
-| instrumentation_scope         | instrumentation scope of the log being processed                | pcommon.InstrumentationScope                                            |
-| instrumentation_scope.name    | name of the instrumentation scope of the log being processed    | string                                                                  |
-| instrumentation_scope.version | version of the instrumentation scope of the log being processed | string                                                                  |
-| attributes                    | attributes of the log being processed                           | pcommon.Map                                                             |
-| attributes\[""\]              | the value of the attribute of the log being processed           | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
-| trace_id.string               | a string representation of the trace id                         | string                                                                  |
-| span_id.string                | a string representation of the span id                          | string                                                                  |
+| path                                   | field accessed                                                                     | type                                                                    |
+|----------------------------------------|------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| resource                               | resource of the log being processed                                                | pcommon.Resource                                                        |
+| resource.attributes                    | resource attributes of the log being processed                                     | pcommon.Map                                                             |
+| resource.attributes\[""\]              | the value of the resource attribute of the log being processed                     | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
+| instrumentation_scope                  | instrumentation scope of the log being processed                                   | pcommon.InstrumentationScope                                            |
+| instrumentation_scope.name             | name of the instrumentation scope of the log being processed                       | string                                                                  |
+| instrumentation_scope.version          | version of the instrumentation scope of the log being processed                    | string                                                                  |
+| instrumentation_scope.attributes       | instrumentation scope attributes of the data point being processed                 | pcommon.Map                                                             |
+| instrumentation_scope.attributes\[""\] | the value of the instrumentation scope attribute of the data point being processed | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
+| attributes                             | attributes of the log being processed                                              | pcommon.Map                                                             |
+| attributes\[""\]                       | the value of the attribute of the log being processed                              | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
+| trace_id.string                        | a string representation of the trace id                                            | string                                                                  |
+| span_id.string                         | a string representation of the span id                                             | string                                                                  |
 
 ## Enums
 

@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/service/featuregate"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
 )
@@ -61,6 +63,12 @@ func createDefaultConfig() config.Receiver {
 
 var errConfigNotES = errors.New("config was not an elasticsearch receiver config")
 
+func logDeprecatedFeatureGateForDirection(log *zap.Logger, gate featuregate.Gate) {
+	log.Warn("WARNING: The " + gate.ID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
+		"the direction attribute has been reverted in the specification. See https://github.com/open-telemetry/opentelemetry-specification/issues/2726 " +
+		"for additional details.")
+}
+
 // createMetricsReceiver creates a metrics receiver for scraping elasticsearch metrics.
 func createMetricsReceiver(
 	_ context.Context,
@@ -73,6 +81,14 @@ func createMetricsReceiver(
 		return nil, errConfigNotES
 	}
 	es := newElasticSearchScraper(params, c)
+
+	if !es.emitMetricsWithDirectionAttribute {
+		logDeprecatedFeatureGateForDirection(es.settings.Logger, emitMetricsWithDirectionAttributeFeatureGate)
+	}
+
+	if es.emitMetricsWithoutDirectionAttribute {
+		logDeprecatedFeatureGateForDirection(es.settings.Logger, emitMetricsWithoutDirectionAttributeFeatureGate)
+	}
 	scraper, err := scraperhelper.NewScraper(typeStr, es.scrape, scraperhelper.WithStart(es.start))
 	if err != nil {
 		return nil, err

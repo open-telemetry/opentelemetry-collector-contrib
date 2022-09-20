@@ -33,8 +33,8 @@ func buildTraces() ptrace.Traces {
 	span.SetName("foo")
 	span.SetStartTimestamp(pcommon.Timestamp(10))
 	span.SetEndTimestamp(pcommon.Timestamp(20))
-	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
 	return td
 }

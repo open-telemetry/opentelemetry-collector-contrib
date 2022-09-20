@@ -22,13 +22,13 @@ import (
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func addMetadata(meta map[string]map[string]interface{}, attrs *pcommon.Map) error {
+func addMetadata(meta map[string]map[string]interface{}, attrs pcommon.Map) error {
 	for k, v := range meta {
 		val, err := json.Marshal(v)
 		if err != nil {
 			return err
 		}
-		attrs.UpsertString(
+		attrs.PutString(
 			awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(val))
 	}
 	return nil

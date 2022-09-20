@@ -44,25 +44,25 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 		{
 			name: "oneEmpty",
 			td:   testdata.GenerateTracesOneEmptyResourceSpans(),
-			zs:   make([]*zipkinmodel.SpanModel, 0),
+			zs:   []*zipkinmodel.SpanModel{},
 			err:  nil,
 		},
 		{
 			name: "noLibs",
 			td:   testdata.GenerateTracesNoLibraries(),
-			zs:   make([]*zipkinmodel.SpanModel, 0),
+			zs:   []*zipkinmodel.SpanModel{},
 			err:  nil,
 		},
 		{
 			name: "oneEmptyLib",
 			td:   testdata.GenerateTracesOneEmptyInstrumentationLibrary(),
-			zs:   make([]*zipkinmodel.SpanModel, 0),
+			zs:   []*zipkinmodel.SpanModel{},
 			err:  nil,
 		},
 		{
 			name: "oneSpanNoResource",
 			td:   testdata.GenerateTracesOneSpanNoResource(),
-			zs:   make([]*zipkinmodel.SpanModel, 0),
+			zs:   []*zipkinmodel.SpanModel{},
 			err:  errors.New("TraceID is invalid"),
 		},
 		{
@@ -131,7 +131,7 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 	}
 }
 
-func findSpanByID(rs ptrace.ResourceSpansSlice, spanID pcommon.SpanID) *ptrace.Span {
+func findSpanByID(rs ptrace.ResourceSpansSlice, spanID pcommon.SpanID) ptrace.Span {
 	for i := 0; i < rs.Len(); i++ {
 		instSpans := rs.At(i).ScopeSpans()
 		for j := 0; j < instSpans.Len(); j++ {
@@ -139,20 +139,20 @@ func findSpanByID(rs ptrace.ResourceSpansSlice, spanID pcommon.SpanID) *ptrace.S
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				if span.SpanID() == spanID {
-					return &span
+					return span
 				}
 			}
 		}
 	}
-	return nil
+	return ptrace.Span{}
 }
 
 func generateTraceOneSpanOneTraceID(status ptrace.StatusCode) ptrace.Traces {
 	td := testdata.GenerateTracesOneSpan()
 	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-	span.SetTraceID(pcommon.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-		0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10}))
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}))
+	span.SetTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+		0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10})
+	span.SetSpanID([8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08})
 	switch status {
 	case ptrace.StatusCodeError:
 		span.Status().SetCode(ptrace.StatusCodeError)

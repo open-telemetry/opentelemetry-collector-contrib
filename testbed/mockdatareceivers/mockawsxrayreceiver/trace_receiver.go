@@ -113,7 +113,7 @@ func (ar *MockAwsXrayReceiver) handleRequest(req *http.Request) error {
 	traces, _ := ToTraces(body)
 	sc := traces.SpanCount()
 
-	err = ar.nextConsumer.ConsumeTraces(ctx, *traces)
+	err = ar.nextConsumer.ConsumeTraces(ctx, traces)
 	obsrecv.EndTracesOp(ctx, typeStr, sc, err)
 	return err
 }
@@ -135,11 +135,11 @@ func (ar *MockAwsXrayReceiver) Shutdown(context.Context) error {
 	return ar.server.Close()
 }
 
-func ToTraces(rawSeg []byte) (*ptrace.Traces, error) {
+func ToTraces(rawSeg []byte) (ptrace.Traces, error) {
 	var result map[string]interface{}
 	err := json.Unmarshal(rawSeg, &result)
 	if err != nil {
-		return nil, err
+		return ptrace.Traces{}, err
 	}
 
 	records, ok := result["TraceSegmentDocuments"].([]interface{})
@@ -156,5 +156,5 @@ func ToTraces(rawSeg []byte) (*ptrace.Traces, error) {
 		ils.Spans().AppendEmpty()
 	}
 
-	return &traceData, nil
+	return traceData, nil
 }
