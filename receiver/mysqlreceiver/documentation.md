@@ -17,6 +17,8 @@ These are the metrics available for this scraper.
 | **mysql.commands** | The number of times each type of command has been executed. | 1 | Sum(Int) | <ul> <li>command</li> </ul> |
 | **mysql.double_writes** | The number of writes to the InnoDB doublewrite buffer. | 1 | Sum(Int) | <ul> <li>double_writes</li> </ul> |
 | **mysql.handlers** | The number of requests to various MySQL handlers. | 1 | Sum(Int) | <ul> <li>handler</li> </ul> |
+| **mysql.index.io.wait.count** | The total count of I/O wait events for an index. | 1 | Sum(Int) | <ul> <li>io_waits_operations</li> <li>table_name</li> <li>schema</li> <li>index_name</li> </ul> |
+| **mysql.index.io.wait.time** | The total time of I/O wait events for an index. | ns | Sum(Int) | <ul> <li>io_waits_operations</li> <li>table_name</li> <li>schema</li> <li>index_name</li> </ul> |
 | **mysql.locks** | The number of MySQL locks. | 1 | Sum(Int) | <ul> <li>locks</li> </ul> |
 | **mysql.log_operations** | The number of InnoDB log operations. | 1 | Sum(Int) | <ul> <li>log_operations</li> </ul> |
 | **mysql.operations** | The number of InnoDB operations. | 1 | Sum(Int) | <ul> <li>operations</li> </ul> |
@@ -24,6 +26,8 @@ These are the metrics available for this scraper.
 | **mysql.row_locks** | The number of InnoDB row locks. | 1 | Sum(Int) | <ul> <li>row_locks</li> </ul> |
 | **mysql.row_operations** | The number of InnoDB row operations. | 1 | Sum(Int) | <ul> <li>row_operations</li> </ul> |
 | **mysql.sorts** | The number of MySQL sorts. | 1 | Sum(Int) | <ul> <li>sorts</li> </ul> |
+| **mysql.table.io.wait.count** | The total count of I/O wait events for a table. | 1 | Sum(Int) | <ul> <li>io_waits_operations</li> <li>table_name</li> <li>schema</li> </ul> |
+| **mysql.table.io.wait.time** | The total time of I/O wait events for a table. | ns | Sum(Int) | <ul> <li>io_waits_operations</li> <li>table_name</li> <li>schema</li> </ul> |
 | **mysql.threads** | The state of MySQL threads. | 1 | Sum(Int) | <ul> <li>threads</li> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
@@ -51,11 +55,15 @@ metrics:
 | command (command) | The command types. | execute, close, fetch, prepare, reset, send_long_data |
 | double_writes (kind) | The doublewrite types. | pages_written, writes |
 | handler (kind) | The handler types. | commit, delete, discover, external_lock, mrr_init, prepare, read_first, read_key, read_last, read_next, read_prev, read_rnd, read_rnd_next, rollback, savepoint, savepoint_rollback, update, write |
+| index_name (index) | The name of the index. |  |
+| io_waits_operations (operation) | The io_waits operation type. | delete, fetch, insert, update |
 | locks (kind) | The table locks type. | immediate, waited |
 | log_operations (operation) | The log operation types. | waits, write_requests, writes |
 | operations (operation) | The operation types. | fsyncs, reads, writes |
 | page_operations (operation) | The page operation types. | created, read, written |
 | row_locks (kind) | The row lock type. | waits, time |
 | row_operations (operation) | The row operation type. | deleted, inserted, read, updated |
+| schema (schema) | The schema of the object. |  |
 | sorts (kind) | The sort count type. | merge_passes, range, rows, scan |
+| table_name (table) | Table name for event or process. |  |
 | threads (kind) | The thread count type. | cached, connected, created, running |
