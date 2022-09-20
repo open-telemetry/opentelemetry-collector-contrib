@@ -155,7 +155,7 @@ func verifyMetrics(t *testing.T, md pmetric.Metrics) error {
 }
 
 func verifyCount(t *testing.T, m pmetric.Metric) {
-	assert.Equal(t, "request_total", m.Name())
+	assert.Equal(t, "traces_service_graph_request_total", m.Name())
 
 	assert.Equal(t, pmetric.MetricDataTypeSum, m.DataType())
 	dps := m.Sum().DataPoints()
@@ -174,7 +174,7 @@ func verifyCount(t *testing.T, m pmetric.Metric) {
 }
 
 func verifyDuration(t *testing.T, m pmetric.Metric) {
-	assert.Equal(t, "request_duration_seconds", m.Name())
+	assert.Equal(t, "traces_service_graph_request_duration_seconds", m.Name())
 
 	assert.Equal(t, pmetric.MetricDataTypeHistogram, m.DataType())
 	dps := m.Histogram().DataPoints()
