@@ -99,11 +99,6 @@ func TestStart_Error(t *testing.T) {
 			},
 			expectedSkipScrape: true,
 		},
-		{
-			name:        "Perfcounter init returns unknown error",
-			initError:   errors.New("failed to init counters"),
-			expectedErr: "failed to init counters",
-		},
 	}
 
 	for _, tc := range testCases {
@@ -114,11 +109,7 @@ func TestStart_Error(t *testing.T) {
 			scraper.perfCounterScraper = perfcounters.NewMockPerfCounterScraperError(nil, nil, nil, tc.initError)
 
 			err = scraper.start(context.Background(), componenttest.NewNopHost())
-			if tc.expectedErr == "" {
-				require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
-			} else {
-				require.ErrorContains(t, err, tc.expectedErr)
-			}
+			require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
 
 			require.Equal(t, tc.expectedSkipScrape, scraper.skipScrape)
 		})

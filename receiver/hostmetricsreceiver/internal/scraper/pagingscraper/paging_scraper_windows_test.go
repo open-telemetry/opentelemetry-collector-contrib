@@ -153,7 +153,6 @@ func TestStart_Error(t *testing.T) {
 		name               string
 		initError          error
 		expectedSkipScrape bool
-		expectedErr        string
 	}{
 		{
 			name:               "Perfcounter partially fails to init",
@@ -165,11 +164,6 @@ func TestStart_Error(t *testing.T) {
 				FailedObjects: []string{"Memory"},
 			},
 			expectedSkipScrape: true,
-		},
-		{
-			name:        "Perfcounter init returns unknown error",
-			initError:   errors.New("failed to init counters"),
-			expectedErr: "failed to init counters",
 		},
 	}
 
@@ -183,11 +177,7 @@ func TestStart_Error(t *testing.T) {
 			scraper.perfCounterScraper = perfcounters.NewMockPerfCounterScraperError(nil, nil, nil, tc.initError)
 
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
-			if tc.expectedErr == "" {
-				require.NoError(t, err, "Failed to initialize paging scraper: %v", err)
-			} else {
-				require.ErrorContains(t, err, tc.expectedErr)
-			}
+			require.NoError(t, err, "Failed to initialize paging scraper: %v", err)
 
 			require.Equal(t, tc.expectedSkipScrape, scraper.skipScrape)
 		})
