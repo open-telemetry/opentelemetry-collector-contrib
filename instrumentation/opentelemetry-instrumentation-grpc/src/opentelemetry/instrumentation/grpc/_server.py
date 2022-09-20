@@ -173,9 +173,10 @@ class OpenTelemetryServerInterceptor(grpc.ServerInterceptor):
     Usage::
 
         tracer = some OpenTelemetry tracer
+        filter = filters.negate(filters.method_name("service.Foo"))
 
         interceptors = [
-            OpenTelemetryServerInterceptor(tracer),
+            OpenTelemetryServerInterceptor(tracer, filter),
         ]
 
         server = grpc.server(
@@ -184,8 +185,9 @@ class OpenTelemetryServerInterceptor(grpc.ServerInterceptor):
 
     """
 
-    def __init__(self, tracer):
+    def __init__(self, tracer, filter_=None):
         self._tracer = tracer
+        self._filter = filter_
 
     @contextmanager
     def _set_remote_context(self, servicer_context):
@@ -261,6 +263,9 @@ class OpenTelemetryServerInterceptor(grpc.ServerInterceptor):
         )
 
     def intercept_service(self, continuation, handler_call_details):
+        if self._filter is not None and not self._filter(handler_call_details):
+            return continuation(handler_call_details)
+
         def telemetry_wrapper(behavior, request_streaming, response_streaming):
             def telemetry_interceptor(request_or_iterator, context):
 

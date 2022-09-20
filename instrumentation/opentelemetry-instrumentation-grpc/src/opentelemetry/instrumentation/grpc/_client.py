@@ -62,8 +62,9 @@ def _make_future_done_callback(span, rpc_info):
 class OpenTelemetryClientInterceptor(
     grpcext.UnaryClientInterceptor, grpcext.StreamClientInterceptor
 ):
-    def __init__(self, tracer):
+    def __init__(self, tracer, filter_=None):
         self._tracer = tracer
+        self._filter = filter_
 
     def _start_span(self, method, **kwargs):
         service, meth = method.lstrip("/").split("/", 1)
@@ -148,6 +149,8 @@ class OpenTelemetryClientInterceptor(
         return self._trace_result(span, rpc_info, result)
 
     def intercept_unary(self, request, metadata, client_info, invoker):
+        if self._filter is not None and not self._filter(client_info):
+            return invoker(request, metadata)
         return self._intercept(request, metadata, client_info, invoker)
 
     # For RPCs that stream responses, the result can be a generator. To record
@@ -186,6 +189,9 @@ class OpenTelemetryClientInterceptor(
         self, request_or_iterator, metadata, client_info, invoker
     ):
         if context.get_value(_SUPPRESS_INSTRUMENTATION_KEY):
+            return invoker(request_or_iterator, metadata)
+
+        if self._filter is not None and not self._filter(client_info):
             return invoker(request_or_iterator, metadata)
 
         if client_info.is_server_stream:

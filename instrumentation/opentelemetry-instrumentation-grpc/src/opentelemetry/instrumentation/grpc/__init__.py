@@ -118,13 +118,62 @@ You can also add the instrumentor manually, rather than using
     server = grpc.server(futures.ThreadPoolExecutor(),
                          interceptors = [server_interceptor()])
 
+Filters
+-------
+
+If you prefer to filter specific requests to be instrumented, you can specify
+the condition by assigning filters to instrumentors.
+
+You can write a global server instrumentor as follows:
+
+.. code-block::
+
+    from opentelemetry.instrumentation.grpc import filters, GrpcInstrumentorServer
+
+    grpc_server_instrumentor = GrpcInstrumentorServer(
+        filter_ = filters.any_of(
+            filters.method_name("SimpleMethod"),
+            filters.method_name("ComplexMethod"),
+        )
+    )
+    grpc_server_instrumentor.instrument()
+
+You can also use the filters directly on the provided interceptors:
+
+.. code-block::
+
+    my_interceptor = server_interceptor(
+        filter_ = filters.negate(filters.method_name("TestMethod"))
+    )
+    server = grpc.server(futures.ThreadPoolExecutor(),
+                         interceptors = [my_interceptor])
+
+``filter_`` option also applies to both global and manual client intrumentors.
+
+
+Environment variable
+--------------------
+
+If you'd like to exclude specific services for the instrumentations, you can use
+``OTEL_PYTHON_GRPC_EXCLUDED_SERVICES`` environment variables.
+
+For example, if you assign ``"GRPCTestServer,GRPCHealthServer"`` to the variable,
+then the global interceptor automatically adds the filters to exclude requests to
+services ``GRPCTestServer`` and ``GRPCHealthServer``.
+
 """
-from typing import Collection
+import os
+from typing import Callable, Collection, List, Union
 
 import grpc  # pylint:disable=import-self
 from wrapt import wrap_function_wrapper as _wrap
 
 from opentelemetry import trace
+from opentelemetry.instrumentation.grpc.filters import (
+    any_of,
+    negate,
+    service_name,
+)
 from opentelemetry.instrumentation.grpc.grpcext import intercept_channel
 from opentelemetry.instrumentation.grpc.package import _instruments
 from opentelemetry.instrumentation.grpc.version import __version__
@@ -145,9 +194,25 @@ class GrpcInstrumentorServer(BaseInstrumentor):
         grpc_server_instrumentor = GrpcInstrumentorServer()
         grpc_server_instrumentor.instrument()
 
+        If you want to add a filter that only intercept requests
+        to match the condition, pass ``filter_`` to GrpcInstrumentorServer.
+
+        grpc_server_instrumentor = GrpcInstrumentorServer(
+            filter_=filters.method_prefix("SimpleMethod"))
+        grpc_server_instrumentor.instrument()
+
     """
 
     # pylint:disable=attribute-defined-outside-init, redefined-outer-name
+
+    def __init__(self, filter_=None):
+        excluded_service_filter = _excluded_service_filter()
+        if excluded_service_filter is not None:
+            if filter_ is None:
+                filter_ = excluded_service_filter
+            else:
+                filter_ = any_of(filter_, excluded_service_filter)
+        self._filter = filter_
 
     def instrumentation_dependencies(self) -> Collection[str]:
         return _instruments
@@ -160,11 +225,16 @@ class GrpcInstrumentorServer(BaseInstrumentor):
             if "interceptors" in kwargs:
                 # add our interceptor as the first
                 kwargs["interceptors"].insert(
-                    0, server_interceptor(tracer_provider=tracer_provider)
+                    0,
+                    server_interceptor(
+                        tracer_provider=tracer_provider, filter_=self._filter
+                    ),
                 )
             else:
                 kwargs["interceptors"] = [
-                    server_interceptor(tracer_provider=tracer_provider)
+                    server_interceptor(
+                        tracer_provider=tracer_provider, filter_=self._filter
+                    )
                 ]
             return self._original_func(*args, **kwargs)
 
@@ -183,7 +253,24 @@ class GrpcInstrumentorClient(BaseInstrumentor):
         grpc_client_instrumentor = GrpcInstrumentorClient()
         grpc_client_instrumentor.instrument()
 
+        If you want to add a filter that only intercept requests
+        to match the condition, pass ``filter_`` option to GrpcInstrumentorClient.
+
+        grpc_client_instrumentor = GrpcInstrumentorClient(
+            filter_=filters.negate(filters.health_check())
+        )
+        grpc_client_instrumentor.instrument()
+
     """
+
+    def __init__(self, filter_=None):
+        excluded_service_filter = _excluded_service_filter()
+        if excluded_service_filter is not None:
+            if filter_ is None:
+                filter_ = excluded_service_filter
+            else:
+                filter_ = any_of(filter_, excluded_service_filter)
+        self._filter = filter_
 
     # Figures out which channel type we need to wrap
     def _which_channel(self, kwargs):
@@ -221,15 +308,22 @@ class GrpcInstrumentorClient(BaseInstrumentor):
         tracer_provider = kwargs.get("tracer_provider")
         return intercept_channel(
             channel,
-            client_interceptor(tracer_provider=tracer_provider),
+            client_interceptor(
+                tracer_provider=tracer_provider,
+                filter_=self._filter,
+            ),
         )
 
 
-def client_interceptor(tracer_provider=None):
+def client_interceptor(tracer_provider=None, filter_=None):
     """Create a gRPC client channel interceptor.
 
     Args:
         tracer: The tracer to use to create client-side spans.
+
+        filter_: filter function that returns True if gRPC requests
+                 matches the condition. Default is None and intercept
+                 all requests.
 
     Returns:
         An invocation-side interceptor object.
@@ -238,14 +332,18 @@ def client_interceptor(tracer_provider=None):
 
     tracer = trace.get_tracer(__name__, __version__, tracer_provider)
 
-    return _client.OpenTelemetryClientInterceptor(tracer)
+    return _client.OpenTelemetryClientInterceptor(tracer, filter_=filter_)
 
 
-def server_interceptor(tracer_provider=None):
+def server_interceptor(tracer_provider=None, filter_=None):
     """Create a gRPC server interceptor.
 
     Args:
         tracer: The tracer to use to create server-side spans.
+
+        filter_: filter function that returns True if gRPC requests
+                 matches the condition. Default is None and intercept
+                 all requests.
 
     Returns:
         A service-side interceptor object.
@@ -254,4 +352,24 @@ def server_interceptor(tracer_provider=None):
 
     tracer = trace.get_tracer(__name__, __version__, tracer_provider)
 
-    return _server.OpenTelemetryServerInterceptor(tracer)
+    return _server.OpenTelemetryServerInterceptor(tracer, filter_=filter_)
+
+
+def _excluded_service_filter() -> Union[Callable[[object], bool], None]:
+    services = _parse_services(
+        os.environ.get("OTEL_PYTHON_GRPC_EXCLUDED_SERVICES", "")
+    )
+    if len(services) == 0:
+        return None
+    filters = (service_name(srv) for srv in services)
+    return negate(any_of(*filters))
+
+
+def _parse_services(excluded_services: str) -> List[str]:
+    if excluded_services != "":
+        excluded_service_list = [
+            s.strip() for s in excluded_services.split(",")
+        ]
+    else:
+        excluded_service_list = []
+    return excluded_service_list
