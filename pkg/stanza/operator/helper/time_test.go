@@ -26,6 +26,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
 )
 
 func Test_setTimestampYear(t *testing.T) {
@@ -722,7 +723,7 @@ func timeConfigFromFileViaMapstructure(file string, result *TimeParser) error {
 		return fmt.Errorf("failed to read data from yaml: %w", err)
 	}
 
-	err = UnmarshalMapstructure(raw, result)
+	err = operatortest.UnmarshalMapstructure(raw, result)
 	return err
 }
 
