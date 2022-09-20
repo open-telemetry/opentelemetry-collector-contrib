@@ -85,7 +85,6 @@ wavefront-sdk-go library.
  (#13417)
 - `transformprocessor`: Fixes panic of transformprocessor handling Gauge types (#13905)
 - `vcenterreceiver`: Fix incorrect KBy and MBy units, updating them to KiBy and MiBy (#13935)
-- `servicegraphprocessor`: Fixed metric names to match the specification (#14324)
 
 # v0.59.0
 
