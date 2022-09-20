@@ -114,7 +114,7 @@ func TestScrape_Errors(t *testing.T) {
 				assert.Zero(t, pageSize%4096) // page size on Windows should always be a multiple of 4KB
 			}
 
-			scraper.perfCounterScraper = perfcounters.NewMockPerfCounterScraperError(test.scrapeErr, test.getObjectErr, test.getValuesErr)
+			scraper.perfCounterScraper = perfcounters.NewMockPerfCounterScraperError(test.scrapeErr, test.getObjectErr, test.getValuesErr, nil)
 
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize paging scraper: %v", err)
@@ -144,6 +144,42 @@ func TestScrape_Errors(t *testing.T) {
 			pagingUtilizationMetric := metrics.At(1)
 			assert.Equal(t, test.expectedUtilizationUsedValue, pagingUtilizationMetric.Gauge().DataPoints().At(0).DoubleVal())
 			assert.Equal(t, test.expectedUtilizationFreeValue, pagingUtilizationMetric.Gauge().DataPoints().At(1).DoubleVal())
+		})
+	}
+}
+
+func TestStart_Error(t *testing.T) {
+	testCases := []struct {
+		name               string
+		initError          error
+		expectedSkipScrape bool
+	}{
+		{
+			name:               "Perfcounter partially fails to init",
+			expectedSkipScrape: false,
+		},
+		{
+			name: "Perfcounter fully fails to init",
+			initError: &perfcounters.PerfCounterInitError{
+				FailedObjects: []string{"Memory"},
+			},
+			expectedSkipScrape: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			metricsConfig := metadata.DefaultMetricsSettings()
+			metricsConfig.SystemPagingUtilization.Enabled = true
+
+			scraper := newPagingScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metricsConfig})
+
+			scraper.perfCounterScraper = perfcounters.NewMockPerfCounterScraperError(nil, nil, nil, tc.initError)
+
+			err := scraper.start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err, "Failed to initialize paging scraper: %v", err)
+
+			require.Equal(t, tc.expectedSkipScrape, scraper.skipScrape)
 		})
 	}
 }
