@@ -23,7 +23,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
@@ -91,7 +90,7 @@ func Test_PerfCounterScraper(t *testing.T) {
 		{
 			name:    "Initialize fully fails",
 			objects: []string{"Invalid Object 1", "Invalid Object 2"},
-			newErr:  ErrAllObjectsUnavailable.Error(),
+			newErr:  "failed to init counters: Invalid Object 1; Invalid Object 2",
 		},
 		{
 			name:          "Get Object Error",
@@ -112,7 +111,7 @@ func Test_PerfCounterScraper(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			s := NewPerfLibScraper(zaptest.NewLogger(t))
+			s := &PerfLibScraper{}
 			err := s.Initialize(test.objects...)
 			if test.newErr != "" {
 				assert.EqualError(t, err, test.newErr)

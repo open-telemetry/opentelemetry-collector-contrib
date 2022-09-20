@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
 )
@@ -41,7 +40,7 @@ func TestStartSampling(t *testing.T) {
 
 	// override the processor queue length perf counter with a mock
 	// that will ensure a positive value is returned
-	assert.IsType(t, perfcounters.NewPerfLibScraper(zaptest.NewLogger(t)), samplerInstance.perfCounterScraper)
+	assert.IsType(t, &perfcounters.PerfLibScraper{}, samplerInstance.perfCounterScraper)
 	samplerInstance.perfCounterScraper = perfcounters.NewMockPerfCounterScraper(map[string]map[string][]int64{
 		system: {processorQueueLength: {100}},
 	})

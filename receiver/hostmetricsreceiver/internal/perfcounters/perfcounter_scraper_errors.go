@@ -14,8 +14,19 @@
 
 package perfcounters // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
 
-import "errors"
+import (
+	"fmt"
+	"strings"
+)
 
-// ErrAllObjectsUnavailable is an error returned by PerfCounterScraper.Initialize when all objects fail to be initialized.
-// This indicates that not even a partial scrape is possible.
-var ErrAllObjectsUnavailable = errors.New("all request counters unavailable")
+type PerfCounterInitError struct {
+	FailedObjects []string
+}
+
+func (p *PerfCounterInitError) Error() string {
+	return fmt.Sprintf("failed to init counters: %s", strings.Join(p.FailedObjects, "; "))
+}
+
+func (p *PerfCounterInitError) AddFailure(object string) {
+	p.FailedObjects = append(p.FailedObjects, object)
+}

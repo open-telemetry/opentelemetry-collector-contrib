@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/leoluk/perflib_exporter/perflib"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
@@ -44,13 +43,6 @@ type PerfCounterScraper interface {
 // perflib to scrape performance counter data.
 type PerfLibScraper struct {
 	objectIndices string
-	logger        *zap.Logger
-}
-
-func NewPerfLibScraper(logger *zap.Logger) *PerfLibScraper {
-	return &PerfLibScraper{
-		logger: logger,
-	}
 }
 
 func (p *PerfLibScraper) Initialize(objects ...string) error {
@@ -58,23 +50,22 @@ func (p *PerfLibScraper) Initialize(objects ...string) error {
 	// This is always present regardless of the OS language.
 	nameTable := perflib.QueryNameTable("Counter 009")
 
-	failedObjects := 0
+	initErr := &PerfCounterInitError{}
+
 	// lookup object indices from name table
 	objectIndicesMap := map[uint32]struct{}{}
 	for _, name := range objects {
 		index := nameTable.LookupIndex(name)
 		if index == 0 {
-			p.logger.Error("Failed to retrieve perf counter object, performance data from this object will fail to be scraped", zap.String("counter", name))
-			failedObjects++
+			initErr.AddFailure(name)
 			continue
 		}
 
 		objectIndicesMap[index] = struct{}{}
 	}
 
-	if len(objects) == failedObjects {
-		// all objects failed to initialize, unable to even partially scrape
-		return ErrAllObjectsUnavailable
+	if len(initErr.FailedObjects) > 0 {
+		return initErr
 	}
 
 	// convert to a space-separated string

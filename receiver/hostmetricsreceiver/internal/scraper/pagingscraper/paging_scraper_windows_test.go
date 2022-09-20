@@ -150,19 +150,21 @@ func TestScrape_Errors(t *testing.T) {
 
 func TestStart_Error(t *testing.T) {
 	testCases := []struct {
-		name                          string
-		initError                     error
-		expectedPerfCounterInitFailed bool
-		expectedErr                   string
+		name               string
+		initError          error
+		expectedSkipScrape bool
+		expectedErr        string
 	}{
 		{
-			name:                          "Perfcounter partially fails to init",
-			expectedPerfCounterInitFailed: false,
+			name:               "Perfcounter partially fails to init",
+			expectedSkipScrape: false,
 		},
 		{
-			name:                          "Perfcounter fully fails to init",
-			initError:                     perfcounters.ErrAllObjectsUnavailable,
-			expectedPerfCounterInitFailed: true,
+			name: "Perfcounter fully fails to init",
+			initError: &perfcounters.PerfCounterInitError{
+				FailedObjects: []string{"Memory"},
+			},
+			expectedSkipScrape: true,
 		},
 		{
 			name:        "Perfcounter init returns unknown error",
@@ -187,7 +189,7 @@ func TestStart_Error(t *testing.T) {
 				require.ErrorContains(t, err, tc.expectedErr)
 			}
 
-			require.Equal(t, tc.expectedPerfCounterInitFailed, scraper.perfCounterInitFailed)
+			require.Equal(t, tc.expectedSkipScrape, scraper.skipScrape)
 		})
 	}
 }

@@ -19,7 +19,6 @@ package pagingscraper // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -29,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/service/featuregate"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
@@ -51,8 +51,8 @@ type scraper struct {
 	config   *Config
 	mb       *metadata.MetricsBuilder
 
-	perfCounterScraper    perfcounters.PerfCounterScraper
-	perfCounterInitFailed bool
+	perfCounterScraper perfcounters.PerfCounterScraper
+	skipScrape         bool
 
 	// for mocking
 	bootTime                             func() (uint64, error)
@@ -66,7 +66,7 @@ func newPagingScraper(_ context.Context, settings component.ReceiverCreateSettin
 	return &scraper{
 		settings:                             settings,
 		config:                               cfg,
-		perfCounterScraper:                   perfcounters.NewPerfLibScraper(settings.Logger),
+		perfCounterScraper:                   &perfcounters.PerfLibScraper{},
 		bootTime:                             host.BootTime,
 		pageFileStats:                        getPageFileStats,
 		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithDirectionAttributeFeatureGateID),
@@ -82,20 +82,15 @@ func (s *scraper) start(context.Context, component.Host) error {
 
 	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 
-	err = s.perfCounterScraper.Initialize(memory)
-	switch {
-	case errors.Is(err, perfcounters.ErrAllObjectsUnavailable):
-		// If the counters simply aren't available, we want to skip scraping and avoid crashing the collector on startup
-		s.perfCounterInitFailed = true
-	case err != nil:
-		// Unknown error; fail to start if this is the case
-		return err
+	if err = s.perfCounterScraper.Initialize(memory); err != nil {
+		s.settings.Logger.Error("Failed to initialize performance counter, paging metrics will not scrape", zap.Error(err))
+		s.skipScrape = true
 	}
 	return nil
 }
 
 func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
-	if s.perfCounterInitFailed {
+	if s.skipScrape {
 		return pmetric.NewMetrics(), nil
 	}
 
