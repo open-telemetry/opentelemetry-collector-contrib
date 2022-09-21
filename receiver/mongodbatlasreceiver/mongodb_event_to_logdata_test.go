@@ -90,8 +90,8 @@ func TestUnknownSeverity(t *testing.T) {
 	assert.Equal(t, logEntry.SeverityText(), "")
 }
 
-func TestMongoEventToAuditLogData4_4(t *testing.T) {
-	mongoevent := GetTestAuditEvent4_4()
+func TestMongoEventToAuditLogData5_0(t *testing.T) {
+	mongoevent := GetTestAuditEvent5_0()
 	pc := ProjectContext{
 		orgName: "Org",
 		Project: mongodbatlas.Project{Name: "Project"},
@@ -112,7 +112,7 @@ func TestMongoEventToAuditLogData4_4(t *testing.T) {
 	assertString(t, resourceAttrs, "mongodb_atlas.host.name", "hostname")
 
 	assert.Equal(t, 12, attrs.Len())
-	assertString(t, attrs, "atype", "authtype")
+	assertString(t, attrs, "atype", "authenticate")
 	assertString(t, attrs, "local.ip", "0.0.0.0")
 	assertInt(t, attrs, "local.port", 3000)
 	assertString(t, attrs, "remote.ip", "192.168.1.237")
@@ -141,19 +141,18 @@ func TestMongoEventToAuditLogData4_4(t *testing.T) {
 	assert.Equal(t, pcommon.Timestamp(1663342012563000000), lr.Timestamp())
 	assert.Equal(t, plog.SeverityNumberInfo, lr.SeverityNumber())
 	assert.Equal(t, "INFO", lr.SeverityText())
-
-	ld = mongodbAuditEventToLogData(zap.NewNop(), []model.AuditLog{mongoevent}, pc, "hostname", "clusterName", "logName", "4.2")
-	assert.Equal(t, 12, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len())
+	assert.Equal(t, `{"atype":"authenticate","ts":{"$date":"2022-09-16T15:26:52.563+00:00"},"uuid":{"$binary":"binary","$type":"type"},"local":{"ip":"0.0.0.0","port":3000},"remote":{"ip":"192.168.1.237","port":4000},"users":[{"user":"mongo_user","db":"my_db"}],"roles":[{"role":"test_role","db":"test_db"}],"result":40,"param":{"db":"db","mechanism":"mechanism","user":"name"}}`,
+		lr.Body().StringVal())
 }
 
 func TestMongoEventToAuditLogData4_2(t *testing.T) {
-	mongoevent := GetTestEventAuditEvent4_2()
+	mongoevent := GetTestAuditEvent4_2()
 	pc := ProjectContext{
 		orgName: "Org",
 		Project: mongodbatlas.Project{Name: "Project"},
 	}
 
-	ld := mongodbAuditEventToLogData(zap.NewNop(), []model.AuditLog{mongoevent}, pc, "hostname", "clusterName", "logName", "4.2")
+	ld := mongodbAuditEventToLogData(zaptest.NewLogger(t), []model.AuditLog{mongoevent}, pc, "hostname", "logName", "clusterName", "4.2")
 	rl := ld.ResourceLogs().At(0)
 	resourceAttrs := rl.Resource().Attributes()
 	sl := rl.ScopeLogs().At(0)
@@ -162,12 +161,42 @@ func TestMongoEventToAuditLogData4_2(t *testing.T) {
 
 	assert.Equal(t, ld.ResourceLogs().Len(), 1)
 	assert.Equal(t, resourceAttrs.Len(), 4)
+	assertString(t, resourceAttrs, "mongodb_atlas.org", "Org")
+	assertString(t, resourceAttrs, "mongodb_atlas.project", "Project")
+	assertString(t, resourceAttrs, "mongodb_atlas.cluster", "clusterName")
+	assertString(t, resourceAttrs, "mongodb_atlas.host.name", "hostname")
 
-	assert.Equal(t, 12, attrs.Len())
+	assert.Equal(t, 10, attrs.Len())
+	assertString(t, attrs, "atype", "authenticate")
+	assertString(t, attrs, "local.ip", "0.0.0.0")
+	assertInt(t, attrs, "local.port", 3000)
+	assertString(t, attrs, "remote.ip", "192.168.1.237")
+	assertInt(t, attrs, "remote.port", 4000)
+
+	assertString(t, attrs, "log_name", "logName")
+	assertInt(t, attrs, "result", 40)
+
+	roles, ok := attrs.Get("roles")
+	require.True(t, ok, "roles key does not exist")
+	require.Equal(t, roles.SliceVal().Len(), 1)
+	assertString(t, roles.SliceVal().At(0).MapVal(), "role", "test_role")
+	assertString(t, roles.SliceVal().At(0).MapVal(), "db", "test_db")
+
+	users, ok := attrs.Get("users")
+	require.True(t, ok, "users key does not exist")
+	require.Equal(t, users.SliceVal().Len(), 1)
+	assertString(t, users.SliceVal().At(0).MapVal(), "user", "mongo_user")
+	assertString(t, users.SliceVal().At(0).MapVal(), "db", "my_db")
+
+	param, ok := attrs.Get("param")
+	require.True(t, ok, "param key does not exist")
+	assert.Equal(t, mongoevent.Param, param.MapVal().AsRaw())
+
 	assert.Equal(t, pcommon.Timestamp(1663342012563000000), lr.Timestamp())
-
-	ld = mongodbAuditEventToLogData(zap.NewNop(), []model.AuditLog{mongoevent}, pc, "hostname", "clusterName", "logName", "4.2")
-	assert.Equal(t, 12, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len())
+	assert.Equal(t, plog.SeverityNumberInfo, lr.SeverityNumber())
+	assert.Equal(t, "INFO", lr.SeverityText())
+	assert.Equal(t, `{"atype":"authenticate","ts":{"$date":"2022-09-16T15:26:52.563+0000"},"local":{"ip":"0.0.0.0","port":3000},"remote":{"ip":"192.168.1.237","port":4000},"users":[{"user":"mongo_user","db":"my_db"}],"roles":[{"role":"test_role","db":"test_db"}],"result":40,"param":{"db":"db","mechanism":"mechanism","user":"name"}}`,
+		lr.Body().StringVal())
 }
 
 func GetTestEvent4_4() model.LogEntry {
@@ -196,13 +225,13 @@ func GetTestEvent4_2() model.LogEntry {
 	}
 }
 
-func GetTestAuditEvent4_4() model.AuditLog {
+func GetTestAuditEvent5_0() model.AuditLog {
 	return model.AuditLog{
 		Timestamp: model.LogTimestamp{
 			Date: "2022-09-16T15:26:52.563+00:00",
 		},
-		Type: "authtype",
-		ID: model.ID{
+		Type: "authenticate",
+		ID: &model.ID{
 			Type:   "type",
 			Binary: "binary",
 		},
@@ -235,23 +264,31 @@ func GetTestAuditEvent4_4() model.AuditLog {
 	}
 }
 
-func GetTestEventAuditEvent4_2() model.AuditLog {
+func GetTestAuditEvent4_2() model.AuditLog {
 	return model.AuditLog{
 		Timestamp: model.LogTimestamp{
 			Date: "2022-09-16T15:26:52.563+0000",
 		},
-		Type: "authtype",
-		ID: model.ID{
-			Type:   "type",
-			Binary: "binary",
-		},
+		Type: "authenticate",
 		Local: model.Address{
-			IP:   "Ip",
-			Port: 12345,
+			IP:   "0.0.0.0",
+			Port: 3000,
 		},
 		Remote: model.Address{
-			IP:   "Ip",
-			Port: 12345,
+			IP:   "192.168.1.237",
+			Port: 4000,
+		},
+		Roles: []model.AuditRole{
+			{
+				Role:     "test_role",
+				Database: "test_db",
+			},
+		},
+		Users: []model.AuditUser{
+			{
+				User:     "mongo_user",
+				Database: "my_db",
+			},
 		},
 		Result: 40,
 		Param: map[string]any{

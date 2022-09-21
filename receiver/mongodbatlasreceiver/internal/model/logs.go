@@ -49,7 +49,7 @@ func (l LogEntry) RawLog() (string, error) {
 type AuditLog struct {
 	Type      string         `json:"atype"`
 	Timestamp LogTimestamp   `json:"ts"`
-	ID        ID             `json:"uuid"`
+	ID        *ID            `json:"uuid,omitempty"`
 	Local     Address        `json:"local"`
 	Remote    Address        `json:"remote"`
 	Users     []AuditUser    `json:"users"`

@@ -249,7 +249,6 @@ func TestDecodeAudit4_2(t *testing.T) {
 		{
 			Type:      "authenticate",
 			Timestamp: model.LogTimestamp{Date: "2022-09-16T01:38:20.034+0000"},
-			ID:        model.ID{},
 			Local:     model.Address{IP: "127.0.0.1", Port: 27017},
 			Remote:    model.Address{IP: "127.0.0.1", Port: 50722},
 			Users: []model.AuditUser{
@@ -294,7 +293,6 @@ func TestDecodeAudit4_2(t *testing.T) {
 		{
 			Type:      "authenticate",
 			Timestamp: model.LogTimestamp{Date: "2022-09-16T02:37:38.714+0000"},
-			ID:        model.ID{},
 			Local:     model.Address{IP: "192.168.248.5", Port: 27017},
 			Remote:    model.Address{IP: "192.168.248.6", Port: 43714},
 			Users: []model.AuditUser{
@@ -339,7 +337,6 @@ func TestDecodeAudit4_2(t *testing.T) {
 		{
 			Type:      "authenticate",
 			Timestamp: model.LogTimestamp{Date: "2022-09-16T02:38:20.030+0000"},
-			ID:        model.ID{},
 			Local:     model.Address{IP: "127.0.0.1", Port: 27017},
 			Remote:    model.Address{IP: "127.0.0.1", Port: 52216},
 			Users: []model.AuditUser{
@@ -402,7 +399,6 @@ func TestDecodeAudit4_2InvalidLog(t *testing.T) {
 		{
 			Type:      "authenticate",
 			Timestamp: model.LogTimestamp{Date: "2022-09-16T01:38:20.034+0000"},
-			ID:        model.ID{},
 			Local:     model.Address{IP: "127.0.0.1", Port: 27017},
 			Remote:    model.Address{IP: "127.0.0.1", Port: 50722},
 			Users: []model.AuditUser{
@@ -465,7 +461,7 @@ func TestDecodeAudit5_0(t *testing.T) {
 		{
 			Type:      "clientMetadata",
 			Timestamp: model.LogTimestamp{Date: "2022-09-15T23:56:28.043+00:00"},
-			ID:        model.ID{Binary: "KXMtAMh9TOOSl9aQBW1Zkg==", Type: "04"},
+			ID:        &model.ID{Binary: "KXMtAMh9TOOSl9aQBW1Zkg==", Type: "04"},
 			Local:     model.Address{IP: "192.168.248.2", Port: 27017},
 			Remote:    model.Address{IP: "192.168.248.2", Port: 34736},
 			Users:     []model.AuditUser{},
@@ -495,7 +491,7 @@ func TestDecodeAudit5_0(t *testing.T) {
 		{
 			Type:      "clientMetadata",
 			Timestamp: model.LogTimestamp{Date: "2022-09-15T23:56:28.055+00:00"},
-			ID:        model.ID{Binary: "pWSwWRZvR9CgNsvcDYhiwg==", Type: "04"},
+			ID:        &model.ID{Binary: "pWSwWRZvR9CgNsvcDYhiwg==", Type: "04"},
 			Local:     model.Address{IP: "192.168.248.2", Port: 27017},
 			Remote:    model.Address{IP: "192.168.248.2", Port: 34740},
 			Users:     []model.AuditUser{},
@@ -525,7 +521,7 @@ func TestDecodeAudit5_0(t *testing.T) {
 		{
 			Type:      "logout",
 			Timestamp: model.LogTimestamp{Date: "2022-09-15T23:56:28.071+00:00"},
-			ID:        model.ID{Binary: "pWSwWRZvR9CgNsvcDYhiwg==", Type: "04"},
+			ID:        &model.ID{Binary: "pWSwWRZvR9CgNsvcDYhiwg==", Type: "04"},
 			Local:     model.Address{IP: "192.168.248.2", Port: 27017},
 			Remote:    model.Address{IP: "192.168.248.2", Port: 34740},
 			Users:     []model.AuditUser{},
@@ -563,7 +559,7 @@ func TestDecodeAudit5_0InvalidLog(t *testing.T) {
 		{
 			Type:      "clientMetadata",
 			Timestamp: model.LogTimestamp{Date: "2022-09-15T23:56:28.043+00:00"},
-			ID:        model.ID{Binary: "KXMtAMh9TOOSl9aQBW1Zkg==", Type: "04"},
+			ID:        &model.ID{Binary: "KXMtAMh9TOOSl9aQBW1Zkg==", Type: "04"},
 			Local:     model.Address{IP: "192.168.248.2", Port: 27017},
 			Remote:    model.Address{IP: "192.168.248.2", Port: 34736},
 			Users:     []model.AuditUser{},

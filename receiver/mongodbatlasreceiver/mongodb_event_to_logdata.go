@@ -100,8 +100,10 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 		attrs.PutString("remote.ip", log.Remote.IP)
 		attrs.PutInt("remote.port", int64(log.Remote.Port))
 
-		attrs.PutString("uuid.binary", log.ID.Binary)
-		attrs.PutString("uuid.type", log.ID.Type)
+		if log.ID != nil {
+			attrs.PutString("uuid.binary", log.ID.Binary)
+			attrs.PutString("uuid.type", log.ID.Type)
+		}
 
 		attrs.PutInt("result", int64(log.Result))
 
