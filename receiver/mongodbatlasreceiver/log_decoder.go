@@ -18,8 +18,6 @@ import (
 	"bufio"
 	"compress/gzip"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io"
 	"regexp"
 
@@ -35,30 +33,32 @@ func decodeLogs(logger *zap.Logger, clusterMajorVersion string, r io.Reader) ([]
 		return decode4_2(logger.Named("console_decoder"), r)
 	default:
 		// All other versions use JSON logging
-		return decodeJSON(r)
+		return decodeJSON(logger.Named("json_decoder"), r)
 	}
 }
 
-func decodeJSON(r io.Reader) ([]model.LogEntry, error) {
+func decodeJSON(logger *zap.Logger, r io.Reader) ([]model.LogEntry, error) {
 	// Pass this into a gzip reader for decoding
-	reader, err := gzip.NewReader(r)
+	gzipReader, err := gzip.NewReader(r)
 	if err != nil {
 		return nil, err
 	}
 
-	// Logs are in JSON format so create a JSON decoder to process them
-	dec := json.NewDecoder(reader)
-
+	scanner := bufio.NewScanner(gzipReader)
 	var entries []model.LogEntry
 	for {
+		if !scanner.Scan() {
+			// Scan failed; This might just be EOF, in which case Err will be nil, or it could be some other IO error.
+			return entries, scanner.Err()
+		}
+
 		var entry model.LogEntry
-		err := dec.Decode(&entry)
-		if errors.Is(err, io.EOF) {
-			return entries, nil
+		if err := json.Unmarshal(scanner.Bytes(), &entry); err != nil {
+			logger.Error("Failed to parse log entry as JSON", zap.String("entry", scanner.Text()))
+			continue
 		}
-		if err != nil {
-			return entries, fmt.Errorf("entry could not be decoded into LogEntry: %w", err)
-		}
+
+		entry.Raw = scanner.Text()
 
 		entries = append(entries, entry)
 	}
@@ -96,33 +96,35 @@ func decode4_2(logger *zap.Logger, r io.Reader) ([]model.LogEntry, error) {
 			Component: submatches[3],
 			Context:   submatches[4],
 			Message:   submatches[5],
-			Raw:       &submatches[0],
+			Raw:       submatches[0],
 		}
 
 		entries = append(entries, entry)
 	}
 }
 
-func decodeAuditJSON(r io.Reader) ([]model.AuditLog, error) {
+func decodeAuditJSON(logger *zap.Logger, r io.Reader) ([]model.AuditLog, error) {
 	// Pass this into a gzip reader for decoding
-	reader, err := gzip.NewReader(r)
+	gzipReader, err := gzip.NewReader(r)
 	if err != nil {
 		return nil, err
 	}
 
-	// Logs are in JSON format so create a JSON decoder to process them
-	dec := json.NewDecoder(reader)
-
+	scanner := bufio.NewScanner(gzipReader)
 	var entries []model.AuditLog
 	for {
+		if !scanner.Scan() {
+			// Scan failed; This might just be EOF, in which case Err will be nil, or it could be some other IO error.
+			return entries, scanner.Err()
+		}
+
 		var entry model.AuditLog
-		err := dec.Decode(&entry)
-		if errors.Is(err, io.EOF) {
-			return entries, nil
+		if err := json.Unmarshal(scanner.Bytes(), &entry); err != nil {
+			logger.Error("Failed to parse audit log entry as JSON", zap.String("entry", scanner.Text()))
+			continue
 		}
-		if err != nil {
-			return entries, fmt.Errorf("entry could not be decoded into AuditLog: %w", err)
-		}
+
+		entry.Raw = scanner.Text()
 
 		entries = append(entries, entry)
 	}
