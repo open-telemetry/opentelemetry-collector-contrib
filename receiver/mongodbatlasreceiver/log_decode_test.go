@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/kr/pretty"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
@@ -241,9 +240,6 @@ func TestDecodeAudit4_2(t *testing.T) {
 
 	entries, err := decodeAuditJSON(zippedBuffer)
 	require.NoError(t, err)
-
-	pretty.Printf("%# v", entries)
-	t.Logf("Logs: %#v", entries)
 
 	require.Equal(t, []model.AuditLog{
 		{
