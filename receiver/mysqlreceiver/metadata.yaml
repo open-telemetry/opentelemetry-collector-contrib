@@ -1,5 +1,10 @@
 name: mysqlreceiver
 
+resource_attributes:
+  mysql.instance.endpoint:
+    description: Endpoint of the MySQL instance.
+    type: string
+
 attributes:
   buffer_pool_pages:
     value: kind
