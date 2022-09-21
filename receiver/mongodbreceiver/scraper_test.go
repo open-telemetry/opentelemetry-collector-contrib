@@ -194,7 +194,7 @@ func TestScraperScrape(t *testing.T) {
 		},
 		{
 			desc:       "Successful scrape",
-			partialErr: true,
+			partialErr: false,
 			setupMockClient: func(t *testing.T) client {
 				fc := &fakeClient{}
 				adminStatus, err := loadAdminStatusAsMap()
@@ -229,7 +229,7 @@ func TestScraperScrape(t *testing.T) {
 				require.NoError(t, err)
 				return expectedMetrics
 			},
-			expectedErr: errLocksPartialMetrics,
+			expectedErr: nil,
 		},
 	}
 
