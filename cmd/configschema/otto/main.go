@@ -14,8 +14,18 @@
 
 package main
 
-import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/otto/otto"
+import (
+	"flag"
+	"log"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/otto/otto"
+)
+
+const defaultPort = 8888
 
 func main() {
-	otto.Server()
+	logger := log.Default()
+	portPtr := flag.Int("port", defaultPort, "the port that the server listens on")
+	flag.Parse()
+	otto.Server(logger, *portPtr)
 }

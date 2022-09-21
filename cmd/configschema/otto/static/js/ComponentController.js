@@ -51,7 +51,7 @@ class ComponentController {
     this.removeExistingConfigDialog();
     this.resetMessagePanel();
     if (componentName !== "") {
-      fetch('http://localhost:8888/cfgschema/' + this.componentType + '/' + componentName).then(
+      fetch('/cfgschema/' + this.componentType + '/' + componentName).then(
         resp => {
           if (resp.ok) {
             resp.json().then(
@@ -107,7 +107,7 @@ class ComponentController {
   }
 
   renderConfigStringDialog(userInputs) {
-    fetch(new Request('http://localhost:8888/jsonToYAML', {
+    fetch(new Request('/jsonToYAML', {
       method: 'POST',
       body: JSON.stringify(userInputs)
     })).then(
@@ -139,7 +139,7 @@ class ComponentController {
 
   startComponent(yaml) {
     this.yaml = yaml;
-    let path = 'ws://localhost:8888/ws/' + this.componentType + '/' + this.componentName;
+    let path = 'ws://' + location.host + '/ws/' + this.componentType + '/' + this.componentName;
     this.socket = new WebSocket(path);
     let msgIdx = 0;
     this.messagePanelController.showView();

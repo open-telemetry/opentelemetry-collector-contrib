@@ -38,7 +38,7 @@ class HeaderController {
   }
 
   fetchComponents() {
-    fetch('http://localhost:8888/components').then(
+    fetch('/components').then(
       resp => {
         if (resp.ok) {
           resp.json().then(

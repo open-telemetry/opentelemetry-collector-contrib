@@ -15,6 +15,7 @@
 package otto
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -24,12 +25,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
 )
 
-func Server() {
+func Server(logger *log.Logger, port int) {
 	mux := http.NewServeMux()
 
 	mux.Handle("/", http.FileServer(http.Dir("static")))
-
-	logger := log.Default()
 
 	factories, err := components.Components()
 	if err != nil {
@@ -61,7 +60,7 @@ func Server() {
 	mux.Handle("/ws/", httpWsHandler{handlers: wsHandlers})
 
 	svr := http.Server{
-		Addr:    "localhost:8888",
+		Addr:    fmt.Sprintf("localhost:%d", port),
 		Handler: mux,
 	}
 	err = svr.ListenAndServe()
