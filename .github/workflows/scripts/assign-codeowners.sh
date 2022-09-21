@@ -17,7 +17,7 @@
 #
 
 
-if [ -z "${COMPONENT}"] || [ -z "${PULL_REQUEST}" ]; then
+if [ -z "${COMPONENT}" ] || [ -z "${PULL_REQUEST}" ]; then
     exit 0
 fi
 
