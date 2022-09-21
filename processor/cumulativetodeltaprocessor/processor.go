@@ -16,10 +16,8 @@ package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentele
 
 import (
 	"context"
-	"fmt"
 	"math"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
@@ -114,7 +112,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 						return false
 					}
 
-					countIdentity := tracking.MetricIdentity{
+					baseIdentity := tracking.MetricIdentity{
 						Resource:               rm.Resource(),
 						InstrumentationLibrary: ilm.Scope(),
 						MetricDataType:         m.DataType(),
@@ -122,22 +120,9 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 						MetricUnit:             m.Unit(),
 						MetricIsMonotonic:      true,
 						MetricValueType:        pmetric.NumberDataPointValueTypeInt,
-						MetricField:            "count",
 					}
 
-					sumIdentity := countIdentity
-					sumIdentity.MetricField = "sum"
-					sumIdentity.MetricValueType = pmetric.NumberDataPointValueTypeDouble
-
-					bucketIdentities := makeBucketIdentities(countIdentity, ms.DataPoints().At(0))
-
-					histogramIdentities := tracking.HistogramIdentities{
-						CountIdentity:    countIdentity,
-						SumIdentity:      sumIdentity,
-						BucketIdentities: bucketIdentities,
-					}
-
-					ctdp.convertHistogramDataPoints(ms.DataPoints(), &histogramIdentities)
+					ctdp.convertHistogramDataPoints(ms.DataPoints(), baseIdentity)
 
 					ms.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 					return ms.DataPoints().Len() == 0
@@ -152,19 +137,6 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 	return md, nil
 }
 
-func makeBucketIdentities(baseIdentity tracking.MetricIdentity, dp pmetric.HistogramDataPoint) []tracking.MetricIdentity {
-	numBuckets := dp.BucketCounts().Len()
-	bucketIdentities := make([]tracking.MetricIdentity, numBuckets)
-
-	for index := 0; index < numBuckets; index++ {
-		bucketIdentity := baseIdentity
-		bucketIdentity.MetricField = fmt.Sprintf("bucket_%d", index)
-		bucketIdentities[index] = bucketIdentity
-	}
-
-	return bucketIdentities
-}
-
 func (ctdp *cumulativeToDeltaProcessor) shutdown(context.Context) error {
 	ctdp.cancelFunc()
 	return nil
@@ -173,32 +145,6 @@ func (ctdp *cumulativeToDeltaProcessor) shutdown(context.Context) error {
 func (ctdp *cumulativeToDeltaProcessor) shouldConvertMetric(metricName string) bool {
 	return (ctdp.includeFS == nil || ctdp.includeFS.Matches(metricName)) &&
 		(ctdp.excludeFS == nil || !ctdp.excludeFS.Matches(metricName))
-}
-
-func (ctdp *cumulativeToDeltaProcessor) convertHistogramFloatValue(id tracking.MetricIdentity, dp pmetric.HistogramDataPoint, value float64) (tracking.DeltaValue, bool) {
-	id.StartTimestamp = dp.StartTimestamp()
-	id.Attributes = dp.Attributes()
-	trackingPoint := tracking.MetricPoint{
-		Identity: id,
-		Value: tracking.ValuePoint{
-			ObservedTimestamp: dp.Timestamp(),
-			FloatValue:        value,
-		},
-	}
-	return ctdp.deltaCalculator.Convert(trackingPoint)
-}
-
-func (ctdp *cumulativeToDeltaProcessor) convertHistogramIntValue(id tracking.MetricIdentity, dp pmetric.HistogramDataPoint, value int64) (tracking.DeltaValue, bool) {
-	id.StartTimestamp = dp.StartTimestamp()
-	id.Attributes = dp.Attributes()
-	trackingPoint := tracking.MetricPoint{
-		Identity: id,
-		Value: tracking.ValuePoint{
-			ObservedTimestamp: dp.Timestamp(),
-			IntValue:          value,
-		},
-	}
-	return ctdp.deltaCalculator.Convert(trackingPoint)
 }
 
 func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseIdentity tracking.MetricIdentity) {
@@ -244,43 +190,40 @@ func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseId
 	}
 }
 
-func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in interface{}, baseIdentities *tracking.HistogramIdentities) {
+func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in interface{}, baseIdentity tracking.MetricIdentity) {
 
 	if dps, ok := in.(pmetric.HistogramDataPointSlice); ok {
 		dps.RemoveIf(func(dp pmetric.HistogramDataPoint) bool {
-			countID := baseIdentities.CountIdentity
-			countDelta, countValid := ctdp.convertHistogramIntValue(countID, dp, int64(dp.Count()))
+			id := baseIdentity
+			id.StartTimestamp = dp.StartTimestamp()
+			id.Attributes = dp.Attributes()
 
-			hasSum := dp.HasSum() && !math.IsNaN(dp.Sum())
-			sumDelta, sumValid := tracking.DeltaValue{}, true
-
-			if hasSum {
-				sumID := baseIdentities.SumIdentity
-				sumDelta, sumValid = ctdp.convertHistogramFloatValue(sumID, dp, dp.Sum())
+			point := tracking.ValuePoint{
+				ObservedTimestamp: dp.Timestamp(),
+				HistogramValue: &tracking.HistogramPoint{
+					Count:   dp.Count(),
+					Sum:     dp.Sum(),
+					Buckets: dp.BucketCounts().AsRaw(),
+				},
 			}
 
-			bucketsValid := true
-			updatedBucketCounts := pcommon.NewUInt64Slice()
-			dp.BucketCounts().CopyTo(updatedBucketCounts)
-			for index := 0; index < updatedBucketCounts.Len(); index++ {
-				bucketID := baseIdentities.BucketIdentities[index]
-				bucketDelta, bucketValid := ctdp.convertHistogramIntValue(bucketID, dp,
-					int64(updatedBucketCounts.At(index)))
-				updatedBucketCounts.SetAt(index, uint64(bucketDelta.IntValue))
-				bucketsValid = bucketsValid && bucketValid
+			trackingPoint := tracking.MetricPoint{
+				Identity: id,
+				Value:    point,
 			}
+			delta, valid := ctdp.deltaCalculator.Convert(trackingPoint)
 
-			if countValid && sumValid && bucketsValid {
-				dp.SetStartTimestamp(countDelta.StartTimestamp)
-				dp.SetCount(uint64(countDelta.IntValue))
-				if hasSum {
-					dp.SetSum(sumDelta.FloatValue)
+			if valid {
+				dp.SetStartTimestamp(delta.StartTimestamp)
+				dp.SetCount(delta.HistogramValue.Count)
+				if dp.HasSum() && !math.IsNaN(dp.Sum()) {
+					dp.SetSum(delta.HistogramValue.Sum)
 				}
-				updatedBucketCounts.MoveTo(dp.BucketCounts())
+				dp.BucketCounts().FromRaw(delta.HistogramValue.Buckets)
 				return false
 			}
 
-			return true
+			return !valid
 		})
 	}
 }
