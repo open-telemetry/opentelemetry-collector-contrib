@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"golang.org/x/net/websocket"
-	"gopkg.in/yaml.v2"
 )
 
 type exporterSocketHandler struct {
@@ -36,27 +35,25 @@ type exporterSocketHandler struct {
 }
 
 func (h exporterSocketHandler) handle(ws *websocket.Conn) {
-	msg, err := readStartComponentMessage(ws)
+	err := h.doHandle(ws)
 	if err != nil {
-		sendErr(ws, h.logger, "error reading start component message", err)
-		return
+		sendErr(ws, h.logger, "exporterSocketHandler", err)
 	}
-	m := map[string]interface{}{}
-	err = yaml.Unmarshal([]byte(msg.ComponentYAML), &m)
+}
+
+func (h exporterSocketHandler) doHandle(ws *websocket.Conn) error {
+	pipelineType, conf, err := readSocket(ws)
 	if err != nil {
-		sendErr(ws, h.logger, "failed to unmarshal yaml", err)
-		return
+		return err
 	}
 
 	exporterConfig := h.exporterFactory.CreateDefaultConfig()
-	conf := confmap.NewFromStringMap(m)
 	err = unmarshalExporterConfig(exporterConfig, conf)
 	if err != nil {
-		sendErr(ws, h.logger, "failed to unmarshal exporter config", err)
-		return
+		return err
 	}
 
-	switch msg.PipelineType {
+	switch pipelineType {
 	case "metrics":
 		h.connectMetricsExporter(ws, exporterConfig)
 	case "logs":
@@ -64,7 +61,7 @@ func (h exporterSocketHandler) handle(ws *websocket.Conn) {
 	case "traces":
 		h.connectTracesExporter(ws, exporterConfig)
 	}
-
+	return nil
 }
 
 func (h exporterSocketHandler) connectMetricsExporter(

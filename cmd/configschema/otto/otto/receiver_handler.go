@@ -16,7 +16,6 @@ package otto
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 
 	"go.opentelemetry.io/collector/component"
@@ -27,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"golang.org/x/net/websocket"
-	"gopkg.in/yaml.v2"
 )
 
 type receiverSocketHandler struct {
@@ -37,27 +35,25 @@ type receiverSocketHandler struct {
 }
 
 func (h receiverSocketHandler) handle(ws *websocket.Conn) {
-	msg, err := readStartComponentMessage(ws)
+	err := h.doHandle(ws)
 	if err != nil {
-		sendErr(ws, h.logger, "error reading start component message", err)
-		return
+		sendErr(ws, h.logger, "receiverSocketHandler", err)
 	}
-	m := map[string]interface{}{}
-	err = yaml.Unmarshal([]byte(msg.ComponentYAML), &m)
+}
+
+func (h receiverSocketHandler) doHandle(ws *websocket.Conn) error {
+	pipelineType, conf, err := readSocket(ws)
 	if err != nil {
-		sendErr(ws, h.logger, "failed to unmarshal yaml", err)
-		return
+		return err
 	}
 
 	receiverConfig := h.receiverFactory.CreateDefaultConfig()
-	conf := confmap.NewFromStringMap(m)
 	err = unmarshalReceiverConfig(receiverConfig, conf)
 	if err != nil {
-		sendErr(ws, h.logger, "failed to unmarshal receiver config", err)
-		return
+		return err
 	}
 
-	switch msg.PipelineType {
+	switch pipelineType {
 	case "metrics":
 		h.startMetricsReceiver(ws, receiverConfig)
 	case "logs":
@@ -65,6 +61,7 @@ func (h receiverSocketHandler) handle(ws *websocket.Conn) {
 	case "traces":
 		h.startTracesReceiver(ws, receiverConfig)
 	}
+	return nil
 }
 
 func (h receiverSocketHandler) startMetricsReceiver(
@@ -190,13 +187,4 @@ func unmarshalReceiverConfig(receiverConfig config.Receiver, conf *confmap.Conf)
 		return unmarshallable.Unmarshal(conf)
 	}
 	return conf.UnmarshalExact(receiverConfig)
-}
-
-func sendErr(ws *websocket.Conn, logger *log.Logger, msg string, err error) {
-	envelopeJson, jsonErr := json.Marshal(wsMessageEnvelope{Error: err})
-	if jsonErr != nil {
-		const fmt = "%s due to %v. also failed to marshal envelope containing the error due to %v"
-		logger.Fatalf(fmt, msg, err, jsonErr)
-	}
-	_, err = ws.Write(envelopeJson)
 }

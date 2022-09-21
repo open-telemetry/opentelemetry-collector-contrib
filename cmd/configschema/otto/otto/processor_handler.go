@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"golang.org/x/net/websocket"
-	"gopkg.in/yaml.v2"
 )
 
 type processorSocketHandler struct {
@@ -36,27 +35,25 @@ type processorSocketHandler struct {
 }
 
 func (h processorSocketHandler) handle(ws *websocket.Conn) {
-	msg, err := readStartComponentMessage(ws)
+	err := h.doHandle(ws)
 	if err != nil {
-		sendErr(ws, h.logger, "error reading start component message", err)
-		return
+		sendErr(ws, h.logger, "processorSocketHandler", err)
 	}
-	m := map[string]interface{}{}
-	err = yaml.Unmarshal([]byte(msg.ComponentYAML), &m)
+}
+
+func (h processorSocketHandler) doHandle(ws *websocket.Conn) error {
+	pipelineType, conf, err := readSocket(ws)
 	if err != nil {
-		sendErr(ws, h.logger, "failed to unmarshal processor yaml", err)
-		return
+		return err
 	}
 
 	processorConfig := h.processorFactory.CreateDefaultConfig()
-	conf := confmap.NewFromStringMap(m)
 	err = unmarshalProcessorConfig(processorConfig, conf)
 	if err != nil {
-		sendErr(ws, h.logger, "failed to unmarshal processor config", err)
-		return
+		return err
 	}
 
-	switch msg.PipelineType {
+	switch pipelineType {
 	case "metrics":
 		h.attachMetricsProcessor(ws, processorConfig)
 	case "logs":
@@ -64,7 +61,7 @@ func (h processorSocketHandler) handle(ws *websocket.Conn) {
 	case "traces":
 		h.attachTracesProcessor(ws, processorConfig)
 	}
-
+	return nil
 }
 
 func (h processorSocketHandler) attachMetricsProcessor(
