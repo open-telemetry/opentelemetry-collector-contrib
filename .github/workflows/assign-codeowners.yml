@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      - name: Run update permissions
+        run: chmod +x ./.github/workflows/scripts/assign-codeowners.sh
     
       - name: Run assign-codeowners.sh
         run: ./.github/workflows/scripts/assign-codeowners.sh
