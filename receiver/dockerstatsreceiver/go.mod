@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/docker/docker v20.10.18+incompatible
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.60.0
@@ -63,6 +64,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/conta
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker => ../../internal/docker
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => ../../internal/scrapertest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible

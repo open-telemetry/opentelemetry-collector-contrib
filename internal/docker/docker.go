@@ -28,6 +28,7 @@ import (
 	devents "github.com/docker/docker/api/types/events"
 	dfilters "github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/matcher"
 	"go.uber.org/zap"
 )
 
@@ -52,7 +53,7 @@ type Client struct {
 	config               *Config
 	containers           map[string]Container
 	containersLock       sync.Mutex
-	excludedImageMatcher *stringMatcher
+	excludedImageMatcher *matcher.StringMatcher
 	logger               *zap.Logger
 }
 
@@ -68,7 +69,7 @@ func NewDockerClient(config *Config, logger *zap.Logger, opts ...docker.Opt) (*C
 		return nil, fmt.Errorf("could not create docker client: %w", err)
 	}
 
-	excludedImageMatcher, err := newStringMatcher(config.ExcludedImages)
+	excludedImageMatcher, err := matcher.NewStringMatcher(config.ExcludedImages)
 	if err != nil {
 		return nil, fmt.Errorf("could not determine docker client excluded images: %w", err)
 	}
@@ -335,7 +336,7 @@ func (dc *Client) RemoveContainer(cid string) {
 }
 
 func (dc *Client) shouldBeExcluded(image string) bool {
-	return dc.excludedImageMatcher != nil && dc.excludedImageMatcher.matches(image)
+	return dc.excludedImageMatcher != nil && dc.excludedImageMatcher.Matches(image)
 }
 
 func ContainerEnvToMap(env []string) map[string]string {

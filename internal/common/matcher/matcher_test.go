@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package docker
+package matcher
 
 import (
 	"testing"
@@ -147,9 +147,9 @@ func TestStringMatcher(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			f, err := newStringMatcher(tc.items)
+			f, err := NewStringMatcher(tc.items)
 			assert.Nil(t, err)
-			assert.Equal(t, tc.shouldMatch, f.matches(tc.input))
+			assert.Equal(t, tc.shouldMatch, f.Matches(tc.input))
 		})
 	}
 }
@@ -195,7 +195,7 @@ func TestInvalidStringMatchers(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			f, err := newStringMatcher(tc.filter)
+			f, err := NewStringMatcher(tc.filter)
 			assert.Nil(t, f)
 			require.Error(t, err)
 			assert.Equal(t, tc.expectedError, err.Error())

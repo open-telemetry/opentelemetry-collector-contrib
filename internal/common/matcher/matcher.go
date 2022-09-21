@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package docker // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
+package matcher // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/matcher"
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ import (
 	"github.com/gobwas/glob"
 )
 
-type stringMatcher struct {
+type StringMatcher struct {
 	standardItems       map[string]bool
 	anyNegatedStandards bool
 	regexItems          []regexItem
@@ -51,7 +51,7 @@ func isGlobbed(s string) bool {
 	return strings.ContainsAny(s, "*?[]{}!")
 }
 
-func newStringMatcher(items []string) (*stringMatcher, error) {
+func NewStringMatcher(items []string) (*StringMatcher, error) {
 	standards := make(map[string]bool)
 	var regexes []regexItem
 	var globs []globbedItem
@@ -88,7 +88,7 @@ func newStringMatcher(items []string) (*stringMatcher, error) {
 		}
 	}
 
-	return &stringMatcher{
+	return &StringMatcher{
 		standardItems:       standards,
 		regexItems:          regexes,
 		globItems:           globs,
@@ -106,7 +106,7 @@ func isNegatedItem(value string) (string, bool) {
 	return value, false
 }
 
-func (f *stringMatcher) matches(s string) bool {
+func (f *StringMatcher) Matches(s string) bool {
 	negated, matched := f.standardItems[s]
 	if matched {
 		return !negated
