@@ -314,7 +314,7 @@ func TestProcess(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.query[0], func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor(tt.query, Functions(), component.ProcessorCreateSettings{})
+			processor, err := NewProcessor(tt.query, Functions(), component.TelemetrySettings{})
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(context.Background(), td)

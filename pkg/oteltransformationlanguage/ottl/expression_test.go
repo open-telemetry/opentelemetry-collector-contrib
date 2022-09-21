@@ -17,6 +17,8 @@ package ottl
 import (
 	"testing"
 
+	"go.opentelemetry.io/collector/component"
+
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottl/ottltest"
@@ -113,7 +115,7 @@ func Test_newGetter(t *testing.T) {
 		functions,
 		testParsePath,
 		testParseEnum,
-		NoOpLogger{},
+		component.TelemetrySettings{},
 	)
 
 	for _, tt := range tests {

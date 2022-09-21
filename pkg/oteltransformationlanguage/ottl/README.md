@@ -159,7 +159,7 @@ It is possible to update the Value in a telemetry field using a Setter. For read
 
 ## Logging inside a OTTL function
 
-To emit logs inside a OTTL function, add a parameter of type `Logger` to the function signature. The OTTL will then inject a logger instance provided by the component that can be used to emit logs.
+To emit logs inside a OTTL function, add a parameter of type [`component.TelemetrySettings`](https://pkg.go.dev/go.opentelemetry.io/collector/component#TelemetrySettings) to the function signature. The OTTL will then inject the TelemetrySettings that were passed to `NewParser` into the function.  TelemetrySettings can be used to emit logs.
 
 ## Examples
 
