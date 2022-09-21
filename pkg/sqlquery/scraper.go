@@ -77,7 +77,6 @@ func (s *Scraper) Start(context.Context, component.Host) error {
 func (s Scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	out := pmetric.NewMetrics()
 	rows, err := s.client.MetricRows(ctx)
-	ts := pcommon.NewTimestampFromTime(time.Now())
 	if err != nil {
 		return out, fmt.Errorf("scraper: %w", err)
 	}
@@ -87,6 +86,7 @@ func (s Scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	sm := sms.AppendEmpty()
 	ms := sm.Metrics()
 	var errs error
+	ts := pcommon.NewTimestampFromTime(time.Now())
 	for _, metricCfg := range s.query.Metrics {
 		for i, row := range rows {
 			if err = rowToMetric(row, metricCfg, ms.AppendEmpty(), s.startTime, ts, s.scrapeCfg); err != nil {
