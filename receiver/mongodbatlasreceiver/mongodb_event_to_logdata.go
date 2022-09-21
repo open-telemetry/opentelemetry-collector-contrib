@@ -94,11 +94,37 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 
 		attrs.PutString("atype", log.Type)
 
-		attrs.PutString("local.ip", log.Local.IP)
-		attrs.PutInt("local.port", int64(log.Local.Port))
+		if log.Local.IP != nil {
+			attrs.PutString("local.ip", *log.Local.IP)
+		}
 
-		attrs.PutString("remote.ip", log.Remote.IP)
-		attrs.PutInt("remote.port", int64(log.Remote.Port))
+		if log.Local.Port != nil {
+			attrs.PutInt("local.port", int64(*log.Local.Port))
+		}
+
+		if log.Local.SystemUser != nil {
+			attrs.PutBool("local.isSystemUser", *log.Local.SystemUser)
+		}
+
+		if log.Local.UnixSocket != nil {
+			attrs.PutString("local.unix", *log.Local.UnixSocket)
+		}
+
+		if log.Remote.IP != nil {
+			attrs.PutString("remote.ip", *log.Remote.IP)
+		}
+
+		if log.Remote.Port != nil {
+			attrs.PutInt("remote.port", int64(*log.Remote.Port))
+		}
+
+		if log.Remote.SystemUser != nil {
+			attrs.PutBool("remote.isSystemUser", *log.Remote.SystemUser)
+		}
+
+		if log.Remote.UnixSocket != nil {
+			attrs.PutString("remote.unix", *log.Remote.UnixSocket)
+		}
 
 		if log.ID != nil {
 			attrs.PutString("uuid.binary", log.ID.Binary)

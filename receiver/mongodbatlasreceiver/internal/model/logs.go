@@ -69,8 +69,10 @@ type ID struct {
 }
 
 type Address struct {
-	IP   string `json:"ip"`
-	Port int    `json:"port"`
+	IP         *string `json:"ip,omitempty"`
+	Port       *int    `json:"port,omitempty"`
+	SystemUser *bool   `json:"isSystemUser,omitempty"`
+	UnixSocket *string `json:"unix,omitempty"`
 }
 
 type AuditRole struct {

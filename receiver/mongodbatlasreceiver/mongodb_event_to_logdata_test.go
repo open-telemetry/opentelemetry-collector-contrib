@@ -111,10 +111,12 @@ func TestMongoEventToAuditLogData5_0(t *testing.T) {
 	assertString(t, resourceAttrs, "mongodb_atlas.cluster", "clusterName")
 	assertString(t, resourceAttrs, "mongodb_atlas.host.name", "hostname")
 
-	assert.Equal(t, 12, attrs.Len())
+	assert.Equal(t, 14, attrs.Len())
 	assertString(t, attrs, "atype", "authenticate")
 	assertString(t, attrs, "local.ip", "0.0.0.0")
 	assertInt(t, attrs, "local.port", 3000)
+	assertBool(t, attrs, "local.isSystemUser", true)
+	assertString(t, attrs, "local.unix", "/var/run/mongodb/mongodb-27017.sock")
 	assertString(t, attrs, "remote.ip", "192.168.1.237")
 	assertInt(t, attrs, "remote.port", 4000)
 	assertString(t, attrs, "uuid.binary", "binary")
@@ -141,7 +143,7 @@ func TestMongoEventToAuditLogData5_0(t *testing.T) {
 	assert.Equal(t, pcommon.Timestamp(1663342012563000000), lr.Timestamp())
 	assert.Equal(t, plog.SeverityNumberInfo, lr.SeverityNumber())
 	assert.Equal(t, "INFO", lr.SeverityText())
-	assert.Equal(t, `{"atype":"authenticate","ts":{"$date":"2022-09-16T15:26:52.563+00:00"},"uuid":{"$binary":"binary","$type":"type"},"local":{"ip":"0.0.0.0","port":3000},"remote":{"ip":"192.168.1.237","port":4000},"users":[{"user":"mongo_user","db":"my_db"}],"roles":[{"role":"test_role","db":"test_db"}],"result":40,"param":{"db":"db","mechanism":"mechanism","user":"name"}}`,
+	assert.Equal(t, `{"atype":"authenticate","ts":{"$date":"2022-09-16T15:26:52.563+00:00"},"uuid":{"$binary":"binary","$type":"type"},"local":{"ip":"0.0.0.0","port":3000,"isSystemUser":true,"unix":"/var/run/mongodb/mongodb-27017.sock"},"remote":{"ip":"192.168.1.237","port":4000},"users":[{"user":"mongo_user","db":"my_db"}],"roles":[{"role":"test_role","db":"test_db"}],"result":40,"param":{"db":"db","mechanism":"mechanism","user":"name"}}`,
 		lr.Body().StringVal())
 }
 
@@ -236,12 +238,14 @@ func GetTestAuditEvent5_0() model.AuditLog {
 			Binary: "binary",
 		},
 		Local: model.Address{
-			IP:   "0.0.0.0",
-			Port: 3000,
+			IP:         strp("0.0.0.0"),
+			Port:       intp(3000),
+			SystemUser: boolp(true),
+			UnixSocket: strp("/var/run/mongodb/mongodb-27017.sock"),
 		},
 		Remote: model.Address{
-			IP:   "192.168.1.237",
-			Port: 4000,
+			IP:   strp("192.168.1.237"),
+			Port: intp(4000),
 		},
 		Roles: []model.AuditRole{
 			{
@@ -271,12 +275,12 @@ func GetTestAuditEvent4_2() model.AuditLog {
 		},
 		Type: "authenticate",
 		Local: model.Address{
-			IP:   "0.0.0.0",
-			Port: 3000,
+			IP:   strp("0.0.0.0"),
+			Port: intp(3000),
 		},
 		Remote: model.Address{
-			IP:   "192.168.1.237",
-			Port: 4000,
+			IP:   strp("192.168.1.237"),
+			Port: intp(4000),
 		},
 		Roles: []model.AuditRole{
 			{
@@ -329,4 +333,20 @@ func assertInt(t *testing.T, m pcommon.Map, key string, expected int64) {
 	}
 
 	assert.Equal(t, expected, v.IntVal())
+}
+
+func assertBool(t *testing.T, m pcommon.Map, key string, expected bool) {
+	t.Helper()
+
+	v, ok := m.Get(key)
+	if !ok {
+		assert.Fail(t, "Couldn't find key %s in map", key)
+		return
+	}
+
+	if v.Type() != pcommon.ValueTypeBool {
+		assert.Fail(t, "Value for key %s was expected be BOOL but was %s", key, v.Type().String())
+	}
+
+	assert.Equal(t, expected, v.BoolVal())
 }
