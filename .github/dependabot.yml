@@ -387,7 +387,7 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/pkg/telemetryquerylanguage"
+    directory: "/pkg/oteltransformationlanguage"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

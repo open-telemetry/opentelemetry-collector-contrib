@@ -17,13 +17,13 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottlmetrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottl"
 )
 
-func convertSumToGauge() (tql.ExprFunc, error) {
-	return func(ctx tql.TransformContext) interface{} {
-		mtc, ok := ctx.(tqlmetrics.TransformContext)
+func convertSumToGauge() (ottl.ExprFunc, error) {
+	return func(ctx ottl.TransformContext) interface{} {
+		mtc, ok := ctx.(ottlmetrics.TransformContext)
 		if !ok {
 			return nil
 		}

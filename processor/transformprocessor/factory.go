@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tqlconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottlconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
@@ -49,14 +49,14 @@ func NewFactory() component.ProcessorFactory {
 func createDefaultConfig() config.Processor {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		Config: tqlconfig.Config{
-			Logs: tqlconfig.SignalConfig{
+		Config: ottlconfig.Config{
+			Logs: ottlconfig.SignalConfig{
 				Queries: []string{},
 			},
-			Traces: tqlconfig.SignalConfig{
+			Traces: ottlconfig.SignalConfig{
 				Queries: []string{},
 			},
-			Metrics: tqlconfig.SignalConfig{
+			Metrics: ottlconfig.SignalConfig{
 				Queries: []string{},
 			},
 		},

@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tqlconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottlconfig"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -38,20 +38,20 @@ func TestLoadConfig(t *testing.T) {
 			id: config.NewComponentIDWithName(typeStr, ""),
 			expected: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-				Config: tqlconfig.Config{
-					Traces: tqlconfig.SignalConfig{
+				Config: ottlconfig.Config{
+					Traces: ottlconfig.SignalConfig{
 						Queries: []string{
 							`set(name, "bear") where attributes["http.path"] == "/animal"`,
 							`keep_keys(attributes, "http.method", "http.path")`,
 						},
 					},
-					Metrics: tqlconfig.SignalConfig{
+					Metrics: ottlconfig.SignalConfig{
 						Queries: []string{
 							`set(metric.name, "bear") where attributes["http.path"] == "/animal"`,
 							`keep_keys(attributes, "http.method", "http.path")`,
 						},
 					},
-					Logs: tqlconfig.SignalConfig{
+					Logs: ottlconfig.SignalConfig{
 						Queries: []string{
 							`set(body, "bear") where attributes["http.path"] == "/animal"`,
 							`keep_keys(attributes, "http.method", "http.path")`,

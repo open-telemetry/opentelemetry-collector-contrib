@@ -15,26 +15,26 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/functions/tqlcommon"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/functions/tqlotel"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/functions/ottlcommon"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/functions/ottlotel"
 )
 
 var registry = map[string]interface{}{
-	"TraceID":              tqlotel.TraceID,
-	"SpanID":               tqlotel.SpanID,
-	"IsMatch":              tqlcommon.IsMatch,
-	"Concat":               tqlcommon.Concat,
-	"Split":                tqlotel.Split,
-	"keep_keys":            tqlotel.KeepKeys,
-	"set":                  tqlcommon.Set,
-	"truncate_all":         tqlotel.TruncateAll,
-	"limit":                tqlotel.Limit,
-	"replace_match":        tqlcommon.ReplaceMatch,
-	"replace_all_matches":  tqlotel.ReplaceAllMatches,
-	"replace_pattern":      tqlcommon.ReplacePattern,
-	"replace_all_patterns": tqlotel.ReplaceAllPatterns,
-	"delete_key":           tqlotel.DeleteKey,
-	"delete_matching_keys": tqlotel.DeleteMatchingKeys,
+	"TraceID":              ottlotel.TraceID,
+	"SpanID":               ottlotel.SpanID,
+	"IsMatch":              ottlcommon.IsMatch,
+	"Concat":               ottlcommon.Concat,
+	"Split":                ottlotel.Split,
+	"keep_keys":            ottlotel.KeepKeys,
+	"set":                  ottlcommon.Set,
+	"truncate_all":         ottlotel.TruncateAll,
+	"limit":                ottlotel.Limit,
+	"replace_match":        ottlcommon.ReplaceMatch,
+	"replace_all_matches":  ottlotel.ReplaceAllMatches,
+	"replace_pattern":      ottlcommon.ReplacePattern,
+	"replace_all_patterns": ottlotel.ReplaceAllPatterns,
+	"delete_key":           ottlotel.DeleteKey,
+	"delete_matching_keys": ottlotel.DeleteMatchingKeys,
 }
 
 func Functions() map[string]interface{} {

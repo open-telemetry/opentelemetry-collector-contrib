@@ -102,11 +102,11 @@ func Test_WithFields(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			logger, logs := createLogger()
-			tqll := NewTQLLogger(logger)
+			ottll := NewOTTLLogger(logger)
 
 			for _, f := range tt.fields {
-				tqll = tqll.WithFields(f).(TQLLogger)
-				tqll.Info(tt.msg)
+				ottll = ottll.WithFields(f).(OTTLLogger)
+				ottll.Info(tt.msg)
 			}
 
 			totalFields := 0
@@ -124,10 +124,10 @@ func Test_WithFields(t *testing.T) {
 func Test_WithFields_serialization(t *testing.T) {
 	t.Run("Byte slices are serialized as hexadecimal", func(t *testing.T) {
 		logger, logs := createLogger()
-		tqll := NewTQLLogger(logger)
+		ottll := NewOTTLLogger(logger)
 		byteSlice := []byte{0, 1, 2, 3, 4, 5, 6, 7}
 
-		tqll.WithFields(map[string]any{"byteSlice": byteSlice}).Info("log message")
+		ottll.WithFields(map[string]any{"byteSlice": byteSlice}).Info("log message")
 
 		log := logs.All()[0]
 
@@ -139,56 +139,56 @@ func Test_logger_logging(t *testing.T) {
 	tests := []struct {
 		name      string
 		loglevels []string
-		log       func(tqll TQLLogger, msg string)
+		log       func(ottll OTTLLogger, msg string)
 	}{
 		{
 			name:      "Info",
 			loglevels: []string{"info"},
-			log: func(tqll TQLLogger, msg string) {
-				tqll.Info(msg)
+			log: func(ottll OTTLLogger, msg string) {
+				ottll.Info(msg)
 			},
 		},
 		{
 			name:      "Error",
 			loglevels: []string{"error"},
-			log: func(tqll TQLLogger, msg string) {
-				tqll.Error(msg)
+			log: func(ottll OTTLLogger, msg string) {
+				ottll.Error(msg)
 			},
 		},
 		{
 			name:      "Multiple Info",
 			loglevels: []string{"info", "info", "info"},
-			log: func(tqll TQLLogger, msg string) {
-				tqll.Info(msg)
-				tqll.Info(msg)
-				tqll.Info(msg)
+			log: func(ottll OTTLLogger, msg string) {
+				ottll.Info(msg)
+				ottll.Info(msg)
+				ottll.Info(msg)
 			},
 		},
 		{
 			name:      "Multiple Error",
 			loglevels: []string{"error", "error", "error"},
-			log: func(tqll TQLLogger, msg string) {
-				tqll.Error(msg)
-				tqll.Error(msg)
-				tqll.Error(msg)
+			log: func(ottll OTTLLogger, msg string) {
+				ottll.Error(msg)
+				ottll.Error(msg)
+				ottll.Error(msg)
 			},
 		},
 		{
 			name:      "Mixed loglevels",
 			loglevels: []string{"info", "error", "info"},
-			log: func(tqll TQLLogger, msg string) {
-				tqll.Info(msg)
-				tqll.Error(msg)
-				tqll.Info(msg)
+			log: func(ottll OTTLLogger, msg string) {
+				ottll.Info(msg)
+				ottll.Error(msg)
+				ottll.Info(msg)
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		logger, logs := createLogger()
-		tqll := NewTQLLogger(logger)
+		ottll := NewOTTLLogger(logger)
 
-		tt.log(tqll, "testing")
+		tt.log(ottll, "testing")
 
 		for i, log := range logs.All() {
 			assert.Equal(t, tt.loglevels[i], log.Level.String())
