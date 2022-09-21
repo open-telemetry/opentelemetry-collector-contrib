@@ -21,5 +21,4 @@ jobs:
           PULL_REQUEST: ${{ github.event.pull_request.number }}
           COMPONENT: ${{ github.event.label.name }}
           SENDER: ${{ github.event.sender.login }}
-    permissions:
-      pull-requests: write
+    permissions: write-all
