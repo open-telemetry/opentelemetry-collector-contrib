@@ -17,9 +17,8 @@ package ottl
 import (
 	"testing"
 
-	"go.opentelemetry.io/collector/component"
-
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottl/ottltest"
 )
