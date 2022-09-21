@@ -218,7 +218,7 @@ func (s *logsReceiver) getHostAuditLogs(groupID, hostname, logName string) ([]mo
 		return nil, err
 	}
 
-	return decodeAuditJSON(buf)
+	return decodeAuditJSON(s.log, buf)
 }
 
 func (s *logsReceiver) collectLogs(pc ProjectContext, hostname, logName, clusterName, clusterMajorVersion string) {

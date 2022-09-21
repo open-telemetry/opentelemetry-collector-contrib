@@ -15,7 +15,6 @@
 package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 
 import (
-	"encoding/json"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -27,7 +26,7 @@ import (
 
 const (
 	// Number of log attributes to add to the plog.LogRecordSlice for host logs.
-	totalLogAttributes = 11
+	totalLogAttributes = 10
 	// Number of log attributes to add to the plog.LogRecordSlice for audit logs.
 	totalAuditLogAttributes = 16
 
@@ -70,10 +69,6 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 
 	for _, log := range logs {
 		lr := sl.LogRecords().AppendEmpty()
-		data, err := json.Marshal(log)
-		if err != nil {
-			logger.Warn("failed to marshal", zap.Error(err))
-		}
 
 		logTsFormat := tsLayout(clusterMajorVersion)
 		t, err := time.Parse(logTsFormat, log.Timestamp.Date)
@@ -84,7 +79,7 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(t))
 		lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		// Insert Raw Log message into Body of LogRecord
-		lr.Body().SetStringVal(string(data))
+		lr.Body().SetStringVal(log.Raw)
 		// Since Audit Logs don't have a severity/level
 		// Set the "SeverityNumber" and "SeverityText" to INFO
 		lr.SetSeverityNumber(plog.SeverityNumberInfo)
@@ -173,11 +168,6 @@ func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc Project
 	for _, log := range logs {
 		lr := sl.LogRecords().AppendEmpty()
 
-		rawLog, err := log.RawLog()
-		if err != nil {
-			logger.Warn("Failed to determine raw log", zap.Error(err))
-		}
-
 		t, err := time.Parse(logTsFormat, log.Timestamp.Date)
 		if err != nil {
 			logger.Warn("Time failed to parse correctly", zap.Error(err))
@@ -186,7 +176,7 @@ func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc Project
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(t))
 		lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		// Insert Raw Log message into Body of LogRecord
-		lr.Body().SetStringVal(rawLog)
+		lr.Body().SetStringVal(log.Raw)
 		// Set the "SeverityNumber" and "SeverityText" if a known type of
 		// severity is found.
 		if severityNumber, ok := severityMap[log.Severity]; ok {
@@ -206,7 +196,6 @@ func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc Project
 			attrs.PutInt("id", log.ID)
 		}
 		attrs.PutString("log_name", logName)
-		attrs.PutString("raw", rawLog)
 	}
 
 	return ld
