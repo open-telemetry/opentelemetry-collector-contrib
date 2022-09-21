@@ -22,24 +22,24 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottlmetrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 type Processor struct {
-	queries []tql.Query
+	queries []ottl.Query
 	logger  *zap.Logger
 }
 
 func NewProcessor(statements []string, functions map[string]interface{}, settings component.ProcessorCreateSettings) (*Processor, error) {
-	tqlp := tql.NewParser(
+	ottlp := ottl.NewParser(
 		functions,
-		tqlmetrics.ParsePath,
-		tqlmetrics.ParseEnum,
-		common.NewTQLLogger(settings.Logger),
+		ottlmetrics.ParsePath,
+		ottlmetrics.ParseEnum,
+		common.NewOTTLLogger(settings.Logger),
 	)
-	queries, err := tqlp.ParseQueries(statements)
+	queries, err := ottlp.ParseQueries(statements)
 	if err != nil {
 		return nil, err
 	}
@@ -77,33 +77,33 @@ func (p *Processor) ProcessMetrics(_ context.Context, td pmetric.Metrics) (pmetr
 
 func (p *Processor) handleNumberDataPoints(dps pmetric.NumberDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) {
 	for i := 0; i < dps.Len(); i++ {
-		ctx := tqlmetrics.NewTransformContext(dps.At(i), metric, metrics, is, resource)
+		ctx := ottlmetrics.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		p.callFunctions(ctx)
 	}
 }
 
 func (p *Processor) handleHistogramDataPoints(dps pmetric.HistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) {
 	for i := 0; i < dps.Len(); i++ {
-		ctx := tqlmetrics.NewTransformContext(dps.At(i), metric, metrics, is, resource)
+		ctx := ottlmetrics.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		p.callFunctions(ctx)
 	}
 }
 
 func (p *Processor) handleExponetialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) {
 	for i := 0; i < dps.Len(); i++ {
-		ctx := tqlmetrics.NewTransformContext(dps.At(i), metric, metrics, is, resource)
+		ctx := ottlmetrics.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		p.callFunctions(ctx)
 	}
 }
 
 func (p *Processor) handleSummaryDataPoints(dps pmetric.SummaryDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) {
 	for i := 0; i < dps.Len(); i++ {
-		ctx := tqlmetrics.NewTransformContext(dps.At(i), metric, metrics, is, resource)
+		ctx := ottlmetrics.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		p.callFunctions(ctx)
 	}
 }
 
-func (p *Processor) callFunctions(ctx tql.TransformContext) {
+func (p *Processor) callFunctions(ctx ottl.TransformContext) {
 	for _, statement := range p.queries {
 		if statement.Condition(ctx) {
 			statement.Function(ctx)

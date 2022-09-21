@@ -25,7 +25,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqllogs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottllogs"
 )
 
 var _ component.LogsProcessor = (*logProcessor)(nil)
@@ -91,7 +91,7 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 
 	for i := 0; i < l.ResourceLogs().Len(); i++ {
 		rlogs := l.ResourceLogs().At(i)
-		ltx := tqllogs.NewTransformContext(
+		ltx := ottllogs.NewTransformContext(
 			plog.LogRecord{},
 			pcommon.InstrumentationScope{},
 			rlogs.Resource(),

@@ -19,7 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottl"
 )
 
 type OTTLLogger struct {
@@ -35,7 +35,7 @@ func NewOTTLLogger(logger *zap.Logger) OTTLLogger {
 // WithFields creates a new logger that will include the specified fields
 // in all subsequent logs in addition to fields attached to the context
 // of the parent logger. Note that fields are not deduplicated.
-func (t OTTLLogger) WithFields(fields map[string]any) tql.Logger {
+func (t OTTLLogger) WithFields(fields map[string]any) ottl.Logger {
 	newFields := make([]zap.Field, len(fields))
 	i := 0
 

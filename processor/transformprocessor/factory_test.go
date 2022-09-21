@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tqlconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottlconfig"
 )
 
 func TestFactory_Type(t *testing.T) {
@@ -40,14 +40,14 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		Config: tqlconfig.Config{
-			Traces: tqlconfig.SignalConfig{
+		Config: ottlconfig.Config{
+			Traces: ottlconfig.SignalConfig{
 				Queries: []string{},
 			},
-			Metrics: tqlconfig.SignalConfig{
+			Metrics: ottlconfig.SignalConfig{
 				Queries: []string{},
 			},
-			Logs: tqlconfig.SignalConfig{
+			Logs: ottlconfig.SignalConfig{
 				Queries: []string{},
 			},
 		},

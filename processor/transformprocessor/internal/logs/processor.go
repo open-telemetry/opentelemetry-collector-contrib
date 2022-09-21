@@ -21,24 +21,24 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqllogs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottllogs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 type Processor struct {
-	queries []tql.Query
+	queries []ottl.Query
 	logger  *zap.Logger
 }
 
 func NewProcessor(statements []string, functions map[string]interface{}, settings component.ProcessorCreateSettings) (*Processor, error) {
-	tqlp := tql.NewParser(
+	ottlp := ottl.NewParser(
 		functions,
-		tqllogs.ParsePath,
-		tqllogs.ParseEnum,
-		common.NewTQLLogger(settings.Logger),
+		ottllogs.ParsePath,
+		ottllogs.ParseEnum,
+		common.NewOTTLLogger(settings.Logger),
 	)
-	queries, err := tqlp.ParseQueries(statements)
+	queries, err := ottlp.ParseQueries(statements)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (p *Processor) ProcessLogs(_ context.Context, td plog.Logs) (plog.Logs, err
 			slogs := rlogs.ScopeLogs().At(j)
 			logs := slogs.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				ctx := tqllogs.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
+				ctx := ottllogs.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
 				for _, statement := range p.queries {
 					if statement.Condition(ctx) {
 						statement.Function(ctx)

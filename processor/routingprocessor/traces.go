@@ -25,7 +25,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqltraces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottltraces"
 )
 
 var _ component.TracesProcessor = (*tracesProcessor)(nil)
@@ -91,7 +91,7 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 	var errs error
 	for i := 0; i < t.ResourceSpans().Len(); i++ {
 		rspans := t.ResourceSpans().At(i)
-		stx := tqltraces.NewTransformContext(
+		stx := ottltraces.NewTransformContext(
 			ptrace.Span{},
 			pcommon.InstrumentationScope{},
 			rspans.Resource(),

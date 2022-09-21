@@ -15,19 +15,19 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/functions/tqlcommon"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/functions/tqlotel"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/functions/ottlcommon"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/functions/ottlotel"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottl"
 )
 
 var registry = map[string]interface{}{
-	"IsMatch":              tqlcommon.IsMatch,
-	"delete_key":           tqlotel.DeleteKey,
-	"delete_matching_keys": tqlotel.DeleteMatchingKeys,
+	"IsMatch":              ottlcommon.IsMatch,
+	"delete_key":           ottlotel.DeleteKey,
+	"delete_matching_keys": ottlotel.DeleteMatchingKeys,
 	// noop function, it is required since the parsing of conditions is not implemented yet,
 	// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13545
-	"route": func(_ []string) (tql.ExprFunc, error) {
-		return func(ctx tql.TransformContext) interface{} {
+	"route": func(_ []string) (ottl.ExprFunc, error) {
+		return func(ctx ottl.TransformContext) interface{} {
 			return true
 		}, nil
 	},
