@@ -16,6 +16,7 @@ package loki // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"fmt"
+
 	"github.com/grafana/loki/pkg/logproto"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
