@@ -17,6 +17,6 @@ When adding new values to the grammar you must:
 
 ## New Functions
 
-All new functions must be added via a new file.  Function files must start with `func_`.  Functions that are usable for any underlying telemetry must be placed in `functions/ottlcommon`.  Functions that are specific to otel must be placed in `functions/ottlotel`.
+All new functions must be added via a new file.  Function files must start with `func_`.  Functions must be placed in `ottlfuncs`.
 
 Unit tests must be added for all new functions.  Unit test files must start with `func_` and end in `_test`.  Unit tests must be placed in the same directory as the function.  Functions that are not specific to a pipeline should be tested independently of any specific pipeline. Functions that are specific to a pipeline should be tests against that pipeline.
