@@ -46,8 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#1206](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1206))
 - Add psycopg2 native tags to sqlcommenter
   ([#1203](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1203))
-- Deprecation of direction attribute for metrics. Addition of direction based metric names
-  ([#1214](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1214))
 
 ### Added
 - `opentelemetry-instrumentation-redis` add support to instrument RedisCluster clients

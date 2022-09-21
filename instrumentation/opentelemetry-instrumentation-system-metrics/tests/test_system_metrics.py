@@ -51,7 +51,6 @@ class _SystemMetricsResult:
         self.value = value
 
 
-# pylint: disable=too-many-public-methods
 class TestSystemMetrics(TestBase):
     def setUp(self):
         super().setUp()
@@ -76,7 +75,7 @@ class TestSystemMetrics(TestBase):
             for scope_metrics in resource_metrics.scope_metrics:
                 for metric in scope_metrics.metrics:
                     metric_names.append(metric.name)
-        self.assertEqual(len(metric_names), 24)
+        self.assertEqual(len(metric_names), 17)
 
         observer_names = [
             "system.cpu.time",
@@ -85,20 +84,13 @@ class TestSystemMetrics(TestBase):
             "system.memory.utilization",
             "system.swap.usage",
             "system.swap.utilization",
-            "system.disk.io.read",
-            "system.disk.io.write",
-            "system.disk.operations.read",
-            "system.disk.operations.write",
-            "system.disk.operation_time.read",
-            "system.disk.operation_time.write",
-            "system.network.dropped.transmit",
-            "system.network.dropped.receive",
-            "system.network.packets.transmit",
-            "system.network.packets.receive",
-            "system.network.errors.transmit",
-            "system.network.errors.receive",
-            "system.network.io.transmit",
-            "system.network.io.receive",
+            "system.disk.io",
+            "system.disk.operations",
+            "system.disk.time",
+            "system.network.dropped_packets",
+            "system.network.packets",
+            "system.network.errors",
+            "system.network.io",
             "system.network.connections",
             f"runtime.{self.implementation}.memory",
             f"runtime.{self.implementation}.cpu_time",
@@ -286,7 +278,7 @@ class TestSystemMetrics(TestBase):
         self._test_metrics("system.swap.utilization", expected)
 
     @mock.patch("psutil.disk_io_counters")
-    def test_system_disk_io_read(self, mock_disk_io_counters):
+    def test_system_disk_io(self, mock_disk_io_counters):
         DiskIO = namedtuple(
             "DiskIO",
             [
@@ -324,13 +316,15 @@ class TestSystemMetrics(TestBase):
         }
 
         expected = [
-            _SystemMetricsResult({"device": "sda"}, 3),
-            _SystemMetricsResult({"device": "sdb"}, 11),
+            _SystemMetricsResult({"device": "sda", "direction": "read"}, 3),
+            _SystemMetricsResult({"device": "sda", "direction": "write"}, 4),
+            _SystemMetricsResult({"device": "sdb", "direction": "read"}, 11),
+            _SystemMetricsResult({"device": "sdb", "direction": "write"}, 12),
         ]
-        self._test_metrics("system.disk.io.read", expected)
+        self._test_metrics("system.disk.io", expected)
 
     @mock.patch("psutil.disk_io_counters")
-    def test_system_disk_io_write(self, mock_disk_io_counters):
+    def test_system_disk_operations(self, mock_disk_io_counters):
         DiskIO = namedtuple(
             "DiskIO",
             [
@@ -368,13 +362,15 @@ class TestSystemMetrics(TestBase):
         }
 
         expected = [
-            _SystemMetricsResult({"device": "sda"}, 4),
-            _SystemMetricsResult({"device": "sdb"}, 12),
+            _SystemMetricsResult({"device": "sda", "direction": "read"}, 1),
+            _SystemMetricsResult({"device": "sda", "direction": "write"}, 2),
+            _SystemMetricsResult({"device": "sdb", "direction": "read"}, 9),
+            _SystemMetricsResult({"device": "sdb", "direction": "write"}, 10),
         ]
-        self._test_metrics("system.disk.io.write", expected)
+        self._test_metrics("system.disk.operations", expected)
 
     @mock.patch("psutil.disk_io_counters")
-    def test_system_disk_operations_read(self, mock_disk_io_counters):
+    def test_system_disk_time(self, mock_disk_io_counters):
         DiskIO = namedtuple(
             "DiskIO",
             [
@@ -412,145 +408,23 @@ class TestSystemMetrics(TestBase):
         }
 
         expected = [
-            _SystemMetricsResult({"device": "sda"}, 1),
-            _SystemMetricsResult({"device": "sdb"}, 9),
+            _SystemMetricsResult(
+                {"device": "sda", "direction": "read"}, 5 / 1000
+            ),
+            _SystemMetricsResult(
+                {"device": "sda", "direction": "write"}, 6 / 1000
+            ),
+            _SystemMetricsResult(
+                {"device": "sdb", "direction": "read"}, 13 / 1000
+            ),
+            _SystemMetricsResult(
+                {"device": "sdb", "direction": "write"}, 14 / 1000
+            ),
         ]
-        self._test_metrics("system.disk.operations.read", expected)
-
-    @mock.patch("psutil.disk_io_counters")
-    def test_system_disk_operations_write(self, mock_disk_io_counters):
-        DiskIO = namedtuple(
-            "DiskIO",
-            [
-                "read_count",
-                "write_count",
-                "read_bytes",
-                "write_bytes",
-                "read_time",
-                "write_time",
-                "read_merged_count",
-                "write_merged_count",
-            ],
-        )
-        mock_disk_io_counters.return_value = {
-            "sda": DiskIO(
-                read_count=1,
-                write_count=2,
-                read_bytes=3,
-                write_bytes=4,
-                read_time=5,
-                write_time=6,
-                read_merged_count=7,
-                write_merged_count=8,
-            ),
-            "sdb": DiskIO(
-                read_count=9,
-                write_count=10,
-                read_bytes=11,
-                write_bytes=12,
-                read_time=13,
-                write_time=14,
-                read_merged_count=15,
-                write_merged_count=16,
-            ),
-        }
-
-        expected = [
-            _SystemMetricsResult({"device": "sda"}, 2),
-            _SystemMetricsResult({"device": "sdb"}, 10),
-        ]
-        self._test_metrics("system.disk.operations.write", expected)
-
-    @mock.patch("psutil.disk_io_counters")
-    def test_system_disk_operation_time_read(self, mock_disk_io_counters):
-        DiskIO = namedtuple(
-            "DiskIO",
-            [
-                "read_count",
-                "write_count",
-                "read_bytes",
-                "write_bytes",
-                "read_time",
-                "write_time",
-                "read_merged_count",
-                "write_merged_count",
-            ],
-        )
-        mock_disk_io_counters.return_value = {
-            "sda": DiskIO(
-                read_count=1,
-                write_count=2,
-                read_bytes=3,
-                write_bytes=4,
-                read_time=5,
-                write_time=6,
-                read_merged_count=7,
-                write_merged_count=8,
-            ),
-            "sdb": DiskIO(
-                read_count=9,
-                write_count=10,
-                read_bytes=11,
-                write_bytes=12,
-                read_time=13,
-                write_time=14,
-                read_merged_count=15,
-                write_merged_count=16,
-            ),
-        }
-
-        expected = [
-            _SystemMetricsResult({"device": "sda"}, 5 / 1000),
-            _SystemMetricsResult({"device": "sdb"}, 13 / 1000),
-        ]
-        self._test_metrics("system.disk.operation_time.read", expected)
-
-    @mock.patch("psutil.disk_io_counters")
-    def test_system_disk_operation_time_write(self, mock_disk_io_counters):
-        DiskIO = namedtuple(
-            "DiskIO",
-            [
-                "read_count",
-                "write_count",
-                "read_bytes",
-                "write_bytes",
-                "read_time",
-                "write_time",
-                "read_merged_count",
-                "write_merged_count",
-            ],
-        )
-        mock_disk_io_counters.return_value = {
-            "sda": DiskIO(
-                read_count=1,
-                write_count=2,
-                read_bytes=3,
-                write_bytes=4,
-                read_time=5,
-                write_time=6,
-                read_merged_count=7,
-                write_merged_count=8,
-            ),
-            "sdb": DiskIO(
-                read_count=9,
-                write_count=10,
-                read_bytes=11,
-                write_bytes=12,
-                read_time=13,
-                write_time=14,
-                read_merged_count=15,
-                write_merged_count=16,
-            ),
-        }
-
-        expected = [
-            _SystemMetricsResult({"device": "sda"}, 6 / 1000),
-            _SystemMetricsResult({"device": "sdb"}, 14 / 1000),
-        ]
-        self._test_metrics("system.disk.operation_time.write", expected)
+        self._test_metrics("system.disk.time", expected)
 
     @mock.patch("psutil.net_io_counters")
-    def test_system_network_dropped_transmit(self, mock_net_io_counters):
+    def test_system_network_dropped_packets(self, mock_net_io_counters):
         NetIO = namedtuple(
             "NetIO",
             [
@@ -588,13 +462,23 @@ class TestSystemMetrics(TestBase):
         }
 
         expected = [
-            _SystemMetricsResult({"device": "eth0"}, 2),
-            _SystemMetricsResult({"device": "eth1"}, 10),
+            _SystemMetricsResult(
+                {"device": "eth0", "direction": "receive"}, 1
+            ),
+            _SystemMetricsResult(
+                {"device": "eth0", "direction": "transmit"}, 2
+            ),
+            _SystemMetricsResult(
+                {"device": "eth1", "direction": "receive"}, 9
+            ),
+            _SystemMetricsResult(
+                {"device": "eth1", "direction": "transmit"}, 10
+            ),
         ]
-        self._test_metrics("system.network.dropped.transmit", expected)
+        self._test_metrics("system.network.dropped_packets", expected)
 
     @mock.patch("psutil.net_io_counters")
-    def test_system_network_dropped_receive(self, mock_net_io_counters):
+    def test_system_network_packets(self, mock_net_io_counters):
         NetIO = namedtuple(
             "NetIO",
             [
@@ -632,13 +516,23 @@ class TestSystemMetrics(TestBase):
         }
 
         expected = [
-            _SystemMetricsResult({"device": "eth0"}, 1),
-            _SystemMetricsResult({"device": "eth1"}, 9),
+            _SystemMetricsResult(
+                {"device": "eth0", "direction": "receive"}, 4
+            ),
+            _SystemMetricsResult(
+                {"device": "eth0", "direction": "transmit"}, 3
+            ),
+            _SystemMetricsResult(
+                {"device": "eth1", "direction": "receive"}, 12
+            ),
+            _SystemMetricsResult(
+                {"device": "eth1", "direction": "transmit"}, 11
+            ),
         ]
-        self._test_metrics("system.network.dropped.receive", expected)
+        self._test_metrics("system.network.packets", expected)
 
     @mock.patch("psutil.net_io_counters")
-    def test_system_network_packets_transmit(self, mock_net_io_counters):
+    def test_system_network_errors(self, mock_net_io_counters):
         NetIO = namedtuple(
             "NetIO",
             [
@@ -676,13 +570,23 @@ class TestSystemMetrics(TestBase):
         }
 
         expected = [
-            _SystemMetricsResult({"device": "eth0"}, 3),
-            _SystemMetricsResult({"device": "eth1"}, 11),
+            _SystemMetricsResult(
+                {"device": "eth0", "direction": "receive"}, 5
+            ),
+            _SystemMetricsResult(
+                {"device": "eth0", "direction": "transmit"}, 6
+            ),
+            _SystemMetricsResult(
+                {"device": "eth1", "direction": "receive"}, 13
+            ),
+            _SystemMetricsResult(
+                {"device": "eth1", "direction": "transmit"}, 14
+            ),
         ]
-        self._test_metrics("system.network.packets.transmit", expected)
+        self._test_metrics("system.network.errors", expected)
 
     @mock.patch("psutil.net_io_counters")
-    def test_system_network_packets_receive(self, mock_net_io_counters):
+    def test_system_network_io(self, mock_net_io_counters):
         NetIO = namedtuple(
             "NetIO",
             [
@@ -720,186 +624,20 @@ class TestSystemMetrics(TestBase):
         }
 
         expected = [
-            _SystemMetricsResult({"device": "eth0"}, 4),
-            _SystemMetricsResult({"device": "eth1"}, 12),
+            _SystemMetricsResult(
+                {"device": "eth0", "direction": "receive"}, 8
+            ),
+            _SystemMetricsResult(
+                {"device": "eth0", "direction": "transmit"}, 7
+            ),
+            _SystemMetricsResult(
+                {"device": "eth1", "direction": "receive"}, 16
+            ),
+            _SystemMetricsResult(
+                {"device": "eth1", "direction": "transmit"}, 15
+            ),
         ]
-        self._test_metrics("system.network.packets.receive", expected)
-
-    @mock.patch("psutil.net_io_counters")
-    def test_system_network_errors_transmit(self, mock_net_io_counters):
-        NetIO = namedtuple(
-            "NetIO",
-            [
-                "dropin",
-                "dropout",
-                "packets_sent",
-                "packets_recv",
-                "errin",
-                "errout",
-                "bytes_sent",
-                "bytes_recv",
-            ],
-        )
-        mock_net_io_counters.return_value = {
-            "eth0": NetIO(
-                dropin=1,
-                dropout=2,
-                packets_sent=3,
-                packets_recv=4,
-                errin=5,
-                errout=6,
-                bytes_sent=7,
-                bytes_recv=8,
-            ),
-            "eth1": NetIO(
-                dropin=9,
-                dropout=10,
-                packets_sent=11,
-                packets_recv=12,
-                errin=13,
-                errout=14,
-                bytes_sent=15,
-                bytes_recv=16,
-            ),
-        }
-
-        expected = [
-            _SystemMetricsResult({"device": "eth0"}, 6),
-            _SystemMetricsResult({"device": "eth1"}, 14),
-        ]
-        self._test_metrics("system.network.errors.transmit", expected)
-
-    @mock.patch("psutil.net_io_counters")
-    def test_system_network_errors_receive(self, mock_net_io_counters):
-        NetIO = namedtuple(
-            "NetIO",
-            [
-                "dropin",
-                "dropout",
-                "packets_sent",
-                "packets_recv",
-                "errin",
-                "errout",
-                "bytes_sent",
-                "bytes_recv",
-            ],
-        )
-        mock_net_io_counters.return_value = {
-            "eth0": NetIO(
-                dropin=1,
-                dropout=2,
-                packets_sent=3,
-                packets_recv=4,
-                errin=5,
-                errout=6,
-                bytes_sent=7,
-                bytes_recv=8,
-            ),
-            "eth1": NetIO(
-                dropin=9,
-                dropout=10,
-                packets_sent=11,
-                packets_recv=12,
-                errin=13,
-                errout=14,
-                bytes_sent=15,
-                bytes_recv=16,
-            ),
-        }
-
-        expected = [
-            _SystemMetricsResult({"device": "eth0"}, 5),
-            _SystemMetricsResult({"device": "eth1"}, 13),
-        ]
-        self._test_metrics("system.network.errors.receive", expected)
-
-    @mock.patch("psutil.net_io_counters")
-    def test_system_network_io_transmit(self, mock_net_io_counters):
-        NetIO = namedtuple(
-            "NetIO",
-            [
-                "dropin",
-                "dropout",
-                "packets_sent",
-                "packets_recv",
-                "errin",
-                "errout",
-                "bytes_sent",
-                "bytes_recv",
-            ],
-        )
-        mock_net_io_counters.return_value = {
-            "eth0": NetIO(
-                dropin=1,
-                dropout=2,
-                packets_sent=3,
-                packets_recv=4,
-                errin=5,
-                errout=6,
-                bytes_sent=7,
-                bytes_recv=8,
-            ),
-            "eth1": NetIO(
-                dropin=9,
-                dropout=10,
-                packets_sent=11,
-                packets_recv=12,
-                errin=13,
-                errout=14,
-                bytes_sent=15,
-                bytes_recv=16,
-            ),
-        }
-
-        expected = [
-            _SystemMetricsResult({"device": "eth0"}, 7),
-            _SystemMetricsResult({"device": "eth1"}, 15),
-        ]
-        self._test_metrics("system.network.io.transmit", expected)
-
-    @mock.patch("psutil.net_io_counters")
-    def test_system_network_io_receive(self, mock_net_io_counters):
-        NetIO = namedtuple(
-            "NetIO",
-            [
-                "dropin",
-                "dropout",
-                "packets_sent",
-                "packets_recv",
-                "errin",
-                "errout",
-                "bytes_sent",
-                "bytes_recv",
-            ],
-        )
-        mock_net_io_counters.return_value = {
-            "eth0": NetIO(
-                dropin=1,
-                dropout=2,
-                packets_sent=3,
-                packets_recv=4,
-                errin=5,
-                errout=6,
-                bytes_sent=7,
-                bytes_recv=8,
-            ),
-            "eth1": NetIO(
-                dropin=9,
-                dropout=10,
-                packets_sent=11,
-                packets_recv=12,
-                errin=13,
-                errout=14,
-                bytes_sent=15,
-                bytes_recv=16,
-            ),
-        }
-
-        expected = [
-            _SystemMetricsResult({"device": "eth0"}, 8),
-            _SystemMetricsResult({"device": "eth1"}, 16),
-        ]
-        self._test_metrics("system.network.io.receive", expected)
+        self._test_metrics("system.network.io", expected)
 
     @mock.patch("psutil.net_connections")
     def test_system_network_connections(self, mock_net_connections):
