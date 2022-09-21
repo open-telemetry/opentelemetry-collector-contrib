@@ -33,7 +33,7 @@ fi
 
 OWNERS=$(grep -m 1 ${COMPONENT} .github/CODEOWNERS | sed 's/   */ /g' | cut -f3- -d ' ' | sed "s/\s*@${SENDER}\s*/ /g")
 
-if [ -z "${OWNERS}" ]; then
+if [ -z "${OWNERS}" ] || [[ -z "${OWNERS// }" ]]; then
     exit 0
 fi
 
