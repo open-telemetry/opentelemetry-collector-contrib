@@ -7,7 +7,6 @@
 | Distributions            | [contrib]                                                                          |
 | Warnings                 | [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other](#warnings) |
 
-<!-- markdown-link-check-disable-next-line -->
 The transform processor modifies telemetry based on configuration using the [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/oteltransformationlanguage/ottl).
 The processor takes a list of queries for each signal type and executes the queries against the incoming telemetry in the order specified in the config.  Each query can access and transform telemetry using functions and allow the use of a condition to help decide whether the function should be executed.
 
@@ -59,27 +58,21 @@ transform:
 ```
 ## Grammar
 
-<!-- markdown-link-check-disable-next-line -->
 You can learn more in-depth details on the capabilities and limitations of the OpenTelemetry Transformation Language used by the transform processor by reading about its [grammar](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/oteltransformationlanguage/ottl#grammar).
 
 ## Contexts
 
 The transform processor utilizes the OTTL's standard contexts for Traces, Metrics and Logs.  The contexts allow the OTTL to interact with the underlying telemetry data in its pdata form.
 
-<!-- markdown-link-check-disable-next-line -->
 - [Traces Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/oteltransformationlanguage/contexts/ottltraces)
-<!-- markdown-link-check-disable-next-line -->
 - [Metrics Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/oteltransformationlanguage/contexts/ottlmetrics)
-<!-- markdown-link-check-disable-next-line -->
 - [Logs Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/oteltransformationlanguage/contexts/ottllogs)
 
 ## Supported functions:
 
 Since the transform processor utilizes the OTTL's contexts for Traces, Metrics, and Logs, it is able to utilize functions that expect pdata in addition to any common functions. These common functions can be used for any signal.
 
-<!-- markdown-link-check-disable-next-line -->
 - [Common OTTL functions](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/oteltransformationlanguage/functions/ottlcommon)
-<!-- markdown-link-check-disable-next-line -->
 - [Otel OTTL functions](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/oteltransformationlanguage/functions/ottlotel)
 
 In addition to OTTL functions, the processor defines its own functions to help with transformations specific to this processor:
@@ -158,7 +151,7 @@ Examples:
 - `convert_summary_sum_val_to_sum("cumulative", false)`
 
 ## Contributing
- <!-- markdown-link-check-disable-next-line -->
+
 See [CONTRIBUTING.md](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/CONTRIBUTING.md).
 
 
