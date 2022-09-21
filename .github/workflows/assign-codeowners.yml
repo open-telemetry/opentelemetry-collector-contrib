@@ -1,0 +1,20 @@
+name: 'Assign code owners'
+on:
+  pull_request:
+    types: [labeled]
+
+jobs:
+  assign-owner:
+    if: ${{ contains(github.event.label.name, 'cmd/') || contains(github.event.label.name, 'exporter/') || contains(github.event.label.name, 'extension/') || contains(github.event.label.name, 'pkg/') || contains(github.event.label.name, 'processor/') || contains(github.event.label.name, 'receiver/') }}
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+    
+      - name: Run assign-codeowners.sh
+        run: ./.github/workflows/scripts/assign-codeowners.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PULL_REQUEST: ${{ github.event.pull_request.number }}
+          COMPONENT: ${{ github.event.label.name }}
+          SENDER: ${{ github.event.sender.login }}
