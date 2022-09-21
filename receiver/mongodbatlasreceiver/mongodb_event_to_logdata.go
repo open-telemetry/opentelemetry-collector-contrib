@@ -26,8 +26,10 @@ import (
 )
 
 const (
-	// Number of log attributes to add to the plog.LogRecordSlice.
+	// Number of log attributes to add to the plog.LogRecordSlice for host logs.
 	totalLogAttributes = 11
+	// Number of log attributes to add to the plog.LogRecordSlice for audit logs.
+	totalAuditLogAttributes = 16
 
 	// Number of resource attributes to add to the plog.ResourceLogs.
 	totalResourceAttributes = 4
@@ -88,23 +90,64 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 		lr.SetSeverityNumber(plog.SeverityNumberInfo)
 		lr.SetSeverityText("INFO")
 		attrs := lr.Attributes()
-		attrs.EnsureCapacity(totalLogAttributes)
-		if log.AuthType != "" {
-			attrs.PutString("authtype", log.AuthType)
+		attrs.EnsureCapacity(totalAuditLogAttributes)
+
+		attrs.PutString("atype", log.Type)
+
+		if log.Local.IP != nil {
+			attrs.PutString("local.ip", *log.Local.IP)
 		}
-		attrs.PutString("local.ip", log.Local.IP)
-		attrs.PutInt("local.port", int64(log.Local.Port))
-		attrs.PutString("remote.ip", log.Remote.IP)
-		attrs.PutInt("remote.port", int64(log.Remote.Port))
-		attrs.PutString("uuid.binary", log.ID.Binary)
-		attrs.PutString("uuid.type", log.ID.Type)
+
+		if log.Local.Port != nil {
+			attrs.PutInt("local.port", int64(*log.Local.Port))
+		}
+
+		if log.Local.SystemUser != nil {
+			attrs.PutBool("local.isSystemUser", *log.Local.SystemUser)
+		}
+
+		if log.Local.UnixSocket != nil {
+			attrs.PutString("local.unix", *log.Local.UnixSocket)
+		}
+
+		if log.Remote.IP != nil {
+			attrs.PutString("remote.ip", *log.Remote.IP)
+		}
+
+		if log.Remote.Port != nil {
+			attrs.PutInt("remote.port", int64(*log.Remote.Port))
+		}
+
+		if log.Remote.SystemUser != nil {
+			attrs.PutBool("remote.isSystemUser", *log.Remote.SystemUser)
+		}
+
+		if log.Remote.UnixSocket != nil {
+			attrs.PutString("remote.unix", *log.Remote.UnixSocket)
+		}
+
+		if log.ID != nil {
+			attrs.PutString("uuid.binary", log.ID.Binary)
+			attrs.PutString("uuid.type", log.ID.Type)
+		}
+
 		attrs.PutInt("result", int64(log.Result))
-		attrs.PutString("log_name", logName)
-		if log.Param.User != "" {
-			attrs.PutString("param.user", log.Param.User)
-			attrs.PutString("param.database", log.Param.Database)
-			attrs.PutString("param.mechanism", log.Param.Mechanism)
+
+		attrs.PutEmptyMap("param").FromRaw(log.Param)
+
+		usersSlice := attrs.PutEmptySlice("users")
+		usersSlice.EnsureCapacity(len(log.Users))
+		for _, user := range log.Users {
+			user.Pdata().CopyTo(usersSlice.AppendEmpty().SetEmptyMapVal())
 		}
+
+		rolesSlice := attrs.PutEmptySlice("roles")
+		rolesSlice.EnsureCapacity(len(log.Roles))
+		for _, roles := range log.Roles {
+			roles.Pdata().CopyTo(rolesSlice.AppendEmpty().SetEmptyMapVal())
+		}
+
+		attrs.PutString("log_name", logName)
 	}
 
 	return ld

@@ -16,6 +16,8 @@ package model // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"encoding/json"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // LogEntry represents a MongoDB Atlas JSON log entry
@@ -45,13 +47,15 @@ func (l LogEntry) RawLog() (string, error) {
 
 // AuditLog represents a MongoDB Atlas JSON audit log entry
 type AuditLog struct {
-	AuthType  string       `json:"authenticate"`
-	Timestamp LogTimestamp `json:"ts"`
-	ID        ID           `json:"uuid"`
-	Local     Address      `json:"local"`
-	Remote    Address      `json:"remote"`
-	Result    int          `json:"result"`
-	Param     Param        `json:"param"`
+	Type      string         `json:"atype"`
+	Timestamp LogTimestamp   `json:"ts"`
+	ID        *ID            `json:"uuid,omitempty"`
+	Local     Address        `json:"local"`
+	Remote    Address        `json:"remote"`
+	Users     []AuditUser    `json:"users"`
+	Roles     []AuditRole    `json:"roles"`
+	Result    int            `json:"result"`
+	Param     map[string]any `json:"param"`
 }
 
 // logTimestamp is the structure that represents a Log Timestamp
@@ -65,12 +69,34 @@ type ID struct {
 }
 
 type Address struct {
-	IP   string `json:"ip"`
-	Port int    `json:"port"`
+	IP         *string `json:"ip,omitempty"`
+	Port       *int    `json:"port,omitempty"`
+	SystemUser *bool   `json:"isSystemUser,omitempty"`
+	UnixSocket *string `json:"unix,omitempty"`
 }
 
-type Param struct {
-	User      string `json:"user"`
-	Database  string `json:"db"`
-	Mechanism string `json:"mechanism"`
+type AuditRole struct {
+	Role     string `json:"role"`
+	Database string `json:"db"`
+}
+
+func (ar AuditRole) Pdata() pcommon.Map {
+	m := pcommon.NewMap()
+	m.EnsureCapacity(2)
+	m.PutString("role", ar.Role)
+	m.PutString("db", ar.Database)
+	return m
+}
+
+type AuditUser struct {
+	User     string `json:"user"`
+	Database string `json:"db"`
+}
+
+func (ar AuditUser) Pdata() pcommon.Map {
+	m := pcommon.NewMap()
+	m.EnsureCapacity(2)
+	m.PutString("user", ar.User)
+	m.PutString("db", ar.Database)
+	return m
 }
