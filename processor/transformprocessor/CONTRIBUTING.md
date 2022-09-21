@@ -16,4 +16,4 @@ All new functions should have integration tests added to any usable pipeline's `
 
 ## New Values
 
-When adding new values to the grammar you must update the [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/oteltransformationlanguage/ottl/CONTRIBUTING.md)
+When adding new values to the grammar you must update the [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/oteltransformationlanguage/CONTRIBUTING.md)
