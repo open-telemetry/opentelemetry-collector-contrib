@@ -16,6 +16,7 @@ package loadscraper // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"errors"
 	"runtime"
 	"time"
 
@@ -25,7 +26,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper/internal/metadata"
 )
 
@@ -33,9 +36,10 @@ const metricsLen = 3
 
 // scraper for Load Metrics
 type scraper struct {
-	settings component.ReceiverCreateSettings
-	config   *Config
-	mb       *metadata.MetricsBuilder
+	settings   component.ReceiverCreateSettings
+	config     *Config
+	mb         *metadata.MetricsBuilder
+	skipScrape bool
 
 	// for mocking
 	bootTime func() (uint64, error)
@@ -55,16 +59,39 @@ func (s *scraper) start(ctx context.Context, _ component.Host) error {
 	}
 
 	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
-	return startSampling(ctx, s.settings.Logger)
+	err = startSampling(ctx, s.settings.Logger)
+
+	var initErr *perfcounters.PerfCounterInitError
+	switch {
+	case errors.As(err, &initErr):
+		// This indicates, on Windows, that the performance counters can't be scraped.
+		// In order to prevent crashing in a fragile manner, we simply skip scraping.
+		s.settings.Logger.Error("Failed to init performance counters, load metrics will not be scraped", zap.Error(err))
+		s.skipScrape = true
+	case err != nil:
+		// Unknown error; fail to start if this is the case
+		return err
+	}
+
+	return nil
 }
 
 // shutdown
 func (s *scraper) shutdown(ctx context.Context) error {
+	if s.skipScrape {
+		// We skipped scraping because the sampler failed to start,
+		// so it doesn't need to be shut down.
+		return nil
+	}
 	return stopSampling(ctx)
 }
 
 // scrape
 func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+	if s.skipScrape {
+		return pmetric.NewMetrics(), nil
+	}
+
 	now := pcommon.NewTimestampFromTime(time.Now())
 	avgLoadValues, err := s.load()
 	if err != nil {

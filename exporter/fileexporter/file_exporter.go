@@ -16,6 +16,7 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"encoding/binary"
 	"io"
 	"sync"
 
@@ -24,60 +25,70 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-// Marshaler configuration used for marhsaling Protobuf to JSON.
-var tracesMarshaler = ptrace.NewJSONMarshaler()
-var metricsMarshaler = pmetric.NewJSONMarshaler()
-var logsMarshaler = plog.NewJSONMarshaler()
+const (
+	formatTypeProto = "proto"
+	formatTypeJSON  = "json"
+)
+
+// Marshaler configuration used for marhsaling Protobuf
+var tracesMarshalers = map[string]ptrace.Marshaler{
+	formatTypeJSON:  ptrace.NewJSONMarshaler(),
+	formatTypeProto: ptrace.NewProtoMarshaler(),
+}
+var metricsMarshalers = map[string]pmetric.Marshaler{
+	formatTypeJSON:  pmetric.NewJSONMarshaler(),
+	formatTypeProto: pmetric.NewProtoMarshaler(),
+}
+var logsMarshalers = map[string]plog.Marshaler{
+	formatTypeJSON:  plog.NewJSONMarshaler(),
+	formatTypeProto: plog.NewProtoMarshaler(),
+}
+
+// exportFunc defines how to export encoded telemetry data.
+type exportFunc func(e *fileExporter, buf []byte) error
 
 // fileExporter is the implementation of file exporter that writes telemetry data to a file
-// in Protobuf-JSON format.
 type fileExporter struct {
 	path  string
 	file  io.WriteCloser
 	mutex sync.Mutex
+
+	tracesMarshaler  ptrace.Marshaler
+	metricsMarshaler pmetric.Marshaler
+	logsMarshaler    plog.Marshaler
+
+	formatType string
+	exporter   exportFunc
 }
 
-func newFileExporter(conf *Config) *fileExporter {
-	return &fileExporter{
-		path: conf.Path,
-		file: &lumberjack.Logger{
-			Filename:   conf.Path,
-			MaxSize:    conf.Rotation.MaxMegabytes,
-			MaxAge:     conf.Rotation.MaxDays,
-			MaxBackups: conf.Rotation.MaxBackups,
-			LocalTime:  conf.Rotation.LocalTime,
-		},
-	}
-}
 func (e *fileExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
 func (e *fileExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
-	buf, err := tracesMarshaler.MarshalTraces(td)
+	buf, err := e.tracesMarshaler.MarshalTraces(td)
 	if err != nil {
 		return err
 	}
-	return exportMessageAsLine(e, buf)
+	return e.exporter(e, buf)
 }
 
 func (e *fileExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
-	buf, err := metricsMarshaler.MarshalMetrics(md)
+	buf, err := e.metricsMarshaler.MarshalMetrics(md)
 	if err != nil {
 		return err
 	}
-	return exportMessageAsLine(e, buf)
+	return e.exporter(e, buf)
 }
 
 func (e *fileExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
-	buf, err := logsMarshaler.MarshalLogs(ld)
+	buf, err := e.logsMarshaler.MarshalLogs(ld)
 	if err != nil {
 		return err
 	}
-	return exportMessageAsLine(e, buf)
+	return e.exporter(e, buf)
 }
 
 func exportMessageAsLine(e *fileExporter, buf []byte) error {
@@ -93,6 +104,21 @@ func exportMessageAsLine(e *fileExporter, buf []byte) error {
 	return nil
 }
 
+func exportMessageAsBuffer(e *fileExporter, buf []byte) error {
+	// Ensure only one write operation happens at a time.
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+	// write the size of each message before writing the message itself.  https://developers.google.com/protocol-buffers/docs/techniques
+	// each encoded object is preceded by 4 bytes (an unsigned 32 bit integer)
+	data := make([]byte, 4, 4+len(buf))
+	binary.BigEndian.PutUint32(data, uint32(len(buf)))
+	data = append(data, buf...)
+	if err := binary.Write(e.file, binary.BigEndian, data); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (e *fileExporter) Start(context.Context, component.Host) error {
 	return nil
 }
@@ -100,4 +126,11 @@ func (e *fileExporter) Start(context.Context, component.Host) error {
 // Shutdown stops the exporter and is invoked during shutdown.
 func (e *fileExporter) Shutdown(context.Context) error {
 	return e.file.Close()
+}
+
+func buildExportFunc(cfg *Config) func(e *fileExporter, buf []byte) error {
+	if cfg.FormatType == formatTypeProto {
+		return exportMessageAsBuffer
+	}
+	return exportMessageAsLine
 }
