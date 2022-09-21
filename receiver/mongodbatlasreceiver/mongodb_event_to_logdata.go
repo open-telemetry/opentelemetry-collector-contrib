@@ -29,7 +29,7 @@ const (
 	// Number of log attributes to add to the plog.LogRecordSlice for host logs.
 	totalLogAttributes = 11
 	// Number of log attributes to add to the plog.LogRecordSlice for audit logs.
-	totalAuditLogAttributes = 12
+	totalAuditLogAttributes = 16
 
 	// Number of resource attributes to add to the plog.ResourceLogs.
 	totalResourceAttributes = 4
