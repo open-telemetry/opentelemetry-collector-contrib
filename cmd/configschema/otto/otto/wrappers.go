@@ -15,120 +15,75 @@
 package otto
 
 import (
-	"context"
-
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 )
 
 type metricsReceiverWrapper struct {
 	component.MetricsReceiver
-	consumer *repeatingMetricsConsumer
-}
-
-func (w metricsReceiverWrapper) start() {
-	err := w.Start(context.Background(), componenttest.NewNopHost())
-	if err != nil {
-		panic(err)
-	}
+	repeater *metricsRepeater
 }
 
 func (w metricsReceiverWrapper) setNextMetricsConsumer(next consumer.Metrics) {
-	w.consumer.next = next
-}
-
-func (w metricsReceiverWrapper) shutdown() {
-	err := w.Shutdown(context.Background())
-	if err != nil {
-		panic(err)
-	}
+	w.repeater.next = next
 }
 
 type logsReceiverWrapper struct {
 	component.LogsReceiver
-	consumer *repeatingLogsConsumer
-}
-
-func (w logsReceiverWrapper) start() {
-	err := w.Start(context.Background(), componenttest.NewNopHost())
-	if err != nil {
-		panic(err)
-	}
+	repeater *logsRepeater
 }
 
 func (w logsReceiverWrapper) setNextLogsConsumer(next consumer.Logs) {
-	w.consumer.next = next
-}
-
-func (w logsReceiverWrapper) shutdown() {
-	err := w.Shutdown(context.Background())
-	if err != nil {
-		panic(err)
-	}
+	w.repeater.next = next
 }
 
 type tracesReceiverWrapper struct {
 	component.TracesReceiver
-	consumer *repeatingTracesConsumer
-}
-
-func (w tracesReceiverWrapper) start() {
-	err := w.Start(context.Background(), componenttest.NewNopHost())
-	if err != nil {
-		panic(err)
-	}
+	repeater *tracesRepeater
 }
 
 func (w tracesReceiverWrapper) setNextTracesConsumer(next consumer.Traces) {
-	w.consumer.next = next
-}
-
-func (w tracesReceiverWrapper) shutdown() {
-	err := w.Shutdown(context.Background())
-	if err != nil {
-		panic(err)
-	}
+	w.repeater.next = next
 }
 
 type metricsProcessorWrapper struct {
 	component.MetricsProcessor
-	consumer *repeatingMetricsConsumer
+	repeater *metricsRepeater
 }
 
 func (w metricsProcessorWrapper) setNextMetricsConsumer(next consumer.Metrics) {
-	w.consumer.next = next
+	w.repeater.next = next
 }
 
 type logsProcessorWrapper struct {
 	component.LogsProcessor
-	consumer *repeatingLogsConsumer
+	repeater *logsRepeater
 }
 
 func (w logsProcessorWrapper) setNextLogsConsumer(next consumer.Logs) {
-	w.consumer.next = next
+	w.repeater.next = next
 }
 
 type tracesProcessorWrapper struct {
 	component.TracesProcessor
-	consumer *repeatingTracesConsumer
+	repeater *tracesRepeater
 }
 
 func (w tracesProcessorWrapper) setNextTracesConsumer(next consumer.Traces) {
-	w.consumer.next = next
+	w.repeater.next = next
 }
 
 type metricsExporterWrapper struct {
 	component.MetricsExporter
-	consumer *repeatingMetricsConsumer
+	repeater *metricsRepeater
 }
 
 type logsExporterWrapper struct {
 	component.LogsExporter
-	consumer *repeatingLogsConsumer
+	repeater *logsRepeater
 }
 
 type tracesExporterWrapper struct {
 	component.TracesExporter
-	consumer *repeatingTracesConsumer
+	repeater *tracesRepeater
 }

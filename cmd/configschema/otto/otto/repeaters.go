@@ -16,7 +16,8 @@ package otto
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
+	"log"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -25,86 +26,98 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-type repeatingMetricsConsumer struct {
-	webSocket *websocket.Conn
+type metricsRepeater struct {
+	logger    *log.Logger
+	ws        *websocket.Conn
 	marshaler pmetric.Marshaler
 	next      consumer.Metrics
 	stop      chan struct{}
 }
 
-func (*repeatingMetricsConsumer) Capabilities() consumer.Capabilities {
+func (*metricsRepeater) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 
-func (c *repeatingMetricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	marshaled, err := c.marshaler.MarshalMetrics(md)
+func (r *metricsRepeater) ConsumeMetrics(ctx context.Context, pmetrics pmetric.Metrics) error {
+	envelopeJson, err := json.Marshal(wsMessageEnvelope{
+		Payload: metrics(pmetrics),
+	})
 	if err != nil {
-		panic(err)
-	}
-	_, err = c.webSocket.Write(marshaled)
-	if err != nil {
-		fmt.Printf("c.webSocket.Write(marshaled): %v\n", err)
-		c.stop <- struct{}{}
+		r.logger.Printf("error marshaling envelope: %v", err)
 		return nil
 	}
-	if c.next == nil {
+	_, err = r.ws.Write(envelopeJson)
+	if err != nil {
+		r.logger.Printf("error writing envelope json to websocket: %v\n", err)
+		r.stop <- struct{}{}
 		return nil
 	}
-	return c.next.ConsumeMetrics(ctx, md)
+	if r.next == nil {
+		return nil
+	}
+	return r.next.ConsumeMetrics(ctx, pmetrics)
 }
 
-type repeatingLogsConsumer struct {
-	webSocket *websocket.Conn
+type logsRepeater struct {
+	logger    *log.Logger
+	ws        *websocket.Conn
 	marshaler plog.Marshaler
 	next      consumer.Logs
 	stop      chan struct{}
 }
 
-func (*repeatingLogsConsumer) Capabilities() consumer.Capabilities {
+func (*logsRepeater) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 
-func (c *repeatingLogsConsumer) ConsumeLogs(ctx context.Context, logs plog.Logs) error {
-	marshaled, err := c.marshaler.MarshalLogs(logs)
+func (r *logsRepeater) ConsumeLogs(ctx context.Context, plogs plog.Logs) error {
+	envelopeJson, err := json.Marshal(wsMessageEnvelope{
+		Payload: logs(plogs),
+	})
 	if err != nil {
-		panic(err)
-	}
-	_, err = c.webSocket.Write(marshaled)
-	if err != nil {
-		fmt.Printf("c.webSocket.Write(marshaled): %v\n", err)
-		c.stop <- struct{}{}
+		r.logger.Printf("error marshaling envelope: %v", err)
 		return nil
 	}
-	if c.next == nil {
+	_, err = r.ws.Write(envelopeJson)
+	if err != nil {
+		r.logger.Printf("error writing envelope json to websocket: %v\n", err)
+		r.stop <- struct{}{}
 		return nil
 	}
-	return c.next.ConsumeLogs(ctx, logs)
+	if r.next == nil {
+		return nil
+	}
+	return r.next.ConsumeLogs(ctx, plogs)
 }
 
-type repeatingTracesConsumer struct {
-	webSocket *websocket.Conn
+type tracesRepeater struct {
+	logger    *log.Logger
+	ws        *websocket.Conn
 	marshaler ptrace.Marshaler
 	next      consumer.Traces
 	stop      chan struct{}
 }
 
-func (c *repeatingTracesConsumer) Capabilities() consumer.Capabilities {
+func (r *tracesRepeater) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 
-func (c *repeatingTracesConsumer) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
-	marshaled, err := c.marshaler.MarshalTraces(traces)
+func (r *tracesRepeater) ConsumeTraces(ctx context.Context, ptraces ptrace.Traces) error {
+	envelopeJson, err := json.Marshal(wsMessageEnvelope{
+		Payload: traces(ptraces),
+	})
 	if err != nil {
-		panic(err)
-	}
-	_, err = c.webSocket.Write(marshaled)
-	if err != nil {
-		fmt.Printf("c.webSocket.Write(marshaled): %v\n", err)
-		c.stop <- struct{}{}
+		r.logger.Printf("error marshaling envelope: %v", err)
 		return nil
 	}
-	if c.next == nil {
+	_, err = r.ws.Write(envelopeJson)
+	if err != nil {
+		r.logger.Printf("error writing envelope json to websocket: %v\n", err)
+		r.stop <- struct{}{}
 		return nil
 	}
-	return c.next.ConsumeTraces(ctx, traces)
+	if r.next == nil {
+		return nil
+	}
+	return r.next.ConsumeTraces(ctx, ptraces)
 }

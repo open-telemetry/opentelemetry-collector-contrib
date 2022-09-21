@@ -16,6 +16,8 @@ package otto
 
 import (
 	"context"
+	"encoding/json"
+	"log"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -29,23 +31,30 @@ import (
 )
 
 type receiverSocketHandler struct {
+	logger          *log.Logger
 	pipeline        *pipeline
 	receiverFactory component.ReceiverFactory
 }
 
 func (h receiverSocketHandler) handle(ws *websocket.Conn) {
-	msg := readStartComponentMessage(ws)
-	m := map[string]interface{}{}
-	err := yaml.Unmarshal([]byte(msg.ComponentYAML), &m)
+	msg, err := readStartComponentMessage(ws)
 	if err != nil {
-		panic(err)
+		sendErr(ws, h.logger, "error reading start component message", err)
+		return
+	}
+	m := map[string]interface{}{}
+	err = yaml.Unmarshal([]byte(msg.ComponentYAML), &m)
+	if err != nil {
+		sendErr(ws, h.logger, "failed to unmarshal yaml", err)
+		return
 	}
 
 	receiverConfig := h.receiverFactory.CreateDefaultConfig()
 	conf := confmap.NewFromStringMap(m)
-	err = unmarshalReceiver(receiverConfig, conf)
+	err = unmarshalReceiverConfig(receiverConfig, conf)
 	if err != nil {
-		panic(err)
+		sendErr(ws, h.logger, "failed to unmarshal receiver config", err)
+		return
 	}
 
 	switch msg.PipelineType {
@@ -59,12 +68,13 @@ func (h receiverSocketHandler) handle(ws *websocket.Conn) {
 }
 
 func (h receiverSocketHandler) startMetricsReceiver(
-	webSocket *websocket.Conn,
+	ws *websocket.Conn,
 	cfg config.Receiver,
 ) {
 	stop := make(chan struct{})
-	repeater := &repeatingMetricsConsumer{
-		webSocket: webSocket,
+	repeater := &metricsRepeater{
+		logger:    h.logger,
+		ws:        ws,
 		marshaler: pmetric.NewJSONMarshaler(),
 		stop:      stop,
 	}
@@ -75,26 +85,35 @@ func (h receiverSocketHandler) startMetricsReceiver(
 		repeater,
 	)
 	if err != nil {
-		panic(err)
+		sendErr(ws, h.logger, "failed to create metrics receiver", err)
+		return
 	}
 	wrapper := metricsReceiverWrapper{
 		MetricsReceiver: receiver,
-		consumer:        repeater,
+		repeater:        repeater,
 	}
 	h.pipeline.connectMetricsReceiverWrapper(wrapper)
-	wrapper.start()
+	err = wrapper.Start(context.Background(), componenttest.NewNopHost())
+	if err != nil {
+		sendErr(ws, h.logger, "failed to start metrics receiver", err)
+		return
+	}
 	<-stop
-	wrapper.shutdown()
+	err = wrapper.Shutdown(context.Background())
+	if err != nil {
+		sendErr(ws, h.logger, "failed to shut down metrics receiver", err)
+		return
+	}
 	h.pipeline.disconnectMetricsReceiverWrapper()
 }
 
 func (h receiverSocketHandler) startLogsReceiver(
-	webSocket *websocket.Conn,
+	ws *websocket.Conn,
 	cfg config.Receiver,
 ) {
 	stop := make(chan struct{})
-	consumer := &repeatingLogsConsumer{
-		webSocket: webSocket,
+	repeater := &logsRepeater{
+		ws:        ws,
 		marshaler: plog.NewJSONMarshaler(),
 		stop:      stop,
 	}
@@ -102,29 +121,38 @@ func (h receiverSocketHandler) startLogsReceiver(
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
 		cfg,
-		consumer,
+		repeater,
 	)
 	if err != nil {
-		panic(err)
+		sendErr(ws, h.logger, "failed to create logs receiver", err)
+		return
 	}
 	wrapper := logsReceiverWrapper{
 		LogsReceiver: receiver,
-		consumer:     consumer,
+		repeater:     repeater,
 	}
 	h.pipeline.connectLogsReceiverWrapper(wrapper)
-	wrapper.start()
+	err = wrapper.Start(context.Background(), componenttest.NewNopHost())
+	if err != nil {
+		sendErr(ws, h.logger, "failed to start logs receiver", err)
+		return
+	}
 	<-stop
-	wrapper.shutdown()
+	err = wrapper.Shutdown(context.Background())
+	if err != nil {
+		sendErr(ws, h.logger, "failed to shut down logs receiver", err)
+		return
+	}
 	h.pipeline.disconnectLogsReceiverWrapper()
 }
 
 func (h receiverSocketHandler) startTracesReceiver(
-	webSocket *websocket.Conn,
+	ws *websocket.Conn,
 	cfg config.Receiver,
 ) {
 	stop := make(chan struct{})
-	consumer := &repeatingTracesConsumer{
-		webSocket: webSocket,
+	repeater := &tracesRepeater{
+		ws:        ws,
 		marshaler: ptrace.NewJSONMarshaler(),
 		stop:      stop,
 	}
@@ -132,25 +160,43 @@ func (h receiverSocketHandler) startTracesReceiver(
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
 		cfg,
-		consumer,
+		repeater,
 	)
 	if err != nil {
-		panic(err)
+		sendErr(ws, h.logger, "failed to create traces receiver", err)
+		return
 	}
 	wrapper := tracesReceiverWrapper{
 		TracesReceiver: receiver,
-		consumer:       consumer,
+		repeater:       repeater,
 	}
 	h.pipeline.connectTracesReceiverWrapper(wrapper)
-	wrapper.start()
+	err = wrapper.Start(context.Background(), componenttest.NewNopHost())
+	if err != nil {
+		sendErr(ws, h.logger, "failed to start traces receiver", err)
+		return
+	}
 	<-stop
-	wrapper.shutdown()
+	err = wrapper.Shutdown(context.Background())
+	if err != nil {
+		sendErr(ws, h.logger, "failed to shut down traces receiver", err)
+		return
+	}
 	h.pipeline.disconnectTracesReceiverWrapper()
 }
 
-func unmarshalReceiver(receiverConfig config.Receiver, conf *confmap.Conf) error {
+func unmarshalReceiverConfig(receiverConfig config.Receiver, conf *confmap.Conf) error {
 	if unmarshallable, ok := receiverConfig.(config.Unmarshallable); ok {
 		return unmarshallable.Unmarshal(conf)
 	}
 	return conf.UnmarshalExact(receiverConfig)
+}
+
+func sendErr(ws *websocket.Conn, logger *log.Logger, msg string, err error) {
+	envelopeJson, jsonErr := json.Marshal(wsMessageEnvelope{Error: err})
+	if jsonErr != nil {
+		const fmt = "%s due to %v. also failed to marshal envelope containing the error due to %v"
+		logger.Fatalf(fmt, msg, err, jsonErr)
+	}
+	_, err = ws.Write(envelopeJson)
 }

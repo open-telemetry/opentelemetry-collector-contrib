@@ -147,7 +147,14 @@ class ComponentController {
       'message',
       event => {
         msgIdx++;
-        this.messagePanelController.handleMessage(msgIdx, JSON.parse(event.data));
+        let envelope = JSON.parse(event.data);
+        if (envelope['Error'] !== null) {
+          this.configYamlView.disableStopButton();
+          this.configYamlView.enableStartButton();
+          alert(envelope['Error']['Errors'][0]);
+        } else {
+          this.messagePanelController.handleMessage(msgIdx, envelope['Payload']);
+        }
       }
     );
     this.socket.addEventListener(

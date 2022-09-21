@@ -29,12 +29,12 @@ func Server() {
 
 	mux.Handle("/", http.FileServer(http.Dir("static")))
 
+	logger := log.Default()
+
 	factories, err := components.Components()
 	if err != nil {
-		panic(err)
+		logger.Fatalf("failed to load collector components: %v", err)
 	}
-
-	logger := log.Default()
 
 	mux.Handle("/components", componentHandler{
 		logger:    logger,
@@ -55,45 +55,51 @@ func Server() {
 	})
 
 	wsHandlers := map[string]wsHandler{}
-	registerReceiverHandlers(factories, wsHandlers, ottoPipeline)
-	registerProcessorHandlers(factories, wsHandlers, ottoPipeline)
-	registerExporterHandlers(factories, wsHandlers, ottoPipeline)
+	registerReceiverHandlers(logger, factories, wsHandlers, ottoPipeline)
+	registerProcessorHandlers(logger, factories, wsHandlers, ottoPipeline)
+	registerExporterHandlers(logger, factories, wsHandlers, ottoPipeline)
 	mux.Handle("/ws/", httpWsHandler{handlers: wsHandlers})
 
 	svr := http.Server{
 		Addr:    "localhost:8888",
 		Handler: mux,
 	}
-	panic(svr.ListenAndServe())
+	err = svr.ListenAndServe()
+	if err != nil {
+		logger.Fatalf("http serve error: %v", err)
+	}
 }
 
-func registerReceiverHandlers(factories component.Factories, handlers map[string]wsHandler, ppln *pipeline) {
+func registerReceiverHandlers(logger *log.Logger, factories component.Factories, handlers map[string]wsHandler, ppln *pipeline) {
 	for componentName, factory := range factories.Receivers {
 		const componentType = "receiver"
 		path := "/ws/" + componentType + "/" + string(componentName)
 		handlers[path] = receiverSocketHandler{
+			logger:          logger,
 			pipeline:        ppln,
 			receiverFactory: factory,
 		}
 	}
 }
 
-func registerProcessorHandlers(factories component.Factories, handlers map[string]wsHandler, ppln *pipeline) {
+func registerProcessorHandlers(logger *log.Logger, factories component.Factories, handlers map[string]wsHandler, ppln *pipeline) {
 	for componentName, factory := range factories.Processors {
 		const componentType = "processor"
 		path := "/ws/" + componentType + "/" + string(componentName)
 		handlers[path] = processorSocketHandler{
+			logger:           logger,
 			pipeline:         ppln,
 			processorFactory: factory,
 		}
 	}
 }
 
-func registerExporterHandlers(factories component.Factories, handlers map[string]wsHandler, ppln *pipeline) {
+func registerExporterHandlers(logger *log.Logger, factories component.Factories, handlers map[string]wsHandler, ppln *pipeline) {
 	for componentName, factory := range factories.Exporters {
 		const componentType = "exporter"
 		path := "/ws/" + componentType + "/" + string(componentName)
 		handlers[path] = exporterSocketHandler{
+			logger:          logger,
 			pipeline:        ppln,
 			exporterFactory: factory,
 		}

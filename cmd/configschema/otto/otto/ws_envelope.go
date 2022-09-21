@@ -17,21 +17,30 @@ package otto
 import (
 	"encoding/json"
 
-	"golang.org/x/net/websocket"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-type startComponentMessage struct {
-	PipelineType  string
-	ComponentYAML string
+type wsMessageEnvelope struct {
+	Payload json.Marshaler
+	Error   error
 }
 
-func readStartComponentMessage(websocketConn *websocket.Conn) (startComponentMessage, error) {
-	out := startComponentMessage{}
-	msg := make([]byte, 4096)
-	numBytesRead, err := websocketConn.Read(msg)
-	if err != nil {
-		return out, err
-	}
-	err = json.Unmarshal(msg[:numBytesRead], &out)
-	return out, err
+type metrics pmetric.Metrics
+
+func (m metrics) MarshalJSON() ([]byte, error) {
+	return pmetric.NewJSONMarshaler().MarshalMetrics(pmetric.Metrics(m))
+}
+
+type traces ptrace.Traces
+
+func (t traces) MarshalJSON() ([]byte, error) {
+	return ptrace.NewJSONMarshaler().MarshalTraces(ptrace.Traces(t))
+}
+
+type logs plog.Logs
+
+func (l logs) MarshalJSON() ([]byte, error) {
+	return plog.NewJSONMarshaler().MarshalLogs(plog.Logs(l))
 }

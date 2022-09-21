@@ -35,39 +35,46 @@ type exporterSocketHandler struct {
 	exporterFactory component.ExporterFactory
 }
 
-func (h exporterSocketHandler) handle(webSocket *websocket.Conn) {
-	msg := readStartComponentMessage(webSocket)
-	m := map[string]interface{}{}
-	err := yaml.Unmarshal([]byte(msg.ComponentYAML), &m)
+func (h exporterSocketHandler) handle(ws *websocket.Conn) {
+	msg, err := readStartComponentMessage(ws)
 	if err != nil {
-		panic(err)
+		sendErr(ws, h.logger, "error reading start component message", err)
+		return
+	}
+	m := map[string]interface{}{}
+	err = yaml.Unmarshal([]byte(msg.ComponentYAML), &m)
+	if err != nil {
+		sendErr(ws, h.logger, "failed to unmarshal yaml", err)
+		return
 	}
 
 	exporterConfig := h.exporterFactory.CreateDefaultConfig()
 	conf := confmap.NewFromStringMap(m)
-	err = unmarshalExporter(exporterConfig, conf)
+	err = unmarshalExporterConfig(exporterConfig, conf)
 	if err != nil {
-		panic(err)
+		sendErr(ws, h.logger, "failed to unmarshal exporter config", err)
+		return
 	}
 
 	switch msg.PipelineType {
 	case "metrics":
-		h.connectMetricsExporter(webSocket, exporterConfig)
+		h.connectMetricsExporter(ws, exporterConfig)
 	case "logs":
-		h.connectLogsExporter(webSocket, exporterConfig)
+		h.connectLogsExporter(ws, exporterConfig)
 	case "traces":
-		h.connectTracesExporter(webSocket, exporterConfig)
+		h.connectTracesExporter(ws, exporterConfig)
 	}
 
 }
 
 func (h exporterSocketHandler) connectMetricsExporter(
-	webSocket *websocket.Conn,
+	ws *websocket.Conn,
 	exporterConfig config.Exporter,
 ) {
 	stop := make(chan struct{})
-	consumer := &repeatingMetricsConsumer{
-		webSocket: webSocket,
+	repeater := &metricsRepeater{
+		logger:    h.logger,
+		ws:        ws,
 		marshaler: pmetric.NewJSONMarshaler(),
 		stop:      stop,
 	}
@@ -77,32 +84,35 @@ func (h exporterSocketHandler) connectMetricsExporter(
 		exporterConfig,
 	)
 	if err != nil {
-		panic(err)
+		sendErr(ws, h.logger, "failed to create metrics expoerter", err)
+		return
 	}
 	wrapper := metricsExporterWrapper{
 		MetricsExporter: exporter,
-		consumer:        consumer,
+		repeater:        repeater,
 	}
 	h.pipeline.connectMetricsExporterWrapper(&wrapper)
 	err = wrapper.Start(context.Background(), componenttest.NewNopHost())
 	if err != nil {
-		panic(err)
+		sendErr(ws, h.logger, "failed to start metrics exporter", err)
+		return
 	}
 	<-stop
 	err = wrapper.Shutdown(context.Background())
 	if err != nil {
-		panic(err)
+		sendErr(ws, h.logger, "failed to unmarshal receiver", err)
+		return
 	}
 	h.pipeline.disconnectMetricsExporterWrapper()
 }
 
 func (h exporterSocketHandler) connectLogsExporter(
-	webSocket *websocket.Conn,
+	ws *websocket.Conn,
 	exporterConfig config.Exporter,
 ) {
 	stop := make(chan struct{})
-	consumer := &repeatingLogsConsumer{
-		webSocket: webSocket,
+	repeater := &logsRepeater{
+		ws:        ws,
 		marshaler: plog.NewJSONMarshaler(),
 		stop:      stop,
 	}
@@ -112,32 +122,35 @@ func (h exporterSocketHandler) connectLogsExporter(
 		exporterConfig,
 	)
 	if err != nil {
-		panic(err)
+		sendErr(ws, h.logger, "failed to create logs exporter", err)
+		return
 	}
 	wrapper := logsExporterWrapper{
 		LogsExporter: proc,
-		consumer:     consumer,
+		repeater:     repeater,
 	}
 	err = wrapper.Start(context.Background(), componenttest.NewNopHost())
 	if err != nil {
-		panic(err)
+		sendErr(ws, h.logger, "failed to start logs exporter", err)
+		return
 	}
 	h.pipeline.connectLogsExporterWrapper(&wrapper)
 	<-stop
 	err = wrapper.Shutdown(context.Background())
 	if err != nil {
-		panic(err)
+		sendErr(ws, h.logger, "failed to shut down logs exporter", err)
+		return
 	}
 	h.pipeline.disconnectLogsExporterWrapper()
 }
 
 func (h exporterSocketHandler) connectTracesExporter(
-	webSocket *websocket.Conn,
+	ws *websocket.Conn,
 	exporterConfig config.Exporter,
 ) {
 	stop := make(chan struct{})
-	consumer := &repeatingTracesConsumer{
-		webSocket: webSocket,
+	repeater := &tracesRepeater{
+		ws:        ws,
 		marshaler: ptrace.NewJSONMarshaler(),
 		stop:      stop,
 	}
@@ -147,26 +160,29 @@ func (h exporterSocketHandler) connectTracesExporter(
 		exporterConfig,
 	)
 	if err != nil {
-		panic(err)
+		sendErr(ws, h.logger, "failed to create traces exporter", err)
+		return
 	}
 	wrapper := tracesExporterWrapper{
 		TracesExporter: exporter,
-		consumer:       consumer,
+		repeater:       repeater,
 	}
 	err = wrapper.Start(context.Background(), componenttest.NewNopHost())
 	if err != nil {
-		panic(err)
+		sendErr(ws, h.logger, "failed to start traces exporter", err)
+		return
 	}
 	h.pipeline.connectTracesExporterWrapper(&wrapper)
 	<-stop
 	err = wrapper.Shutdown(context.Background())
 	if err != nil {
-		panic(err)
+		sendErr(ws, h.logger, "failed to shut down traces exporter", err)
+		return
 	}
 	h.pipeline.disconnectTracesExporterWrapper()
 }
 
-func unmarshalExporter(exporterConfig config.Exporter, conf *confmap.Conf) error {
+func unmarshalExporterConfig(exporterConfig config.Exporter, conf *confmap.Conf) error {
 	if unmarshallable, ok := exporterConfig.(config.Unmarshallable); ok {
 		return unmarshallable.Unmarshal(conf)
 	}
