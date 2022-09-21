@@ -88,6 +88,12 @@ func (z *zookeeperMetricsScraper) Name() string {
 	return typeStr
 }
 
+func logDeprecatedFeatureGateForDirection(log *zap.Logger, gate featuregate.Gate) {
+	log.Warn("WARNING: The " + gate.ID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
+		"the direction attribute has been reverted in the specification. See https://github.com/open-telemetry/opentelemetry-specification/issues/2726 " +
+		"for additional details.")
+}
+
 func newZookeeperMetricsScraper(settings component.ReceiverCreateSettings, config *Config) (*zookeeperMetricsScraper, error) {
 	_, _, err := net.SplitHostPort(config.TCPAddr.Endpoint)
 	if err != nil {
@@ -109,15 +115,12 @@ func newZookeeperMetricsScraper(settings component.ReceiverCreateSettings, confi
 		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(emitMetricsWithoutDirectionAttributeFeatureGateID),
 	}
 
-	if z.emitMetricsWithDirectionAttribute {
-		z.logger.Info("WARNING - Breaking Change: " + emitMetricsWithDirectionAttributeFeatureGate.Description)
-		z.logger.Info("The feature gate " + emitMetricsWithDirectionAttributeFeatureGate.ID + " is enabled. This " +
-			"otel collector will report metrics with a direction attribute, be aware this will not be supported in the future")
+	if !z.emitMetricsWithDirectionAttribute {
+		logDeprecatedFeatureGateForDirection(z.logger, emitMetricsWithDirectionAttributeFeatureGate)
 	}
 
 	if z.emitMetricsWithoutDirectionAttribute {
-		z.logger.Info("The " + emitMetricsWithoutDirectionAttributeFeatureGate.ID + " feature gate is enabled. This " +
-			"otel collector will report metrics without a direction attribute, which is good for future support")
+		logDeprecatedFeatureGateForDirection(z.logger, emitMetricsWithoutDirectionAttributeFeatureGate)
 	}
 
 	return z, nil

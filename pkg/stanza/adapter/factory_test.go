@@ -51,17 +51,6 @@ func TestCreateReceiver(t *testing.T) {
 		require.NotNil(t, receiver, "receiver creation failed")
 	})
 
-	t.Run("DecodeInputConfigFailure", func(t *testing.T) {
-		factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
-		badCfg := factory.CreateDefaultConfig().(*TestConfig)
-		badCfg.Input = map[string]interface{}{
-			"type": "unknown",
-		}
-		receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), badCfg, consumertest.NewNop())
-		require.Error(t, err, "receiver creation should fail if input config isn't valid")
-		require.Nil(t, receiver, "receiver creation should fail if input config isn't valid")
-	})
-
 	t.Run("DecodeOperatorConfigsFailureMissingFields", func(t *testing.T) {
 		factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
 		badCfg := factory.CreateDefaultConfig().(*TestConfig)

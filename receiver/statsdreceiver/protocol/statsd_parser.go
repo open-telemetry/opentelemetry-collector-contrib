@@ -117,7 +117,6 @@ func (p *StatsDParser) Initialize(enableMetricType bool, isMonotonicCounter bool
 	p.lastIntervalTime = timeNowFunc()
 	p.gauges = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
 	p.counters = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
-	p.timersAndDistributions = make([]pmetric.ScopeMetrics, 0)
 	p.summaries = make(map[statsDMetricDescription]summaryMetric)
 
 	p.observeHistogram = DefaultObserverType
@@ -166,7 +165,7 @@ func (p *StatsDParser) GetMetrics() pmetric.Metrics {
 
 	p.gauges = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
 	p.counters = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
-	p.timersAndDistributions = make([]pmetric.ScopeMetrics, 0)
+	p.timersAndDistributions = nil
 	p.summaries = make(map[statsDMetricDescription]summaryMetric)
 	return metrics
 }

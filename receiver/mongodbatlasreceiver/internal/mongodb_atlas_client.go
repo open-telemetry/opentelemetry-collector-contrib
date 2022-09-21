@@ -181,7 +181,7 @@ func hasNext(links []*mongodbatlas.Link) bool {
 
 // Organizations returns a list of all organizations available with the supplied credentials
 func (s *MongoDBAtlasClient) Organizations(ctx context.Context) ([]*mongodbatlas.Organization, error) {
-	allOrgs := make([]*mongodbatlas.Organization, 0)
+	var allOrgs []*mongodbatlas.Organization
 	page := 1
 
 	for {
@@ -232,7 +232,7 @@ func (s *MongoDBAtlasClient) Projects(
 	ctx context.Context,
 	orgID string,
 ) ([]*mongodbatlas.Project, error) {
-	allProjects := make([]*mongodbatlas.Project, 0)
+	var allProjects []*mongodbatlas.Project
 	page := 1
 
 	for {
@@ -299,7 +299,7 @@ func (s *MongoDBAtlasClient) Processes(
 	)
 	err = checkMongoDBClientErr(err, response)
 	if err != nil {
-		return make([]*mongodbatlas.Process, 0), fmt.Errorf("error retrieving processes from MongoDB Atlas API: %w", err)
+		return nil, fmt.Errorf("error retrieving processes from MongoDB Atlas API: %w", err)
 	}
 	return processes, nil
 }
@@ -332,7 +332,7 @@ func (s *MongoDBAtlasClient) ProcessDatabases(
 	host string,
 	port int,
 ) ([]*mongodbatlas.ProcessDatabase, error) {
-	allProcessDatabases := make([]*mongodbatlas.ProcessDatabase, 0)
+	var allProcessDatabases []*mongodbatlas.ProcessDatabase
 	pageNum := 1
 	for {
 		processes, hasMore, err := s.getProcessDatabasesPage(ctx, projectID, host, port, pageNum)
@@ -359,7 +359,7 @@ func (s *MongoDBAtlasClient) ProcessMetrics(
 	end string,
 	resolution string,
 ) error {
-	allMeasurements := make([]*mongodbatlas.Measurements, 0)
+	var allMeasurements []*mongodbatlas.Measurements
 	pageNum := 1
 	for {
 		measurements, hasMore, err := s.getProcessMeasurementsPage(
@@ -426,7 +426,7 @@ func (s *MongoDBAtlasClient) ProcessDatabaseMetrics(
 	end string,
 	resolution string,
 ) error {
-	allMeasurements := make([]*mongodbatlas.Measurements, 0)
+	var allMeasurements []*mongodbatlas.Measurements
 	pageNum := 1
 	for {
 		measurements, hasMore, err := s.getProcessDatabaseMeasurementsPage(
@@ -490,7 +490,7 @@ func (s *MongoDBAtlasClient) ProcessDisks(
 	host string,
 	port int,
 ) []*mongodbatlas.ProcessDisk {
-	allDisks := make([]*mongodbatlas.ProcessDisk, 0)
+	var allDisks []*mongodbatlas.ProcessDisk
 	pageNum := 1
 	for {
 		disks, hasMore, err := s.getProcessDisksPage(ctx, projectID, host, port, pageNum)
@@ -540,7 +540,7 @@ func (s *MongoDBAtlasClient) ProcessDiskMetrics(
 	end string,
 	resolution string,
 ) error {
-	allMeasurements := make([]*mongodbatlas.Measurements, 0)
+	var allMeasurements []*mongodbatlas.Measurements
 	pageNum := 1
 	for {
 		measurements, hasMore, err := s.processDiskMeasurementsPage(

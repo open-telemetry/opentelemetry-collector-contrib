@@ -28,7 +28,7 @@ func SpanID(bytes []byte) (tql.ExprFunc, error) {
 	}
 	var idArr [8]byte
 	copy(idArr[:8], bytes)
-	id := pcommon.NewSpanID(idArr)
+	id := pcommon.SpanID(idArr)
 	return func(ctx tql.TransformContext) interface{} {
 		return id
 	}, nil

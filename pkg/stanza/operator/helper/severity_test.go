@@ -25,6 +25,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -72,7 +73,7 @@ func validMappingKeyCases() []severityTestCase {
 		"fatal4": entry.Fatal4,
 	}
 
-	cases := []severityTestCase{}
+	var cases []severityTestCase
 	for k, v := range aliasedMapping {
 		cases = append(cases,
 			severityTestCase{
@@ -116,7 +117,7 @@ func otlpSevCases() []severityTestCase {
 		"fAtAl4": entry.Fatal4,
 	}
 
-	cases := []severityTestCase{}
+	var cases []severityTestCase
 	for k, v := range mustParse {
 		cases = append(cases,
 			severityTestCase{
@@ -581,7 +582,7 @@ func severityConfigFromFileViaMapstructure(file string, result *SeverityConfig) 
 		return fmt.Errorf("failed to read data from yaml: %w", err)
 	}
 
-	err = UnmarshalMapstructure(raw, result)
+	err = operatortest.UnmarshalMapstructure(raw, result)
 	return err
 }
 

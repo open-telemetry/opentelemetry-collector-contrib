@@ -63,7 +63,7 @@ func createTracesExporter(
 
 	tobsCfg := cfg.(*Config)
 
-	return exporterhelper.NewTracesExporterWithContext(
+	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
 		cfg,
@@ -86,7 +86,7 @@ func createMetricsExporter(
 
 	tobsCfg := cfg.(*Config)
 
-	exporter, err := exporterhelper.NewMetricsExporterWithContext(
+	exporter, err := exporterhelper.NewMetricsExporter(
 		ctx,
 		set,
 		cfg,

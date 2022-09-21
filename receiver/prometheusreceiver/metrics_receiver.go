@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"time"
 
 	"github.com/go-kit/log"
@@ -208,12 +209,21 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 		}
 	}()
 
+	var startTimeMetricRegex *regexp.Regexp
+	if r.cfg.StartTimeMetricRegex != "" {
+		var err error
+		startTimeMetricRegex, err = regexp.Compile(r.cfg.StartTimeMetricRegex)
+		if err != nil {
+			return err
+		}
+	}
+
 	store := internal.NewAppendable(
 		r.consumer,
 		r.settings,
 		gcInterval(r.cfg.PrometheusConfig),
 		r.cfg.UseStartTimeMetric,
-		r.cfg.StartTimeMetricRegex,
+		startTimeMetricRegex,
 		r.cfg.ID(),
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 	)

@@ -160,9 +160,8 @@ func Test_serializeGauge(t *testing.T) {
 			logger := zap.New(zapCore)
 
 			metric := pmetric.NewMetric()
-			metric.SetDataType(pmetric.MetricDataTypeGauge)
 			metric.SetName(tt.args.metricName)
-			dataPoints := metric.Gauge().DataPoints()
+			dataPoints := metric.SetEmptyGauge().DataPoints()
 
 			if tt.args.intValues != nil {
 				if tt.args.floatValues != nil {

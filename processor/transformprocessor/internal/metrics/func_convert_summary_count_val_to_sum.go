@@ -34,7 +34,7 @@ func convertSummaryCountValToSum(stringAggTemp string, monotonic bool) (tql.Expr
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
 	}
 	return func(ctx tql.TransformContext) interface{} {
-		mtc, ok := ctx.(tqlmetrics.MetricTransformContext)
+		mtc, ok := ctx.(tqlmetrics.TransformContext)
 		if !ok {
 			return nil
 		}
@@ -48,8 +48,7 @@ func convertSummaryCountValToSum(stringAggTemp string, monotonic bool) (tql.Expr
 		sumMetric.SetDescription(metric.Description())
 		sumMetric.SetName(metric.Name() + "_count")
 		sumMetric.SetUnit(metric.Unit())
-		sumMetric.SetDataType(pmetric.MetricDataTypeSum)
-		sumMetric.Sum().SetAggregationTemporality(aggTemp)
+		sumMetric.SetEmptySum().SetAggregationTemporality(aggTemp)
 		sumMetric.Sum().SetIsMonotonic(monotonic)
 
 		sumDps := sumMetric.Sum().DataPoints()

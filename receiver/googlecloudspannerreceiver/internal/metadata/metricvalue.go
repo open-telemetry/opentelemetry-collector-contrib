@@ -17,6 +17,7 @@ package metadata // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"fmt"
 
+	"cloud.google.com/go/spanner"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -56,6 +57,11 @@ type float64MetricValue struct {
 	value    float64
 }
 
+type nullFloat64MetricValue struct {
+	metadata MetricValueMetadata
+	value    spanner.NullFloat64
+}
+
 func (m queryMetricValueMetadata) ValueHolder() interface{} {
 	return m.valueHolderFunc()
 }
@@ -92,11 +98,19 @@ func (v float64MetricValue) Metadata() MetricValueMetadata {
 	return v.metadata
 }
 
+func (v nullFloat64MetricValue) Metadata() MetricValueMetadata {
+	return v.metadata
+}
+
 func (v int64MetricValue) Value() interface{} {
 	return v.value
 }
 
 func (v float64MetricValue) Value() interface{} {
+	return v.value
+}
+
+func (v nullFloat64MetricValue) Value() interface{} {
 	return v.value
 }
 
@@ -106,6 +120,14 @@ func (v int64MetricValue) SetValueTo(point pmetric.NumberDataPoint) {
 
 func (v float64MetricValue) SetValueTo(point pmetric.NumberDataPoint) {
 	point.SetDoubleVal(v.value)
+}
+
+func (v nullFloat64MetricValue) SetValueTo(point pmetric.NumberDataPoint) {
+	if v.value.Valid {
+		point.SetDoubleVal(v.value.Float64)
+	} else {
+		point.SetDoubleVal(0)
+	}
 }
 
 func newInt64MetricValue(metadata MetricValueMetadata, valueHolder interface{}) MetricValue {
@@ -119,6 +141,13 @@ func newFloat64MetricValue(metadata MetricValueMetadata, valueHolder interface{}
 	return float64MetricValue{
 		metadata: metadata,
 		value:    *valueHolder.(*float64),
+	}
+}
+
+func newNullFloat64MetricValue(metadata MetricValueMetadata, valueHolder interface{}) MetricValue {
+	return nullFloat64MetricValue{
+		metadata: metadata,
+		value:    *valueHolder.(*spanner.NullFloat64),
 	}
 }
 
@@ -139,6 +168,12 @@ func NewMetricValueMetadata(name string, columnName string, dataType MetricDataT
 		newMetricValueFunc = newFloat64MetricValue
 		valueHolderFunc = func() interface{} {
 			var valueHolder float64
+			return &valueHolder
+		}
+	case NullFloatValueType:
+		newMetricValueFunc = newNullFloat64MetricValue
+		valueHolderFunc = func() interface{} {
+			var valueHolder spanner.NullFloat64
 			return &valueHolder
 		}
 	default:

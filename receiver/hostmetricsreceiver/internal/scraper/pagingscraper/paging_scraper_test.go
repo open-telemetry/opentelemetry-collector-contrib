@@ -140,7 +140,7 @@ func assertPagingUsageMetricValid(t *testing.T, hostPagingUsageMetric pmetric.Me
 	expected.SetName("system.paging.usage")
 	expected.SetDescription("Swap (unix) or pagefile (windows) usage.")
 	expected.SetUnit("By")
-	expected.SetDataType(pmetric.MetricDataTypeSum)
+	expected.SetEmptySum()
 	internal.AssertDescriptorEqual(t, expected, hostPagingUsageMetric)
 
 	// it's valid for a system to have no swap space  / paging file, so if no data points were returned, do no validation
@@ -178,7 +178,7 @@ func assertPagingUtilizationMetricValid(t *testing.T, hostPagingUtilizationMetri
 	expected.SetName("system.paging.utilization")
 	expected.SetDescription("Swap (unix) or pagefile (windows) utilization.")
 	expected.SetUnit("1")
-	expected.SetDataType(pmetric.MetricDataTypeGauge)
+	expected.SetEmptyGauge()
 	internal.AssertDescriptorEqual(t, expected, hostPagingUtilizationMetric)
 
 	// it's valid for a system to have no swap space  / paging file, so if no data points were returned, do no validation
@@ -249,7 +249,7 @@ func assertPagingOperationsMetricValid(t *testing.T, pagingMetric []pmetric.Metr
 		expected.SetName(tt.name)
 		expected.SetDescription(tt.description)
 		expected.SetUnit(tt.unit)
-		expected.SetDataType(pmetric.MetricDataTypeSum)
+		expected.SetEmptySum()
 		internal.AssertDescriptorEqual(t, expected, pagingMetric[idx])
 
 		if startTime != 0 {
@@ -301,7 +301,7 @@ func assertPageFaultsMetricValid(t *testing.T, pageFaultsMetric pmetric.Metric, 
 	expected.SetName("system.paging.faults")
 	expected.SetDescription("The number of page faults.")
 	expected.SetUnit("{faults}")
-	expected.SetDataType(pmetric.MetricDataTypeSum)
+	expected.SetEmptySum()
 	internal.AssertDescriptorEqual(t, expected, pageFaultsMetric)
 
 	if startTime != 0 {

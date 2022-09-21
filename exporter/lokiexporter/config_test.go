@@ -19,7 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -27,11 +26,10 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
-func TestLoadConfig(t *testing.T) {
+func TestLoadConfigNewExporter(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
@@ -42,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, 3, len(cfg.Exporters))
+	assert.Equal(t, 2, len(cfg.Exporters))
 
 	actualCfg := cfg.Exporters[config.NewComponentIDWithName(typeStr, "allsettings")].(*Config)
 	expectedCfg := Config{
@@ -75,455 +73,82 @@ func TestLoadConfig(t *testing.T) {
 			NumConsumers: 2,
 			QueueSize:    10,
 		},
-		TenantID: "example",
-		Labels: LabelsConfig{
-			Attributes: map[string]string{
-				conventions.AttributeContainerName:  "container_name",
-				conventions.AttributeK8SClusterName: "k8s_cluster_name",
-				"severity":                          "severity",
-			},
-			ResourceAttributes: map[string]string{
-				"resource.name": "resource_name",
-				"severity":      "severity",
-			},
-			RecordAttributes: map[string]string{
-				"traceID": "traceid",
-			},
-		},
 	}
 	require.Equal(t, &expectedCfg, actualCfg)
 }
 
-func TestJSONLoadConfig(t *testing.T) {
-	formatJSON := "json"
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[config.Type(typeStr)] = factory
-	cfg, err := servicetest.LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	assert.Equal(t, 3, len(cfg.Exporters))
-
-	actualCfg := cfg.Exporters[config.NewComponentIDWithName(typeStr, "json")].(*Config)
-	expectedCfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "json")),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Headers:  map[string]string{},
-			Endpoint: "https://loki:3100/loki/api/v1/push",
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
-					CAFile:   "",
-					CertFile: "",
-					KeyFile:  "",
-				},
-				Insecure: false,
-			},
-			ReadBufferSize:  0,
-			WriteBufferSize: 524288,
-			Timeout:         time.Second * 30,
-		},
-		RetrySettings: exporterhelper.RetrySettings{
-			Enabled:         true,
-			InitialInterval: 5 * time.Second,
-			MaxInterval:     30 * time.Second,
-			MaxElapsedTime:  5 * time.Minute,
-		},
-		QueueSettings: exporterhelper.QueueSettings{
-			Enabled:      true,
-			NumConsumers: 10,
-			QueueSize:    5000,
-		},
-		TenantID: "example",
-		Labels: LabelsConfig{
-			Attributes:         map[string]string{},
-			ResourceAttributes: map[string]string{},
-		},
-		Format: &formatJSON,
-	}
-	require.Equal(t, &expectedCfg, actualCfg)
-}
-
-func TestConfig_validate(t *testing.T) {
-	const validEndpoint = "https://validendpoint.local"
-
-	validAttribLabelsConfig := LabelsConfig{
-		Attributes: testValidAttributesWithMapping,
-	}
-	validResourceLabelsConfig := LabelsConfig{
-		ResourceAttributes: testValidResourceWithMapping,
-	}
-
-	type fields struct {
-		Endpoint       string
-		Source         string
-		CredentialFile string
-		Audience       string
-		Labels         LabelsConfig
-		TenantID       string
-		Tenant         *Tenant
-	}
-	tests := []struct {
-		name         string
-		fields       fields
-		errorMessage string
-		shouldError  bool
+func TestIsLegacy(t *testing.T) {
+	testCases := []struct {
+		desc    string
+		cfg     *Config
+		outcome bool
 	}{
 		{
-			name: "with valid endpoint",
-			fields: fields{
-				Endpoint: validEndpoint,
-				Labels:   validAttribLabelsConfig,
-			},
-			shouldError: false,
-		},
-		{
-			name: "with missing endpoint",
-			fields: fields{
-				Endpoint: "",
-				Labels:   validAttribLabelsConfig,
-			},
-			errorMessage: "\"endpoint\" must be a valid URL",
-			shouldError:  true,
-		},
-		{
-			name: "with invalid endpoint",
-			fields: fields{
-				Endpoint: "this://is:an:invalid:endpoint.com",
-				Labels:   validAttribLabelsConfig,
-			},
-			errorMessage: "\"endpoint\" must be a valid URL",
-			shouldError:  true,
-		},
-		{
-			name: "with missing `labels.attributes` and missing `labels.resource`",
-			fields: fields{
-				Endpoint: validEndpoint,
-				Labels: LabelsConfig{
-					Attributes:         nil,
-					ResourceAttributes: nil,
+			// the default mode for an empty config is the new logic
+			desc: "not legacy",
+			cfg: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "https://loki.example.com",
 				},
 			},
-			errorMessage: "\"labels.attributes\", \"labels.resource\", or \"labels.record\" must be configured with at least one attribute",
-			shouldError:  true,
+			outcome: false,
 		},
 		{
-			name: "with missing `labels.attributes`",
-			fields: fields{
-				Endpoint: validEndpoint,
-				Labels:   validResourceLabelsConfig,
+			desc: "format is set to body",
+			cfg: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "https://loki.example.com",
+				},
+				Format: stringp("body"),
 			},
-			shouldError: false,
+			outcome: true,
 		},
 		{
-			name: "with missing `labels.resource`",
-			fields: fields{
-				Endpoint: validEndpoint,
-				Labels:   validAttribLabelsConfig,
-			},
-			shouldError: false,
-		},
-		{
-			name: "with valid `labels.record`",
-			fields: fields{
-				Endpoint: validEndpoint,
-				Labels: LabelsConfig{
-					RecordAttributes: map[string]string{
-						"traceID":   "traceID",
-						"spanID":    "spanID",
-						"severity":  "severity",
-						"severityN": "severityN",
-					},
+			desc: "a label is specified",
+			cfg: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "https://loki.example.com",
+				},
+				Labels: &LabelsConfig{
+					Attributes: map[string]string{"some_attribute": "some_value"},
 				},
 			},
-			shouldError: false,
+			outcome: true,
 		},
 		{
-			name: "with invalid `labels.record`",
-			fields: fields{
-				Endpoint: validEndpoint,
-				Labels: LabelsConfig{
-					RecordAttributes: map[string]string{
-						"invalid": "Invalid",
-					},
+			desc: "a tenant is specified",
+			cfg: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "https://loki.example.com",
 				},
-			},
-			shouldError: true,
-		},
-		{
-			name: "with missing `tenant.source`",
-			fields: fields{
-				Endpoint: validEndpoint,
-				Labels:   validAttribLabelsConfig,
-				Tenant:   &Tenant{},
-			},
-			shouldError: true,
-		},
-		{
-			name: "with invalid `tenant.source`",
-			fields: fields{
-				Endpoint: validEndpoint,
-				Labels:   validAttribLabelsConfig,
-				Tenant: &Tenant{
-					Source: "invalid",
-				},
-			},
-			shouldError: true,
-		},
-		{
-			name: "with valid `tenant.source`",
-			fields: fields{
-				Endpoint: validEndpoint,
-				Labels:   validAttribLabelsConfig,
 				Tenant: &Tenant{
 					Source: "static",
 					Value:  "acme",
 				},
 			},
-			shouldError: false,
+			outcome: true,
 		},
 		{
-			name: "with both tenantID and tenant",
-			fields: fields{
-				Endpoint: validEndpoint,
-				Labels:   validAttribLabelsConfig,
-				Tenant: &Tenant{
-					Source: "static",
-					Value:  "acme",
+			desc: "a tenant ID is specified",
+			cfg: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "https://loki.example.com",
 				},
-				TenantID: "globex",
+				TenantID: stringp("acme"),
 			},
-			shouldError: true,
+			outcome: true,
 		},
 	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			assert.Equal(t, tC.outcome, tC.cfg.isLegacy())
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			factory := NewFactory()
-			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.ExporterSettings = config.NewExporterSettings(config.NewComponentID(typeStr))
-			cfg.Endpoint = tt.fields.Endpoint
-			cfg.Labels = tt.fields.Labels
-
-			if len(tt.fields.TenantID) > 0 {
-				cfg.TenantID = tt.fields.TenantID
-			}
-
-			if tt.fields.Tenant != nil {
-				cfg.Tenant = tt.fields.Tenant
-			}
-
-			err := cfg.validate()
-			if (err != nil) != tt.shouldError {
-				t.Errorf("validate() error = %v, shouldError %v", err, tt.shouldError)
-				return
-			}
-
-			if tt.shouldError {
-				assert.Error(t, err)
-				if len(tt.errorMessage) != 0 {
-					assert.Equal(t, tt.errorMessage, err.Error())
-				}
-			}
+			// all configs from this table test are valid:
+			assert.NoError(t, tC.cfg.Validate())
 		})
 	}
 }
 
-func TestLabelsConfig_validate(t *testing.T) {
-	tests := []struct {
-		name         string
-		labels       LabelsConfig
-		errorMessage string
-		shouldError  bool
-	}{
-		{
-			name: "with no attributes",
-			labels: LabelsConfig{
-				Attributes:         map[string]string{},
-				ResourceAttributes: map[string]string{},
-			},
-			errorMessage: "\"labels.attributes\", \"labels.resource\", or \"labels.record\" must be configured with at least one attribute",
-			shouldError:  true,
-		},
-		{
-			name: "with valid attribute label map",
-			labels: LabelsConfig{
-				Attributes: map[string]string{
-					"some.attribute": "some_attribute",
-				},
-			},
-			shouldError: false,
-		},
-		{
-			name: "with valid resource label map",
-			labels: LabelsConfig{
-				ResourceAttributes: map[string]string{
-					"other.attribute": "other",
-				},
-			},
-			shouldError: false,
-		},
-		{
-			name: "with invalid attribute label map",
-			labels: LabelsConfig{
-				Attributes: map[string]string{
-					"some.attribute": "invalid.label.name",
-				},
-			},
-			errorMessage: "the label `invalid.label.name` in \"labels.attributes\" is not a valid label name. Label names must match " + model.LabelNameRE.String(),
-			shouldError:  true,
-		},
-		{
-			name: "with invalid resource label map",
-			labels: LabelsConfig{
-				ResourceAttributes: map[string]string{
-					"other.attribute": "invalid.label.name",
-				},
-			},
-			errorMessage: "the label `invalid.label.name` in \"labels.resource\" is not a valid label name. Label names must match " + model.LabelNameRE.String(),
-			shouldError:  true,
-		},
-		{
-			name: "with attribute having an invalid label name and no map configured",
-			labels: LabelsConfig{
-				Attributes: map[string]string{
-					"invalid.attribute": "",
-				},
-			},
-			errorMessage: "the label `invalid.attribute` in \"labels.attributes\" is not a valid label name. Label names must match " + model.LabelNameRE.String(),
-			shouldError:  true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.labels.validate()
-			if (err != nil) != tt.shouldError {
-				t.Errorf("validate() error = %v, shouldError %v", err, tt.shouldError)
-				return
-			}
-
-			if tt.shouldError {
-				assert.Error(t, err)
-				if len(tt.errorMessage) != 0 {
-					assert.Equal(t, tt.errorMessage, err.Error())
-				}
-			}
-		})
-	}
-}
-
-func TestLabelsConfig_getAttributes(t *testing.T) {
-	tests := []struct {
-		name            string
-		labels          LabelsConfig
-		expectedMapping map[string]model.LabelName
-	}{
-		{
-			name: "with attributes without label mapping",
-			labels: LabelsConfig{
-				Attributes: map[string]string{
-					"attribute_1": "",
-					"attribute_2": "",
-				},
-			},
-			expectedMapping: map[string]model.LabelName{
-				"attribute_1": model.LabelName("attribute_1"),
-				"attribute_2": model.LabelName("attribute_2"),
-			},
-		},
-		{
-			name: "with attributes and label mapping",
-			labels: LabelsConfig{
-				Attributes: map[string]string{
-					"attribute.1": "attribute_1",
-					"attribute.2": "attribute_2",
-				},
-			},
-			expectedMapping: map[string]model.LabelName{
-				"attribute.1": model.LabelName("attribute_1"),
-				"attribute.2": model.LabelName("attribute_2"),
-			},
-		},
-		{
-			name: "with attributes and without label mapping",
-			labels: LabelsConfig{
-				Attributes: map[string]string{
-					"attribute.1": "attribute_1",
-					"attribute2":  "",
-				},
-			},
-			expectedMapping: map[string]model.LabelName{
-				"attribute.1": model.LabelName("attribute_1"),
-				"attribute2":  model.LabelName("attribute2"),
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mapping := tt.labels.getAttributes(tt.labels.Attributes)
-
-			assert.Equal(t, tt.expectedMapping, mapping)
-		})
-	}
-}
-
-func TestResourcesConfig_getAttributes(t *testing.T) {
-	tests := []struct {
-		name            string
-		labels          LabelsConfig
-		expectedMapping map[string]model.LabelName
-	}{
-		{
-			name: "with attributes without label mapping",
-			labels: LabelsConfig{
-				ResourceAttributes: map[string]string{
-					"attribute_1": "",
-					"attribute_2": "",
-				},
-			},
-			expectedMapping: map[string]model.LabelName{
-				"attribute_1": model.LabelName("attribute_1"),
-				"attribute_2": model.LabelName("attribute_2"),
-			},
-		},
-		{
-			name: "with attributes and label mapping",
-			labels: LabelsConfig{
-				ResourceAttributes: map[string]string{
-					"attribute.1": "attribute_1",
-					"attribute.2": "attribute_2",
-				},
-			},
-			expectedMapping: map[string]model.LabelName{
-				"attribute.1": model.LabelName("attribute_1"),
-				"attribute.2": model.LabelName("attribute_2"),
-			},
-		},
-		{
-			name: "with attributes and without label mapping",
-			labels: LabelsConfig{
-				ResourceAttributes: map[string]string{
-					"attribute.1": "attribute_1",
-					"attribute2":  "",
-				},
-			},
-			expectedMapping: map[string]model.LabelName{
-				"attribute.1": model.LabelName("attribute_1"),
-				"attribute2":  model.LabelName("attribute2"),
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mapping := tt.labels.getAttributes(tt.labels.ResourceAttributes)
-
-			assert.Equal(t, tt.expectedMapping, mapping)
-		})
-	}
+func stringp(str string) *string {
+	return &str
 }

@@ -15,18 +15,19 @@
 package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 
 import (
-	"fmt"
-
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
-func getNewAndPolicy(logger *zap.Logger, config AndCfg) (sampling.PolicyEvaluator, error) {
+func getNewAndPolicy(logger *zap.Logger, config *AndCfg) (sampling.PolicyEvaluator, error) {
 	var subPolicyEvaluators []sampling.PolicyEvaluator
 	for i := range config.SubPolicyCfg {
-		policyCfg := config.SubPolicyCfg[i]
-		policy, _ := getAndSubPolicyEvaluator(logger, &policyCfg)
+		policyCfg := &config.SubPolicyCfg[i]
+		policy, err := getAndSubPolicyEvaluator(logger, policyCfg)
+		if err != nil {
+			return nil, err
+		}
 		subPolicyEvaluators = append(subPolicyEvaluators, policy)
 	}
 	return sampling.NewAnd(logger, subPolicyEvaluators), nil
@@ -34,30 +35,5 @@ func getNewAndPolicy(logger *zap.Logger, config AndCfg) (sampling.PolicyEvaluato
 
 // Return instance of and sub-policy
 func getAndSubPolicyEvaluator(logger *zap.Logger, cfg *AndSubPolicyCfg) (sampling.PolicyEvaluator, error) {
-	switch cfg.Type {
-	case AlwaysSample:
-		return sampling.NewAlwaysSample(logger), nil
-	case NumericAttribute:
-		nafCfg := cfg.NumericAttributeCfg
-		return sampling.NewNumericAttributeFilter(logger, nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue), nil
-	case StringAttribute:
-		safCfg := cfg.StringAttributeCfg
-		return sampling.NewStringAttributeFilter(logger, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize, safCfg.InvertMatch), nil
-	case RateLimiting:
-		rlfCfg := cfg.RateLimitingCfg
-		return sampling.NewRateLimiting(logger, rlfCfg.SpansPerSecond), nil
-	case StatusCode:
-		return sampling.NewStatusCodeFilter(logger, cfg.StatusCodeCfg.StatusCodes)
-	case Probabilistic:
-		pfCfg := cfg.ProbabilisticCfg
-		return sampling.NewProbabilisticSampler(logger, pfCfg.HashSalt, pfCfg.SamplingPercentage), nil
-	case TraceState:
-		tsfCfg := cfg.TraceStateCfg
-		return sampling.NewTraceStateFilter(logger, tsfCfg.Key, tsfCfg.Values), nil
-	case SpanCount:
-		scfCfg := cfg.SpanCountCfg
-		return sampling.NewSpanCount(logger, scfCfg.MinSpans), nil
-	default:
-		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
-	}
+	return getSharedPolicyEvaluator(logger, &cfg.sharedPolicyCfg)
 }

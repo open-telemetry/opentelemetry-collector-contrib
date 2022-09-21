@@ -50,12 +50,15 @@ func (p *PerfLibScraper) Initialize(objects ...string) error {
 	// This is always present regardless of the OS language.
 	nameTable := perflib.QueryNameTable("Counter 009")
 
+	initErr := &PerfCounterInitError{}
+
 	// lookup object indices from name table
 	objectIndicesMap := map[uint32]struct{}{}
 	for _, name := range objects {
 		index := nameTable.LookupIndex(name)
 		if index == 0 {
-			return fmt.Errorf("Failed to retrieve perf counter object %q", name)
+			initErr.AddFailure(name)
+			continue
 		}
 
 		objectIndicesMap[index] = struct{}{}
@@ -67,6 +70,11 @@ func (p *PerfLibScraper) Initialize(objects ...string) error {
 		objectIndicesSlice = append(objectIndicesSlice, strconv.Itoa(int(k)))
 	}
 	p.objectIndices = strings.Join(objectIndicesSlice, " ")
+
+	if len(initErr.FailedObjects) > 0 {
+		return initErr
+	}
+
 	return nil
 }
 

@@ -132,9 +132,9 @@ func initializeWrapper(t *testing.T, w *testDBWrapper, filename string) {
 	require.NoError(t, err)
 
 	for _, query := range queries {
-		result := [][]*string{}
+		var result [][]*string
 		for _, providedRow := range query.Result {
-			row := []*string{}
+			var row []*string
 			for _, val := range providedRow {
 				if val == "nil" {
 					row = append(row, nil)

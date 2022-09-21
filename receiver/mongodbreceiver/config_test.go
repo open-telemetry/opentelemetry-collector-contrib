@@ -81,7 +81,7 @@ func TestValidate(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			hosts := []confignet.NetAddr{}
+			var hosts []confignet.NetAddr
 
 			for _, ep := range tc.endpoints {
 				hosts = append(hosts, confignet.NetAddr{

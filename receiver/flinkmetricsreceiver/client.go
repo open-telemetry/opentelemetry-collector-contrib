@@ -140,7 +140,7 @@ func (c *flinkClient) getMetrics(ctx context.Context, path string) (*models.Metr
 	}
 
 	// Construct a get query parameter using comma-separated list of string values to select specific metrics
-	query := []string{}
+	var query []string
 	for _, metricName := range *metrics {
 		query = append(query, metricName.ID)
 	}

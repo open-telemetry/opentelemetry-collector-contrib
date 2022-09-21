@@ -223,3 +223,18 @@ func (f *AttributeField) UnmarshalYAML(unmarshal func(interface{}) error) error 
 func (f AttributeField) MarshalYAML() (interface{}, error) {
 	return toJSONDot(AttributesPrefix, f.Keys), nil
 }
+
+// UnmarshalText will unmarshal a field from text
+func (f *AttributeField) UnmarshalText(text []byte) error {
+	keys, err := fromJSONDot(string(text))
+	if err != nil {
+		return err
+	}
+
+	if keys[0] != AttributesPrefix {
+		return fmt.Errorf("must start with 'attributes': %s", text)
+	}
+
+	*f = AttributeField{keys[1:]}
+	return nil
+}

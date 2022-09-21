@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
@@ -25,25 +26,24 @@ import (
 
 func Test_convertSumToGauge(t *testing.T) {
 	sumInput := pmetric.NewMetric()
-	sumInput.SetDataType(pmetric.MetricDataTypeSum)
 
-	dp1 := sumInput.Sum().DataPoints().AppendEmpty()
+	dp1 := sumInput.SetEmptySum().DataPoints().AppendEmpty()
 	dp1.SetIntVal(10)
 
 	dp2 := sumInput.Sum().DataPoints().AppendEmpty()
 	dp2.SetDoubleVal(14.5)
 
 	gaugeInput := pmetric.NewMetric()
-	gaugeInput.SetDataType(pmetric.MetricDataTypeGauge)
+	gaugeInput.SetEmptyGauge()
 
 	histogramInput := pmetric.NewMetric()
-	histogramInput.SetDataType(pmetric.MetricDataTypeHistogram)
+	histogramInput.SetEmptyHistogram()
 
 	expoHistogramInput := pmetric.NewMetric()
-	expoHistogramInput.SetDataType(pmetric.MetricDataTypeExponentialHistogram)
+	expoHistogramInput.SetEmptyExponentialHistogram()
 
 	summaryInput := pmetric.NewMetric()
-	summaryInput.SetDataType(pmetric.MetricDataTypeSummary)
+	summaryInput.SetEmptySummary()
 
 	tests := []struct {
 		name  string
@@ -57,8 +57,7 @@ func Test_convertSumToGauge(t *testing.T) {
 				sumInput.CopyTo(metric)
 
 				dps := sumInput.Sum().DataPoints()
-				metric.SetDataType(pmetric.MetricDataTypeGauge)
-				dps.CopyTo(metric.Gauge().DataPoints())
+				dps.CopyTo(metric.SetEmptyGauge().DataPoints())
 			},
 		},
 		{
@@ -95,9 +94,7 @@ func Test_convertSumToGauge(t *testing.T) {
 			metric := pmetric.NewMetric()
 			tt.input.CopyTo(metric)
 
-			ctx := tqlmetrics.MetricTransformContext{
-				Metric: metric,
-			}
+			ctx := tqlmetrics.NewTransformContext(pmetric.NewNumberDataPoint(), metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
 			exprFunc, _ := convertSumToGauge()
 			exprFunc(ctx)

@@ -444,7 +444,7 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 
 // getIdentifiersFromAssoc returns list of PodIdentifiers for given pod
 func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
-	ids := []PodIdentifier{}
+	var ids []PodIdentifier
 	for _, assoc := range c.Associations {
 		ret := PodIdentifier{}
 		skip := false
@@ -476,6 +476,9 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 					attr = pod.PodUID
 				case conventions.AttributeHostName:
 					attr = pod.Address
+				// k8s.pod.ip is set by passthrough mode
+				case K8sIPLabelName:
+					attr = pod.Address
 				default:
 					if v, ok := pod.Attributes[source.Name]; ok {
 						attr = v
@@ -506,6 +509,10 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 		ids = append(ids, PodIdentifier{
 			PodIdentifierAttributeFromConnection(pod.Address),
 		})
+		// k8s.pod.ip is set by passthrough mode
+		ids = append(ids, PodIdentifier{
+			PodIdentifierAttributeFromResourceAttribute(K8sIPLabelName, pod.Address),
+		})
 	}
 
 	return ids
@@ -520,11 +527,11 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	for _, id := range c.getIdentifiersFromAssoc(newPod) {
 		// compare initial scheduled timestamp for existing pod and new pod with same identifier
 		// and only replace old pod if scheduled time of new pod is newer or equal.
-		// This should fix the case where scheduler has assigned the same attribtues (like IP address)
+		// This should fix the case where scheduler has assigned the same attributes (like IP address)
 		// to a new pod but update event for the old pod came in later.
 		if p, ok := c.Pods[id]; ok {
-			if p.StartTime != nil && !p.StartTime.Before(pod.Status.StartTime) {
-				return
+			if pod.Status.StartTime.Before(p.StartTime) {
+				continue
 			}
 		}
 		c.Pods[id] = newPod

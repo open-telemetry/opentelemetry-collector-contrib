@@ -21,6 +21,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/require"
 	yaml "gopkg.in/yaml.v2"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 )
 
 type testCase struct {
@@ -88,7 +90,7 @@ func TestByteSizeUnmarshalYAML(t *testing.T) {
 		{`test: val`, 0, true},
 	}
 
-	cases := []testCase{}
+	var cases []testCase
 	cases = append(cases, sharedTestCases...)
 	cases = append(cases, additionalCases...)
 
@@ -108,7 +110,7 @@ func TestByteSizeUnmarshalYAML(t *testing.T) {
 			var raw string
 			_ = yaml.Unmarshal([]byte(tc.input), &raw)
 
-			dc := &mapstructure.DecoderConfig{Result: &bs, DecodeHook: JSONUnmarshalerHook()}
+			dc := &mapstructure.DecoderConfig{Result: &bs, DecodeHook: operatortest.JSONUnmarshalerHook()}
 			ms, err := mapstructure.NewDecoder(dc)
 			require.NoError(t, err)
 

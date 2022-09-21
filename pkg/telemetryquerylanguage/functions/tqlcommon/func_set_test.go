@@ -42,7 +42,11 @@ func Test_set(t *testing.T) {
 		{
 			name:   "set name",
 			setter: target,
-			getter: tql.Literal{Value: "new name"},
+			getter: tql.StandardGetSetter{
+				Getter: func(ctx tql.TransformContext) interface{} {
+					return "new name"
+				},
+			},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStringVal("new name")
 			},
@@ -50,7 +54,11 @@ func Test_set(t *testing.T) {
 		{
 			name:   "set nil value",
 			setter: target,
-			getter: tql.Literal{Value: nil},
+			getter: tql.StandardGetSetter{
+				Getter: func(ctx tql.TransformContext) interface{} {
+					return nil
+				},
+			},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStringVal("original name")
 			},

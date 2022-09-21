@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -49,6 +50,9 @@ type metricsExporter struct {
 	retrier        *utils.Retrier
 	onceMetadata   *sync.Once
 	sourceProvider source.Provider
+	// infraTransformer holds a metrics.Transformer which is able to transform OpenTelemetry
+	// system.* and process.* metrics to Datadog specific infrastructure metrics.
+	infraTransformer *metrics.Transformer
 	// getPushTime returns a Unix time in nanoseconds, representing the time pushing metrics.
 	// It will be overwritten in tests.
 	getPushTime func() uint64
@@ -110,18 +114,23 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 		return nil, err
 	}
 
+	transformer, err := metrics.NewInfraTransformer(ctx, params, cfg.ExporterSettings.ID())
+	if err != nil {
+		return nil, err
+	}
 	scrubber := scrub.NewScrubber()
 	return &metricsExporter{
-		params:         params,
-		cfg:            cfg,
-		ctx:            ctx,
-		client:         client,
-		tr:             tr,
-		scrubber:       scrubber,
-		retrier:        utils.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
-		onceMetadata:   onceMetadata,
-		sourceProvider: sourceProvider,
-		getPushTime:    func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
+		params:           params,
+		cfg:              cfg,
+		ctx:              ctx,
+		client:           client,
+		tr:               tr,
+		scrubber:         scrubber,
+		retrier:          utils.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
+		onceMetadata:     onceMetadata,
+		sourceProvider:   sourceProvider,
+		infraTransformer: transformer,
+		getPushTime:      func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
 	}, nil
 }
 
@@ -159,6 +168,45 @@ func (exp *metricsExporter) PushMetricsDataScrubbed(ctx context.Context, md pmet
 	return exp.scrubber.Scrub(exp.PushMetricsData(ctx, md))
 }
 
+// otelNamespacePrefix specifies the namespace used for OpenTelemetry host metrics.
+const otelNamespacePrefix = "otel."
+
+// prepareSystemMetrics prepends system hosts metrics with the otel.* prefix to identify
+// them as part of the Datadog OpenTelemetry Integration.
+func (exp *metricsExporter) prepareSystemMetrics(ms []datadog.Metric) {
+	sptr := func(s string) *string { return &s }
+	dptr := func(d int) *int { return &d }
+	for i, m := range ms {
+		name := *m.Metric
+		if !strings.HasPrefix(name, "system.") &&
+			!strings.HasPrefix(name, "process.") {
+			// not a system metric
+			continue
+		}
+		if exp.infraTransformer.Has(name) {
+			// it is a system metric, but it's a Datadog native one,
+			// so we skip it
+			switch name {
+			case "system.net.bytes_rcvd", "system.net.bytes_sent":
+				// These two metrics are reported in Datadog as Gauges, but OpenTelemetry
+				// sends them as Counts, so we need to fix this inconsistency here to avoid
+				// bugs in mixed deployments.
+				ms[i].Type = sptr("gauge")
+				fallthrough
+			case "system.load.1", "system.load.5", "system.load.15",
+				"system.cpu.idle", "system.cpu.user", "system.cpu.system",
+				"system.mem.total", "system.mem.usable", "system.swap.free",
+				"system.swap.used":
+				// these need to be interval 1
+				ms[i].Interval = dptr(1)
+			}
+			continue
+		}
+
+		ms[i].Metric = sptr(otelNamespacePrefix + name)
+	}
+}
+
 func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metrics) error {
 	// Start host metadata with resource attributes from
 	// the first payload.
@@ -170,6 +218,9 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 			}
 			go metadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
 		})
+	}
+	if err := exp.infraTransformer.Transform(ctx, md); err != nil {
+		return err
 	}
 	consumer := metrics.NewConsumer()
 	err := exp.tr.MapMetrics(ctx, md, consumer)
@@ -185,7 +236,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 		tags = append(tags, exp.cfg.HostMetadata.Tags...)
 	}
 	ms, sl := consumer.All(exp.getPushTime(), exp.params.BuildInfo, tags)
-	metrics.ProcessMetrics(ms)
+	exp.prepareSystemMetrics(ms)
 
 	err = nil
 	if len(ms) > 0 {

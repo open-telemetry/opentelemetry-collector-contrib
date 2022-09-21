@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 )
@@ -29,6 +30,8 @@ const (
 	typeStr = "file"
 	// The stability level of the exporter.
 	stability = component.StabilityLevelAlpha
+	// the number of old log files to retain
+	defaultMaxBackups = 100
 )
 
 // NewFactory creates a factory for OTLP exporter.
@@ -44,6 +47,8 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		Rotation:         Rotation{MaxBackups: defaultMaxBackups},
+		FormatType:       formatTypeJSON,
 	}
 }
 
@@ -53,9 +58,22 @@ func createTracesExporter(
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{path: cfg.(*Config).Path}
+		conf := cfg.(*Config)
+		return &fileExporter{
+			path:       conf.Path,
+			formatType: conf.FormatType,
+			file: &lumberjack.Logger{
+				Filename:   conf.Path,
+				MaxSize:    conf.Rotation.MaxMegabytes,
+				MaxAge:     conf.Rotation.MaxDays,
+				MaxBackups: conf.Rotation.MaxBackups,
+				LocalTime:  conf.Rotation.LocalTime,
+			},
+			tracesMarshaler: tracesMarshalers[conf.FormatType],
+			exporter:        buildExportFunc(conf),
+		}
 	})
-	return exporterhelper.NewTracesExporterWithContext(
+	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
 		cfg,
@@ -71,9 +89,22 @@ func createMetricsExporter(
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{path: cfg.(*Config).Path}
+		conf := cfg.(*Config)
+		return &fileExporter{
+			path:       conf.Path,
+			formatType: conf.FormatType,
+			file: &lumberjack.Logger{
+				Filename:   conf.Path,
+				MaxSize:    conf.Rotation.MaxMegabytes,
+				MaxAge:     conf.Rotation.MaxDays,
+				MaxBackups: conf.Rotation.MaxBackups,
+				LocalTime:  conf.Rotation.LocalTime,
+			},
+			metricsMarshaler: metricsMarshalers[conf.FormatType],
+			exporter:         buildExportFunc(conf),
+		}
 	})
-	return exporterhelper.NewMetricsExporterWithContext(
+	return exporterhelper.NewMetricsExporter(
 		ctx,
 		set,
 		cfg,
@@ -89,9 +120,22 @@ func createLogsExporter(
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{path: cfg.(*Config).Path}
+		conf := cfg.(*Config)
+		return &fileExporter{
+			path:       conf.Path,
+			formatType: conf.FormatType,
+			file: &lumberjack.Logger{
+				Filename:   conf.Path,
+				MaxSize:    conf.Rotation.MaxMegabytes,
+				MaxAge:     conf.Rotation.MaxDays,
+				MaxBackups: conf.Rotation.MaxBackups,
+				LocalTime:  conf.Rotation.LocalTime,
+			},
+			logsMarshaler: logsMarshalers[conf.FormatType],
+			exporter:      buildExportFunc(conf),
+		}
 	})
-	return exporterhelper.NewLogsExporterWithContext(
+	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
 		cfg,

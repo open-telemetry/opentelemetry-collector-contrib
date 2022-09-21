@@ -63,7 +63,7 @@ func metricsData(
 	rs.SetSchemaUrl(conventions.SchemaURL)
 	rsAttr := rs.Resource().Attributes()
 	for k, v := range rLabels {
-		rsAttr.UpsertString(k, v)
+		rsAttr.PutString(k, v)
 	}
 	rsAttr.Sort()
 
@@ -77,13 +77,11 @@ func metricsData(
 		var dps pmetric.NumberDataPointSlice
 		switch m.mtype {
 		case MetricTypeCumulative:
-			mdMetric.SetDataType(pmetric.MetricDataTypeSum)
-			mdMetric.Sum().SetIsMonotonic(true)
+			mdMetric.SetEmptySum().SetIsMonotonic(true)
 			mdMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 			dps = mdMetric.Sum().DataPoints()
 		case MetricTypeGauge, MetricTypeDoubleGauge:
-			mdMetric.SetDataType(pmetric.MetricDataTypeGauge)
-			dps = mdMetric.Gauge().DataPoints()
+			dps = mdMetric.SetEmptyGauge().DataPoints()
 		}
 
 		for _, v := range m.values {

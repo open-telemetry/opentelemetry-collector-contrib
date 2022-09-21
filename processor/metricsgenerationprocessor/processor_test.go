@@ -351,9 +351,10 @@ func generateTestMetrics(tm testMetric) pmetric.Metrics {
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()
 		m.SetName(name)
-		m.SetDataType(pmetric.MetricDataTypeGauge)
+		dps := m.SetEmptyGauge().DataPoints()
+		dps.EnsureCapacity(len(tm.metricValues[i]))
 		for _, value := range tm.metricValues[i] {
-			dp := m.Gauge().DataPoints().AppendEmpty()
+			dp := dps.AppendEmpty()
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(10 * time.Second)))
 			dp.SetDoubleVal(value)
 		}
@@ -371,9 +372,10 @@ func generateTestMetricsWithIntDatapoint(tm testMetricIntGauge) pmetric.Metrics 
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()
 		m.SetName(name)
-		m.SetDataType(pmetric.MetricDataTypeGauge)
+		dps := m.SetEmptyGauge().DataPoints()
+		dps.EnsureCapacity(len(tm.metricValues[i]))
 		for _, value := range tm.metricValues[i] {
-			dp := m.Gauge().DataPoints().AppendEmpty()
+			dp := dps.AppendEmpty()
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(10 * time.Second)))
 			dp.SetIntVal(value)
 		}
@@ -389,9 +391,8 @@ func getOutputForIntGaugeTest() pmetric.Metrics {
 	})
 	ilm := intGaugeOutputMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	doubleMetric := ilm.AppendEmpty()
-	doubleMetric.SetDataType(pmetric.MetricDataTypeGauge)
 	doubleMetric.SetName("metric_calculated")
-	neweDoubleDataPoint := doubleMetric.Gauge().DataPoints().AppendEmpty()
+	neweDoubleDataPoint := doubleMetric.SetEmptyGauge().DataPoints().AppendEmpty()
 	neweDoubleDataPoint.SetDoubleVal(105)
 
 	return intGaugeOutputMetrics

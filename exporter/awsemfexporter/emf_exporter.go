@@ -104,7 +104,7 @@ func newEmfExporter(
 		return nil, err
 	}
 
-	exporter, err := exporterhelper.NewMetricsExporterWithContext(
+	exporter, err := exporterhelper.NewMetricsExporter(
 		context.TODO(),
 		set,
 		config,
@@ -138,8 +138,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 	outputDestination := expConfig.OutputDestination
 
 	for i := 0; i < rms.Len(); i++ {
-		rm := rms.At(i)
-		err := emf.metricTranslator.translateOTelToGroupedMetric(&rm, groupedMetrics, expConfig)
+		err := emf.metricTranslator.translateOTelToGroupedMetric(rms.At(i), groupedMetrics, expConfig)
 		if err != nil {
 			return err
 		}
@@ -210,7 +209,7 @@ func (emf *emfExporter) listPushers() []cwlogs.Pusher {
 	emf.pusherMapLock.Lock()
 	defer emf.pusherMapLock.Unlock()
 
-	pushers := []cwlogs.Pusher{}
+	var pushers []cwlogs.Pusher
 	for _, pusherMap := range emf.groupStreamToPusherMap {
 		for _, pusher := range pusherMap {
 			pushers = append(pushers, pusher)
