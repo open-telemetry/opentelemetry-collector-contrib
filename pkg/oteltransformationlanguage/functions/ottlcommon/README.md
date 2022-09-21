@@ -1,6 +1,5 @@
 # Common Functions
 
-<!-- markdown-link-check-disable-next-line -->
 The following functions can be used in any implementation of the OpenTelemetry Transformation Language.  Although they are tested using [pdata](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata) for convenience, the function implementation only interact with native Go types or types defined in the [OTTL package](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/oteltransformationlanguage/ottl).
 
 Factory Functions

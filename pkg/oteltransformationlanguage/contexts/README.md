@@ -1,6 +1,5 @@
 # OpenTelemetry Transformation Language Contexts
 
-<!-- markdown-link-check-disable-next-line -->
 The OpenTelemetry Transformation Language uses Contexts to bridge the gap between a [Path](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/oteltransformationlanguage/ottl#paths) and an underlying data model.
 
 A Context must provide a struct that implements `ottl.TransformContext`.  A context must also define a `PathExpressionParser` and a `EnumParser`.
