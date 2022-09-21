@@ -1,0 +1,30 @@
+receivers:
+  snmp:
+    attributes:
+      a2:
+        oid: "2"
+    metrics:
+      m3:
+        unit: "By"
+        sum:
+          aggregation: cumulative
+          monotonic: true
+          value_type: float
+        scalar_oids:
+          - oid: "1"
+            attributes:
+              - name: a2
+                value: val1
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [snmp]
+      processors: [nop]
+      exporters: [nop]

@@ -1,0 +1,20 @@
+receivers:
+  snmp:
+    metrics:
+      m3:
+        unit: "By"
+        gauge:
+          value_type: float
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [snmp]
+      processors: [nop]
+      exporters: [nop]

@@ -28,11 +28,6 @@ import (
 const (
 	typeStr   = "snmp"
 	stability = component.StabilityLevelBeta
-
-	defaultCollectionInterval = 10 // In seconds
-	defaultEndpoint           = "localhost:161"
-	defaultVersion            = "v2c"
-	defaultCommunity          = "public"
 )
 
 var errConfigNotSNMP = errors.New("config was not a SNMP receiver config")
@@ -45,16 +40,19 @@ func NewFactory() component.ReceiverFactory {
 		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
-// createDefaultConfig creates a config for Big-IP with as many default values as possible
+// createDefaultConfig creates a config for SNMP with as many default values as possible
 func createDefaultConfig() config.Receiver {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: defaultCollectionInterval * time.Second,
 		},
-		Endpoint:  defaultEndpoint,
-		Version:   defaultVersion,
-		Community: defaultCommunity,
+		Endpoint:      defaultEndpoint,
+		Version:       defaultVersion,
+		Community:     defaultCommunity,
+		SecurityLevel: defaultSecurityLevel,
+		AuthType:      defaultAuthType,
+		PrivacyType:   defaultPrivacyType,
 	}
 }
 

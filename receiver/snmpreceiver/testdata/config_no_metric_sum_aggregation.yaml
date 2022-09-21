@@ -1,0 +1,23 @@
+receivers:
+  snmp:
+    metrics:
+      m3:
+        unit: "By"
+        sum:
+          monotonic: true
+          value_type: float
+        scalar_oids:
+          - oid: "1"  
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [snmp]
+      processors: [nop]
+      exporters: [nop]

@@ -1,0 +1,16 @@
+receivers:
+  snmp:
+    collection_interval: 1s
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [snmp]
+      processors: [nop]
+      exporters: [nop]

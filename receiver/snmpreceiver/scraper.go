@@ -138,7 +138,7 @@ func scalarDataToMetric(
 		builtMetric.SetUnit(metricCfg.Unit)
 
 		var dps pmetric.NumberDataPointSlice
-		if (metricCfg.Sum != SumMetric{}) {
+		if metricCfg.Sum != nil {
 			builtMetric.SetEmptySum()
 			builtMetric.Sum().SetIsMonotonic(metricCfg.Sum.Monotonic)
 
@@ -189,11 +189,11 @@ func (s *snmpScraper) scrapeIndexedMetrics(now pcommon.Timestamp, resourceMetric
 	indexedMetricNamesByOID := map[string]string{}
 	indexedMetricOIDs := []string{}
 	for name, metricCfg := range s.cfg.Metrics {
-		if len(metricCfg.IndexedOIDs) > 0 {
-			for i, oid := range metricCfg.IndexedOIDs {
+		if len(metricCfg.ColumnOIDs) > 0 {
+			for i, oid := range metricCfg.ColumnOIDs {
 				if !strings.HasPrefix(oid.OID, ".") {
 					oid.OID = "." + oid.OID
-					s.cfg.Metrics[name].IndexedOIDs[i].OID = oid.OID
+					s.cfg.Metrics[name].ColumnOIDs[i].OID = oid.OID
 				}
 				indexedMetricOIDs = append(indexedMetricOIDs, oid.OID)
 				indexedMetricNamesByOID[oid.OID] = name
@@ -235,7 +235,7 @@ func indexedDataToMetric(
 		// get all attributes and resource attributes for this metric config
 		var metricResourceAttributes []string
 		var metricAttributes []Attribute
-		for _, indexedOID := range metricCfg.IndexedOIDs {
+		for _, indexedOID := range metricCfg.ColumnOIDs {
 			if indexedOID.OID == data.parentOID {
 				metricAttributes = indexedOID.Attributes
 				metricResourceAttributes = indexedOID.ResourceAttributes
@@ -284,7 +284,7 @@ func indexedDataToMetric(
 		builtMetric.SetUnit(metricCfg.Unit)
 
 		var dps pmetric.NumberDataPointSlice
-		if (metricCfg.Sum != SumMetric{}) {
+		if metricCfg.Sum != nil {
 			builtMetric.SetDataType(pmetric.MetricDataTypeSum)
 			builtMetric.Sum().SetIsMonotonic(metricCfg.Sum.Monotonic)
 
