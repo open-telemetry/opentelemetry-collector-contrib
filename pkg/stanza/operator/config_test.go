@@ -84,20 +84,6 @@ func TestUnmarshalJSONErrors(t *testing.T) {
 	})
 }
 
-func TestMarshalJSON(t *testing.T) {
-	cfg := Config{
-		Builder: &FakeBuilder{
-			OperatorID:   "operator",
-			OperatorType: "operator",
-			Array:        []string{"test"},
-		},
-	}
-	out, err := json.Marshal(cfg)
-	require.NoError(t, err)
-	expected := `{"id":"operator","type":"operator","array":["test"]}`
-	require.Equal(t, expected, string(out))
-}
-
 func TestUnmarshalYAMLErrors(t *testing.T) {
 	t.Run("ValidYAML", func(t *testing.T) {
 		Register("fake_operator", func() Builder { return &FakeBuilder{} })
@@ -148,18 +134,4 @@ func TestUnmarshalYAMLErrors(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "cannot unmarshal !!str")
 	})
-}
-
-func TestMarshalYAML(t *testing.T) {
-	cfg := Config{
-		Builder: &FakeBuilder{
-			OperatorID:   "operator",
-			OperatorType: "operator",
-			Array:        []string{"test"},
-		},
-	}
-	out, err := yaml.Marshal(cfg)
-	require.NoError(t, err)
-	expected := "id: operator\ntype: operator\narray:\n- test\n"
-	require.Equal(t, expected, string(out))
 }

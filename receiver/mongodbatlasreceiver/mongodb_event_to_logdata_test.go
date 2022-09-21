@@ -35,22 +35,35 @@ func TestMongoeventToLogData4_4(t *testing.T) {
 		Project: mongodbatlas.Project{Name: "Project"},
 	}
 
-	ld := mongodbEventToLogData(zap.NewNop(), []model.LogEntry{mongoevent}, pc, "hostname", "clusterName", "logName", "4.4")
+	ld := mongodbEventToLogData(zap.NewNop(), []model.LogEntry{mongoevent}, pc, "hostname", "logName", "clusterName", "4.4")
 	rl := ld.ResourceLogs().At(0)
 	resourceAttrs := rl.Resource().Attributes()
 	sl := rl.ScopeLogs().At(0)
 	lr := sl.LogRecords().At(0)
 	attrs := lr.Attributes()
-	assert.Equal(t, ld.ResourceLogs().Len(), 1)
-	assert.Equal(t, resourceAttrs.Len(), 4)
-	assert.Equal(t, attrs.Len(), 9)
-	assert.Equal(t, pcommon.Timestamp(1663006227215000000), lr.Timestamp())
-	_, exists := attrs.Get("id")
-	assert.True(t, exists, "expected attribute id to exist, but it didn't")
 
-	// Count attribute will not be present in the LogData
-	ld = mongodbEventToLogData(zap.NewNop(), []model.LogEntry{mongoevent}, pc, "hostname", "clusterName", "logName", "4.4")
-	assert.Equal(t, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len(), 9)
+	assert.Equal(t, 1, ld.ResourceLogs().Len())
+	assert.Equal(t, 4, resourceAttrs.Len())
+	assertString(t, resourceAttrs, "mongodb_atlas.org", "Org")
+	assertString(t, resourceAttrs, "mongodb_atlas.project", "Project")
+	assertString(t, resourceAttrs, "mongodb_atlas.cluster", "clusterName")
+	assertString(t, resourceAttrs, "mongodb_atlas.host.name", "hostname")
+
+	t.Logf("%+v", attrs.AsRaw())
+	assert.Equal(t, 8, attrs.Len())
+	assertInt(t, attrs, "id", 12312)
+	assertString(t, attrs, "message", "Connection ended")
+	assertString(t, attrs, "component", "NETWORK")
+	assertString(t, attrs, "context", "context")
+	assertString(t, attrs, "log_name", "logName")
+	assertString(t, attrs, "remote", "192.168.253.105:59742")
+	assertInt(t, attrs, "connectionCount", 47)
+	assertInt(t, attrs, "connectionId", 9052)
+
+	assert.Equal(t, pcommon.Timestamp(1663006227215000000), lr.Timestamp())
+	assert.Equal(t, "RAW MESSAGE", lr.Body().StringVal())
+	assert.Equal(t, "I", lr.SeverityText())
+	assert.Equal(t, plog.SeverityNumberInfo, lr.SeverityNumber())
 }
 
 func TestMongoeventToLogData4_2(t *testing.T) {
@@ -60,18 +73,33 @@ func TestMongoeventToLogData4_2(t *testing.T) {
 		Project: mongodbatlas.Project{Name: "Project"},
 	}
 
-	ld := mongodbEventToLogData(zaptest.NewLogger(t), []model.LogEntry{mongoevent}, pc, "hostname", "clusterName", "logName", "4.2")
+	ld := mongodbEventToLogData(zaptest.NewLogger(t), []model.LogEntry{mongoevent}, pc, "hostname", "logName", "clusterName", "4.2")
 	rl := ld.ResourceLogs().At(0)
 	resourceAttrs := rl.Resource().Attributes()
 	sl := rl.ScopeLogs().At(0)
 	lr := sl.LogRecords().At(0)
 	attrs := lr.Attributes()
-	assert.Equal(t, ld.ResourceLogs().Len(), 1)
-	assert.Equal(t, resourceAttrs.Len(), 4)
-	assert.Equal(t, attrs.Len(), 5)
+
+	assert.Equal(t, 1, ld.ResourceLogs().Len())
+	assert.Equal(t, 4, resourceAttrs.Len())
+	assertString(t, resourceAttrs, "mongodb_atlas.org", "Org")
+	assertString(t, resourceAttrs, "mongodb_atlas.project", "Project")
+	assertString(t, resourceAttrs, "mongodb_atlas.cluster", "clusterName")
+	assertString(t, resourceAttrs, "mongodb_atlas.host.name", "hostname")
+
+	assert.Equal(t, 4, attrs.Len())
+	assertString(t, attrs, "message", "Connection ended")
+	assertString(t, attrs, "component", "NETWORK")
+	assertString(t, attrs, "context", "context")
+	assertString(t, attrs, "log_name", "logName")
+
 	assert.Equal(t, pcommon.Timestamp(1663004293902000000), lr.Timestamp())
 	_, exists := attrs.Get("id")
 	assert.False(t, exists, "expected attribute id to not exist, but it did")
+
+	assert.Equal(t, "RAW MESSAGE", lr.Body().StringVal())
+	assert.Equal(t, "I", lr.SeverityText())
+	assert.Equal(t, plog.SeverityNumberInfo, lr.SeverityNumber())
 }
 
 func TestUnknownSeverity(t *testing.T) {
@@ -143,8 +171,7 @@ func TestMongoEventToAuditLogData5_0(t *testing.T) {
 	assert.Equal(t, pcommon.Timestamp(1663342012563000000), lr.Timestamp())
 	assert.Equal(t, plog.SeverityNumberInfo, lr.SeverityNumber())
 	assert.Equal(t, "INFO", lr.SeverityText())
-	assert.Equal(t, `{"atype":"authenticate","ts":{"$date":"2022-09-16T15:26:52.563+00:00"},"uuid":{"$binary":"binary","$type":"type"},"local":{"ip":"0.0.0.0","port":3000,"isSystemUser":true,"unix":"/var/run/mongodb/mongodb-27017.sock"},"remote":{"ip":"192.168.1.237","port":4000},"users":[{"user":"mongo_user","db":"my_db"}],"roles":[{"role":"test_role","db":"test_db"}],"result":40,"param":{"db":"db","mechanism":"mechanism","user":"name"}}`,
-		lr.Body().StringVal())
+	assert.Equal(t, "RAW MESSAGE", lr.Body().StringVal())
 }
 
 func TestMongoEventToAuditLogData4_2(t *testing.T) {
@@ -197,8 +224,7 @@ func TestMongoEventToAuditLogData4_2(t *testing.T) {
 	assert.Equal(t, pcommon.Timestamp(1663342012563000000), lr.Timestamp())
 	assert.Equal(t, plog.SeverityNumberInfo, lr.SeverityNumber())
 	assert.Equal(t, "INFO", lr.SeverityText())
-	assert.Equal(t, `{"atype":"authenticate","ts":{"$date":"2022-09-16T15:26:52.563+0000"},"local":{"ip":"0.0.0.0","port":3000},"remote":{"ip":"192.168.1.237","port":4000},"users":[{"user":"mongo_user","db":"my_db"}],"roles":[{"role":"test_role","db":"test_db"}],"result":40,"param":{"db":"db","mechanism":"mechanism","user":"name"}}`,
-		lr.Body().StringVal())
+	assert.Equal(t, "RAW MESSAGE", lr.Body().StringVal())
 }
 
 func GetTestEvent4_4() model.LogEntry {
@@ -212,6 +238,7 @@ func GetTestEvent4_4() model.LogEntry {
 		Context:    "context",
 		Message:    "Connection ended",
 		Attributes: map[string]interface{}{"connectionCount": 47, "connectionId": 9052, "remote": "192.168.253.105:59742", "id": "93a8f190-afd0-422d-9de6-f6c5e833e35f"},
+		Raw:        "RAW MESSAGE",
 	}
 }
 
@@ -224,6 +251,7 @@ func GetTestEvent4_2() model.LogEntry {
 		Timestamp: model.LogTimestamp{
 			Date: "2022-09-12T17:38:13.902+0000",
 		},
+		Raw: "RAW MESSAGE",
 	}
 }
 
@@ -265,6 +293,7 @@ func GetTestAuditEvent5_0() model.AuditLog {
 			"db":        "db",
 			"mechanism": "mechanism",
 		},
+		Raw: "RAW MESSAGE",
 	}
 }
 
@@ -300,6 +329,7 @@ func GetTestAuditEvent4_2() model.AuditLog {
 			"db":        "db",
 			"mechanism": "mechanism",
 		},
+		Raw: "RAW MESSAGE",
 	}
 }
 
