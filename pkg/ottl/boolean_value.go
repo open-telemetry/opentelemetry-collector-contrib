@@ -16,6 +16,7 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"fmt"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
 )
 

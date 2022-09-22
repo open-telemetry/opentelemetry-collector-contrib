@@ -15,13 +15,13 @@
 package ottl
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 

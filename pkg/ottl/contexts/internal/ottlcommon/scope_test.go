@@ -15,8 +15,9 @@
 package ottlcommon
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
 	"testing"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"

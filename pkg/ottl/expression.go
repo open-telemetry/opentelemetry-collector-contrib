@@ -16,9 +16,10 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
 )
 
 type TransformContext interface {

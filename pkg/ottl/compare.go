@@ -17,9 +17,10 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"bytes"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
 
 	"golang.org/x/exp/constraints"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
 )
 
 // The functions in this file implement a general-purpose comparison of two

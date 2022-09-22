@@ -17,6 +17,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"encoding/hex"
 	"fmt"
+
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 )

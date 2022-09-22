@@ -16,11 +16,11 @@ package ottlcommon // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
 )
 
 func ScopePathGetSetter(path []internal.Field) (ottl.GetSetter, error) {

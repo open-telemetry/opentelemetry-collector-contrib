@@ -16,8 +16,9 @@ package ottl
 
 import (
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
 	"testing"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
 )
 
 // Our types are bool, int, float, string, Bytes, nil, so we compare all types in both directions.
