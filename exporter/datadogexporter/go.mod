@@ -4,9 +4,9 @@ go 1.18
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.29
-	github.com/DataDog/datadog-agent/pkg/otlp/model v0.40.0-rc.1
-	github.com/DataDog/datadog-agent/pkg/quantile v0.40.0-rc.1
-	github.com/DataDog/datadog-agent/pkg/trace v0.40.0-rc.1
+	github.com/DataDog/datadog-agent/pkg/otlp/model v0.40.0-rc.2
+	github.com/DataDog/datadog-agent/pkg/quantile v0.40.0-rc.2
+	github.com/DataDog/datadog-agent/pkg/trace v0.40.0-rc.2
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.8
 	github.com/aws/aws-sdk-go v1.44.103
@@ -34,11 +34,11 @@ require (
 
 require (
 	cloud.google.com/go/compute v1.10.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.40.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.40.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.40.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.40.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.40.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.40.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.40.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.40.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.40.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.40.0-rc.2 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/sketches-go v1.4.1 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
@@ -117,7 +117,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
 	github.com/rs/cors v1.8.2 // indirect
-	github.com/secure-systems-lab/go-securesystemslib v0.3.1 // indirect
+	github.com/secure-systems-lab/go-securesystemslib v0.4.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.22.8 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
