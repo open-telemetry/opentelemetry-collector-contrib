@@ -56,9 +56,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4433
-exclude github.com/StackExchange/wmi v1.2.0
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../../pkg/translator/jaeger
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
