@@ -74,7 +74,11 @@ func (r *receiver) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	r.scraper = newContainerScraper(podmanClient, r.set.Logger, r.config)
+	r.scraper, err = newContainerScraper(podmanClient, r.set.Logger, r.config)
+	if err != nil {
+		return err
+	}
+
 	if err = r.scraper.loadContainerList(ctx); err != nil {
 		return err
 	}

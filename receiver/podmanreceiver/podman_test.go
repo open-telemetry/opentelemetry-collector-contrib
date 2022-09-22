@@ -87,7 +87,8 @@ func TestWatchingTimeouts(t *testing.T) {
 	client, err := newLibpodClient(zap.NewNop(), config)
 	assert.Nil(t, err)
 
-	cli := newContainerScraper(client, zap.NewNop(), config)
+	cli, err := newContainerScraper(client, zap.NewNop(), config)
+	assert.NoError(t, err)
 	assert.NotNil(t, cli)
 
 	expectedError := "context deadline exceeded"
@@ -135,7 +136,8 @@ func TestEventLoopHandlesError(t *testing.T) {
 	client, err := newLibpodClient(zap.NewNop(), config)
 	assert.Nil(t, err)
 
-	cli := newContainerScraper(client, zap.New(observed), config)
+	cli, err := newContainerScraper(client, zap.New(observed), config)
+	assert.NoError(t, err)
 	assert.NotNil(t, cli)
 
 	go cli.containerEventLoop(context.Background())
@@ -175,7 +177,8 @@ func TestEventLoopHandles(t *testing.T) {
 		}}, nil
 	}
 
-	cli := newContainerScraper(&eventClient, zap.NewNop(), &Config{})
+	cli, err := newContainerScraper(&eventClient, zap.NewNop(), &Config{})
+	assert.NoError(t, err)
 	assert.NotNil(t, cli)
 
 	assert.Equal(t, 0, len(cli.containers))
@@ -206,7 +209,8 @@ func TestInspectAndPersistContainer(t *testing.T) {
 		}}, nil
 	}
 
-	cli := newContainerScraper(&inspectClient, zap.NewNop(), &Config{})
+	cli, err := newContainerScraper(&inspectClient, zap.NewNop(), &Config{})
+	assert.NoError(t, err)
 	assert.NotNil(t, cli)
 
 	assert.Equal(t, 0, len(cli.containers))
@@ -215,4 +219,43 @@ func TestInspectAndPersistContainer(t *testing.T) {
 	assert.True(t, ok)
 	assert.NotNil(t, stats)
 	assert.Equal(t, 1, len(cli.containers))
+}
+
+func TestInvalidExclude(t *testing.T) {
+	config := Config{
+		ExcludedImages: []string{"["},
+	}
+	cli, err := newContainerScraper(&baseClient, zap.NewNop(), &config)
+	assert.Nil(t, cli)
+	require.Error(t, err)
+	assert.Equal(t, "could not determine podman client excluded images: invalid glob item: unexpected end of input", err.Error())
+}
+
+func TestLoadContainersWithExclude(t *testing.T) {
+	inspectClient := baseClient
+	inspectClient.ListF = func(context.Context, url.Values) ([]container, error) {
+		return []container{{
+			ID:    "c1",
+			Image: "library/nginxy:latest",
+		}, {
+			ID:    "c2",
+			Image: "docker.io/library/httpd:latest",
+		}}, nil
+	}
+
+	excludeImagesConfig := Config{
+		ExcludedImages: []string{"*httpd:latest"},
+	}
+
+	cli, err := newContainerScraper(&inspectClient, zap.NewNop(), &excludeImagesConfig)
+	assert.NoError(t, err)
+	assert.NotNil(t, cli)
+
+	assert.Equal(t, 0, len(cli.containers))
+
+	err = cli.loadContainerList(context.Background())
+	assert.Nil(t, err)
+
+	assert.Equal(t, 1, len(cli.containers))
+	assert.Contains(t, cli.containers, "c1")
 }

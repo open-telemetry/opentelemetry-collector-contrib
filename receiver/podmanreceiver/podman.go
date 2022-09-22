@@ -20,11 +20,14 @@ package podmanreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"sync"
 	"time"
 
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/matcher"
 )
 
 type clientFactory func(logger *zap.Logger, cfg *Config) (PodmanClient, error)
@@ -37,20 +40,26 @@ type PodmanClient interface {
 }
 
 type ContainerScraper struct {
-	client         PodmanClient
-	containers     map[string]container
-	containersLock sync.Mutex
-	logger         *zap.Logger
-	config         *Config
+	client               PodmanClient
+	containers           map[string]container
+	containersLock       sync.Mutex
+	logger               *zap.Logger
+	config               *Config
+	excludedImageMatcher *matcher.StringMatcher
 }
 
-func newContainerScraper(engineClient PodmanClient, logger *zap.Logger, config *Config) *ContainerScraper {
-	return &ContainerScraper{
-		client:     engineClient,
-		containers: make(map[string]container),
-		logger:     logger,
-		config:     config,
+func newContainerScraper(engineClient PodmanClient, logger *zap.Logger, config *Config) (*ContainerScraper, error) {
+	excludedImageMatcher, err := matcher.NewStringMatcher(config.ExcludedImages)
+	if err != nil {
+		return nil, fmt.Errorf("could not determine podman client excluded images: %w", err)
 	}
+	return &ContainerScraper{
+		client:               engineClient,
+		containers:           make(map[string]container),
+		logger:               logger,
+		config:               config,
+		excludedImageMatcher: excludedImageMatcher,
+	}, nil
 }
 
 // containers provides a slice of container to use for individual fetchContainerStats calls.
@@ -86,7 +95,15 @@ func (pc *ContainerScraper) loadContainerList(ctx context.Context) error {
 	}
 
 	for _, c := range containerList {
-		pc.persistContainer(c)
+		if !pc.shouldBeExcluded(c.Image) {
+			pc.persistContainer(c)
+		} else {
+			pc.logger.Debug(
+				"Not monitoring container per ExcludedImages",
+				zap.String("image", c.Image),
+				zap.String("id", c.ID),
+			)
+		}
 	}
 	return nil
 }
@@ -166,8 +183,16 @@ func (pc *ContainerScraper) inspectAndPersistContainer(ctx context.Context, cid 
 	defer cancel()
 	container, err := pc.client.list(listCtx, params)
 	if len(container) == 1 && err == nil {
-		pc.persistContainer(container[0])
-		return &container[0], true
+		if !pc.shouldBeExcluded(container[0].Image) {
+			pc.persistContainer(container[0])
+			return &container[0], true
+		}
+		pc.logger.Debug(
+			"Not monitoring container per ExcludedImages",
+			zap.String("image", container[0].Image),
+			zap.String("id", container[0].ID),
+		)
+		return nil, false
 	}
 	pc.logger.Error(
 		"Could not inspect updated container",
@@ -197,6 +222,10 @@ func (pc *ContainerScraper) persistContainer(c container) {
 	pc.containersLock.Lock()
 	defer pc.containersLock.Unlock()
 	pc.containers[c.ID] = c
+}
+
+func (pc *ContainerScraper) shouldBeExcluded(image string) bool {
+	return pc.excludedImageMatcher != nil && pc.excludedImageMatcher.Matches(image)
 }
 
 func (pc *ContainerScraper) removeContainer(cid string) {

@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podman
 go 1.18
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.60.0
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.60.1-0.20220916163348-84621e483dfb
 	go.opentelemetry.io/collector/pdata v0.60.1-0.20220916163348-84621e483dfb
@@ -15,6 +16,7 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
+	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -41,3 +43,5 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common

@@ -23,6 +23,14 @@ The following settings are optional:
 
 - `collection_interval` (default = `10s`): The interval at which to gather container stats.
 - `timeout` (default = `5s`): The maximum amount of time to wait for Podman API responses.
+- `excluded_images` (no default, all running containers monitored): A list of strings,
+[regexes](https://golang.org/pkg/regexp/), or [globs](https://github.com/gobwas/glob) whose referent container image
+names will not be among the queried containers. `!`-prefixed negations are possible for all item types to signify that
+only unmatched container image names should be monitored.
+    - Regexes must be placed between `/` characters: `/my?egex/`.  Negations are to be outside the forward slashes:
+    `!/my?egex/` will monitor all containers whose name doesn't match the compiled regex `my?egex`.
+    - Globs are non-regex items (e.g. `/items/`) containing any of the following: `*[]{}?`.  Negations are supported:
+    `!my*container` will monitor all containers whose image name doesn't match the blob `my*container`.
 
 Example:
 
@@ -32,6 +40,10 @@ receivers:
     endpoint: unix://run/podman/podman.sock
     timeout: 10s
     collection_interval: 10s
+    excluded_images:
+      - undesired-container
+      - /.*undesired.*/
+      - another-*-container
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)

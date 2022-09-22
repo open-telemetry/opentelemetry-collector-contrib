@@ -36,6 +36,9 @@ type Config struct {
 	APIVersion    string `mapstructure:"api_version"`
 	SSHKey        string `mapstructure:"ssh_key"`
 	SSHPassphrase string `mapstructure:"ssh_passphrase"`
+
+	// A list of filters whose matching images are to be excluded. Supports literals, globs, and regex.
+	ExcludedImages []string `mapstructure:"excluded_images"`
 }
 
 func (config Config) Validate() error {
