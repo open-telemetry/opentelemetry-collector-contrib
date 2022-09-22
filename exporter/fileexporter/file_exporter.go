@@ -20,7 +20,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/valyala/gozstd"
+	"github.com/DataDog/zstd"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -75,8 +75,12 @@ func (e *fileExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error 
 	if err != nil {
 		return err
 	}
-	if e.isCompressed {
-		buf = gozstd.Compress(nil, buf)
+	if !e.isCompressed {
+		return e.exporter(e, buf)
+	}
+	buf, err = zstd.Compress(nil, buf)
+	if err != nil {
+		return err
 	}
 	return e.exporter(e, buf)
 }
@@ -86,8 +90,12 @@ func (e *fileExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) err
 	if err != nil {
 		return err
 	}
-	if e.isCompressed {
-		buf = gozstd.Compress(nil, buf)
+	if !e.isCompressed {
+		return e.exporter(e, buf)
+	}
+	buf, err = zstd.Compress(nil, buf)
+	if err != nil {
+		return err
 	}
 	return e.exporter(e, buf)
 }
@@ -97,8 +105,12 @@ func (e *fileExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	if err != nil {
 		return err
 	}
-	if e.isCompressed {
-		buf = gozstd.Compress(nil, buf)
+	if !e.isCompressed {
+		return e.exporter(e, buf)
+	}
+	buf, err = zstd.Compress(nil, buf)
+	if err != nil {
+		return err
 	}
 	return e.exporter(e, buf)
 }
