@@ -28,8 +28,9 @@ import (
 	devents "github.com/docker/docker/api/types/events"
 	dfilters "github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/matcher"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/matcher"
 )
 
 const (
