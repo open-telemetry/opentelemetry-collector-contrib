@@ -24,7 +24,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottlmetrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 type Processor struct {
@@ -32,12 +31,12 @@ type Processor struct {
 	logger  *zap.Logger
 }
 
-func NewProcessor(statements []string, functions map[string]interface{}, settings component.ProcessorCreateSettings) (*Processor, error) {
+func NewProcessor(statements []string, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
 	ottlp := ottl.NewParser(
 		functions,
 		ottlmetrics.ParsePath,
 		ottlmetrics.ParseEnum,
-		common.NewOTTLLogger(settings.Logger),
+		settings,
 	)
 	queries, err := ottlp.ParseQueries(statements)
 	if err != nil {

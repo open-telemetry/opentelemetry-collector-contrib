@@ -48,15 +48,15 @@ type router[E component.Exporter] struct {
 func newRouter[E component.Exporter](
 	table []RoutingTableItem,
 	defaultExporterIDs []string,
-	logger *zap.Logger,
+	settings component.TelemetrySettings,
 ) router[E] {
 	return router[E]{
-		logger: logger,
+		logger: settings.Logger,
 		parser: ottl.NewParser(
 			common.Functions(),
 			ottllogs.ParsePath,
 			ottllogs.ParseEnum,
-			common.NewOTTLLogger(logger),
+			settings,
 		),
 
 		table:              table,

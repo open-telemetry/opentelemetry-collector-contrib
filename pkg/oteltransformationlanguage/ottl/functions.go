@@ -50,7 +50,7 @@ func (p *Parser) buildArgs(inv Invocation, fType reflect.Type) ([]reflect.Value,
 	// Some function arguments may be intended to take values from the calling processor
 	// instead of being passed by the caller of the OTTL function, so we have to keep
 	// track of the index of the argument passed within the DSL.
-	// e.g. Logger, which is provided by the processor to the OTTL Parser struct.
+	// e.g. TelemetrySettings, which is provided by the processor to the OTTL Parser struct.
 	DSLArgumentIndex := 0
 	for i := 0; i < fType.NumIn(); i++ {
 		argType := fType.In(i)
@@ -191,8 +191,8 @@ func (p *Parser) buildArg(argDef Value, argType reflect.Type, index int, args *[
 // never be called in an invocation. Returns whether the arg is an internal arg.
 func (p *Parser) buildInternalArg(argType reflect.Type, args *[]reflect.Value) bool {
 	switch argType.Name() {
-	case "Logger":
-		*args = append(*args, reflect.ValueOf(p.logger))
+	case "TelemetrySettings":
+		*args = append(*args, reflect.ValueOf(p.telemetrySettings))
 	default:
 		return false
 	}

@@ -20,6 +20,7 @@ import (
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/multierr"
 )
 
@@ -193,18 +194,18 @@ func (n *IsNil) Capture(_ []string) error {
 type EnumSymbol string
 
 type Parser struct {
-	functions  map[string]interface{}
-	pathParser PathExpressionParser
-	enumParser EnumParser
-	logger     Logger
+	functions         map[string]interface{}
+	pathParser        PathExpressionParser
+	enumParser        EnumParser
+	telemetrySettings component.TelemetrySettings
 }
 
-func NewParser(functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser, logger Logger) Parser {
+func NewParser(functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser, telemetrySettings component.TelemetrySettings) Parser {
 	return Parser{
-		functions:  functions,
-		pathParser: pathParser,
-		enumParser: enumParser,
-		logger:     logger,
+		functions:         functions,
+		pathParser:        pathParser,
+		enumParser:        enumParser,
+		telemetrySettings: telemetrySettings,
 	}
 }
 
