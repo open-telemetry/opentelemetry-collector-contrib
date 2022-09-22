@@ -1,0 +1,22 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+      grpc:
+processors:
+  batch:
+exporters:
+  logicmonitor:
+    url: https://example.logicmonitor.com/rest
+    apitoken:
+      access_id: "xyz"
+      access_key: "abcdefg123"
+  logging:
+    logLevel: debug
+
+service:
+  pipelines:
+    traces:
+      receivers : [ otlp ]
+      processors: [ batch ]
+      exporters : [ logicmonitor ]

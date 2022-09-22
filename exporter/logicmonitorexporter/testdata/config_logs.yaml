@@ -1,0 +1,16 @@
+receivers:
+  fluentforward:
+    endpoint: 127.0.0.1:8006
+processors:
+  batch:
+exporters:
+  logicmonitor:
+    url: https://example.logicmonitor.com/rest
+    apitoken:
+      access_id: "xyz"
+      access_key: "abcdefg123"
+service:
+  pipelines:
+    logs:
+      receivers: [ fluentforward ]
+      exporters: [ logicmonitor ]
