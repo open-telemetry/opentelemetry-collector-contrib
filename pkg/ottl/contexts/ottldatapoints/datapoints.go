@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // nolint:gocritic
-package ottldatapoints // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottldatapoints"
+package ottldatapoints // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 
 import (
 	"fmt"
