@@ -97,7 +97,7 @@ internal/splunk/                                     @open-telemetry/collector-c
 pkg/batchpersignal/                                  @open-telemetry/collector-contrib-approvers @jpkrohling
 pkg/resourcetotelemetry/                             @open-telemetry/collector-contrib-approvers @mx-psi
 pkg/stanza/                                          @open-telemetry/collector-contrib-approvers @djaglowski
-pkg/oteltransformationlanguage/                          @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu
+pkg/ottl/                          @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu
 pkg/translator/jaeger/                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 pkg/translator/loki/                                 @open-telemetry/collector-contrib-approvers @gouthamve @jpkrohling @kovrus @mar4uk
 pkg/translator/opencensus/                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
