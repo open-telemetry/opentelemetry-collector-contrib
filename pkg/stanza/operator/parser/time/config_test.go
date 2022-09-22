@@ -44,6 +44,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg := NewConfig()
 					from := entry.NewBodyField("from")
 					cfg.ParseFrom = &from
+					cfg.LayoutType = "strptime"
 					cfg.Layout = "%Y-%m-%d"
 					return cfg
 				}(),

@@ -40,7 +40,7 @@ func TestLogProcessorCapabilities(t *testing.T) {
 	}
 
 	// test
-	p := newLogProcessor(zap.NewNop(), config)
+	p := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, config)
 	require.NotNil(t, p)
 
 	// verify
@@ -63,7 +63,7 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 		},
 	}
 
-	exp := newLogProcessor(zap.NewNop(), &Config{
+	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  contextAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -127,7 +127,7 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 		},
 	}
 
-	exp := newLogProcessor(zap.NewNop(), &Config{
+	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -185,7 +185,7 @@ func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T)
 		},
 	}
 
-	exp := newLogProcessor(zap.NewNop(), &Config{
+	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		AttributeSource:              resourceAttributeSource,
 		FromAttribute:                "X-Tenant",
 		DropRoutingResourceAttribute: true,
@@ -232,7 +232,7 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		},
 	}
 
-	exp := newLogProcessor(zap.NewNop(), &Config{
+	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -291,7 +291,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		},
 	}
 
-	exp := newLogProcessor(zap.NewNop(), &Config{
+	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		DefaultExporters: []string{"otlp"},
 		Table: []RoutingTableItem{
 			{

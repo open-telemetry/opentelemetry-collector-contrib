@@ -64,10 +64,6 @@ func (ltp *logsTransformProcessor) Shutdown(ctx context.Context) error {
 
 func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Host) error {
 	baseCfg := ltp.config.BaseConfig
-	operators, err := baseCfg.DecodeOperatorConfigs()
-	if err != nil {
-		return err
-	}
 
 	emitterOpts := []adapter.LogEmitterOption{
 		adapter.LogEmitterWithLogger(ltp.logger.Sugar()),
@@ -80,7 +76,7 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 	}
 	ltp.emitter = adapter.NewLogEmitter(emitterOpts...)
 	pipe, err := pipeline.Config{
-		Operators:     operators,
+		Operators:     baseCfg.Operators,
 		DefaultOutput: ltp.emitter,
 	}.Build(ltp.logger.Sugar())
 	if err != nil {
