@@ -17,7 +17,7 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlgrammar"
 )
 
 // boolExpressionEvaluator is a function that returns the result.
@@ -57,7 +57,7 @@ func orFuncs(funcs []boolExpressionEvaluator) boolExpressionEvaluator {
 	}
 }
 
-func (p *Parser) newComparisonEvaluator(comparison *internal.Comparison) (boolExpressionEvaluator, error) {
+func (p *Parser) newComparisonEvaluator(comparison *ottlgrammar.Comparison) (boolExpressionEvaluator, error) {
 	if comparison == nil {
 		return alwaysTrue, nil
 	}
@@ -79,7 +79,7 @@ func (p *Parser) newComparisonEvaluator(comparison *internal.Comparison) (boolEx
 
 }
 
-func (p *Parser) newBooleanExpressionEvaluator(expr *internal.BooleanExpression) (boolExpressionEvaluator, error) {
+func (p *Parser) newBooleanExpressionEvaluator(expr *ottlgrammar.BooleanExpression) (boolExpressionEvaluator, error) {
 	if expr == nil {
 		return alwaysTrue, nil
 	}
@@ -99,7 +99,7 @@ func (p *Parser) newBooleanExpressionEvaluator(expr *internal.BooleanExpression)
 	return orFuncs(funcs), nil
 }
 
-func (p *Parser) newBooleanTermEvaluator(term *internal.Term) (boolExpressionEvaluator, error) {
+func (p *Parser) newBooleanTermEvaluator(term *ottlgrammar.Term) (boolExpressionEvaluator, error) {
 	if term == nil {
 		return alwaysTrue, nil
 	}
@@ -119,7 +119,7 @@ func (p *Parser) newBooleanTermEvaluator(term *internal.Term) (boolExpressionEva
 	return andFuncs(funcs), nil
 }
 
-func (p *Parser) newBooleanValueEvaluator(value *internal.BooleanValue) (boolExpressionEvaluator, error) {
+func (p *Parser) newBooleanValueEvaluator(value *ottlgrammar.BooleanValue) (boolExpressionEvaluator, error) {
 	if value == nil {
 		return alwaysTrue, nil
 	}

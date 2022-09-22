@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlgrammar"
 )
 
 // Our types are bool, int, float, string, Bytes, nil, so we compare all types in both directions.
@@ -112,7 +112,7 @@ func Test_compare(t *testing.T) {
 		{"non-prim, int type", testA{"hi"}, 5, []bool{false, true, false, false, false, false}},
 		{"int, non-prim", 5, testA{"hi"}, []bool{false, true, false, false, false, false}},
 	}
-	ops := []internal.CompareOp{internal.EQ, internal.NE, internal.LT, internal.LTE, internal.GTE, internal.GT}
+	ops := []ottlgrammar.CompareOp{ottlgrammar.EQ, ottlgrammar.NE, ottlgrammar.LT, ottlgrammar.LTE, ottlgrammar.GTE, ottlgrammar.GT}
 	for _, tt := range tests {
 		for _, op := range ops {
 			t.Run(fmt.Sprintf("%s %v", tt.name, op), func(t *testing.T) {
@@ -130,74 +130,74 @@ func Test_compare(t *testing.T) {
 // mac pro laptop, and none of them have any allocations.
 func BenchmarkCompareEQInt64(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(i64a, i64b, internal.EQ)
+		compare(i64a, i64b, ottlgrammar.EQ)
 	}
 }
 
 func BenchmarkCompareEQFloat(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(f64a, f64b, internal.EQ)
+		compare(f64a, f64b, ottlgrammar.EQ)
 	}
 }
 func BenchmarkCompareEQString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(sa, sb, internal.EQ)
+		compare(sa, sb, ottlgrammar.EQ)
 	}
 }
 func BenchmarkCompareEQPString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(&sa, &sb, internal.EQ)
+		compare(&sa, &sb, ottlgrammar.EQ)
 	}
 }
 func BenchmarkCompareEQBytes(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(ba, bb, internal.EQ)
+		compare(ba, bb, ottlgrammar.EQ)
 	}
 }
 func BenchmarkCompareEQNil(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(nil, nil, internal.EQ)
+		compare(nil, nil, ottlgrammar.EQ)
 	}
 }
 func BenchmarkCompareNEInt(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(i64a, i64b, internal.NE)
+		compare(i64a, i64b, ottlgrammar.NE)
 	}
 }
 
 func BenchmarkCompareNEFloat(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(f64a, f64b, internal.NE)
+		compare(f64a, f64b, ottlgrammar.NE)
 	}
 }
 func BenchmarkCompareNEString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(sa, sb, internal.NE)
+		compare(sa, sb, ottlgrammar.NE)
 	}
 }
 func BenchmarkCompareLTFloat(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(f64a, f64b, internal.LT)
+		compare(f64a, f64b, ottlgrammar.LT)
 	}
 }
 func BenchmarkCompareLTString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(sa, sb, internal.LT)
+		compare(sa, sb, ottlgrammar.LT)
 	}
 }
 func BenchmarkCompareLTNil(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(nil, nil, internal.LT)
+		compare(nil, nil, ottlgrammar.LT)
 	}
 }
 
 // this is only used for benchmarking, and is a rough equivalent of the original compare function
 // before adding LT, LTE, GTE, and GT.
-func compareEq(a any, b any, op internal.CompareOp) bool {
+func compareEq(a any, b any, op ottlgrammar.CompareOp) bool {
 	switch op {
-	case internal.EQ:
+	case ottlgrammar.EQ:
 		return a == b
-	case internal.NE:
+	case ottlgrammar.NE:
 		return a != b
 	default:
 		return false
@@ -206,6 +206,6 @@ func compareEq(a any, b any, op internal.CompareOp) bool {
 
 func BenchmarkCompareEQFunction(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compareEq(sa, sb, internal.EQ)
+		compareEq(sa, sb, ottlgrammar.EQ)
 	}
 }

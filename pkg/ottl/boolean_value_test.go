@@ -21,23 +21,23 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlgrammar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 // valueFor is a test helper to eliminate a lot of tedium in writing tests of Comparisons.
-func valueFor(x any) internal.Value {
-	val := internal.Value{}
+func valueFor(x any) ottlgrammar.Value {
+	val := ottlgrammar.Value{}
 	switch v := x.(type) {
 	case []byte:
-		var b internal.Bytes = v
+		var b ottlgrammar.Bytes = v
 		val.Bytes = &b
 	case string:
 		switch {
 		case v == "NAME":
 			// if the string is NAME construct a path of "name".
-			val.Path = &internal.Path{
-				Fields: []internal.Field{
+			val.Path = &ottlgrammar.Path{
+				Fields: []ottlgrammar.Field{
 					{
 						Name: "name",
 					},
@@ -45,7 +45,7 @@ func valueFor(x any) internal.Value {
 			}
 		case strings.Contains(v, "ENUM"):
 			// if the string contains ENUM construct an EnumSymbol from it.
-			val.Enum = (*internal.EnumSymbol)(ottltest.Strp(v))
+			val.Enum = (*ottlgrammar.EnumSymbol)(ottltest.Strp(v))
 		default:
 			val.String = ottltest.Strp(v)
 		}
@@ -58,9 +58,9 @@ func valueFor(x any) internal.Value {
 	case *int64:
 		val.Int = v
 	case bool:
-		val.Bool = Booleanp(internal.Boolean(v))
+		val.Bool = Booleanp(ottlgrammar.Boolean(v))
 	case nil:
-		var n internal.IsNil = true
+		var n ottlgrammar.IsNil = true
 		val.IsNil = &n
 	default:
 		panic("test error!")
@@ -69,11 +69,11 @@ func valueFor(x any) internal.Value {
 }
 
 // comparison is a test helper that constructs a Comparison object using valueFor
-func comparison(left any, right any, op string) *internal.Comparison {
-	return &internal.Comparison{
+func comparison(left any, right any, op string) *ottlgrammar.Comparison {
+	return &ottlgrammar.Comparison{
 		Left:  valueFor(left),
 		Right: valueFor(right),
-		Op:    internal.CompareOpTable[op],
+		Op:    ottlgrammar.CompareOpTable[op],
 	}
 }
 
@@ -138,16 +138,16 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		comparison *internal.Comparison
+		comparison *ottlgrammar.Comparison
 	}{
 		{
 			name: "unknown Path",
-			comparison: &internal.Comparison{
-				Left: internal.Value{
-					Enum: (*internal.EnumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
+			comparison: &ottlgrammar.Comparison{
+				Left: ottlgrammar.Value{
+					Enum: (*ottlgrammar.EnumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
 				},
-				Op: internal.EQ,
-				Right: internal.Value{
+				Op: ottlgrammar.EQ,
+				Right: ottlgrammar.Value{
 					String: ottltest.Strp("trash"),
 				},
 			},
@@ -172,18 +172,18 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 	tests := []struct {
 		name string
 		want bool
-		expr *internal.BooleanExpression
+		expr *ottlgrammar.BooleanExpression
 	}{
 		{"a", false,
-			&internal.BooleanExpression{
-				Left: &internal.Term{
-					Left: &internal.BooleanValue{
+			&ottlgrammar.BooleanExpression{
+				Left: &ottlgrammar.Term{
+					Left: &ottlgrammar.BooleanValue{
 						ConstExpr: Booleanp(true),
 					},
-					Right: []*internal.OpAndBooleanValue{
+					Right: []*ottlgrammar.OpAndBooleanValue{
 						{
 							Operator: "and",
-							Value: &internal.BooleanValue{
+							Value: &ottlgrammar.BooleanValue{
 								ConstExpr: Booleanp(false),
 							},
 						},
@@ -192,15 +192,15 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 			},
 		},
 		{"b", true,
-			&internal.BooleanExpression{
-				Left: &internal.Term{
-					Left: &internal.BooleanValue{
+			&ottlgrammar.BooleanExpression{
+				Left: &ottlgrammar.Term{
+					Left: &ottlgrammar.BooleanValue{
 						ConstExpr: Booleanp(true),
 					},
-					Right: []*internal.OpAndBooleanValue{
+					Right: []*ottlgrammar.OpAndBooleanValue{
 						{
 							Operator: "and",
-							Value: &internal.BooleanValue{
+							Value: &ottlgrammar.BooleanValue{
 								ConstExpr: Booleanp(true),
 							},
 						},
@@ -209,21 +209,21 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 			},
 		},
 		{"c", false,
-			&internal.BooleanExpression{
-				Left: &internal.Term{
-					Left: &internal.BooleanValue{
+			&ottlgrammar.BooleanExpression{
+				Left: &ottlgrammar.Term{
+					Left: &ottlgrammar.BooleanValue{
 						ConstExpr: Booleanp(true),
 					},
-					Right: []*internal.OpAndBooleanValue{
+					Right: []*ottlgrammar.OpAndBooleanValue{
 						{
 							Operator: "and",
-							Value: &internal.BooleanValue{
+							Value: &ottlgrammar.BooleanValue{
 								ConstExpr: Booleanp(true),
 							},
 						},
 						{
 							Operator: "and",
-							Value: &internal.BooleanValue{
+							Value: &ottlgrammar.BooleanValue{
 								ConstExpr: Booleanp(false),
 							},
 						},
@@ -232,17 +232,17 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 			},
 		},
 		{"d", true,
-			&internal.BooleanExpression{
-				Left: &internal.Term{
-					Left: &internal.BooleanValue{
+			&ottlgrammar.BooleanExpression{
+				Left: &ottlgrammar.Term{
+					Left: &ottlgrammar.BooleanValue{
 						ConstExpr: Booleanp(true),
 					},
 				},
-				Right: []*internal.OpOrTerm{
+				Right: []*ottlgrammar.OpOrTerm{
 					{
 						Operator: "or",
-						Term: &internal.Term{
-							Left: &internal.BooleanValue{
+						Term: &ottlgrammar.Term{
+							Left: &ottlgrammar.BooleanValue{
 								ConstExpr: Booleanp(false),
 							},
 						},
@@ -251,17 +251,17 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 			},
 		},
 		{"e", true,
-			&internal.BooleanExpression{
-				Left: &internal.Term{
-					Left: &internal.BooleanValue{
+			&ottlgrammar.BooleanExpression{
+				Left: &ottlgrammar.Term{
+					Left: &ottlgrammar.BooleanValue{
 						ConstExpr: Booleanp(false),
 					},
 				},
-				Right: []*internal.OpOrTerm{
+				Right: []*ottlgrammar.OpOrTerm{
 					{
 						Operator: "or",
-						Term: &internal.Term{
-							Left: &internal.BooleanValue{
+						Term: &ottlgrammar.Term{
+							Left: &ottlgrammar.BooleanValue{
 								ConstExpr: Booleanp(true),
 							},
 						},
@@ -270,17 +270,17 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 			},
 		},
 		{"f", false,
-			&internal.BooleanExpression{
-				Left: &internal.Term{
-					Left: &internal.BooleanValue{
+			&ottlgrammar.BooleanExpression{
+				Left: &ottlgrammar.Term{
+					Left: &ottlgrammar.BooleanValue{
 						ConstExpr: Booleanp(false),
 					},
 				},
-				Right: []*internal.OpOrTerm{
+				Right: []*ottlgrammar.OpOrTerm{
 					{
 						Operator: "or",
-						Term: &internal.Term{
-							Left: &internal.BooleanValue{
+						Term: &ottlgrammar.Term{
+							Left: &ottlgrammar.BooleanValue{
 								ConstExpr: Booleanp(false),
 							},
 						},
@@ -289,25 +289,25 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 			},
 		},
 		{"g", true,
-			&internal.BooleanExpression{
-				Left: &internal.Term{
-					Left: &internal.BooleanValue{
+			&ottlgrammar.BooleanExpression{
+				Left: &ottlgrammar.Term{
+					Left: &ottlgrammar.BooleanValue{
 						ConstExpr: Booleanp(false),
 					},
-					Right: []*internal.OpAndBooleanValue{
+					Right: []*ottlgrammar.OpAndBooleanValue{
 						{
 							Operator: "and",
-							Value: &internal.BooleanValue{
+							Value: &ottlgrammar.BooleanValue{
 								ConstExpr: Booleanp(false),
 							},
 						},
 					},
 				},
-				Right: []*internal.OpOrTerm{
+				Right: []*ottlgrammar.OpOrTerm{
 					{
 						Operator: "or",
-						Term: &internal.Term{
-							Left: &internal.BooleanValue{
+						Term: &ottlgrammar.Term{
+							Left: &ottlgrammar.BooleanValue{
 								ConstExpr: Booleanp(true),
 							},
 						},
@@ -316,26 +316,26 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 			},
 		},
 		{"h", true,
-			&internal.BooleanExpression{
-				Left: &internal.Term{
-					Left: &internal.BooleanValue{
+			&ottlgrammar.BooleanExpression{
+				Left: &ottlgrammar.Term{
+					Left: &ottlgrammar.BooleanValue{
 						ConstExpr: Booleanp(true),
 					},
-					Right: []*internal.OpAndBooleanValue{
+					Right: []*ottlgrammar.OpAndBooleanValue{
 						{
 							Operator: "and",
-							Value: &internal.BooleanValue{
-								SubExpr: &internal.BooleanExpression{
-									Left: &internal.Term{
-										Left: &internal.BooleanValue{
+							Value: &ottlgrammar.BooleanValue{
+								SubExpr: &ottlgrammar.BooleanExpression{
+									Left: &ottlgrammar.Term{
+										Left: &ottlgrammar.BooleanValue{
 											ConstExpr: Booleanp(true),
 										},
 									},
-									Right: []*internal.OpOrTerm{
+									Right: []*ottlgrammar.OpOrTerm{
 										{
 											Operator: "or",
-											Term: &internal.Term{
-												Left: &internal.BooleanValue{
+											Term: &ottlgrammar.Term{
+												Left: &ottlgrammar.BooleanValue{
 													ConstExpr: Booleanp(false),
 												},
 											},

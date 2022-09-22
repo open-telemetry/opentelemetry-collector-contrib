@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlgrammar"
 )
 
 // Query holds a top level Query for processing telemetry data. A Query is a combination of a function
@@ -76,8 +76,8 @@ func (p *Parser) ParseQueries(statements []string) ([]Query, error) {
 	return queries, nil
 }
 
-func parseQuery(raw string) (*internal.ParsedQuery, error) {
-	parsed, err := internal.ParserSingleton.ParseString("", raw)
+func parseQuery(raw string) (*ottlgrammar.ParsedQuery, error) {
+	parsed, err := ottlgrammar.ParserSingleton.ParseString("", raw)
 	if err != nil {
 		return nil, err
 	}

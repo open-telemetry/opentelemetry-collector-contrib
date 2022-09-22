@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlgrammar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -33,56 +33,56 @@ func hello() (ExprFunc, error) {
 func Test_newGetter(t *testing.T) {
 	tests := []struct {
 		name string
-		val  internal.Value
+		val  ottlgrammar.Value
 		want interface{}
 	}{
 		{
 			name: "string literal",
-			val: internal.Value{
+			val: ottlgrammar.Value{
 				String: ottltest.Strp("str"),
 			},
 			want: "str",
 		},
 		{
 			name: "float literal",
-			val: internal.Value{
+			val: ottlgrammar.Value{
 				Float: ottltest.Floatp(1.2),
 			},
 			want: 1.2,
 		},
 		{
 			name: "int literal",
-			val: internal.Value{
+			val: ottlgrammar.Value{
 				Int: ottltest.Intp(12),
 			},
 			want: int64(12),
 		},
 		{
 			name: "bytes literal",
-			val: internal.Value{
-				Bytes: (*internal.Bytes)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+			val: ottlgrammar.Value{
+				Bytes: (*ottlgrammar.Bytes)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
 			},
 			want: []byte{1, 2, 3, 4, 5, 6, 7, 8},
 		},
 		{
 			name: "nil literal",
-			val: internal.Value{
-				IsNil: (*internal.IsNil)(ottltest.Boolp(true)),
+			val: ottlgrammar.Value{
+				IsNil: (*ottlgrammar.IsNil)(ottltest.Boolp(true)),
 			},
 			want: nil,
 		},
 		{
 			name: "bool literal",
-			val: internal.Value{
-				Bool: (*internal.Boolean)(ottltest.Boolp(true)),
+			val: ottlgrammar.Value{
+				Bool: (*ottlgrammar.Boolean)(ottltest.Boolp(true)),
 			},
 			want: true,
 		},
 		{
 			name: "path expression",
-			val: internal.Value{
-				Path: &internal.Path{
-					Fields: []internal.Field{
+			val: ottlgrammar.Value{
+				Path: &ottlgrammar.Path{
+					Fields: []ottlgrammar.Field{
 						{
 							Name: "name",
 						},
@@ -93,8 +93,8 @@ func Test_newGetter(t *testing.T) {
 		},
 		{
 			name: "function call",
-			val: internal.Value{
-				Invocation: &internal.Invocation{
+			val: ottlgrammar.Value{
+				Invocation: &ottlgrammar.Invocation{
 					Function: "hello",
 				},
 			},
@@ -102,8 +102,8 @@ func Test_newGetter(t *testing.T) {
 		},
 		{
 			name: "enum",
-			val: internal.Value{
-				Enum: (*internal.EnumSymbol)(ottltest.Strp("TEST_ENUM_ONE")),
+			val: ottlgrammar.Value{
+				Enum: (*ottlgrammar.EnumSymbol)(ottltest.Strp("TEST_ENUM_ONE")),
 			},
 			want: int64(1),
 		},
@@ -130,7 +130,7 @@ func Test_newGetter(t *testing.T) {
 	}
 
 	t.Run("empty value", func(t *testing.T) {
-		_, err := p.newGetter(internal.Value{})
+		_, err := p.newGetter(ottlgrammar.Value{})
 		assert.Error(t, err)
 	})
 }

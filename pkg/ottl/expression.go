@@ -19,7 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlgrammar"
 )
 
 type TransformContext interface {
@@ -72,7 +72,7 @@ func (g exprGetter) Get(ctx TransformContext) interface{} {
 	return g.expr(ctx)
 }
 
-func (p *Parser) newGetter(val internal.Value) (Getter, error) {
+func (p *Parser) newGetter(val ottlgrammar.Value) (Getter, error) {
 	if val.IsNil != nil && *val.IsNil {
 		return &literal{value: nil}, nil
 	}

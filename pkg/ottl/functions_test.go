@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlgrammar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -45,20 +45,20 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 
 	tests := []struct {
 		name string
-		inv  internal.Invocation
+		inv  ottlgrammar.Invocation
 	}{
 		{
 			name: "unknown function",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function:  "unknownfunc",
-				Arguments: []internal.Value{},
+				Arguments: []ottlgrammar.Value{},
 			},
 		},
 		{
 			name: "not accessor",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_getsetter",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
 						String: ottltest.Strp("not path"),
 					},
@@ -67,11 +67,11 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "not reader (invalid function)",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_getter",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
-						Invocation: &internal.Invocation{
+						Invocation: &ottlgrammar.Invocation{
 							Function: "unknownfunc",
 						},
 					},
@@ -80,12 +80,12 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "not enough args",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_multiple_args",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
-						Path: &internal.Path{
-							Fields: []internal.Field{
+						Path: &ottlgrammar.Path{
+							Fields: []ottlgrammar.Field{
 								{
 									Name: "name",
 								},
@@ -100,12 +100,12 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "too many args",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_multiple_args",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
-						Path: &internal.Path{
-							Fields: []internal.Field{
+						Path: &ottlgrammar.Path{
+							Fields: []ottlgrammar.Field{
 								{
 									Name: "name",
 								},
@@ -123,9 +123,9 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "not enough args with telemetrySettings",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_telemetry_settings_first",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
 						String: ottltest.Strp("test"),
 					},
@@ -137,9 +137,9 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "too many args with telemetrySettings",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_telemetry_settings_first",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
 						String: ottltest.Strp("test"),
 					},
@@ -157,9 +157,9 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "not matching arg type",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_string",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
 						Int: ottltest.Intp(10),
 					},
@@ -168,9 +168,9 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "not matching arg type when byte slice",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_byte_slice",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
 						String: ottltest.Strp("test"),
 					},
@@ -185,17 +185,17 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "function call returns error",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_error",
 			},
 		},
 		{
 			name: "Enum not found",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_enum",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
-						Enum: (*internal.EnumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
+						Enum: (*ottlgrammar.EnumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
 					},
 				},
 			},
@@ -220,13 +220,13 @@ func Test_NewFunctionCall(t *testing.T) {
 
 	tests := []struct {
 		name string
-		inv  internal.Invocation
+		inv  ottlgrammar.Invocation
 	}{
 		{
 			name: "string slice arg",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_string_slice",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
 						String: ottltest.Strp("test"),
 					},
@@ -241,9 +241,9 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "float slice arg",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_float_slice",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
 						Float: ottltest.Floatp(1.1),
 					},
@@ -258,9 +258,9 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "int slice arg",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_int_slice",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
 						Int: ottltest.Intp(1),
 					},
@@ -275,12 +275,12 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "getter slice arg",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_getter_slice",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
-						Path: &internal.Path{
-							Fields: []internal.Field{
+						Path: &ottlgrammar.Path{
+							Fields: []ottlgrammar.Field{
 								{
 									Name: "name",
 								},
@@ -297,18 +297,18 @@ func Test_NewFunctionCall(t *testing.T) {
 						Float: ottltest.Floatp(1.1),
 					},
 					{
-						Bool: (*internal.Boolean)(ottltest.Boolp(true)),
+						Bool: (*ottlgrammar.Boolean)(ottltest.Boolp(true)),
 					},
 					{
-						Enum: (*internal.EnumSymbol)(ottltest.Strp("TEST_ENUM")),
+						Enum: (*ottlgrammar.EnumSymbol)(ottltest.Strp("TEST_ENUM")),
 					},
 					{
-						Invocation: &internal.Invocation{
+						Invocation: &ottlgrammar.Invocation{
 							Function: "testing_getter",
-							Arguments: []internal.Value{
+							Arguments: []ottlgrammar.Value{
 								{
-									Path: &internal.Path{
-										Fields: []internal.Field{
+									Path: &ottlgrammar.Path{
+										Fields: []ottlgrammar.Field{
 											{
 												Name: "name",
 											},
@@ -323,12 +323,12 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "setter arg",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_setter",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
-						Path: &internal.Path{
-							Fields: []internal.Field{
+						Path: &ottlgrammar.Path{
+							Fields: []ottlgrammar.Field{
 								{
 									Name: "name",
 								},
@@ -340,12 +340,12 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "getsetter arg",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_getsetter",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
-						Path: &internal.Path{
-							Fields: []internal.Field{
+						Path: &ottlgrammar.Path{
+							Fields: []ottlgrammar.Field{
 								{
 									Name: "name",
 								},
@@ -357,12 +357,12 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "getter arg",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_getter",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
-						Path: &internal.Path{
-							Fields: []internal.Field{
+						Path: &ottlgrammar.Path{
+							Fields: []ottlgrammar.Field{
 								{
 									Name: "name",
 								},
@@ -374,20 +374,20 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "getter arg with nil literal",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_getter",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
-						IsNil: (*internal.IsNil)(ottltest.Boolp(true)),
+						IsNil: (*ottlgrammar.IsNil)(ottltest.Boolp(true)),
 					},
 				},
 			},
 		},
 		{
 			name: "string arg",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_string",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
 						String: ottltest.Strp("test"),
 					},
@@ -396,9 +396,9 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "float arg",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_float",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
 						Float: ottltest.Floatp(1.1),
 					},
@@ -407,9 +407,9 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "int arg",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_int",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
 						Int: ottltest.Intp(1),
 					},
@@ -418,34 +418,34 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "bool arg",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_bool",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
-						Bool: (*internal.Boolean)(ottltest.Boolp(true)),
+						Bool: (*ottlgrammar.Boolean)(ottltest.Boolp(true)),
 					},
 				},
 			},
 		},
 		{
 			name: "bytes arg",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_byte_slice",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
-						Bytes: (*internal.Bytes)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+						Bytes: (*ottlgrammar.Bytes)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
 					},
 				},
 			},
 		},
 		{
 			name: "multiple args",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_multiple_args",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
-						Path: &internal.Path{
-							Fields: []internal.Field{
+						Path: &ottlgrammar.Path{
+							Fields: []ottlgrammar.Field{
 								{
 									Name: "name",
 								},
@@ -472,20 +472,20 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "Enum arg",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_enum",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
-						Enum: (*internal.EnumSymbol)(ottltest.Strp("TEST_ENUM")),
+						Enum: (*ottlgrammar.EnumSymbol)(ottltest.Strp("TEST_ENUM")),
 					},
 				},
 			},
 		},
 		{
 			name: "telemetrySettings first",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_telemetry_settings_first",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
 						String: ottltest.Strp("test0"),
 					},
@@ -500,9 +500,9 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "telemetrySettings middle",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_telemetry_settings_middle",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
 						String: ottltest.Strp("test0"),
 					},
@@ -517,9 +517,9 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "telemetrySettings last",
-			inv: internal.Invocation{
+			inv: ottlgrammar.Invocation{
 				Function: "testing_telemetry_settings_last",
-				Arguments: []internal.Value{
+				Arguments: []ottlgrammar.Value{
 					{
 						String: ottltest.Strp("test0"),
 					},

@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlgrammar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -33,14 +33,14 @@ func TestResourcePathGetSetter(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []internal.Field
+		path     []ottlgrammar.Field
 		orig     interface{}
 		newVal   interface{}
 		modified func(resource pcommon.Resource)
 	}{
 		{
 			name:   "resource",
-			path:   []internal.Field{},
+			path:   []ottlgrammar.Field{},
 			orig:   refResource,
 			newVal: pcommon.NewResource(),
 			modified: func(resource pcommon.Resource) {
@@ -49,7 +49,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			path: []internal.Field{
+			path: []ottlgrammar.Field{
 				{
 					Name: "attributes",
 				},
@@ -62,7 +62,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: []internal.Field{
+			path: []ottlgrammar.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("str"),
@@ -76,7 +76,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: []internal.Field{
+			path: []ottlgrammar.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("bool"),
@@ -90,7 +90,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: []internal.Field{
+			path: []ottlgrammar.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("int"),
@@ -104,7 +104,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: []internal.Field{
+			path: []ottlgrammar.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("double"),
@@ -118,7 +118,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: []internal.Field{
+			path: []ottlgrammar.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("bytes"),
@@ -132,7 +132,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: []internal.Field{
+			path: []ottlgrammar.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("arr_str"),
@@ -149,7 +149,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: []internal.Field{
+			path: []ottlgrammar.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("arr_bool"),
@@ -166,7 +166,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: []internal.Field{
+			path: []ottlgrammar.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("arr_int"),
@@ -183,7 +183,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: []internal.Field{
+			path: []ottlgrammar.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("arr_float"),
@@ -200,7 +200,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: []internal.Field{
+			path: []ottlgrammar.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("arr_bytes"),
@@ -217,7 +217,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "dropped_attributes_count",
-			path: []internal.Field{
+			path: []ottlgrammar.Field{
 				{
 					Name: "dropped_attributes_count",
 				},

@@ -25,7 +25,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ottlcommon"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlgrammar"
 )
 
 type transformContext struct {
@@ -54,7 +54,7 @@ func (ctx transformContext) GetResource() pcommon.Resource {
 	return ctx.resource
 }
 
-var symbolTable = map[internal.EnumSymbol]ottl.Enum{
+var symbolTable = map[ottlgrammar.EnumSymbol]ottl.Enum{
 	"SEVERITY_NUMBER_UNSPECIFIED": ottl.Enum(plog.SeverityNumberUndefined),
 	"SEVERITY_NUMBER_TRACE":       ottl.Enum(plog.SeverityNumberTrace),
 	"SEVERITY_NUMBER_TRACE2":      ottl.Enum(plog.SeverityNumberTrace2),
@@ -82,7 +82,7 @@ var symbolTable = map[internal.EnumSymbol]ottl.Enum{
 	"SEVERITY_NUMBER_FATAL4":      ottl.Enum(plog.SeverityNumberFatal4),
 }
 
-func ParseEnum(val *internal.EnumSymbol) (*ottl.Enum, error) {
+func ParseEnum(val *ottlgrammar.EnumSymbol) (*ottl.Enum, error) {
 	if val != nil {
 		if enum, ok := symbolTable[*val]; ok {
 			return &enum, nil
@@ -92,14 +92,14 @@ func ParseEnum(val *internal.EnumSymbol) (*ottl.Enum, error) {
 	return nil, fmt.Errorf("enum symbol not provided")
 }
 
-func ParsePath(val *internal.Path) (ottl.GetSetter, error) {
+func ParsePath(val *ottlgrammar.Path) (ottl.GetSetter, error) {
 	if val != nil && len(val.Fields) > 0 {
 		return newPathGetSetter(val.Fields)
 	}
 	return nil, fmt.Errorf("bad path %v", val)
 }
 
-func newPathGetSetter(path []internal.Field) (ottl.GetSetter, error) {
+func newPathGetSetter(path []ottlgrammar.Field) (ottl.GetSetter, error) {
 	switch path[0].Name {
 	case "resource":
 		return ottlcommon.ResourcePathGetSetter(path[1:])

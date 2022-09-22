@@ -21,12 +21,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlgrammar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 // This is not in ottltest because it depends on a type that's a member of OTTL.
-func Booleanp(b internal.Boolean) *internal.Boolean {
+func Booleanp(b ottlgrammar.Boolean) *ottlgrammar.Boolean {
 	return &b
 }
 
@@ -34,15 +34,15 @@ func Test_parse(t *testing.T) {
 	tests := []struct {
 		name     string
 		query    string
-		expected *internal.ParsedQuery
+		expected *ottlgrammar.ParsedQuery
 	}{
 		{
 			name:  "invocation with string",
 			query: `set("foo")`,
-			expected: &internal.ParsedQuery{
-				Invocation: internal.Invocation{
+			expected: &ottlgrammar.ParsedQuery{
+				Invocation: ottlgrammar.Invocation{
 					Function: "set",
-					Arguments: []internal.Value{
+					Arguments: []ottlgrammar.Value{
 						{
 							String: ottltest.Strp("foo"),
 						},
@@ -54,10 +54,10 @@ func Test_parse(t *testing.T) {
 		{
 			name:  "invocation with float",
 			query: `met(1.2)`,
-			expected: &internal.ParsedQuery{
-				Invocation: internal.Invocation{
+			expected: &ottlgrammar.ParsedQuery{
+				Invocation: ottlgrammar.Invocation{
 					Function: "met",
-					Arguments: []internal.Value{
+					Arguments: []ottlgrammar.Value{
 						{
 							Float: ottltest.Floatp(1.2),
 						},
@@ -69,10 +69,10 @@ func Test_parse(t *testing.T) {
 		{
 			name:  "invocation with int",
 			query: `fff(12)`,
-			expected: &internal.ParsedQuery{
-				Invocation: internal.Invocation{
+			expected: &ottlgrammar.ParsedQuery{
+				Invocation: ottlgrammar.Invocation{
 					Function: "fff",
-					Arguments: []internal.Value{
+					Arguments: []ottlgrammar.Value{
 						{
 							Int: ottltest.Intp(12),
 						},
@@ -84,20 +84,20 @@ func Test_parse(t *testing.T) {
 		{
 			name:  "complex invocation",
 			query: `set("foo", getSomething(bear.honey))`,
-			expected: &internal.ParsedQuery{
-				Invocation: internal.Invocation{
+			expected: &ottlgrammar.ParsedQuery{
+				Invocation: ottlgrammar.Invocation{
 					Function: "set",
-					Arguments: []internal.Value{
+					Arguments: []ottlgrammar.Value{
 						{
 							String: ottltest.Strp("foo"),
 						},
 						{
-							Invocation: &internal.Invocation{
+							Invocation: &ottlgrammar.Invocation{
 								Function: "getSomething",
-								Arguments: []internal.Value{
+								Arguments: []ottlgrammar.Value{
 									{
-										Path: &internal.Path{
-											Fields: []internal.Field{
+										Path: &ottlgrammar.Path{
+											Fields: []ottlgrammar.Field{
 												{
 													Name: "bear",
 												},
@@ -118,13 +118,13 @@ func Test_parse(t *testing.T) {
 		{
 			name:  "complex path",
 			query: `set(foo.attributes["bar"].cat, "dog")`,
-			expected: &internal.ParsedQuery{
-				Invocation: internal.Invocation{
+			expected: &ottlgrammar.ParsedQuery{
+				Invocation: ottlgrammar.Invocation{
 					Function: "set",
-					Arguments: []internal.Value{
+					Arguments: []ottlgrammar.Value{
 						{
-							Path: &internal.Path{
-								Fields: []internal.Field{
+							Path: &ottlgrammar.Path{
+								Fields: []ottlgrammar.Field{
 									{
 										Name: "foo",
 									},
@@ -149,13 +149,13 @@ func Test_parse(t *testing.T) {
 		{
 			name:  "where == clause",
 			query: `set(foo.attributes["bar"].cat, "dog") where name == "fido"`,
-			expected: &internal.ParsedQuery{
-				Invocation: internal.Invocation{
+			expected: &ottlgrammar.ParsedQuery{
+				Invocation: ottlgrammar.Invocation{
 					Function: "set",
-					Arguments: []internal.Value{
+					Arguments: []ottlgrammar.Value{
 						{
-							Path: &internal.Path{
-								Fields: []internal.Field{
+							Path: &ottlgrammar.Path{
+								Fields: []ottlgrammar.Field{
 									{
 										Name: "foo",
 									},
@@ -174,21 +174,21 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				WhereClause: &internal.BooleanExpression{
-					Left: &internal.Term{
-						Left: &internal.BooleanValue{
-							Comparison: &internal.Comparison{
-								Left: internal.Value{
-									Path: &internal.Path{
-										Fields: []internal.Field{
+				WhereClause: &ottlgrammar.BooleanExpression{
+					Left: &ottlgrammar.Term{
+						Left: &ottlgrammar.BooleanValue{
+							Comparison: &ottlgrammar.Comparison{
+								Left: ottlgrammar.Value{
+									Path: &ottlgrammar.Path{
+										Fields: []ottlgrammar.Field{
 											{
 												Name: "name",
 											},
 										},
 									},
 								},
-								Op: internal.EQ,
-								Right: internal.Value{
+								Op: ottlgrammar.EQ,
+								Right: ottlgrammar.Value{
 									String: ottltest.Strp("fido"),
 								},
 							},
@@ -200,13 +200,13 @@ func Test_parse(t *testing.T) {
 		{
 			name:  "where != clause",
 			query: `set(foo.attributes["bar"].cat, "dog") where name != "fido"`,
-			expected: &internal.ParsedQuery{
-				Invocation: internal.Invocation{
+			expected: &ottlgrammar.ParsedQuery{
+				Invocation: ottlgrammar.Invocation{
 					Function: "set",
-					Arguments: []internal.Value{
+					Arguments: []ottlgrammar.Value{
 						{
-							Path: &internal.Path{
-								Fields: []internal.Field{
+							Path: &ottlgrammar.Path{
+								Fields: []ottlgrammar.Field{
 									{
 										Name: "foo",
 									},
@@ -225,21 +225,21 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				WhereClause: &internal.BooleanExpression{
-					Left: &internal.Term{
-						Left: &internal.BooleanValue{
-							Comparison: &internal.Comparison{
-								Left: internal.Value{
-									Path: &internal.Path{
-										Fields: []internal.Field{
+				WhereClause: &ottlgrammar.BooleanExpression{
+					Left: &ottlgrammar.Term{
+						Left: &ottlgrammar.BooleanValue{
+							Comparison: &ottlgrammar.Comparison{
+								Left: ottlgrammar.Value{
+									Path: &ottlgrammar.Path{
+										Fields: []ottlgrammar.Field{
 											{
 												Name: "name",
 											},
 										},
 									},
 								},
-								Op: internal.NE,
-								Right: internal.Value{
+								Op: ottlgrammar.NE,
+								Right: ottlgrammar.Value{
 									String: ottltest.Strp("fido"),
 								},
 							},
@@ -251,13 +251,13 @@ func Test_parse(t *testing.T) {
 		{
 			name:  "ignore extra spaces",
 			query: `set  ( foo.attributes[ "bar"].cat,   "dog")   where name=="fido"`,
-			expected: &internal.ParsedQuery{
-				Invocation: internal.Invocation{
+			expected: &ottlgrammar.ParsedQuery{
+				Invocation: ottlgrammar.Invocation{
 					Function: "set",
-					Arguments: []internal.Value{
+					Arguments: []ottlgrammar.Value{
 						{
-							Path: &internal.Path{
-								Fields: []internal.Field{
+							Path: &ottlgrammar.Path{
+								Fields: []ottlgrammar.Field{
 									{
 										Name: "foo",
 									},
@@ -276,21 +276,21 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				WhereClause: &internal.BooleanExpression{
-					Left: &internal.Term{
-						Left: &internal.BooleanValue{
-							Comparison: &internal.Comparison{
-								Left: internal.Value{
-									Path: &internal.Path{
-										Fields: []internal.Field{
+				WhereClause: &ottlgrammar.BooleanExpression{
+					Left: &ottlgrammar.Term{
+						Left: &ottlgrammar.BooleanValue{
+							Comparison: &ottlgrammar.Comparison{
+								Left: ottlgrammar.Value{
+									Path: &ottlgrammar.Path{
+										Fields: []ottlgrammar.Field{
 											{
 												Name: "name",
 											},
 										},
 									},
 								},
-								Op: internal.EQ,
-								Right: internal.Value{
+								Op: ottlgrammar.EQ,
+								Right: ottlgrammar.Value{
 									String: ottltest.Strp("fido"),
 								},
 							},
@@ -302,10 +302,10 @@ func Test_parse(t *testing.T) {
 		{
 			name:  "handle quotes",
 			query: `set("fo\"o")`,
-			expected: &internal.ParsedQuery{
-				Invocation: internal.Invocation{
+			expected: &ottlgrammar.ParsedQuery{
+				Invocation: ottlgrammar.Invocation{
 					Function: "set",
-					Arguments: []internal.Value{
+					Arguments: []ottlgrammar.Value{
 						{
 							String: ottltest.Strp("fo\"o"),
 						},
@@ -317,15 +317,15 @@ func Test_parse(t *testing.T) {
 		{
 			name:  "Invocation with boolean false",
 			query: `convert_gauge_to_sum("cumulative", false)`,
-			expected: &internal.ParsedQuery{
-				Invocation: internal.Invocation{
+			expected: &ottlgrammar.ParsedQuery{
+				Invocation: ottlgrammar.Invocation{
 					Function: "convert_gauge_to_sum",
-					Arguments: []internal.Value{
+					Arguments: []ottlgrammar.Value{
 						{
 							String: ottltest.Strp("cumulative"),
 						},
 						{
-							Bool: (*internal.Boolean)(ottltest.Boolp(false)),
+							Bool: (*ottlgrammar.Boolean)(ottltest.Boolp(false)),
 						},
 					},
 				},
@@ -335,15 +335,15 @@ func Test_parse(t *testing.T) {
 		{
 			name:  "Invocation with boolean true",
 			query: `convert_gauge_to_sum("cumulative", true)`,
-			expected: &internal.ParsedQuery{
-				Invocation: internal.Invocation{
+			expected: &ottlgrammar.ParsedQuery{
+				Invocation: ottlgrammar.Invocation{
 					Function: "convert_gauge_to_sum",
-					Arguments: []internal.Value{
+					Arguments: []ottlgrammar.Value{
 						{
 							String: ottltest.Strp("cumulative"),
 						},
 						{
-							Bool: (*internal.Boolean)(ottltest.Boolp(true)),
+							Bool: (*ottlgrammar.Boolean)(ottltest.Boolp(true)),
 						},
 					},
 				},
@@ -353,13 +353,13 @@ func Test_parse(t *testing.T) {
 		{
 			name:  "Invocation with bytes",
 			query: `set(attributes["bytes"], 0x0102030405060708)`,
-			expected: &internal.ParsedQuery{
-				Invocation: internal.Invocation{
+			expected: &ottlgrammar.ParsedQuery{
+				Invocation: ottlgrammar.Invocation{
 					Function: "set",
-					Arguments: []internal.Value{
+					Arguments: []ottlgrammar.Value{
 						{
-							Path: &internal.Path{
-								Fields: []internal.Field{
+							Path: &ottlgrammar.Path{
+								Fields: []ottlgrammar.Field{
 									{
 										Name:   "attributes",
 										MapKey: ottltest.Strp("bytes"),
@@ -368,7 +368,7 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							Bytes: (*internal.Bytes)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+							Bytes: (*ottlgrammar.Bytes)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
 						},
 					},
 				},
@@ -378,13 +378,13 @@ func Test_parse(t *testing.T) {
 		{
 			name:  "Invocation with nil",
 			query: `set(attributes["test"], nil)`,
-			expected: &internal.ParsedQuery{
-				Invocation: internal.Invocation{
+			expected: &ottlgrammar.ParsedQuery{
+				Invocation: ottlgrammar.Invocation{
 					Function: "set",
-					Arguments: []internal.Value{
+					Arguments: []ottlgrammar.Value{
 						{
-							Path: &internal.Path{
-								Fields: []internal.Field{
+							Path: &ottlgrammar.Path{
+								Fields: []ottlgrammar.Field{
 									{
 										Name:   "attributes",
 										MapKey: ottltest.Strp("test"),
@@ -393,7 +393,7 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							IsNil: (*internal.IsNil)(ottltest.Boolp(true)),
+							IsNil: (*ottlgrammar.IsNil)(ottltest.Boolp(true)),
 						},
 					},
 				},
@@ -403,13 +403,13 @@ func Test_parse(t *testing.T) {
 		{
 			name:  "Invocation with Enum",
 			query: `set(attributes["test"], TEST_ENUM)`,
-			expected: &internal.ParsedQuery{
-				Invocation: internal.Invocation{
+			expected: &ottlgrammar.ParsedQuery{
+				Invocation: ottlgrammar.Invocation{
 					Function: "set",
-					Arguments: []internal.Value{
+					Arguments: []ottlgrammar.Value{
 						{
-							Path: &internal.Path{
-								Fields: []internal.Field{
+							Path: &ottlgrammar.Path{
+								Fields: []ottlgrammar.Field{
 									{
 										Name:   "attributes",
 										MapKey: ottltest.Strp("test"),
@@ -418,7 +418,7 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							Enum: (*internal.EnumSymbol)(ottltest.Strp("TEST_ENUM")),
+							Enum: (*ottlgrammar.EnumSymbol)(ottltest.Strp("TEST_ENUM")),
 						},
 					},
 				},
@@ -467,7 +467,7 @@ func Test_parse_failure(t *testing.T) {
 	}
 }
 
-func testParsePath(val *internal.Path) (GetSetter, error) {
+func testParsePath(val *ottlgrammar.Path) (GetSetter, error) {
 	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "name" {
 		return &testGetSetter{
 			getter: func(ctx TransformContext) interface{} {
@@ -483,14 +483,14 @@ func testParsePath(val *internal.Path) (GetSetter, error) {
 
 // Helper for test cases where the WHERE clause is all that matters.
 // Parse string should start with `set(name, "test") where`...
-func setNameTest(b *internal.BooleanExpression) *internal.ParsedQuery {
-	return &internal.ParsedQuery{
-		Invocation: internal.Invocation{
+func setNameTest(b *ottlgrammar.BooleanExpression) *ottlgrammar.ParsedQuery {
+	return &ottlgrammar.ParsedQuery{
+		Invocation: ottlgrammar.Invocation{
 			Function: "set",
-			Arguments: []internal.Value{
+			Arguments: []ottlgrammar.Value{
 				{
-					Path: &internal.Path{
-						Fields: []internal.Field{
+					Path: &ottlgrammar.Path{
+						Fields: []ottlgrammar.Field{
 							{
 								Name: "name",
 							},
@@ -509,13 +509,13 @@ func setNameTest(b *internal.BooleanExpression) *internal.ParsedQuery {
 func Test_parseWhere(t *testing.T) {
 	tests := []struct {
 		query    string
-		expected *internal.ParsedQuery
+		expected *ottlgrammar.ParsedQuery
 	}{
 		{
 			query: `true`,
-			expected: setNameTest(&internal.BooleanExpression{
-				Left: &internal.Term{
-					Left: &internal.BooleanValue{
+			expected: setNameTest(&ottlgrammar.BooleanExpression{
+				Left: &ottlgrammar.Term{
+					Left: &ottlgrammar.BooleanValue{
 						ConstExpr: Booleanp(true),
 					},
 				},
@@ -523,15 +523,15 @@ func Test_parseWhere(t *testing.T) {
 		},
 		{
 			query: `true and false`,
-			expected: setNameTest(&internal.BooleanExpression{
-				Left: &internal.Term{
-					Left: &internal.BooleanValue{
+			expected: setNameTest(&ottlgrammar.BooleanExpression{
+				Left: &ottlgrammar.Term{
+					Left: &ottlgrammar.BooleanValue{
 						ConstExpr: Booleanp(true),
 					},
-					Right: []*internal.OpAndBooleanValue{
+					Right: []*ottlgrammar.OpAndBooleanValue{
 						{
 							Operator: "and",
-							Value: &internal.BooleanValue{
+							Value: &ottlgrammar.BooleanValue{
 								ConstExpr: Booleanp(false),
 							},
 						},
@@ -541,21 +541,21 @@ func Test_parseWhere(t *testing.T) {
 		},
 		{
 			query: `true and true and false`,
-			expected: setNameTest(&internal.BooleanExpression{
-				Left: &internal.Term{
-					Left: &internal.BooleanValue{
+			expected: setNameTest(&ottlgrammar.BooleanExpression{
+				Left: &ottlgrammar.Term{
+					Left: &ottlgrammar.BooleanValue{
 						ConstExpr: Booleanp(true),
 					},
-					Right: []*internal.OpAndBooleanValue{
+					Right: []*ottlgrammar.OpAndBooleanValue{
 						{
 							Operator: "and",
-							Value: &internal.BooleanValue{
+							Value: &ottlgrammar.BooleanValue{
 								ConstExpr: Booleanp(true),
 							},
 						},
 						{
 							Operator: "and",
-							Value: &internal.BooleanValue{
+							Value: &ottlgrammar.BooleanValue{
 								ConstExpr: Booleanp(false),
 							},
 						},
@@ -565,17 +565,17 @@ func Test_parseWhere(t *testing.T) {
 		},
 		{
 			query: `true or false`,
-			expected: setNameTest(&internal.BooleanExpression{
-				Left: &internal.Term{
-					Left: &internal.BooleanValue{
+			expected: setNameTest(&ottlgrammar.BooleanExpression{
+				Left: &ottlgrammar.Term{
+					Left: &ottlgrammar.BooleanValue{
 						ConstExpr: Booleanp(true),
 					},
 				},
-				Right: []*internal.OpOrTerm{
+				Right: []*ottlgrammar.OpOrTerm{
 					{
 						Operator: "or",
-						Term: &internal.Term{
-							Left: &internal.BooleanValue{
+						Term: &ottlgrammar.Term{
+							Left: &ottlgrammar.BooleanValue{
 								ConstExpr: Booleanp(false),
 							},
 						},
@@ -585,25 +585,25 @@ func Test_parseWhere(t *testing.T) {
 		},
 		{
 			query: `false and true or false`,
-			expected: setNameTest(&internal.BooleanExpression{
-				Left: &internal.Term{
-					Left: &internal.BooleanValue{
+			expected: setNameTest(&ottlgrammar.BooleanExpression{
+				Left: &ottlgrammar.Term{
+					Left: &ottlgrammar.BooleanValue{
 						ConstExpr: Booleanp(false),
 					},
-					Right: []*internal.OpAndBooleanValue{
+					Right: []*ottlgrammar.OpAndBooleanValue{
 						{
 							Operator: "and",
-							Value: &internal.BooleanValue{
+							Value: &ottlgrammar.BooleanValue{
 								ConstExpr: Booleanp(true),
 							},
 						},
 					},
 				},
-				Right: []*internal.OpOrTerm{
+				Right: []*ottlgrammar.OpOrTerm{
 					{
 						Operator: "or",
-						Term: &internal.Term{
-							Left: &internal.BooleanValue{
+						Term: &ottlgrammar.Term{
+							Left: &ottlgrammar.BooleanValue{
 								ConstExpr: Booleanp(false),
 							},
 						},
@@ -613,18 +613,18 @@ func Test_parseWhere(t *testing.T) {
 		},
 		{
 			query: `(false and true) or false`,
-			expected: setNameTest(&internal.BooleanExpression{
-				Left: &internal.Term{
-					Left: &internal.BooleanValue{
-						SubExpr: &internal.BooleanExpression{
-							Left: &internal.Term{
-								Left: &internal.BooleanValue{
+			expected: setNameTest(&ottlgrammar.BooleanExpression{
+				Left: &ottlgrammar.Term{
+					Left: &ottlgrammar.BooleanValue{
+						SubExpr: &ottlgrammar.BooleanExpression{
+							Left: &ottlgrammar.Term{
+								Left: &ottlgrammar.BooleanValue{
 									ConstExpr: Booleanp(false),
 								},
-								Right: []*internal.OpAndBooleanValue{
+								Right: []*ottlgrammar.OpAndBooleanValue{
 									{
 										Operator: "and",
-										Value: &internal.BooleanValue{
+										Value: &ottlgrammar.BooleanValue{
 											ConstExpr: Booleanp(true),
 										},
 									},
@@ -633,11 +633,11 @@ func Test_parseWhere(t *testing.T) {
 						},
 					},
 				},
-				Right: []*internal.OpOrTerm{
+				Right: []*ottlgrammar.OpOrTerm{
 					{
 						Operator: "or",
-						Term: &internal.Term{
-							Left: &internal.BooleanValue{
+						Term: &ottlgrammar.Term{
+							Left: &ottlgrammar.BooleanValue{
 								ConstExpr: Booleanp(false),
 							},
 						},
@@ -647,26 +647,26 @@ func Test_parseWhere(t *testing.T) {
 		},
 		{
 			query: `false and (true or false)`,
-			expected: setNameTest(&internal.BooleanExpression{
-				Left: &internal.Term{
-					Left: &internal.BooleanValue{
+			expected: setNameTest(&ottlgrammar.BooleanExpression{
+				Left: &ottlgrammar.Term{
+					Left: &ottlgrammar.BooleanValue{
 						ConstExpr: Booleanp(false),
 					},
-					Right: []*internal.OpAndBooleanValue{
+					Right: []*ottlgrammar.OpAndBooleanValue{
 						{
 							Operator: "and",
-							Value: &internal.BooleanValue{
-								SubExpr: &internal.BooleanExpression{
-									Left: &internal.Term{
-										Left: &internal.BooleanValue{
+							Value: &ottlgrammar.BooleanValue{
+								SubExpr: &ottlgrammar.BooleanExpression{
+									Left: &ottlgrammar.Term{
+										Left: &ottlgrammar.BooleanValue{
 											ConstExpr: Booleanp(true),
 										},
 									},
-									Right: []*internal.OpOrTerm{
+									Right: []*ottlgrammar.OpOrTerm{
 										{
 											Operator: "or",
-											Term: &internal.Term{
-												Left: &internal.BooleanValue{
+											Term: &ottlgrammar.Term{
+												Left: &ottlgrammar.BooleanValue{
 													ConstExpr: Booleanp(false),
 												},
 											},
@@ -681,41 +681,41 @@ func Test_parseWhere(t *testing.T) {
 		},
 		{
 			query: `name != "foo" and name != "bar"`,
-			expected: setNameTest(&internal.BooleanExpression{
-				Left: &internal.Term{
-					Left: &internal.BooleanValue{
-						Comparison: &internal.Comparison{
-							Left: internal.Value{
-								Path: &internal.Path{
-									Fields: []internal.Field{
+			expected: setNameTest(&ottlgrammar.BooleanExpression{
+				Left: &ottlgrammar.Term{
+					Left: &ottlgrammar.BooleanValue{
+						Comparison: &ottlgrammar.Comparison{
+							Left: ottlgrammar.Value{
+								Path: &ottlgrammar.Path{
+									Fields: []ottlgrammar.Field{
 										{
 											Name: "name",
 										},
 									},
 								},
 							},
-							Op: internal.NE,
-							Right: internal.Value{
+							Op: ottlgrammar.NE,
+							Right: ottlgrammar.Value{
 								String: ottltest.Strp("foo"),
 							},
 						},
 					},
-					Right: []*internal.OpAndBooleanValue{
+					Right: []*ottlgrammar.OpAndBooleanValue{
 						{
 							Operator: "and",
-							Value: &internal.BooleanValue{
-								Comparison: &internal.Comparison{
-									Left: internal.Value{
-										Path: &internal.Path{
-											Fields: []internal.Field{
+							Value: &ottlgrammar.BooleanValue{
+								Comparison: &ottlgrammar.Comparison{
+									Left: ottlgrammar.Value{
+										Path: &ottlgrammar.Path{
+											Fields: []ottlgrammar.Field{
 												{
 													Name: "name",
 												},
 											},
 										},
 									},
-									Op: internal.NE,
-									Right: internal.Value{
+									Op: ottlgrammar.NE,
+									Right: ottlgrammar.Value{
 										String: ottltest.Strp("bar"),
 									},
 								},
@@ -727,43 +727,43 @@ func Test_parseWhere(t *testing.T) {
 		},
 		{
 			query: `name == "foo" or name == "bar"`,
-			expected: setNameTest(&internal.BooleanExpression{
-				Left: &internal.Term{
-					Left: &internal.BooleanValue{
-						Comparison: &internal.Comparison{
-							Left: internal.Value{
-								Path: &internal.Path{
-									Fields: []internal.Field{
+			expected: setNameTest(&ottlgrammar.BooleanExpression{
+				Left: &ottlgrammar.Term{
+					Left: &ottlgrammar.BooleanValue{
+						Comparison: &ottlgrammar.Comparison{
+							Left: ottlgrammar.Value{
+								Path: &ottlgrammar.Path{
+									Fields: []ottlgrammar.Field{
 										{
 											Name: "name",
 										},
 									},
 								},
 							},
-							Op: internal.EQ,
-							Right: internal.Value{
+							Op: ottlgrammar.EQ,
+							Right: ottlgrammar.Value{
 								String: ottltest.Strp("foo"),
 							},
 						},
 					},
 				},
-				Right: []*internal.OpOrTerm{
+				Right: []*ottlgrammar.OpOrTerm{
 					{
 						Operator: "or",
-						Term: &internal.Term{
-							Left: &internal.BooleanValue{
-								Comparison: &internal.Comparison{
-									Left: internal.Value{
-										Path: &internal.Path{
-											Fields: []internal.Field{
+						Term: &ottlgrammar.Term{
+							Left: &ottlgrammar.BooleanValue{
+								Comparison: &ottlgrammar.Comparison{
+									Left: ottlgrammar.Value{
+										Path: &ottlgrammar.Path{
+											Fields: []ottlgrammar.Field{
 												{
 													Name: "name",
 												},
 											},
 										},
 									},
-									Op: internal.EQ,
-									Right: internal.Value{
+									Op: ottlgrammar.EQ,
+									Right: ottlgrammar.Value{
 										String: ottltest.Strp("bar"),
 									},
 								},
@@ -788,13 +788,13 @@ func Test_parseWhere(t *testing.T) {
 	}
 }
 
-var testSymbolTable = map[internal.EnumSymbol]Enum{
+var testSymbolTable = map[ottlgrammar.EnumSymbol]Enum{
 	"TEST_ENUM":     0,
 	"TEST_ENUM_ONE": 1,
 	"TEST_ENUM_TWO": 2,
 }
 
-func testParseEnum(val *internal.EnumSymbol) (*Enum, error) {
+func testParseEnum(val *ottlgrammar.EnumSymbol) (*Enum, error) {
 	if val != nil {
 		if enum, ok := testSymbolTable[*val]; ok {
 			return &enum, nil

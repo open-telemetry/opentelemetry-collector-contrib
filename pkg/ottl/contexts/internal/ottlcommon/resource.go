@@ -20,10 +20,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlgrammar"
 )
 
-func ResourcePathGetSetter(path []internal.Field) (ottl.GetSetter, error) {
+func ResourcePathGetSetter(path []ottlgrammar.Field) (ottl.GetSetter, error) {
 	if len(path) == 0 {
 		return accessResource(), nil
 	}
