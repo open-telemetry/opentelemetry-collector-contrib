@@ -26,24 +26,24 @@ import (
 )
 
 func fillComplexAttributeValueMap(m pcommon.Map) {
-	m.UpsertBool("result", true)
-	m.UpsertString("status", "ok")
-	m.UpsertDouble("value", 1.3)
-	m.UpsertInt("code", 200)
-	m.UpsertEmpty("null")
-	m.UpsertEmptySlice("array").AppendEmpty().SetStringVal("array")
-	m.UpsertEmptyMap("map").UpsertString("data", "hello world")
-	m.UpsertString("status", "ok")
+	m.PutBool("result", true)
+	m.PutString("status", "ok")
+	m.PutDouble("value", 1.3)
+	m.PutInt("code", 200)
+	m.PutEmpty("null")
+	m.PutEmptySlice("array").AppendEmpty().SetStringVal("array")
+	m.PutEmptyMap("map").PutString("data", "hello world")
+	m.PutString("status", "ok")
 }
 
 func createLogData(numberOfLogs int) plog.Logs {
 	logs := plog.NewLogs()
 	logs.ResourceLogs().AppendEmpty()
 	rl := logs.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().UpsertString("resourceKey", "resourceValue")
-	rl.Resource().Attributes().UpsertString(conventions.AttributeServiceName, "test-service")
-	rl.Resource().Attributes().UpsertString(conventions.AttributeHostName, "test-host")
-	rl.Resource().Attributes().UpsertString(conventions.AttributeServiceInstanceID, "test-instance")
+	rl.Resource().Attributes().PutString("resourceKey", "resourceValue")
+	rl.Resource().Attributes().PutString(conventions.AttributeServiceName, "test-service")
+	rl.Resource().Attributes().PutString(conventions.AttributeHostName, "test-host")
+	rl.Resource().Attributes().PutString(conventions.AttributeServiceInstanceID, "test-instance")
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.Scope().SetName("collector")
 	sl.Scope().SetVersion("v0.1.0")
@@ -51,9 +51,9 @@ func createLogData(numberOfLogs int) plog.Logs {
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
-		logRecord.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
-		logRecord.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-		logRecord.SetFlagsStruct(plog.DefaultLogRecordFlags.WithIsSampled(true))
+		logRecord.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+		logRecord.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+		logRecord.SetFlags(plog.DefaultLogRecordFlags.WithIsSampled(true))
 		logRecord.SetSeverityText("INFO")
 		logRecord.SetSeverityNumber(plog.SeverityNumberInfo)
 		logRecord.SetTimestamp(ts)
@@ -68,15 +68,15 @@ func createLogData(numberOfLogs int) plog.Logs {
 		case 4:
 			logRecord.Body().SetStringVal("4")
 		case 5:
-			fillComplexAttributeValueMap(logRecord.Attributes().UpsertEmptyMap("map-value"))
+			fillComplexAttributeValueMap(logRecord.Attributes().PutEmptyMap("map-value"))
 			logRecord.Body().SetStringVal("log contents")
 		case 6:
-			logRecord.Attributes().UpsertEmptySlice("array-value").AppendEmpty().SetStringVal("array")
+			logRecord.Attributes().PutEmptySlice("array-value").AppendEmpty().SetStringVal("array")
 			logRecord.Body().SetStringVal("log contents")
 		default:
 			logRecord.Body().SetStringVal("log contents")
 		}
-		logRecord.Attributes().UpsertString("custom", "custom")
+		logRecord.Attributes().PutString("custom", "custom")
 	}
 
 	return logs

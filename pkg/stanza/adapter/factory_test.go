@@ -23,15 +23,19 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 )
 
 func TestCreateReceiver(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
 		cfg := factory.CreateDefaultConfig().(*TestConfig)
-		cfg.Operators = []map[string]interface{}{
+		cfg.Operators = []operator.Config{
 			{
-				"type": "json_parser",
+				Builder: json.NewConfig(),
 			},
 		}
 		receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
@@ -51,23 +55,12 @@ func TestCreateReceiver(t *testing.T) {
 		require.NotNil(t, receiver, "receiver creation failed")
 	})
 
-	t.Run("DecodeInputConfigFailure", func(t *testing.T) {
-		factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
-		badCfg := factory.CreateDefaultConfig().(*TestConfig)
-		badCfg.Input = map[string]interface{}{
-			"type": "unknown",
-		}
-		receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), badCfg, consumertest.NewNop())
-		require.Error(t, err, "receiver creation should fail if input config isn't valid")
-		require.Nil(t, receiver, "receiver creation should fail if input config isn't valid")
-	})
-
 	t.Run("DecodeOperatorConfigsFailureMissingFields", func(t *testing.T) {
 		factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
 		badCfg := factory.CreateDefaultConfig().(*TestConfig)
-		badCfg.Operators = []map[string]interface{}{
+		badCfg.Operators = []operator.Config{
 			{
-				"badparam": "badvalue",
+				Builder: regex.NewConfig(),
 			},
 		}
 		receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), badCfg, consumertest.NewNop())

@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/golang/snappy"
+	"github.com/grafana/loki/pkg/logproto"
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,7 +39,6 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/tenant"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
 )
 
 const (
@@ -57,7 +57,7 @@ var (
 	}
 )
 
-func createLogData(numberOfLogs int, attributes pcommon.Map) plog.Logs {
+func createTestLogData(numberOfLogs int, attributes map[string]interface{}) plog.Logs {
 	logs := plog.NewLogs()
 	sl := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 
@@ -65,7 +65,7 @@ func createLogData(numberOfLogs int, attributes pcommon.Map) plog.Logs {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStringVal("mylog")
-		attributes.CopyTo(logRecord.Attributes())
+		logRecord.Attributes().FromRaw(attributes)
 		logRecord.SetTimestamp(ts)
 	}
 
@@ -107,13 +107,12 @@ func TestExporter_pushLogData(t *testing.T) {
 	}
 
 	genericGenLogsFunc := func() plog.Logs {
-		return createLogData(10,
-			pcommon.NewMapFromRaw(map[string]interface{}{
-				conventions.AttributeContainerName:  "api",
-				conventions.AttributeK8SClusterName: "local",
-				"resource.name":                     "myresource",
-				"severity":                          "debug",
-			}))
+		return createTestLogData(10, map[string]interface{}{
+			conventions.AttributeContainerName:  "api",
+			conventions.AttributeK8SClusterName: "local",
+			"resource.name":                     "myresource",
+			"severity":                          "debug",
+		})
 	}
 
 	genericConfig := &Config{
@@ -186,10 +185,9 @@ func TestExporter_pushLogData(t *testing.T) {
 			httpResponseCode: http.StatusOK,
 			testServer:       true,
 			genLogsFunc: func() plog.Logs {
-				return createLogData(10,
-					pcommon.NewMapFromRaw(map[string]interface{}{
-						"not.a.match": "random",
-					}))
+				return createTestLogData(10, map[string]interface{}{
+					"not.a.match": "random",
+				})
 			},
 			errFunc: func(err error) {
 				require.True(t, consumererror.IsPermanent(err))
@@ -205,18 +203,16 @@ func TestExporter_pushLogData(t *testing.T) {
 			genLogsFunc: func() plog.Logs {
 				outLogs := plog.NewLogs()
 
-				matchingLogs := createLogData(10,
-					pcommon.NewMapFromRaw(map[string]interface{}{
-						conventions.AttributeContainerName:  "api",
-						conventions.AttributeK8SClusterName: "local",
-						"severity":                          "debug",
-					}))
+				matchingLogs := createTestLogData(10, map[string]interface{}{
+					conventions.AttributeContainerName:  "api",
+					conventions.AttributeK8SClusterName: "local",
+					"severity":                          "debug",
+				})
 				matchingLogs.ResourceLogs().MoveAndAppendTo(outLogs.ResourceLogs())
 
-				nonMatchingLogs := createLogData(5,
-					pcommon.NewMapFromRaw(map[string]interface{}{
-						"not.a.match": "random",
-					}))
+				nonMatchingLogs := createTestLogData(5, map[string]interface{}{
+					"not.a.match": "random",
+				})
 				nonMatchingLogs.ResourceLogs().MoveAndAppendTo(outLogs.ResourceLogs())
 
 				return outLogs
@@ -338,7 +334,7 @@ func TestTenantSource(t *testing.T) {
 
 			ld := plog.NewLogs()
 			ld.ResourceLogs().AppendEmpty()
-			ld.ResourceLogs().At(0).Resource().Attributes().UpsertString("tenant.name", "acme")
+			ld.ResourceLogs().At(0).Resource().Attributes().PutString("tenant.name", "acme")
 
 			tenant, err := exp.tenantSource.GetTenant(ctx, ld)
 			assert.NoError(t, err)
@@ -378,7 +374,7 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		ts := pcommon.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
 		lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		lr.Body().SetStringVal("log message")
-		lr.Attributes().UpsertString("not.in.config", "not allowed")
+		lr.Attributes().PutString("not.in.config", "not allowed")
 		lr.SetTimestamp(ts)
 
 		pr, numDroppedLogs := exp.logDataToLoki(logs)
@@ -392,9 +388,9 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		ts := pcommon.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
 		lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		lr.Body().SetStringVal("log message")
-		lr.Attributes().UpsertString(conventions.AttributeContainerName, "mycontainer")
-		lr.Attributes().UpsertString("severity", "info")
-		lr.Attributes().UpsertString("random.attribute", "random attribute")
+		lr.Attributes().PutString(conventions.AttributeContainerName, "mycontainer")
+		lr.Attributes().PutString("severity", "info")
+		lr.Attributes().PutString("random.attribute", "random attribute")
 		lr.SetTimestamp(ts)
 
 		pr, numDroppedLogs := exp.logDataToLoki(logs)
@@ -410,16 +406,16 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		sl := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 		lr1 := sl.LogRecords().AppendEmpty()
 		lr1.Body().SetStringVal("log message 1")
-		lr1.Attributes().UpsertString(conventions.AttributeContainerName, "mycontainer")
-		lr1.Attributes().UpsertString(conventions.AttributeK8SClusterName, "mycluster")
-		lr1.Attributes().UpsertString("severity", "info")
+		lr1.Attributes().PutString(conventions.AttributeContainerName, "mycontainer")
+		lr1.Attributes().PutString(conventions.AttributeK8SClusterName, "mycluster")
+		lr1.Attributes().PutString("severity", "info")
 		lr1.SetTimestamp(ts)
 
 		lr2 := sl.LogRecords().AppendEmpty()
 		lr2.Body().SetStringVal("log message 2")
-		lr2.Attributes().UpsertString(conventions.AttributeContainerName, "mycontainer")
-		lr2.Attributes().UpsertString(conventions.AttributeK8SClusterName, "mycluster")
-		lr2.Attributes().UpsertString("severity", "info")
+		lr2.Attributes().PutString(conventions.AttributeContainerName, "mycontainer")
+		lr2.Attributes().PutString(conventions.AttributeK8SClusterName, "mycluster")
+		lr2.Attributes().PutString("severity", "info")
 		lr2.SetTimestamp(ts)
 
 		pr, numDroppedLogs := exp.logDataToLoki(logs)
@@ -436,16 +432,16 @@ func TestExporter_logDataToLoki(t *testing.T) {
 
 		lr1 := sl.LogRecords().AppendEmpty()
 		lr1.Body().SetStringVal("log message 1")
-		lr1.Attributes().UpsertString(conventions.AttributeContainerName, "mycontainer1")
-		lr1.Attributes().UpsertString(conventions.AttributeK8SClusterName, "mycluster1")
-		lr1.Attributes().UpsertString("severity", "debug")
+		lr1.Attributes().PutString(conventions.AttributeContainerName, "mycontainer1")
+		lr1.Attributes().PutString(conventions.AttributeK8SClusterName, "mycluster1")
+		lr1.Attributes().PutString("severity", "debug")
 		lr1.SetTimestamp(ts)
 
 		lr2 := sl.LogRecords().AppendEmpty()
 		lr2.Body().SetStringVal("log message 2")
-		lr2.Attributes().UpsertString(conventions.AttributeContainerName, "mycontainer2")
-		lr2.Attributes().UpsertString(conventions.AttributeK8SClusterName, "mycluster2")
-		lr2.Attributes().UpsertString("severity", "error")
+		lr2.Attributes().PutString(conventions.AttributeContainerName, "mycontainer2")
+		lr2.Attributes().PutString(conventions.AttributeK8SClusterName, "mycluster2")
+		lr2.Attributes().PutString("severity", "error")
 		lr2.SetTimestamp(ts)
 
 		pr, numDroppedLogs := exp.logDataToLoki(logs)
@@ -460,11 +456,11 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		logs := plog.NewLogs()
 		ts := pcommon.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
 		lr := logs.ResourceLogs().AppendEmpty()
-		lr.Resource().Attributes().UpsertString("not.in.config", "not allowed")
+		lr.Resource().Attributes().PutString("not.in.config", "not allowed")
 
 		lri := lr.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		lri.Body().SetStringVal("log message")
-		lri.Attributes().UpsertString("not.in.config", "not allowed")
+		lri.Attributes().PutString("not.in.config", "not allowed")
 		lri.SetTimestamp(ts)
 
 		pr, numDroppedLogs := exp.logDataToLoki(logs)
@@ -477,13 +473,13 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		logs := plog.NewLogs()
 		ts := pcommon.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
 		lr := logs.ResourceLogs().AppendEmpty()
-		lr.Resource().Attributes().UpsertString("resource.name", "myresource")
+		lr.Resource().Attributes().PutString("resource.name", "myresource")
 
 		lri := lr.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		lri.Body().SetStringVal("log message")
-		lri.Attributes().UpsertString(conventions.AttributeContainerName, "mycontainer")
-		lri.Attributes().UpsertString("severity", "info")
-		lri.Attributes().UpsertString("random.attribute", "random")
+		lri.Attributes().PutString(conventions.AttributeContainerName, "mycontainer")
+		lri.Attributes().PutString("severity", "info")
+		lri.Attributes().PutString("random.attribute", "random")
 		lri.SetTimestamp(ts)
 
 		pr, numDroppedLogs := exp.logDataToLoki(logs)
@@ -518,13 +514,13 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 
 	t.Run("with attributes that match", func(t *testing.T) {
 		am := pcommon.NewMap()
-		am.UpsertString(conventions.AttributeContainerName, "mycontainer")
-		am.UpsertString(conventions.AttributeK8SClusterName, "mycluster")
-		am.UpsertString("severity", "debug")
+		am.PutString(conventions.AttributeContainerName, "mycontainer")
+		am.PutString(conventions.AttributeK8SClusterName, "mycluster")
+		am.PutString("severity", "debug")
 		ram := pcommon.NewMap()
-		ram.UpsertString("resource.name", "myresource")
+		ram.PutString("resource.name", "myresource")
 		// this should overwrite log attribute of the same name
-		ram.UpsertString("severity", "info")
+		ram.PutString("severity", "info")
 
 		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		expLs := model.LabelSet{
@@ -538,7 +534,7 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 
 	t.Run("with attribute matches and the value is a boolean", func(t *testing.T) {
 		am := pcommon.NewMap()
-		am.UpsertBool("severity", false)
+		am.PutBool("severity", false)
 		ram := pcommon.NewMap()
 		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		require.Nil(t, ls)
@@ -546,7 +542,7 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 
 	t.Run("with attribute that matches and the value is a double", func(t *testing.T) {
 		am := pcommon.NewMap()
-		am.UpsertDouble("severity", float64(0))
+		am.PutDouble("severity", float64(0))
 		ram := pcommon.NewMap()
 		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		require.Nil(t, ls)
@@ -554,7 +550,7 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 
 	t.Run("with attribute that matches and the value is an int", func(t *testing.T) {
 		am := pcommon.NewMap()
-		am.UpsertInt("severity", 0)
+		am.PutInt("severity", 0)
 		ram := pcommon.NewMap()
 		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		require.Nil(t, ls)
@@ -562,7 +558,7 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 
 	t.Run("with attribute that matches and the value is null", func(t *testing.T) {
 		am := pcommon.NewMap()
-		am.UpsertEmpty("severity")
+		am.PutEmpty("severity")
 		ram := pcommon.NewMap()
 		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		require.Nil(t, ls)
@@ -571,16 +567,16 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 
 func TestExporter_convertLogBodyToEntry(t *testing.T) {
 	res := pcommon.NewResource()
-	res.Attributes().UpsertString("host.name", "something")
-	res.Attributes().UpsertString("pod.name", "something123")
+	res.Attributes().PutString("host.name", "something")
+	res.Attributes().PutString("pod.name", "something123")
 
 	lr := plog.NewLogRecord()
 	lr.Body().SetStringVal("Payment succeeded")
-	lr.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
-	lr.SetSpanID(pcommon.NewSpanID([8]byte{5, 6, 7, 8}))
+	lr.SetTraceID([16]byte{1, 2, 3, 4})
+	lr.SetSpanID([8]byte{5, 6, 7, 8})
 	lr.SetSeverityText("DEBUG")
 	lr.SetSeverityNumber(plog.SeverityNumberDebug)
-	lr.Attributes().UpsertString("payment_method", "credit_card")
+	lr.Attributes().PutString("payment_method", "credit_card")
 
 	ts := pcommon.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
 	lr.SetTimestamp(ts)
@@ -696,7 +692,7 @@ func TestExporter_convertLogtoJSONEntry(t *testing.T) {
 	lr.Body().SetStringVal("log message")
 	lr.SetTimestamp(ts)
 	res := pcommon.NewResource()
-	res.Attributes().UpsertString("host.name", "something")
+	res.Attributes().PutString("host.name", "something")
 
 	exp := newLegacyExporter(&Config{}, componenttest.NewNopTelemetrySettings())
 	entry, err := exp.convertLogToJSONEntry(lr, res)
@@ -719,7 +715,7 @@ func TestConvertRecordAttributesToLabels(t *testing.T) {
 			desc: "traceID",
 			lr: func() plog.LogRecord {
 				lr := plog.NewLogRecord()
-				lr.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+				lr.SetTraceID([16]byte{1, 2, 3, 4})
 				return lr
 			}(),
 			expected: func() model.LabelSet {
@@ -732,7 +728,7 @@ func TestConvertRecordAttributesToLabels(t *testing.T) {
 			desc: "spanID",
 			lr: func() plog.LogRecord {
 				lr := plog.NewLogRecord()
-				lr.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4}))
+				lr.SetSpanID([8]byte{1, 2, 3, 4})
 				return lr
 			}(),
 			expected: func() model.LabelSet {

@@ -47,7 +47,7 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 	return &TCPLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
+			Operators:        []operator.Config{},
 		},
 		InputConfig: *tcp.NewConfig(),
 	}
@@ -64,8 +64,7 @@ type TCPLogConfig struct {
 	adapter.BaseConfig `mapstructure:",squash"`
 }
 
-// DecodeInputConfig unmarshals the input operator
-func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
-	logConfig := cfg.(*TCPLogConfig)
-	return &operator.Config{Builder: &logConfig.InputConfig}, nil
+// InputConfig unmarshals the input operator
+func (f ReceiverType) InputConfig(cfg config.Receiver) operator.Config {
+	return operator.NewConfig(&cfg.(*TCPLogConfig).InputConfig)
 }

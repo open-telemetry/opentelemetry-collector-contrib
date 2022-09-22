@@ -183,7 +183,7 @@ func (a alertsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	if err := a.consumer.ConsumeLogs(req.Context(), *logs); err != nil {
+	if err := a.consumer.ConsumeLogs(req.Context(), logs); err != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
 		a.logger.Error("Failed to consumer alert as log", zap.Error(err))
 		return
@@ -222,12 +222,12 @@ func verifyHMACSignature(secret string, payload []byte, signatureHeader string) 
 	return nil
 }
 
-func payloadToLogs(now time.Time, payload []byte) (*plog.Logs, error) {
+func payloadToLogs(now time.Time, payload []byte) (plog.Logs, error) {
 	var alert model.Alert
 
 	err := json.Unmarshal(payload, &alert)
 	if err != nil {
-		return nil, err
+		return plog.Logs{}, err
 	}
 
 	logs := plog.NewLogs()
@@ -240,53 +240,53 @@ func payloadToLogs(now time.Time, payload []byte) (*plog.Logs, error) {
 	logRecord.Body().SetStringVal(string(payload))
 
 	resourceAttrs := resourceLogs.Resource().Attributes()
-	resourceAttrs.UpsertString("mongodbatlas.group.id", alert.GroupID)
-	resourceAttrs.UpsertString("mongodbatlas.alert.config.id", alert.AlertConfigID)
-	upsertStringToMapNotNil(resourceAttrs, "mongodbatlas.cluster.name", alert.ClusterName)
-	upsertStringToMapNotNil(resourceAttrs, "mongodbatlas.replica_set.name", alert.ReplicaSetName)
+	resourceAttrs.PutString("mongodbatlas.group.id", alert.GroupID)
+	resourceAttrs.PutString("mongodbatlas.alert.config.id", alert.AlertConfigID)
+	putStringToMapNotNil(resourceAttrs, "mongodbatlas.cluster.name", alert.ClusterName)
+	putStringToMapNotNil(resourceAttrs, "mongodbatlas.replica_set.name", alert.ReplicaSetName)
 
 	attrs := logRecord.Attributes()
 	// These attributes are always present
-	attrs.UpsertString("event.domain", "mongodbatlas")
-	attrs.UpsertString("event.name", alert.EventType)
-	attrs.UpsertString("message", alert.HumanReadable)
-	attrs.UpsertString("status", alert.Status)
-	attrs.UpsertString("created", alert.Created)
-	attrs.UpsertString("updated", alert.Updated)
-	attrs.UpsertString("id", alert.ID)
+	attrs.PutString("event.domain", "mongodbatlas")
+	attrs.PutString("event.name", alert.EventType)
+	attrs.PutString("message", alert.HumanReadable)
+	attrs.PutString("status", alert.Status)
+	attrs.PutString("created", alert.Created)
+	attrs.PutString("updated", alert.Updated)
+	attrs.PutString("id", alert.ID)
 
 	// These attributes are optional and may not be present, depending on the alert type.
-	upsertStringToMapNotNil(attrs, "metric.name", alert.MetricName)
-	upsertStringToMapNotNil(attrs, "type_name", alert.TypeName)
-	upsertStringToMapNotNil(attrs, "user_alias", alert.UserAlias)
-	upsertStringToMapNotNil(attrs, "last_notified", alert.LastNotified)
-	upsertStringToMapNotNil(attrs, "resolved", alert.Resolved)
-	upsertStringToMapNotNil(attrs, "acknowledgement.comment", alert.AcknowledgementComment)
-	upsertStringToMapNotNil(attrs, "acknowledgement.username", alert.AcknowledgementUsername)
-	upsertStringToMapNotNil(attrs, "acknowledgement.until", alert.AcknowledgedUntil)
+	putStringToMapNotNil(attrs, "metric.name", alert.MetricName)
+	putStringToMapNotNil(attrs, "type_name", alert.TypeName)
+	putStringToMapNotNil(attrs, "user_alias", alert.UserAlias)
+	putStringToMapNotNil(attrs, "last_notified", alert.LastNotified)
+	putStringToMapNotNil(attrs, "resolved", alert.Resolved)
+	putStringToMapNotNil(attrs, "acknowledgement.comment", alert.AcknowledgementComment)
+	putStringToMapNotNil(attrs, "acknowledgement.username", alert.AcknowledgementUsername)
+	putStringToMapNotNil(attrs, "acknowledgement.until", alert.AcknowledgedUntil)
 
 	if alert.CurrentValue != nil {
-		attrs.UpsertDouble("metric.value", alert.CurrentValue.Number)
-		attrs.UpsertString("metric.units", alert.CurrentValue.Units)
+		attrs.PutDouble("metric.value", alert.CurrentValue.Number)
+		attrs.PutString("metric.units", alert.CurrentValue.Units)
 	}
 
 	if alert.HostNameAndPort != nil {
 		host, portStr, err := net.SplitHostPort(*alert.HostNameAndPort)
 		if err != nil {
-			return nil, fmt.Errorf("failed to split host:port %s: %w", *alert.HostNameAndPort, err)
+			return plog.Logs{}, fmt.Errorf("failed to split host:port %s: %w", *alert.HostNameAndPort, err)
 		}
 
 		port, err := strconv.ParseInt(portStr, 10, 64)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse port %s: %w", portStr, err)
+			return plog.Logs{}, fmt.Errorf("failed to parse port %s: %w", portStr, err)
 		}
 
-		attrs.UpsertString("net.peer.name", host)
-		attrs.UpsertInt("net.peer.port", port)
+		attrs.PutString("net.peer.name", host)
+		attrs.PutInt("net.peer.port", port)
 
 	}
 
-	return &logs, nil
+	return logs, nil
 }
 
 func timestampFromAlert(a model.Alert) pcommon.Timestamp {
@@ -310,8 +310,8 @@ func severityFromAlert(a model.Alert) plog.SeverityNumber {
 	}
 }
 
-func upsertStringToMapNotNil(m pcommon.Map, k string, v *string) {
+func putStringToMapNotNil(m pcommon.Map, k string, v *string) {
 	if v != nil {
-		m.UpsertString(k, *v)
+		m.PutString(k, *v)
 	}
 }

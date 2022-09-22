@@ -231,8 +231,8 @@ func Test_resourceEnhancer_ConsumeMetrics(t *testing.T) {
 			want: func() pmetric.Metrics {
 				md := pmetric.NewMetrics()
 				attr := md.ResourceMetrics().AppendEmpty().Resource().Attributes()
-				attr.UpsertString("key1", "value1")
-				attr.UpsertString("key2", "value2")
+				attr.PutString("key1", "value1")
+				attr.PutString("key2", "value2")
 				attr.Sort()
 				return md
 			}(),

@@ -81,7 +81,7 @@ type targetAllocator struct {
 }
 
 var _ config.Receiver = (*Config)(nil)
-var _ config.Unmarshallable = (*Config)(nil)
+var _ confmap.Unmarshaler = (*Config)(nil)
 
 func checkFile(fn string) error {
 	// Nothing set, nothing to error on.

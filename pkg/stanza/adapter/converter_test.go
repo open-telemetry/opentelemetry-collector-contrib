@@ -185,11 +185,11 @@ func TestConvert(t *testing.T) {
 
 	if resAtts := rls.Resource().Attributes(); assert.Equal(t, 5, resAtts.Len()) {
 		m := pcommon.NewMap()
-		m.UpsertBool("bool", true)
-		m.UpsertInt("int", 123)
-		m.UpsertDouble("double", 12.34)
-		m.UpsertString("string", "hello")
-		m.UpsertEmptyMap("object")
+		m.PutBool("bool", true)
+		m.PutInt("int", 123)
+		m.PutDouble("double", 12.34)
+		m.PutString("string", "hello")
+		m.PutEmptyMap("object")
 		assert.EqualValues(t, m.Sort(), resAtts.Sort())
 	}
 
@@ -206,11 +206,11 @@ func TestConvert(t *testing.T) {
 
 	if atts := lr.Attributes(); assert.Equal(t, 5, atts.Len()) {
 		m := pcommon.NewMap()
-		m.UpsertBool("bool", true)
-		m.UpsertInt("int", 123)
-		m.UpsertDouble("double", 12.34)
-		m.UpsertString("string", "hello")
-		m.UpsertEmptyMap("object")
+		m.PutBool("bool", true)
+		m.PutInt("int", 123)
+		m.PutDouble("double", 12.34)
+		m.PutString("string", "hello")
+		m.PutEmptyMap("object")
 		assert.EqualValues(t, m.Sort(), atts.Sort())
 	}
 
@@ -218,11 +218,11 @@ func TestConvert(t *testing.T) {
 		m := pcommon.NewMap()
 		// Don't include a nested object because AttributeValueMap sorting
 		// doesn't sort recursively.
-		m.UpsertBool("bool", true)
-		m.UpsertInt("int", 123)
-		m.UpsertDouble("double", 12.34)
-		m.UpsertString("string", "hello")
-		m.UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("asdf")))
+		m.PutBool("bool", true)
+		m.PutInt("int", 123)
+		m.PutDouble("double", 12.34)
+		m.PutString("string", "hello")
+		m.PutEmptyBytes("bytes").FromRaw([]byte("asdf"))
 		assert.EqualValues(t, m.Sort(), lr.Body().MapVal().Sort())
 	}
 }
@@ -863,15 +863,15 @@ func TestConvertTrace(t *testing.T) {
 			0x01,
 		}})
 
-	require.Equal(t, pcommon.NewTraceID(
+	require.Equal(t, pcommon.TraceID(
 		[16]byte{
 			0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
 		}), record.TraceID())
-	require.Equal(t, pcommon.NewSpanID(
+	require.Equal(t, pcommon.SpanID(
 		[8]byte{
 			0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
 		}), record.SpanID())
-	require.Equal(t, uint32(0x01), uint32(record.FlagsStruct()))
+	require.Equal(t, uint32(0x01), uint32(record.Flags()))
 }
 
 func BenchmarkConverter(b *testing.B) {

@@ -131,6 +131,12 @@ attributes:
   ingest_pipeline_name:
     value: name
     description: Name of the ingest pipeline.
+  query_cache_count_type:
+    value: type
+    description: Type of query cache count
+    enum:
+      - hit
+      - miss
 metrics:
   # these metrics are from /_nodes/stats, and are node level metrics
   elasticsearch.breaker.memory.estimated:
@@ -176,6 +182,15 @@ metrics:
       value_type: int
     attributes: [cache_name]
     enabled: true
+  elasticsearch.node.cache.count:
+    description: Total count of query cache misses across all shards assigned to selected nodes.
+    unit: "{count}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [ query_cache_count_type ]
+    enabled: true
   elasticsearch.node.fs.disk.available:
     description: The amount of disk space available to the JVM across all file stores for this node. Depending on OS or process level restrictions, this might appear less than free. This is the actual amount of free disk space the Elasticsearch node can utilise.
     unit: By
@@ -203,18 +218,28 @@ metrics:
       value_type: int
     attributes: []
     enabled: true
+  # The calculation for node.disk.io.read is actually in KiBy(1024 bytes), not kBy (1000 bytes)
+  # The metric value calculation comes from sectors: https://github.com/elastic/elasticsearch/blob/3c6797f2d2271a30b24f505da55afbb5ea10733e/server/src/main/java/org/elasticsearch/monitor/fs/FsInfo.java#L287
+  # The metric value is gathered by reading disk stats files from https://github.com/elastic/elasticsearch/blob/3c6797f2d2271a30b24f505da55afbb5ea10733e/server/src/main/java/org/elasticsearch/monitor/fs/FsProbe.java#L117
+  # which come from a kernel https://www.kernel.org/doc/Documentation/ABI/testing/procfs-diskstats
+  # Linux always considers sectors to be 512 bytes https://github.com/torvalds/linux/blob/6f0d349d922ba44e4348a17a78ea51b7135965b1/include/linux/types.h#L125
   elasticsearch.node.disk.io.read:
     description: The total number of kilobytes read across all file stores for this node.
-    unit: By
+    unit: KiBy
     sum:
       monotonic: false
       aggregation: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
+  # The calculation for node.disk.io.write is actually in KiBy(1024 bytes), not kBy (1000 bytes)
+  # The metric value calculation comes from sectors: https://github.com/elastic/elasticsearch/blob/3c6797f2d2271a30b24f505da55afbb5ea10733e/server/src/main/java/org/elasticsearch/monitor/fs/FsInfo.java#L293
+  # The metric value is gathered by reading disk stats files from https://github.com/elastic/elasticsearch/blob/3c6797f2d2271a30b24f505da55afbb5ea10733e/server/src/main/java/org/elasticsearch/monitor/fs/FsProbe.java#L117
+  # which come from a kernel https://www.kernel.org/doc/Documentation/ABI/testing/procfs-diskstats
+  # Linux always considers sectors to be 512 bytes https://github.com/torvalds/linux/blob/6f0d349d922ba44e4348a17a78ea51b7135965b1/include/linux/types.h#L125
   elasticsearch.node.disk.io.write:
     description: The total number of kilobytes written across all file stores for this node.
-    unit: By
+    unit: KiBy
     sum:
       monotonic: false
       aggregation: cumulative
@@ -468,6 +493,25 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+    enabled: true
+  # these metrics are from /_cluster/pending_tasks, and are cluster level metrics
+  elasticsearch.cluster.pending_tasks:
+    description: The number of cluster-level changes that have not yet been executed.
+    unit: "{tasks}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.cluster.in_flight_fetch:
+    description: The number of unfinished fetches.
+    unit: "{fetches}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
     enabled: true
   # these metrics are from /_cluster/health, and are cluster level metrics
   elasticsearch.cluster.shards:

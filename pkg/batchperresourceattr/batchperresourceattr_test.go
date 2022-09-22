@@ -248,15 +248,15 @@ func sortTraces(tds []ptrace.Traces, attrKey string) {
 }
 
 func fillResourceSpans(rs ptrace.ResourceSpans, key string, val string) {
-	rs.Resource().Attributes().UpsertString(key, val)
-	rs.Resource().Attributes().UpsertInt("__other_key__", 123)
+	rs.Resource().Attributes().PutString(key, val)
+	rs.Resource().Attributes().PutInt("__other_key__", 123)
 	ils := rs.ScopeSpans().AppendEmpty()
 	firstSpan := ils.Spans().AppendEmpty()
 	firstSpan.SetName("first-span")
-	firstSpan.SetTraceID(pcommon.NewTraceID([16]byte{byte(rand.Int())}))
+	firstSpan.SetTraceID(pcommon.TraceID([16]byte{byte(rand.Int())}))
 	secondSpan := ils.Spans().AppendEmpty()
 	secondSpan.SetName("second-span")
-	secondSpan.SetTraceID(pcommon.NewTraceID([16]byte{byte(rand.Int())}))
+	secondSpan.SetTraceID(pcommon.TraceID([16]byte{byte(rand.Int())}))
 }
 
 func newMetrics(rms ...pmetric.ResourceMetrics) pmetric.Metrics {
@@ -282,15 +282,15 @@ func sortMetrics(tds []pmetric.Metrics, attrKey string) {
 }
 
 func fillResourceMetrics(rs pmetric.ResourceMetrics, key string, val string) {
-	rs.Resource().Attributes().UpsertString(key, val)
-	rs.Resource().Attributes().UpsertInt("__other_key__", 123)
+	rs.Resource().Attributes().PutString(key, val)
+	rs.Resource().Attributes().PutInt("__other_key__", 123)
 	ils := rs.ScopeMetrics().AppendEmpty()
 	firstMetric := ils.Metrics().AppendEmpty()
 	firstMetric.SetName("first-metric")
-	firstMetric.SetDataType(pmetric.MetricDataType(rand.Int() % 4))
+	firstMetric.SetEmptyGauge()
 	secondMetric := ils.Metrics().AppendEmpty()
 	secondMetric.SetName("second-metric")
-	secondMetric.SetDataType(pmetric.MetricDataType(rand.Int() % 4))
+	secondMetric.SetEmptySum()
 }
 
 func newLogs(rls ...plog.ResourceLogs) plog.Logs {
@@ -316,13 +316,13 @@ func sortLogs(tds []plog.Logs, attrKey string) {
 }
 
 func fillResourceLogs(rs plog.ResourceLogs, key string, val string) {
-	rs.Resource().Attributes().UpsertString(key, val)
-	rs.Resource().Attributes().UpsertInt("__other_key__", 123)
+	rs.Resource().Attributes().PutString(key, val)
+	rs.Resource().Attributes().PutInt("__other_key__", 123)
 	ils := rs.ScopeLogs().AppendEmpty()
 	firstLogRecord := ils.LogRecords().AppendEmpty()
-	firstLogRecord.SetFlagsStruct(plog.LogRecordFlags(rand.Int31()))
+	firstLogRecord.SetFlags(plog.LogRecordFlags(rand.Int31()))
 	secondLogRecord := ils.LogRecords().AppendEmpty()
-	secondLogRecord.SetFlagsStruct(plog.LogRecordFlags(rand.Int31()))
+	secondLogRecord.SetFlags(plog.LogRecordFlags(rand.Int31()))
 }
 
 func BenchmarkBatchPerResourceTraces(b *testing.B) {

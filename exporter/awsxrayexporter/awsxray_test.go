@@ -153,14 +153,14 @@ func constructW3CFormatTraceSpanData(ispans ptrace.ScopeSpans) {
 func constructResource() pcommon.Resource {
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
-	attrs.UpsertString(conventions.AttributeServiceName, "signup_aggregator")
-	attrs.UpsertString(conventions.AttributeContainerName, "signup_aggregator")
-	attrs.UpsertString(conventions.AttributeContainerImageName, "otel/signupaggregator")
-	attrs.UpsertString(conventions.AttributeContainerImageTag, "v1")
-	attrs.UpsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.UpsertString(conventions.AttributeCloudAccountID, "999999998")
-	attrs.UpsertString(conventions.AttributeCloudRegion, "us-west-2")
-	attrs.UpsertString(conventions.AttributeCloudAvailabilityZone, "us-west-1b")
+	attrs.PutString(conventions.AttributeServiceName, "signup_aggregator")
+	attrs.PutString(conventions.AttributeContainerName, "signup_aggregator")
+	attrs.PutString(conventions.AttributeContainerImageName, "otel/signupaggregator")
+	attrs.PutString(conventions.AttributeContainerImageTag, "v1")
+	attrs.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.PutString(conventions.AttributeCloudAccountID, "999999998")
+	attrs.PutString(conventions.AttributeCloudRegion, "us-west-2")
+	attrs.PutString(conventions.AttributeCloudAvailabilityZone, "us-west-1b")
 	return resource
 }
 
@@ -223,11 +223,11 @@ func constructSpanAttributes(attributes map[string]interface{}) pcommon.Map {
 	attrs := pcommon.NewMap()
 	for key, value := range attributes {
 		if cast, ok := value.(int); ok {
-			attrs.UpsertInt(key, int64(cast))
+			attrs.PutInt(key, int64(cast))
 		} else if cast, ok := value.(int64); ok {
-			attrs.UpsertInt(key, cast)
+			attrs.PutInt(key, cast)
 		} else {
-			attrs.UpsertString(key, fmt.Sprintf("%v", value))
+			attrs.PutString(key, fmt.Sprintf("%v", value))
 		}
 	}
 	return attrs
@@ -241,7 +241,7 @@ func newTraceID() pcommon.TraceID {
 	if err != nil {
 		panic(err)
 	}
-	return pcommon.NewTraceID(r)
+	return r
 }
 
 func constructW3CTraceID() pcommon.TraceID {
@@ -249,7 +249,7 @@ func constructW3CTraceID() pcommon.TraceID {
 	for i := range r {
 		r[i] = byte(rand.Intn(128))
 	}
-	return pcommon.NewTraceID(r)
+	return r
 }
 
 func newSegmentID() pcommon.SpanID {
@@ -258,5 +258,5 @@ func newSegmentID() pcommon.SpanID {
 	if err != nil {
 		panic(err)
 	}
-	return pcommon.NewSpanID(r)
+	return r
 }

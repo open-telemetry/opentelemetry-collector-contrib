@@ -333,12 +333,12 @@ func (p *processor) updateDurationMetrics(key string, duration float64) {
 
 func buildDimensions(e *store.Edge) pcommon.Map {
 	dims := pcommon.NewMap()
-	dims.UpsertString("client", e.ClientService)
-	dims.UpsertString("server", e.ServerService)
-	dims.UpsertString("connection_type", string(e.ConnectionType))
-	dims.UpsertBool("failed", e.Failed)
+	dims.PutString("client", e.ClientService)
+	dims.PutString("server", e.ServerService)
+	dims.PutString("connection_type", string(e.ConnectionType))
+	dims.PutBool("failed", e.Failed)
 	for k, v := range e.Dimensions {
-		dims.UpsertString(k, v)
+		dims.PutString(k, v)
 	}
 	return dims
 }
@@ -366,9 +366,8 @@ func (p *processor) buildMetrics() (pmetric.Metrics, error) {
 func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 	for key, c := range p.reqTotal {
 		mCount := ilm.Metrics().AppendEmpty()
-		mCount.SetDataType(pmetric.MetricDataTypeSum)
 		mCount.SetName("request_total")
-		mCount.Sum().SetIsMonotonic(true)
+		mCount.SetEmptySum().SetIsMonotonic(true)
 		// TODO: Support other aggregation temporalities
 		mCount.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 
@@ -387,9 +386,8 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 
 	for key, c := range p.reqFailedTotal {
 		mCount := ilm.Metrics().AppendEmpty()
-		mCount.SetDataType(pmetric.MetricDataTypeSum)
 		mCount.SetName("request_failed_total")
-		mCount.Sum().SetIsMonotonic(true)
+		mCount.SetEmptySum().SetIsMonotonic(true)
 		// TODO: Support other aggregation temporalities
 		mCount.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 
@@ -412,18 +410,17 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 func (p *processor) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 	for key := range p.reqDurationSecondsCount {
 		mDuration := ilm.Metrics().AppendEmpty()
-		mDuration.SetDataType(pmetric.MetricDataTypeHistogram)
 		mDuration.SetName("request_duration_seconds")
 		// TODO: Support other aggregation temporalities
-		mDuration.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 
 		timestamp := pcommon.NewTimestampFromTime(time.Now())
 
 		dpDuration := mDuration.Histogram().DataPoints().AppendEmpty()
 		dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 		dpDuration.SetTimestamp(timestamp)
-		dpDuration.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(p.reqDurationBounds))
-		dpDuration.SetBucketCounts(pcommon.NewImmutableUInt64Slice(p.reqDurationSecondsBucketCounts[key]))
+		dpDuration.ExplicitBounds().FromRaw(p.reqDurationBounds)
+		dpDuration.BucketCounts().FromRaw(p.reqDurationSecondsBucketCounts[key])
 		dpDuration.SetCount(p.reqDurationSecondsCount[key])
 		dpDuration.SetSum(p.reqDurationSecondsSum[key])
 

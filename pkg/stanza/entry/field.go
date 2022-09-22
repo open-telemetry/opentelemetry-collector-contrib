@@ -94,16 +94,6 @@ func NewField(s string) (Field, error) {
 	}
 }
 
-// MarshalJSON will marshal a field into JSON
-func (f Field) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf(`"%s"`, f.String())), nil
-}
-
-// MarshalYAML will marshal a field into YAML
-func (f Field) MarshalYAML() (interface{}, error) {
-	return f.String(), nil
-}
-
 type splitState uint
 
 const (

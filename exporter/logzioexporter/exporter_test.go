@@ -37,6 +37,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 const (
@@ -46,21 +48,10 @@ const (
 )
 
 var (
-	resourceAttributes1  = map[string]interface{}{"resource-attr": "resource-attr-val-1"}
 	TestLogTime          = time.Now()
 	TestLogTimeUnixMilli = TestLogTime.UnixMilli()
 	TestLogTimestamp     = pcommon.NewTimestampFromTime(TestLogTime)
 )
-
-// Resource Attributes
-func initResourceAttributes1(dest pcommon.Map) {
-	pcommon.NewMapFromRaw(resourceAttributes1).CopyTo(dest)
-}
-
-// Resources
-func initResource1(r pcommon.Resource) {
-	initResourceAttributes1(r.Attributes())
-}
 
 // Logs
 
@@ -69,21 +60,21 @@ func fillLogOne(log plog.LogRecord) {
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(plog.SeverityNumberInfo)
 	log.SetSeverityText("Info")
-	log.SetSpanID(pcommon.NewSpanID([8]byte{0x01, 0x02, 0x04, 0x08}))
-	log.SetTraceID(pcommon.NewTraceID([16]byte{0x08, 0x04, 0x02, 0x01}))
+	log.SetSpanID([8]byte{0x01, 0x02, 0x04, 0x08})
+	log.SetTraceID([16]byte{0x08, 0x04, 0x02, 0x01})
 
 	attrs := log.Attributes()
-	attrs.UpsertString("app", "server")
-	attrs.UpsertDouble("instance_num", 1)
+	attrs.PutString("app", "server")
+	attrs.PutDouble("instance_num", 1)
 
 	// nested body map
 	attMap := log.Body().SetEmptyMapVal()
-	attMap.UpsertDouble("23", 45)
-	attMap.UpsertString("foo", "bar")
-	attMap.UpsertString("message", "hello there")
-	attNestedMap := attMap.UpsertEmptyMap("nested")
-	attNestedMap.UpsertString("string", "v1")
-	attNestedMap.UpsertDouble("number", 499)
+	attMap.PutDouble("23", 45)
+	attMap.PutString("foo", "bar")
+	attMap.PutString("message", "hello there")
+	attNestedMap := attMap.PutEmptyMap("nested")
+	attNestedMap.PutString("string", "v1")
+	attNestedMap.PutDouble("number", 499)
 }
 
 func fillLogTwo(log plog.LogRecord) {
@@ -93,10 +84,10 @@ func fillLogTwo(log plog.LogRecord) {
 	log.SetSeverityText("Info")
 
 	attrs := log.Attributes()
-	attrs.UpsertString("customer", "acme")
-	attrs.UpsertDouble("number", 64)
-	attrs.UpsertBool("bool", true)
-	attrs.UpsertString("env", "dev")
+	attrs.PutString("customer", "acme")
+	attrs.PutDouble("number", 64)
+	attrs.PutBool("bool", true)
+	attrs.PutString("env", "dev")
 	log.Body().SetStringVal("something happened")
 }
 func fillLogNoTimestamp(log plog.LogRecord) {
@@ -105,58 +96,18 @@ func fillLogNoTimestamp(log plog.LogRecord) {
 	log.SetSeverityText("Info")
 
 	attrs := log.Attributes()
-	attrs.UpsertString("customer", "acme")
-	attrs.UpsertDouble("number", 64)
-	attrs.UpsertBool("bool", true)
-	attrs.UpsertString("env", "dev")
+	attrs.PutString("customer", "acme")
+	attrs.PutDouble("number", 64)
+	attrs.PutBool("bool", true)
+	attrs.PutString("env", "dev")
 	log.Body().SetStringVal("something happened")
 }
 
-func GenerateLogsOneEmptyTimestamp() plog.Logs {
-	ld := GenerateLogsOneEmptyLogRecord()
+func generateLogsOneEmptyTimestamp() plog.Logs {
+	ld := testdata.GenerateLogsOneEmptyLogRecord()
 	logs := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	fillLogOne(logs.At(0))
 	fillLogNoTimestamp(logs.AppendEmpty())
-	return ld
-}
-
-func GenerateLogsOneEmptyResourceLogs() plog.Logs {
-	ld := plog.NewLogs()
-	ld.ResourceLogs().AppendEmpty()
-	return ld
-}
-
-func GenerateLogsNoLogRecords() plog.Logs {
-	ld := GenerateLogsOneEmptyResourceLogs()
-	initResource1(ld.ResourceLogs().At(0).Resource())
-	return ld
-}
-
-func GenerateLogsOneEmptyLogRecord() plog.Logs {
-	ld := GenerateLogsNoLogRecords()
-	rs0 := ld.ResourceLogs().At(0)
-	rs0.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	return ld
-}
-
-func GenerateLogsManyLogRecordsSameResource(count int) plog.Logs {
-	ld := GenerateLogsOneEmptyLogRecord()
-	logs := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	logs.EnsureCapacity(count)
-	for i := 0; i < count; i++ {
-		var l plog.LogRecord
-		if i < logs.Len() {
-			l = logs.At(i)
-		} else {
-			l = logs.AppendEmpty()
-		}
-
-		if i%2 == 0 {
-			fillLogOne(l)
-		} else {
-			fillLogTwo(l)
-		}
-	}
 	return ld
 }
 
@@ -189,10 +140,10 @@ func newTestTracesWithAttributes() ptrace.Traces {
 	for i := 0; i < 10; i++ {
 		s := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		s.SetName(fmt.Sprintf("%s-%d", testOperation, i))
-		s.SetTraceID(pcommon.NewTraceID([16]byte{byte(i), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
-		s.SetSpanID(pcommon.NewSpanID([8]byte{byte(i), 0, 0, 0, 0, 0, 0, 2}))
+		s.SetTraceID(pcommon.TraceID([16]byte{byte(i), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
+		s.SetSpanID(pcommon.SpanID([8]byte{byte(i), 0, 0, 0, 0, 0, 0, 2}))
 		for j := 0; j < 5; j++ {
-			s.Attributes().UpsertString(fmt.Sprintf("k%d", j), fmt.Sprintf("v%d", j))
+			s.Attributes().PutString(fmt.Sprintf("k%d", j), fmt.Sprintf("v%d", j))
 		}
 		s.SetKind(ptrace.SpanKindServer)
 	}
@@ -203,8 +154,8 @@ func newTestTraces() ptrace.Traces {
 	td := ptrace.NewTraces()
 	s := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	s.SetName(testOperation)
-	s.SetTraceID(pcommon.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
-	s.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2}))
+	s.SetTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1})
+	s.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2})
 	s.SetKind(ptrace.SpanKindServer)
 	return td
 }
@@ -258,7 +209,7 @@ func TestExportErrors(tester *testing.T) {
 			},
 		}
 		td := newTestTracesWithAttributes()
-		ld := GenerateLogsManyLogRecordsSameResource(10)
+		ld := testdata.GenerateLogsManyLogRecordsSameResource(10)
 		err := testTracesExporter(td, tester, cfg)
 		fmt.Println(err.Error())
 		require.Error(tester, err)
@@ -327,8 +278,8 @@ func TestPushTraceData(tester *testing.T) {
 	defer server.Close()
 	td := newTestTraces()
 	res := td.ResourceSpans().At(0).Resource()
-	res.Attributes().UpsertString(conventions.AttributeServiceName, testService)
-	res.Attributes().UpsertString(conventions.AttributeHostName, testHost)
+	res.Attributes().PutString(conventions.AttributeServiceName, testService)
+	res.Attributes().PutString(conventions.AttributeHostName, testHost)
 	err := testTracesExporter(td, tester, &cfg)
 	require.NoError(tester, err)
 	var newSpan logzioSpan
@@ -359,10 +310,10 @@ func TestPushLogsData(tester *testing.T) {
 		},
 	}
 	defer server.Close()
-	ld := GenerateLogsManyLogRecordsSameResource(2)
+	ld := testdata.GenerateLogsManyLogRecordsSameResource(2)
 	res := ld.ResourceLogs().At(0).Resource()
-	res.Attributes().UpsertString(conventions.AttributeServiceName, testService)
-	res.Attributes().UpsertString(conventions.AttributeHostName, testHost)
+	res.Attributes().PutString(conventions.AttributeServiceName, testService)
+	res.Attributes().PutString(conventions.AttributeHostName, testHost)
 	err := testLogsExporter(ld, tester, &cfg)
 	require.NoError(tester, err)
 	var jsonLog map[string]interface{}

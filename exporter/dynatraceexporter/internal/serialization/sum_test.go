@@ -104,26 +104,26 @@ func Test_serializeSumPoint(t *testing.T) {
 	t.Run("different dimensions should be treated as separate counters", func(t *testing.T) {
 		dp := pmetric.NewNumberDataPoint()
 		dp.SetIntVal(5)
-		dp.Attributes().UpsertString("sort", "unstable")
-		dp.Attributes().UpsertString("group", "a")
+		dp.Attributes().PutString("sort", "unstable")
+		dp.Attributes().PutString("group", "a")
 		dp.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		dp2 := pmetric.NewNumberDataPoint()
 		dp2.SetIntVal(10)
-		dp2.Attributes().UpsertString("sort", "unstable")
-		dp2.Attributes().UpsertString("group", "b")
+		dp2.Attributes().PutString("sort", "unstable")
+		dp2.Attributes().PutString("group", "b")
 		dp2.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		dp3 := pmetric.NewNumberDataPoint()
 		dp3.SetIntVal(10)
-		dp3.Attributes().UpsertString("group", "a")
-		dp3.Attributes().UpsertString("sort", "unstable")
+		dp3.Attributes().PutString("group", "a")
+		dp3.Attributes().PutString("sort", "unstable")
 		dp3.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		dp4 := pmetric.NewNumberDataPoint()
 		dp4.SetIntVal(20)
-		dp4.Attributes().UpsertString("group", "b")
-		dp4.Attributes().UpsertString("sort", "unstable")
+		dp4.Attributes().PutString("group", "b")
+		dp4.Attributes().PutString("sort", "unstable")
 		dp4.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		prev := ttlmap.New(1, 1)
@@ -172,9 +172,8 @@ func Test_serializeSum(t *testing.T) {
 	empty := dimensions.NewNormalizedDimensionList()
 	t.Run("non-monotonic delta is dropped", func(t *testing.T) {
 		metric := pmetric.NewMetric()
-		metric.SetDataType(pmetric.MetricDataTypeSum)
 		metric.SetName("metric_name")
-		sum := metric.Sum()
+		sum := metric.SetEmptySum()
 		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 		sum.SetIsMonotonic(false)
 		prev := ttlmap.New(10, 10)
@@ -199,9 +198,8 @@ func Test_serializeSum(t *testing.T) {
 
 	t.Run("monotonic delta", func(t *testing.T) {
 		metric := pmetric.NewMetric()
-		metric.SetDataType(pmetric.MetricDataTypeSum)
 		metric.SetName("metric_name")
-		sum := metric.Sum()
+		sum := metric.SetEmptySum()
 		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 		sum.SetIsMonotonic(true)
 
@@ -253,9 +251,8 @@ func Test_serializeSum(t *testing.T) {
 
 	t.Run("non-monotonic cumulative", func(t *testing.T) {
 		metric := pmetric.NewMetric()
-		metric.SetDataType(pmetric.MetricDataTypeSum)
 		metric.SetName("metric_name")
-		sum := metric.Sum()
+		sum := metric.SetEmptySum()
 		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		sum.SetIsMonotonic(false)
 		dp := sum.DataPoints().AppendEmpty()
@@ -312,9 +309,8 @@ func Test_serializeSum(t *testing.T) {
 
 	t.Run("monotonic cumulative", func(t *testing.T) {
 		metric := pmetric.NewMetric()
-		metric.SetDataType(pmetric.MetricDataTypeSum)
 		metric.SetName("metric_name")
-		sum := metric.Sum()
+		sum := metric.SetEmptySum()
 		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		sum.SetIsMonotonic(true)
 		dp1 := sum.DataPoints().AppendEmpty()

@@ -50,25 +50,13 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 
 #### Transition from metrics with "direction" attribute
 
-There is a proposal to change some memcached metrics from being reported with a `direction` attribute to being
-reported with the direction included in the metric name.
+The proposal to change metrics from being reported with a `direction` attribute has been reverted in the specification. As a result, the
+following feature gates will be removed in v0.62.0:
 
-- `memcached.network` will become:
-  - `memcached.network.sent`
-  - `memcached.network.received`
+- **receiver.memcachedreceiver.emitMetricsWithoutDirectionAttribute**
+- **receiver.memcachedreceiver.emitMetricsWithDirectionAttribute**
 
-The following feature gates control the transition process:
-
-- **receiver.memcachedreceiver.emitMetricsWithoutDirectionAttribute**: controls if the new metrics without
-  `direction` attribute are emitted by the receiver.
-- **receiver.memcachedreceiver.emitMetricsWithDirectionAttribute**: controls if the deprecated metrics with
-  `direction`
-  attribute are emitted by the receiver.
-
-##### Transition schedule:
-
-The final decision on the transition is not finalized yet. The transition is on hold until
-https://github.com/open-telemetry/opentelemetry-specification/issues/2726 is resolved.
+For additional information, see https://github.com/open-telemetry/opentelemetry-specification/issues/2726.
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

@@ -25,14 +25,14 @@ import (
 
 func TestMetricIdentity_Write(t *testing.T) {
 	resource := pcommon.NewResource()
-	resource.Attributes().UpsertBool("resource", true)
+	resource.Attributes().PutBool("resource", true)
 
 	il := pcommon.NewInstrumentationScope()
 	il.SetName("ilm_name")
 	il.SetVersion("ilm_version")
 
 	attributes := pcommon.NewMap()
-	attributes.UpsertString("label", "value")
+	attributes.PutString("label", "value")
 	type fields struct {
 		Resource               pcommon.Resource
 		InstrumentationLibrary pcommon.InstrumentationScope
@@ -43,7 +43,6 @@ func TestMetricIdentity_Write(t *testing.T) {
 		StartTimestamp         pcommon.Timestamp
 		Attributes             pcommon.Map
 		MetricValueType        pmetric.NumberDataPointValueType
-		MetricField            string
 	}
 	tests := []struct {
 		name   string
@@ -74,16 +73,15 @@ func TestMetricIdentity_Write(t *testing.T) {
 			want: []string{"C" + SEPSTR + "B", "Y"},
 		},
 		{
-			name: "histogram sum",
+			name: "histogram",
 			fields: fields{
 				Resource:               resource,
 				InstrumentationLibrary: il,
 				Attributes:             attributes,
 				MetricDataType:         pmetric.MetricDataTypeHistogram,
 				MetricValueType:        pmetric.NumberDataPointValueTypeInt,
-				MetricField:            "bound_100",
 			},
-			want: []string{"D" + SEPSTR + "B", "bound_100"},
+			want: []string{"D" + SEPSTR + "B"},
 		},
 	}
 	for _, tt := range tests {
@@ -98,7 +96,6 @@ func TestMetricIdentity_Write(t *testing.T) {
 				StartTimestamp:         tt.fields.StartTimestamp,
 				Attributes:             tt.fields.Attributes,
 				MetricValueType:        tt.fields.MetricValueType,
-				MetricField:            tt.fields.MetricField,
 			}
 			b := &bytes.Buffer{}
 			mi.Write(b)

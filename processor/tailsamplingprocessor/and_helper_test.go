@@ -17,58 +17,45 @@ package tailsamplingprocessor
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
 func TestAndHelper(t *testing.T) {
-	andCfg := &AndCfg{
-		SubPolicyCfg: []AndSubPolicyCfg{
-			{
-				Name: "test-and-policy-1",
-				Type: AlwaysSample,
+	t.Run("valid", func(t *testing.T) {
+		actual, err := getNewAndPolicy(zap.NewNop(), &AndCfg{
+			SubPolicyCfg: []AndSubPolicyCfg{
+				{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name:       "test-and-policy-1",
+						Type:       Latency,
+						LatencyCfg: LatencyCfg{ThresholdMs: 100},
+					},
+				},
 			},
-			{
-				Name:                "test-and-policy-2",
-				Type:                NumericAttribute,
-				NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
-			},
-			{
-				Name:               "test-and-policy-3",
-				Type:               StringAttribute,
-				StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
-			},
-			{
-				Name:            "test-and-policy-4",
-				Type:            RateLimiting,
-				RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 10},
-			},
-			{
-				Name:          "test-and-policy-5",
-				Type:          StatusCode,
-				StatusCodeCfg: StatusCodeCfg{StatusCodes: []string{"ERROR", "UNSET"}},
-			},
-			{
-				Name:             "test-and-policy-6",
-				Type:             Probabilistic,
-				ProbabilisticCfg: ProbabilisticCfg{HashSalt: "salt", SamplingPercentage: 10},
-			},
-			{
-				Name:          "test-and-policy-3",
-				Type:          TraceState,
-				TraceStateCfg: TraceStateCfg{Key: "key3", Values: []string{"value1", "value2"}},
-			},
-			{
-				Name:         "test-and-policy-1",
-				Type:         SpanCount,
-				SpanCountCfg: SpanCountCfg{MinSpans: 2},
-			},
-		},
-	}
+		})
+		require.NoError(t, err)
 
-	for i := range andCfg.SubPolicyCfg {
-		policy, e := getAndSubPolicyEvaluator(zap.NewNop(), &andCfg.SubPolicyCfg[i])
-		require.NotNil(t, policy)
-		require.NoError(t, e)
-	}
+		expected := sampling.NewAnd(zap.NewNop(), []sampling.PolicyEvaluator{
+			sampling.NewLatency(zap.NewNop(), 100),
+		})
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("unsupported sampling policy type", func(t *testing.T) {
+		_, err := getNewAndPolicy(zap.NewNop(), &AndCfg{
+			SubPolicyCfg: []AndSubPolicyCfg{
+				{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name: "test-and-policy-2",
+						Type: And, // nested and is not allowed
+					},
+				},
+			},
+		})
+		require.EqualError(t, err, "unknown sampling policy type and")
+	})
 }

@@ -15,8 +15,8 @@
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 
 import (
-	"bytes"
 	"strconv"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -269,10 +269,12 @@ func getLogGroupMetadata(logGroups pcommon.Slice, isArn bool) []awsxray.LogGroup
 	return lgm
 }
 
+// Log group name will always be in the 7th position of the ARN
+// https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/iam-access-control-overview-cwl.html#CWL_ARN_Format
 func parseLogGroup(arn string) string {
-	i := bytes.LastIndexByte([]byte(arn), byte(':'))
-	if i != -1 {
-		return arn[i+1:]
+	parts := strings.Split(arn, ":")
+	if len(parts) >= 7 {
+		return parts[6]
 	}
 
 	return arn

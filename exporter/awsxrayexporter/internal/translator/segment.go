@@ -219,7 +219,7 @@ func newSegmentID() pcommon.SpanID {
 	if err != nil {
 		panic(err)
 	}
-	return pcommon.NewSpanID(r)
+	return pcommon.SpanID(r)
 }
 
 func determineAwsOrigin(resource pcommon.Resource) string {
@@ -290,7 +290,7 @@ func convertToAmazonTraceID(traceID pcommon.TraceID) (string, error) {
 	var (
 		content      = [traceIDLength]byte{}
 		epochNow     = time.Now().Unix()
-		traceIDBytes = traceID.Bytes()
+		traceIDBytes = traceID
 		epoch        = int64(binary.BigEndian.Uint32(traceIDBytes[0:4]))
 		b            = [4]byte{}
 	)

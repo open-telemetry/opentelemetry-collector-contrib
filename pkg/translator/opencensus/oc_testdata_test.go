@@ -615,16 +615,16 @@ func generateOCTestMetricDoubleSummary() *ocmetrics.Metric {
 
 func generateResourceWithOcNodeAndResource() pcommon.Resource {
 	resource := pcommon.NewResource()
-	resource.Attributes().UpsertString(occonventions.AttributeProcessStartTime, "2020-02-11T20:26:00Z")
-	resource.Attributes().UpsertString(conventions.AttributeHostName, "host1")
-	resource.Attributes().UpsertInt(conventions.AttributeProcessPID, 123)
-	resource.Attributes().UpsertString(conventions.AttributeTelemetrySDKVersion, "v2.0.1")
-	resource.Attributes().UpsertString(occonventions.AttributeExporterVersion, "v1.2.0")
-	resource.Attributes().UpsertString(conventions.AttributeTelemetrySDKLanguage, "cpp")
-	resource.Attributes().UpsertString(occonventions.AttributeResourceType, "good-resource")
-	resource.Attributes().UpsertString("node-str-attr", "node-str-attr-val")
-	resource.Attributes().UpsertString("resource-str-attr", "resource-str-attr-val")
-	resource.Attributes().UpsertInt("resource-int-attr", 123)
+	resource.Attributes().PutString(occonventions.AttributeProcessStartTime, "2020-02-11T20:26:00Z")
+	resource.Attributes().PutString(conventions.AttributeHostName, "host1")
+	resource.Attributes().PutInt(conventions.AttributeProcessPID, 123)
+	resource.Attributes().PutString(conventions.AttributeTelemetrySDKVersion, "v2.0.1")
+	resource.Attributes().PutString(occonventions.AttributeExporterVersion, "v1.2.0")
+	resource.Attributes().PutString(conventions.AttributeTelemetrySDKLanguage, "cpp")
+	resource.Attributes().PutString(occonventions.AttributeResourceType, "good-resource")
+	resource.Attributes().PutString("node-str-attr", "node-str-attr-val")
+	resource.Attributes().PutString("resource-str-attr", "resource-str-attr-val")
+	resource.Attributes().PutInt("resource-int-attr", 123)
 	return resource
 }
 
