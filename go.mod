@@ -190,14 +190,14 @@ require (
 	github.com/ClickHouse/ch-go v0.47.3 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.3.0 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.29 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.40.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/otlp/model v0.40.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/quantile v0.40.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.40.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.40.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.40.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.40.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.40.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.40.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/otlp/model v0.40.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/quantile v0.40.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.40.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.40.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.40.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.40.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.40.0-rc.2 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc // indirect
 	github.com/DataDog/sketches-go v1.4.1 // indirect
@@ -502,7 +502,7 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.9 // indirect
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 // indirect
 	github.com/seccomp/libseccomp-golang v0.9.2-0.20220502022130-f33da4d89646 // indirect
-	github.com/secure-systems-lab/go-securesystemslib v0.3.1 // indirect
+	github.com/secure-systems-lab/go-securesystemslib v0.4.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/sercand/kuberesolver v2.4.0+incompatible // indirect
 	github.com/shirou/gopsutil/v3 v3.22.8 // indirect
