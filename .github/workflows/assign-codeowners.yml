@@ -2,13 +2,14 @@ name: 'Assign code owners'
 on:
   pull_request:
     types: [labeled]
+    
+permissions: write-all
 
 jobs:
   assign-owner:
     if: ${{ contains(github.event.label.name, 'cmd/') || contains(github.event.label.name, 'exporter/') || contains(github.event.label.name, 'extension/') || contains(github.event.label.name, 'pkg/') || contains(github.event.label.name, 'processor/') || contains(github.event.label.name, 'receiver/') }}
 
     runs-on: ubuntu-latest
-    permissions: write-all
     steps:
       - uses: actions/checkout@v3
 
