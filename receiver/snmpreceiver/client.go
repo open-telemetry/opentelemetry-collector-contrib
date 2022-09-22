@@ -34,10 +34,21 @@ var (
 	errNoWalkOIDs       = errors.New(`all WALK OIDs requests have failed`)
 )
 
+type oidDataType byte
+
+const (
+	NotSupported oidDataType = 0x00
+	Integer      oidDataType = 0x01
+	UInteger     oidDataType = 0x02
+	Float        oidDataType = 0x03
+	String       oidDataType = 0x04
+)
+
 type snmpData struct {
 	parentOID string // optional
 	oid       string
 	value     interface{}
+	valueType oidDataType
 }
 
 type processFunc func(data snmpData) error
@@ -60,16 +71,6 @@ var _ client = (*snmpClient)(nil)
 
 // newClient creates an initialized client (but with no token)
 func newClient(cfg *Config, host component.Host, settings component.TelemetrySettings, logger *zap.Logger) (client, error) {
-	endpoint := cfg.Endpoint
-	if !strings.Contains(endpoint, "://") {
-		endpoint = "udp://" + endpoint
-	}
-
-	snmpUrl, err := url.Parse(endpoint)
-	if err != nil {
-		return nil, err
-	}
-
 	var snmpVersion gosnmp.SnmpVersion
 	switch cfg.Version {
 	case "v3":
@@ -82,15 +83,20 @@ func newClient(cfg *Config, host component.Host, settings component.TelemetrySet
 		return nil, fmt.Errorf("invalid version")
 	}
 
-	// Only allow udp{4,6} and tcp{4,6}.
-	// Allowing ip{4,6} does not make sense as specifying a port
-	// requires the specification of a protocol.
-	// gosnmp does not handle these errors well, which is why
-	// they can result in cryptic errors by net.Dial.
-	var transport string
+	endpoint := cfg.Endpoint
+	if !strings.Contains(endpoint, "://") {
+		endpoint = "udp://" + endpoint
+	}
+
+	snmpUrl, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	var scheme string
 	switch snmpUrl.Scheme {
 	case "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6":
-		transport = snmpUrl.Scheme
+		scheme = snmpUrl.Scheme
 	default:
 		return nil, fmt.Errorf("unsupported scheme: %v", snmpUrl.Scheme)
 	}
@@ -99,25 +105,92 @@ func newClient(cfg *Config, host component.Host, settings component.TelemetrySet
 	if portStr == "" {
 		portStr = "161"
 	}
+
 	port, err := strconv.ParseUint(portStr, 10, 16)
 	if err != nil {
 		return nil, fmt.Errorf("parsing port: %w", err)
 	}
 
 	goSNMP := &gosnmp.GoSNMP{
-		Transport: transport,
+		Transport: scheme,
 		Target:    snmpUrl.Hostname(),
 		Port:      uint16(port),
-		Community: cfg.Community,
 		Version:   snmpVersion,
 		Timeout:   cfg.CollectionInterval,
 		MaxOids:   gosnmp.Default.MaxOids,
+	}
+
+	if snmpVersion == gosnmp.Version3 {
+		if err != nil {
+			return nil, err
+		}
+		goSNMP.SecurityModel = gosnmp.UserSecurityModel
+		securityParams := &gosnmp.UsmSecurityParameters{
+			UserName: cfg.User,
+		}
+		switch strings.ToUpper(cfg.SecurityLevel) {
+		case "NO_AUTH_NO_PRIV":
+			goSNMP.MsgFlags = gosnmp.NoAuthNoPriv
+		case "AUTH_NO_PRIV":
+			goSNMP.MsgFlags = gosnmp.AuthNoPriv
+			securityParams.AuthenticationProtocol = getAuthProtocol(cfg.AuthType)
+			securityParams.AuthenticationPassphrase = cfg.AuthPassword
+		case "AUTH_PRIV":
+			goSNMP.MsgFlags = gosnmp.AuthPriv
+			securityParams.AuthenticationProtocol = getAuthProtocol(cfg.AuthType)
+			securityParams.AuthenticationPassphrase = cfg.AuthPassword
+			securityParams.PrivacyProtocol = getPrivacyProtocol(cfg.PrivacyType)
+			securityParams.PrivacyPassphrase = cfg.PrivacyPassword
+		default:
+			goSNMP.MsgFlags = gosnmp.NoAuthNoPriv
+		}
+		goSNMP.SecurityParameters = securityParams
+	} else {
+		goSNMP.Community = cfg.Community
 	}
 
 	return &snmpClient{
 		client: goSNMP,
 		logger: logger,
 	}, nil
+}
+
+func getAuthProtocol(authType string) gosnmp.SnmpV3AuthProtocol {
+	switch strings.ToUpper(authType) {
+	case "MD5":
+		return gosnmp.MD5
+	case "SHA":
+		return gosnmp.SHA
+	case "SHA224":
+		return gosnmp.SHA224
+	case "SHA256":
+		return gosnmp.SHA256
+	case "SHA384":
+		return gosnmp.SHA384
+	case "SHA512":
+		return gosnmp.SHA512
+	default:
+		return gosnmp.MD5
+	}
+}
+
+func getPrivacyProtocol(privacyType string) gosnmp.SnmpV3PrivProtocol {
+	switch strings.ToUpper(privacyType) {
+	case "DES":
+		return gosnmp.DES
+	case "AES":
+		return gosnmp.AES
+	case "AES192":
+		return gosnmp.AES192
+	case "AES192C":
+		return gosnmp.AES192C
+	case "AES256":
+		return gosnmp.AES256
+	case "AES256C":
+		return gosnmp.AES256C
+	default:
+		return gosnmp.DES
+	}
 }
 
 func (c *snmpClient) Connect() error {
@@ -133,7 +206,7 @@ func (c *snmpClient) GetScalarData(oids []string, processFn processFunc) error {
 	processOIDSuccess := false
 
 	for _, oids := range chunkedOIDs {
-		// Having issues trying to get BulkGet to work right
+		// Not sure if GetBulk would work right based on how the receiver and configuration are currently working
 		packets, err := c.client.Get(oids)
 		if err != nil {
 			c.logger.Warn("Problem with GET oids", zap.Error(err))
@@ -143,10 +216,11 @@ func (c *snmpClient) GetScalarData(oids []string, processFn processFunc) error {
 		}
 
 		for _, data := range packets.Variables {
-			snmpData := snmpData{
-				oid:   data.Name,
-				value: data.Value,
+			if data.Value == nil {
+				c.logger.Warn(fmt.Sprintf("Data for OID: %s not found", data.Name))
+				continue
 			}
+			snmpData := c.convertSnmpPDUToSnmpData(data)
 			if err := processFn(snmpData); err != nil {
 				c.logger.Warn(fmt.Sprintf("Problem with processing data for OID: %s", snmpData.oid), zap.Error(err))
 			} else {
@@ -171,16 +245,18 @@ func (c *snmpClient) GetIndexedData(oids []string, processFn processFunc) error 
 
 	for _, oid := range oids {
 		walkFn := func(data gosnmp.SnmpPDU) error {
-			snmpData := snmpData{
-				parentOID: oid,
-				oid:       data.Name,
-				value:     data.Value,
-			}
+			snmpData := c.convertSnmpPDUToSnmpData(data)
+			snmpData.parentOID = oid
 
 			return processFn(snmpData)
 		}
-		// TODO: Determine if we can use BulkWalk
-		err := c.client.Walk(oid, walkFn)
+
+		var err error
+		if c.client.Version == gosnmp.Version1 {
+			err = c.client.Walk(oid, walkFn)
+		} else {
+			err = c.client.BulkWalk(oid, walkFn)
+		}
 		if err != nil {
 			c.logger.Warn("Problem with WALK oids", zap.Error(err))
 			continue
@@ -194,6 +270,160 @@ func (c *snmpClient) GetIndexedData(oids []string, processFn processFunc) error 
 	}
 
 	return nil
+}
+
+func (c *snmpClient) convertSnmpPDUToSnmpData(pdu gosnmp.SnmpPDU) snmpData {
+	snmpData := snmpData{
+		oid: pdu.Name,
+	}
+
+	switch pdu.Type {
+
+	// Integer types
+	case gosnmp.Counter32:
+		fallthrough
+	case gosnmp.Gauge32:
+		fallthrough
+	case gosnmp.Uinteger32:
+		fallthrough
+	case gosnmp.TimeTicks:
+		fallthrough
+	case gosnmp.Integer:
+		snmpData.valueType = Integer
+		snmpData.value = c.toInt64(pdu.Name, pdu.Value)
+		return snmpData
+
+	// String types
+	case gosnmp.IPAddress:
+		fallthrough
+	case gosnmp.ObjectIdentifier:
+		fallthrough
+	case gosnmp.OctetString:
+		snmpData.valueType = String
+		snmpData.value = toString(pdu.Value)
+		return snmpData
+
+	// Float types
+	case gosnmp.OpaqueFloat:
+		fallthrough
+	case gosnmp.OpaqueDouble:
+		snmpData.valueType = Float
+		snmpData.value = c.toFloat64(pdu.Name, pdu.Value)
+		return snmpData
+
+	// Not supported types either because gosnmp doesn't support them
+	// or they are a type that doesn't translate well to OTEL
+	case gosnmp.UnknownType:
+		fallthrough
+	case gosnmp.Counter64:
+		fallthrough
+	case gosnmp.NsapAddress:
+		fallthrough
+	case gosnmp.ObjectDescription:
+		fallthrough
+	case gosnmp.BitString:
+		fallthrough
+	case gosnmp.NoSuchObject:
+		fallthrough
+	case gosnmp.NoSuchInstance:
+		fallthrough
+	case gosnmp.EndOfMibView:
+		fallthrough
+	case gosnmp.Opaque:
+		fallthrough
+	case gosnmp.Null:
+		fallthrough
+	case gosnmp.Boolean:
+		fallthrough
+	default:
+		snmpData.valueType = NotSupported
+		snmpData.value = pdu.Value
+		return snmpData
+	}
+}
+
+// toInt64 converts SnmpPDU.Value to int64, or returns a zero int64 for
+// non int-like types (eg strings) or a uint64.
+//
+// This is a convenience function to make working with SnmpPDU's easier - it
+// reduces the need for type assertions. A int64 is convenient, as SNMP can
+// return int32, uint32, and int64.
+func (c snmpClient) toInt64(name string, value interface{}) int64 {
+	var val int64
+
+	switch value := value.(type) { // shadow
+	case int:
+		val = int64(value)
+	case int8:
+		val = int64(value)
+	case int16:
+		val = int64(value)
+	case int32:
+		val = int64(value)
+	case int64:
+		val = value
+	case uint:
+		val = int64(value)
+	case uint8:
+		val = int64(value)
+	case uint16:
+		val = int64(value)
+	case uint32:
+		val = int64(value)
+	default:
+		c.logger.Warn(fmt.Sprintf("Unexpected type while converting OID: %s data to int64. Returning 0", name))
+		val = 0
+	}
+
+	return val
+}
+
+// toFloat64 converts SnmpPDU.Value to float64, or returns a zero float64 for
+// non float-like types (eg strings).
+//
+// This is a convenience function to make working with SnmpPDU's easier - it
+// reduces the need for type assertions. A float64 is convenient, as SNMP can
+// return float32 and float64.
+func (c snmpClient) toFloat64(name string, value interface{}) float64 {
+	var val float64
+
+	switch value := value.(type) { // shadow
+	case float32:
+		val = float64(value)
+	case float64:
+		val = value
+	case string:
+		// for testing and other apps - numbers may appear as strings
+		var err error
+		if val, err = strconv.ParseFloat(value, 64); err != nil {
+			c.logger.Warn(fmt.Sprintf("Problem converting OID: %s data to float64. Returning 0", name), zap.Error(err))
+			val = 0
+		}
+	default:
+		c.logger.Warn(fmt.Sprintf("Unexpected type while converting OID: %s data to float64. Returning 0", name))
+		val = 0
+	}
+
+	return val
+}
+
+// toString converts SnmpPDU.Value to string
+//
+// This is a convenience function to make working with SnmpPDU's easier - it
+// reduces the need for type assertions.
+func toString(value interface{}) string {
+	var val string
+
+	switch value := value.(type) { // shadow
+	case []byte:
+		val = string(value)
+	case string:
+		val = value
+	default:
+		val = fmt.Sprintf("%v", value)
+	}
+
+	return val
 }
 
 func chunkArray(initArray []string, chunkSize int) [][]string {

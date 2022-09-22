@@ -16,11 +16,12 @@ package snmpreceiver // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/gosnmp/gosnmp"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -100,6 +101,10 @@ func (s *snmpScraper) scrapeScalarMetrics(now pcommon.Timestamp, metricSlice *pm
 		}
 	}
 
+	if len(scalarMetricOIDs) == 0 {
+		return nil
+	}
+
 	// Get all scalar OID data and turn it into metrics/attributes
 	err := s.client.GetScalarData(scalarMetricOIDs, scalarDataToMetric(now, metricSlice, scalarMetricNamesByOID, s.cfg))
 	if err != nil {
@@ -119,6 +124,13 @@ func scalarDataToMetric(
 ) processFunc {
 	// returns a function because this is what the client GetScalarData method requires
 	return func(data snmpData) error {
+		switch data.valueType {
+		case NotSupported:
+			fallthrough
+		case String:
+			return fmt.Errorf("Returned metric data for OID: %s is not supported", data.oid)
+		}
+
 		// retrieve the metric config for this piece of SNMP data
 		metricName := scalarMetricNamesByOID[data.oid]
 		metricCfg := cfg.Metrics[metricName]
@@ -157,7 +169,12 @@ func scalarDataToMetric(
 		// creates a data point based on the SNMP data
 		dp := dps.AppendEmpty()
 		dp.SetTimestamp(now)
-		dp.SetIntVal(gosnmp.ToBigInt(data.value).Int64())
+		switch data.valueType {
+		case Integer:
+			dp.SetIntVal(data.value.(int64))
+		case Float:
+			dp.SetDoubleVal(data.value.(float64))
+		}
 
 		// set enum attributes for this metric based on the previously gathered attributes
 		// values will comes from these attributes and keys will come from the attribute config
@@ -201,6 +218,10 @@ func (s *snmpScraper) scrapeIndexedMetrics(now pcommon.Timestamp, resourceMetric
 		}
 	}
 
+	if len(indexedMetricOIDs) == 0 {
+		return nil
+	}
+
 	// Get all column OID data for metrics and turn it into metrics and attributes
 	// (using the previously retrieved attribute data)
 	err := s.client.GetIndexedData(
@@ -227,6 +248,12 @@ func indexedDataToMetric(
 ) processFunc {
 	// returns a function because this is what the client GetIndexedData method requires
 	return func(data snmpData) error {
+		switch data.valueType {
+		case NotSupported:
+			fallthrough
+		case String:
+			return fmt.Errorf("Returned metric data for OID: %s is not supported", data.oid)
+		}
 		// retrieve the metric config for this piece of SNMP data
 		cfg := snmpScraper.cfg
 		metricName := indexedMetricNamesByOID[data.parentOID]
@@ -303,7 +330,12 @@ func indexedDataToMetric(
 		// creates a data point based on the SNMP data
 		dp := dps.AppendEmpty()
 		dp.SetTimestamp(now)
-		dp.SetIntVal(gosnmp.ToBigInt(data.value).Int64())
+		switch data.valueType {
+		case Integer:
+			dp.SetIntVal(data.value.(int64))
+		case Float:
+			dp.SetDoubleVal(data.value.(float64))
+		}
 
 		// set attributes for this metric based on the previously gathered attributes
 		// keys will come from the attribute config and values will come from either the
@@ -367,12 +399,23 @@ func indexedDataToAttribute(
 ) processFunc {
 	// returns a function because this is what the client GetIndexedData method requires
 	return func(data snmpData) error {
+		var stringValue string
+		switch data.valueType {
+		case NotSupported:
+			return fmt.Errorf("Returned attribute data for OID: %s from column OID: %s is not supported", data.oid, data.parentOID)
+		case String:
+			stringValue = data.value.(string)
+		case Integer:
+			stringValue = strconv.FormatInt(data.value.(int64), 10)
+		case Float:
+			stringValue = strconv.FormatFloat(data.value.(float64), 'f', 2, 64)
+		}
 		// For each piece of SNMP data related to an attribute column OID store it in a map
 		indexString := strings.TrimPrefix(data.oid, data.parentOID)
 		if indexedAttributeMapByOID[data.parentOID] == nil {
 			indexedAttributeMapByOID[data.parentOID] = map[string]string{}
 		}
-		indexedAttributeMapByOID[data.parentOID][indexString] = string(data.value.([]byte))
+		indexedAttributeMapByOID[data.parentOID][indexString] = stringValue
 
 		return nil
 	}
@@ -409,12 +452,23 @@ func indexedDataToResourceAttributes(
 ) processFunc {
 	// returns a function because this is what the client GetIndexedData method requires
 	return func(data snmpData) error {
+		var stringValue string
+		switch data.valueType {
+		case NotSupported:
+			return fmt.Errorf("Returned resource attribute data for OID: %s from column OID: %s is not supported", data.oid, data.parentOID)
+		case String:
+			stringValue = data.value.(string)
+		case Integer:
+			stringValue = strconv.FormatInt(data.value.(int64), 10)
+		case Float:
+			stringValue = strconv.FormatFloat(data.value.(float64), 'f', 2, 64)
+		}
 		// For each piece of SNMP data related to a resource attribute column OID store it in a map
 		indexString := strings.TrimPrefix(data.oid, data.parentOID)
 		if indexedResoiurceAttributeMapByOID[data.parentOID] == nil {
 			indexedResoiurceAttributeMapByOID[data.parentOID] = map[string]string{}
 		}
-		indexedResoiurceAttributeMapByOID[data.parentOID][indexString] = string(data.value.([]byte))
+		indexedResoiurceAttributeMapByOID[data.parentOID][indexString] = stringValue
 
 		return nil
 	}
