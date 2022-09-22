@@ -15,15 +15,14 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/functions/ottlcommon"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/functions/ottlotel"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottlfuncs"
 )
 
 var registry = map[string]interface{}{
-	"IsMatch":              ottlcommon.IsMatch,
-	"delete_key":           ottlotel.DeleteKey,
-	"delete_matching_keys": ottlotel.DeleteMatchingKeys,
+	"IsMatch":              ottlfuncs.IsMatch,
+	"delete_key":           ottlfuncs.DeleteKey,
+	"delete_matching_keys": ottlfuncs.DeleteMatchingKeys,
 	// noop function, it is required since the parsing of conditions is not implemented yet,
 	// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13545
 	"route": func(_ []string) (ottl.ExprFunc, error) {

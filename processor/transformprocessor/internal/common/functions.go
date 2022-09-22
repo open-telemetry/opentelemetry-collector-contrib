@@ -15,26 +15,25 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/functions/ottlcommon"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/functions/ottlotel"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottlfuncs"
 )
 
 var registry = map[string]interface{}{
-	"TraceID":              ottlotel.TraceID,
-	"SpanID":               ottlotel.SpanID,
-	"IsMatch":              ottlcommon.IsMatch,
-	"Concat":               ottlcommon.Concat,
-	"Split":                ottlotel.Split,
-	"keep_keys":            ottlotel.KeepKeys,
-	"set":                  ottlcommon.Set,
-	"truncate_all":         ottlotel.TruncateAll,
-	"limit":                ottlotel.Limit,
-	"replace_match":        ottlcommon.ReplaceMatch,
-	"replace_all_matches":  ottlotel.ReplaceAllMatches,
-	"replace_pattern":      ottlcommon.ReplacePattern,
-	"replace_all_patterns": ottlotel.ReplaceAllPatterns,
-	"delete_key":           ottlotel.DeleteKey,
-	"delete_matching_keys": ottlotel.DeleteMatchingKeys,
+	"TraceID":              ottlfuncs.TraceID,
+	"SpanID":               ottlfuncs.SpanID,
+	"IsMatch":              ottlfuncs.IsMatch,
+	"Concat":               ottlfuncs.Concat,
+	"Split":                ottlfuncs.Split,
+	"keep_keys":            ottlfuncs.KeepKeys,
+	"set":                  ottlfuncs.Set,
+	"truncate_all":         ottlfuncs.TruncateAll,
+	"limit":                ottlfuncs.Limit,
+	"replace_match":        ottlfuncs.ReplaceMatch,
+	"replace_all_matches":  ottlfuncs.ReplaceAllMatches,
+	"replace_pattern":      ottlfuncs.ReplacePattern,
+	"replace_all_patterns": ottlfuncs.ReplaceAllPatterns,
+	"delete_key":           ottlfuncs.DeleteKey,
+	"delete_matching_keys": ottlfuncs.DeleteMatchingKeys,
 }
 
 func Functions() map[string]interface{} {

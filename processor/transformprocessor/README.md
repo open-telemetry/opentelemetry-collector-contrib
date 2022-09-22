@@ -71,9 +71,8 @@ The transform processor utilizes the OTTL's standard contexts for Traces, Metric
 ## Supported functions:
 
 Since the transform processor utilizes the OTTL's contexts for Traces, Metrics, and Logs, it is able to utilize functions that expect pdata in addition to any common functions. These common functions can be used for any signal.
-
-- [Common OTTL functions](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/oteltransformationlanguage/functions/ottlcommon)
-- [Otel OTTL functions](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/oteltransformationlanguage/functions/ottlotel)
+<!-- markdown-link-check-disable-next-line -->
+- [OTTL Functions](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/oteltransformationlanguage/ottlfuncs)
 
 In addition to OTTL functions, the processor defines its own functions to help with transformations specific to this processor:
 
