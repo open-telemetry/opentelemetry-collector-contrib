@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottl/ottltest"
 )
@@ -80,7 +81,7 @@ func Test_newComparisonEvaluator(t *testing.T) {
 		defaultFunctionsForTests(),
 		testParsePath,
 		testParseEnum,
-		NoOpLogger{},
+		component.TelemetrySettings{},
 	)
 
 	tests := []struct {
@@ -131,7 +132,7 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 		defaultFunctionsForTests(),
 		testParsePath,
 		testParseEnum,
-		NoOpLogger{},
+		component.TelemetrySettings{},
 	)
 
 	tests := []struct {
@@ -164,7 +165,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 		defaultFunctionsForTests(),
 		testParsePath,
 		testParseEnum,
-		NoOpLogger{},
+		component.TelemetrySettings{},
 	)
 
 	tests := []struct {

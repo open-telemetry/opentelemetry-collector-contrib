@@ -33,7 +33,7 @@ import (
 
 func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 	// prepare
-	exp := newTracesProcessor(zap.NewNop(), &Config{
+	exp := newTracesProcessor(component.TelemetrySettings{}, &Config{
 		DefaultExporters: []string{"otlp"},
 		FromAttribute:    "X-Tenant",
 		Table: []RoutingTableItem{
@@ -74,7 +74,7 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 
 func TestTraces_InvalidExporter(t *testing.T) {
 	//  prepare
-	exp := newTracesProcessor(zap.NewNop(), &Config{
+	exp := newTracesProcessor(component.TelemetrySettings{}, &Config{
 		DefaultExporters: []string{"otlp"},
 		FromAttribute:    "X-Tenant",
 		Table: []RoutingTableItem{
@@ -119,7 +119,7 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		},
 	}
 
-	exp := newTracesProcessor(zap.NewNop(), &Config{
+	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -179,7 +179,7 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 		},
 	}
 
-	exp := newTracesProcessor(zap.NewNop(), &Config{
+	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  contextAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -243,7 +243,7 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 		},
 	}
 
-	exp := newTracesProcessor(zap.NewNop(), &Config{
+	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -301,7 +301,7 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 		},
 	}
 
-	exp := newTracesProcessor(zap.NewNop(), &Config{
+	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		AttributeSource:              resourceAttributeSource,
 		FromAttribute:                "X-Tenant",
 		DropRoutingResourceAttribute: true,
@@ -352,7 +352,7 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		},
 	}
 
-	exp := newTracesProcessor(zap.NewNop(), &Config{
+	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		DefaultExporters: []string{"otlp"},
 		Table: []RoutingTableItem{
 			{
@@ -472,7 +472,7 @@ func TestTraceProcessorCapabilities(t *testing.T) {
 	}
 
 	// test
-	p := newTracesProcessor(zap.NewNop(), config)
+	p := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, config)
 	require.NotNil(t, p)
 
 	// verify

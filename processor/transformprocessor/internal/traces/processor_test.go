@@ -223,7 +223,7 @@ func TestProcess(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.query, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]string{tt.query}, Functions(), component.ProcessorCreateSettings{})
+			processor, err := NewProcessor([]string{tt.query}, Functions(), component.TelemetrySettings{})
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessTraces(context.Background(), td)
@@ -273,7 +273,7 @@ func BenchmarkTwoSpans(b *testing.B) {
 
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			processor, err := NewProcessor(tt.queries, Functions(), component.ProcessorCreateSettings{})
+			processor, err := NewProcessor(tt.queries, Functions(), component.TelemetrySettings{})
 			assert.NoError(b, err)
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
@@ -315,7 +315,7 @@ func BenchmarkHundredSpans(b *testing.B) {
 	}
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			processor, err := NewProcessor(tt.queries, Functions(), component.ProcessorCreateSettings{})
+			processor, err := NewProcessor(tt.queries, Functions(), component.TelemetrySettings{})
 			assert.NoError(b, err)
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {

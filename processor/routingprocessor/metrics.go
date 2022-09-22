@@ -38,18 +38,18 @@ type metricsProcessor struct {
 	router    router[component.MetricsExporter]
 }
 
-func newMetricProcessor(logger *zap.Logger, config config.Processor) *metricsProcessor {
+func newMetricProcessor(settings component.TelemetrySettings, config config.Processor) *metricsProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
 	return &metricsProcessor{
-		logger: logger,
+		logger: settings.Logger,
 		config: cfg,
 		router: newRouter[component.MetricsExporter](
 			cfg.Table,
 			cfg.DefaultExporters,
-			logger,
+			settings,
 		),
-		extractor: newExtractor(cfg.FromAttribute, logger),
+		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
 }
 

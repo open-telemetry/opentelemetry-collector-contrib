@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottl/ottltest"
 )
@@ -32,13 +33,13 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 	functions["testing_string"] = functionWithString
 	functions["testing_byte_slice"] = functionWithByteSlice
 	functions["testing_enum"] = functionWithEnum
-	functions["testing_logger_first"] = functionWithLoggerFirst
+	functions["testing_telemetry_settings_first"] = functionWithTelemetrySettingsFirst
 
 	p := NewParser(
 		functions,
 		testParsePath,
 		testParseEnum,
-		NoOpLogger{},
+		component.TelemetrySettings{},
 	)
 
 	tests := []struct {
@@ -120,9 +121,9 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
-			name: "not enough args with logger",
+			name: "not enough args with telemetrySettings",
 			inv: Invocation{
-				Function: "testing_logger_first",
+				Function: "testing_telemetry_settings_first",
 				Arguments: []Value{
 					{
 						String: ottltest.Strp("test"),
@@ -134,9 +135,9 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
-			name: "too many args with logger",
+			name: "too many args with telemetrySettings",
 			inv: Invocation{
-				Function: "testing_logger_first",
+				Function: "testing_telemetry_settings_first",
 				Arguments: []Value{
 					{
 						String: ottltest.Strp("test"),
@@ -213,7 +214,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		defaultFunctionsForTests(),
 		testParsePath,
 		testParseEnum,
-		NoOpLogger{},
+		component.TelemetrySettings{},
 	)
 
 	tests := []struct {
@@ -480,9 +481,9 @@ func Test_NewFunctionCall(t *testing.T) {
 			},
 		},
 		{
-			name: "logger first",
+			name: "telemetrySettings first",
 			inv: Invocation{
-				Function: "testing_logger_first",
+				Function: "testing_telemetry_settings_first",
 				Arguments: []Value{
 					{
 						String: ottltest.Strp("test0"),
@@ -497,9 +498,9 @@ func Test_NewFunctionCall(t *testing.T) {
 			},
 		},
 		{
-			name: "logger middle",
+			name: "telemetrySettings middle",
 			inv: Invocation{
-				Function: "testing_logger_middle",
+				Function: "testing_telemetry_settings_middle",
 				Arguments: []Value{
 					{
 						String: ottltest.Strp("test0"),
@@ -514,9 +515,9 @@ func Test_NewFunctionCall(t *testing.T) {
 			},
 		},
 		{
-			name: "logger last",
+			name: "telemetrySettings last",
 			inv: Invocation{
-				Function: "testing_logger_last",
+				Function: "testing_telemetry_settings_last",
 				Arguments: []Value{
 					{
 						String: ottltest.Strp("test0"),
@@ -630,19 +631,19 @@ func functionWithEnum(_ Enum) (ExprFunc, error) {
 	}, nil
 }
 
-func functionWithLoggerFirst(_ Logger, _ string, _ string, _ int64) (ExprFunc, error) {
+func functionWithTelemetrySettingsFirst(_ component.TelemetrySettings, _ string, _ string, _ int64) (ExprFunc, error) {
 	return func(ctx TransformContext) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithLoggerMiddle(_ string, _ string, _ Logger, _ int64) (ExprFunc, error) {
+func functionWithTelemetrySettingsMiddle(_ string, _ string, _ component.TelemetrySettings, _ int64) (ExprFunc, error) {
 	return func(ctx TransformContext) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithLoggerLast(_ string, _ string, _ int64, _ Logger) (ExprFunc, error) {
+func functionWithTelemetrySettingsLast(_ string, _ string, _ int64, _ component.TelemetrySettings) (ExprFunc, error) {
 	return func(ctx TransformContext) interface{} {
 		return "anything"
 	}, nil
@@ -664,8 +665,8 @@ func defaultFunctionsForTests() map[string]interface{} {
 	functions["testing_bool"] = functionWithBool
 	functions["testing_multiple_args"] = functionWithMultipleArgs
 	functions["testing_enum"] = functionWithEnum
-	functions["testing_logger_first"] = functionWithLoggerFirst
-	functions["testing_logger_middle"] = functionWithLoggerMiddle
-	functions["testing_logger_last"] = functionWithLoggerLast
+	functions["testing_telemetry_settings_first"] = functionWithTelemetrySettingsFirst
+	functions["testing_telemetry_settings_middle"] = functionWithTelemetrySettingsMiddle
+	functions["testing_telemetry_settings_last"] = functionWithTelemetrySettingsLast
 	return functions
 }
