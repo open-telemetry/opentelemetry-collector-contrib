@@ -387,7 +387,7 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/pkg/oteltransformationlanguage"
+    directory: "/pkg/ottl"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

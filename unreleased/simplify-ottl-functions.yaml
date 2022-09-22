@@ -2,7 +2,7 @@
 change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: oteltransformationlanguage
+component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Flattens ottlcommon and ottlotel into ottlfuncs.
