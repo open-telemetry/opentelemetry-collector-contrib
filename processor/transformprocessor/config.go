@@ -15,14 +15,15 @@
 package transformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
 
 import (
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottldatapoints"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottllogs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottltraces"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottlconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
@@ -43,7 +44,7 @@ func (c *Config) Validate() error {
 		traces.Functions(),
 		ottltraces.ParsePath,
 		ottltraces.ParseEnum,
-		ottl.NoOpLogger{},
+		component.TelemetrySettings{},
 	)
 	_, err := ottlp.ParseQueries(c.Traces.Queries)
 	if err != nil {
@@ -54,7 +55,7 @@ func (c *Config) Validate() error {
 		metrics.Functions(),
 		ottldatapoints.ParsePath,
 		ottldatapoints.ParseEnum,
-		ottl.NoOpLogger{},
+		component.TelemetrySettings{},
 	)
 	_, err = ottlp.ParseQueries(c.Metrics.Queries)
 	if err != nil {
@@ -65,7 +66,7 @@ func (c *Config) Validate() error {
 		logs.Functions(),
 		ottllogs.ParsePath,
 		ottllogs.ParseEnum,
-		ottl.NoOpLogger{},
+		component.TelemetrySettings{},
 	)
 	_, err = ottlp.ParseQueries(c.Logs.Queries)
 	if err != nil {

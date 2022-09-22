@@ -25,7 +25,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottllogs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
 )
 
 var _ component.LogsProcessor = (*logProcessor)(nil)
@@ -38,18 +38,18 @@ type logProcessor struct {
 	router    router[component.LogsExporter]
 }
 
-func newLogProcessor(logger *zap.Logger, config config.Processor) *logProcessor {
+func newLogProcessor(settings component.TelemetrySettings, config config.Processor) *logProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
 	return &logProcessor{
-		logger: logger,
+		logger: settings.Logger,
 		config: cfg,
 		router: newRouter[component.LogsExporter](
 			cfg.Table,
 			cfg.DefaultExporters,
-			logger,
+			settings,
 		),
-		extractor: newExtractor(cfg.FromAttribute, logger),
+		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
 }
 

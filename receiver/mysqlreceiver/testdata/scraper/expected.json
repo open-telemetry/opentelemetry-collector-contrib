@@ -1048,7 +1048,16 @@
                ]
             }
          ],
-         "resource": {}
+         "resource": {
+            "attributes": [
+               {
+                  "key": "mysql.instance.endpoint",
+                  "value": {
+                     "stringValue": "localhost:3306"
+                  }
+               }
+            ]
+         }
       }
    ]
 }

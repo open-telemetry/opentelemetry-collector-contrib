@@ -5,7 +5,7 @@ change_type: breaking
 component: oteltransformationlanguage
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Renames ottlmetrics to ottldatapoints to better represent how the context is intended to be used.
+note: Renames ottldatapoints to ottldatapoints to better represent how the context is intended to be used.
 
 # One or more tracking issues related to the change
 issues: [14384]
