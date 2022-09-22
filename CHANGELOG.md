@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `opentelemetry-instrumentation-grpc` add supports to filter requests to instrument. ([#1241](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1241))
 - Flask sqlalchemy psycopg2 integration
   ([#1224](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1224))
+- Add metric instrumentation in Falcon
+  ([#1230](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1230))
 - Add metric instrumentation in fastapi
   ([#1199](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1199))
 - Add metric instrumentation in Pyramid
