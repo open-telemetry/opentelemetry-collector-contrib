@@ -15,10 +15,10 @@
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
-
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
 )
 
 // Query holds a top level Query for processing telemetry data. A Query is a combination of a function
