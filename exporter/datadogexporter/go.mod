@@ -28,7 +28,7 @@ require (
 	go.uber.org/zap v1.23.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
-	k8s.io/apimachinery v0.25.1
+	k8s.io/apimachinery v0.25.2
 	k8s.io/client-go v0.25.1
 )
 
