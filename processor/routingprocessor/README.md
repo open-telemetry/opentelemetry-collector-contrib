@@ -94,9 +94,9 @@ It is also possible to use both the conventional routing items configuration and
 - [OTTL] expressions can be applied only to resource attributes.
 - Currently, it is not possible to specify the boolean expression without function invocation as the routing condition. It is required to provide the NOOP `route()` or any other supported function as part of the routing expression, see [#13545](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13545) for more information.
 - Supported [OTTL] functions:
-  - [IsMatch](../../pkg/oteltransformationlanguage/functions/ottlcommon/README.md#IsMatch)
-  - [delete_key](../../pkg/oteltransformationlanguage/functions/ottlotel/README.md#delete_key)
-  - [delete_matching_keys](../../pkg/oteltransformationlanguage/functions/ottlotel/README.md#delete_matching_keys)
+  - [IsMatch](../../pkg/oteltransformationlanguage/ottlfuncs/README.md#IsMatch)
+  - [delete_key](../../pkg/oteltransformationlanguage/ottlfuncs/README.md#delete_key)
+  - [delete_matching_keys](../../pkg/oteltransformationlanguage/ottlfuncs/README.md#delete_matching_keys)
 
 The full list of settings exposed for this processor are documented [here](./config.go) with detailed sample configuration files:
 
