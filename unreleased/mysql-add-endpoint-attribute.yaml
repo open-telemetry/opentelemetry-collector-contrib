@@ -1,0 +1,5 @@
+change_type: breaking
+component: mysqlreceiver
+note: The metrics are now being emitted with a resource attribute marking the endpoint of the database.
+issues: [14138]
+subtext:

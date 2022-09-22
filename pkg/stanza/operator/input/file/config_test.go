@@ -26,7 +26,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -714,7 +714,7 @@ func TestMapStructureDecodeConfigWithHook(t *testing.T) {
 	}
 
 	var actual Config
-	dc := &mapstructure.DecoderConfig{Result: &actual, DecodeHook: helper.JSONUnmarshalerHook()}
+	dc := &mapstructure.DecoderConfig{Result: &actual, DecodeHook: operatortest.JSONUnmarshalerHook()}
 	ms, err := mapstructure.NewDecoder(dc)
 	require.NoError(t, err)
 	err = ms.Decode(input)

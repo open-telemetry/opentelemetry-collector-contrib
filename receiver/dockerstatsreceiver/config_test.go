@@ -78,6 +78,9 @@ func TestLoadConfig(t *testing.T) {
 	}, ascfg.EnvVarsToMetricLabels)
 
 	assert.True(t, ascfg.ProvidePerCoreCPUMetrics)
+
+	assert.False(t, ascfg.MetricsConfig.ContainerCPUUsageSystem.Enabled)
+	assert.True(t, ascfg.MetricsConfig.ContainerMemoryTotalRss.Enabled)
 }
 
 func TestValidateErrors(t *testing.T) {

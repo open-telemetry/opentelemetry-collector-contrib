@@ -50,7 +50,7 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 	return &JournaldConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
+			Operators:        []operator.Config{},
 		},
 		InputConfig: *journald.NewConfig(),
 	}

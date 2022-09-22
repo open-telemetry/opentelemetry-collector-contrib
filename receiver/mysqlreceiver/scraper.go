@@ -271,6 +271,8 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
+	m.mb.EmitForResource(metadata.WithMysqlInstanceEndpoint(m.config.Endpoint))
+
 	return m.mb.Emit(), errs.Combine()
 }
 
