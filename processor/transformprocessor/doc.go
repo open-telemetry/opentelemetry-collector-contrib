@@ -13,5 +13,5 @@
 // limitations under the License.
 
 // Package transformprocessor contains the logic to execute telemetry transform based
-// on the Transform Query Language.
+// on the OpenTelemetry Transformation Language.
 package transformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"

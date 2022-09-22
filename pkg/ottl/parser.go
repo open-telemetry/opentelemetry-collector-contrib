@@ -24,8 +24,8 @@ import (
 	"go.uber.org/multierr"
 )
 
-// ParsedQuery represents a parsed query. It is the entry point into the query DSL.
-type ParsedQuery struct {
+// ParsedStatement represents a parsed statement. It is the entry point into the statement DSL.
+type ParsedStatement struct {
 	Invocation  Invocation         `parser:"@@"`
 	WhereClause *BooleanExpression `parser:"( 'where' @@ )?"`
 }
@@ -130,7 +130,7 @@ type Invocation struct {
 	Arguments []Value `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
 }
 
-// Value represents a part of a parsed query which is resolved to a value of some sort. This can be a telemetry path
+// Value represents a part of a parsed statement which is resolved to a value of some sort. This can be a telemetry path
 // expression, function call, or literal.
 type Value struct {
 	Invocation *Invocation `parser:"( @@"`
@@ -155,9 +155,9 @@ type Field struct {
 	MapKey *string `parser:"( '[' @String ']' )?"`
 }
 
-// Query holds a top level Query for processing telemetry data. A Query is a combination of a function
+// Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
 // invocation and the expression to match telemetry for invoking the function.
-type Query struct {
+type Statement struct {
 	Function  ExprFunc
 	Condition boolExpressionEvaluator
 }
@@ -209,12 +209,12 @@ func NewParser(functions map[string]interface{}, pathParser PathExpressionParser
 	}
 }
 
-func (p *Parser) ParseQueries(statements []string) ([]Query, error) {
-	var queries []Query
+func (p *Parser) ParseStatements(statements []string) ([]Statement, error) {
+	var queries []Statement
 	var errors error
 
 	for _, statement := range statements {
-		parsed, err := parseQuery(statement)
+		parsed, err := parseStatement(statement)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
@@ -229,7 +229,7 @@ func (p *Parser) ParseQueries(statements []string) ([]Query, error) {
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		queries = append(queries, Query{
+		queries = append(queries, Statement{
 			Function:  function,
 			Condition: expression,
 		})
@@ -243,7 +243,7 @@ func (p *Parser) ParseQueries(statements []string) ([]Query, error) {
 
 var parser = newParser()
 
-func parseQuery(raw string) (*ParsedQuery, error) {
+func parseStatement(raw string) (*ParsedStatement, error) {
 	parsed, err := parser.ParseString("", raw)
 	if err != nil {
 		return nil, err
@@ -273,11 +273,11 @@ func buildLexer() *lexer.StatefulDefinition {
 	})
 }
 
-// newParser returns a parser that can be used to read a string into a ParsedQuery. An error will be returned if the string
+// newParser returns a parser that can be used to read a string into a ParsedStatement. An error will be returned if the string
 // is not formatted for the DSL.
-func newParser() *participle.Parser[ParsedQuery] {
+func newParser() *participle.Parser[ParsedStatement] {
 	lex := buildLexer()
-	parser, err := participle.Build[ParsedQuery](
+	parser, err := participle.Build[ParsedStatement](
 		participle.Lexer(lex),
 		participle.Unquote("String"),
 		participle.Elide("whitespace"),
