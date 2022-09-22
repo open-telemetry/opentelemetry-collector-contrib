@@ -15,6 +15,7 @@
 package ottlcommon
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,14 +32,14 @@ func TestScopePathGetSetter(t *testing.T) {
 	newAttrs.PutString("hello", "world")
 	tests := []struct {
 		name     string
-		path     []ottl.Field
+		path     []internal.Field
 		orig     interface{}
 		newVal   interface{}
 		modified func(is pcommon.InstrumentationScope)
 	}{
 		{
 			name:   "instrumentation_scope",
-			path:   []ottl.Field{},
+			path:   []internal.Field{},
 			orig:   refIS,
 			newVal: pcommon.NewInstrumentationScope(),
 			modified: func(is pcommon.InstrumentationScope) {
@@ -47,7 +48,7 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "instrumentation_scope name",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name: "name",
 				},
@@ -60,7 +61,7 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "instrumentation_scope version",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name: "version",
 				},
@@ -73,7 +74,7 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name: "attributes",
 				},
@@ -86,7 +87,7 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("str"),
@@ -100,7 +101,7 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("bool"),
@@ -114,7 +115,7 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("int"),
@@ -128,7 +129,7 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("double"),
@@ -142,7 +143,7 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("bytes"),
@@ -156,7 +157,7 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("arr_str"),
@@ -174,7 +175,7 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("arr_bool"),
@@ -192,7 +193,7 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("arr_int"),
@@ -210,7 +211,7 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("arr_float"),
@@ -228,7 +229,7 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("arr_bytes"),

@@ -16,16 +16,17 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
 	"reflect"
 )
 
-type PathExpressionParser func(*Path) (GetSetter, error)
+type PathExpressionParser func(*internal.Path) (GetSetter, error)
 
-type EnumParser func(*EnumSymbol) (*Enum, error)
+type EnumParser func(*internal.EnumSymbol) (*Enum, error)
 
 type Enum int64
 
-func (p *Parser) newFunctionCall(inv Invocation) (ExprFunc, error) {
+func (p *Parser) newFunctionCall(inv internal.Invocation) (ExprFunc, error) {
 	if f, ok := p.functions[inv.Function]; ok {
 		args, err := p.buildArgs(inv, reflect.TypeOf(f))
 		if err != nil {
@@ -45,7 +46,7 @@ func (p *Parser) newFunctionCall(inv Invocation) (ExprFunc, error) {
 	return nil, fmt.Errorf("undefined function %v", inv.Function)
 }
 
-func (p *Parser) buildArgs(inv Invocation, fType reflect.Type) ([]reflect.Value, error) {
+func (p *Parser) buildArgs(inv internal.Invocation, fType reflect.Type) ([]reflect.Value, error) {
 	var args []reflect.Value
 	// Some function arguments may be intended to take values from the calling processor
 	// instead of being passed by the caller of the OTTL function, so we have to keep
@@ -90,7 +91,7 @@ func (p *Parser) buildArgs(inv Invocation, fType reflect.Type) ([]reflect.Value,
 	return args, nil
 }
 
-func (p *Parser) buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args *[]reflect.Value) error {
+func (p *Parser) buildSliceArg(inv internal.Invocation, argType reflect.Type, startingIndex int, args *[]reflect.Value) error {
 	switch argType.Elem().Name() {
 	case reflect.String.String():
 		var arg []string
@@ -141,7 +142,7 @@ func (p *Parser) buildSliceArg(inv Invocation, argType reflect.Type, startingInd
 }
 
 // Handle interfaces that can be passed as arguments to OTTL function invocations.
-func (p *Parser) buildArg(argDef Value, argType reflect.Type, index int, args *[]reflect.Value) error {
+func (p *Parser) buildArg(argDef internal.Value, argType reflect.Type, index int, args *[]reflect.Value) error {
 	switch argType.Name() {
 	case "Setter":
 		fallthrough

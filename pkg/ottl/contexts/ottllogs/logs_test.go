@@ -16,6 +16,7 @@ package ottllogs
 
 import (
 	"encoding/hex"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
 	"testing"
 	"time"
 
@@ -42,14 +43,14 @@ func Test_newPathGetSetter(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []ottl.Field
+		path     []internal.Field
 		orig     interface{}
 		newVal   interface{}
 		modified func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource)
 	}{
 		{
 			name: "time_unix_nano",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name: "time_unix_nano",
 				},
@@ -62,7 +63,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "observed_time_unix_nano",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name: "observed_time_unix_nano",
 				},
@@ -75,7 +76,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "severity_number",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name: "severity_number",
 				},
@@ -88,7 +89,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "severity_text",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name: "severity_text",
 				},
@@ -101,7 +102,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "body",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name: "body",
 				},
@@ -114,7 +115,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "flags",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name: "flags",
 				},
@@ -127,7 +128,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "trace_id",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name: "trace_id",
 				},
@@ -140,7 +141,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "span_id",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name: "span_id",
 				},
@@ -153,7 +154,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "trace_id string",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name: "trace_id",
 				},
@@ -169,7 +170,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "span_id string",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name: "span_id",
 				},
@@ -185,7 +186,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name: "attributes",
 				},
@@ -199,7 +200,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("str"),
@@ -213,7 +214,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("bool"),
@@ -227,7 +228,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("int"),
@@ -241,7 +242,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("double"),
@@ -255,7 +256,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("bytes"),
@@ -269,7 +270,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("arr_str"),
@@ -286,7 +287,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("arr_bool"),
@@ -303,7 +304,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("arr_int"),
@@ -320,7 +321,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("arr_float"),
@@ -337,7 +338,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name:   "attributes",
 					MapKey: ottltest.Strp("arr_bytes"),
@@ -354,7 +355,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "dropped_attributes_count",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name: "dropped_attributes_count",
 				},
@@ -367,7 +368,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "instrumentation_scope",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name: "instrumentation_scope",
 				},
@@ -380,7 +381,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "resource",
-			path: []ottl.Field{
+			path: []internal.Field{
 				{
 					Name: "resource",
 				},
@@ -572,7 +573,7 @@ func Test_ParseEnum(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := ParseEnum((*ottl.EnumSymbol)(ottltest.Strp(tt.name)))
+			actual, err := ParseEnum((*internal.EnumSymbol)(ottltest.Strp(tt.name)))
 			assert.NoError(t, err)
 			assert.Equal(t, *actual, tt.want)
 		})
@@ -582,11 +583,11 @@ func Test_ParseEnum(t *testing.T) {
 func Test_ParseEnum_False(t *testing.T) {
 	tests := []struct {
 		name       string
-		enumSymbol *ottl.EnumSymbol
+		enumSymbol *internal.EnumSymbol
 	}{
 		{
 			name:       "unknown enum symbol",
-			enumSymbol: (*ottl.EnumSymbol)(ottltest.Strp("not an enum")),
+			enumSymbol: (*internal.EnumSymbol)(ottltest.Strp("not an enum")),
 		},
 		{
 			name:       "nil enum symbol",

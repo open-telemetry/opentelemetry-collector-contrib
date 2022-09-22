@@ -16,6 +16,7 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -70,7 +71,7 @@ func (g exprGetter) Get(ctx TransformContext) interface{} {
 	return g.expr(ctx)
 }
 
-func (p *Parser) newGetter(val Value) (Getter, error) {
+func (p *Parser) newGetter(val internal.Value) (Getter, error) {
 	if val.IsNil != nil && *val.IsNil {
 		return &literal{value: nil}, nil
 	}

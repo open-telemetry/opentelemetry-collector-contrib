@@ -15,6 +15,7 @@
 package ottl
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,56 +33,56 @@ func hello() (ExprFunc, error) {
 func Test_newGetter(t *testing.T) {
 	tests := []struct {
 		name string
-		val  Value
+		val  internal.Value
 		want interface{}
 	}{
 		{
 			name: "string literal",
-			val: Value{
+			val: internal.Value{
 				String: ottltest.Strp("str"),
 			},
 			want: "str",
 		},
 		{
 			name: "float literal",
-			val: Value{
+			val: internal.Value{
 				Float: ottltest.Floatp(1.2),
 			},
 			want: 1.2,
 		},
 		{
 			name: "int literal",
-			val: Value{
+			val: internal.Value{
 				Int: ottltest.Intp(12),
 			},
 			want: int64(12),
 		},
 		{
 			name: "bytes literal",
-			val: Value{
-				Bytes: (*Bytes)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+			val: internal.Value{
+				Bytes: (*internal.Bytes)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
 			},
 			want: []byte{1, 2, 3, 4, 5, 6, 7, 8},
 		},
 		{
 			name: "nil literal",
-			val: Value{
-				IsNil: (*IsNil)(ottltest.Boolp(true)),
+			val: internal.Value{
+				IsNil: (*internal.IsNil)(ottltest.Boolp(true)),
 			},
 			want: nil,
 		},
 		{
 			name: "bool literal",
-			val: Value{
-				Bool: (*Boolean)(ottltest.Boolp(true)),
+			val: internal.Value{
+				Bool: (*internal.Boolean)(ottltest.Boolp(true)),
 			},
 			want: true,
 		},
 		{
 			name: "path expression",
-			val: Value{
-				Path: &Path{
-					Fields: []Field{
+			val: internal.Value{
+				Path: &internal.Path{
+					Fields: []internal.Field{
 						{
 							Name: "name",
 						},
@@ -92,8 +93,8 @@ func Test_newGetter(t *testing.T) {
 		},
 		{
 			name: "function call",
-			val: Value{
-				Invocation: &Invocation{
+			val: internal.Value{
+				Invocation: &internal.Invocation{
 					Function: "hello",
 				},
 			},
@@ -101,8 +102,8 @@ func Test_newGetter(t *testing.T) {
 		},
 		{
 			name: "enum",
-			val: Value{
-				Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM_ONE")),
+			val: internal.Value{
+				Enum: (*internal.EnumSymbol)(ottltest.Strp("TEST_ENUM_ONE")),
 			},
 			want: int64(1),
 		},
@@ -129,7 +130,7 @@ func Test_newGetter(t *testing.T) {
 	}
 
 	t.Run("empty value", func(t *testing.T) {
-		_, err := p.newGetter(Value{})
+		_, err := p.newGetter(internal.Value{})
 		assert.Error(t, err)
 	})
 }

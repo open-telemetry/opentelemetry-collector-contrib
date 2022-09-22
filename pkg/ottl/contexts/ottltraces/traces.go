@@ -18,6 +18,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -54,7 +55,7 @@ func (ctx transformContext) GetResource() pcommon.Resource {
 	return ctx.resource
 }
 
-var symbolTable = map[ottl.EnumSymbol]ottl.Enum{
+var symbolTable = map[internal.EnumSymbol]ottl.Enum{
 	"SPAN_KIND_UNSPECIFIED": ottl.Enum(ptrace.SpanKindUnspecified),
 	"SPAN_KIND_INTERNAL":    ottl.Enum(ptrace.SpanKindInternal),
 	"SPAN_KIND_SERVER":      ottl.Enum(ptrace.SpanKindServer),
@@ -66,7 +67,7 @@ var symbolTable = map[ottl.EnumSymbol]ottl.Enum{
 	"STATUS_CODE_ERROR":     ottl.Enum(ptrace.StatusCodeError),
 }
 
-func ParseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
+func ParseEnum(val *internal.EnumSymbol) (*ottl.Enum, error) {
 	if val != nil {
 		if enum, ok := symbolTable[*val]; ok {
 			return &enum, nil
@@ -76,14 +77,14 @@ func ParseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	return nil, fmt.Errorf("enum symbol not provided")
 }
 
-func ParsePath(val *ottl.Path) (ottl.GetSetter, error) {
+func ParsePath(val *internal.Path) (ottl.GetSetter, error) {
 	if val != nil && len(val.Fields) > 0 {
 		return newPathGetSetter(val.Fields)
 	}
 	return nil, fmt.Errorf("bad path %v", val)
 }
 
-func newPathGetSetter(path []ottl.Field) (ottl.GetSetter, error) {
+func newPathGetSetter(path []internal.Field) (ottl.GetSetter, error) {
 	switch path[0].Name {
 	case "resource":
 		return ottlcommon.ResourcePathGetSetter(path[1:])

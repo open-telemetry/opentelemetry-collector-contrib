@@ -17,6 +17,7 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"bytes"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal"
 
 	"golang.org/x/exp/constraints"
 )
@@ -28,71 +29,71 @@ import (
 // invalidComparison returns false for everything except NE (where it returns true to indicate that the
 // objects were definitely not equivalent).
 // It also gives us an opportunity to log something.
-func invalidComparison(msg string, op CompareOp) bool {
+func invalidComparison(msg string, op internal.CompareOp) bool {
 	fmt.Printf("%s with op %v\n", msg, op)
-	return op == NE
+	return op == internal.NE
 }
 
 // comparePrimitives implements a generic comparison helper for all Ordered types (derived from Float, Int, or string).
 // According to benchmarks, it's faster than explicit comparison functions for these types.
-func comparePrimitives[T constraints.Ordered](a T, b T, op CompareOp) bool {
+func comparePrimitives[T constraints.Ordered](a T, b T, op internal.CompareOp) bool {
 	switch op {
-	case EQ:
+	case internal.EQ:
 		return a == b
-	case NE:
+	case internal.NE:
 		return a != b
-	case LT:
+	case internal.LT:
 		return a < b
-	case LTE:
+	case internal.LTE:
 		return a <= b
-	case GTE:
+	case internal.GTE:
 		return a >= b
-	case GT:
+	case internal.GT:
 		return a > b
 	default:
 		return false
 	}
 }
 
-func compareBools(a bool, b bool, op CompareOp) bool {
+func compareBools(a bool, b bool, op internal.CompareOp) bool {
 	switch op {
-	case EQ:
+	case internal.EQ:
 		return a == b
-	case NE:
+	case internal.NE:
 		return a != b
-	case LT:
+	case internal.LT:
 		return !a && b
-	case LTE:
+	case internal.LTE:
 		return !a || b
-	case GTE:
+	case internal.GTE:
 		return a || !b
-	case GT:
+	case internal.GT:
 		return a && !b
 	default:
 		return false
 	}
 }
 
-func compareBytes(a []byte, b []byte, op CompareOp) bool {
+func compareBytes(a []byte, b []byte, op internal.CompareOp) bool {
 	switch op {
-	case EQ:
+	case internal.EQ:
 		return bytes.Equal(a, b)
-	case NE:
+	case internal.NE:
 		return !bytes.Equal(a, b)
-	case LT:
+	case internal.LT:
 		return bytes.Compare(a, b) < 0
-	case LTE:
+	case internal.LTE:
 		return bytes.Compare(a, b) <= 0
-	case GTE:
+	case internal.GTE:
 		return bytes.Compare(a, b) >= 0
-	case GT:
+	case internal.GT:
 		return bytes.Compare(a, b) > 0
 	default:
 		return false
 	}
 }
 
-func compareBool(a bool, b any, op CompareOp) bool {
+func compareBool(a bool, b any, op internal.CompareOp) bool {
 	switch v := b.(type) {
 	case bool:
 		return compareBools(a, v, op)
@@ -101,7 +102,7 @@ func compareBool(a bool, b any, op CompareOp) bool {
 	}
 }
 
-func compareString(a string, b any, op CompareOp) bool {
+func compareString(a string, b any, op internal.CompareOp) bool {
 	switch v := b.(type) {
 	case string:
 		return comparePrimitives(a, v, op)
@@ -110,13 +111,13 @@ func compareString(a string, b any, op CompareOp) bool {
 	}
 }
 
-func compareByte(a []byte, b any, op CompareOp) bool {
+func compareByte(a []byte, b any, op internal.CompareOp) bool {
 	switch v := b.(type) {
 	case nil:
-		return op == NE
+		return op == internal.NE
 	case []byte:
 		if v == nil {
-			return op == NE
+			return op == internal.NE
 		}
 		return compareBytes(a, v, op)
 	default:
@@ -124,7 +125,7 @@ func compareByte(a []byte, b any, op CompareOp) bool {
 	}
 }
 
-func compareInt64(a int64, b any, op CompareOp) bool {
+func compareInt64(a int64, b any, op internal.CompareOp) bool {
 	switch v := b.(type) {
 	case int64:
 		return comparePrimitives(a, v, op)
@@ -135,7 +136,7 @@ func compareInt64(a int64, b any, op CompareOp) bool {
 	}
 }
 
-func compareFloat64(a float64, b any, op CompareOp) bool {
+func compareFloat64(a float64, b any, op internal.CompareOp) bool {
 	switch v := b.(type) {
 	case int64:
 		return comparePrimitives(a, float64(v), op)
@@ -148,11 +149,11 @@ func compareFloat64(a float64, b any, op CompareOp) bool {
 
 // a and b are the return values from a Getter; we try to compare them
 // according to the given operator.
-func compare(a any, b any, op CompareOp) bool {
+func compare(a any, b any, op internal.CompareOp) bool {
 	// nils are equal to each other and never equal to anything else,
 	// so if they're both nil, report equality.
 	if a == nil && b == nil {
-		return op == EQ || op == LTE || op == GTE
+		return op == internal.EQ || op == internal.LTE || op == internal.GTE
 	}
 	// Anything else, we switch on the left side first.
 	switch v := a.(type) {
@@ -177,9 +178,9 @@ func compare(a any, b any, op CompareOp) bool {
 		// If we don't know what type it is, we can't do inequalities yet. So we can fall back to the old behavior where we just
 		// use Go's standard equality.
 		switch op {
-		case EQ:
+		case internal.EQ:
 			return a == b
-		case NE:
+		case internal.NE:
 			return a != b
 		default:
 			return invalidComparison("unsupported type for inequality on left", op)
