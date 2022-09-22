@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 )
 
 var _ component.MetricsProcessor = (*metricsProcessor)(nil)
@@ -89,7 +91,7 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 
 	for i := 0; i < tm.ResourceMetrics().Len(); i++ {
 		rmetrics := tm.ResourceMetrics().At(i)
-		mtx := ottlmetrics.NewTransformContext(
+		mtx := ottldatapoints.NewTransformContext(
 			nil,
 			pmetric.Metric{},
 			pmetric.MetricSlice{},
