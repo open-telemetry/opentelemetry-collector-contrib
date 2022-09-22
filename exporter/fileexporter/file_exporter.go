@@ -20,6 +20,7 @@ import (
 	"io"
 	"sync"
 
+	"github.com/valyala/gozstd"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -59,6 +60,8 @@ type fileExporter struct {
 	metricsMarshaler pmetric.Marshaler
 	logsMarshaler    plog.Marshaler
 
+	isCompressed bool
+
 	formatType string
 	exporter   exportFunc
 }
@@ -72,6 +75,9 @@ func (e *fileExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error 
 	if err != nil {
 		return err
 	}
+	if e.isCompressed {
+		buf = gozstd.Compress(nil, buf)
+	}
 	return e.exporter(e, buf)
 }
 
@@ -80,6 +86,9 @@ func (e *fileExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) err
 	if err != nil {
 		return err
 	}
+	if e.isCompressed {
+		buf = gozstd.Compress(nil, buf)
+	}
 	return e.exporter(e, buf)
 }
 
@@ -87,6 +96,9 @@ func (e *fileExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	buf, err := e.logsMarshaler.MarshalLogs(ld)
 	if err != nil {
 		return err
+	}
+	if e.isCompressed {
+		buf = gozstd.Compress(nil, buf)
 	}
 	return e.exporter(e, buf)
 }
@@ -130,6 +142,9 @@ func (e *fileExporter) Shutdown(context.Context) error {
 
 func buildExportFunc(cfg *Config) func(e *fileExporter, buf []byte) error {
 	if cfg.FormatType == formatTypeProto {
+		return exportMessageAsBuffer
+	}
+	if cfg.IsCompressed {
 		return exportMessageAsBuffer
 	}
 	return exportMessageAsLine

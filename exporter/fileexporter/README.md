@@ -12,6 +12,8 @@ Exporter supports the following features：
 
 + Support for rotation of telemetry files.
 
++ Support for compressing the telemetry data before exporting.
+
 
 
 Please note that there is no guarantee that exact field names will remain stable.
@@ -33,7 +35,7 @@ The following settings are optional:
   - localtime : [default: false (use UTC)] whether or not the timestamps in backup files is formatted according to the host's local time.
 
 - `format`[default: json]: define the data format of encoded telemetry data. The setting can be overridden with `proto`.
-
+- `compression`[default:false]:defines whether to compress encoded telemetry data.
 
 
 ## File Rotation
@@ -48,14 +50,13 @@ For example, if your `path` is `data.json` and rotation is triggered, this file 
 
 
 
-##  File Format
+##  File Format and File Compression
 
-Telemetry data is encoded according to the `format` setting and then written to the file.
+Telemetry data is encoded according to the `format` setting. If `compression` is true, the data will be compressed.
 
-When `format` is json, telemetry data is written to file in JSON format. Each line in the file is a JSON object.
-When `format` is proto, each encoded object is preceded by 4 bytes (an unsigned 32 bit integer) which represent the number of bytes contained in the encoded object.
+When `format` is json and `compression` is false , telemetry data is written to file in JSON format. Each line in the file is a JSON object.
 
-When we need read the messages back in, we read the size, then read the bytes into a separate buffer, then parse from that buffer.
+Besides, each encoded object is preceded by 4 bytes (an unsigned 32 bit integer) which represent the number of bytes contained in the encoded object.When we need read the messages back in, we read the size, then read the bytes into a separate buffer, then parse from that buffer.
 
 ## Example:
 
@@ -79,6 +80,7 @@ exporters:
       max_backups: 3
       localtime: true
     format: proto
+    compression: true
 ```
 
 

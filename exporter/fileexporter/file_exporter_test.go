@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
+	"github.com/valyala/gozstd"
 	"io"
 	"os"
 	"testing"
@@ -53,11 +54,33 @@ func TestFileTracesExporter(t *testing.T) {
 			},
 		},
 		{
+			name: "json: compression configuration",
+			args: args{
+				conf: &Config{
+					Path:         tempFileName(t),
+					FormatType:   "json",
+					IsCompressed: true,
+				},
+				unmarshaler: ptrace.NewJSONUnmarshaler(),
+			},
+		},
+		{
 			name: "Proto: default configuration",
 			args: args{
 				conf: &Config{
 					Path:       tempFileName(t),
 					FormatType: "proto",
+				},
+				unmarshaler: ptrace.NewProtoUnmarshaler(),
+			},
+		},
+		{
+			name: "Proto: compression configuration",
+			args: args{
+				conf: &Config{
+					Path:         tempFileName(t),
+					FormatType:   "proto",
+					IsCompressed: true,
 				},
 				unmarshaler: ptrace.NewProtoUnmarshaler(),
 			},
@@ -78,6 +101,7 @@ func TestFileTracesExporter(t *testing.T) {
 				},
 				tracesMarshaler: tracesMarshalers[conf.FormatType],
 				exporter:        buildExportFunc(conf),
+				isCompressed:    conf.IsCompressed,
 			}
 			require.NotNil(t, fe)
 
@@ -93,7 +117,7 @@ func TestFileTracesExporter(t *testing.T) {
 			br := bufio.NewReader(fi)
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
-					if fe.formatType == formatTypeJSON {
+					if fe.formatType == formatTypeJSON && !fe.isCompressed {
 						return readJSONMessage(br)
 					}
 					return readMessageFromStream(br)
@@ -101,6 +125,10 @@ func TestFileTracesExporter(t *testing.T) {
 				assert.NoError(t, err)
 				if isEnd {
 					break
+				}
+				if tt.args.conf.IsCompressed {
+					buf, err = gozstd.Decompress(nil, buf)
+					assert.NoError(t, err)
 				}
 				got, err := tt.args.unmarshaler.UnmarshalTraces(buf)
 				assert.NoError(t, err)
@@ -146,11 +174,33 @@ func TestFileMetricsExporter(t *testing.T) {
 			},
 		},
 		{
+			name: "json: compression configuration",
+			args: args{
+				conf: &Config{
+					Path:         tempFileName(t),
+					FormatType:   "json",
+					IsCompressed: true,
+				},
+				unmarshaler: pmetric.NewJSONUnmarshaler(),
+			},
+		},
+		{
 			name: "Proto: default configuration",
 			args: args{
 				conf: &Config{
 					Path:       tempFileName(t),
 					FormatType: "proto",
+				},
+				unmarshaler: pmetric.NewProtoUnmarshaler(),
+			},
+		},
+		{
+			name: "Proto: compression configuration",
+			args: args{
+				conf: &Config{
+					Path:         tempFileName(t),
+					FormatType:   "proto",
+					IsCompressed: true,
 				},
 				unmarshaler: pmetric.NewProtoUnmarshaler(),
 			},
@@ -171,6 +221,7 @@ func TestFileMetricsExporter(t *testing.T) {
 				},
 				metricsMarshaler: metricsMarshalers[conf.FormatType],
 				exporter:         buildExportFunc(conf),
+				isCompressed:     conf.IsCompressed,
 			}
 			require.NotNil(t, fe)
 
@@ -186,7 +237,7 @@ func TestFileMetricsExporter(t *testing.T) {
 			br := bufio.NewReader(fi)
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
-					if fe.formatType == formatTypeJSON {
+					if fe.formatType == formatTypeJSON && !fe.isCompressed {
 						return readJSONMessage(br)
 					}
 					return readMessageFromStream(br)
@@ -194,6 +245,10 @@ func TestFileMetricsExporter(t *testing.T) {
 				assert.NoError(t, err)
 				if isEnd {
 					break
+				}
+				if tt.args.conf.IsCompressed {
+					buf, err = gozstd.Decompress(nil, buf)
+					assert.NoError(t, err)
 				}
 				got, err := tt.args.unmarshaler.UnmarshalMetrics(buf)
 				assert.NoError(t, err)
@@ -240,11 +295,33 @@ func TestFileLogsExporter(t *testing.T) {
 			},
 		},
 		{
+			name: "json: compression configuration",
+			args: args{
+				conf: &Config{
+					Path:         tempFileName(t),
+					FormatType:   "json",
+					IsCompressed: true,
+				},
+				unmarshaler: plog.NewJSONUnmarshaler(),
+			},
+		},
+		{
 			name: "Proto: default configuration",
 			args: args{
 				conf: &Config{
 					Path:       tempFileName(t),
 					FormatType: "proto",
+				},
+				unmarshaler: plog.NewProtoUnmarshaler(),
+			},
+		},
+		{
+			name: "Proto: compression configuration",
+			args: args{
+				conf: &Config{
+					Path:         tempFileName(t),
+					FormatType:   "proto",
+					IsCompressed: true,
 				},
 				unmarshaler: plog.NewProtoUnmarshaler(),
 			},
@@ -265,6 +342,7 @@ func TestFileLogsExporter(t *testing.T) {
 				},
 				logsMarshaler: logsMarshalers[conf.FormatType],
 				exporter:      buildExportFunc(conf),
+				isCompressed:  conf.IsCompressed,
 			}
 			require.NotNil(t, fe)
 
@@ -280,7 +358,7 @@ func TestFileLogsExporter(t *testing.T) {
 			br := bufio.NewReader(fi)
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
-					if fe.formatType == formatTypeJSON {
+					if fe.formatType == formatTypeJSON && !fe.isCompressed {
 						return readJSONMessage(br)
 					}
 					return readMessageFromStream(br)
@@ -288,6 +366,10 @@ func TestFileLogsExporter(t *testing.T) {
 				assert.NoError(t, err)
 				if isEnd {
 					break
+				}
+				if tt.args.conf.IsCompressed {
+					buf, err = gozstd.Decompress(nil, buf)
+					assert.NoError(t, err)
 				}
 				got, err := tt.args.unmarshaler.UnmarshalLogs(buf)
 				assert.NoError(t, err)

@@ -6,6 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.60.0
 	github.com/stretchr/testify v1.8.0
+	github.com/valyala/gozstd v1.17.0
 	go.opentelemetry.io/collector v0.60.1-0.20220923151520-96e9af35c002
 	go.opentelemetry.io/collector/pdata v0.60.1-0.20220923151520-96e9af35c002
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0

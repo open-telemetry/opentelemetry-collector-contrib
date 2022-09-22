@@ -71,6 +71,7 @@ func createTracesExporter(
 			},
 			tracesMarshaler: tracesMarshalers[conf.FormatType],
 			exporter:        buildExportFunc(conf),
+			isCompressed:    conf.IsCompressed,
 		}
 	})
 	return exporterhelper.NewTracesExporter(
@@ -102,6 +103,7 @@ func createMetricsExporter(
 			},
 			metricsMarshaler: metricsMarshalers[conf.FormatType],
 			exporter:         buildExportFunc(conf),
+			isCompressed:     conf.IsCompressed,
 		}
 	})
 	return exporterhelper.NewMetricsExporter(
@@ -133,6 +135,7 @@ func createLogsExporter(
 			},
 			logsMarshaler: logsMarshalers[conf.FormatType],
 			exporter:      buildExportFunc(conf),
+			isCompressed:  conf.IsCompressed,
 		}
 	})
 	return exporterhelper.NewLogsExporter(

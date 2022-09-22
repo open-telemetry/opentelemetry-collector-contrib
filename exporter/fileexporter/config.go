@@ -35,6 +35,9 @@ type Config struct {
 	// - json[default]:  OTLP json bytes.
 	// - proto:  OTLP binary protobuf bytes.
 	FormatType string `mapstructure:"format"`
+
+	// IsCompressed defines whether to compress encoded telemetry data
+	IsCompressed bool `mapstructure:"compression"`
 }
 
 // Rotation an option to rolling log files
