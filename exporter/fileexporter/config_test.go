@@ -62,7 +62,8 @@ func TestLoadConfig(t *testing.T) {
 				MaxBackups:   3,
 				LocalTime:    true,
 			},
-			FormatType: formatTypeProto,
+			FormatType:   formatTypeProto,
+			IsCompressed: true,
 		})
 }
 

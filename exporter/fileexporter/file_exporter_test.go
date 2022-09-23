@@ -22,7 +22,7 @@ import (
 	"os"
 	"testing"
 
-	gozstd "github.com/DataDog/zstd"
+	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -127,7 +127,7 @@ func TestFileTracesExporter(t *testing.T) {
 					break
 				}
 				if tt.args.conf.IsCompressed {
-					buf, err = gozstd.Decompress(nil, buf)
+					buf, err = decompress(buf)
 					assert.NoError(t, err)
 				}
 				got, err := tt.args.unmarshaler.UnmarshalTraces(buf)
@@ -247,7 +247,7 @@ func TestFileMetricsExporter(t *testing.T) {
 					break
 				}
 				if tt.args.conf.IsCompressed {
-					buf, err = gozstd.Decompress(nil, buf)
+					buf, err = decompress(buf)
 					assert.NoError(t, err)
 				}
 				got, err := tt.args.unmarshaler.UnmarshalMetrics(buf)
@@ -368,7 +368,7 @@ func TestFileLogsExporter(t *testing.T) {
 					break
 				}
 				if tt.args.conf.IsCompressed {
-					buf, err = gozstd.Decompress(nil, buf)
+					buf, err = decompress(buf)
 					assert.NoError(t, err)
 				}
 				got, err := tt.args.unmarshaler.UnmarshalLogs(buf)
@@ -482,4 +482,13 @@ func readJSONMessage(br *bufio.Reader) ([]byte, bool, error) {
 		return nil, true, nil
 	}
 	return buf, false, nil
+}
+
+// Create a reader that caches decompressors.
+// For this operation type we supply a nil Reader.
+var decoder, _ = zstd.NewReader(nil)
+
+// decompress a buffer.
+func decompress(src []byte) ([]byte, error) {
+	return decoder.DecodeAll(src, nil)
 }
