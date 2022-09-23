@@ -20,8 +20,8 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
@@ -53,8 +53,8 @@ func (c *Config) Validate() error {
 
 	ottlp = ottl.NewParser(
 		metrics.Functions(),
-		ottlmetrics.ParsePath,
-		ottlmetrics.ParseEnum,
+		ottldatapoints.ParsePath,
+		ottldatapoints.ParseEnum,
 		component.TelemetrySettings{},
 	)
 	_, err = ottlp.ParseStatements(c.Metrics.Queries)

@@ -18,12 +18,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 )
 
 func convertSumToGauge() (ottl.ExprFunc, error) {
 	return func(ctx ottl.TransformContext) interface{} {
-		mtc, ok := ctx.(ottlmetrics.TransformContext)
+		mtc, ok := ctx.(ottldatapoints.TransformContext)
 		if !ok {
 			return nil
 		}
