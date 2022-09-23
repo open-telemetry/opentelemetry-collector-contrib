@@ -8,7 +8,7 @@
 | Warnings                 | [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other](#warnings) |
 
 The transform processor modifies telemetry based on configuration using the [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl).
-The processor takes a list of queries for each signal type and executes the queries against the incoming telemetry in the order specified in the config.  Each query can access and transform telemetry using functions and allow the use of a condition to help decide whether the function should be executed.
+The processor takes a list of queries for each signal type and executes the queries against the incoming telemetry in the order specified in the config.  Each statement can access and transform telemetry using functions and allow the use of a condition to help decide whether the function should be executed.
 
 ## Config
 

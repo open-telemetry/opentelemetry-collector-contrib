@@ -27,7 +27,7 @@ import (
 )
 
 type Processor struct {
-	queries []ottl.Query
+	queries []ottl.Statement
 	logger  *zap.Logger
 }
 
@@ -38,7 +38,7 @@ func NewProcessor(statements []string, functions map[string]interface{}, setting
 		ottlmetrics.ParseEnum,
 		settings,
 	)
-	queries, err := ottlp.ParseQueries(statements)
+	queries, err := ottlp.ParseStatements(statements)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,6 @@
 # OpenTelemetry Transformation Language
 
-The OpenTelemetry Transformation Language is a query language for transforming open telemetry data based on the [OpenTelemetry Collector Processing Exploration](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md).
+The OpenTelemetry Transformation Language is a language for transforming open telemetry data based on the [OpenTelemetry Collector Processing Exploration](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md).
 
 This package reads in OTTL queries and converts them to invokable Booleans and functions based on the OTTL's grammar.
 
@@ -97,7 +97,7 @@ When defining a function that will be used as an Invocation by the OTTL, if the 
 
 ### Expressions
 
-Expressions allow a decision to be made about whether an Invocation should be called. Expressions are optional.  When used, the parsed query will include a `Condition`, which can be used to evaluate the result of the query's Expression. Expressions always evaluate to a boolean value (true or false).
+Expressions allow a decision to be made about whether an Invocation should be called. Expressions are optional.  When used, the parsed statement will include a `Condition`, which can be used to evaluate the result of the statement's Expression. Expressions always evaluate to a boolean value (true or false).
 
 Expressions consist of the literal string `where` followed by one or more Booleans (see below).
 Booleans can be joined with the literal strings `and` and `or`.
