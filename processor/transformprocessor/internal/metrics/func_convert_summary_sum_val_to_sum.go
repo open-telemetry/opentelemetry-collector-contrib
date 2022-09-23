@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 )
 
 func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc, error) {
@@ -34,7 +34,7 @@ func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (ottl.ExprF
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
 	}
 	return func(ctx ottl.TransformContext) interface{} {
-		mtc, ok := ctx.(ottlmetrics.TransformContext)
+		mtc, ok := ctx.(ottldatapoints.TransformContext)
 		if !ok {
 			return nil
 		}

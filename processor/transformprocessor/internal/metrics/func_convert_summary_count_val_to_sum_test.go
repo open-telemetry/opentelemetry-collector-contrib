@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 )
 
 func Test_ConvertSummaryCountValToSum(t *testing.T) {
@@ -108,7 +108,7 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 			evaluate, err := convertSummaryCountValToSum(tt.temporality, tt.monotonicity)
 			assert.NoError(t, err)
 
-			evaluate(ottlmetrics.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			evaluate(ottldatapoints.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
 
 			expected := pmetric.NewMetricSlice()
 			tt.want(expected)
