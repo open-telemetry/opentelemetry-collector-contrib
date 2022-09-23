@@ -83,6 +83,12 @@ func TestScrape(t *testing.T) {
 				ms.ProcessMemoryUtilization.Enabled = true
 			},
 		},
+		{
+			name: "With uptime",
+			mutateMetricsSettings: func(t *testing.T, ms *metadata.MetricsSettings) {
+				ms.ProcessUptime.Enabled = true
+			},
+		},
 	}
 
 	const createTime = 100
@@ -153,6 +159,11 @@ func TestScrape(t *testing.T) {
 				assertOpenFileDescriptorMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			} else {
 				assertMetricMissing(t, md.ResourceMetrics(), "process.open_file_descriptors")
+			}
+			if metricsSettings.ProcessUptime.Enabled {
+				assertUptimeMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+			} else {
+				assertMetricMissing(t, md.ResourceMetrics(), "process.uptime")
 			}
 			assertSameTimeStampForAllMetricsWithinResource(t, md.ResourceMetrics())
 		})
@@ -244,6 +255,13 @@ func assertThreadsCountValid(t *testing.T, resourceMetrics pmetric.ResourceMetri
 		if startTime != 0 {
 			internal.AssertSumMetricStartTimeEquals(t, threadsMetric, startTime)
 		}
+	}
+}
+
+func assertUptimeMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice, startTime pcommon.Timestamp) {
+	uptimeMetric := getMetric(t, "process.uptime", resourceMetrics)
+	if startTime != 0 {
+		internal.AssertSumMetricStartTimeEquals(t, uptimeMetric, startTime)
 	}
 }
 
@@ -612,6 +630,7 @@ func enableOptionalMetrics(ms *metadata.MetricsSettings) {
 	ms.ProcessContextSwitches.Enabled = true
 	ms.ProcessOpenFileDescriptors.Enabled = true
 	ms.ProcessSignalsPending.Enabled = true
+	ms.ProcessUptime.Enabled = true
 }
 
 func TestScrapeMetrics_ProcessErrors(t *testing.T) {
@@ -663,7 +682,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		{
 			name:            "Create Time Error",
 			createTimeError: errors.New("err4"),
-			expectedError:   `error reading create time for process "test" (pid 1): err4`,
+			expectedError:   `error reading create time for process "test" (pid 1): err4; error reading uptime info for process "test" (pid 1): err4`,
 		},
 		{
 			name:          "Times Error",
@@ -716,6 +735,11 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			expectedError: `error reading pending signals for process "test" (pid 1): err-rlimit`,
 		},
 		{
+			name:            "Uptime Error",
+			createTimeError: errors.New("err-createtime"),
+			expectedError:   `error reading create time for process "test" (pid 1): err-createtime; error reading uptime info for process "test" (pid 1): err-createtime`,
+		},
+		{
 			name:                "Multiple Errors",
 			cmdlineError:        errors.New("err2"),
 			usernameError:       errors.New("err3"),
@@ -740,7 +764,8 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				`error reading thread info for process "test" (pid 1): err8; ` +
 				`error reading context switch counts for process "test" (pid 1): err9; ` +
 				`error reading open file descriptor count for process "test" (pid 1): err10; ` +
-				`error reading pending signals for process "test" (pid 1): err-rlimit`,
+				`error reading pending signals for process "test" (pid 1): err-rlimit; ` +
+				`error reading uptime info for process "test" (pid 1): err4`,
 		},
 	}
 
@@ -793,7 +818,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 
 			md, err := scraper.scrape(context.Background())
 
-			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
+			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError, test.createTimeError)
 			assert.Equal(t, expectedResourceMetricsLen, md.ResourceMetrics().Len())
 			assert.Equal(t, expectedMetricsLen, md.MetricCount())
 
@@ -801,7 +826,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			isPartial := scrapererror.IsPartialScrapeError(err)
 			assert.True(t, isPartial)
 			if isPartial {
-				expectedFailures := getExpectedScrapeFailures(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
+				expectedFailures := getExpectedScrapeFailures(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError, test.createTimeError)
 				var scraperErr scrapererror.PartialScrapeError
 				require.ErrorAs(t, err, &scraperErr)
 				assert.Equal(t, expectedFailures, scraperErr.Failed)
@@ -810,7 +835,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 	}
 }
 
-func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, rlimitError error) (int, int) {
+func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError, createTimeError error) (int, int) {
 	if nameError != nil || exeError != nil {
 		return 0, 0
 	}
@@ -843,6 +868,9 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 	if fileDescriptorError == nil {
 		expectedLen += fileDescriptorMetricsLen
 	}
+	if createTimeError == nil {
+		expectedLen += uptimeMetricsLen
+	}
 
 	if expectedLen == 0 {
 		return 0, 0
@@ -850,11 +878,11 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 	return 1, expectedLen
 }
 
-func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, rlimitError error) int {
+func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError, createTimeError error) int {
 	if nameError != nil || exeError != nil {
 		return 1
 	}
-	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError)
+	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError, createTimeError)
 	return metricsLen - expectedMetricsLen
 }
 

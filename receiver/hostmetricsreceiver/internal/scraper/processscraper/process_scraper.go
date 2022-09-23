@@ -42,8 +42,9 @@ const (
 	contextSwitchMetricsLen     = 1
 	fileDescriptorMetricsLen    = 1
 	signalMetricsLen            = 1
+	uptimeMetricsLen            = 1
 
-	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + memoryUtilizationMetricsLen + pagingMetricsLen + threadMetricsLen + contextSwitchMetricsLen + fileDescriptorMetricsLen + signalMetricsLen
+	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + memoryUtilizationMetricsLen + pagingMetricsLen + threadMetricsLen + contextSwitchMetricsLen + fileDescriptorMetricsLen + signalMetricsLen + uptimeMetricsLen
 )
 
 // scraper for Process Metrics
@@ -145,6 +146,10 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 		if err = s.scrapeAndAppendSignalsPendingMetric(now, md.handle); err != nil {
 			errs.AddPartial(signalMetricsLen, fmt.Errorf("error reading pending signals for process %q (pid %v): %w", md.executable.name, md.pid, err))
+		}
+
+		if err = s.scrapeAndAppendUptimeMetrics(now, md.handle); err != nil {
+			errs.AddPartial(uptimeMetricsLen, fmt.Errorf("error reading uptime info for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
 		options := append(md.resourceOptions(), metadata.WithStartTimeOverride(pcommon.Timestamp(md.createTime*1e6)))
@@ -368,6 +373,21 @@ func (s *scraper) scrapeAndAppendSignalsPendingMetric(now pcommon.Timestamp, han
 			break
 		}
 	}
+
+	return nil
+}
+
+func (s *scraper) scrapeAndAppendUptimeMetrics(now pcommon.Timestamp, handle processHandle) error {
+	if !s.config.Metrics.ProcessUptime.Enabled {
+		return nil
+	}
+
+	createTime, err := s.getProcessCreateTime(handle)
+	if err != nil {
+		return err
+	}
+	processUptime := now.AsTime().UnixMilli() - createTime
+	s.mb.RecordProcessUptimeDataPoint(now, processUptime)
 
 	return nil
 }

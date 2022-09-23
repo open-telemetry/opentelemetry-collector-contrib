@@ -94,6 +94,7 @@ type processHandle interface {
 	MemoryPercent() (float32, error)
 	IOCounters() (*process.IOCountersStat, error)
 	NumThreads() (int32, error)
+	// CreateTime returns process start time in milliseconds since the epoch, in UTC.
 	CreateTime() (int64, error)
 	Parent() (*process.Process, error)
 	PageFaults() (*process.PageFaultsStat, error)

@@ -192,3 +192,12 @@ metrics:
       aggregation: cumulative
       monotonic: true
     attributes: [context_switch_type]
+
+  process.uptime:
+    enabled: false
+    description: Number of seconds that the process has been running.
+    unit: s
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true

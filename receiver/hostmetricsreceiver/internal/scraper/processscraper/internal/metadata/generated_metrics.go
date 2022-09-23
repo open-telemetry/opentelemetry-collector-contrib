@@ -52,6 +52,7 @@ type MetricsSettings struct {
 	ProcessPagingFaults        MetricSettings `mapstructure:"process.paging.faults"`
 	ProcessSignalsPending      MetricSettings `mapstructure:"process.signals_pending"`
 	ProcessThreads             MetricSettings `mapstructure:"process.threads"`
+	ProcessUptime              MetricSettings `mapstructure:"process.uptime"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
@@ -93,6 +94,9 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: false,
 		},
 		ProcessThreads: MetricSettings{
+			Enabled: false,
+		},
+		ProcessUptime: MetricSettings{
 			Enabled: false,
 		},
 	}
@@ -875,6 +879,57 @@ func newMetricProcessThreads(settings MetricSettings) metricProcessThreads {
 	return m
 }
 
+type metricProcessUptime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills process.uptime metric with initial data.
+func (m *metricProcessUptime) init() {
+	m.data.SetName("process.uptime")
+	m.data.SetDescription("Number of seconds that the process has been running.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricProcessUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricProcessUptime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricProcessUptime) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricProcessUptime(settings MetricSettings) metricProcessUptime {
+	m := metricProcessUptime{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -896,6 +951,7 @@ type MetricsBuilder struct {
 	metricProcessPagingFaults        metricProcessPagingFaults
 	metricProcessSignalsPending      metricProcessSignalsPending
 	metricProcessThreads             metricProcessThreads
+	metricProcessUptime              metricProcessUptime
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -934,6 +990,7 @@ func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, opt
 		metricProcessPagingFaults:        newMetricProcessPagingFaults(ms.ProcessPagingFaults),
 		metricProcessSignalsPending:      newMetricProcessSignalsPending(ms.ProcessSignalsPending),
 		metricProcessThreads:             newMetricProcessThreads(ms.ProcessThreads),
+		metricProcessUptime:              newMetricProcessUptime(ms.ProcessUptime),
 	}
 	for _, op := range options {
 		op(mb)
@@ -1049,6 +1106,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricProcessPagingFaults.emit(ils.Metrics())
 	mb.metricProcessSignalsPending.emit(ils.Metrics())
 	mb.metricProcessThreads.emit(ils.Metrics())
+	mb.metricProcessUptime.emit(ils.Metrics())
 	for _, op := range rmo {
 		op(rm)
 	}
@@ -1131,6 +1189,11 @@ func (mb *MetricsBuilder) RecordProcessSignalsPendingDataPoint(ts pcommon.Timest
 // RecordProcessThreadsDataPoint adds a data point to process.threads metric.
 func (mb *MetricsBuilder) RecordProcessThreadsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricProcessThreads.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordProcessUptimeDataPoint adds a data point to process.uptime metric.
+func (mb *MetricsBuilder) RecordProcessUptimeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricProcessUptime.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

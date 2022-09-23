@@ -156,6 +156,14 @@ Process threads count.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {threads} | Sum | Int | Cumulative | false |
 
+### process.uptime
+
+Number of seconds that the process has been running.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Int | Cumulative | true |
+
 ## Resource Attributes
 
 | Name | Description | Values |

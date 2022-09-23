@@ -50,6 +50,8 @@ func TestDefaultMetrics(t *testing.T) {
 
 	mb.RecordProcessThreadsDataPoint(ts, 1)
 
+	mb.RecordProcessUptimeDataPoint(ts, 1)
+
 	metrics := mb.Emit()
 
 	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
@@ -82,6 +84,7 @@ func TestAllMetrics(t *testing.T) {
 		ProcessPagingFaults:        MetricSettings{Enabled: true},
 		ProcessSignalsPending:      MetricSettings{Enabled: true},
 		ProcessThreads:             MetricSettings{Enabled: true},
+		ProcessUptime:              MetricSettings{Enabled: true},
 	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
@@ -103,6 +106,7 @@ func TestAllMetrics(t *testing.T) {
 	mb.RecordProcessPagingFaultsDataPoint(ts, 1, AttributePagingFaultType(1))
 	mb.RecordProcessSignalsPendingDataPoint(ts, 1)
 	mb.RecordProcessThreadsDataPoint(ts, 1)
+	mb.RecordProcessUptimeDataPoint(ts, 1)
 
 	metrics := mb.Emit(WithProcessCommand("attr-val"), WithProcessCommandLine("attr-val"), WithProcessExecutableName("attr-val"), WithProcessExecutablePath("attr-val"), WithProcessOwner("attr-val"), WithProcessParentPid(1), WithProcessPid(1))
 
@@ -326,6 +330,19 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 			assert.Equal(t, int64(1), dp.IntValue())
 			validatedMetrics["process.threads"] = struct{}{}
+		case "process.uptime":
+			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+			assert.Equal(t, "Number of seconds that the process has been running.", ms.At(i).Description())
+			assert.Equal(t, "s", ms.At(i).Unit())
+			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+			dp := ms.At(i).Sum().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+			assert.Equal(t, int64(1), dp.IntValue())
+			validatedMetrics["process.uptime"] = struct{}{}
 		}
 	}
 	assert.Equal(t, allMetricsCount, len(validatedMetrics))
@@ -348,6 +365,7 @@ func TestNoMetrics(t *testing.T) {
 		ProcessPagingFaults:        MetricSettings{Enabled: false},
 		ProcessSignalsPending:      MetricSettings{Enabled: false},
 		ProcessThreads:             MetricSettings{Enabled: false},
+		ProcessUptime:              MetricSettings{Enabled: false},
 	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
@@ -368,6 +386,7 @@ func TestNoMetrics(t *testing.T) {
 	mb.RecordProcessPagingFaultsDataPoint(ts, 1, AttributePagingFaultType(1))
 	mb.RecordProcessSignalsPendingDataPoint(ts, 1)
 	mb.RecordProcessThreadsDataPoint(ts, 1)
+	mb.RecordProcessUptimeDataPoint(ts, 1)
 
 	metrics := mb.Emit()
 
