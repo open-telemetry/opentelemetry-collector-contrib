@@ -99,10 +99,19 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	m.scrapeIndexIoWaitsStats(now, errs)
 
 	// collect global status metrics.
+	m.scrapeGlobalStats(now, errs)
+
+	m.mb.EmitForResource(metadata.WithMysqlInstanceEndpoint(m.config.Endpoint))
+
+	return m.mb.Emit(), errs.Combine()
+}
+
+func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	globalStats, err := m.sqlclient.getGlobalStats()
 	if err != nil {
 		m.logger.Error("Failed to fetch global stats", zap.Error(err))
-		return pmetric.Metrics{}, err
+		errs.AddPartial(66, err)
+		return
 	}
 
 	m.recordDataPages(now, globalStats, errs)
@@ -278,10 +287,6 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			addPartialIfError(errs, m.mb.RecordMysqlThreadsDataPoint(now, v, metadata.AttributeThreadsRunning))
 		}
 	}
-
-	m.mb.EmitForResource(metadata.WithMysqlInstanceEndpoint(m.config.Endpoint))
-
-	return m.mb.Emit(), errs.Combine()
 }
 
 func (m *mySQLScraper) scrapeTableIoWaitsStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
