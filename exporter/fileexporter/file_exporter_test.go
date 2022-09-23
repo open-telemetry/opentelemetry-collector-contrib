@@ -20,6 +20,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/klauspost/compress/zstd"
@@ -491,4 +492,62 @@ var decoder, _ = zstd.NewReader(nil)
 // decompress a buffer.
 func decompress(src []byte) ([]byte, error) {
 	return decoder.DecodeAll(src, nil)
+}
+
+func TestConcurrentlyCompress(t *testing.T) {
+	wg := sync.WaitGroup{}
+	wg.Add(3)
+	var (
+		ctd []byte
+		cmd []byte
+		cld []byte
+	)
+	td := testdata.GenerateTracesTwoSpansSameResource()
+	md := testdata.GenerateMetricsTwoMetrics()
+	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
+	go func() {
+		defer wg.Done()
+		buf, err := tracesMarshalers[formatTypeJSON].MarshalTraces(td)
+		if err != nil {
+			return
+		}
+		ctd = compress(buf)
+	}()
+	go func() {
+		defer wg.Done()
+		buf, err := metricsMarshalers[formatTypeJSON].MarshalMetrics(md)
+		if err != nil {
+			return
+		}
+		cmd = compress(buf)
+	}()
+	go func() {
+		defer wg.Done()
+		buf, err := logsMarshalers[formatTypeJSON].MarshalLogs(ld)
+		if err != nil {
+			return
+		}
+		cld = compress(buf)
+	}()
+	wg.Wait()
+	buf, err := decompress(ctd)
+	assert.NoError(t, err)
+	traceUnmarshaler := ptrace.NewJSONUnmarshaler()
+	got, err := traceUnmarshaler.UnmarshalTraces(buf)
+	assert.NoError(t, err)
+	assert.EqualValues(t, td, got)
+
+	buf, err = decompress(cmd)
+	assert.NoError(t, err)
+	metricsUnmarshaler := pmetric.NewJSONUnmarshaler()
+	gotMd, err := metricsUnmarshaler.UnmarshalMetrics(buf)
+	assert.NoError(t, err)
+	assert.EqualValues(t, md, gotMd)
+
+	buf, err = decompress(cld)
+	assert.NoError(t, err)
+	logsUnmarshaler := plog.NewJSONUnmarshaler()
+	gotLd, err := logsUnmarshaler.UnmarshalLogs(buf)
+	assert.NoError(t, err)
+	assert.EqualValues(t, ld, gotLd)
 }
