@@ -29,6 +29,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
 )
 
+const (
+	picosecondsInNanoseconds int64 = 1000
+)
+
 type mySQLScraper struct {
 	sqlclient client
 	logger    *zap.Logger
@@ -89,6 +93,10 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 		addPartialIfError(errs, m.mb.RecordMysqlBufferPoolLimitDataPoint(now, v))
 	}
+
+	// collect io_waits metrics.
+	m.scrapeTableIoWaitsStats(now, errs)
+	m.scrapeIndexIoWaitsStats(now, errs)
 
 	// collect global status metrics.
 	globalStats, err := m.sqlclient.getGlobalStats()
@@ -274,6 +282,70 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	m.mb.EmitForResource(metadata.WithMysqlInstanceEndpoint(m.config.Endpoint))
 
 	return m.mb.Emit(), errs.Combine()
+}
+
+func (m *mySQLScraper) scrapeTableIoWaitsStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	tableIoWaitsStats, err := m.sqlclient.getTableIoWaitsStats()
+	if err != nil {
+		m.logger.Error("Failed to fetch table io_waits stats", zap.Error(err))
+		errs.AddPartial(8, err)
+		return
+	}
+
+	for i := 0; i < len(tableIoWaitsStats); i++ {
+		s := tableIoWaitsStats[i]
+		// counts
+		m.mb.RecordMysqlTableIoWaitCountDataPoint(now, s.countDelete, metadata.AttributeIoWaitsOperationsDelete, s.name, s.schema)
+		m.mb.RecordMysqlTableIoWaitCountDataPoint(now, s.countFetch, metadata.AttributeIoWaitsOperationsFetch, s.name, s.schema)
+		m.mb.RecordMysqlTableIoWaitCountDataPoint(now, s.countInsert, metadata.AttributeIoWaitsOperationsInsert, s.name, s.schema)
+		m.mb.RecordMysqlTableIoWaitCountDataPoint(now, s.countUpdate, metadata.AttributeIoWaitsOperationsUpdate, s.name, s.schema)
+
+		// times
+		m.mb.RecordMysqlTableIoWaitTimeDataPoint(
+			now, s.timeDelete/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsDelete, s.name, s.schema,
+		)
+		m.mb.RecordMysqlTableIoWaitTimeDataPoint(
+			now, s.timeFetch/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsFetch, s.name, s.schema,
+		)
+		m.mb.RecordMysqlTableIoWaitTimeDataPoint(
+			now, s.timeInsert/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsInsert, s.name, s.schema,
+		)
+		m.mb.RecordMysqlTableIoWaitTimeDataPoint(
+			now, s.timeUpdate/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsUpdate, s.name, s.schema,
+		)
+	}
+}
+
+func (m *mySQLScraper) scrapeIndexIoWaitsStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	indexIoWaitsStats, err := m.sqlclient.getIndexIoWaitsStats()
+	if err != nil {
+		m.logger.Error("Failed to fetch index io_waits stats", zap.Error(err))
+		errs.AddPartial(8, err)
+		return
+	}
+
+	for i := 0; i < len(indexIoWaitsStats); i++ {
+		s := indexIoWaitsStats[i]
+		// counts
+		m.mb.RecordMysqlIndexIoWaitCountDataPoint(now, s.countDelete, metadata.AttributeIoWaitsOperationsDelete, s.name, s.schema, s.index)
+		m.mb.RecordMysqlIndexIoWaitCountDataPoint(now, s.countFetch, metadata.AttributeIoWaitsOperationsFetch, s.name, s.schema, s.index)
+		m.mb.RecordMysqlIndexIoWaitCountDataPoint(now, s.countInsert, metadata.AttributeIoWaitsOperationsInsert, s.name, s.schema, s.index)
+		m.mb.RecordMysqlIndexIoWaitCountDataPoint(now, s.countUpdate, metadata.AttributeIoWaitsOperationsUpdate, s.name, s.schema, s.index)
+
+		// times
+		m.mb.RecordMysqlIndexIoWaitTimeDataPoint(
+			now, s.timeDelete/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsDelete, s.name, s.schema, s.index,
+		)
+		m.mb.RecordMysqlIndexIoWaitTimeDataPoint(
+			now, s.timeFetch/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsFetch, s.name, s.schema, s.index,
+		)
+		m.mb.RecordMysqlIndexIoWaitTimeDataPoint(
+			now, s.timeInsert/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsInsert, s.name, s.schema, s.index,
+		)
+		m.mb.RecordMysqlIndexIoWaitTimeDataPoint(
+			now, s.timeUpdate/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsUpdate, s.name, s.schema, s.index,
+		)
+	}
 }
 
 func addPartialIfError(errors *scrapererror.ScrapeErrors, err error) {

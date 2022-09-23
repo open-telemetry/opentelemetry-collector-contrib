@@ -42,8 +42,10 @@ func TestScrape(t *testing.T) {
 
 		scraper := newMySQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 		scraper.sqlclient = &mockClient{
-			globalStatsFile: "global_stats",
-			innodbStatsFile: "innodb_stats",
+			globalStatsFile:  "global_stats",
+			innodbStatsFile:  "innodb_stats",
+			tableIoWaitsFile: "table_io_waits_stats",
+			indexIoWaitsFile: "index_io_waits_stats",
 		}
 
 		actualMetrics, err := scraper.scrape(context.Background())
@@ -64,8 +66,10 @@ func TestScrape(t *testing.T) {
 
 		scraper := newMySQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 		scraper.sqlclient = &mockClient{
-			globalStatsFile: "global_stats_partial",
-			innodbStatsFile: "innodb_stats_empty",
+			globalStatsFile:  "global_stats_partial",
+			innodbStatsFile:  "innodb_stats_empty",
+			tableIoWaitsFile: "table_io_waits_stats_empty",
+			indexIoWaitsFile: "index_io_waits_stats_empty",
 		}
 
 		actualMetrics, scrapeErr := scraper.scrape(context.Background())
@@ -88,8 +92,10 @@ func TestScrape(t *testing.T) {
 var _ client = (*mockClient)(nil)
 
 type mockClient struct {
-	globalStatsFile string
-	innodbStatsFile string
+	globalStatsFile  string
+	innodbStatsFile  string
+	tableIoWaitsFile string
+	indexIoWaitsFile string
 }
 
 func readFile(fname string) (map[string]string, error) {
@@ -118,6 +124,65 @@ func (c *mockClient) getGlobalStats() (map[string]string, error) {
 
 func (c *mockClient) getInnodbStats() (map[string]string, error) {
 	return readFile(c.innodbStatsFile)
+}
+
+func (c *mockClient) getTableIoWaitsStats() ([]TableIoWaitsStats, error) {
+	var stats []TableIoWaitsStats
+	file, err := os.Open(filepath.Join("testdata", "scraper", c.tableIoWaitsFile+".txt"))
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		var s TableIoWaitsStats
+		text := strings.Split(scanner.Text(), "\t")
+
+		s.schema = text[0]
+		s.name = text[1]
+		s.countDelete, _ = parseInt(text[2])
+		s.countFetch, _ = parseInt(text[3])
+		s.countInsert, _ = parseInt(text[4])
+		s.countUpdate, _ = parseInt(text[5])
+		s.timeDelete, _ = parseInt(text[6])
+		s.timeFetch, _ = parseInt(text[7])
+		s.timeInsert, _ = parseInt(text[8])
+		s.timeUpdate, _ = parseInt(text[9])
+
+		stats = append(stats, s)
+	}
+	return stats, nil
+}
+
+func (c *mockClient) getIndexIoWaitsStats() ([]IndexIoWaitsStats, error) {
+	var stats []IndexIoWaitsStats
+	file, err := os.Open(filepath.Join("testdata", "scraper", c.indexIoWaitsFile+".txt"))
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		var s IndexIoWaitsStats
+		text := strings.Split(scanner.Text(), "\t")
+
+		s.schema = text[0]
+		s.name = text[1]
+		s.index = text[2]
+		s.countDelete, _ = parseInt(text[3])
+		s.countFetch, _ = parseInt(text[4])
+		s.countInsert, _ = parseInt(text[5])
+		s.countUpdate, _ = parseInt(text[6])
+		s.timeDelete, _ = parseInt(text[7])
+		s.timeFetch, _ = parseInt(text[8])
+		s.timeInsert, _ = parseInt(text[9])
+		s.timeUpdate, _ = parseInt(text[10])
+
+		stats = append(stats, s)
+	}
+	return stats, nil
 }
 
 func (c *mockClient) Close() error {
