@@ -75,7 +75,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			orig:   1.1,
 			newVal: 2.2,
 			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.SetDoubleVal(2.2)
+				datapoint.SetDoubleValue(2.2)
 			},
 			valueType: pmetric.NumberDataPointValueTypeDouble,
 		},
@@ -89,7 +89,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			orig:   int64(1),
 			newVal: int64(2),
 			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.SetIntVal(2)
+				datapoint.SetIntValue(2)
 			},
 		},
 		{
@@ -316,14 +316,14 @@ func createNumberDataPointTelemetry(valueType pmetric.NumberDataPointValueType) 
 	numberDataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
 
 	if valueType == pmetric.NumberDataPointValueTypeDouble {
-		numberDataPoint.SetDoubleVal(1.1)
+		numberDataPoint.SetDoubleValue(1.1)
 	} else {
-		numberDataPoint.SetIntVal(1)
+		numberDataPoint.SetIntValue(1)
 	}
 
 	createAttributeTelemetry(numberDataPoint.Attributes())
 
-	numberDataPoint.Exemplars().AppendEmpty().SetIntVal(0)
+	numberDataPoint.Exemplars().AppendEmpty().SetIntValue(0)
 
 	return numberDataPoint
 }
@@ -647,7 +647,7 @@ func createHistogramDataPointTelemetry() pmetric.HistogramDataPoint {
 
 	createAttributeTelemetry(histogramDataPoint.Attributes())
 
-	histogramDataPoint.Exemplars().AppendEmpty().SetIntVal(0)
+	histogramDataPoint.Exemplars().AppendEmpty().SetIntValue(0)
 
 	return histogramDataPoint
 }
@@ -1075,7 +1075,7 @@ func createExpoHistogramDataPointTelemetry() pmetric.ExponentialHistogramDataPoi
 
 	createAttributeTelemetry(expoHistogramDataPoint.Attributes())
 
-	expoHistogramDataPoint.Exemplars().AppendEmpty().SetIntVal(0)
+	expoHistogramDataPoint.Exemplars().AppendEmpty().SetIntValue(0)
 
 	return expoHistogramDataPoint
 }
@@ -1490,8 +1490,8 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 					Name: "type",
 				},
 			},
-			orig:   int64(pmetric.MetricDataTypeSum),
-			newVal: int64(pmetric.MetricDataTypeSum),
+			orig:   int64(pmetric.MetricTypeSum),
+			newVal: int64(pmetric.MetricTypeSum),
 			modified: func(metric pmetric.Metric) {
 			},
 		},
@@ -1562,7 +1562,7 @@ func createMetricTelemetry() pmetric.Metric {
 
 func createNewTelemetry() (pmetric.ExemplarSlice, pcommon.Map) {
 	newExemplars := pmetric.NewExemplarSlice()
-	newExemplars.AppendEmpty().SetIntVal(4)
+	newExemplars.AppendEmpty().SetIntValue(4)
 
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutString("hello", "world")
@@ -1597,27 +1597,27 @@ func Test_ParseEnum(t *testing.T) {
 		},
 		{
 			name: "METRIC_DATA_TYPE_NONE",
-			want: ottl.Enum(pmetric.MetricDataTypeNone),
+			want: ottl.Enum(pmetric.MetricTypeNone),
 		},
 		{
 			name: "METRIC_DATA_TYPE_GAUGE",
-			want: ottl.Enum(pmetric.MetricDataTypeGauge),
+			want: ottl.Enum(pmetric.MetricTypeGauge),
 		},
 		{
 			name: "METRIC_DATA_TYPE_SUM",
-			want: ottl.Enum(pmetric.MetricDataTypeSum),
+			want: ottl.Enum(pmetric.MetricTypeSum),
 		},
 		{
 			name: "METRIC_DATA_TYPE_HISTOGRAM",
-			want: ottl.Enum(pmetric.MetricDataTypeHistogram),
+			want: ottl.Enum(pmetric.MetricTypeHistogram),
 		},
 		{
 			name: "METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM",
-			want: ottl.Enum(pmetric.MetricDataTypeExponentialHistogram),
+			want: ottl.Enum(pmetric.MetricTypeExponentialHistogram),
 		},
 		{
 			name: "METRIC_DATA_TYPE_SUMMARY",
-			want: ottl.Enum(pmetric.MetricDataTypeSummary),
+			want: ottl.Enum(pmetric.MetricTypeSummary),
 		},
 	}
 	for _, tt := range tests {

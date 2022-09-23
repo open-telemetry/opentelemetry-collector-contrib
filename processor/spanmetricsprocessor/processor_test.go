@@ -462,7 +462,7 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 		require.Equal(t, 1, dps.Len())
 
 		dp := dps.At(0)
-		assert.Equal(t, int64(numCumulativeConsumptions), dp.IntVal(), "There should only be one metric per Service/operation/kind combination")
+		assert.Equal(t, int64(numCumulativeConsumptions), dp.IntValue(), "There should only be one metric per Service/operation/kind combination")
 		assert.NotZero(t, dp.StartTimestamp(), "StartTimestamp should be set")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
@@ -857,7 +857,7 @@ func TestSetLatencyExemplars(t *testing.T) {
 	assert.True(t, exist)
 	assert.Equal(t, traceIDValue.AsString(), traceID.HexString())
 	assert.Equal(t, exemplarSlice.At(0).Timestamp(), timestamp)
-	assert.Equal(t, exemplarSlice.At(0).DoubleVal(), value)
+	assert.Equal(t, exemplarSlice.At(0).DoubleValue(), value)
 }
 
 func TestProcessorUpdateLatencyExemplars(t *testing.T) {

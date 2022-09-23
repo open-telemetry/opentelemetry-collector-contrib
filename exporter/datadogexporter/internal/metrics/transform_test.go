@@ -310,7 +310,7 @@ func TestTransformFunc(t *testing.T) {
 			p := ms.At(i).Gauge().DataPoints().At(j)
 			nva := NVA{
 				N: ms.At(i).Name(),
-				V: p.DoubleVal(),
+				V: p.DoubleValue(),
 			}
 			if p.Attributes().Len() > 0 {
 				nva.A = p.Attributes().AsRaw()

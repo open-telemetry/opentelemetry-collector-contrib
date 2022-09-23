@@ -30,7 +30,7 @@ const (
 
 	metricName       = "metricName"
 	metricColumnName = "metricColumnName"
-	metricDataType   = pmetric.MetricDataTypeGauge
+	metricDataType   = pmetric.MetricTypeGauge
 	metricUnit       = "metricUnit"
 	metricNamePrefix = "metricNamePrefix-"
 

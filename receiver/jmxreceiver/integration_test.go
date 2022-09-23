@@ -227,7 +227,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 				require.Equal(t, "By", met.Unit())
 
 				// otel-java only uses int sum w/ non-monotonic for up down counters instead of gauge
-				require.Equal(t, pmetric.MetricDataTypeSum, met.DataType())
+				require.Equal(t, pmetric.MetricTypeSum, met.Type())
 				sum := met.Sum()
 				require.False(t, sum.IsMonotonic())
 

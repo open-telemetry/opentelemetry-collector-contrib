@@ -448,7 +448,7 @@ func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {
 	dpsInt := met.SetEmptyGauge().DataPoints()
 	dpInt := dpsInt.AppendEmpty()
 	dpInt.SetTimestamp(seconds(0))
-	dpInt.SetIntVal(222)
+	dpInt.SetIntValue(222)
 
 	// host metric
 	met = metricsArray.AppendEmpty()
@@ -456,7 +456,7 @@ func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {
 	dpsInt = met.SetEmptyGauge().DataPoints()
 	dpInt = dpsInt.AppendEmpty()
 	dpInt.SetTimestamp(seconds(0))
-	dpInt.SetIntVal(333)
+	dpInt.SetIntValue(333)
 
 	// Histogram (delta)
 	met = metricsArray.AppendEmpty()

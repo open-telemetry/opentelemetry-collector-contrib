@@ -131,13 +131,13 @@ func testMetrics() pmetric.MetricSlice {
 }
 
 func setDPDoubleVal(dp pmetric.NumberDataPoint, value float64, attributes pcommon.Map, timeStamp time.Time) {
-	dp.SetDoubleVal(value)
+	dp.SetDoubleValue(value)
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeStamp))
 	attributes.CopyTo(dp.Attributes())
 }
 
 func setDPIntVal(dp pmetric.NumberDataPoint, value int64, attributes pcommon.Map, timeStamp time.Time) {
-	dp.SetIntVal(value)
+	dp.SetIntValue(value)
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeStamp))
 	attributes.CopyTo(dp.Attributes())
 }

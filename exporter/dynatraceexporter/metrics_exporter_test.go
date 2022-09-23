@@ -78,7 +78,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intGauge := intGaugeMetric.SetEmptyGauge()
 	intGaugeDataPoints := intGauge.DataPoints()
 	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
-	intGaugeDataPoint.SetIntVal(10)
+	intGaugeDataPoint.SetIntValue(10)
 	intGaugeDataPoint.SetTimestamp(testTimestamp)
 
 	nmIntSumMetric := metrics.AppendEmpty()
@@ -86,7 +86,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	nmIntSum := nmIntSumMetric.SetEmptySum()
 	nmIntSumDataPoints := nmIntSum.DataPoints()
 	nmIntSumDataPoint := nmIntSumDataPoints.AppendEmpty()
-	nmIntSumDataPoint.SetIntVal(10)
+	nmIntSumDataPoint.SetIntValue(10)
 	nmIntSumDataPoint.SetTimestamp(testTimestamp)
 
 	mIntSumMetric := metrics.AppendEmpty()
@@ -95,7 +95,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	mIntSum.SetIsMonotonic(true)
 	mIntSumDataPoints := mIntSum.DataPoints()
 	mIntSumDataPoint := mIntSumDataPoints.AppendEmpty()
-	mIntSumDataPoint.SetIntVal(10)
+	mIntSumDataPoint.SetIntValue(10)
 	mIntSumDataPoint.SetTimestamp(testTimestamp)
 
 	doubleGaugeMetric := metrics.AppendEmpty()
@@ -103,7 +103,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleGauge := doubleGaugeMetric.SetEmptyGauge()
 	doubleGaugeDataPoints := doubleGauge.DataPoints()
 	doubleGaugeDataPoint := doubleGaugeDataPoints.AppendEmpty()
-	doubleGaugeDataPoint.SetDoubleVal(10.1)
+	doubleGaugeDataPoint.SetDoubleValue(10.1)
 	doubleGaugeDataPoint.SetTimestamp(testTimestamp)
 
 	nmDoubleSumMetric := metrics.AppendEmpty()
@@ -111,7 +111,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	nmDoubleSum := nmDoubleSumMetric.SetEmptySum()
 	nmDoubleSumDataPoints := nmDoubleSum.DataPoints()
 	nmDoubleSumDataPoint := nmDoubleSumDataPoints.AppendEmpty()
-	nmDoubleSumDataPoint.SetDoubleVal(10.1)
+	nmDoubleSumDataPoint.SetDoubleValue(10.1)
 	nmDoubleSumDataPoint.SetTimestamp(testTimestamp)
 
 	mDoubleSumMetric := metrics.AppendEmpty()
@@ -120,7 +120,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	mDoubleSum.SetIsMonotonic(true)
 	mDoubleSumDataPoints := mDoubleSum.DataPoints()
 	mDoubleSumDataPoint := mDoubleSumDataPoints.AppendEmpty()
-	mDoubleSumDataPoint.SetDoubleVal(10.1)
+	mDoubleSumDataPoint.SetDoubleValue(10.1)
 	mDoubleSumDataPoint.SetTimestamp(testTimestamp)
 
 	doubleHistogramMetric := metrics.AppendEmpty()
@@ -343,11 +343,11 @@ func Test_SumMetrics(t *testing.T) {
 
 			switch tt.args.valueType {
 			case "int":
-				dataPoint1.SetIntVal(10)
-				dataPoint2.SetIntVal(20)
+				dataPoint1.SetIntValue(10)
+				dataPoint2.SetIntValue(20)
 			case "double":
-				dataPoint1.SetDoubleVal(10.1)
-				dataPoint2.SetDoubleVal(20.2)
+				dataPoint1.SetDoubleValue(10.1)
+				dataPoint2.SetDoubleValue(20.2)
 			default:
 				t.Fatalf("valueType can only be 'int' or 'double' but was '%s'", tt.args.valueType)
 			}
@@ -412,7 +412,7 @@ func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
 	intGauge := metric.SetEmptyGauge()
 	intGaugeDataPoints := intGauge.DataPoints()
 	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
-	intGaugeDataPoint.SetIntVal(10)
+	intGaugeDataPoint.SetIntValue(10)
 	intGaugeDataPoint.SetTimestamp(testTimestamp)
 
 	e := &exporter{
@@ -599,7 +599,7 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 	intGauge := intGaugeMetric.SetEmptyGauge()
 	intGaugeDataPoints := intGauge.DataPoints()
 	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
-	intGaugeDataPoint.SetIntVal(10)
+	intGaugeDataPoint.SetIntValue(10)
 	intGaugeDataPoint.SetTimestamp(testTimestamp)
 	type fields struct {
 		logger *zap.Logger
@@ -721,7 +721,7 @@ func Test_LineTooLong(t *testing.T) {
 	intGauge := intGaugeMetric.SetEmptyGauge()
 	intGaugeDataPoints := intGauge.DataPoints()
 	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
-	intGaugeDataPoint.SetIntVal(10)
+	intGaugeDataPoint.SetIntValue(10)
 	intGaugeDataPoint.SetTimestamp(testTimestamp)
 	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), &config.Config{DefaultDimensions: dims})
 

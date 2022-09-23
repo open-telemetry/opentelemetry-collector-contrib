@@ -32,7 +32,7 @@ import (
 func Test_serializeSumPoint(t *testing.T) {
 	t.Run("without timestamp", func(t *testing.T) {
 		dp := pmetric.NewNumberDataPoint()
-		dp.SetIntVal(5)
+		dp.SetIntValue(5)
 
 		got, err := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(), pmetric.MetricAggregationTemporalityDelta, dp, ttlmap.New(1, 1))
 		assert.NoError(t, err)
@@ -41,7 +41,7 @@ func Test_serializeSumPoint(t *testing.T) {
 
 	t.Run("float delta with prefix and dimension", func(t *testing.T) {
 		dp := pmetric.NewNumberDataPoint()
-		dp.SetDoubleVal(5.5)
+		dp.SetDoubleValue(5.5)
 		dp.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		prev := ttlmap.New(1, 1)
@@ -53,7 +53,7 @@ func Test_serializeSumPoint(t *testing.T) {
 
 	t.Run("int delta with prefix and dimension", func(t *testing.T) {
 		dp := pmetric.NewNumberDataPoint()
-		dp.SetIntVal(5)
+		dp.SetIntValue(5)
 		dp.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		got, err := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.MetricAggregationTemporalityDelta, dp, ttlmap.New(1, 1))
@@ -63,11 +63,11 @@ func Test_serializeSumPoint(t *testing.T) {
 
 	t.Run("float cumulative with prefix and dimension", func(t *testing.T) {
 		dp := pmetric.NewNumberDataPoint()
-		dp.SetDoubleVal(5.5)
+		dp.SetDoubleValue(5.5)
 		dp.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		dp2 := pmetric.NewNumberDataPoint()
-		dp2.SetDoubleVal(7.0)
+		dp2.SetDoubleValue(7.0)
 		dp2.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 31, 0, 0, time.UTC).UnixNano()))
 
 		prev := ttlmap.New(1, 1)
@@ -83,11 +83,11 @@ func Test_serializeSumPoint(t *testing.T) {
 
 	t.Run("int cumulative with prefix and dimension", func(t *testing.T) {
 		dp := pmetric.NewNumberDataPoint()
-		dp.SetIntVal(5)
+		dp.SetIntValue(5)
 		dp.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		dp2 := pmetric.NewNumberDataPoint()
-		dp2.SetIntVal(10)
+		dp2.SetIntValue(10)
 		dp2.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 31, 0, 0, time.UTC).UnixNano()))
 
 		prev := ttlmap.New(1, 1)
@@ -103,25 +103,25 @@ func Test_serializeSumPoint(t *testing.T) {
 
 	t.Run("different dimensions should be treated as separate counters", func(t *testing.T) {
 		dp := pmetric.NewNumberDataPoint()
-		dp.SetIntVal(5)
+		dp.SetIntValue(5)
 		dp.Attributes().PutString("sort", "unstable")
 		dp.Attributes().PutString("group", "a")
 		dp.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		dp2 := pmetric.NewNumberDataPoint()
-		dp2.SetIntVal(10)
+		dp2.SetIntValue(10)
 		dp2.Attributes().PutString("sort", "unstable")
 		dp2.Attributes().PutString("group", "b")
 		dp2.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		dp3 := pmetric.NewNumberDataPoint()
-		dp3.SetIntVal(10)
+		dp3.SetIntValue(10)
 		dp3.Attributes().PutString("group", "a")
 		dp3.Attributes().PutString("sort", "unstable")
 		dp3.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		dp4 := pmetric.NewNumberDataPoint()
-		dp4.SetIntVal(20)
+		dp4.SetIntValue(20)
 		dp4.Attributes().PutString("group", "b")
 		dp4.Attributes().PutString("sort", "unstable")
 		dp4.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
@@ -145,11 +145,11 @@ func Test_serializeSumPoint(t *testing.T) {
 
 	t.Run("count values older than the previous count value are dropped", func(t *testing.T) {
 		dp := pmetric.NewNumberDataPoint()
-		dp.SetIntVal(5)
+		dp.SetIntValue(5)
 		dp.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		dp2 := pmetric.NewNumberDataPoint()
-		dp2.SetIntVal(5)
+		dp2.SetIntValue(5)
 		dp2.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 29, 0, 0, time.UTC).UnixNano()))
 
 		prev := ttlmap.New(1, 1)
@@ -206,7 +206,7 @@ func Test_serializeSum(t *testing.T) {
 		dp := sum.DataPoints().AppendEmpty()
 		t.Run("with valid value is exported as delta", func(t *testing.T) {
 			// not checking Double, this is done in Test_serializeSumPoint
-			dp.SetIntVal(12)
+			dp.SetIntValue(12)
 
 			prev := ttlmap.New(10, 10)
 
@@ -223,7 +223,7 @@ func Test_serializeSum(t *testing.T) {
 		})
 
 		t.Run("with invalid value logs warning and returns no line", func(t *testing.T) {
-			dp.SetDoubleVal(math.NaN())
+			dp.SetDoubleValue(math.NaN())
 
 			prev := ttlmap.New(10, 10)
 
@@ -259,7 +259,7 @@ func Test_serializeSum(t *testing.T) {
 
 		t.Run("with valid value is exported as gauge", func(t *testing.T) {
 			// not checking Int here, this is done in Test_serializeSumPoint
-			dp.SetDoubleVal(12.3)
+			dp.SetDoubleValue(12.3)
 
 			prev := ttlmap.New(10, 10)
 
@@ -278,7 +278,7 @@ func Test_serializeSum(t *testing.T) {
 		})
 
 		t.Run("with invalid value logs warning and returns no line", func(t *testing.T) {
-			dp.SetDoubleVal(math.NaN())
+			dp.SetDoubleValue(math.NaN())
 
 			prev := ttlmap.New(10, 10)
 
@@ -303,7 +303,7 @@ func Test_serializeSum(t *testing.T) {
 		})
 
 		invalidDp := sum.DataPoints().AppendEmpty()
-		invalidDp.SetDoubleVal(math.NaN())
+		invalidDp.SetDoubleValue(math.NaN())
 
 	})
 
@@ -318,8 +318,8 @@ func Test_serializeSum(t *testing.T) {
 
 		t.Run("with two valid data points is converted to delta", func(t *testing.T) {
 			// not checking Int here, this is done in Test_serializeSumPoint
-			dp1.SetDoubleVal(5.2)
-			dp2.SetDoubleVal(5.7)
+			dp1.SetDoubleValue(5.2)
+			dp2.SetDoubleValue(5.7)
 
 			prev := ttlmap.New(10, 10)
 
@@ -338,8 +338,8 @@ func Test_serializeSum(t *testing.T) {
 		})
 
 		t.Run("with invalid value logs error and exports no line", func(t *testing.T) {
-			dp1.SetDoubleVal(5.2)
-			dp2.SetDoubleVal(math.NaN())
+			dp1.SetDoubleValue(5.2)
+			dp2.SetDoubleValue(math.NaN())
 
 			prev := ttlmap.New(10, 10)
 
@@ -365,8 +365,8 @@ func Test_serializeSum(t *testing.T) {
 
 		t.Run("conversion with incompatible types returns an error", func(t *testing.T) {
 			// double and int are incompatible
-			dp1.SetDoubleVal(5.2)
-			dp2.SetIntVal(5)
+			dp1.SetDoubleValue(5.2)
+			dp2.SetIntValue(5)
 
 			prev := ttlmap.New(10, 10)
 

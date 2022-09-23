@@ -376,7 +376,7 @@ func TestScrape(t *testing.T) {
 					dps := metric.Gauge().DataPoints()
 					assert.Equal(t, len(test.mockCounterValues), dps.Len())
 					for dpIdx, val := range test.mockCounterValues {
-						assert.Equal(t, val.Value, dps.At(dpIdx).DoubleVal())
+						assert.Equal(t, val.Value, dps.At(dpIdx).DoubleValue())
 						expectedAttributeLen := len(counterCfg.MetricRep.Attributes)
 						if val.InstanceName != "" {
 							expectedAttributeLen++

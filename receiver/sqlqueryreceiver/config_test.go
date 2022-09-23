@@ -45,7 +45,7 @@ func TestParseConfig(t *testing.T) {
 	assert.Equal(t, "count", metric.ValueColumn)
 	assert.Equal(t, "type", metric.AttributeColumns[0])
 	assert.Equal(t, false, metric.Monotonic)
-	assert.Equal(t, MetricDataTypeSum, metric.DataType)
+	assert.Equal(t, MetricTypeSum, metric.DataType)
 	assert.Equal(t, MetricValueTypeInt, metric.ValueType)
 	assert.Equal(t, map[string]string{"foo": "bar"}, metric.StaticAttributes)
 	assert.Equal(t, MetricAggregationCumulative, metric.Aggregation)

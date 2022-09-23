@@ -199,7 +199,7 @@ func getJaegerProtoSpanTags(span ptrace.Span, scope pcommon.InstrumentationScope
 		tagsCount++
 	}
 
-	traceStateTags, traceStateTagsFound := getTagsFromTraceState(span.TraceStateStruct().AsRaw())
+	traceStateTags, traceStateTagsFound := getTagsFromTraceState(span.TraceState().AsRaw())
 	if traceStateTagsFound {
 		tagsCount += len(traceStateTags)
 	}
