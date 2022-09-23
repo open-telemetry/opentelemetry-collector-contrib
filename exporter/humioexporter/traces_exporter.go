@@ -204,7 +204,7 @@ func toHumioLinks(pLinks ptrace.SpanLinkSlice) []*HumioLink {
 		links = append(links, &HumioLink{
 			TraceID:    link.TraceID().HexString(),
 			SpanID:     link.SpanID().HexString(),
-			TraceState: link.TraceStateStruct().AsRaw(),
+			TraceState: link.TraceState().AsRaw(),
 		})
 	}
 	return links

@@ -6,14 +6,14 @@ require (
 	github.com/lib/pq v1.10.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.60.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.60.1-0.20220916163348-84621e483dfb
+	go.opentelemetry.io/collector v0.60.1-0.20220923151520-96e9af35c002
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 )
 
 require (
 	github.com/testcontainers/testcontainers-go v0.14.0
-	go.opentelemetry.io/collector/pdata v0.60.1-0.20220916163348-84621e483dfb
+	go.opentelemetry.io/collector/pdata v0.60.1-0.20220923151520-96e9af35c002
 )
 
 require (
@@ -55,7 +55,7 @@ require (
 	github.com/stretchr/objx v0.4.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/otel v1.10.0 // indirect
-	go.opentelemetry.io/otel/metric v0.32.0 // indirect
+	go.opentelemetry.io/otel/metric v0.32.1 // indirect
 	go.opentelemetry.io/otel/trace v1.10.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/net v0.0.0-20220617184016-355a448f1bc9 // indirect

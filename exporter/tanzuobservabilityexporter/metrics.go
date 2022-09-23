@@ -60,7 +60,7 @@ var (
 
 // metricsConsumer instances consume OTEL metrics
 type metricsConsumer struct {
-	consumerMap           map[pmetric.MetricDataType]typedMetricConsumer
+	consumerMap           map[pmetric.MetricType]typedMetricConsumer
 	sender                flushCloser
 	reportInternalMetrics bool
 }
@@ -82,7 +82,7 @@ func newMetricsConsumer(
 	sender flushCloser,
 	reportInternalMetrics bool,
 ) *metricsConsumer {
-	consumerMap := make(map[pmetric.MetricDataType]typedMetricConsumer, len(consumers))
+	consumerMap := make(map[pmetric.MetricType]typedMetricConsumer, len(consumers))
 	for _, consumer := range consumers {
 		if consumerMap[consumer.Type()] != nil {
 			panic("duplicate consumer type detected: " + consumer.Type().String())
@@ -147,7 +147,7 @@ func (c *metricsConsumer) pushInternalMetrics(errs *[]error) {
 }
 
 func (c *metricsConsumer) pushSingleMetric(mi metricInfo, errs *[]error) {
-	dataType := mi.DataType()
+	dataType := mi.Type()
 	consumer := c.consumerMap[dataType]
 	if consumer == nil {
 		*errs = append(
@@ -163,7 +163,7 @@ type typedMetricConsumer interface {
 
 	// Type returns the type of metric this consumer consumes. For example
 	// Gauge, Sum, or Histogram
-	Type() pmetric.MetricDataType
+	Type() pmetric.MetricType
 
 	// Consume consumes the metric from the metricInfo and appends any errors encountered to errs
 	Consume(mi metricInfo, errs *[]error)
@@ -196,7 +196,7 @@ func report(count *atomic.Int64, name string, tags map[string]string, sender gau
 // metrics with missing values.
 func logMissingValue(metric pmetric.Metric, settings component.TelemetrySettings, count *atomic.Int64) {
 	namef := zap.String(metricNameString, metric.Name())
-	typef := zap.String(metricTypeString, metric.DataType().String())
+	typef := zap.String(metricTypeString, metric.Type().String())
 	settings.Logger.Debug("Metric missing value", namef, typef)
 	count.Inc()
 }
@@ -205,9 +205,9 @@ func logMissingValue(metric pmetric.Metric, settings component.TelemetrySettings
 func getValue(numberDataPoint pmetric.NumberDataPoint) (float64, error) {
 	switch numberDataPoint.ValueType() {
 	case pmetric.NumberDataPointValueTypeInt:
-		return float64(numberDataPoint.IntVal()), nil
+		return float64(numberDataPoint.IntValue()), nil
 	case pmetric.NumberDataPointValueTypeDouble:
-		return numberDataPoint.DoubleVal(), nil
+		return numberDataPoint.DoubleValue(), nil
 	default:
 		return 0.0, errors.New("unsupported metric value type")
 	}
@@ -261,8 +261,8 @@ func newGaugeConsumer(
 	}
 }
 
-func (g *gaugeConsumer) Type() pmetric.MetricDataType {
-	return pmetric.MetricDataTypeGauge
+func (g *gaugeConsumer) Type() pmetric.MetricType {
+	return pmetric.MetricTypeGauge
 }
 
 func (g *gaugeConsumer) Consume(mi metricInfo, errs *[]error) {
@@ -300,8 +300,8 @@ func newSumConsumer(
 	}
 }
 
-func (s *sumConsumer) Type() pmetric.MetricDataType {
-	return pmetric.MetricDataTypeSum
+func (s *sumConsumer) Type() pmetric.MetricType {
+	return pmetric.MetricTypeSum
 }
 
 func (s *sumConsumer) Consume(mi metricInfo, errs *[]error) {
@@ -412,7 +412,7 @@ func newHistogramConsumer(
 	}
 }
 
-func (h *histogramConsumer) Type() pmetric.MetricDataType {
+func (h *histogramConsumer) Type() pmetric.MetricType {
 	return h.spec.Type()
 }
 
@@ -531,8 +531,8 @@ func newSummaryConsumer(
 	return &summaryConsumer{sender: sender, settings: settings}
 }
 
-func (s *summaryConsumer) Type() pmetric.MetricDataType {
-	return pmetric.MetricDataTypeSummary
+func (s *summaryConsumer) Type() pmetric.MetricType {
+	return pmetric.MetricTypeSummary
 }
 
 func (s *summaryConsumer) Consume(mi metricInfo, errs *[]error) {
@@ -701,7 +701,7 @@ func (b *bucketHistogramDataPoint) centroidValue(index int) float64 {
 }
 
 type histogramSpecification interface {
-	Type() pmetric.MetricDataType
+	Type() pmetric.MetricType
 	AggregationTemporality(metric pmetric.Metric) pmetric.MetricAggregationTemporality
 	DataPoints(metric pmetric.Metric) []bucketHistogramDataPoint
 }
@@ -709,8 +709,8 @@ type histogramSpecification interface {
 type regularHistogramSpecification struct {
 }
 
-func (regularHistogramSpecification) Type() pmetric.MetricDataType {
-	return pmetric.MetricDataTypeHistogram
+func (regularHistogramSpecification) Type() pmetric.MetricType {
+	return pmetric.MetricTypeHistogram
 }
 
 func (regularHistogramSpecification) AggregationTemporality(
@@ -725,8 +725,8 @@ func (regularHistogramSpecification) DataPoints(metric pmetric.Metric) []bucketH
 type exponentialHistogramSpecification struct {
 }
 
-func (exponentialHistogramSpecification) Type() pmetric.MetricDataType {
-	return pmetric.MetricDataTypeExponentialHistogram
+func (exponentialHistogramSpecification) Type() pmetric.MetricType {
+	return pmetric.MetricTypeExponentialHistogram
 }
 
 func (exponentialHistogramSpecification) AggregationTemporality(

@@ -56,16 +56,16 @@ func (p *Processor) ProcessMetrics(_ context.Context, td pmetric.Metrics) (pmetr
 			metrics := smetrics.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
 				metric := metrics.At(k)
-				switch metric.DataType() {
-				case pmetric.MetricDataTypeSum:
+				switch metric.Type() {
+				case pmetric.MetricTypeSum:
 					p.handleNumberDataPoints(metric.Sum().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
-				case pmetric.MetricDataTypeGauge:
+				case pmetric.MetricTypeGauge:
 					p.handleNumberDataPoints(metric.Gauge().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
-				case pmetric.MetricDataTypeHistogram:
+				case pmetric.MetricTypeHistogram:
 					p.handleHistogramDataPoints(metric.Histogram().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
-				case pmetric.MetricDataTypeExponentialHistogram:
+				case pmetric.MetricTypeExponentialHistogram:
 					p.handleExponetialHistogramDataPoints(metric.ExponentialHistogram().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
-				case pmetric.MetricDataTypeSummary:
+				case pmetric.MetricTypeSummary:
 					p.handleSummaryDataPoints(metric.Summary().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
 				}
 			}

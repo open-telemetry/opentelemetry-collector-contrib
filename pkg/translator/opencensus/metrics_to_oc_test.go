@@ -177,7 +177,7 @@ func TestMetricsType(t *testing.T) {
 			name: "int-gauge",
 			internal: func() pmetric.Metric {
 				m := pmetric.NewMetric()
-				m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntVal(1)
+				m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_GAUGE_INT64,
@@ -186,7 +186,7 @@ func TestMetricsType(t *testing.T) {
 			name: "double-gauge",
 			internal: func() pmetric.Metric {
 				m := pmetric.NewMetric()
-				m.SetEmptyGauge().DataPoints().AppendEmpty().SetDoubleVal(1)
+				m.SetEmptyGauge().DataPoints().AppendEmpty().SetDoubleValue(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_GAUGE_DOUBLE,
@@ -197,7 +197,7 @@ func TestMetricsType(t *testing.T) {
 				m := pmetric.NewMetric()
 				m.SetEmptySum().SetIsMonotonic(false)
 				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
-				m.Sum().DataPoints().AppendEmpty().SetIntVal(1)
+				m.Sum().DataPoints().AppendEmpty().SetIntValue(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_GAUGE_INT64,
@@ -208,7 +208,7 @@ func TestMetricsType(t *testing.T) {
 				m := pmetric.NewMetric()
 				m.SetEmptySum().SetIsMonotonic(false)
 				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-				m.Sum().DataPoints().AppendEmpty().SetIntVal(1)
+				m.Sum().DataPoints().AppendEmpty().SetIntValue(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_GAUGE_INT64,
@@ -219,7 +219,7 @@ func TestMetricsType(t *testing.T) {
 				m := pmetric.NewMetric()
 				m.SetEmptySum().SetIsMonotonic(true)
 				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
-				m.Sum().DataPoints().AppendEmpty().SetIntVal(1)
+				m.Sum().DataPoints().AppendEmpty().SetIntValue(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_GAUGE_INT64,
@@ -230,7 +230,7 @@ func TestMetricsType(t *testing.T) {
 				m := pmetric.NewMetric()
 				m.SetEmptySum().SetIsMonotonic(true)
 				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-				m.Sum().DataPoints().AppendEmpty().SetIntVal(1)
+				m.Sum().DataPoints().AppendEmpty().SetIntValue(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_CUMULATIVE_INT64,
@@ -241,7 +241,7 @@ func TestMetricsType(t *testing.T) {
 				m := pmetric.NewMetric()
 				m.SetEmptySum().SetIsMonotonic(false)
 				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
-				m.Sum().DataPoints().AppendEmpty().SetDoubleVal(1)
+				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_GAUGE_DOUBLE,
@@ -252,7 +252,7 @@ func TestMetricsType(t *testing.T) {
 				m := pmetric.NewMetric()
 				m.SetEmptySum().SetIsMonotonic(false)
 				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-				m.Sum().DataPoints().AppendEmpty().SetDoubleVal(1)
+				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_GAUGE_DOUBLE,
@@ -263,7 +263,7 @@ func TestMetricsType(t *testing.T) {
 				m := pmetric.NewMetric()
 				m.SetEmptySum().SetIsMonotonic(true)
 				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
-				m.Sum().DataPoints().AppendEmpty().SetDoubleVal(1)
+				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_GAUGE_DOUBLE,
@@ -274,7 +274,7 @@ func TestMetricsType(t *testing.T) {
 				m := pmetric.NewMetric()
 				m.SetEmptySum().SetIsMonotonic(true)
 				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-				m.Sum().DataPoints().AppendEmpty().SetDoubleVal(1)
+				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE,

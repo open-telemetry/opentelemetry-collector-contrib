@@ -33,9 +33,9 @@ const (
 )
 
 type MetricsDataPointKey struct {
-	MetricName     string
-	MetricUnit     string
-	MetricDataType MetricDataType
+	MetricName string
+	MetricUnit string
+	MetricType MetricType
 }
 
 type MetricsDataPoint struct {
@@ -75,9 +75,9 @@ func (mdp *MetricsDataPoint) CopyTo(dataPoint pmetric.NumberDataPoint) {
 
 func (mdp *MetricsDataPoint) GroupingKey() MetricsDataPointKey {
 	return MetricsDataPointKey{
-		MetricName:     mdp.metricName,
-		MetricUnit:     mdp.metricValue.Metadata().Unit(),
-		MetricDataType: mdp.metricValue.Metadata().DataType(),
+		MetricName: mdp.metricName,
+		MetricUnit: mdp.metricValue.Metadata().Unit(),
+		MetricType: mdp.metricValue.Metadata().DataType(),
 	}
 }
 

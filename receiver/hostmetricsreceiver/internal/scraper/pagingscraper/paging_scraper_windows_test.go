@@ -138,12 +138,12 @@ func TestScrape_Errors(t *testing.T) {
 
 			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			pagingUsageMetric := metrics.At(0)
-			assert.Equal(t, test.expectedUsedValue, pagingUsageMetric.Sum().DataPoints().At(0).IntVal())
-			assert.Equal(t, test.expectedFreeValue, pagingUsageMetric.Sum().DataPoints().At(1).IntVal())
+			assert.Equal(t, test.expectedUsedValue, pagingUsageMetric.Sum().DataPoints().At(0).IntValue())
+			assert.Equal(t, test.expectedFreeValue, pagingUsageMetric.Sum().DataPoints().At(1).IntValue())
 
 			pagingUtilizationMetric := metrics.At(1)
-			assert.Equal(t, test.expectedUtilizationUsedValue, pagingUtilizationMetric.Gauge().DataPoints().At(0).DoubleVal())
-			assert.Equal(t, test.expectedUtilizationFreeValue, pagingUtilizationMetric.Gauge().DataPoints().At(1).DoubleVal())
+			assert.Equal(t, test.expectedUtilizationUsedValue, pagingUtilizationMetric.Gauge().DataPoints().At(0).DoubleValue())
+			assert.Equal(t, test.expectedUtilizationFreeValue, pagingUtilizationMetric.Gauge().DataPoints().At(1).DoubleValue())
 		})
 	}
 }

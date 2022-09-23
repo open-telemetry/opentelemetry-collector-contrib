@@ -403,7 +403,7 @@ func (m *metricVcenterClusterCPUEffective) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -454,7 +454,7 @@ func (m *metricVcenterClusterCPULimit) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -506,7 +506,7 @@ func (m *metricVcenterClusterHostCount) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutBool("effective", hostEffectiveAttributeValue)
 }
 
@@ -558,7 +558,7 @@ func (m *metricVcenterClusterMemoryEffective) recordDataPoint(start pcommon.Time
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -609,7 +609,7 @@ func (m *metricVcenterClusterMemoryLimit) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -660,7 +660,7 @@ func (m *metricVcenterClusterMemoryUsed) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -712,7 +712,7 @@ func (m *metricVcenterClusterVMCount) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("power_state", vmCountPowerStateAttributeValue)
 }
 
@@ -765,7 +765,7 @@ func (m *metricVcenterDatastoreDiskUsage) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("disk_state", diskStateAttributeValue)
 }
 
@@ -815,7 +815,7 @@ func (m *metricVcenterDatastoreDiskUtilization) recordDataPoint(start pcommon.Ti
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -866,7 +866,7 @@ func (m *metricVcenterHostCPUUsage) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -915,7 +915,7 @@ func (m *metricVcenterHostCPUUtilization) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -965,7 +965,7 @@ func (m *metricVcenterHostDiskLatencyAvg) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("direction", diskDirectionAttributeValue)
 }
 
@@ -1015,7 +1015,7 @@ func (m *metricVcenterHostDiskLatencyAvgRead) recordDataPoint(start pcommon.Time
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1064,7 +1064,7 @@ func (m *metricVcenterHostDiskLatencyAvgWrite) recordDataPoint(start pcommon.Tim
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1113,7 +1113,7 @@ func (m *metricVcenterHostDiskLatencyMax) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1165,7 +1165,7 @@ func (m *metricVcenterHostDiskThroughput) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("direction", diskDirectionAttributeValue)
 }
 
@@ -1217,7 +1217,7 @@ func (m *metricVcenterHostDiskThroughputRead) recordDataPoint(start pcommon.Time
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1268,7 +1268,7 @@ func (m *metricVcenterHostDiskThroughputWrite) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1319,7 +1319,7 @@ func (m *metricVcenterHostMemoryUsage) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1368,7 +1368,7 @@ func (m *metricVcenterHostMemoryUtilization) recordDataPoint(start pcommon.Times
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1420,7 +1420,7 @@ func (m *metricVcenterHostNetworkPacketCount) recordDataPoint(start pcommon.Time
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("direction", throughputDirectionAttributeValue)
 }
 
@@ -1472,7 +1472,7 @@ func (m *metricVcenterHostNetworkPacketCountReceive) recordDataPoint(start pcomm
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1523,7 +1523,7 @@ func (m *metricVcenterHostNetworkPacketCountTransmit) recordDataPoint(start pcom
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1575,7 +1575,7 @@ func (m *metricVcenterHostNetworkPacketErrors) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("direction", throughputDirectionAttributeValue)
 }
 
@@ -1627,7 +1627,7 @@ func (m *metricVcenterHostNetworkPacketErrorsReceive) recordDataPoint(start pcom
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1678,7 +1678,7 @@ func (m *metricVcenterHostNetworkPacketErrorsTransmit) recordDataPoint(start pco
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1730,7 +1730,7 @@ func (m *metricVcenterHostNetworkThroughput) recordDataPoint(start pcommon.Times
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("direction", throughputDirectionAttributeValue)
 }
 
@@ -1782,7 +1782,7 @@ func (m *metricVcenterHostNetworkThroughputReceive) recordDataPoint(start pcommo
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1833,7 +1833,7 @@ func (m *metricVcenterHostNetworkThroughputTransmit) recordDataPoint(start pcomm
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1884,7 +1884,7 @@ func (m *metricVcenterHostNetworkUsage) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1935,7 +1935,7 @@ func (m *metricVcenterResourcePoolCPUShares) recordDataPoint(start pcommon.Times
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1986,7 +1986,7 @@ func (m *metricVcenterResourcePoolCPUUsage) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2037,7 +2037,7 @@ func (m *metricVcenterResourcePoolMemoryShares) recordDataPoint(start pcommon.Ti
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2088,7 +2088,7 @@ func (m *metricVcenterResourcePoolMemoryUsage) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2138,7 +2138,7 @@ func (m *metricVcenterVMDiskLatencyAvg) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("direction", diskDirectionAttributeValue)
 	dp.Attributes().PutString("disk_type", diskTypeAttributeValue)
 }
@@ -2190,7 +2190,7 @@ func (m *metricVcenterVMDiskLatencyAvgRead) recordDataPoint(start pcommon.Timest
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("disk_type", diskTypeAttributeValue)
 }
 
@@ -2241,7 +2241,7 @@ func (m *metricVcenterVMDiskLatencyAvgWrite) recordDataPoint(start pcommon.Times
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("disk_type", diskTypeAttributeValue)
 }
 
@@ -2291,7 +2291,7 @@ func (m *metricVcenterVMDiskLatencyMax) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2342,7 +2342,7 @@ func (m *metricVcenterVMDiskThroughput) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2394,7 +2394,7 @@ func (m *metricVcenterVMDiskUsage) recordDataPoint(start pcommon.Timestamp, ts p
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("disk_state", diskStateAttributeValue)
 }
 
@@ -2444,7 +2444,7 @@ func (m *metricVcenterVMDiskUtilization) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2495,7 +2495,7 @@ func (m *metricVcenterVMMemoryBallooned) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2546,7 +2546,7 @@ func (m *metricVcenterVMMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2598,7 +2598,7 @@ func (m *metricVcenterVMNetworkPacketCount) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("direction", throughputDirectionAttributeValue)
 }
 
@@ -2650,7 +2650,7 @@ func (m *metricVcenterVMNetworkPacketCountReceive) recordDataPoint(start pcommon
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2701,7 +2701,7 @@ func (m *metricVcenterVMNetworkPacketCountTransmit) recordDataPoint(start pcommo
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2753,7 +2753,7 @@ func (m *metricVcenterVMNetworkThroughput) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("direction", throughputDirectionAttributeValue)
 }
 
@@ -2805,7 +2805,7 @@ func (m *metricVcenterVMNetworkThroughputReceive) recordDataPoint(start pcommon.
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2856,7 +2856,7 @@ func (m *metricVcenterVMNetworkThroughputTransmit) recordDataPoint(start pcommon
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2907,7 +2907,7 @@ func (m *metricVcenterVMNetworkUsage) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3129,10 +3129,10 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {

@@ -27,7 +27,7 @@ type Metric struct {
 }
 
 func (metric Metric) toMetricValueMetadata() (metadata.MetricValueMetadata, error) {
-	dataType, err := metric.DataType.toMetricDataType()
+	dataType, err := metric.DataType.toMetricType()
 	if err != nil {
 		return nil, fmt.Errorf("invalid value data type received for metric %q", metric.Name)
 	}

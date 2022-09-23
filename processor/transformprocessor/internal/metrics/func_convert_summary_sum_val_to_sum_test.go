@@ -54,7 +54,7 @@ func getTestGaugeMetric() pmetric.Metric {
 	metricInput.SetEmptyGauge()
 	metricInput.SetName("gauge_metric")
 	input := metricInput.Gauge().DataPoints().AppendEmpty()
-	input.SetIntVal(12)
+	input.SetIntValue(12)
 
 	attrs := getTestAttributes()
 	attrs.CopyTo(input.Attributes())
@@ -94,7 +94,7 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 
 				sumMetric.SetName("summary_metric_sum")
 				dp := sumMetric.Sum().DataPoints().AppendEmpty()
-				dp.SetDoubleVal(12.34)
+				dp.SetDoubleValue(12.34)
 
 				attrs := getTestAttributes()
 				attrs.CopyTo(dp.Attributes())
@@ -115,7 +115,7 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 
 				sumMetric.SetName("summary_metric_sum")
 				dp := sumMetric.Sum().DataPoints().AppendEmpty()
-				dp.SetDoubleVal(12.34)
+				dp.SetDoubleValue(12.34)
 
 				attrs := getTestAttributes()
 				attrs.CopyTo(dp.Attributes())
@@ -136,7 +136,7 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 
 				sumMetric.SetName("summary_metric_sum")
 				dp := sumMetric.Sum().DataPoints().AppendEmpty()
-				dp.SetDoubleVal(12.34)
+				dp.SetDoubleValue(12.34)
 
 				attrs := getTestAttributes()
 				attrs.CopyTo(dp.Attributes())

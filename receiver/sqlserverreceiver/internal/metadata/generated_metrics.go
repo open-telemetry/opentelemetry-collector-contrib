@@ -151,7 +151,7 @@ func (m *metricSqlserverBatchRequestRate) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -200,7 +200,7 @@ func (m *metricSqlserverBatchSQLCompilationRate) recordDataPoint(start pcommon.T
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -249,7 +249,7 @@ func (m *metricSqlserverBatchSQLRecompilationRate) recordDataPoint(start pcommon
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -298,7 +298,7 @@ func (m *metricSqlserverLockWaitRate) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -347,7 +347,7 @@ func (m *metricSqlserverLockWaitTimeAvg) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -396,7 +396,7 @@ func (m *metricSqlserverPageBufferCacheHitRatio) recordDataPoint(start pcommon.T
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -445,7 +445,7 @@ func (m *metricSqlserverPageCheckpointFlushRate) recordDataPoint(start pcommon.T
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -494,7 +494,7 @@ func (m *metricSqlserverPageLazyWriteRate) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -543,7 +543,7 @@ func (m *metricSqlserverPageLifeExpectancy) recordDataPoint(start pcommon.Timest
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -593,7 +593,7 @@ func (m *metricSqlserverPageOperationRate) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("type", pageOperationsAttributeValue)
 }
 
@@ -643,7 +643,7 @@ func (m *metricSqlserverPageSplitRate) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -692,7 +692,7 @@ func (m *metricSqlserverTransactionRate) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -741,7 +741,7 @@ func (m *metricSqlserverTransactionWriteRate) recordDataPoint(start pcommon.Time
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -790,7 +790,7 @@ func (m *metricSqlserverTransactionLogFlushDataRate) recordDataPoint(start pcomm
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -839,7 +839,7 @@ func (m *metricSqlserverTransactionLogFlushRate) recordDataPoint(start pcommon.T
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -888,7 +888,7 @@ func (m *metricSqlserverTransactionLogFlushWaitRate) recordDataPoint(start pcomm
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -939,7 +939,7 @@ func (m *metricSqlserverTransactionLogGrowthCount) recordDataPoint(start pcommon
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -990,7 +990,7 @@ func (m *metricSqlserverTransactionLogShrinkCount) recordDataPoint(start pcommon
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1039,7 +1039,7 @@ func (m *metricSqlserverTransactionLogUsage) recordDataPoint(start pcommon.Times
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1088,7 +1088,7 @@ func (m *metricSqlserverUserConnectionCount) recordDataPoint(start pcommon.Times
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1215,10 +1215,10 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {

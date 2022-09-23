@@ -16,20 +16,20 @@ package metadata // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import "go.opentelemetry.io/collector/pdata/pmetric"
 
-type MetricDataType interface {
-	MetricDataType() pmetric.MetricDataType
+type MetricType interface {
+	MetricType() pmetric.MetricType
 	AggregationTemporality() pmetric.MetricAggregationTemporality
 	IsMonotonic() bool
 }
 
 type metricValueDataType struct {
-	dataType               pmetric.MetricDataType
+	dataType               pmetric.MetricType
 	aggregationTemporality pmetric.MetricAggregationTemporality
 	isMonotonic            bool
 }
 
-func NewMetricDataType(dataType pmetric.MetricDataType, aggregationTemporality pmetric.MetricAggregationTemporality,
-	isMonotonic bool) MetricDataType {
+func NewMetricType(dataType pmetric.MetricType, aggregationTemporality pmetric.MetricAggregationTemporality,
+	isMonotonic bool) MetricType {
 	return metricValueDataType{
 		dataType:               dataType,
 		aggregationTemporality: aggregationTemporality,
@@ -37,7 +37,7 @@ func NewMetricDataType(dataType pmetric.MetricDataType, aggregationTemporality p
 	}
 }
 
-func (metricValueDataType metricValueDataType) MetricDataType() pmetric.MetricDataType {
+func (metricValueDataType metricValueDataType) MetricType() pmetric.MetricType {
 	return metricValueDataType.dataType
 }
 

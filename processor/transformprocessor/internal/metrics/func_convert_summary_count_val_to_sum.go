@@ -40,7 +40,7 @@ func convertSummaryCountValToSum(stringAggTemp string, monotonic bool) (ottl.Exp
 		}
 
 		metric := mtc.GetMetric()
-		if metric.DataType() != pmetric.MetricDataTypeSummary {
+		if metric.Type() != pmetric.MetricTypeSummary {
 			return nil
 		}
 
@@ -57,7 +57,7 @@ func convertSummaryCountValToSum(stringAggTemp string, monotonic bool) (ottl.Exp
 			dp := dps.At(i)
 			sumDp := sumDps.AppendEmpty()
 			dp.Attributes().CopyTo(sumDp.Attributes())
-			sumDp.SetIntVal(int64(dp.Count()))
+			sumDp.SetIntValue(int64(dp.Count()))
 			sumDp.SetStartTimestamp(dp.StartTimestamp())
 			sumDp.SetTimestamp(dp.Timestamp())
 		}

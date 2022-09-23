@@ -18,7 +18,7 @@ import (
 	"strings"
 	"unicode"
 
-	"go.opentelemetry.io/collector/service/featuregate"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 var dropSanitizationGate = featuregate.Gate{

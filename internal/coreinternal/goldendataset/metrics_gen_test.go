@@ -42,7 +42,7 @@ func TestGenDefault(t *testing.T) {
 	require.Equal(t, "my-md-description", pdm.Description())
 	require.Equal(t, "my-md-units", pdm.Unit())
 
-	require.Equal(t, pmetric.MetricDataTypeGauge, pdm.DataType())
+	require.Equal(t, pmetric.MetricTypeGauge, pdm.Type())
 	pts := pdm.Gauge().DataPoints()
 	require.Equal(t, 1, pts.Len())
 	pt := pts.At(0)
@@ -53,7 +53,7 @@ func TestGenDefault(t *testing.T) {
 
 	require.EqualValues(t, 940000000000000000, pt.StartTimestamp())
 	require.EqualValues(t, 940000000000000042, pt.Timestamp())
-	require.EqualValues(t, 1, pt.IntVal())
+	require.EqualValues(t, 1, pt.IntValue())
 }
 
 func TestDoubleHistogramFunctions(t *testing.T) {
@@ -80,7 +80,7 @@ func TestDoubleHistogramFunctions(t *testing.T) {
 
 func TestGenDoubleHistogram(t *testing.T) {
 	cfg := DefaultCfg()
-	cfg.MetricDescriptorType = pmetric.MetricDataTypeHistogram
+	cfg.MetricDescriptorType = pmetric.MetricTypeHistogram
 	cfg.PtVal = 2
 	md := MetricsFromCfg(cfg)
 	pts := getMetric(md).Histogram().DataPoints()
@@ -92,13 +92,13 @@ func TestGenDoubleHistogram(t *testing.T) {
 
 func TestGenDoubleGauge(t *testing.T) {
 	cfg := DefaultCfg()
-	cfg.MetricDescriptorType = pmetric.MetricDataTypeGauge
+	cfg.MetricDescriptorType = pmetric.MetricTypeGauge
 	md := MetricsFromCfg(cfg)
 	metric := getMetric(md)
 	pts := metric.Gauge().DataPoints()
 	require.Equal(t, 1, pts.Len())
 	pt := pts.At(0)
-	require.EqualValues(t, float64(1), pt.IntVal())
+	require.EqualValues(t, float64(1), pt.IntValue())
 }
 
 func getMetric(md pmetric.Metrics) pmetric.Metric {

@@ -81,7 +81,7 @@ func spanToOC(span ptrace.Span) *octrace.Span {
 	return &octrace.Span{
 		TraceId:                 traceIDToOC(span.TraceID()),
 		SpanId:                  spanIDToOC(span.SpanID()),
-		Tracestate:              traceStateToOC(span.TraceStateStruct().AsRaw()),
+		Tracestate:              traceStateToOC(span.TraceState().AsRaw()),
 		ParentSpanId:            spanIDToOC(span.ParentSpanID()),
 		Name:                    stringToTruncatableString(span.Name()),
 		Kind:                    spanKindToOC(span.Kind()),
@@ -336,7 +336,7 @@ func linksToOC(links ptrace.SpanLinkSlice, droppedCount uint32) *octrace.Span_Li
 		ocLink := &octrace.Span_Link{
 			TraceId:    traceIDToOC(link.TraceID()),
 			SpanId:     spanIDToOC(link.SpanID()),
-			Tracestate: traceStateToOC(link.TraceStateStruct().AsRaw()),
+			Tracestate: traceStateToOC(link.TraceState().AsRaw()),
 			Attributes: attributesMapToOCSpanAttributes(link.Attributes(), link.DroppedAttributesCount()),
 		}
 		ocLinks = append(ocLinks, ocLink)

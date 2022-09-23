@@ -28,10 +28,10 @@ func Test_convertSumToGauge(t *testing.T) {
 	sumInput := pmetric.NewMetric()
 
 	dp1 := sumInput.SetEmptySum().DataPoints().AppendEmpty()
-	dp1.SetIntVal(10)
+	dp1.SetIntValue(10)
 
 	dp2 := sumInput.Sum().DataPoints().AppendEmpty()
-	dp2.SetDoubleVal(14.5)
+	dp2.SetDoubleValue(14.5)
 
 	gaugeInput := pmetric.NewMetric()
 	gaugeInput.SetEmptyGauge()

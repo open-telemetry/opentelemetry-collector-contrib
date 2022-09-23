@@ -68,19 +68,19 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 				}
 
 				// handle individual metric based on type
-				switch metric.DataType() {
-				case pmetric.MetricDataTypeGauge:
+				switch metric.Type() {
+				case pmetric.MetricTypeGauge:
 					dataPoints := metric.Gauge().DataPoints()
 					if err := addNumberDataPointSlice(dataPoints, resource, metric, settings, tsMap); err != nil {
 						errs = multierr.Append(errs, err)
 					}
-				case pmetric.MetricDataTypeSum:
+				case pmetric.MetricTypeSum:
 					dataPoints := metric.Sum().DataPoints()
 					if err := addNumberDataPointSlice(dataPoints, resource, metric, settings, tsMap); err != nil {
 						errs = multierr.Append(errs, err)
 					}
 
-				case pmetric.MetricDataTypeHistogram:
+				case pmetric.MetricTypeHistogram:
 					dataPoints := metric.Histogram().DataPoints()
 					if dataPoints.Len() == 0 {
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
@@ -88,7 +88,7 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 					for x := 0; x < dataPoints.Len(); x++ {
 						addSingleHistogramDataPoint(dataPoints.At(x), resource, metric, settings, tsMap)
 					}
-				case pmetric.MetricDataTypeSummary:
+				case pmetric.MetricTypeSummary:
 					dataPoints := metric.Summary().DataPoints()
 					if dataPoints.Len() == 0 {
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))

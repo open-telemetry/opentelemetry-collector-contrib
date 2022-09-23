@@ -91,7 +91,7 @@ func TestInt64MetricValue(t *testing.T) {
 
 	metricValue.SetValueTo(dataPoint)
 
-	assert.Equal(t, int64Value, dataPoint.IntVal())
+	assert.Equal(t, int64Value, dataPoint.IntValue())
 }
 
 func TestFloat64MetricValue(t *testing.T) {
@@ -109,7 +109,7 @@ func TestFloat64MetricValue(t *testing.T) {
 
 	metricValue.SetValueTo(dataPoint)
 
-	assert.Equal(t, float64Value, dataPoint.DoubleVal())
+	assert.Equal(t, float64Value, dataPoint.DoubleValue())
 }
 
 func TestNullFloat64MetricValue(t *testing.T) {
@@ -125,7 +125,7 @@ func TestNullFloat64MetricValue(t *testing.T) {
 	assert.Equal(t, NullFloatValueType, metadata.ValueType())
 	dataPoint := pmetric.NewNumberDataPoint()
 	metricValue.SetValueTo(dataPoint)
-	assert.Equal(t, float64Value, dataPoint.DoubleVal())
+	assert.Equal(t, float64Value, dataPoint.DoubleValue())
 
 	invalidNullFloat := spanner.NullFloat64{Float64: float64Value, Valid: false}
 	metricValue = nullFloat64MetricValue{
@@ -135,7 +135,7 @@ func TestNullFloat64MetricValue(t *testing.T) {
 	assert.Equal(t, invalidNullFloat, metricValue.Value())
 	assert.Equal(t, NullFloatValueType, metadata.ValueType())
 	metricValue.SetValueTo(dataPoint)
-	assert.Equal(t, defaultNullFloat64Value, dataPoint.DoubleVal())
+	assert.Equal(t, defaultNullFloat64Value, dataPoint.DoubleValue())
 }
 
 func TestNewInt64MetricValue(t *testing.T) {

@@ -104,7 +104,7 @@ func sum(ilm pmetric.MetricSlice, metricName string, unit string, points []point
 	for _, pt := range points {
 		dataPoint := dataPoints.AppendEmpty()
 		dataPoint.SetTimestamp(ts)
-		dataPoint.SetIntVal(int64(pt.intVal))
+		dataPoint.SetIntValue(int64(pt.intVal))
 		setDataPointAttributes(dataPoint, pt.attributes)
 	}
 }
@@ -120,7 +120,7 @@ func gaugeI(ms pmetric.MetricSlice, metricName string, unit string, points []poi
 	for _, pt := range points {
 		dataPoint := dataPoints.AppendEmpty()
 		dataPoint.SetTimestamp(ts)
-		dataPoint.SetIntVal(int64(pt.intVal))
+		dataPoint.SetIntValue(int64(pt.intVal))
 		setDataPointAttributes(dataPoint, pt.attributes)
 	}
 }
@@ -130,7 +130,7 @@ func gaugeF(ms pmetric.MetricSlice, metricName string, unit string, points []poi
 	for _, pt := range points {
 		dataPoint := dataPoints.AppendEmpty()
 		dataPoint.SetTimestamp(ts)
-		dataPoint.SetDoubleVal(pt.doubleVal)
+		dataPoint.SetDoubleValue(pt.doubleVal)
 		setDataPointAttributes(dataPoint, pt.attributes)
 	}
 }

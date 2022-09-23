@@ -44,16 +44,16 @@ type MetricType struct {
 	Monotonic   bool            `yaml:"monotonic"`
 }
 
-func (metricType MetricType) dataType() (pmetric.MetricDataType, error) {
-	var dataType pmetric.MetricDataType
+func (metricType MetricType) dataType() (pmetric.MetricType, error) {
+	var dataType pmetric.MetricType
 
 	switch metricType.DataType {
 	case GaugeMetricDataType:
-		dataType = pmetric.MetricDataTypeGauge
+		dataType = pmetric.MetricTypeGauge
 	case SumMetricDataType:
-		dataType = pmetric.MetricDataTypeSum
+		dataType = pmetric.MetricTypeSum
 	default:
-		return pmetric.MetricDataTypeNone, errors.New("invalid data type received")
+		return pmetric.MetricTypeNone, errors.New("invalid data type received")
 	}
 
 	return dataType, nil
@@ -76,7 +76,7 @@ func (metricType MetricType) aggregationTemporality() (pmetric.MetricAggregation
 	return aggregationTemporality, nil
 }
 
-func (metricType MetricType) toMetricDataType() (metadata.MetricDataType, error) {
+func (metricType MetricType) toMetricType() (metadata.MetricType, error) {
 	dataType, err := metricType.dataType()
 	if err != nil {
 		return nil, err
@@ -87,5 +87,5 @@ func (metricType MetricType) toMetricDataType() (metadata.MetricDataType, error)
 		return nil, err
 	}
 
-	return metadata.NewMetricDataType(dataType, aggregationTemporality, metricType.Monotonic), nil
+	return metadata.NewMetricType(dataType, aggregationTemporality, metricType.Monotonic), nil
 }

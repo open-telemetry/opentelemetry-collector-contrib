@@ -211,11 +211,11 @@ func accessStringSpanID() ottl.StandardGetSetter {
 func accessTraceState() ottl.StandardGetSetter {
 	return ottl.StandardGetSetter{
 		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).TraceStateStruct().AsRaw()
+			return ctx.GetItem().(ptrace.Span).TraceState().AsRaw()
 		},
 		Setter: func(ctx ottl.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.GetItem().(ptrace.Span).TraceStateStruct().FromRaw(str)
+				ctx.GetItem().(ptrace.Span).TraceState().FromRaw(str)
 			}
 		},
 	}
@@ -224,16 +224,16 @@ func accessTraceState() ottl.StandardGetSetter {
 func accessTraceStateKey(mapKey *string) ottl.StandardGetSetter {
 	return ottl.StandardGetSetter{
 		Getter: func(ctx ottl.TransformContext) interface{} {
-			if ts, err := trace.ParseTraceState(ctx.GetItem().(ptrace.Span).TraceStateStruct().AsRaw()); err == nil {
+			if ts, err := trace.ParseTraceState(ctx.GetItem().(ptrace.Span).TraceState().AsRaw()); err == nil {
 				return ts.Get(*mapKey)
 			}
 			return nil
 		},
 		Setter: func(ctx ottl.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				if ts, err := trace.ParseTraceState(ctx.GetItem().(ptrace.Span).TraceStateStruct().AsRaw()); err == nil {
+				if ts, err := trace.ParseTraceState(ctx.GetItem().(ptrace.Span).TraceState().AsRaw()); err == nil {
 					if updated, err := ts.Insert(*mapKey, str); err == nil {
-						ctx.GetItem().(ptrace.Span).TraceStateStruct().FromRaw(updated.String())
+						ctx.GetItem().(ptrace.Span).TraceState().FromRaw(updated.String())
 					}
 				}
 			}

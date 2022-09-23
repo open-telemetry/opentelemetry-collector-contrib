@@ -65,7 +65,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 	initDoublePt := func(doublePt pmetric.NumberDataPoint) {
 		doublePt.SetTimestamp(ts)
-		doublePt.SetDoubleVal(doubleVal)
+		doublePt.SetDoubleValue(doubleVal)
 	}
 
 	initDoublePtWithLabels := func(doublePtWithLabels pmetric.NumberDataPoint) {
@@ -89,7 +89,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 	initInt64Pt := func(int64Pt pmetric.NumberDataPoint) {
 		int64Pt.SetTimestamp(ts)
-		int64Pt.SetIntVal(int64Val)
+		int64Pt.SetIntValue(int64Val)
 	}
 
 	initInt64PtWithLabels := func(int64PtWithLabels pmetric.NumberDataPoint) {
@@ -662,7 +662,7 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m.SetName("metric1")
 	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetIntVal(123)
+	dp.SetIntValue(123)
 	dp.Attributes().PutString("old.dim", "val1")
 
 	gaugeType := sfxpb.MetricType_GAUGE
@@ -701,7 +701,7 @@ func TestDimensionKeyCharsWithPeriod(t *testing.T) {
 	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m.SetName("metric1")
 	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetIntVal(123)
+	dp.SetIntValue(123)
 	dp.Attributes().PutString("old.dim.with.periods", "val1")
 
 	gaugeType := sfxpb.MetricType_GAUGE
