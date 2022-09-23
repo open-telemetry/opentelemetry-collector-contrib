@@ -193,6 +193,7 @@ receiver/otlpjsonfilereceiver/                       @open-telemetry/collector-c
 receiver/postgresqlreceiver/                         @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/prometheusexecreceiver/                     @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/prometheusreceiver/                         @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
+receiver/prometheusremotewritereceiver/              @open-telemetry/collector-contrib-approvers @Norbertwnuk @adamkubon
 receiver/rabbitmqreceiver/                           @open-telemetry/collector-contrib-approvers @djaglowski @cpheps
 receiver/pulsarreceiver/                             @open-telemetry/collector-contrib-approvers @dmitryax @tjiuming
 receiver/receivercreator/                            @open-telemetry/collector-contrib-approvers @jrcamp

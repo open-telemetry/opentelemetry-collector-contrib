@@ -723,6 +723,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/prometheusremotewritereceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/rabbitmqreceiver"
     schedule:
       interval: "weekly"
