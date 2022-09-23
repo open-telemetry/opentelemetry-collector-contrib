@@ -56,7 +56,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.103 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
-	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
+	github.com/census-instrumentation/opencensus-proto v0.4.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cncf/xds/go v0.0.0-20220314180256-7f1daf1720fc // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -104,7 +104,7 @@ require (
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/grafana/regexp v0.0.0-20220304095617-2e8d9baf4ac2 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
-	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.3 // indirect
 	github.com/hashicorp/consul/api v1.15.2 // indirect
 	github.com/hashicorp/cronexpr v1.1.1 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
