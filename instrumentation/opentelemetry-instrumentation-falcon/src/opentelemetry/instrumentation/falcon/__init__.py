@@ -456,6 +456,7 @@ class FalconInstrumentor(BaseInstrumentor):
     def instrumentation_dependencies(self) -> Collection[str]:
         return _instruments
 
+    # pylint:disable=no-self-use
     def _remove_instrumented_middleware(self, app):
         if (
             hasattr(app, "_is_instrumented_by_opentelemetry")
@@ -477,6 +478,7 @@ class FalconInstrumentor(BaseInstrumentor):
                     for x in app._middlewares_list
                     if not isinstance(x, _TraceMiddleware)
                 ]
+                # pylint: disable=c-extension-no-member
                 app._middleware = falcon.api_helpers.prepare_middleware(
                     app._middlewares_list,
                     independent_middleware=app._independent_middleware,

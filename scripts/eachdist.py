@@ -282,7 +282,7 @@ def find_targets_unordered(rootpath):
             continue
         if any(
             (subdir / marker).exists()
-            for marker in ("pyproject.toml")
+            for marker in ("pyproject.toml",)
         ):
             yield subdir
         else:
@@ -647,7 +647,7 @@ def update_dependencies(targets, version, packages):
             targets,
             "pyproject.toml",
             fr"({package_name}.*)==(.*)",
-            r"\1== " + version,
+            r"\1== " + version + '",',
         )
 
 
