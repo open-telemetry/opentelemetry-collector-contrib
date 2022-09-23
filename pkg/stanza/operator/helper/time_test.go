@@ -15,18 +15,13 @@
 package helper
 
 import (
-	"fmt"
 	"math"
-	"os"
-	"path"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 )
 
 func Test_setTimestampYear(t *testing.T) {
@@ -622,114 +617,6 @@ func makeTestEntry(field entry.Field, value interface{}) *entry.Entry {
 	e := entry.New()
 	_ = e.Set(field, value)
 	return e
-}
-
-type timeConfigTestCase struct {
-	name      string
-	expectErr bool
-	expect    *TimeParser
-}
-
-func TestGoldenTimeParserConfig(t *testing.T) {
-	cases := []timeConfigTestCase{
-		{
-			"parse_from",
-			false,
-			func() *TimeParser {
-				cfg := defaultTimeCfg()
-				newParse := entry.NewBodyField("from")
-				cfg.ParseFrom = &newParse
-				return cfg
-			}(),
-		},
-		{
-			"layout",
-			false,
-			func() *TimeParser {
-				cfg := defaultTimeCfg()
-				cfg.Layout = "%Y-%m-%d"
-				return cfg
-			}(),
-		},
-		{
-			"layout_type",
-			false,
-			func() *TimeParser {
-				cfg := defaultTimeCfg()
-				cfg.LayoutType = "epoch"
-				return cfg
-			}(),
-		},
-		{
-			"location",
-			false,
-			func() *TimeParser {
-				cfg := defaultTimeCfg()
-				cfg.Location = "America/Shiprock"
-				return cfg
-			}(),
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run("yaml/"+tc.name, func(t *testing.T) {
-			cfgFromYaml, yamlErr := timeConfigFromFileViaYaml(path.Join(".", "testdata", "time", fmt.Sprintf("%s.yaml", tc.name)))
-			if tc.expectErr {
-				require.Error(t, yamlErr)
-			} else {
-				require.NoError(t, yamlErr)
-				require.Equal(t, tc.expect, cfgFromYaml)
-			}
-		})
-		t.Run("mapstructure/"+tc.name, func(t *testing.T) {
-			cfgFromMapstructure := defaultTimeCfg()
-			mapErr := timeConfigFromFileViaMapstructure(
-				path.Join(".", "testdata", "time", fmt.Sprintf("%s.yaml", tc.name)),
-				cfgFromMapstructure,
-			)
-			if tc.expectErr {
-				require.Error(t, mapErr)
-			} else {
-				require.NoError(t, mapErr)
-				require.Equal(t, tc.expect, cfgFromMapstructure)
-			}
-		})
-	}
-}
-
-func timeConfigFromFileViaYaml(file string) (*TimeParser, error) {
-	bytes, err := os.ReadFile(file)
-	if err != nil {
-		return nil, fmt.Errorf("could not find config file: %w", err)
-	}
-
-	config := defaultTimeCfg()
-	if err := yaml.Unmarshal(bytes, config); err != nil {
-		return nil, fmt.Errorf("failed to read config file as yaml: %w", err)
-	}
-
-	return config, nil
-}
-
-func timeConfigFromFileViaMapstructure(file string, result *TimeParser) error {
-	bytes, err := os.ReadFile(file)
-	if err != nil {
-		return fmt.Errorf("could not find config file: %w", err)
-	}
-
-	raw := map[string]interface{}{}
-
-	if err = yaml.Unmarshal(bytes, raw); err != nil {
-		return fmt.Errorf("failed to read data from yaml: %w", err)
-	}
-
-	err = operatortest.UnmarshalMapstructure(raw, result)
-	return err
-}
-
-func defaultTimeCfg() *TimeParser {
-	newCfg := NewTimeParser()
-	return &newCfg
 }
 
 func TestSetInvalidLocation(t *testing.T) {

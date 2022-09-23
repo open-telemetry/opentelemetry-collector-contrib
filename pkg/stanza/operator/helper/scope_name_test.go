@@ -15,17 +15,12 @@
 package helper
 
 import (
-	"fmt"
-	"os"
-	"path"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 )
 
 const testScopeName = "my.logger"
@@ -109,79 +104,4 @@ func TestScopeNameParser(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestGoldenScopeNameParserConfig(t *testing.T) {
-	cases := []struct {
-		name      string
-		expectErr bool
-		expect    *ScopeNameParser
-	}{
-		{
-			"parse_from",
-			false,
-			func() *ScopeNameParser {
-				cfg := NewScopeNameParser()
-				cfg.ParseFrom = entry.NewBodyField("from")
-				return &cfg
-			}(),
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run("yaml/"+tc.name, func(t *testing.T) {
-			cfgFromYaml, yamlErr := ScopeConfigFromFileViaYaml(path.Join(".", "testdata", "scope_name", fmt.Sprintf("%s.yaml", tc.name)))
-			if tc.expectErr {
-				require.Error(t, yamlErr)
-			} else {
-				require.NoError(t, yamlErr)
-				require.Equal(t, tc.expect, cfgFromYaml)
-			}
-		})
-		t.Run("mapstructure/"+tc.name, func(t *testing.T) {
-			parser := NewScopeNameParser()
-			cfgFromMapstructure := &parser
-			mapErr := ScopeConfigFromFileViaMapstructure(
-				path.Join(".", "testdata", "scope_name", fmt.Sprintf("%s.yaml", tc.name)),
-				cfgFromMapstructure,
-			)
-			if tc.expectErr {
-				require.Error(t, mapErr)
-			} else {
-				require.NoError(t, mapErr)
-				require.Equal(t, tc.expect, cfgFromMapstructure)
-			}
-		})
-	}
-}
-
-func ScopeConfigFromFileViaYaml(file string) (*ScopeNameParser, error) {
-	bytes, err := os.ReadFile(file)
-	if err != nil {
-		return nil, fmt.Errorf("could not find config file: %w", err)
-	}
-
-	parser := NewScopeNameParser()
-	config := &parser
-	if err := yaml.Unmarshal(bytes, config); err != nil {
-		return nil, fmt.Errorf("failed to read config file as yaml: %w", err)
-	}
-
-	return config, nil
-}
-
-func ScopeConfigFromFileViaMapstructure(file string, result *ScopeNameParser) error {
-	bytes, err := os.ReadFile(file)
-	if err != nil {
-		return fmt.Errorf("could not find config file: %w", err)
-	}
-
-	raw := map[string]interface{}{}
-
-	if err = yaml.Unmarshal(bytes, raw); err != nil {
-		return fmt.Errorf("failed to read data from yaml: %w", err)
-	}
-
-	err = operatortest.UnmarshalMapstructure(raw, result)
-	return err
 }
