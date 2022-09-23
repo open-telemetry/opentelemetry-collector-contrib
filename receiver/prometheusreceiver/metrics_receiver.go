@@ -16,8 +16,9 @@ package prometheusreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -115,13 +116,13 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 // baseDiscoveryCfg can be used to provide additional ScrapeConfigs which will be added to the retrieved jobs.
 func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *targetAllocator, baseCfg *config.Config) (uint64, error) {
 	r.settings.Logger.Debug("Syncing target allocator jobs")
-	jobObject, err := getJobResponse(allocConf.Endpoint)
+	scrapeConfigsResponse, err := getScrapeConfigsResponse(allocConf.Endpoint)
 	if err != nil {
 		r.settings.Logger.Error("Failed to retrieve job list", zap.Error(err))
 		return 0, err
 	}
 
-	hash, err := hashstructure.Hash(jobObject, hashstructure.FormatV2, nil)
+	hash, err := hashstructure.Hash(scrapeConfigsResponse, hashstructure.FormatV2, nil)
 	if err != nil {
 		r.settings.Logger.Error("Failed to hash job list", zap.Error(err))
 		return 0, err
@@ -133,24 +134,20 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *targetAll
 
 	cfg := *baseCfg
 
-	for _, linkJSON := range *jobObject {
+	for jobName, scrapeConfig := range scrapeConfigsResponse {
 		var httpSD promHTTP.SDConfig
 		if allocConf.HTTPSDConfig == nil {
 			httpSD = promHTTP.SDConfig{}
 		} else {
 			httpSD = *allocConf.HTTPSDConfig
 		}
-
-		httpSD.URL = fmt.Sprintf("%s%s?collector_id=%s", allocConf.Endpoint, linkJSON.Link, allocConf.CollectorID)
-
-		scrapeCfg := &config.ScrapeConfig{
-			JobName: linkJSON.Link,
-			ServiceDiscoveryConfigs: discovery.Configs{
-				&httpSD,
-			},
+		escapedJob := url.QueryEscape(jobName)
+		httpSD.URL = fmt.Sprintf("%s/jobs/%s/targets?collector_id=%s", allocConf.Endpoint, escapedJob, allocConf.CollectorID)
+		scrapeConfig.ServiceDiscoveryConfigs = discovery.Configs{
+			&httpSD,
 		}
 
-		cfg.ScrapeConfigs = append(cfg.ScrapeConfigs, scrapeCfg)
+		cfg.ScrapeConfigs = append(cfg.ScrapeConfigs, scrapeConfig)
 	}
 
 	err = r.applyCfg(&cfg)
@@ -162,26 +159,30 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *targetAll
 	return hash, nil
 }
 
-func getJobResponse(baseURL string) (*map[string]linkJSON, error) {
-	jobURLString := fmt.Sprintf("%s/jobs", baseURL)
-	_, err := url.Parse(jobURLString) // check if valid
+func getScrapeConfigsResponse(baseURL string) (map[string]*config.ScrapeConfig, error) {
+	scrapeConfigsURL := fmt.Sprintf("%s/scrape_configs", baseURL)
+	_, err := url.Parse(scrapeConfigsURL) // check if valid
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := http.Get(jobURLString) //nolint
+	resp, err := http.Get(scrapeConfigsURL) //nolint
 	if err != nil {
 		return nil, err
 	}
 
 	defer resp.Body.Close()
 
-	jobObject := &map[string]linkJSON{}
-	err = json.NewDecoder(resp.Body).Decode(jobObject)
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
-	return jobObject, nil
+	jobToScrapeConfig := map[string]*config.ScrapeConfig{}
+	err = yaml.Unmarshal(body, &jobToScrapeConfig)
+	if err != nil {
+		return nil, err
+	}
+	return jobToScrapeConfig, nil
 }
 
 func (r *pReceiver) applyCfg(cfg *config.Config) error {
@@ -192,6 +193,7 @@ func (r *pReceiver) applyCfg(cfg *config.Config) error {
 	discoveryCfg := make(map[string]discovery.Configs)
 	for _, scrapeConfig := range cfg.ScrapeConfigs {
 		discoveryCfg[scrapeConfig.JobName] = scrapeConfig.ServiceDiscoveryConfigs
+		r.settings.Logger.Info("Scrape job added", zap.String("jobName", scrapeConfig.JobName))
 	}
 	if err := r.discoveryManager.ApplyConfig(discoveryCfg); err != nil {
 		return err
