@@ -1,0 +1,5 @@
+change_type: enhancement
+component: mysqlreceiver
+note: The receiver now scraper 16 new metrics related to io_waits.
+issues: [14138]
+subtext:
