@@ -45,7 +45,7 @@ func Test_logs_exporter_send_logs(t *testing.T) {
 		want []map[string]interface{}
 	}{
 		{
-			name: "log_with_out_message",
+			name: "log_with_no_message",
 			args: args{
 				sendLogRecordBody: false,
 				ld:                lr,
@@ -68,7 +68,7 @@ func Test_logs_exporter_send_logs(t *testing.T) {
 			},
 		},
 		{
-			name: "log_with_message",
+			name: "log_with_message_from_log_record_body",
 			args: args{
 				sendLogRecordBody: true,
 				ld:                lr,

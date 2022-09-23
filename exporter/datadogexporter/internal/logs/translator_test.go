@@ -218,7 +218,7 @@ func TestTransform(t *testing.T) {
 			},
 		},
 		{
-			name: "log_send_message",
+			name: "log_with_message_from_body",
 			args: args{
 				lr: func() plog.LogRecord {
 					l := plog.NewLogRecord()
@@ -384,7 +384,7 @@ func Test_deriveStatus(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, derviveDdStatusFromSeverityNumber(tt.args.severity), "derviveDdStatusFromSeverityNumber(%v)", tt.args.severity)
+			assert.Equalf(t, tt.want, derviveStatusFromSeverityNumber(tt.args.severity), "derviveDdStatusFromSeverityNumber(%v)", tt.args.severity)
 		})
 	}
 }

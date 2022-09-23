@@ -16,7 +16,7 @@ package logs // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"encoding/binary"
-	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -73,11 +73,11 @@ func Transform(lr plog.LogRecord, res pcommon.Resource, sendLogRecordBody bool) 
 		return true
 	})
 	if !lr.TraceID().IsEmpty() {
-		l.AdditionalProperties[ddTraceID] = fmt.Sprintf("%d", traceIDToUint64(lr.TraceID()))
+		l.AdditionalProperties[ddTraceID] = strconv.FormatUint(traceIDToUint64(lr.TraceID()), 10)
 		l.AdditionalProperties[otelTraceID] = lr.TraceID().HexString()
 	}
 	if !lr.SpanID().IsEmpty() {
-		l.AdditionalProperties[ddSpanID] = fmt.Sprintf("%d", spanIDToUint64(lr.SpanID()))
+		l.AdditionalProperties[ddSpanID] = strconv.FormatUint(spanIDToUint64(lr.SpanID()), 10)
 		l.AdditionalProperties[otelSpanID] = lr.SpanID().HexString()
 	}
 	var status string
@@ -88,19 +88,19 @@ func Transform(lr plog.LogRecord, res pcommon.Resource, sendLogRecordBody bool) 
 		status = lr.SeverityText()
 		l.AdditionalProperties[otelSeverityText] = lr.SeverityText()
 	} else if lr.SeverityNumber() != 0 {
-		status = derviveDdStatusFromSeverityNumber(lr.SeverityNumber())
+		status = derviveStatusFromSeverityNumber(lr.SeverityNumber())
 	}
 
 	l.AdditionalProperties[ddStatus] = status
 	// if SeverityNumber is set , we want to retain it
 	if lr.SeverityNumber() != 0 {
-		l.AdditionalProperties[otelSeverityNumber] = fmt.Sprintf("%d", lr.SeverityNumber())
+		l.AdditionalProperties[otelSeverityNumber] = strconv.Itoa(int(lr.SeverityNumber()))
 	}
 
 	// for datadog to use the same timestamp we need to set the additional property of "@timestamp"
 	if lr.Timestamp() != 0 {
 		// we are retaining the nano second precision in this property
-		l.AdditionalProperties[otelTimestamp] = fmt.Sprintf("%d", lr.Timestamp())
+		l.AdditionalProperties[otelTimestamp] = strconv.FormatInt(lr.Timestamp().AsTime().UnixNano(), 10)
 		l.AdditionalProperties[ddTimestamp] = lr.Timestamp().AsTime().Format(time.RFC3339)
 	}
 
@@ -155,9 +155,11 @@ func spanIDToUint64(b [8]byte) uint64 {
 	return binary.BigEndian.Uint64(b[:])
 }
 
-// derviveDdStatusFromSeverityNumber converts the severity number to log level
+// derviveStatusFromSeverityNumber converts the severity number to log level
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-severitynumber
-func derviveDdStatusFromSeverityNumber(severity plog.SeverityNumber) string {
+// this is not exactly datadog log levels , but derived from range name from above link
+// see https://docs.datadoghq.com/logs/log_configuration/processors/?tab=ui#log-status-remapper for details on how it maps to datadog level
+func derviveStatusFromSeverityNumber(severity plog.SeverityNumber) string {
 	switch {
 	case severity <= 4:
 		return logLevelTrace
