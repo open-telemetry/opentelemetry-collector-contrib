@@ -60,19 +60,22 @@ func (s *snmpScraper) start(ctx context.Context, host component.Host) (err error
 func (s *snmpScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
 
-	scopeMetrics := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	resourceMetrics := pmetric.NewResourceMetrics()
+	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
 	scopeMetrics.Scope().SetName("otelcol/snmpreceiver")
 	scopeMetrics.Scope().SetVersion(s.settings.BuildInfo.Version)
 	metricSlice := scopeMetrics.Metrics()
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	if err := s.scrapeScalarMetrics(now, &metricSlice); err != nil {
-		return md, err
+		s.logger.Warn("Failed to collect scalar OID metrics", zap.Error(err))
 	}
 
-	resourceMetricsMap := map[string]*pmetric.ResourceMetrics{}
+	resourceMetricsMap := map[string]*pmetric.ResourceMetrics{
+		"": &resourceMetrics,
+	}
 	if err := s.scrapeIndexedMetrics(now, resourceMetricsMap); err != nil {
-		return md, err
+		s.logger.Warn("Failed to collect column OID metrics", zap.Error(err))
 	}
 	for _, value := range resourceMetricsMap {
 		value.MoveTo(md.ResourceMetrics().AppendEmpty())

@@ -210,6 +210,10 @@ func (c *snmpClient) GetScalarData(oids []string, processFn processFunc) error {
 		packets, err := c.client.Get(oids)
 		if err != nil {
 			c.logger.Warn("Problem with GET oids", zap.Error(err))
+			// Prevent getting stuck in a failure where we can't recover
+			if strings.Contains(err.Error(), "request timeout (after ") {
+				c.Connect()
+			}
 			continue
 		} else {
 			getOIDsSuccess = true
@@ -259,6 +263,10 @@ func (c *snmpClient) GetIndexedData(oids []string, processFn processFunc) error 
 		}
 		if err != nil {
 			c.logger.Warn("Problem with WALK oids", zap.Error(err))
+			// Allows for quicker recovery rather than timing out for each WALK OID and waiting for the next GET to fix it
+			if strings.Contains(err.Error(), "request timeout (after ") {
+				c.Connect()
+			}
 			continue
 		} else {
 			walkOIDsSuccess = true
