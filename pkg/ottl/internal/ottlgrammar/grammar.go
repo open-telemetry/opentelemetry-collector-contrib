@@ -22,8 +22,8 @@ import (
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
-// ParsedQuery represents a parsed query. It is the entry point into the query DSL.
-type ParsedQuery struct {
+// ParsedStatement represents a parsed statement. It is the entry point into the statement DSL.
+type ParsedStatement struct {
 	Invocation  Invocation         `parser:"@@"`
 	WhereClause *BooleanExpression `parser:"( 'where' @@ )?"`
 }
@@ -128,7 +128,7 @@ type Invocation struct {
 	Arguments []Value `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
 }
 
-// Value represents a part of a parsed query which is resolved to a value of some sort. This can be a telemetry path
+// Value represents a part of a parsed statement which is resolved to a value of some sort. This can be a telemetry path
 // expression, function call, or literal.
 type Value struct {
 	Invocation *Invocation `parser:"( @@"`
@@ -206,11 +206,11 @@ func buildLexer() *lexer.StatefulDefinition {
 	})
 }
 
-// newParser returns a parser that can be used to read a string into a ParsedQuery. An error will be returned if the string
+// newParser returns a parser that can be used to read a string into a ParsedStatement. An error will be returned if the string
 // is not formatted for the DSL.
-func newParser() *participle.Parser[ParsedQuery] {
+func newParser() *participle.Parser[ParsedStatement] {
 	lex := buildLexer()
-	parser, err := participle.Build[ParsedQuery](
+	parser, err := participle.Build[ParsedStatement](
 		participle.Lexer(lex),
 		participle.Unquote("String"),
 		participle.Elide("whitespace"),

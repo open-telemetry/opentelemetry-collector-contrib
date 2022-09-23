@@ -68,7 +68,7 @@ func newRouter[E component.Exporter](
 
 type routingItem[E component.Exporter] struct {
 	exporters  []E
-	expression ottl.Query
+	expression ottl.Statement
 }
 
 func (r *router[E]) registerExporters(available map[config.ComponentID]component.Exporter) error {
@@ -136,10 +136,10 @@ func (r *router[E]) registerRouteExporters(available map[config.ComponentID]comp
 // routingExpression builds a routing OTTL expressions from provided
 // routing table entry configuration. If routing table entry configuration
 // does not contain a OTTL expressions then nil is returned.
-func (r *router[E]) routingExpression(item RoutingTableItem) (ottl.Query, error) {
-	var e ottl.Query
+func (r *router[E]) routingExpression(item RoutingTableItem) (ottl.Statement, error) {
+	var e ottl.Statement
 	if item.Expression != "" {
-		queries, err := r.parser.ParseQueries([]string{item.Expression})
+		queries, err := r.parser.ParseStatements([]string{item.Expression})
 		if err != nil {
 			return e, err
 		}

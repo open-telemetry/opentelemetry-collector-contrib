@@ -79,7 +79,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	url := fmt.Sprintf("http://%s/v1/trace", addr)
 
 	// Verify that CORS is not enabled by default, but that it gives a method not allowed error.
-	verifyCorsResp(t, url, "origin.com", http.StatusMethodNotAllowed, false)
+	verifyCorsResp(t, url, "origin.com", http.StatusNotImplemented, false)
 
 	traceJSON := []byte(`
     {
@@ -108,23 +108,13 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
 
 	respBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Errorf("Error reading response from trace grpc-gateway, %v", err)
-	}
+	require.NoError(t, err)
 	respStr := string(respBytes)
 
-	err = resp.Body.Close()
-	if err != nil {
-		t.Errorf("Error closing response body, %v", err)
-	}
+	require.NoError(t, resp.Body.Close())
 
-	if resp.StatusCode != 200 {
-		t.Errorf("Unexpected status from trace grpc-gateway: %v", resp.StatusCode)
-	}
-
-	if respStr != "" {
-		t.Errorf("Got unexpected response from trace grpc-gateway: %v", respStr)
-	}
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Empty(t, respStr)
 
 	got := sink.AllTraces()
 	require.Len(t, got, 1)
@@ -220,9 +210,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 		t.Errorf("Error closing OPTIONS response body, %v", err)
 	}
 
-	if resp.StatusCode != wantStatus {
-		t.Errorf("Unexpected status from OPTIONS: %v", resp.StatusCode)
-	}
+	assert.Equal(t, wantStatus, resp.StatusCode)
 
 	gotAllowOrigin := resp.Header.Get("Access-Control-Allow-Origin")
 	gotAllowMethods := resp.Header.Get("Access-Control-Allow-Methods")
@@ -234,12 +222,8 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 		wantAllowMethods = "POST"
 	}
 
-	if gotAllowOrigin != wantAllowOrigin {
-		t.Errorf("Unexpected Access-Control-Allow-Origin: %v", gotAllowOrigin)
-	}
-	if gotAllowMethods != wantAllowMethods {
-		t.Errorf("Unexpected Access-Control-Allow-Methods: %v", gotAllowMethods)
-	}
+	assert.Equal(t, wantAllowOrigin, gotAllowOrigin)
+	assert.Equal(t, wantAllowMethods, gotAllowMethods)
 }
 
 func TestStopWithoutStartNeverCrashes(t *testing.T) {

@@ -32,14 +32,14 @@ func Booleanp(b ottlgrammar.Boolean) *ottlgrammar.Boolean {
 
 func Test_parse(t *testing.T) {
 	tests := []struct {
-		name     string
-		query    string
-		expected *ottlgrammar.ParsedQuery
+		name      string
+		statement string
+		expected  *ottlgrammar.ParsedStatement
 	}{
 		{
-			name:  "invocation with string",
-			query: `set("foo")`,
-			expected: &ottlgrammar.ParsedQuery{
+			name:      "invocation with string",
+			statement: `set("foo")`,
+			expected: &ottlgrammar.ParsedStatement{
 				Invocation: ottlgrammar.Invocation{
 					Function: "set",
 					Arguments: []ottlgrammar.Value{
@@ -52,9 +52,9 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:  "invocation with float",
-			query: `met(1.2)`,
-			expected: &ottlgrammar.ParsedQuery{
+			name:      "invocation with float",
+			statement: `met(1.2)`,
+			expected: &ottlgrammar.ParsedStatement{
 				Invocation: ottlgrammar.Invocation{
 					Function: "met",
 					Arguments: []ottlgrammar.Value{
@@ -67,9 +67,9 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:  "invocation with int",
-			query: `fff(12)`,
-			expected: &ottlgrammar.ParsedQuery{
+			name:      "invocation with int",
+			statement: `fff(12)`,
+			expected: &ottlgrammar.ParsedStatement{
 				Invocation: ottlgrammar.Invocation{
 					Function: "fff",
 					Arguments: []ottlgrammar.Value{
@@ -82,9 +82,9 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:  "complex invocation",
-			query: `set("foo", getSomething(bear.honey))`,
-			expected: &ottlgrammar.ParsedQuery{
+			name:      "complex invocation",
+			statement: `set("foo", getSomething(bear.honey))`,
+			expected: &ottlgrammar.ParsedStatement{
 				Invocation: ottlgrammar.Invocation{
 					Function: "set",
 					Arguments: []ottlgrammar.Value{
@@ -116,9 +116,9 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:  "complex path",
-			query: `set(foo.attributes["bar"].cat, "dog")`,
-			expected: &ottlgrammar.ParsedQuery{
+			name:      "complex path",
+			statement: `set(foo.attributes["bar"].cat, "dog")`,
+			expected: &ottlgrammar.ParsedStatement{
 				Invocation: ottlgrammar.Invocation{
 					Function: "set",
 					Arguments: []ottlgrammar.Value{
@@ -147,9 +147,9 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:  "where == clause",
-			query: `set(foo.attributes["bar"].cat, "dog") where name == "fido"`,
-			expected: &ottlgrammar.ParsedQuery{
+			name:      "where == clause",
+			statement: `set(foo.attributes["bar"].cat, "dog") where name == "fido"`,
+			expected: &ottlgrammar.ParsedStatement{
 				Invocation: ottlgrammar.Invocation{
 					Function: "set",
 					Arguments: []ottlgrammar.Value{
@@ -198,9 +198,9 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:  "where != clause",
-			query: `set(foo.attributes["bar"].cat, "dog") where name != "fido"`,
-			expected: &ottlgrammar.ParsedQuery{
+			name:      "where != clause",
+			statement: `set(foo.attributes["bar"].cat, "dog") where name != "fido"`,
+			expected: &ottlgrammar.ParsedStatement{
 				Invocation: ottlgrammar.Invocation{
 					Function: "set",
 					Arguments: []ottlgrammar.Value{
@@ -249,9 +249,9 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:  "ignore extra spaces",
-			query: `set  ( foo.attributes[ "bar"].cat,   "dog")   where name=="fido"`,
-			expected: &ottlgrammar.ParsedQuery{
+			name:      "ignore extra spaces",
+			statement: `set  ( foo.attributes[ "bar"].cat,   "dog")   where name=="fido"`,
+			expected: &ottlgrammar.ParsedStatement{
 				Invocation: ottlgrammar.Invocation{
 					Function: "set",
 					Arguments: []ottlgrammar.Value{
@@ -300,9 +300,9 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:  "handle quotes",
-			query: `set("fo\"o")`,
-			expected: &ottlgrammar.ParsedQuery{
+			name:      "handle quotes",
+			statement: `set("fo\"o")`,
+			expected: &ottlgrammar.ParsedStatement{
 				Invocation: ottlgrammar.Invocation{
 					Function: "set",
 					Arguments: []ottlgrammar.Value{
@@ -315,9 +315,9 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:  "Invocation with boolean false",
-			query: `convert_gauge_to_sum("cumulative", false)`,
-			expected: &ottlgrammar.ParsedQuery{
+			name:      "Invocation with boolean false",
+			statement: `convert_gauge_to_sum("cumulative", false)`,
+			expected: &ottlgrammar.ParsedStatement{
 				Invocation: ottlgrammar.Invocation{
 					Function: "convert_gauge_to_sum",
 					Arguments: []ottlgrammar.Value{
@@ -333,9 +333,9 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:  "Invocation with boolean true",
-			query: `convert_gauge_to_sum("cumulative", true)`,
-			expected: &ottlgrammar.ParsedQuery{
+			name:      "Invocation with boolean true",
+			statement: `convert_gauge_to_sum("cumulative", true)`,
+			expected: &ottlgrammar.ParsedStatement{
 				Invocation: ottlgrammar.Invocation{
 					Function: "convert_gauge_to_sum",
 					Arguments: []ottlgrammar.Value{
@@ -351,9 +351,9 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:  "Invocation with bytes",
-			query: `set(attributes["bytes"], 0x0102030405060708)`,
-			expected: &ottlgrammar.ParsedQuery{
+			name:      "Invocation with bytes",
+			statement: `set(attributes["bytes"], 0x0102030405060708)`,
+			expected: &ottlgrammar.ParsedStatement{
 				Invocation: ottlgrammar.Invocation{
 					Function: "set",
 					Arguments: []ottlgrammar.Value{
@@ -376,9 +376,9 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:  "Invocation with nil",
-			query: `set(attributes["test"], nil)`,
-			expected: &ottlgrammar.ParsedQuery{
+			name:      "Invocation with nil",
+			statement: `set(attributes["test"], nil)`,
+			expected: &ottlgrammar.ParsedStatement{
 				Invocation: ottlgrammar.Invocation{
 					Function: "set",
 					Arguments: []ottlgrammar.Value{
@@ -401,9 +401,9 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:  "Invocation with Enum",
-			query: `set(attributes["test"], TEST_ENUM)`,
-			expected: &ottlgrammar.ParsedQuery{
+			name:      "Invocation with Enum",
+			statement: `set(attributes["test"], TEST_ENUM)`,
+			expected: &ottlgrammar.ParsedStatement{
 				Invocation: ottlgrammar.Invocation{
 					Function: "set",
 					Arguments: []ottlgrammar.Value{
@@ -428,8 +428,8 @@ func Test_parse(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.query, func(t *testing.T) {
-			parsed, err := parseQuery(tt.query)
+		t.Run(tt.statement, func(t *testing.T) {
+			parsed, err := parseStatement(tt.statement)
 			assert.NoError(t, err)
 			assert.EqualValues(t, tt.expected, parsed)
 		})
@@ -461,7 +461,7 @@ func Test_parse_failure(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {
-			_, err := parseQuery(tt)
+			_, err := parseStatement(tt)
 			assert.Error(t, err)
 		})
 	}
@@ -483,8 +483,8 @@ func testParsePath(val *ottlgrammar.Path) (GetSetter, error) {
 
 // Helper for test cases where the WHERE clause is all that matters.
 // Parse string should start with `set(name, "test") where`...
-func setNameTest(b *ottlgrammar.BooleanExpression) *ottlgrammar.ParsedQuery {
-	return &ottlgrammar.ParsedQuery{
+func setNameTest(b *ottlgrammar.BooleanExpression) *ottlgrammar.ParsedStatement {
+	return &ottlgrammar.ParsedStatement{
 		Invocation: ottlgrammar.Invocation{
 			Function: "set",
 			Arguments: []ottlgrammar.Value{
@@ -508,11 +508,11 @@ func setNameTest(b *ottlgrammar.BooleanExpression) *ottlgrammar.ParsedQuery {
 
 func Test_parseWhere(t *testing.T) {
 	tests := []struct {
-		query    string
-		expected *ottlgrammar.ParsedQuery
+		statement string
+		expected  *ottlgrammar.ParsedStatement
 	}{
 		{
-			query: `true`,
+			statement: `true`,
 			expected: setNameTest(&ottlgrammar.BooleanExpression{
 				Left: &ottlgrammar.Term{
 					Left: &ottlgrammar.BooleanValue{
@@ -522,7 +522,7 @@ func Test_parseWhere(t *testing.T) {
 			}),
 		},
 		{
-			query: `true and false`,
+			statement: `true and false`,
 			expected: setNameTest(&ottlgrammar.BooleanExpression{
 				Left: &ottlgrammar.Term{
 					Left: &ottlgrammar.BooleanValue{
@@ -540,7 +540,7 @@ func Test_parseWhere(t *testing.T) {
 			}),
 		},
 		{
-			query: `true and true and false`,
+			statement: `true and true and false`,
 			expected: setNameTest(&ottlgrammar.BooleanExpression{
 				Left: &ottlgrammar.Term{
 					Left: &ottlgrammar.BooleanValue{
@@ -564,7 +564,7 @@ func Test_parseWhere(t *testing.T) {
 			}),
 		},
 		{
-			query: `true or false`,
+			statement: `true or false`,
 			expected: setNameTest(&ottlgrammar.BooleanExpression{
 				Left: &ottlgrammar.Term{
 					Left: &ottlgrammar.BooleanValue{
@@ -584,7 +584,7 @@ func Test_parseWhere(t *testing.T) {
 			}),
 		},
 		{
-			query: `false and true or false`,
+			statement: `false and true or false`,
 			expected: setNameTest(&ottlgrammar.BooleanExpression{
 				Left: &ottlgrammar.Term{
 					Left: &ottlgrammar.BooleanValue{
@@ -612,7 +612,7 @@ func Test_parseWhere(t *testing.T) {
 			}),
 		},
 		{
-			query: `(false and true) or false`,
+			statement: `(false and true) or false`,
 			expected: setNameTest(&ottlgrammar.BooleanExpression{
 				Left: &ottlgrammar.Term{
 					Left: &ottlgrammar.BooleanValue{
@@ -646,7 +646,7 @@ func Test_parseWhere(t *testing.T) {
 			}),
 		},
 		{
-			query: `false and (true or false)`,
+			statement: `false and (true or false)`,
 			expected: setNameTest(&ottlgrammar.BooleanExpression{
 				Left: &ottlgrammar.Term{
 					Left: &ottlgrammar.BooleanValue{
@@ -680,7 +680,7 @@ func Test_parseWhere(t *testing.T) {
 			}),
 		},
 		{
-			query: `name != "foo" and name != "bar"`,
+			statement: `name != "foo" and name != "bar"`,
 			expected: setNameTest(&ottlgrammar.BooleanExpression{
 				Left: &ottlgrammar.Term{
 					Left: &ottlgrammar.BooleanValue{
@@ -726,7 +726,7 @@ func Test_parseWhere(t *testing.T) {
 			}),
 		},
 		{
-			query: `name == "foo" or name == "bar"`,
+			statement: `name == "foo" or name == "bar"`,
 			expected: setNameTest(&ottlgrammar.BooleanExpression{
 				Left: &ottlgrammar.Term{
 					Left: &ottlgrammar.BooleanValue{
@@ -778,10 +778,10 @@ func Test_parseWhere(t *testing.T) {
 	// create a test name that doesn't confuse vscode so we can rerun tests with one click
 	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
 	for _, tt := range tests {
-		name := pat.ReplaceAllString(tt.query, "_")
+		name := pat.ReplaceAllString(tt.statement, "_")
 		t.Run(name, func(t *testing.T) {
-			query := `set(name, "test") where ` + tt.query
-			parsed, err := parseQuery(query)
+			statement := `set(name, "test") where ` + tt.statement
+			parsed, err := parseStatement(statement)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, parsed)
 		})
@@ -806,10 +806,10 @@ func testParseEnum(val *ottlgrammar.EnumSymbol) (*Enum, error) {
 
 // This test doesn't validate parser results, simply checks whether the parse succeeds or not.
 // It's a fast way to check a large range of possible syntaxes.
-func Test_parseQuery(t *testing.T) {
+func Test_parseStatement(t *testing.T) {
 	tests := []struct {
-		query   string
-		wantErr bool
+		statement string
+		wantErr   bool
 	}{
 		{`set(foo.attributes["bar"].cat, "dog")`, false},
 		{`set(foo.attributes["animal"], "dog") where animal == "cat"`, false},
@@ -831,11 +831,11 @@ func Test_parseQuery(t *testing.T) {
 	}
 	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
 	for _, tt := range tests {
-		name := pat.ReplaceAllString(tt.query, "_")
+		name := pat.ReplaceAllString(tt.statement, "_")
 		t.Run(name, func(t *testing.T) {
-			_, err := parseQuery(tt.query)
+			_, err := parseStatement(tt.statement)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("parseQuery(%s) error = %v, wantErr %v", tt.query, err, tt.wantErr)
+				t.Errorf("parseStatement(%s) error = %v, wantErr %v", tt.statement, err, tt.wantErr)
 				return
 			}
 		})

@@ -21,9 +21,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlgrammar"
 )
 
-// Query holds a top level Query for processing telemetry data. A Query is a combination of a function
+// Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
 // invocation and the expression to match telemetry for invoking the function.
-type Query struct {
+type Statement struct {
 	Function  ExprFunc
 	Condition boolExpressionEvaluator
 }
@@ -44,12 +44,12 @@ func NewParser(functions map[string]interface{}, pathParser PathExpressionParser
 	}
 }
 
-func (p *Parser) ParseQueries(statements []string) ([]Query, error) {
-	var queries []Query
+func (p *Parser) ParseStatements(statementStrs []string) ([]Statement, error) {
+	var statements []Statement
 	var errors error
 
-	for _, statement := range statements {
-		parsed, err := parseQuery(statement)
+	for _, statement := range statementStrs {
+		parsed, err := parseStatement(statement)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
@@ -64,7 +64,7 @@ func (p *Parser) ParseQueries(statements []string) ([]Query, error) {
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		queries = append(queries, Query{
+		statements = append(statements, Statement{
 			Function:  function,
 			Condition: expression,
 		})
@@ -73,10 +73,10 @@ func (p *Parser) ParseQueries(statements []string) ([]Query, error) {
 	if errors != nil {
 		return nil, errors
 	}
-	return queries, nil
+	return statements, nil
 }
 
-func parseQuery(raw string) (*ottlgrammar.ParsedQuery, error) {
+func parseStatement(raw string) (*ottlgrammar.ParsedStatement, error) {
 	parsed, err := ottlgrammar.ParserSingleton.ParseString("", raw)
 	if err != nil {
 		return nil, err
