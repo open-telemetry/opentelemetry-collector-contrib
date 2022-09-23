@@ -847,7 +847,7 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 						timestampMs: timestamp,
 					},
 					receiver:       prometheusReceiver,
-					metricDataType: pmetric.MetricDataTypeGauge,
+					metricDataType: pmetric.MetricTypeGauge,
 				},
 			},
 			nil,
@@ -2483,7 +2483,7 @@ func generateTestMetrics(tm testMetric) pmetric.Metrics {
 		for _, value := range tm.metricValues[i] {
 			dp := g.DataPoints().AppendEmpty()
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(10 * time.Second)))
-			dp.SetDoubleVal(value)
+			dp.SetDoubleValue(value)
 			dp.Attributes().FromRaw(tm.attributeMap)
 		}
 	}

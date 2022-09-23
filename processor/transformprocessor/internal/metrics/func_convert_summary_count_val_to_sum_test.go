@@ -41,7 +41,7 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 
 				sumMetric.SetName("summary_metric_count")
 				dp := sumMetric.Sum().DataPoints().AppendEmpty()
-				dp.SetIntVal(100)
+				dp.SetIntValue(100)
 
 				attrs := getTestAttributes()
 				attrs.CopyTo(dp.Attributes())
@@ -62,7 +62,7 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 
 				sumMetric.SetName("summary_metric_count")
 				dp := sumMetric.Sum().DataPoints().AppendEmpty()
-				dp.SetIntVal(100)
+				dp.SetIntValue(100)
 
 				attrs := getTestAttributes()
 				attrs.CopyTo(dp.Attributes())
@@ -83,7 +83,7 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 
 				sumMetric.SetName("summary_metric_count")
 				dp := sumMetric.Sum().DataPoints().AppendEmpty()
-				dp.SetIntVal(100)
+				dp.SetIntValue(100)
 
 				attrs := getTestAttributes()
 				attrs.CopyTo(dp.Attributes())

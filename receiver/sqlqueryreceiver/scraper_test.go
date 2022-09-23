@@ -61,7 +61,7 @@ func TestScraper_RowToMetricErrorOnScrape_Float(t *testing.T) {
 				ValueColumn: "myfloat",
 				Monotonic:   true,
 				ValueType:   MetricValueTypeDouble,
-				DataType:    MetricDataTypeGauge,
+				DataType:    MetricTypeGauge,
 			}},
 		},
 	}
@@ -86,7 +86,7 @@ func TestScraper_RowToMetricErrorOnScrape_Int(t *testing.T) {
 				ValueColumn: "myint",
 				Monotonic:   true,
 				ValueType:   MetricValueTypeInt,
-				DataType:    MetricDataTypeGauge,
+				DataType:    MetricTypeGauge,
 			}},
 		},
 	}
@@ -112,7 +112,7 @@ func TestScraper_RowToMetricMultiErrorsOnScrape(t *testing.T) {
 				ValueColumn: "mycol",
 				Monotonic:   true,
 				ValueType:   MetricValueTypeInt,
-				DataType:    MetricDataTypeGauge,
+				DataType:    MetricTypeGauge,
 			}},
 		},
 	}
@@ -139,14 +139,14 @@ func TestScraper_SingleRow_MultiMetrics(t *testing.T) {
 					ValueColumn:      "count",
 					AttributeColumns: []string{"foo_name", "bar_name"},
 					ValueType:        MetricValueTypeInt,
-					DataType:         MetricDataTypeGauge,
+					DataType:         MetricTypeGauge,
 				},
 				{
 					MetricName:       "my.metric.2",
 					ValueColumn:      "count",
 					AttributeColumns: []string{"foo_name", "bar_name"},
 					ValueType:        MetricValueTypeInt,
-					DataType:         MetricDataTypeSum,
+					DataType:         MetricTypeSum,
 					Aggregation:      MetricAggregationCumulative,
 				},
 			},
@@ -169,7 +169,7 @@ func TestScraper_SingleRow_MultiMetrics(t *testing.T) {
 		dps := gauge.DataPoints()
 		assert.Equal(t, 1, dps.Len())
 		dp := dps.At(0)
-		assert.EqualValues(t, 42, dp.IntVal())
+		assert.EqualValues(t, 42, dp.IntValue())
 		attrs := dp.Attributes()
 		assert.Equal(t, 2, attrs.Len())
 		fooVal, _ := attrs.Get("foo_name")
@@ -184,7 +184,7 @@ func TestScraper_SingleRow_MultiMetrics(t *testing.T) {
 		dps := sum.DataPoints()
 		assert.Equal(t, 1, dps.Len())
 		dp := dps.At(0)
-		assert.EqualValues(t, 42, dp.IntVal())
+		assert.EqualValues(t, 42, dp.IntValue())
 		attrs := dp.Attributes()
 		assert.Equal(t, 2, attrs.Len())
 		fooVal, _ := attrs.Get("foo_name")
@@ -216,7 +216,7 @@ func TestScraper_MultiRow(t *testing.T) {
 					ValueColumn:      "count",
 					AttributeColumns: []string{"genre"},
 					ValueType:        MetricValueTypeInt,
-					DataType:         MetricDataTypeGauge,
+					DataType:         MetricTypeGauge,
 				},
 			},
 		},
@@ -227,14 +227,14 @@ func TestScraper_MultiRow(t *testing.T) {
 	{
 		metric := ms.At(0)
 		dp := metric.Gauge().DataPoints().At(0)
-		assert.EqualValues(t, 42, dp.IntVal())
+		assert.EqualValues(t, 42, dp.IntValue())
 		val, _ := dp.Attributes().Get("genre")
 		assert.Equal(t, "action", val.StringVal())
 	}
 	{
 		metric := ms.At(1)
 		dp := metric.Gauge().DataPoints().At(0)
-		assert.EqualValues(t, 111, dp.IntVal())
+		assert.EqualValues(t, 111, dp.IntValue())
 		val, _ := dp.Attributes().Get("genre")
 		assert.Equal(t, "sci-fi", val.StringVal())
 	}
@@ -254,7 +254,7 @@ func TestScraper_MultiResults_CumulativeSum(t *testing.T) {
 				MetricName:  "transaction.count",
 				ValueColumn: "count",
 				ValueType:   MetricValueTypeInt,
-				DataType:    MetricDataTypeSum,
+				DataType:    MetricTypeSum,
 				Aggregation: MetricAggregationCumulative,
 			}},
 		},
@@ -277,7 +277,7 @@ func TestScraper_MultiResults_DeltaSum(t *testing.T) {
 				MetricName:  "transaction.count",
 				ValueColumn: "count",
 				ValueType:   MetricValueTypeInt,
-				DataType:    MetricDataTypeSum,
+				DataType:    MetricTypeSum,
 				Aggregation: MetricAggregationDelta,
 			}},
 		},
@@ -297,7 +297,7 @@ func assertTransactionCount(t *testing.T, scrpr scraper, expected int, agg pmetr
 		agg,
 		sum.AggregationTemporality(),
 	)
-	assert.EqualValues(t, expected, sum.DataPoints().At(0).IntVal())
+	assert.EqualValues(t, expected, sum.DataPoints().At(0).IntValue())
 }
 
 func TestScraper_Float(t *testing.T) {
@@ -314,14 +314,14 @@ func TestScraper_Float(t *testing.T) {
 				ValueColumn: "myfloat",
 				Monotonic:   true,
 				ValueType:   MetricValueTypeDouble,
-				DataType:    MetricDataTypeGauge,
+				DataType:    MetricTypeGauge,
 			}},
 		},
 	}
 	metrics, err := scrpr.Scrape(context.Background())
 	require.NoError(t, err)
 	metric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-	assert.Equal(t, 123.4, metric.Gauge().DataPoints().At(0).DoubleVal())
+	assert.Equal(t, 123.4, metric.Gauge().DataPoints().At(0).DoubleValue())
 }
 
 func TestScraper_DescriptionAndUnit(t *testing.T) {

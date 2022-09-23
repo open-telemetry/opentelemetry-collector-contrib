@@ -41,7 +41,7 @@ func convertGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc, err
 		}
 
 		metric := mtc.GetMetric()
-		if metric.DataType() != pmetric.MetricDataTypeGauge {
+		if metric.Type() != pmetric.MetricTypeGauge {
 			return nil
 		}
 

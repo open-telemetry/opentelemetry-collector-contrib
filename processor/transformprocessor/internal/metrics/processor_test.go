@@ -176,7 +176,7 @@ func TestProcess(t *testing.T) {
 				sumMetric.SetUnit(summaryMetric.Unit())
 
 				summaryDp.Attributes().CopyTo(sumDp.Attributes())
-				sumDp.SetIntVal(int64(summaryDp.Count()))
+				sumDp.SetIntValue(int64(summaryDp.Count()))
 				sumDp.SetStartTimestamp(StartTimestamp)
 				sumDp.SetTimestamp(TestTimeStamp)
 			},
@@ -198,7 +198,7 @@ func TestProcess(t *testing.T) {
 				sumMetric.SetUnit(summaryMetric.Unit())
 
 				summaryDp.Attributes().CopyTo(sumDp.Attributes())
-				sumDp.SetDoubleVal(summaryDp.Sum())
+				sumDp.SetDoubleValue(summaryDp.Sum())
 				sumDp.SetStartTimestamp(StartTimestamp)
 				sumDp.SetTimestamp(TestTimeStamp)
 			},
@@ -223,7 +223,7 @@ func TestProcess(t *testing.T) {
 				sumMetric.SetUnit("new unit")
 
 				summaryDp.Attributes().CopyTo(sumDp.Attributes())
-				sumDp.SetDoubleVal(summaryDp.Sum())
+				sumDp.SetDoubleValue(summaryDp.Sum())
 				sumDp.SetStartTimestamp(StartTimestamp)
 				sumDp.SetTimestamp(TestTimeStamp)
 
@@ -347,7 +347,7 @@ func fillMetricOne(m pmetric.Metric) {
 
 	dataPoint0 := m.SetEmptySum().DataPoints().AppendEmpty()
 	dataPoint0.SetStartTimestamp(StartTimestamp)
-	dataPoint0.SetDoubleVal(1.0)
+	dataPoint0.SetDoubleValue(1.0)
 	dataPoint0.Attributes().PutString("attr1", "test1")
 	dataPoint0.Attributes().PutString("attr2", "test2")
 	dataPoint0.Attributes().PutString("attr3", "test3")

@@ -374,7 +374,7 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 		dpCalls := mCount.Sum().DataPoints().AppendEmpty()
 		dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 		dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		dpCalls.SetIntVal(c)
+		dpCalls.SetIntValue(c)
 
 		dimensions, ok := p.dimensionsForSeries(key)
 		if !ok {
@@ -394,7 +394,7 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 		dpCalls := mCount.Sum().DataPoints().AppendEmpty()
 		dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 		dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		dpCalls.SetIntVal(c)
+		dpCalls.SetIntValue(c)
 
 		dimensions, ok := p.dimensionsForSeries(key)
 		if !ok {

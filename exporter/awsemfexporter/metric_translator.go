@@ -41,12 +41,12 @@ const (
 	fieldPrometheusMetricType = "prom_metric_type"
 )
 
-var fieldPrometheusTypes = map[pmetric.MetricDataType]string{
-	pmetric.MetricDataTypeNone:      "",
-	pmetric.MetricDataTypeGauge:     "gauge",
-	pmetric.MetricDataTypeSum:       "counter",
-	pmetric.MetricDataTypeHistogram: "histogram",
-	pmetric.MetricDataTypeSummary:   "summary",
+var fieldPrometheusTypes = map[pmetric.MetricType]string{
+	pmetric.MetricTypeNone:      "",
+	pmetric.MetricTypeGauge:     "gauge",
+	pmetric.MetricTypeSum:       "counter",
+	pmetric.MetricTypeHistogram: "histogram",
+	pmetric.MetricTypeSummary:   "summary",
 }
 
 type cWMetrics struct {
@@ -81,7 +81,7 @@ type cWMetricMetadata struct {
 	instrumentationLibraryName string
 
 	receiver       string
-	metricDataType pmetric.MetricDataType
+	metricDataType pmetric.MetricType
 }
 
 type metricTranslator struct {
@@ -130,7 +130,7 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 				},
 				instrumentationLibraryName: instrumentationLibName,
 				receiver:                   metricReceiver,
-				metricDataType:             metric.DataType(),
+				metricDataType:             metric.Type(),
 			}
 			err := addToGroupedMetric(metric, groupedMetrics, metadata, patternReplaceSucceeded, config.logger, mt.metricDescriptor, config)
 			if err != nil {

@@ -29,7 +29,7 @@ func convertSumToGauge() (ottl.ExprFunc, error) {
 		}
 
 		metric := mtc.GetMetric()
-		if metric.DataType() != pmetric.MetricDataTypeSum {
+		if metric.Type() != pmetric.MetricTypeSum {
 			return nil
 		}
 

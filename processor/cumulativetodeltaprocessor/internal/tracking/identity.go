@@ -25,7 +25,7 @@ import (
 type MetricIdentity struct {
 	Resource               pcommon.Resource
 	InstrumentationLibrary pcommon.InstrumentationScope
-	MetricDataType         pmetric.MetricDataType
+	MetricType             pmetric.MetricType
 	MetricIsMonotonic      bool
 	MetricName             string
 	MetricUnit             string
@@ -39,7 +39,7 @@ const SEP = byte(0x1E)
 const SEPSTR = string(SEP)
 
 func (mi *MetricIdentity) Write(b *bytes.Buffer) {
-	b.WriteRune(A + int32(mi.MetricDataType))
+	b.WriteRune(A + int32(mi.MetricType))
 	b.WriteByte(SEP)
 	b.WriteRune(A + int32(mi.MetricValueType))
 	mi.Resource.Attributes().Sort().Range(func(k string, v pcommon.Value) bool {
@@ -82,5 +82,5 @@ func (mi *MetricIdentity) IsFloatVal() bool {
 }
 
 func (mi *MetricIdentity) IsSupportedMetricType() bool {
-	return mi.MetricDataType == pmetric.MetricDataTypeSum || mi.MetricDataType == pmetric.MetricDataTypeHistogram
+	return mi.MetricType == pmetric.MetricTypeSum || mi.MetricType == pmetric.MetricTypeHistogram
 }

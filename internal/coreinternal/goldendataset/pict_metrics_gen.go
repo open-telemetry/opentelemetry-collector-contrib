@@ -34,7 +34,7 @@ func GenerateMetrics(metricPairsFile string) ([]pmetric.Metrics, error) {
 		}
 		metricInputs := PICTMetricInputs{
 			NumPtsPerMetric: PICTNumPtsPerMetric(values[0]),
-			MetricType:      PICTMetricDataType(values[1]),
+			MetricType:      PICTMetricType(values[1]),
 			NumPtLabels:     PICTNumPtLabels(values[2]),
 		}
 		cfg := pictToCfg(metricInputs)
@@ -65,32 +65,32 @@ func pictToCfg(inputs PICTMetricInputs) MetricsCfg {
 
 	switch inputs.MetricType {
 	case MetricTypeIntGauge:
-		cfg.MetricDescriptorType = pmetric.MetricDataTypeGauge
+		cfg.MetricDescriptorType = pmetric.MetricTypeGauge
 		cfg.MetricValueType = pmetric.NumberDataPointValueTypeInt
 	case MetricTypeMonotonicIntSum:
-		cfg.MetricDescriptorType = pmetric.MetricDataTypeSum
+		cfg.MetricDescriptorType = pmetric.MetricTypeSum
 		cfg.MetricValueType = pmetric.NumberDataPointValueTypeInt
 		cfg.IsMonotonicSum = true
 	case MetricTypeNonMonotonicIntSum:
-		cfg.MetricDescriptorType = pmetric.MetricDataTypeSum
+		cfg.MetricDescriptorType = pmetric.MetricTypeSum
 		cfg.MetricValueType = pmetric.NumberDataPointValueTypeInt
 		cfg.IsMonotonicSum = false
 	case MetricTypeDoubleGauge:
-		cfg.MetricDescriptorType = pmetric.MetricDataTypeGauge
+		cfg.MetricDescriptorType = pmetric.MetricTypeGauge
 		cfg.MetricValueType = pmetric.NumberDataPointValueTypeDouble
 	case MetricTypeMonotonicDoubleSum:
-		cfg.MetricDescriptorType = pmetric.MetricDataTypeSum
+		cfg.MetricDescriptorType = pmetric.MetricTypeSum
 		cfg.MetricValueType = pmetric.NumberDataPointValueTypeDouble
 		cfg.IsMonotonicSum = true
 	case MetricTypeNonMonotonicDoubleSum:
-		cfg.MetricDescriptorType = pmetric.MetricDataTypeSum
+		cfg.MetricDescriptorType = pmetric.MetricTypeSum
 		cfg.MetricValueType = pmetric.NumberDataPointValueTypeDouble
 		cfg.IsMonotonicSum = false
 	case MetricTypeDoubleExemplarsHistogram:
-		cfg.MetricDescriptorType = pmetric.MetricDataTypeHistogram
+		cfg.MetricDescriptorType = pmetric.MetricTypeHistogram
 		cfg.MetricValueType = pmetric.NumberDataPointValueTypeNone
 	case MetricTypeIntExemplarsHistogram:
-		cfg.MetricDescriptorType = pmetric.MetricDataTypeHistogram
+		cfg.MetricDescriptorType = pmetric.MetricTypeHistogram
 		cfg.MetricValueType = pmetric.NumberDataPointValueTypeNone
 	default:
 		panic("Should not happen, unsupported type " + string(inputs.MetricType))

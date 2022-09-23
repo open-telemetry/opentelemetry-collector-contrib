@@ -127,7 +127,7 @@ func TestConsumeMetrics(t *testing.T) {
 	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 	dp.Attributes().PutString("k0", "v0")
 	dp.Attributes().PutString("k1", "v1")
-	dp.SetDoubleVal(123)
+	dp.SetDoubleValue(123)
 
 	tests := []struct {
 		name                 string
@@ -265,7 +265,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 		dp.Attributes().PutString("k0", "v0")
 		dp.Attributes().PutString("k1", "v1")
-		dp.SetDoubleVal(123)
+		dp.SetDoubleValue(123)
 		return out
 	}
 
@@ -327,7 +327,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp.Attributes().PutString("k0", "v0")
 				dp.Attributes().PutString("k1", "v1")
-				dp.SetDoubleVal(123)
+				dp.SetDoubleValue(123)
 
 				return out
 			}(),
@@ -706,7 +706,7 @@ func generateLargeDPBatch() pmetric.Metrics {
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 		dp.Attributes().PutString("k0", "v0")
 		dp.Attributes().PutString("k1", "v1")
-		dp.SetIntVal(int64(i))
+		dp.SetIntValue(int64(i))
 	}
 
 	return md

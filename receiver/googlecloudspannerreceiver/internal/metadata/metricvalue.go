@@ -26,7 +26,7 @@ type newMetricValueFunction func(m MetricValueMetadata, value interface{}) Metri
 type MetricValueMetadata interface {
 	ValueMetadata
 	ValueType() ValueType
-	DataType() MetricDataType
+	DataType() MetricType
 	Unit() string
 	NewMetricValue(value interface{}) MetricValue
 }
@@ -40,7 +40,7 @@ type MetricValue interface {
 type queryMetricValueMetadata struct {
 	name               string
 	columnName         string
-	dataType           MetricDataType
+	dataType           MetricType
 	unit               string
 	valueType          ValueType
 	newMetricValueFunc newMetricValueFunction
@@ -82,7 +82,7 @@ func (m queryMetricValueMetadata) ValueType() ValueType {
 	return m.valueType
 }
 
-func (m queryMetricValueMetadata) DataType() MetricDataType {
+func (m queryMetricValueMetadata) DataType() MetricType {
 	return m.dataType
 }
 
@@ -115,18 +115,18 @@ func (v nullFloat64MetricValue) Value() interface{} {
 }
 
 func (v int64MetricValue) SetValueTo(point pmetric.NumberDataPoint) {
-	point.SetIntVal(v.value)
+	point.SetIntValue(v.value)
 }
 
 func (v float64MetricValue) SetValueTo(point pmetric.NumberDataPoint) {
-	point.SetDoubleVal(v.value)
+	point.SetDoubleValue(v.value)
 }
 
 func (v nullFloat64MetricValue) SetValueTo(point pmetric.NumberDataPoint) {
 	if v.value.Valid {
-		point.SetDoubleVal(v.value.Float64)
+		point.SetDoubleValue(v.value.Float64)
 	} else {
-		point.SetDoubleVal(0)
+		point.SetDoubleValue(0)
 	}
 }
 
@@ -151,7 +151,7 @@ func newNullFloat64MetricValue(metadata MetricValueMetadata, valueHolder interfa
 	}
 }
 
-func NewMetricValueMetadata(name string, columnName string, dataType MetricDataType, unit string,
+func NewMetricValueMetadata(name string, columnName string, dataType MetricType, unit string,
 	valueType ValueType) (MetricValueMetadata, error) {
 
 	var newMetricValueFunc newMetricValueFunction

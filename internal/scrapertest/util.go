@@ -31,13 +31,13 @@ func metricsByName(metricSlice pmetric.MetricSlice) map[string]pmetric.Metric {
 
 func getDataPointSlice(metric pmetric.Metric) pmetric.NumberDataPointSlice {
 	var dataPointSlice pmetric.NumberDataPointSlice
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		dataPointSlice = metric.Gauge().DataPoints()
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		dataPointSlice = metric.Sum().DataPoints()
 	default:
-		panic(fmt.Sprintf("data type not supported: %s", metric.DataType()))
+		panic(fmt.Sprintf("data type not supported: %s", metric.Type()))
 	}
 	return dataPointSlice
 }

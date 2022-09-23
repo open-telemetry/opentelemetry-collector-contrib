@@ -22,24 +22,24 @@ import (
 // deleteLabelValueOp deletes a label value and all data associated with it
 func deleteLabelValueOp(metric pmetric.Metric, mtpOp internalOperation) {
 	op := mtpOp.configOperation
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		metric.Gauge().DataPoints().RemoveIf(func(dp pmetric.NumberDataPoint) bool {
 			return hasAttr(dp.Attributes(), op.Label, op.LabelValue)
 		})
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		metric.Sum().DataPoints().RemoveIf(func(dp pmetric.NumberDataPoint) bool {
 			return hasAttr(dp.Attributes(), op.Label, op.LabelValue)
 		})
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		metric.Histogram().DataPoints().RemoveIf(func(dp pmetric.HistogramDataPoint) bool {
 			return hasAttr(dp.Attributes(), op.Label, op.LabelValue)
 		})
-	case pmetric.MetricDataTypeExponentialHistogram:
+	case pmetric.MetricTypeExponentialHistogram:
 		metric.ExponentialHistogram().DataPoints().RemoveIf(func(dp pmetric.ExponentialHistogramDataPoint) bool {
 			return hasAttr(dp.Attributes(), op.Label, op.LabelValue)
 		})
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		metric.Summary().DataPoints().RemoveIf(func(dp pmetric.SummaryDataPoint) bool {
 			return hasAttr(dp.Attributes(), op.Label, op.LabelValue)
 		})

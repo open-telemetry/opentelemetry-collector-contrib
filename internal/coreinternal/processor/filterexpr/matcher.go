@@ -52,16 +52,16 @@ func NewMatcher(expression string) (*Matcher, error) {
 
 func (m *Matcher) MatchMetric(metric pmetric.Metric) (bool, error) {
 	metricName := metric.Name()
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		return m.matchGauge(metricName, metric.Gauge())
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		return m.matchSum(metricName, metric.Sum())
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		return m.matchHistogram(metricName, metric.Histogram())
-	case pmetric.MetricDataTypeExponentialHistogram:
+	case pmetric.MetricTypeExponentialHistogram:
 		return m.matchExponentialHistogram(metricName, metric.ExponentialHistogram())
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		return m.matchSummary(metricName, metric.Summary())
 	default:
 		return false, nil
@@ -71,7 +71,7 @@ func (m *Matcher) MatchMetric(metric pmetric.Metric) (bool, error) {
 func (m *Matcher) matchGauge(metricName string, gauge pmetric.Gauge) (bool, error) {
 	pts := gauge.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
-		matched, err := m.matchEnv(metricName, pmetric.MetricDataTypeGauge, pts.At(i).Attributes())
+		matched, err := m.matchEnv(metricName, pmetric.MetricTypeGauge, pts.At(i).Attributes())
 		if err != nil {
 			return false, err
 		}
@@ -85,7 +85,7 @@ func (m *Matcher) matchGauge(metricName string, gauge pmetric.Gauge) (bool, erro
 func (m *Matcher) matchSum(metricName string, sum pmetric.Sum) (bool, error) {
 	pts := sum.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
-		matched, err := m.matchEnv(metricName, pmetric.MetricDataTypeSum, pts.At(i).Attributes())
+		matched, err := m.matchEnv(metricName, pmetric.MetricTypeSum, pts.At(i).Attributes())
 		if err != nil {
 			return false, err
 		}
@@ -99,7 +99,7 @@ func (m *Matcher) matchSum(metricName string, sum pmetric.Sum) (bool, error) {
 func (m *Matcher) matchHistogram(metricName string, histogram pmetric.Histogram) (bool, error) {
 	pts := histogram.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
-		matched, err := m.matchEnv(metricName, pmetric.MetricDataTypeHistogram, pts.At(i).Attributes())
+		matched, err := m.matchEnv(metricName, pmetric.MetricTypeHistogram, pts.At(i).Attributes())
 		if err != nil {
 			return false, err
 		}
@@ -113,7 +113,7 @@ func (m *Matcher) matchHistogram(metricName string, histogram pmetric.Histogram)
 func (m *Matcher) matchExponentialHistogram(metricName string, eh pmetric.ExponentialHistogram) (bool, error) {
 	pts := eh.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
-		matched, err := m.matchEnv(metricName, pmetric.MetricDataTypeExponentialHistogram, pts.At(i).Attributes())
+		matched, err := m.matchEnv(metricName, pmetric.MetricTypeExponentialHistogram, pts.At(i).Attributes())
 		if err != nil {
 			return false, err
 		}
@@ -127,7 +127,7 @@ func (m *Matcher) matchExponentialHistogram(metricName string, eh pmetric.Expone
 func (m *Matcher) matchSummary(metricName string, summary pmetric.Summary) (bool, error) {
 	pts := summary.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
-		matched, err := m.matchEnv(metricName, pmetric.MetricDataTypeSummary, pts.At(i).Attributes())
+		matched, err := m.matchEnv(metricName, pmetric.MetricTypeSummary, pts.At(i).Attributes())
 		if err != nil {
 			return false, err
 		}
@@ -138,7 +138,7 @@ func (m *Matcher) matchSummary(metricName string, summary pmetric.Summary) (bool
 	return false, nil
 }
 
-func (m *Matcher) matchEnv(metricName string, metricType pmetric.MetricDataType, attributes pcommon.Map) (bool, error) {
+func (m *Matcher) matchEnv(metricName string, metricType pmetric.MetricType, attributes pcommon.Map) (bool, error) {
 	return m.match(env{
 		MetricName: metricName,
 		MetricType: metricType.String(),

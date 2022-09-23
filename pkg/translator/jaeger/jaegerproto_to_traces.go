@@ -238,7 +238,7 @@ func jSpanToInternal(span *model.Span, spansByLibrary map[scope]ptrace.SpanSlice
 		attrs.Remove(tracetranslator.TagSpanKind)
 	}
 
-	dest.TraceStateStruct().FromRaw(getTraceStateFromAttrs(attrs))
+	dest.TraceState().FromRaw(getTraceStateFromAttrs(attrs))
 
 	// drop the attributes slice if all of them were replaced during translation
 	if attrs.Len() == 0 {

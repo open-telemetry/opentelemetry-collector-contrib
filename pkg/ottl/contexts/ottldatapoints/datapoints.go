@@ -70,12 +70,12 @@ var symbolTable = map[ottl.EnumSymbol]ottl.Enum{
 	"AGGREGATION_TEMPORALITY_CUMULATIVE":     ottl.Enum(pmetric.MetricAggregationTemporalityCumulative),
 	"FLAG_NONE":                              0,
 	"FLAG_NO_RECORDED_VALUE":                 1,
-	"METRIC_DATA_TYPE_NONE":                  ottl.Enum(pmetric.MetricDataTypeNone),
-	"METRIC_DATA_TYPE_GAUGE":                 ottl.Enum(pmetric.MetricDataTypeGauge),
-	"METRIC_DATA_TYPE_SUM":                   ottl.Enum(pmetric.MetricDataTypeSum),
-	"METRIC_DATA_TYPE_HISTOGRAM":             ottl.Enum(pmetric.MetricDataTypeHistogram),
-	"METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM": ottl.Enum(pmetric.MetricDataTypeExponentialHistogram),
-	"METRIC_DATA_TYPE_SUMMARY":               ottl.Enum(pmetric.MetricDataTypeSummary),
+	"METRIC_DATA_TYPE_NONE":                  ottl.Enum(pmetric.MetricTypeNone),
+	"METRIC_DATA_TYPE_GAUGE":                 ottl.Enum(pmetric.MetricTypeGauge),
+	"METRIC_DATA_TYPE_SUM":                   ottl.Enum(pmetric.MetricTypeSum),
+	"METRIC_DATA_TYPE_HISTOGRAM":             ottl.Enum(pmetric.MetricTypeHistogram),
+	"METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM": ottl.Enum(pmetric.MetricTypeExponentialHistogram),
+	"METRIC_DATA_TYPE_SUMMARY":               ottl.Enum(pmetric.MetricTypeSummary),
 }
 
 func ParseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
@@ -230,7 +230,7 @@ func accessMetricUnit() ottl.StandardGetSetter {
 func accessMetricType() ottl.StandardGetSetter {
 	return ottl.StandardGetSetter{
 		Getter: func(ctx ottl.TransformContext) interface{} {
-			return int64(ctx.(TransformContext).GetMetric().DataType())
+			return int64(ctx.(TransformContext).GetMetric().Type())
 		},
 		Setter: func(ctx ottl.TransformContext, val interface{}) {
 			// TODO Implement methods so correctly convert data types.
@@ -243,12 +243,12 @@ func accessMetricAggTemporality() ottl.StandardGetSetter {
 	return ottl.StandardGetSetter{
 		Getter: func(ctx ottl.TransformContext) interface{} {
 			metric := ctx.(TransformContext).GetMetric()
-			switch metric.DataType() {
-			case pmetric.MetricDataTypeSum:
+			switch metric.Type() {
+			case pmetric.MetricTypeSum:
 				return int64(metric.Sum().AggregationTemporality())
-			case pmetric.MetricDataTypeHistogram:
+			case pmetric.MetricTypeHistogram:
 				return int64(metric.Histogram().AggregationTemporality())
-			case pmetric.MetricDataTypeExponentialHistogram:
+			case pmetric.MetricTypeExponentialHistogram:
 				return int64(metric.ExponentialHistogram().AggregationTemporality())
 			}
 			return nil
@@ -256,12 +256,12 @@ func accessMetricAggTemporality() ottl.StandardGetSetter {
 		Setter: func(ctx ottl.TransformContext, val interface{}) {
 			if newAggTemporality, ok := val.(int64); ok {
 				metric := ctx.(TransformContext).GetMetric()
-				switch metric.DataType() {
-				case pmetric.MetricDataTypeSum:
+				switch metric.Type() {
+				case pmetric.MetricTypeSum:
 					metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporality(newAggTemporality))
-				case pmetric.MetricDataTypeHistogram:
+				case pmetric.MetricTypeHistogram:
 					metric.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporality(newAggTemporality))
-				case pmetric.MetricDataTypeExponentialHistogram:
+				case pmetric.MetricTypeExponentialHistogram:
 					metric.ExponentialHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporality(newAggTemporality))
 				}
 			}
@@ -273,8 +273,8 @@ func accessMetricIsMonotonic() ottl.StandardGetSetter {
 	return ottl.StandardGetSetter{
 		Getter: func(ctx ottl.TransformContext) interface{} {
 			metric := ctx.(TransformContext).GetMetric()
-			switch metric.DataType() {
-			case pmetric.MetricDataTypeSum:
+			switch metric.Type() {
+			case pmetric.MetricTypeSum:
 				return metric.Sum().IsMonotonic()
 			}
 			return nil
@@ -282,8 +282,8 @@ func accessMetricIsMonotonic() ottl.StandardGetSetter {
 		Setter: func(ctx ottl.TransformContext, val interface{}) {
 			if newIsMonotonic, ok := val.(bool); ok {
 				metric := ctx.(TransformContext).GetMetric()
-				switch metric.DataType() {
-				case pmetric.MetricDataTypeSum:
+				switch metric.Type() {
+				case pmetric.MetricTypeSum:
 					metric.Sum().SetIsMonotonic(newIsMonotonic)
 				}
 			}
@@ -428,7 +428,7 @@ func accessDoubleValue() ottl.StandardGetSetter {
 		Getter: func(ctx ottl.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
-				return ctx.GetItem().(pmetric.NumberDataPoint).DoubleVal()
+				return ctx.GetItem().(pmetric.NumberDataPoint).DoubleValue()
 			}
 			return nil
 		},
@@ -436,7 +436,7 @@ func accessDoubleValue() ottl.StandardGetSetter {
 			if newDouble, ok := val.(float64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.NumberDataPoint:
-					ctx.GetItem().(pmetric.NumberDataPoint).SetDoubleVal(newDouble)
+					ctx.GetItem().(pmetric.NumberDataPoint).SetDoubleValue(newDouble)
 				}
 			}
 		},
@@ -448,7 +448,7 @@ func accessIntValue() ottl.StandardGetSetter {
 		Getter: func(ctx ottl.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
-				return ctx.GetItem().(pmetric.NumberDataPoint).IntVal()
+				return ctx.GetItem().(pmetric.NumberDataPoint).IntValue()
 			}
 			return nil
 		},
@@ -456,7 +456,7 @@ func accessIntValue() ottl.StandardGetSetter {
 			if newInt, ok := val.(int64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.NumberDataPoint:
-					ctx.GetItem().(pmetric.NumberDataPoint).SetIntVal(newInt)
+					ctx.GetItem().(pmetric.NumberDataPoint).SetIntValue(newInt)
 				}
 			}
 		},

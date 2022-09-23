@@ -124,7 +124,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   "key1=val1,key2=val2",
 			newVal: "key=newVal",
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.TraceStateStruct().FromRaw("key=newVal")
+				span.TraceState().FromRaw("key=newVal")
 			},
 		},
 		{
@@ -138,7 +138,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   "val1",
 			newVal: "newVal",
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.TraceStateStruct().FromRaw("key1=newVal,key2=val2")
+				span.TraceState().FromRaw("key1=newVal,key2=val2")
 			},
 		},
 		{
@@ -544,7 +544,7 @@ func createTelemetry() (ptrace.Span, pcommon.InstrumentationScope, pcommon.Resou
 	span := ptrace.NewSpan()
 	span.SetTraceID(traceID)
 	span.SetSpanID(spanID)
-	span.TraceStateStruct().FromRaw("key1=val1,key2=val2")
+	span.TraceState().FromRaw("key1=val1,key2=val2")
 	span.SetParentSpanID(spanID2)
 	span.SetName("bear")
 	span.SetKind(ptrace.SpanKindServer)

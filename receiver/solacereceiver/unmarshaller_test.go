@@ -357,7 +357,7 @@ func TestUnmarshallerMapClientSpanData(t *testing.T) {
 				span.SetStartTimestamp(1234567890)
 				span.SetEndTimestamp(2234567890)
 				span.SetParentSpanID([8]byte{15, 14, 13, 12, 11, 10, 9, 8})
-				span.TraceStateStruct().FromRaw(someTraceState)
+				span.TraceState().FromRaw(someTraceState)
 				span.Status().SetCode(ptrace.StatusCodeError)
 				span.Status().SetMessage("some error")
 				// expect some constants

@@ -40,7 +40,7 @@ func TestMetricsDataPoint_GroupingKey(t *testing.T) {
 	assert.NotNil(t, groupingKey)
 	assert.Equal(t, dataPoint.metricName, groupingKey.MetricName)
 	assert.Equal(t, dataPoint.metricValue.Metadata().Unit(), groupingKey.MetricUnit)
-	assert.Equal(t, dataPoint.metricValue.Metadata().DataType(), groupingKey.MetricDataType)
+	assert.Equal(t, dataPoint.metricValue.Metadata().DataType(), groupingKey.MetricType)
 }
 
 func TestMetricsDataPoint_ToItem(t *testing.T) {
@@ -153,8 +153,8 @@ func allPossibleLabelValues() []LabelValue {
 	}
 }
 
-func allPossibleMetricValues(metricDataType pmetric.MetricDataType) []MetricValue {
-	dataType := NewMetricDataType(metricDataType, pmetric.MetricAggregationTemporalityDelta, true)
+func allPossibleMetricValues(metricDataType pmetric.MetricType) []MetricValue {
+	dataType := NewMetricType(metricDataType, pmetric.MetricAggregationTemporalityDelta, true)
 	int64Metadata, _ := NewMetricValueMetadata("int64MetricName", "int64MetricColumnName", dataType,
 		metricUnit, IntValueType)
 	float64Metadata, _ := NewMetricValueMetadata("float64MetricName", "float64MetricColumnName", dataType,
@@ -209,9 +209,9 @@ func assertStringLabelValue(t *testing.T, attributesMap pcommon.Map, labelName s
 func assertMetricValue(t *testing.T, metricValue MetricValue, dataPoint pmetric.NumberDataPoint) {
 	switch metricValue.(type) {
 	case int64MetricValue:
-		assert.Equal(t, metricValue.Value(), dataPoint.IntVal())
+		assert.Equal(t, metricValue.Value(), dataPoint.IntValue())
 	case float64MetricValue:
-		assert.Equal(t, metricValue.Value(), dataPoint.DoubleVal())
+		assert.Equal(t, metricValue.Value(), dataPoint.DoubleValue())
 	}
 }
 
