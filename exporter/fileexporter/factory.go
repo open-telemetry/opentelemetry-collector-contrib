@@ -40,7 +40,7 @@ const (
 
 	// the type of compression codec
 	defaultCompression = "none"
-	CompressionZSTD    = "zstd"
+	compressionZSTD    = "zstd"
 )
 
 // NewFactory creates a factory for OTLP exporter.
@@ -81,6 +81,8 @@ func createTracesExporter(
 			},
 			tracesMarshaler: tracesMarshalers[conf.FormatType],
 			exporter:        buildExportFunc(conf),
+			compression:     conf.Compression,
+			compressor:      compressFuncs[conf.Compression],
 		}
 	})
 	return exporterhelper.NewTracesExporter(
@@ -112,6 +114,8 @@ func createMetricsExporter(
 			},
 			metricsMarshaler: metricsMarshalers[conf.FormatType],
 			exporter:         buildExportFunc(conf),
+			compression:      conf.Compression,
+			compressor:       compressFuncs[conf.Compression],
 		}
 	})
 	return exporterhelper.NewMetricsExporter(
@@ -143,6 +147,8 @@ func createLogsExporter(
 			},
 			logsMarshaler: logsMarshalers[conf.FormatType],
 			exporter:      buildExportFunc(conf),
+			compression:   conf.Compression,
+			compressor:    compressFuncs[conf.Compression],
 		}
 	})
 	return exporterhelper.NewLogsExporter(

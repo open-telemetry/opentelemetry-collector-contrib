@@ -20,7 +20,6 @@ import (
 	"io"
 	"sync"
 
-	"github.com/klauspost/compress/zstd"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -42,8 +41,6 @@ var logsMarshalers = map[string]plog.Marshaler{
 	formatTypeProto:   plog.NewProtoMarshaler(),
 }
 
-var encoder, _ = zstd.NewWriter(nil)
-
 // exportFunc defines how to export encoded telemetry data.
 type exportFunc func(e *fileExporter, buf []byte) error
 
@@ -57,7 +54,8 @@ type fileExporter struct {
 	metricsMarshaler pmetric.Marshaler
 	logsMarshaler    plog.Marshaler
 
-	isCompressed bool
+	compression string
+	compressor  compressFunc
 
 	formatType string
 	exporter   exportFunc
@@ -72,9 +70,7 @@ func (e *fileExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error 
 	if err != nil {
 		return err
 	}
-	if e.isCompressed {
-		buf = compress(buf)
-	}
+	buf = e.compressor(buf)
 	return e.exporter(e, buf)
 }
 
@@ -83,9 +79,7 @@ func (e *fileExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) err
 	if err != nil {
 		return err
 	}
-	if e.isCompressed {
-		buf = compress(buf)
-	}
+	buf = e.compressor(buf)
 	return e.exporter(e, buf)
 }
 
@@ -94,9 +88,7 @@ func (e *fileExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	if err != nil {
 		return err
 	}
-	if e.isCompressed {
-		buf = compress(buf)
-	}
+	buf = e.compressor(buf)
 	return e.exporter(e, buf)
 }
 
@@ -138,13 +130,8 @@ func (e *fileExporter) Shutdown(context.Context) error {
 }
 
 func buildExportFunc(cfg *Config) func(e *fileExporter, buf []byte) error {
-	if cfg.FormatType == formatTypeProto {
+	if cfg.FormatType == formatTypeProto || cfg.Compression != defaultCompression {
 		return exportMessageAsBuffer
 	}
 	return exportMessageAsLine
-}
-
-// compress a buffer.
-func compress(src []byte) []byte {
-	return encoder.EncodeAll(src, make([]byte, 0, len(src)))
 }

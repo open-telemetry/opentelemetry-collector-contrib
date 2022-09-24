@@ -74,7 +74,7 @@ func (cfg *Config) Validate() error {
 	if cfg.FormatType != defaultFormatType && cfg.FormatType != formatTypeProto {
 		return errors.New("format type is not supported")
 	}
-	if cfg.Compression != defaultCompression && cfg.Compression != CompressionZSTD {
+	if cfg.Compression != defaultCompression && cfg.Compression != compressionZSTD {
 		return errors.New("compression is not supported")
 	}
 	return nil

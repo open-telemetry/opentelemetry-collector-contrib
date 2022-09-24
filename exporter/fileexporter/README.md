@@ -35,7 +35,7 @@ The following settings are optional:
   - localtime : [default: false (use UTC)] whether or not the timestamps in backup files is formatted according to the host's local time.
 
 - `format`[default: json]: define the data format of encoded telemetry data. The setting can be overridden with `proto`.
-- `compression`[default = 'none']: the compression used when exporting telemetry data to file. The options are: `none` and `zstd`
+- `compression`[default = none]: the compression algorithm used when exporting telemetry data to file. The options are: `none` and `zstd`
 
 ## File Rotation
 
@@ -47,15 +47,20 @@ in the name immediately before the file's extension (or the end of the filename 
 
 For example, if your `path` is `data.json` and rotation is triggered, this file will be renamed to `data-2022-09-14T05-02-14.173.json`, and a new telemetry file created with `data.json`
 
+## File Compression
+Telemetry data is compressed according to the `compression` setting.
+`fileexporter` does not compress data by default. 
 
+Currently, `fileexporter` support the `zstd` compression algorithm, and we will support more compression algorithms in the future.
 
-##  File Format and File Compression
+##  File Format 
 
-Telemetry data is encoded according to the `format` setting. If `compression` is true, the data will be compressed.
+Telemetry data is encoded according to the `format` setting and then written to the file.
 
-When `format` is json and `compression` is false , telemetry data is written to file in JSON format. Each line in the file is a JSON object.
+When `format` is json and `compression` is none , telemetry data is written to file in JSON format. Each line in the file is a JSON object.
 
 Besides, each encoded object is preceded by 4 bytes (an unsigned 32 bit integer) which represent the number of bytes contained in the encoded object.When we need read the messages back in, we read the size, then read the bytes into a separate buffer, then parse from that buffer.
+
 
 ## Example:
 
@@ -79,7 +84,7 @@ exporters:
       max_backups: 3
       localtime: true
     format: proto
-    compression: true
+    compression: zstd
 ```
 
 

@@ -35,6 +35,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
+var decoders = map[string]func([]byte) ([]byte, error){
+	defaultCompression: func(src []byte) ([]byte, error) {
+		return src, nil
+	},
+	compressionZSTD: decompress,
+}
+
 func TestFileTracesExporter(t *testing.T) {
 	type args struct {
 		conf        *Config
@@ -48,8 +55,9 @@ func TestFileTracesExporter(t *testing.T) {
 			name: "json: default configuration",
 			args: args{
 				conf: &Config{
-					Path:       tempFileName(t),
-					FormatType: "json",
+					Path:        tempFileName(t),
+					FormatType:  "json",
+					Compression: defaultCompression,
 				},
 				unmarshaler: ptrace.NewJSONUnmarshaler(),
 			},
@@ -58,8 +66,9 @@ func TestFileTracesExporter(t *testing.T) {
 			name: "json: compression configuration",
 			args: args{
 				conf: &Config{
-					Path:       tempFileName(t),
-					FormatType: "json",
+					Path:        tempFileName(t),
+					FormatType:  "json",
+					Compression: compressionZSTD,
 				},
 				unmarshaler: ptrace.NewJSONUnmarshaler(),
 			},
@@ -68,8 +77,9 @@ func TestFileTracesExporter(t *testing.T) {
 			name: "Proto: default configuration",
 			args: args{
 				conf: &Config{
-					Path:       tempFileName(t),
-					FormatType: "proto",
+					Path:        tempFileName(t),
+					FormatType:  "proto",
+					Compression: defaultCompression,
 				},
 				unmarshaler: ptrace.NewProtoUnmarshaler(),
 			},
@@ -78,8 +88,9 @@ func TestFileTracesExporter(t *testing.T) {
 			name: "Proto: compression configuration",
 			args: args{
 				conf: &Config{
-					Path:       tempFileName(t),
-					FormatType: "proto",
+					Path:        tempFileName(t),
+					FormatType:  "proto",
+					Compression: compressionZSTD,
 				},
 				unmarshaler: ptrace.NewProtoUnmarshaler(),
 			},
@@ -100,6 +111,8 @@ func TestFileTracesExporter(t *testing.T) {
 				},
 				tracesMarshaler: tracesMarshalers[conf.FormatType],
 				exporter:        buildExportFunc(conf),
+				compression:     conf.Compression,
+				compressor:      compressFuncs[conf.Compression],
 			}
 			require.NotNil(t, fe)
 
@@ -115,7 +128,7 @@ func TestFileTracesExporter(t *testing.T) {
 			br := bufio.NewReader(fi)
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
-					if fe.formatType == defaultFormatType && !fe.isCompressed {
+					if fe.formatType == defaultFormatType && fe.compression == defaultCompression {
 						return readJSONMessage(br)
 					}
 					return readMessageFromStream(br)
@@ -124,6 +137,9 @@ func TestFileTracesExporter(t *testing.T) {
 				if isEnd {
 					break
 				}
+				decoder := decoders[fe.compression]
+				buf, err = decoder(buf)
+				assert.NoError(t, err)
 				got, err := tt.args.unmarshaler.UnmarshalTraces(buf)
 				assert.NoError(t, err)
 				assert.EqualValues(t, td, got)
@@ -139,6 +155,8 @@ func TestFileTracesExporterError(t *testing.T) {
 		formatType:      defaultFormatType,
 		exporter:        exportMessageAsLine,
 		tracesMarshaler: tracesMarshalers[defaultFormatType],
+		compression:     defaultCompression,
+		compressor:      noneCompress,
 	}
 	require.NotNil(t, fe)
 
@@ -161,8 +179,9 @@ func TestFileMetricsExporter(t *testing.T) {
 			name: "json: default configuration",
 			args: args{
 				conf: &Config{
-					Path:       tempFileName(t),
-					FormatType: "json",
+					Path:        tempFileName(t),
+					FormatType:  "json",
+					Compression: defaultCompression,
 				},
 				unmarshaler: pmetric.NewJSONUnmarshaler(),
 			},
@@ -171,8 +190,9 @@ func TestFileMetricsExporter(t *testing.T) {
 			name: "json: compression configuration",
 			args: args{
 				conf: &Config{
-					Path:       tempFileName(t),
-					FormatType: "json",
+					Path:        tempFileName(t),
+					FormatType:  "json",
+					Compression: compressionZSTD,
 				},
 				unmarshaler: pmetric.NewJSONUnmarshaler(),
 			},
@@ -181,8 +201,9 @@ func TestFileMetricsExporter(t *testing.T) {
 			name: "Proto: default configuration",
 			args: args{
 				conf: &Config{
-					Path:       tempFileName(t),
-					FormatType: "proto",
+					Path:        tempFileName(t),
+					FormatType:  "proto",
+					Compression: defaultCompression,
 				},
 				unmarshaler: pmetric.NewProtoUnmarshaler(),
 			},
@@ -191,8 +212,9 @@ func TestFileMetricsExporter(t *testing.T) {
 			name: "Proto: compression configuration",
 			args: args{
 				conf: &Config{
-					Path:       tempFileName(t),
-					FormatType: "proto",
+					Path:        tempFileName(t),
+					FormatType:  "proto",
+					Compression: compressionZSTD,
 				},
 				unmarshaler: pmetric.NewProtoUnmarshaler(),
 			},
@@ -213,6 +235,8 @@ func TestFileMetricsExporter(t *testing.T) {
 				},
 				metricsMarshaler: metricsMarshalers[conf.FormatType],
 				exporter:         buildExportFunc(conf),
+				compression:      conf.Compression,
+				compressor:       compressFuncs[conf.Compression],
 			}
 			require.NotNil(t, fe)
 
@@ -228,7 +252,8 @@ func TestFileMetricsExporter(t *testing.T) {
 			br := bufio.NewReader(fi)
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
-					if fe.formatType == defaultFormatType && !fe.isCompressed {
+					if fe.formatType == defaultFormatType &&
+						fe.compression == defaultCompression {
 						return readJSONMessage(br)
 					}
 					return readMessageFromStream(br)
@@ -237,6 +262,9 @@ func TestFileMetricsExporter(t *testing.T) {
 				if isEnd {
 					break
 				}
+				decoder := decoders[fe.compression]
+				buf, err = decoder(buf)
+				assert.NoError(t, err)
 				got, err := tt.args.unmarshaler.UnmarshalMetrics(buf)
 				assert.NoError(t, err)
 				assert.EqualValues(t, md, got)
@@ -253,6 +281,8 @@ func TestFileMetricsExporterError(t *testing.T) {
 		formatType:       defaultFormatType,
 		exporter:         exportMessageAsLine,
 		metricsMarshaler: metricsMarshalers[defaultFormatType],
+		compression:      defaultCompression,
+		compressor:       noneCompress,
 	}
 	require.NotNil(t, fe)
 
@@ -275,8 +305,9 @@ func TestFileLogsExporter(t *testing.T) {
 			name: "json: default configuration",
 			args: args{
 				conf: &Config{
-					Path:       tempFileName(t),
-					FormatType: "json",
+					Path:        tempFileName(t),
+					FormatType:  "json",
+					Compression: defaultCompression,
 				},
 				unmarshaler: plog.NewJSONUnmarshaler(),
 			},
@@ -285,8 +316,9 @@ func TestFileLogsExporter(t *testing.T) {
 			name: "json: compression configuration",
 			args: args{
 				conf: &Config{
-					Path:       tempFileName(t),
-					FormatType: "json",
+					Path:        tempFileName(t),
+					FormatType:  "json",
+					Compression: compressionZSTD,
 				},
 				unmarshaler: plog.NewJSONUnmarshaler(),
 			},
@@ -295,8 +327,9 @@ func TestFileLogsExporter(t *testing.T) {
 			name: "Proto: default configuration",
 			args: args{
 				conf: &Config{
-					Path:       tempFileName(t),
-					FormatType: "proto",
+					Path:        tempFileName(t),
+					FormatType:  "proto",
+					Compression: defaultCompression,
 				},
 				unmarshaler: plog.NewProtoUnmarshaler(),
 			},
@@ -305,8 +338,9 @@ func TestFileLogsExporter(t *testing.T) {
 			name: "Proto: compression configuration",
 			args: args{
 				conf: &Config{
-					Path:       tempFileName(t),
-					FormatType: "proto",
+					Path:        tempFileName(t),
+					FormatType:  "proto",
+					Compression: compressionZSTD,
 				},
 				unmarshaler: plog.NewProtoUnmarshaler(),
 			},
@@ -327,6 +361,8 @@ func TestFileLogsExporter(t *testing.T) {
 				},
 				logsMarshaler: logsMarshalers[conf.FormatType],
 				exporter:      buildExportFunc(conf),
+				compression:   conf.Compression,
+				compressor:    compressFuncs[conf.Compression],
 			}
 			require.NotNil(t, fe)
 
@@ -342,7 +378,7 @@ func TestFileLogsExporter(t *testing.T) {
 			br := bufio.NewReader(fi)
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
-					if fe.formatType == defaultFormatType && !fe.isCompressed {
+					if fe.formatType == defaultFormatType && fe.compression == defaultCompression {
 						return readJSONMessage(br)
 					}
 					return readMessageFromStream(br)
@@ -351,6 +387,9 @@ func TestFileLogsExporter(t *testing.T) {
 				if isEnd {
 					break
 				}
+				decoder := decoders[fe.compression]
+				buf, err = decoder(buf)
+				assert.NoError(t, err)
 				got, err := tt.args.unmarshaler.UnmarshalLogs(buf)
 				assert.NoError(t, err)
 				assert.EqualValues(t, ld, got)
@@ -366,6 +405,8 @@ func TestFileLogsExporterErrors(t *testing.T) {
 		formatType:    defaultFormatType,
 		exporter:      exportMessageAsLine,
 		logsMarshaler: logsMarshalers[defaultFormatType],
+		compression:   defaultCompression,
+		compressor:    noneCompress,
 	}
 	require.NotNil(t, fe)
 
@@ -490,7 +531,7 @@ func TestConcurrentlyCompress(t *testing.T) {
 		if err != nil {
 			return
 		}
-		ctd = compress(buf)
+		ctd = zstdCompress(buf)
 	}()
 	go func() {
 		defer wg.Done()
@@ -498,7 +539,7 @@ func TestConcurrentlyCompress(t *testing.T) {
 		if err != nil {
 			return
 		}
-		cmd = compress(buf)
+		cmd = zstdCompress(buf)
 	}()
 	go func() {
 		defer wg.Done()
@@ -506,7 +547,7 @@ func TestConcurrentlyCompress(t *testing.T) {
 		if err != nil {
 			return
 		}
-		cld = compress(buf)
+		cld = zstdCompress(buf)
 	}()
 	wg.Wait()
 	buf, err := decompress(ctd)
