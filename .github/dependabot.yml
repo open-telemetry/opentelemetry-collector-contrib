@@ -15,10 +15,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/cmd/chloggen"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/cmd/configschema"
     schedule:
       interval: "weekly"
@@ -391,7 +387,7 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/pkg/telemetryquerylanguage"
+    directory: "/pkg/ottl"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

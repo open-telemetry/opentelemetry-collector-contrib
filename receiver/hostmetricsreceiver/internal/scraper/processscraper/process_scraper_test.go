@@ -83,8 +83,8 @@ func TestScrape(t *testing.T) {
 		},
 	}
 
-	const bootTime = 100
-	const expectedStartTime = 100 * 1e9
+	const createTime = 100
+	const expectedStartTime = 100 * 1e6
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
@@ -96,7 +96,7 @@ func TestScrape(t *testing.T) {
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}
-			scraper.bootTime = func() (uint64, error) { return bootTime, nil }
+			scraper.getProcessCreateTime = func(p processHandle) (int64, error) { return createTime, nil }
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
 			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)

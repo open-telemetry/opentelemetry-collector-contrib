@@ -224,7 +224,12 @@ type DocumentStats struct {
 }
 
 type BasicCacheInfo struct {
+	TotalCount     int64 `json:"total_count"`
+	HitCount       int64 `json:"hit_count"`
+	MissCount      int64 `json:"miss_count"`
 	Evictions      int64 `json:"evictions"`
+	CacheSize      int64 `json:"cache_size"`
+	CacheCount     int64 `json:"cache_count"`
 	MemorySizeInBy int64 `json:"memory_size_in_bytes"`
 	MemorySize     int64 `json:"memory_size"`
 }

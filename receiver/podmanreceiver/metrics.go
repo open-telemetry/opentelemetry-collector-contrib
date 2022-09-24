@@ -39,10 +39,10 @@ func containerStatsToMetrics(ts time.Time, container container, stats *container
 	rs := md.ResourceMetrics().AppendEmpty()
 
 	resourceAttr := rs.Resource().Attributes()
-	resourceAttr.UpsertString(conventions.AttributeContainerRuntime, "podman")
-	resourceAttr.UpsertString(conventions.AttributeContainerName, stats.Name)
-	resourceAttr.UpsertString(conventions.AttributeContainerID, stats.ContainerID)
-	resourceAttr.UpsertString(conventions.AttributeContainerImageName, container.Image)
+	resourceAttr.PutString(conventions.AttributeContainerRuntime, "podman")
+	resourceAttr.PutString(conventions.AttributeContainerName, stats.Name)
+	resourceAttr.PutString(conventions.AttributeContainerID, stats.ContainerID)
+	resourceAttr.PutString(conventions.AttributeContainerImageName, container.Image)
 
 	ms := rs.ScopeMetrics().AppendEmpty().Metrics()
 	appendIOMetrics(ms, stats, pbts)
@@ -104,7 +104,7 @@ func sum(ilm pmetric.MetricSlice, metricName string, unit string, points []point
 	for _, pt := range points {
 		dataPoint := dataPoints.AppendEmpty()
 		dataPoint.SetTimestamp(ts)
-		dataPoint.SetIntVal(int64(pt.intVal))
+		dataPoint.SetIntValue(int64(pt.intVal))
 		setDataPointAttributes(dataPoint, pt.attributes)
 	}
 }
@@ -120,7 +120,7 @@ func gaugeI(ms pmetric.MetricSlice, metricName string, unit string, points []poi
 	for _, pt := range points {
 		dataPoint := dataPoints.AppendEmpty()
 		dataPoint.SetTimestamp(ts)
-		dataPoint.SetIntVal(int64(pt.intVal))
+		dataPoint.SetIntValue(int64(pt.intVal))
 		setDataPointAttributes(dataPoint, pt.attributes)
 	}
 }
@@ -130,13 +130,13 @@ func gaugeF(ms pmetric.MetricSlice, metricName string, unit string, points []poi
 	for _, pt := range points {
 		dataPoint := dataPoints.AppendEmpty()
 		dataPoint.SetTimestamp(ts)
-		dataPoint.SetDoubleVal(pt.doubleVal)
+		dataPoint.SetDoubleValue(pt.doubleVal)
 		setDataPointAttributes(dataPoint, pt.attributes)
 	}
 }
 
 func setDataPointAttributes(dataPoint pmetric.NumberDataPoint, attributes map[string]string) {
 	for k, v := range attributes {
-		dataPoint.Attributes().UpsertString(k, v)
+		dataPoint.Attributes().PutString(k, v)
 	}
 }

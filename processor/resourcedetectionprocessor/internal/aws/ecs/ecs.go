@@ -71,36 +71,36 @@ func (d *Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 	}
 
 	attr := res.Attributes()
-	attr.UpsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attr.UpsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
-	attr.UpsertString(conventions.AttributeAWSECSTaskARN, tmdeResp.TaskARN)
-	attr.UpsertString(conventions.AttributeAWSECSTaskFamily, tmdeResp.Family)
-	attr.UpsertString(conventions.AttributeAWSECSTaskRevision, tmdeResp.Revision)
+	attr.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attr.PutString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
+	attr.PutString(conventions.AttributeAWSECSTaskARN, tmdeResp.TaskARN)
+	attr.PutString(conventions.AttributeAWSECSTaskFamily, tmdeResp.Family)
+	attr.PutString(conventions.AttributeAWSECSTaskRevision, tmdeResp.Revision)
 
 	region, account := parseRegionAndAccount(tmdeResp.TaskARN)
 	if account != "" {
-		attr.UpsertString(conventions.AttributeCloudAccountID, account)
+		attr.PutString(conventions.AttributeCloudAccountID, account)
 	}
 
 	if region != "" {
-		attr.UpsertString(conventions.AttributeCloudRegion, region)
+		attr.PutString(conventions.AttributeCloudRegion, region)
 	}
 
 	// TMDE returns the cluster short name or ARN, so we need to construct the ARN if necessary
-	attr.UpsertString(conventions.AttributeAWSECSClusterARN, constructClusterArn(tmdeResp.Cluster, region, account))
+	attr.PutString(conventions.AttributeAWSECSClusterARN, constructClusterArn(tmdeResp.Cluster, region, account))
 
 	// The Availability Zone is not available in all Fargate runtimes
 	if tmdeResp.AvailabilityZone != "" {
-		attr.UpsertString(conventions.AttributeCloudAvailabilityZone, tmdeResp.AvailabilityZone)
+		attr.PutString(conventions.AttributeCloudAvailabilityZone, tmdeResp.AvailabilityZone)
 	}
 
 	// The launch type and log data attributes are only available in TMDE v4
 	switch lt := strings.ToLower(tmdeResp.LaunchType); lt {
 	case "ec2":
-		attr.UpsertString(conventions.AttributeAWSECSLaunchtype, "ec2")
+		attr.PutString(conventions.AttributeAWSECSLaunchtype, "ec2")
 
 	case "fargate":
-		attr.UpsertString(conventions.AttributeAWSECSLaunchtype, "fargate")
+		attr.PutString(conventions.AttributeAWSECSLaunchtype, "fargate")
 	}
 
 	selfMetaData, err := d.provider.FetchContainerMetadata()
@@ -153,10 +153,10 @@ func addValidLogData(containers []ecsutil.ContainerMetadata, self *ecsutil.Conta
 			self.DockerID != container.DockerID &&
 			logData != (ecsutil.LogOptions{}) {
 			if !initialized {
-				logGroupNames = dest.UpsertEmptySlice(conventions.AttributeAWSLogGroupNames)
-				logGroupArns = dest.UpsertEmptySlice(conventions.AttributeAWSLogGroupARNs)
-				logStreamNames = dest.UpsertEmptySlice(conventions.AttributeAWSLogStreamNames)
-				logStreamArns = dest.UpsertEmptySlice(conventions.AttributeAWSLogStreamARNs)
+				logGroupNames = dest.PutEmptySlice(conventions.AttributeAWSLogGroupNames)
+				logGroupArns = dest.PutEmptySlice(conventions.AttributeAWSLogGroupARNs)
+				logStreamNames = dest.PutEmptySlice(conventions.AttributeAWSLogStreamNames)
+				logStreamArns = dest.PutEmptySlice(conventions.AttributeAWSLogStreamARNs)
 				initialized = true
 			}
 			logGroupNames.AppendEmpty().SetStringVal(logData.LogGroup)

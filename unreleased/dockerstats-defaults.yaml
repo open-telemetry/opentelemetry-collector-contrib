@@ -1,0 +1,5 @@
+change_type: breaking
+component: dockerstatsreceiver
+note: "For V2 scraper implementation, change the defaults from emitting everything to a sensible set of defaults."
+issues: [9794, 14093]
+subtext: "This is only breaking if you have explicitly enabled the featuregate `receiver.dockerstats.useScraperV2`."

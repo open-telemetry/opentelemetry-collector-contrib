@@ -242,7 +242,7 @@ func (p *processorImp) tracesToMetrics(ctx context.Context, traces ptrace.Traces
 		return err
 	}
 
-	if err = p.metricsExporter.ConsumeMetrics(ctx, *m); err != nil {
+	if err = p.metricsExporter.ConsumeMetrics(ctx, m); err != nil {
 		return err
 	}
 
@@ -251,17 +251,17 @@ func (p *processorImp) tracesToMetrics(ctx context.Context, traces ptrace.Traces
 
 // buildMetrics collects the computed raw metrics data, builds the metrics object and
 // writes the raw metrics data into the metrics object.
-func (p *processorImp) buildMetrics() (*pmetric.Metrics, error) {
+func (p *processorImp) buildMetrics() (pmetric.Metrics, error) {
 	m := pmetric.NewMetrics()
 	ilm := m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Scope().SetName("spanmetricsprocessor")
 
 	if err := p.collectCallMetrics(ilm); err != nil {
-		return nil, err
+		return pmetric.Metrics{}, err
 	}
 
 	if err := p.collectLatencyMetrics(ilm); err != nil {
-		return nil, err
+		return pmetric.Metrics{}, err
 	}
 
 	p.metricKeyToDimensions.RemoveEvictedItems()
@@ -272,7 +272,7 @@ func (p *processorImp) buildMetrics() (*pmetric.Metrics, error) {
 	}
 	p.resetExemplarData()
 
-	return &m, nil
+	return m, nil
 }
 
 // collectLatencyMetrics collects the raw latency metrics, writing the data
@@ -319,7 +319,7 @@ func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) error {
 		dpCalls := mCalls.Sum().DataPoints().AppendEmpty()
 		dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 		dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		dpCalls.SetIntVal(p.callSum[key])
+		dpCalls.SetIntValue(p.callSum[key])
 
 		dimensions, err := p.getDimensionsByMetricKey(key)
 		if err != nil {
@@ -440,13 +440,13 @@ func (p *processorImp) updateLatencyMetrics(key metricKey, latency float64, inde
 
 func (p *processorImp) buildDimensionKVs(serviceName string, span ptrace.Span, optionalDims []Dimension, resourceAttrs pcommon.Map) pcommon.Map {
 	dims := pcommon.NewMap()
-	dims.UpsertString(serviceNameKey, serviceName)
-	dims.UpsertString(operationKey, span.Name())
-	dims.UpsertString(spanKindKey, span.Kind().String())
-	dims.UpsertString(statusCodeKey, span.Status().Code().String())
+	dims.PutString(serviceNameKey, serviceName)
+	dims.PutString(operationKey, span.Name())
+	dims.PutString(spanKindKey, span.Kind().String())
+	dims.PutString(statusCodeKey, span.Status().Code().String())
 	for _, d := range optionalDims {
 		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
-			v.CopyTo(dims.UpsertEmpty(d.Name))
+			v.CopyTo(dims.PutEmpty(d.Name))
 		}
 	}
 	return dims
@@ -566,9 +566,9 @@ func setLatencyExemplars(exemplarsData []exemplarData, timestamp pcommon.Timesta
 			continue
 		}
 
-		exemplar.SetDoubleVal(value)
+		exemplar.SetDoubleValue(value)
 		exemplar.SetTimestamp(timestamp)
-		exemplar.FilteredAttributes().UpsertString(traceIDKey, traceID.HexString())
+		exemplar.FilteredAttributes().PutString(traceIDKey, traceID.HexString())
 	}
 
 	es.CopyTo(exemplars)

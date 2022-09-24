@@ -63,7 +63,7 @@ func metricsData(
 	rs.SetSchemaUrl(conventions.SchemaURL)
 	rsAttr := rs.Resource().Attributes()
 	for k, v := range rLabels {
-		rsAttr.UpsertString(k, v)
+		rsAttr.PutString(k, v)
 	}
 	rsAttr.Sort()
 
@@ -88,9 +88,9 @@ func metricsData(
 			dp := dps.AppendEmpty()
 			dp.SetTimestamp(ts)
 			if m.mtype == MetricTypeDoubleGauge {
-				dp.SetDoubleVal(v.doubleValue)
+				dp.SetDoubleValue(v.doubleValue)
 			} else {
-				dp.SetIntVal(v.value)
+				dp.SetIntValue(v.value)
 			}
 			populateAttributes(dp.Attributes(), m.labelKeys, v.labelValues)
 		}

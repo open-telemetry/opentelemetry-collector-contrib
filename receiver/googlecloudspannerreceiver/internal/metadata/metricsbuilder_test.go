@@ -85,13 +85,13 @@ func TestNewMetricsFromDataPointBuilder(t *testing.T) {
 
 func TestMetricsFromDataPointBuilder_Build(t *testing.T) {
 	testCases := map[string]struct {
-		metricsDataType pmetric.MetricDataType
+		metricsDataType pmetric.MetricType
 		expectedError   error
 	}{
-		"Gauge":                      {pmetric.MetricDataTypeGauge, nil},
-		"Sum":                        {pmetric.MetricDataTypeSum, nil},
-		"Gauge with filtering error": {pmetric.MetricDataTypeGauge, errors.New("filtering error")},
-		"Sum with filtering error":   {pmetric.MetricDataTypeSum, errors.New("filtering error")},
+		"Gauge":                      {pmetric.MetricTypeGauge, nil},
+		"Sum":                        {pmetric.MetricTypeSum, nil},
+		"Gauge with filtering error": {pmetric.MetricTypeGauge, errors.New("filtering error")},
+		"Sum with filtering error":   {pmetric.MetricTypeSum, errors.New("filtering error")},
 	}
 
 	for name, testCase := range testCases {
@@ -101,7 +101,7 @@ func TestMetricsFromDataPointBuilder_Build(t *testing.T) {
 	}
 }
 
-func testMetricsFromDataPointBuilderBuild(t *testing.T, metricDataType pmetric.MetricDataType, expectedError error) {
+func testMetricsFromDataPointBuilderBuild(t *testing.T, metricDataType pmetric.MetricType, expectedError error) {
 	filterResolver := &mockItemFilterResolver{}
 	dataForTesting := generateTestData(metricDataType)
 	builder := &metricsFromDataPointBuilder{filterResolver: filterResolver}
@@ -142,11 +142,11 @@ func testMetricsFromDataPointBuilderBuild(t *testing.T, metricDataType pmetric.M
 		for dataPointIndex, expectedDataPoint := range expectedDataPoints {
 			assert.Equal(t, expectedDataPoint.metricName, ilMetric.Name())
 			assert.Equal(t, expectedDataPoint.metricValue.Metadata().Unit(), ilMetric.Unit())
-			assert.Equal(t, expectedDataPoint.metricValue.Metadata().DataType().MetricDataType(), ilMetric.DataType())
+			assert.Equal(t, expectedDataPoint.metricValue.Metadata().DataType().MetricType(), ilMetric.Type())
 
 			var dataPoint pmetric.NumberDataPoint
 
-			if metricDataType == pmetric.MetricDataTypeGauge {
+			if metricDataType == pmetric.MetricTypeGauge {
 				assert.NotNil(t, ilMetric.Gauge())
 				assert.Equal(t, len(expectedDataPoints), ilMetric.Gauge().DataPoints().Len())
 				dataPoint = ilMetric.Gauge().DataPoints().At(dataPointIndex)
@@ -293,7 +293,7 @@ func TestMetricsFromDataPointBuilder_Shutdown(t *testing.T) {
 	}
 }
 
-func generateTestData(metricDataType pmetric.MetricDataType) testData {
+func generateTestData(metricDataType pmetric.MetricType) testData {
 	timestamp1 := time.Now().UTC()
 	timestamp2 := timestamp1.Add(time.Minute)
 	labelValues := allPossibleLabelValues()
@@ -312,14 +312,14 @@ func generateTestData(metricDataType pmetric.MetricDataType) testData {
 
 	expectedGroupingKeys := []MetricsDataPointKey{
 		{
-			MetricName:     metricName1,
-			MetricDataType: metricValues[0].Metadata().DataType(),
-			MetricUnit:     metricValues[0].Metadata().Unit(),
+			MetricName: metricName1,
+			MetricType: metricValues[0].Metadata().DataType(),
+			MetricUnit: metricValues[0].Metadata().Unit(),
 		},
 		{
-			MetricName:     metricName2,
-			MetricDataType: metricValues[0].Metadata().DataType(),
-			MetricUnit:     metricValues[0].Metadata().Unit(),
+			MetricName: metricName2,
+			MetricType: metricValues[0].Metadata().DataType(),
+			MetricUnit: metricValues[0].Metadata().Unit(),
 		},
 	}
 

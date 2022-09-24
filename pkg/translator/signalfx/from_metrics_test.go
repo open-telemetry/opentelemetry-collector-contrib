@@ -40,15 +40,15 @@ func Test_FromMetrics(t *testing.T) {
 		"k1": "v1",
 	}
 	attrMap := pcommon.NewMap()
-	attrMap.UpsertString("k0", "v0")
-	attrMap.UpsertString("k1", "v1")
+	attrMap.PutString("k0", "v0")
+	attrMap.PutString("k1", "v1")
 
 	ts := pcommon.NewTimestampFromTime(time.Unix(unixSecs, unixNSecs))
 
 	const doubleVal = 1234.5678
 	initDoublePt := func(dp pmetric.NumberDataPoint) {
 		dp.SetTimestamp(ts)
-		dp.SetDoubleVal(doubleVal)
+		dp.SetDoubleValue(doubleVal)
 	}
 
 	initDoublePtWithLabels := func(dp pmetric.NumberDataPoint) {
@@ -59,7 +59,7 @@ func Test_FromMetrics(t *testing.T) {
 	const int64Val = int64(123)
 	initInt64Pt := func(dp pmetric.NumberDataPoint) {
 		dp.SetTimestamp(ts)
-		dp.SetIntVal(int64Val)
+		dp.SetIntValue(int64Val)
 	}
 
 	initInt64PtWithLabels := func(dp pmetric.NumberDataPoint) {
@@ -201,10 +201,10 @@ func Test_FromMetrics(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().UpsertString("k_r0", "v_r0")
-				res.Attributes().UpsertString("k_r1", "v_r1")
-				res.Attributes().UpsertString("k_n0", "v_n0")
-				res.Attributes().UpsertString("k_n1", "v_n1")
+				res.Attributes().PutString("k_r0", "v_r0")
+				res.Attributes().PutString("k_r1", "v_r1")
+				res.Attributes().PutString("k_n0", "v_n0")
+				res.Attributes().PutString("k_n1", "v_n1")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(2)

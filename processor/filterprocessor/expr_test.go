@@ -40,14 +40,14 @@ const filteredAttrKey = "pt-label-key-1"
 var filteredAttrVal = pcommon.NewValueString("pt-label-val-1")
 
 func TestExprError(t *testing.T) {
-	testMatchError(t, pmetric.MetricDataTypeGauge, pmetric.NumberDataPointValueTypeInt)
-	testMatchError(t, pmetric.MetricDataTypeGauge, pmetric.NumberDataPointValueTypeDouble)
-	testMatchError(t, pmetric.MetricDataTypeSum, pmetric.NumberDataPointValueTypeInt)
-	testMatchError(t, pmetric.MetricDataTypeSum, pmetric.NumberDataPointValueTypeDouble)
-	testMatchError(t, pmetric.MetricDataTypeHistogram, pmetric.NumberDataPointValueTypeNone)
+	testMatchError(t, pmetric.MetricTypeGauge, pmetric.NumberDataPointValueTypeInt)
+	testMatchError(t, pmetric.MetricTypeGauge, pmetric.NumberDataPointValueTypeDouble)
+	testMatchError(t, pmetric.MetricTypeSum, pmetric.NumberDataPointValueTypeInt)
+	testMatchError(t, pmetric.MetricTypeSum, pmetric.NumberDataPointValueTypeDouble)
+	testMatchError(t, pmetric.MetricTypeHistogram, pmetric.NumberDataPointValueTypeNone)
 }
 
-func testMatchError(t *testing.T, mdType pmetric.MetricDataType, mvType pmetric.NumberDataPointValueType) {
+func testMatchError(t *testing.T, mdType pmetric.MetricType, mvType pmetric.NumberDataPointValueType) {
 	// the "foo" expr expression will cause expr Run() to return an error
 	proc, next, logs := testProcessor(t, nil, []string{"foo"})
 	pdm := testData("", 1, mdType, mvType)
@@ -60,14 +60,14 @@ func testMatchError(t *testing.T, mdType pmetric.MetricDataType, mvType pmetric.
 }
 
 func TestExprProcessor(t *testing.T) {
-	testFilter(t, pmetric.MetricDataTypeGauge, pmetric.NumberDataPointValueTypeInt)
-	testFilter(t, pmetric.MetricDataTypeGauge, pmetric.NumberDataPointValueTypeDouble)
-	testFilter(t, pmetric.MetricDataTypeSum, pmetric.NumberDataPointValueTypeInt)
-	testFilter(t, pmetric.MetricDataTypeSum, pmetric.NumberDataPointValueTypeDouble)
-	testFilter(t, pmetric.MetricDataTypeHistogram, pmetric.NumberDataPointValueTypeNone)
+	testFilter(t, pmetric.MetricTypeGauge, pmetric.NumberDataPointValueTypeInt)
+	testFilter(t, pmetric.MetricTypeGauge, pmetric.NumberDataPointValueTypeDouble)
+	testFilter(t, pmetric.MetricTypeSum, pmetric.NumberDataPointValueTypeInt)
+	testFilter(t, pmetric.MetricTypeSum, pmetric.NumberDataPointValueTypeDouble)
+	testFilter(t, pmetric.MetricTypeHistogram, pmetric.NumberDataPointValueTypeNone)
 }
 
-func testFilter(t *testing.T, mdType pmetric.MetricDataType, mvType pmetric.NumberDataPointValueType) {
+func testFilter(t *testing.T, mdType pmetric.MetricType, mvType pmetric.NumberDataPointValueType) {
 	format := "MetricName == '%s' && Label('%s') == '%s'"
 	q := fmt.Sprintf(format, filteredMetric, filteredAttrKey, filteredAttrVal.StringVal())
 
@@ -91,19 +91,19 @@ func testFilter(t *testing.T, mdType pmetric.MetricDataType, mvType pmetric.Numb
 				for k := 0; k < metricSlice.Len(); k++ {
 					metric := metricSlice.At(k)
 					if metric.Name() == filteredMetric {
-						dt := metric.DataType()
+						dt := metric.Type()
 						switch dt {
-						case pmetric.MetricDataTypeGauge:
+						case pmetric.MetricTypeGauge:
 							pts := metric.Gauge().DataPoints()
 							for l := 0; l < pts.Len(); l++ {
 								assertFiltered(t, pts.At(l).Attributes())
 							}
-						case pmetric.MetricDataTypeSum:
+						case pmetric.MetricTypeSum:
 							pts := metric.Sum().DataPoints()
 							for l := 0; l < pts.Len(); l++ {
 								assertFiltered(t, pts.At(l).Attributes())
 							}
-						case pmetric.MetricDataTypeHistogram:
+						case pmetric.MetricTypeHistogram:
 							pts := metric.Histogram().DataPoints()
 							for l := 0; l < pts.Len(); l++ {
 								assertFiltered(t, pts.At(l).Attributes())
@@ -176,7 +176,7 @@ func exprConfig(factory component.ProcessorFactory, include []string, exclude []
 	return cfg
 }
 
-func testDataSlice(size int, mdType pmetric.MetricDataType, mvType pmetric.NumberDataPointValueType) []pmetric.Metrics {
+func testDataSlice(size int, mdType pmetric.MetricType, mvType pmetric.NumberDataPointValueType) []pmetric.Metrics {
 	var out []pmetric.Metrics
 	for i := 0; i < 16; i++ {
 		out = append(out, testData(fmt.Sprintf("p%d_", i), size, mdType, mvType))
@@ -184,7 +184,7 @@ func testDataSlice(size int, mdType pmetric.MetricDataType, mvType pmetric.Numbe
 	return out
 }
 
-func testData(prefix string, size int, mdType pmetric.MetricDataType, mvType pmetric.NumberDataPointValueType) pmetric.Metrics {
+func testData(prefix string, size int, mdType pmetric.MetricType, mvType pmetric.NumberDataPointValueType) pmetric.Metrics {
 	c := goldendataset.MetricsCfg{
 		MetricDescriptorType: mdType,
 		MetricValueType:      mvType,

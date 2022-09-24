@@ -65,17 +65,17 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 	initDoublePt := func(doublePt pmetric.NumberDataPoint) {
 		doublePt.SetTimestamp(ts)
-		doublePt.SetDoubleVal(doubleVal)
+		doublePt.SetDoubleValue(doubleVal)
 	}
 
 	initDoublePtWithLabels := func(doublePtWithLabels pmetric.NumberDataPoint) {
 		initDoublePt(doublePtWithLabels)
-		pcommon.NewMapFromRaw(labelMap).CopyTo(doublePtWithLabels.Attributes())
+		doublePtWithLabels.Attributes().FromRaw(labelMap)
 	}
 
 	initDoublePtWithLongLabels := func(doublePtWithLabels pmetric.NumberDataPoint) {
 		initDoublePt(doublePtWithLabels)
-		pcommon.NewMapFromRaw(longLabelMap).CopyTo(doublePtWithLabels.Attributes())
+		doublePtWithLabels.Attributes().FromRaw(longLabelMap)
 	}
 
 	differentLabelMap := map[string]interface{}{
@@ -84,17 +84,17 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	}
 	initDoublePtWithDifferentLabels := func(doublePtWithDifferentLabels pmetric.NumberDataPoint) {
 		initDoublePt(doublePtWithDifferentLabels)
-		pcommon.NewMapFromRaw(differentLabelMap).CopyTo(doublePtWithDifferentLabels.Attributes())
+		doublePtWithDifferentLabels.Attributes().FromRaw(differentLabelMap)
 	}
 
 	initInt64Pt := func(int64Pt pmetric.NumberDataPoint) {
 		int64Pt.SetTimestamp(ts)
-		int64Pt.SetIntVal(int64Val)
+		int64Pt.SetIntValue(int64Val)
 	}
 
 	initInt64PtWithLabels := func(int64PtWithLabels pmetric.NumberDataPoint) {
 		initInt64Pt(int64PtWithLabels)
-		pcommon.NewMapFromRaw(labelMap).CopyTo(int64PtWithLabels.Attributes())
+		int64PtWithLabels.Attributes().FromRaw(labelMap)
 	}
 
 	initHistDP := func(histDP pmetric.HistogramDataPoint) {
@@ -103,7 +103,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		histDP.SetSum(100.0)
 		histDP.ExplicitBounds().FromRaw([]float64{1, 2, 4})
 		histDP.BucketCounts().FromRaw([]uint64{4, 2, 3, 7})
-		pcommon.NewMapFromRaw(labelMap).CopyTo(histDP.Attributes())
+		histDP.Attributes().FromRaw(labelMap)
 	}
 	histDP := pmetric.NewHistogramDataPoint()
 	initHistDP(histDP)
@@ -112,7 +112,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		histDP.SetCount(2)
 		histDP.SetSum(10)
 		histDP.SetTimestamp(ts)
-		pcommon.NewMapFromRaw(labelMap).CopyTo(histDP.Attributes())
+		histDP.Attributes().FromRaw(labelMap)
 	}
 	histDPNoBuckets := pmetric.NewHistogramDataPoint()
 	initHistDPNoBuckets(histDPNoBuckets)
@@ -238,10 +238,10 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().UpsertString("k/r0", "vr0")
-				res.Attributes().UpsertString("k/r1", "vr1")
-				res.Attributes().UpsertString("k/n0", "vn0")
-				res.Attributes().UpsertString("k/n1", "vn1")
+				res.Attributes().PutString("k/r0", "vr0")
+				res.Attributes().PutString("k/r1", "vr1")
+				res.Attributes().PutString("k/n0", "vn0")
+				res.Attributes().PutString("k/n1", "vn1")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(2)
@@ -286,10 +286,10 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().UpsertString("k/r0", "vr0")
-				res.Attributes().UpsertString("k/r1", "vr1")
-				res.Attributes().UpsertString("k/n0", "vn0")
-				res.Attributes().UpsertString("k/n1", "vn1")
+				res.Attributes().PutString("k/r0", "vr0")
+				res.Attributes().PutString("k/r1", "vr1")
+				res.Attributes().PutString("k/n0", "vn0")
+				res.Attributes().PutString("k/n1", "vn1")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(5)
@@ -349,10 +349,10 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().UpsertString("k/r0", "vr0")
-				res.Attributes().UpsertString("k/r1", "vr1")
-				res.Attributes().UpsertString("k/n0", "vn0")
-				res.Attributes().UpsertString("k/n1", "vn1")
+				res.Attributes().PutString("k/r0", "vr0")
+				res.Attributes().PutString("k/r1", "vr1")
+				res.Attributes().PutString("k/n0", "vn0")
+				res.Attributes().PutString("k/n1", "vn1")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(1)
@@ -386,11 +386,11 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().UpsertString("k/r0", "vr0")
-				res.Attributes().UpsertString("k/r1", "vr1")
-				res.Attributes().UpsertString("cloud.provider", conventions.AttributeCloudProviderAWS)
-				res.Attributes().UpsertString("cloud.account.id", "efgh")
-				res.Attributes().UpsertString("cloud.region", "us-east")
+				res.Attributes().PutString("k/r0", "vr0")
+				res.Attributes().PutString("k/r1", "vr1")
+				res.Attributes().PutString("cloud.provider", conventions.AttributeCloudProviderAWS)
+				res.Attributes().PutString("cloud.account.id", "efgh")
+				res.Attributes().PutString("cloud.region", "us-east")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
@@ -418,12 +418,12 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().UpsertString("k/r0", "vr0")
-				res.Attributes().UpsertString("k/r1", "vr1")
-				res.Attributes().UpsertString("cloud.provider", conventions.AttributeCloudProviderAWS)
-				res.Attributes().UpsertString("cloud.account.id", "efgh")
-				res.Attributes().UpsertString("cloud.region", "us-east")
-				res.Attributes().UpsertString("host.id", "abcd")
+				res.Attributes().PutString("k/r0", "vr0")
+				res.Attributes().PutString("k/r1", "vr1")
+				res.Attributes().PutString("cloud.provider", conventions.AttributeCloudProviderAWS)
+				res.Attributes().PutString("cloud.account.id", "efgh")
+				res.Attributes().PutString("cloud.region", "us-east")
+				res.Attributes().PutString("host.id", "abcd")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
@@ -453,10 +453,10 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().UpsertString("k/r0", "vr0")
-				res.Attributes().UpsertString("k/r1", "vr1")
-				res.Attributes().UpsertString("cloud.provider", conventions.AttributeCloudProviderGCP)
-				res.Attributes().UpsertString("host.id", "abcd")
+				res.Attributes().PutString("k/r0", "vr0")
+				res.Attributes().PutString("k/r1", "vr1")
+				res.Attributes().PutString("cloud.provider", conventions.AttributeCloudProviderGCP)
+				res.Attributes().PutString("host.id", "abcd")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
@@ -483,11 +483,11 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().UpsertString("k/r0", "vr0")
-				res.Attributes().UpsertString("k/r1", "vr1")
-				res.Attributes().UpsertString("cloud.provider", conventions.AttributeCloudProviderGCP)
-				res.Attributes().UpsertString("host.id", "abcd")
-				res.Attributes().UpsertString("cloud.account.id", "efgh")
+				res.Attributes().PutString("k/r0", "vr0")
+				res.Attributes().PutString("k/r1", "vr1")
+				res.Attributes().PutString("cloud.provider", conventions.AttributeCloudProviderGCP)
+				res.Attributes().PutString("host.id", "abcd")
+				res.Attributes().PutString("cloud.account.id", "efgh")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
@@ -662,8 +662,8 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m.SetName("metric1")
 	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetIntVal(123)
-	dp.Attributes().UpsertString("old.dim", "val1")
+	dp.SetIntValue(123)
+	dp.Attributes().PutString("old.dim", "val1")
 
 	gaugeType := sfxpb.MetricType_GAUGE
 	expected := []*sfxpb.DataPoint{
@@ -701,8 +701,8 @@ func TestDimensionKeyCharsWithPeriod(t *testing.T) {
 	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m.SetName("metric1")
 	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetIntVal(123)
-	dp.Attributes().UpsertString("old.dim.with.periods", "val1")
+	dp.SetIntValue(123)
+	dp.Attributes().PutString("old.dim.with.periods", "val1")
 
 	gaugeType := sfxpb.MetricType_GAUGE
 	expected := []*sfxpb.DataPoint{

@@ -66,18 +66,6 @@ func GenerateLogsTwoLogRecordsSameResource() plog.Logs {
 	return ld
 }
 
-func GenerateLogsTwoLogRecordsSameResourceOneDifferent() plog.Logs {
-	ld := plog.NewLogs()
-	rl0 := ld.ResourceLogs().AppendEmpty()
-	initResource1(rl0.Resource())
-	logs := rl0.ScopeLogs().AppendEmpty().LogRecords()
-	fillLogOne(logs.AppendEmpty())
-	fillLogTwo(logs.AppendEmpty())
-	rl1 := ld.ResourceLogs().AppendEmpty()
-	initResource2(rl1.Resource())
-	fillLogThree(rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty())
-	return ld
-}
 func fillLogOne(log plog.LogRecord) {
 	log.SetTimestamp(TestLogTimestamp)
 	log.SetDroppedAttributesCount(1)
@@ -87,8 +75,8 @@ func fillLogOne(log plog.LogRecord) {
 	log.SetTraceID([16]byte{0x08, 0x04, 0x02, 0x01})
 
 	attrs := log.Attributes()
-	attrs.UpsertString("app", "server")
-	attrs.UpsertInt("instance_num", 1)
+	attrs.PutString("app", "server")
+	attrs.PutInt("instance_num", 1)
 
 	log.Body().SetStringVal("This is a log message")
 }
@@ -100,8 +88,8 @@ func fillLogTwo(log plog.LogRecord) {
 	log.SetSeverityText("Info")
 
 	attrs := log.Attributes()
-	attrs.UpsertString("customer", "acme")
-	attrs.UpsertString("env", "dev")
+	attrs.PutString("customer", "acme")
+	attrs.PutString("env", "dev")
 
 	log.Body().SetStringVal("something happened")
 }

@@ -28,6 +28,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -75,7 +76,7 @@ func TestParserConfigBuildValid(t *testing.T) {
 	}
 
 	sevField := entry.NewBodyField("timestamp")
-	cfg.Config = &SeverityConfig{
+	cfg.SeverityConfig = &SeverityConfig{
 		ParseFrom: &sevField,
 	}
 
@@ -663,7 +664,7 @@ func NewTestParserConfig() ParserConfig {
 		"info": "3xx",
 		"warn": "4xx",
 	}
-	expect.Config = &sp
+	expect.SeverityConfig = &sp
 
 	lnp := NewScopeNameParser()
 	lnp.ParseFrom = entry.NewBodyField("logger")
@@ -694,7 +695,7 @@ func TestMapStructureDecodeParserConfigWithHook(t *testing.T) {
 	}
 
 	var actual ParserConfig
-	dc := &mapstructure.DecoderConfig{Result: &actual, DecodeHook: JSONUnmarshalerHook()}
+	dc := &mapstructure.DecoderConfig{Result: &actual, DecodeHook: operatortest.JSONUnmarshalerHook()}
 	ms, err := mapstructure.NewDecoder(dc)
 	require.NoError(t, err)
 	err = ms.Decode(input)

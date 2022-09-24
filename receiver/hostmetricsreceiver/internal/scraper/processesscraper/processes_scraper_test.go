@@ -210,7 +210,7 @@ func validateFakeData(t *testing.T, metrics pmetric.MetricSlice) {
 			point := points.At(i)
 			val, ok := point.Attributes().Get("status")
 			assert.Truef(t, ok, "Missing status attribute in data point %d", i)
-			attrs[val.StringVal()] = point.IntVal()
+			attrs[val.StringVal()] = point.IntValue()
 		}
 
 		assert.Equal(t, attrs, map[string]int64{

@@ -84,14 +84,14 @@ func testMetrics() pmetric.MetricSlice {
 
 	dp := dps.AppendEmpty()
 	attributes := pcommon.NewMap()
-	attributes.UpsertString("testKey1", "teststringvalue1")
-	attributes.UpsertString("testKey2", "testvalue1")
+	attributes.PutString("testKey1", "teststringvalue1")
+	attributes.PutString("testKey2", "testvalue1")
 	setDPDoubleVal(dp, 2, attributes, time.Time{})
 
 	dp = dps.AppendEmpty()
 	attributes = pcommon.NewMap()
-	attributes.UpsertString("testKey1", "teststringvalue2")
-	attributes.UpsertString("testKey2", "testvalue2")
+	attributes.PutString("testKey1", "teststringvalue2")
+	attributes.PutString("testKey2", "testvalue2")
 	setDPDoubleVal(dp, 2, attributes, time.Time{})
 
 	// Gauge with one int dp
@@ -101,7 +101,7 @@ func testMetrics() pmetric.MetricSlice {
 
 	dp = dps.AppendEmpty()
 	attributes = pcommon.NewMap()
-	attributes.UpsertString("testKey2", "teststringvalue2")
+	attributes.PutString("testKey2", "teststringvalue2")
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	// Delta Sum with two int dps
@@ -111,12 +111,12 @@ func testMetrics() pmetric.MetricSlice {
 
 	dp = dps.AppendEmpty()
 	attributes = pcommon.NewMap()
-	attributes.UpsertString("testKey2", "teststringvalue2")
+	attributes.PutString("testKey2", "teststringvalue2")
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	dp = dps.AppendEmpty()
 	attributes = pcommon.NewMap()
-	attributes.UpsertString("testKey2", "teststringvalue2")
+	attributes.PutString("testKey2", "teststringvalue2")
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	// Cumulative Sum with one double dp
@@ -131,13 +131,13 @@ func testMetrics() pmetric.MetricSlice {
 }
 
 func setDPDoubleVal(dp pmetric.NumberDataPoint, value float64, attributes pcommon.Map, timeStamp time.Time) {
-	dp.SetDoubleVal(value)
+	dp.SetDoubleValue(value)
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeStamp))
 	attributes.CopyTo(dp.Attributes())
 }
 
 func setDPIntVal(dp pmetric.NumberDataPoint, value int64, attributes pcommon.Map, timeStamp time.Time) {
-	dp.SetIntVal(value)
+	dp.SetIntValue(value)
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeStamp))
 	attributes.CopyTo(dp.Attributes())
 }

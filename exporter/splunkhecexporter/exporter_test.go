@@ -226,11 +226,11 @@ func generateLargeLogsBatch() plog.Logs {
 	for i := 0; i < 65000; i++ {
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStringVal("mylog")
-		logRecord.Attributes().UpsertString(splunk.DefaultSourceLabel, "myapp")
-		logRecord.Attributes().UpsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
-		logRecord.Attributes().UpsertString(splunk.DefaultIndexLabel, "myindex")
-		logRecord.Attributes().UpsertString(conventions.AttributeHostName, "myhost")
-		logRecord.Attributes().UpsertString("custom", "custom")
+		logRecord.Attributes().PutString(splunk.DefaultSourceLabel, "myapp")
+		logRecord.Attributes().PutString(splunk.DefaultSourceTypeLabel, "myapp-type")
+		logRecord.Attributes().PutString(splunk.DefaultIndexLabel, "myindex")
+		logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
+		logRecord.Attributes().PutString("custom", "custom")
 		logRecord.SetTimestamp(ts)
 	}
 
@@ -241,8 +241,8 @@ func TestConsumeLogsData(t *testing.T) {
 	smallBatch := plog.NewLogs()
 	logRecord := smallBatch.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	logRecord.Body().SetStringVal("mylog")
-	logRecord.Attributes().UpsertString(conventions.AttributeHostName, "myhost")
-	logRecord.Attributes().UpsertString("custom", "custom")
+	logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
+	logRecord.Attributes().PutString("custom", "custom")
 	logRecord.SetTimestamp(123)
 	tests := []struct {
 		name             string

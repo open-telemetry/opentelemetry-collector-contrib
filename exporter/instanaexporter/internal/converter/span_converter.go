@@ -26,10 +26,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter/internal/converter/model"
 )
 
-const (
-	OtelSpanType = "otel"
-)
-
 var _ Converter = (*SpanConverter)(nil)
 
 type SpanConverter struct {

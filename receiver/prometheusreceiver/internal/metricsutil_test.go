@@ -41,7 +41,7 @@ func histogramPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Times
 
 	attrs := hdp.Attributes()
 	for _, kv := range attributes {
-		attrs.UpsertString(kv.Key, kv.Value)
+		attrs.PutString(kv.Key, kv.Value)
 	}
 
 	return hdp
@@ -95,7 +95,7 @@ func doublePointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timestam
 	ndp.SetTimestamp(timestamp)
 
 	for _, kv := range attributes {
-		ndp.Attributes().UpsertString(kv.Key, kv.Value)
+		ndp.Attributes().PutString(kv.Key, kv.Value)
 	}
 
 	return ndp
@@ -103,7 +103,7 @@ func doublePointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timestam
 
 func doublePoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, value float64) pmetric.NumberDataPoint {
 	ndp := doublePointRaw(attributes, startTimestamp, timestamp)
-	ndp.SetDoubleVal(value)
+	ndp.SetDoubleValue(value)
 	return ndp
 }
 
@@ -147,7 +147,7 @@ func summaryPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timesta
 	sdp.SetTimestamp(timestamp)
 
 	for _, kv := range attributes {
-		sdp.Attributes().UpsertString(kv.Key, kv.Value)
+		sdp.Attributes().PutString(kv.Key, kv.Value)
 	}
 
 	return sdp

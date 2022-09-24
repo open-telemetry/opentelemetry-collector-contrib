@@ -35,7 +35,7 @@ func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pme
 		metric := metricSlice.AppendEmpty()
 		metric.SetName(namePrefix + message.Counter.GetName())
 		dataPoint := metric.SetEmptySum().DataPoints().AppendEmpty()
-		dataPoint.SetDoubleVal(float64(message.Counter.GetTotal()))
+		dataPoint.SetDoubleValue(float64(message.Counter.GetTotal()))
 		dataPoint.SetTimestamp(pcommon.Timestamp(envelope.GetTimestamp()))
 		dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 		copyEnvelopeAttributes(dataPoint.Attributes(), envelope)
@@ -44,7 +44,7 @@ func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pme
 			metric := metricSlice.AppendEmpty()
 			metric.SetName(namePrefix + name)
 			dataPoint := metric.SetEmptyGauge().DataPoints().AppendEmpty()
-			dataPoint.SetDoubleVal(value.Value)
+			dataPoint.SetDoubleValue(value.Value)
 			dataPoint.SetTimestamp(pcommon.Timestamp(envelope.GetTimestamp()))
 			dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 			copyEnvelopeAttributes(dataPoint.Attributes(), envelope)
@@ -54,14 +54,14 @@ func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pme
 
 func copyEnvelopeAttributes(attributes pcommon.Map, envelope *loggregator_v2.Envelope) {
 	for key, value := range envelope.Tags {
-		attributes.UpsertString(attributeNamePrefix+key, value)
+		attributes.PutString(attributeNamePrefix+key, value)
 	}
 
 	if envelope.SourceId != "" {
-		attributes.UpsertString(attributeNamePrefix+"source_id", envelope.SourceId)
+		attributes.PutString(attributeNamePrefix+"source_id", envelope.SourceId)
 	}
 
 	if envelope.InstanceId != "" {
-		attributes.UpsertString(attributeNamePrefix+"instance_id", envelope.InstanceId)
+		attributes.PutString(attributeNamePrefix+"instance_id", envelope.InstanceId)
 	}
 }

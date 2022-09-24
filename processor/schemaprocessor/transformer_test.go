@@ -86,7 +86,6 @@ func TestTransformerProcessing(t *testing.T) {
 		s.SetName("http.request")
 		s.SetKind(ptrace.SpanKindConsumer)
 		s.SetSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
-		s.SetTraceState(ptrace.TraceStateEmpty)
 		s.CopyTo(in.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0))
 
 		out, err := trans.processTraces(context.Background(), in)

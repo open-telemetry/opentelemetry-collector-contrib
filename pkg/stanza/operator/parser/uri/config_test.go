@@ -19,7 +19,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 )
 
 func TestParserGoldenConfig(t *testing.T) {
@@ -83,7 +83,7 @@ func TestParserGoldenConfig(t *testing.T) {
 						"debug":    "2xx",
 					}
 					severityField.Mapping = mapping
-					cfg.Config = &severityField
+					cfg.SeverityConfig = &severityField
 					return cfg
 				}(),
 			},

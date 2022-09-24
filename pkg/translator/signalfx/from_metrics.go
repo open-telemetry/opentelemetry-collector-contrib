@@ -73,14 +73,14 @@ func (ft *FromTranslator) FromMetric(m pmetric.Metric, extraDimensions []*sfxpb.
 
 	mt := fromMetricTypeToMetricType(m)
 
-	switch m.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch m.Type() {
+	case pmetric.MetricTypeGauge:
 		dps = convertNumberDataPoints(m.Gauge().DataPoints(), m.Name(), mt, extraDimensions)
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		dps = convertNumberDataPoints(m.Sum().DataPoints(), m.Name(), mt, extraDimensions)
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		dps = convertHistogram(m.Histogram().DataPoints(), m.Name(), mt, extraDimensions)
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		dps = convertSummaryDataPoints(m.Summary().DataPoints(), m.Name(), extraDimensions)
 	}
 
@@ -88,11 +88,11 @@ func (ft *FromTranslator) FromMetric(m pmetric.Metric, extraDimensions []*sfxpb.
 }
 
 func fromMetricTypeToMetricType(metric pmetric.Metric) *sfxpb.MetricType {
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		return &sfxMetricTypeGauge
 
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		if !metric.Sum().IsMonotonic() {
 			return &sfxMetricTypeGauge
 		}
@@ -101,7 +101,7 @@ func fromMetricTypeToMetricType(metric pmetric.Metric) *sfxpb.MetricType {
 		}
 		return &sfxMetricTypeCumulativeCounter
 
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		if metric.Histogram().AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta {
 			return &sfxMetricTypeCounter
 		}
@@ -120,10 +120,10 @@ func convertNumberDataPoints(in pmetric.NumberDataPointSlice, name string, mt *s
 		dp := dps.appendPoint(name, mt, fromTimestamp(inDp.Timestamp()), attributesToDimensions(inDp.Attributes(), extraDims))
 		switch inDp.ValueType() {
 		case pmetric.NumberDataPointValueTypeInt:
-			val := inDp.IntVal()
+			val := inDp.IntValue()
 			dp.Value.IntValue = &val
 		case pmetric.NumberDataPointValueTypeDouble:
-			val := inDp.DoubleVal()
+			val := inDp.DoubleValue()
 			dp.Value.DoubleValue = &val
 		}
 	}

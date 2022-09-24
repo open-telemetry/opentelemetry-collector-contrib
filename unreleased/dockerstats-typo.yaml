@@ -1,0 +1,5 @@
+change_type: breaking
+component: dockerstatsreceiver
+note: "Change 'stats' config key to 'metrics'."
+issues: [9794, 14184]
+subtext: "Note: this is only breaking for those who have explicitly enabled the featuregate `receiver.dockerstatsd.useScraperV2`."

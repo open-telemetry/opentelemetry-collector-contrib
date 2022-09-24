@@ -50,7 +50,7 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 	return &JournaldConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
+			Operators:        []operator.Config{},
 		},
 		InputConfig: *journald.NewConfig(),
 	}
@@ -67,8 +67,7 @@ type JournaldConfig struct {
 	InputConfig        journald.Config `mapstructure:",squash"`
 }
 
-// DecodeInputConfig unmarshals the input operator
-func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
-	logConfig := cfg.(*JournaldConfig)
-	return &operator.Config{Builder: &logConfig.InputConfig}, nil
+// InputConfig unmarshals the input operator
+func (f ReceiverType) InputConfig(cfg config.Receiver) operator.Config {
+	return operator.NewConfig(&cfg.(*JournaldConfig).InputConfig)
 }

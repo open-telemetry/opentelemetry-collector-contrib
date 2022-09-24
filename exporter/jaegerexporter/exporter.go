@@ -181,8 +181,7 @@ func (s *protoGRPCSender) propagateStateChange(st connectivity.State) {
 }
 
 func (s *protoGRPCSender) onStateChange(st connectivity.State) {
-	mCtx, _ := tag.New(context.Background(), tag.Upsert(tag.MustNewKey("exporter_name"), s.name))
-	stats.Record(mCtx, mLastConnectionState.M(int64(st)))
+	_ = stats.RecordWithTags(context.Background(), []tag.Mutator{tag.Upsert(tag.MustNewKey("exporter_name"), s.name)}, mLastConnectionState.M(int64(st)))
 	s.settings.Logger.Info("State of the connection with the Jaeger Collector backend", zap.Stringer("state", st))
 }
 

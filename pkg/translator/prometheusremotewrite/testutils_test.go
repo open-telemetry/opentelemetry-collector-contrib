@@ -161,7 +161,7 @@ var (
 func getAttributes(labels ...string) pcommon.Map {
 	attributeMap := pcommon.NewMap()
 	for i := 0; i < len(labels); i += 2 {
-		attributeMap.UpsertString(labels[i], labels[i+1])
+		attributeMap.PutString(labels[i], labels[i+1])
 	}
 	return attributeMap
 }
@@ -214,13 +214,13 @@ func getTimeSeriesWithSamplesAndExemplars(labels []prompb.Label, samples []promp
 	}
 }
 
-func getHistogramDataPointWithExemplars(t *testing.T, time time.Time, value float64, traceID string, spanID string, attributeKey string, attributeValue string) *pmetric.HistogramDataPoint {
+func getHistogramDataPointWithExemplars(t *testing.T, time time.Time, value float64, traceID string, spanID string, attributeKey string, attributeValue string) pmetric.HistogramDataPoint {
 	h := pmetric.NewHistogramDataPoint()
 
 	e := h.Exemplars().AppendEmpty()
-	e.SetDoubleVal(value)
+	e.SetDoubleValue(value)
 	e.SetTimestamp(pcommon.NewTimestampFromTime(time))
-	e.FilteredAttributes().UpsertString(attributeKey, attributeValue)
+	e.FilteredAttributes().PutString(attributeKey, attributeValue)
 
 	if traceID != "" {
 		var traceIDBytes [16]byte
@@ -237,13 +237,7 @@ func getHistogramDataPointWithExemplars(t *testing.T, time time.Time, value floa
 		e.SetSpanID(spanIDBytes)
 	}
 
-	return &h
-}
-
-func getHistogramDataPoint() *pmetric.HistogramDataPoint {
-	h := pmetric.NewHistogramDataPoint()
-
-	return &h
+	return h
 }
 
 func getQuantiles(bounds []float64, values []float64) pmetric.ValueAtQuantileSlice {
@@ -273,7 +267,7 @@ func getIntGaugeMetric(name string, attributes pcommon.Map, value int64, ts uint
 	if strings.HasPrefix(name, "staleNaN") {
 		dp.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 	}
-	dp.SetIntVal(value)
+	dp.SetIntValue(value)
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetStartTimestamp(pcommon.Timestamp(0))
@@ -288,7 +282,7 @@ func getDoubleGaugeMetric(name string, attributes pcommon.Map, value float64, ts
 	if strings.HasPrefix(name, "staleNaN") {
 		dp.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 	}
-	dp.SetDoubleVal(value)
+	dp.SetDoubleValue(value)
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetStartTimestamp(pcommon.Timestamp(0))
@@ -311,7 +305,7 @@ func getIntSumMetric(name string, attributes pcommon.Map, value int64, ts uint64
 	if strings.HasPrefix(name, "staleNaN") {
 		dp.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 	}
-	dp.SetIntVal(value)
+	dp.SetIntValue(value)
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetStartTimestamp(pcommon.Timestamp(0))
@@ -334,7 +328,7 @@ func getSumMetric(name string, attributes pcommon.Map, value float64, ts uint64)
 	if strings.HasPrefix(name, "staleNaN") {
 		dp.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 	}
-	dp.SetDoubleVal(value)
+	dp.SetDoubleValue(value)
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetStartTimestamp(pcommon.Timestamp(0))
@@ -392,7 +386,7 @@ func getSummaryMetric(name string, attributes pcommon.Map, ts uint64, sum float6
 	dp.SetCount(count)
 	dp.SetSum(sum)
 	attributes.Range(func(k string, v pcommon.Value) bool {
-		v.CopyTo(dp.Attributes().UpsertEmpty(k))
+		v.CopyTo(dp.Attributes().PutEmpty(k))
 		return true
 	})
 

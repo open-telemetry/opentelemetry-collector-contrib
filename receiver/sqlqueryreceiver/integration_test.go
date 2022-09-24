@@ -71,14 +71,14 @@ func TestPostgresIntegration(t *testing.T) {
 					ValueColumn:      "count",
 					AttributeColumns: []string{genreKey},
 					ValueType:        MetricValueTypeInt,
-					DataType:         MetricDataTypeGauge,
+					DataType:         MetricTypeGauge,
 				},
 				{
 					MetricName:       "genre.imdb",
 					ValueColumn:      "avg",
 					AttributeColumns: []string{genreKey},
 					ValueType:        MetricValueTypeDouble,
-					DataType:         MetricDataTypeGauge,
+					DataType:         MetricTypeGauge,
 				},
 			},
 		},
@@ -90,43 +90,43 @@ func TestPostgresIntegration(t *testing.T) {
 					MetricName:  "a",
 					ValueColumn: "a",
 					ValueType:   MetricValueTypeInt,
-					DataType:    MetricDataTypeGauge,
+					DataType:    MetricTypeGauge,
 				},
 				{
 					MetricName:  "b",
 					ValueColumn: "b",
 					ValueType:   MetricValueTypeInt,
-					DataType:    MetricDataTypeGauge,
+					DataType:    MetricTypeGauge,
 				},
 				{
 					MetricName:  "c",
 					ValueColumn: "c",
 					ValueType:   MetricValueTypeInt,
-					DataType:    MetricDataTypeGauge,
+					DataType:    MetricTypeGauge,
 				},
 				{
 					MetricName:  "d",
 					ValueColumn: "d",
 					ValueType:   MetricValueTypeDouble,
-					DataType:    MetricDataTypeGauge,
+					DataType:    MetricTypeGauge,
 				},
 				{
 					MetricName:  "e",
 					ValueColumn: "e",
 					ValueType:   MetricValueTypeDouble,
-					DataType:    MetricDataTypeGauge,
+					DataType:    MetricTypeGauge,
 				},
 				{
 					MetricName:  "f",
 					ValueColumn: "f",
 					ValueType:   MetricValueTypeDouble,
-					DataType:    MetricDataTypeGauge,
+					DataType:    MetricTypeGauge,
 				},
 				{
 					MetricName:  "g",
 					ValueColumn: "g",
 					ValueType:   MetricValueTypeDouble,
-					DataType:    MetricDataTypeGauge,
+					DataType:    MetricTypeGauge,
 				},
 			},
 		},
@@ -205,14 +205,14 @@ func TestOracleDBIntegration(t *testing.T) {
 					ValueColumn:      "COUNT",
 					AttributeColumns: []string{genreKey},
 					ValueType:        MetricValueTypeInt,
-					DataType:         MetricDataTypeGauge,
+					DataType:         MetricTypeGauge,
 				},
 				{
 					MetricName:       "genre.imdb",
 					ValueColumn:      "AVG",
 					AttributeColumns: []string{genreKey},
 					ValueType:        MetricValueTypeDouble,
-					DataType:         MetricDataTypeGauge,
+					DataType:         MetricTypeGauge,
 				},
 			},
 		},
@@ -275,9 +275,9 @@ func testMovieMetrics(t *testing.T, rm pmetric.ResourceMetrics, genreAttrKey str
 		genreStr := genre.AsString()
 		switch genreStr {
 		case "SciFi":
-			assert.InDelta(t, 8.2, pt.DoubleVal(), 0.1)
+			assert.InDelta(t, 8.2, pt.DoubleValue(), 0.1)
 		case "Action":
-			assert.InDelta(t, 7.65, pt.DoubleVal(), 0.1)
+			assert.InDelta(t, 7.65, pt.DoubleValue(), 0.1)
 		default:
 			assert.Failf(t, "unexpected genre: %s", genreStr)
 		}
@@ -311,9 +311,9 @@ func testPGTypeMetrics(t *testing.T, rm pmetric.ResourceMetrics) {
 }
 
 func assertIntGaugeEquals(t *testing.T, expected int, metric pmetric.Metric) bool {
-	return assert.EqualValues(t, expected, metric.Gauge().DataPoints().At(0).IntVal())
+	return assert.EqualValues(t, expected, metric.Gauge().DataPoints().At(0).IntValue())
 }
 
 func assertDoubleGaugeEquals(t *testing.T, expected float64, metric pmetric.Metric) bool {
-	return assert.InDelta(t, expected, metric.Gauge().DataPoints().At(0).DoubleVal(), 0.1)
+	return assert.InDelta(t, expected, metric.Gauge().DataPoints().At(0).DoubleValue(), 0.1)
 }

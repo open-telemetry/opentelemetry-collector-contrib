@@ -56,13 +56,13 @@ func TestConvertCountEnvelope(t *testing.T) {
 
 	metric := metricSlice.At(0)
 	assert.Equal(t, "gorouter.bad_gateways", metric.Name())
-	assert.Equal(t, pmetric.MetricDataTypeSum, metric.DataType())
+	assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
 	dataPoints := metric.Sum().DataPoints()
 	assert.Equal(t, 1, dataPoints.Len())
 	dataPoint := dataPoints.At(0)
 	assert.Equal(t, pcommon.NewTimestampFromTime(now), dataPoint.Timestamp())
 	assert.Equal(t, pcommon.NewTimestampFromTime(before), dataPoint.StartTimestamp())
-	assert.Equal(t, 10.0, dataPoint.DoubleVal())
+	assert.Equal(t, 10.0, dataPoint.DoubleValue())
 
 	assertAttributes(t, dataPoint.Attributes(), map[string]string{
 		"org.cloudfoundry.source_id":  "uaa",
@@ -134,22 +134,22 @@ func TestConvertGaugeEnvelope(t *testing.T) {
 
 	metric := metricSlice.At(memoryMetricPosition)
 	assert.Equal(t, "rep.memory", metric.Name())
-	assert.Equal(t, pmetric.MetricDataTypeGauge, metric.DataType())
+	assert.Equal(t, pmetric.MetricTypeGauge, metric.Type())
 	assert.Equal(t, 1, metric.Gauge().DataPoints().Len())
 	dataPoint := metric.Gauge().DataPoints().At(0)
 	assert.Equal(t, pcommon.NewTimestampFromTime(now), dataPoint.Timestamp())
 	assert.Equal(t, pcommon.NewTimestampFromTime(before), dataPoint.StartTimestamp())
-	assert.Equal(t, 17046641.0, dataPoint.DoubleVal())
+	assert.Equal(t, 17046641.0, dataPoint.DoubleValue())
 	assertAttributes(t, dataPoint.Attributes(), expectedAttributes)
 
 	metric = metricSlice.At(1 - memoryMetricPosition)
 	assert.Equal(t, "rep.disk", metric.Name())
-	assert.Equal(t, pmetric.MetricDataTypeGauge, metric.DataType())
+	assert.Equal(t, pmetric.MetricTypeGauge, metric.Type())
 	assert.Equal(t, 1, metric.Gauge().DataPoints().Len())
 	dataPoint = metric.Gauge().DataPoints().At(0)
 	assert.Equal(t, pcommon.NewTimestampFromTime(now), dataPoint.Timestamp())
 	assert.Equal(t, pcommon.NewTimestampFromTime(before), dataPoint.StartTimestamp())
-	assert.Equal(t, 10231808.0, dataPoint.DoubleVal())
+	assert.Equal(t, 10231808.0, dataPoint.DoubleValue())
 	assertAttributes(t, dataPoint.Attributes(), expectedAttributes)
 }
 

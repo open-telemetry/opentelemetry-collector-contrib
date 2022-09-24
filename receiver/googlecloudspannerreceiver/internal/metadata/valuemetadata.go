@@ -21,6 +21,7 @@ const (
 	StringValueType           ValueType = "string"
 	IntValueType              ValueType = "int"
 	FloatValueType            ValueType = "float"
+	NullFloatValueType        ValueType = "null_float"
 	BoolValueType             ValueType = "bool"
 	StringSliceValueType      ValueType = "string_slice"
 	ByteSliceValueType        ValueType = "byte_slice"
