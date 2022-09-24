@@ -58,9 +58,8 @@ func TestFileTracesExporter(t *testing.T) {
 			name: "json: compression configuration",
 			args: args{
 				conf: &Config{
-					Path:         tempFileName(t),
-					FormatType:   "json",
-					IsCompressed: true,
+					Path:       tempFileName(t),
+					FormatType: "json",
 				},
 				unmarshaler: ptrace.NewJSONUnmarshaler(),
 			},
@@ -79,9 +78,8 @@ func TestFileTracesExporter(t *testing.T) {
 			name: "Proto: compression configuration",
 			args: args{
 				conf: &Config{
-					Path:         tempFileName(t),
-					FormatType:   "proto",
-					IsCompressed: true,
+					Path:       tempFileName(t),
+					FormatType: "proto",
 				},
 				unmarshaler: ptrace.NewProtoUnmarshaler(),
 			},
@@ -102,7 +100,6 @@ func TestFileTracesExporter(t *testing.T) {
 				},
 				tracesMarshaler: tracesMarshalers[conf.FormatType],
 				exporter:        buildExportFunc(conf),
-				isCompressed:    conf.IsCompressed,
 			}
 			require.NotNil(t, fe)
 
@@ -118,7 +115,7 @@ func TestFileTracesExporter(t *testing.T) {
 			br := bufio.NewReader(fi)
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
-					if fe.formatType == formatTypeJSON && !fe.isCompressed {
+					if fe.formatType == defaultFormatType && !fe.isCompressed {
 						return readJSONMessage(br)
 					}
 					return readMessageFromStream(br)
@@ -126,10 +123,6 @@ func TestFileTracesExporter(t *testing.T) {
 				assert.NoError(t, err)
 				if isEnd {
 					break
-				}
-				if tt.args.conf.IsCompressed {
-					buf, err = decompress(buf)
-					assert.NoError(t, err)
 				}
 				got, err := tt.args.unmarshaler.UnmarshalTraces(buf)
 				assert.NoError(t, err)
@@ -143,9 +136,9 @@ func TestFileTracesExporterError(t *testing.T) {
 	mf := &errorWriter{}
 	fe := &fileExporter{
 		file:            mf,
-		formatType:      formatTypeJSON,
+		formatType:      defaultFormatType,
 		exporter:        exportMessageAsLine,
-		tracesMarshaler: tracesMarshalers[formatTypeJSON],
+		tracesMarshaler: tracesMarshalers[defaultFormatType],
 	}
 	require.NotNil(t, fe)
 
@@ -178,9 +171,8 @@ func TestFileMetricsExporter(t *testing.T) {
 			name: "json: compression configuration",
 			args: args{
 				conf: &Config{
-					Path:         tempFileName(t),
-					FormatType:   "json",
-					IsCompressed: true,
+					Path:       tempFileName(t),
+					FormatType: "json",
 				},
 				unmarshaler: pmetric.NewJSONUnmarshaler(),
 			},
@@ -199,9 +191,8 @@ func TestFileMetricsExporter(t *testing.T) {
 			name: "Proto: compression configuration",
 			args: args{
 				conf: &Config{
-					Path:         tempFileName(t),
-					FormatType:   "proto",
-					IsCompressed: true,
+					Path:       tempFileName(t),
+					FormatType: "proto",
 				},
 				unmarshaler: pmetric.NewProtoUnmarshaler(),
 			},
@@ -222,7 +213,6 @@ func TestFileMetricsExporter(t *testing.T) {
 				},
 				metricsMarshaler: metricsMarshalers[conf.FormatType],
 				exporter:         buildExportFunc(conf),
-				isCompressed:     conf.IsCompressed,
 			}
 			require.NotNil(t, fe)
 
@@ -238,7 +228,7 @@ func TestFileMetricsExporter(t *testing.T) {
 			br := bufio.NewReader(fi)
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
-					if fe.formatType == formatTypeJSON && !fe.isCompressed {
+					if fe.formatType == defaultFormatType && !fe.isCompressed {
 						return readJSONMessage(br)
 					}
 					return readMessageFromStream(br)
@@ -246,10 +236,6 @@ func TestFileMetricsExporter(t *testing.T) {
 				assert.NoError(t, err)
 				if isEnd {
 					break
-				}
-				if tt.args.conf.IsCompressed {
-					buf, err = decompress(buf)
-					assert.NoError(t, err)
 				}
 				got, err := tt.args.unmarshaler.UnmarshalMetrics(buf)
 				assert.NoError(t, err)
@@ -264,9 +250,9 @@ func TestFileMetricsExporterError(t *testing.T) {
 	mf := &errorWriter{}
 	fe := &fileExporter{
 		file:             mf,
-		formatType:       formatTypeJSON,
+		formatType:       defaultFormatType,
 		exporter:         exportMessageAsLine,
-		metricsMarshaler: metricsMarshalers[formatTypeJSON],
+		metricsMarshaler: metricsMarshalers[defaultFormatType],
 	}
 	require.NotNil(t, fe)
 
@@ -299,9 +285,8 @@ func TestFileLogsExporter(t *testing.T) {
 			name: "json: compression configuration",
 			args: args{
 				conf: &Config{
-					Path:         tempFileName(t),
-					FormatType:   "json",
-					IsCompressed: true,
+					Path:       tempFileName(t),
+					FormatType: "json",
 				},
 				unmarshaler: plog.NewJSONUnmarshaler(),
 			},
@@ -320,9 +305,8 @@ func TestFileLogsExporter(t *testing.T) {
 			name: "Proto: compression configuration",
 			args: args{
 				conf: &Config{
-					Path:         tempFileName(t),
-					FormatType:   "proto",
-					IsCompressed: true,
+					Path:       tempFileName(t),
+					FormatType: "proto",
 				},
 				unmarshaler: plog.NewProtoUnmarshaler(),
 			},
@@ -343,7 +327,6 @@ func TestFileLogsExporter(t *testing.T) {
 				},
 				logsMarshaler: logsMarshalers[conf.FormatType],
 				exporter:      buildExportFunc(conf),
-				isCompressed:  conf.IsCompressed,
 			}
 			require.NotNil(t, fe)
 
@@ -359,7 +342,7 @@ func TestFileLogsExporter(t *testing.T) {
 			br := bufio.NewReader(fi)
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
-					if fe.formatType == formatTypeJSON && !fe.isCompressed {
+					if fe.formatType == defaultFormatType && !fe.isCompressed {
 						return readJSONMessage(br)
 					}
 					return readMessageFromStream(br)
@@ -367,10 +350,6 @@ func TestFileLogsExporter(t *testing.T) {
 				assert.NoError(t, err)
 				if isEnd {
 					break
-				}
-				if tt.args.conf.IsCompressed {
-					buf, err = decompress(buf)
-					assert.NoError(t, err)
 				}
 				got, err := tt.args.unmarshaler.UnmarshalLogs(buf)
 				assert.NoError(t, err)
@@ -384,9 +363,9 @@ func TestFileLogsExporterErrors(t *testing.T) {
 	mf := &errorWriter{}
 	fe := &fileExporter{
 		file:          mf,
-		formatType:    formatTypeJSON,
+		formatType:    defaultFormatType,
 		exporter:      exportMessageAsLine,
-		logsMarshaler: logsMarshalers[formatTypeJSON],
+		logsMarshaler: logsMarshalers[defaultFormatType],
 	}
 	require.NotNil(t, fe)
 
@@ -400,11 +379,11 @@ func Test_fileExporter_Capabilities(t *testing.T) {
 	path := tempFileName(t)
 	fe := &fileExporter{
 		path:       path,
-		formatType: formatTypeJSON,
+		formatType: defaultFormatType,
 		file: &lumberjack.Logger{
 			Filename: path,
 		},
-		metricsMarshaler: metricsMarshalers[formatTypeJSON],
+		metricsMarshaler: metricsMarshalers[defaultFormatType],
 		exporter:         exportMessageAsLine,
 	}
 	require.NotNil(t, fe)
@@ -507,7 +486,7 @@ func TestConcurrentlyCompress(t *testing.T) {
 	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
 	go func() {
 		defer wg.Done()
-		buf, err := tracesMarshalers[formatTypeJSON].MarshalTraces(td)
+		buf, err := tracesMarshalers[defaultFormatType].MarshalTraces(td)
 		if err != nil {
 			return
 		}
@@ -515,7 +494,7 @@ func TestConcurrentlyCompress(t *testing.T) {
 	}()
 	go func() {
 		defer wg.Done()
-		buf, err := metricsMarshalers[formatTypeJSON].MarshalMetrics(md)
+		buf, err := metricsMarshalers[defaultFormatType].MarshalMetrics(md)
 		if err != nil {
 			return
 		}
@@ -523,7 +502,7 @@ func TestConcurrentlyCompress(t *testing.T) {
 	}()
 	go func() {
 		defer wg.Done()
-		buf, err := logsMarshalers[formatTypeJSON].MarshalLogs(ld)
+		buf, err := logsMarshalers[defaultFormatType].MarshalLogs(ld)
 		if err != nil {
 			return
 		}
