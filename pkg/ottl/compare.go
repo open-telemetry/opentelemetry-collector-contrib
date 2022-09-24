@@ -16,8 +16,8 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"bytes"
-	"go.uber.org/zap"
 
+	"go.uber.org/zap"
 	"golang.org/x/exp/constraints"
 )
 

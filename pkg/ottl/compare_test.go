@@ -16,8 +16,9 @@ package ottl
 
 import (
 	"fmt"
-	"go.uber.org/zap"
 	"testing"
+
+	"go.uber.org/zap"
 )
 
 // Our types are bool, int, float, string, Bytes, nil, so we compare all types in both directions.

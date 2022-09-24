@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -223,7 +223,7 @@ func TestProcess(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]string{tt.statement}, Functions(), component.TelemetrySettings{})
+			processor, err := NewProcessor([]string{tt.statement}, Functions(), componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessTraces(context.Background(), td)
@@ -273,7 +273,7 @@ func BenchmarkTwoSpans(b *testing.B) {
 
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			processor, err := NewProcessor(tt.queries, Functions(), component.TelemetrySettings{})
+			processor, err := NewProcessor(tt.queries, Functions(), componenttest.NewNopTelemetrySettings())
 			assert.NoError(b, err)
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
@@ -315,7 +315,7 @@ func BenchmarkHundredSpans(b *testing.B) {
 	}
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			processor, err := NewProcessor(tt.queries, Functions(), component.TelemetrySettings{})
+			processor, err := NewProcessor(tt.queries, Functions(), componenttest.NewNopTelemetrySettings())
 			assert.NoError(b, err)
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
