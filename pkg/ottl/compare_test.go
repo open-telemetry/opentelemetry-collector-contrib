@@ -16,6 +16,7 @@ package ottl
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"testing"
 )
 
@@ -114,7 +115,7 @@ func Test_compare(t *testing.T) {
 	for _, tt := range tests {
 		for _, op := range ops {
 			t.Run(fmt.Sprintf("%s %v", tt.name, op), func(t *testing.T) {
-				if got := compare(tt.a, tt.b, op); got != tt.want[op] {
+				if got := compare(tt.a, tt.b, op, zap.NewNop()); got != tt.want[op] {
 					t.Errorf("compare(%v, %v, %v) = %v, want %v", tt.a, tt.b, op, got, tt.want[op])
 				}
 			})
@@ -128,64 +129,64 @@ func Test_compare(t *testing.T) {
 // mac pro laptop, and none of them have any allocations.
 func BenchmarkCompareEQInt64(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(i64a, i64b, EQ)
+		compare(i64a, i64b, EQ, zap.NewNop())
 	}
 }
 
 func BenchmarkCompareEQFloat(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(f64a, f64b, EQ)
+		compare(f64a, f64b, EQ, zap.NewNop())
 	}
 }
 func BenchmarkCompareEQString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(sa, sb, EQ)
+		compare(sa, sb, EQ, zap.NewNop())
 	}
 }
 func BenchmarkCompareEQPString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(&sa, &sb, EQ)
+		compare(&sa, &sb, EQ, zap.NewNop())
 	}
 }
 func BenchmarkCompareEQBytes(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(ba, bb, EQ)
+		compare(ba, bb, EQ, zap.NewNop())
 	}
 }
 func BenchmarkCompareEQNil(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(nil, nil, EQ)
+		compare(nil, nil, EQ, zap.NewNop())
 	}
 }
 func BenchmarkCompareNEInt(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(i64a, i64b, NE)
+		compare(i64a, i64b, NE, zap.NewNop())
 	}
 }
 
 func BenchmarkCompareNEFloat(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(f64a, f64b, NE)
+		compare(f64a, f64b, NE, zap.NewNop())
 	}
 }
 func BenchmarkCompareNEString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(sa, sb, NE)
+		compare(sa, sb, NE, zap.NewNop())
 	}
 }
 func BenchmarkCompareLTFloat(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(f64a, f64b, LT)
+		compare(f64a, f64b, LT, zap.NewNop())
 	}
 }
 func BenchmarkCompareLTString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(sa, sb, LT)
+		compare(sa, sb, LT, zap.NewNop())
 	}
 }
 func BenchmarkCompareLTNil(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compare(nil, nil, LT)
+		compare(nil, nil, LT, zap.NewNop())
 	}
 }
 

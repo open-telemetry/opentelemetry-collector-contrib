@@ -72,7 +72,7 @@ func (p *Parser) newComparisonEvaluator(comparison *Comparison) (boolExpressionE
 	return func(ctx TransformContext) bool {
 		a := left.Get(ctx)
 		b := right.Get(ctx)
-		return compare(a, b, comparison.Op)
+		return compare(a, b, comparison.Op, p.telemetrySettings.Logger)
 	}, nil
 
 }
