@@ -33,7 +33,35 @@ type client struct {
 	consumer consumer.Logs
 	config   *Config
 	obsrecv  *obsreport.Receiver
-	hub      *eventhub.Hub
+	hub      hubWrapper
+}
+
+type hubWrapper interface {
+	GetRuntimeInformation(ctx context.Context) (*eventhub.HubRuntimeInformation, error)
+	Receive(ctx context.Context, partitionID string, handler eventhub.Handler, opts ...eventhub.ReceiveOption) (listerHandleWrapper, error)
+	Close(ctx context.Context) error
+}
+
+type listerHandleWrapper interface {
+	Done() <-chan struct{}
+	Err() error
+}
+
+type hubWrapperImpl struct {
+	hub *eventhub.Hub
+}
+
+func (h *hubWrapperImpl) GetRuntimeInformation(ctx context.Context) (*eventhub.HubRuntimeInformation, error) {
+	return h.hub.GetRuntimeInformation(ctx)
+}
+
+func (h *hubWrapperImpl) Receive(ctx context.Context, partitionID string, handler eventhub.Handler, opts ...eventhub.ReceiveOption) (listerHandleWrapper, error) {
+	l, err := h.hub.Receive(ctx, partitionID, handler, opts...)
+	return l, err
+}
+
+func (h *hubWrapperImpl) Close(ctx context.Context) error {
+	return h.hub.Close(ctx)
 }
 
 func (c *client) Start(ctx context.Context, host component.Host) error {
@@ -41,11 +69,14 @@ func (c *client) Start(ctx context.Context, host component.Host) error {
 	if err != nil {
 		return err
 	}
-	hub, err := eventhub.NewHubFromConnectionString(c.config.Connection, eventhub.HubWithOffsetPersistence(&storageCheckpointPersister{storageClient: storageClient}))
-	c.hub = hub
-
-	if err != nil {
-		return err
+	if c.hub == nil { // set manually for testing.
+		hub, newHubErr := eventhub.NewHubFromConnectionString(c.config.Connection, eventhub.HubWithOffsetPersistence(&storageCheckpointPersister{storageClient: storageClient}))
+		if newHubErr != nil {
+			return newHubErr
+		}
+		c.hub = &hubWrapperImpl{
+			hub: hub,
+		}
 	}
 
 	if c.config.Partition == "" {
