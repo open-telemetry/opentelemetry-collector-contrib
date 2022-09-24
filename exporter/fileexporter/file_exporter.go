@@ -28,23 +28,18 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-const (
-	formatTypeProto = "proto"
-	formatTypeJSON  = "json"
-)
-
 // Marshaler configuration used for marhsaling Protobuf
 var tracesMarshalers = map[string]ptrace.Marshaler{
-	formatTypeJSON:  ptrace.NewJSONMarshaler(),
-	formatTypeProto: ptrace.NewProtoMarshaler(),
+	defaultFormatType: ptrace.NewJSONMarshaler(),
+	formatTypeProto:   ptrace.NewProtoMarshaler(),
 }
 var metricsMarshalers = map[string]pmetric.Marshaler{
-	formatTypeJSON:  pmetric.NewJSONMarshaler(),
-	formatTypeProto: pmetric.NewProtoMarshaler(),
+	defaultFormatType: pmetric.NewJSONMarshaler(),
+	formatTypeProto:   pmetric.NewProtoMarshaler(),
 }
 var logsMarshalers = map[string]plog.Marshaler{
-	formatTypeJSON:  plog.NewJSONMarshaler(),
-	formatTypeProto: plog.NewProtoMarshaler(),
+	defaultFormatType: plog.NewJSONMarshaler(),
+	formatTypeProto:   plog.NewProtoMarshaler(),
 }
 
 var encoder, _ = zstd.NewWriter(nil)
@@ -144,9 +139,6 @@ func (e *fileExporter) Shutdown(context.Context) error {
 
 func buildExportFunc(cfg *Config) func(e *fileExporter, buf []byte) error {
 	if cfg.FormatType == formatTypeProto {
-		return exportMessageAsBuffer
-	}
-	if cfg.IsCompressed {
 		return exportMessageAsBuffer
 	}
 	return exportMessageAsLine

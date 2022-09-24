@@ -36,8 +36,9 @@ type Config struct {
 	// - proto:  OTLP binary protobuf bytes.
 	FormatType string `mapstructure:"format"`
 
-	// IsCompressed defines whether to compress encoded telemetry data
-	IsCompressed bool `mapstructure:"compression"`
+	// Compression Codec used to export telemetry data
+	// The options are: 'none'  and 'zstd'
+	Compression string `mapstructure:"compression"`
 }
 
 // Rotation an option to rolling log files
@@ -70,8 +71,11 @@ func (cfg *Config) Validate() error {
 	if cfg.Path == "" {
 		return errors.New("path must be non-empty")
 	}
-	if cfg.FormatType != formatTypeJSON && cfg.FormatType != formatTypeProto {
+	if cfg.FormatType != defaultFormatType && cfg.FormatType != formatTypeProto {
 		return errors.New("format type is not supported")
+	}
+	if cfg.Compression != defaultCompression && cfg.Compression != CompressionZSTD {
+		return errors.New("compression is not supported")
 	}
 	return nil
 }

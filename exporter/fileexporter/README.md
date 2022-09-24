@@ -35,8 +35,7 @@ The following settings are optional:
   - localtime : [default: false (use UTC)] whether or not the timestamps in backup files is formatted according to the host's local time.
 
 - `format`[default: json]: define the data format of encoded telemetry data. The setting can be overridden with `proto`.
-- `compression`[default:false]:defines whether to compress encoded telemetry data.
-
+- `compression`[default = 'none']: the compression used when exporting telemetry data to file. The options are: `none` and `zstd`
 
 ## File Rotation
 

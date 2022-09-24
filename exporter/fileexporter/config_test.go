@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 				MaxBackups:   3,
 				LocalTime:    true,
 			},
-			FormatType: formatTypeJSON,
+			FormatType: defaultFormatType,
 		})
 	e2 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "3")]
 	assert.Equal(t, e2,
@@ -62,8 +62,7 @@ func TestLoadConfig(t *testing.T) {
 				MaxBackups:   3,
 				LocalTime:    true,
 			},
-			FormatType:   formatTypeProto,
-			IsCompressed: true,
+			FormatType: formatTypeProto,
 		})
 }
 
