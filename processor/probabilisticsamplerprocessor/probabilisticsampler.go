@@ -16,10 +16,11 @@ package probabilisticsamplerprocessor // import "github.com/open-telemetry/opent
 
 import (
 	"context"
+	"strconv"
+
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
-	"strconv"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"

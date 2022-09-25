@@ -16,8 +16,9 @@ package probabilisticsamplerprocessor // import "github.com/open-telemetry/opent
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"sync"
+
+	"go.opentelemetry.io/collector/config/configtelemetry"
 
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
