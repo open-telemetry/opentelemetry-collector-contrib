@@ -118,7 +118,6 @@ func (tsp *tracesamplerprocessor) processTraces(ctx context.Context, td ptrace.T
 						statCountTracesSampled.M(int64(1)),
 					)
 					metrics.decisionSampled++
-					return false
 				} else {
 					_ = stats.RecordWithTags(
 						ctx,
@@ -126,8 +125,8 @@ func (tsp *tracesamplerprocessor) processTraces(ctx context.Context, td ptrace.T
 						statCountTracesSampled.M(int64(1)),
 					)
 					metrics.decisionNotSampled++
-					return true
 				}
+				return !sampled
 			})
 			// Filter out empty ScopeMetrics
 			return ils.Spans().Len() == 0
