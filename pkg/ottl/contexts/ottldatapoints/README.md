@@ -1,9 +1,9 @@
-# Metrics Context
+# DataPoints Context
 
-The Metrics Context is a Context implementation for [pdata Metrics](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata/pmetric), the collector's internal representation for OTLP metric data.  This Context should be used when interacted with OTLP metrics.
+The DataPoints Context is a Context implementation for [pdata DataPoints](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata/pmetric), the collector's internal representation for OTLP metric data points.  This Context should be used when interacting with individual OTLP data points.
 
 ## Paths
-In general, the Metrics Context supports accessing pdata using the field names from the [metrics proto](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto).  All integers are returned and set via `int64`.  All doubles are returned and set via `float64`.
+In general, the DataPoints Context supports accessing pdata using the field names from the [metrics proto](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto).  All integers are returned and set via `int64`.  All doubles are returned and set via `float64`.
 
 The following fields are the exception.
 
@@ -35,7 +35,7 @@ The following fields are the exception.
 
 ## Enums
 
-The Metrics Context supports the enum names from the [metrics proto](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto).  In addition, it also supports an enum for metrics data type, with the numeric value being [defined by pdata](https://github.com/open-telemetry/opentelemetry-collector/blob/61c6989f8498ec2938416c66d8a46286f255c21b/pdata/internal/metrics.go#L123).
+The DataPoints Context supports the enum names from the [metrics proto](https://github.com/open-telemetry/opentelemetry-collector/blob/main/pdata/pmetric/metrics.go#L129-L136).
 
 | Enum Symbol                            | Value |
 |----------------------------------------|-------|

@@ -46,8 +46,8 @@ func NewConsumer() *Consumer {
 }
 
 // toDataType maps translator datatypes to zorkian's datatypes.
-func (c *Consumer) toDataType(dt translator.MetricDataType) (out MetricDataType) {
-	out = MetricDataType("unknown")
+func (c *Consumer) toDataType(dt translator.MetricDataType) (out MetricType) {
+	out = MetricType("unknown")
 
 	switch dt {
 	case translator.Count:

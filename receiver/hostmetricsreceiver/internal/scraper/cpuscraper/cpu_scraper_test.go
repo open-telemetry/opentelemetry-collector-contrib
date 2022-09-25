@@ -332,7 +332,7 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 
 		// remove empty values to make the test more simple
 		dp.RemoveIf(func(n pmetric.NumberDataPoint) bool {
-			return n.DoubleVal() == 0.0
+			return n.DoubleValue() == 0.0
 		})
 
 		for idx, expectedDp := range scrapeData.expectedDps {
@@ -342,7 +342,7 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 }
 
 func assertDatapointValueAndStringAttributes(t *testing.T, dp pmetric.NumberDataPoint, value float64, attrs map[string]string) {
-	assert.InDelta(t, value, dp.DoubleVal(), 0.0001)
+	assert.InDelta(t, value, dp.DoubleValue(), 0.0001)
 	for k, v := range attrs {
 		cpuAttribute, exists := dp.Attributes().Get(k)
 		assert.True(t, exists)

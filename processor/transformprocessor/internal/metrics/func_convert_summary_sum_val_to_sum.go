@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 )
 
 func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc, error) {
@@ -34,13 +34,13 @@ func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (ottl.ExprF
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
 	}
 	return func(ctx ottl.TransformContext) interface{} {
-		mtc, ok := ctx.(ottlmetrics.TransformContext)
+		mtc, ok := ctx.(ottldatapoints.TransformContext)
 		if !ok {
 			return nil
 		}
 
 		metric := mtc.GetMetric()
-		if metric.DataType() != pmetric.MetricDataTypeSummary {
+		if metric.Type() != pmetric.MetricTypeSummary {
 			return nil
 		}
 
@@ -57,7 +57,7 @@ func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (ottl.ExprF
 			dp := dps.At(i)
 			sumDp := sumDps.AppendEmpty()
 			dp.Attributes().CopyTo(sumDp.Attributes())
-			sumDp.SetDoubleVal(dp.Sum())
+			sumDp.SetDoubleValue(dp.Sum())
 			sumDp.SetStartTimestamp(dp.StartTimestamp())
 			sumDp.SetTimestamp(dp.Timestamp())
 		}

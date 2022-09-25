@@ -243,14 +243,14 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 // validateMetrics returns a bool representing whether the metric has a valid type and temporality combination and a
 // matching metric type and field
 func validateMetrics(metric pmetric.Metric) bool {
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		return metric.Gauge().DataPoints().Len() != 0
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		return metric.Sum().DataPoints().Len() != 0 && metric.Sum().AggregationTemporality() == pmetric.MetricAggregationTemporalityCumulative
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		return metric.Histogram().DataPoints().Len() != 0 && metric.Histogram().AggregationTemporality() == pmetric.MetricAggregationTemporalityCumulative
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		return metric.Summary().DataPoints().Len() != 0
 	}
 	return false
@@ -268,14 +268,14 @@ func addSingleNumberDataPoint(pt pmetric.NumberDataPoint, resource pcommon.Resou
 	}
 	switch pt.ValueType() {
 	case pmetric.NumberDataPointValueTypeInt:
-		sample.Value = float64(pt.IntVal())
+		sample.Value = float64(pt.IntValue())
 	case pmetric.NumberDataPointValueTypeDouble:
-		sample.Value = pt.DoubleVal()
+		sample.Value = pt.DoubleValue()
 	}
 	if pt.Flags().NoRecordedValue() {
 		sample.Value = math.Float64frombits(value.StaleNaN)
 	}
-	addSample(tsMap, sample, labels, metric.DataType().String())
+	addSample(tsMap, sample, labels, metric.Type().String())
 }
 
 // addSingleHistogramDataPoint converts pt to 2 + min(len(ExplicitBounds), len(BucketCount)) + 1 samples. It
@@ -298,7 +298,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 		}
 
 		sumlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+sumStr)
-		addSample(tsMap, sum, sumlabels, metric.DataType().String())
+		addSample(tsMap, sum, sumlabels, metric.Type().String())
 	}
 
 	// treat count as a sample in an individual TimeSeries
@@ -311,7 +311,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 	}
 
 	countlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+countStr)
-	addSample(tsMap, count, countlabels, metric.DataType().String())
+	addSample(tsMap, count, countlabels, metric.Type().String())
 
 	// cumulative count for conversion to cumulative histogram
 	var cumulativeCount uint64
@@ -333,7 +333,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 		}
 		boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
 		labels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+bucketStr, leStr, boundStr)
-		sig := addSample(tsMap, bucket, labels, metric.DataType().String())
+		sig := addSample(tsMap, bucket, labels, metric.Type().String())
 
 		bucketBounds = append(bucketBounds, bucketBoundsData{sig: sig, bound: bound})
 	}
@@ -350,7 +350,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 		infBucket.Value = float64(cumulativeCount)
 	}
 	infLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+bucketStr, leStr, pInfStr)
-	sig := addSample(tsMap, infBucket, infLabels, metric.DataType().String())
+	sig := addSample(tsMap, infBucket, infLabels, metric.Type().String())
 
 	bucketBounds = append(bucketBounds, bucketBoundsData{sig: sig, bound: math.Inf(1)})
 	addExemplars(tsMap, promExemplars, bucketBounds)
@@ -364,7 +364,7 @@ func getPromExemplars(pt pmetric.HistogramDataPoint) []prompb.Exemplar {
 		exemplarRunes := 0
 
 		promExemplar := &prompb.Exemplar{
-			Value:     exemplar.DoubleVal(),
+			Value:     exemplar.DoubleValue(),
 			Timestamp: timestamp.FromTime(exemplar.Timestamp().AsTime()),
 		}
 		if !exemplar.TraceID().IsEmpty() {
@@ -415,23 +415,23 @@ func getPromExemplars(pt pmetric.HistogramDataPoint) []prompb.Exemplar {
 func mostRecentTimestampInMetric(metric pmetric.Metric) pcommon.Timestamp {
 	var ts pcommon.Timestamp
 	// handle individual metric based on type
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		dataPoints := metric.Gauge().DataPoints()
 		for x := 0; x < dataPoints.Len(); x++ {
 			ts = maxTimestamp(ts, dataPoints.At(x).Timestamp())
 		}
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		dataPoints := metric.Sum().DataPoints()
 		for x := 0; x < dataPoints.Len(); x++ {
 			ts = maxTimestamp(ts, dataPoints.At(x).Timestamp())
 		}
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		dataPoints := metric.Histogram().DataPoints()
 		for x := 0; x < dataPoints.Len(); x++ {
 			ts = maxTimestamp(ts, dataPoints.At(x).Timestamp())
 		}
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		dataPoints := metric.Summary().DataPoints()
 		for x := 0; x < dataPoints.Len(); x++ {
 			ts = maxTimestamp(ts, dataPoints.At(x).Timestamp())
@@ -462,7 +462,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 		sum.Value = math.Float64frombits(value.StaleNaN)
 	}
 	sumlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+sumStr)
-	addSample(tsMap, sum, sumlabels, metric.DataType().String())
+	addSample(tsMap, sum, sumlabels, metric.Type().String())
 
 	// treat count as a sample in an individual TimeSeries
 	count := &prompb.Sample{
@@ -473,7 +473,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 		count.Value = math.Float64frombits(value.StaleNaN)
 	}
 	countlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+countStr)
-	addSample(tsMap, count, countlabels, metric.DataType().String())
+	addSample(tsMap, count, countlabels, metric.Type().String())
 
 	// process each percentile/quantile
 	for i := 0; i < pt.QuantileValues().Len(); i++ {
@@ -487,7 +487,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 		}
 		percentileStr := strconv.FormatFloat(qt.Quantile(), 'f', -1, 64)
 		qtlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName, quantileStr, percentileStr)
-		addSample(tsMap, quantile, qtlabels, metric.DataType().String())
+		addSample(tsMap, quantile, qtlabels, metric.Type().String())
 	}
 }
 

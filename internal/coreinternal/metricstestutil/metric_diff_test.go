@@ -59,10 +59,10 @@ func TestDifferentPtValueTypes(t *testing.T) {
 
 func TestHistogram(t *testing.T) {
 	cfg1 := goldendataset.DefaultCfg()
-	cfg1.MetricDescriptorType = pmetric.MetricDataTypeHistogram
+	cfg1.MetricDescriptorType = pmetric.MetricTypeHistogram
 	expected := goldendataset.MetricsFromCfg(cfg1)
 	cfg2 := goldendataset.DefaultCfg()
-	cfg2.MetricDescriptorType = pmetric.MetricDataTypeHistogram
+	cfg2.MetricDescriptorType = pmetric.MetricTypeHistogram
 	cfg2.PtVal = 2
 	actual := goldendataset.MetricsFromCfg(cfg2)
 	diffs := diffMetricData(expected, actual)
@@ -71,11 +71,11 @@ func TestHistogram(t *testing.T) {
 
 func TestAttributes(t *testing.T) {
 	cfg1 := goldendataset.DefaultCfg()
-	cfg1.MetricDescriptorType = pmetric.MetricDataTypeHistogram
+	cfg1.MetricDescriptorType = pmetric.MetricTypeHistogram
 	cfg1.NumPtLabels = 1
 	expected := goldendataset.MetricsFromCfg(cfg1)
 	cfg2 := goldendataset.DefaultCfg()
-	cfg2.MetricDescriptorType = pmetric.MetricDataTypeHistogram
+	cfg2.MetricDescriptorType = pmetric.MetricTypeHistogram
 	cfg2.NumPtLabels = 2
 	actual := goldendataset.MetricsFromCfg(cfg2)
 	diffs := DiffMetrics(nil, expected, actual)
@@ -84,11 +84,11 @@ func TestAttributes(t *testing.T) {
 
 func TestExponentialHistogram(t *testing.T) {
 	cfg1 := goldendataset.DefaultCfg()
-	cfg1.MetricDescriptorType = pmetric.MetricDataTypeHistogram
+	cfg1.MetricDescriptorType = pmetric.MetricTypeHistogram
 	cfg1.PtVal = 1
 	expected := goldendataset.MetricsFromCfg(cfg1)
 	cfg2 := goldendataset.DefaultCfg()
-	cfg2.MetricDescriptorType = pmetric.MetricDataTypeHistogram
+	cfg2.MetricDescriptorType = pmetric.MetricTypeHistogram
 	cfg2.PtVal = 3
 	actual := goldendataset.MetricsFromCfg(cfg2)
 	diffs := DiffMetrics(nil, expected, actual)

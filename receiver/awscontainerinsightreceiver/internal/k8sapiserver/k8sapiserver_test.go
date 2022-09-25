@@ -133,12 +133,12 @@ func assertMetricValueEqual(t *testing.T, m pmetric.Metrics, metricName string, 
 		for i := 0; i < metricSlice.Len(); i++ {
 			metric := metricSlice.At(i)
 			if metric.Name() == metricName {
-				if metric.DataType() == pmetric.MetricDataTypeGauge {
+				if metric.Type() == pmetric.MetricTypeGauge {
 					switch metric.Gauge().DataPoints().At(0).ValueType() {
 					case pmetric.NumberDataPointValueTypeDouble:
-						assert.Equal(t, expected, metric.Gauge().DataPoints().At(0).DoubleVal())
+						assert.Equal(t, expected, metric.Gauge().DataPoints().At(0).DoubleValue())
 					case pmetric.NumberDataPointValueTypeInt:
-						assert.Equal(t, expected, metric.Gauge().DataPoints().At(0).IntVal())
+						assert.Equal(t, expected, metric.Gauge().DataPoints().At(0).IntValue())
 					}
 
 					return

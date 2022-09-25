@@ -56,32 +56,32 @@ func generateMetricData(resourceName string, attrs map[string]interface{}) pmetr
 	sl := res.ScopeMetrics().AppendEmpty()
 	m := sl.Metrics().AppendEmpty()
 
-	switch m.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch m.Type() {
+	case pmetric.MetricTypeGauge:
 		dps := m.Gauge().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			dps.At(i).Attributes().FromRaw(attrs)
 			dps.At(i).Attributes().Sort()
 		}
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		dps := m.Sum().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			dps.At(i).Attributes().FromRaw(attrs)
 			dps.At(i).Attributes().Sort()
 		}
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		dps := m.Histogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			dps.At(i).Attributes().FromRaw(attrs)
 			dps.At(i).Attributes().Sort()
 		}
-	case pmetric.MetricDataTypeExponentialHistogram:
+	case pmetric.MetricTypeExponentialHistogram:
 		dps := m.ExponentialHistogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			dps.At(i).Attributes().FromRaw(attrs)
 			dps.At(i).Attributes().Sort()
 		}
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		dps := m.Summary().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			dps.At(i).Attributes().FromRaw(attrs)
@@ -103,28 +103,28 @@ func sortMetricAttributes(md pmetric.Metrics) {
 			for k := 0; k < metrics.Len(); k++ {
 				m := metrics.At(k)
 
-				switch m.DataType() {
-				case pmetric.MetricDataTypeGauge:
+				switch m.Type() {
+				case pmetric.MetricTypeGauge:
 					dps := m.Gauge().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dps.At(l).Attributes().Sort()
 					}
-				case pmetric.MetricDataTypeSum:
+				case pmetric.MetricTypeSum:
 					dps := m.Sum().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dps.At(l).Attributes().Sort()
 					}
-				case pmetric.MetricDataTypeHistogram:
+				case pmetric.MetricTypeHistogram:
 					dps := m.Histogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dps.At(l).Attributes().Sort()
 					}
-				case pmetric.MetricDataTypeExponentialHistogram:
+				case pmetric.MetricTypeExponentialHistogram:
 					dps := m.ExponentialHistogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dps.At(l).Attributes().Sort()
 					}
-				case pmetric.MetricDataTypeSummary:
+				case pmetric.MetricTypeSummary:
 					dps := m.Summary().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dps.At(l).Attributes().Sort()

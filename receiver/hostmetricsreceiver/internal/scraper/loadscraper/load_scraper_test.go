@@ -147,8 +147,8 @@ func assertMetricHasSingleDatapoint(t *testing.T, metric pmetric.Metric, expecte
 }
 
 func assertCompareAveragePerCPU(t *testing.T, average pmetric.Metric, standard pmetric.Metric, numCPU int) {
-	valAverage := average.Gauge().DataPoints().At(0).DoubleVal()
-	valStandard := standard.Gauge().DataPoints().At(0).DoubleVal()
+	valAverage := average.Gauge().DataPoints().At(0).DoubleValue()
+	valStandard := standard.Gauge().DataPoints().At(0).DoubleValue()
 	if numCPU == 1 {
 		// For hardware with only 1 cpu, results must be very close
 		assert.InDelta(t, valAverage, valStandard, 0.1)

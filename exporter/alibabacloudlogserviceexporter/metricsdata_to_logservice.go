@@ -180,7 +180,7 @@ func numberMetricsToLogs(name string, data pmetric.NumberDataPointSlice, default
 				newMetricLogFromRaw(name,
 					labels,
 					int64(dataPoint.Timestamp()),
-					float64(dataPoint.IntVal()),
+					float64(dataPoint.IntValue()),
 				),
 			)
 		case pmetric.NumberDataPointValueTypeDouble:
@@ -188,7 +188,7 @@ func numberMetricsToLogs(name string, data pmetric.NumberDataPointSlice, default
 				newMetricLogFromRaw(name,
 					labels,
 					int64(dataPoint.Timestamp()),
-					dataPoint.DoubleVal(),
+					dataPoint.DoubleValue(),
 				),
 			)
 		}
@@ -281,16 +281,16 @@ func doubleSummaryMetricsToLogs(name string, data pmetric.SummaryDataPointSlice,
 }
 
 func metricDataToLogServiceData(md pmetric.Metric, defaultLabels KeyValues) (logs []*sls.Log) {
-	switch md.DataType() {
-	case pmetric.MetricDataTypeNone:
+	switch md.Type() {
+	case pmetric.MetricTypeNone:
 		break
-	case pmetric.MetricDataTypeGauge:
+	case pmetric.MetricTypeGauge:
 		return numberMetricsToLogs(md.Name(), md.Gauge().DataPoints(), defaultLabels)
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		return numberMetricsToLogs(md.Name(), md.Sum().DataPoints(), defaultLabels)
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		return doubleHistogramMetricsToLogs(md.Name(), md.Histogram().DataPoints(), defaultLabels)
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		return doubleSummaryMetricsToLogs(md.Name(), md.Summary().DataPoints(), defaultLabels)
 	}
 	return logs

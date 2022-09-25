@@ -28,7 +28,7 @@ func (m *metricPostgresqlDbSize) recordDatapointWithoutDatabase(start pcommon.Ti
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // RecordPostgresqlBackendsDataPointWithoutDatabase adds a data point to postgresql.backends metric.
@@ -43,7 +43,7 @@ func (m *metricPostgresqlBackends) recordDatapointWithoutDatabase(start pcommon.
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable adds a data point to postgresql.blocks_read metric.
@@ -58,7 +58,7 @@ func (m *metricPostgresqlBlocksRead) recordDatapointWithoutDatabaseAndTable(star
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("source", sourceAttributeValue)
 }
 
@@ -74,7 +74,7 @@ func (m *metricPostgresqlCommits) recordDatapointWithoutDatabase(start pcommon.T
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // RecordPostgresqlRollbacksDataPointWithoutDatabase adds a data point to postgresql.commits metric without the database metric attribute
@@ -89,7 +89,7 @@ func (m *metricPostgresqlRollbacks) recordDatapointWithoutDatabase(start pcommon
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // RecordPostgresqlRowsDataPointWithoutDatabaseAndTable adds a data point to postgresql.rows metric without the database or table metric attribute.
@@ -104,7 +104,7 @@ func (m *metricPostgresqlRows) recordDatapointWithoutDatabaseAndTable(start pcom
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("state", stateAttributeValue)
 }
 
@@ -120,6 +120,6 @@ func (m *metricPostgresqlOperations) recordDatapointWithoutDatabaseAndTable(star
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("operation", operationAttributeValue)
 }

@@ -111,8 +111,8 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 
 	out.StartTimestamp = state.PrevPoint.ObservedTimestamp
 
-	switch metricID.MetricDataType {
-	case pmetric.MetricDataTypeHistogram:
+	switch metricID.MetricType {
+	case pmetric.MetricTypeHistogram:
 		value := metricPoint.HistogramValue
 		prevValue := state.PrevPoint.HistogramValue
 		if math.IsNaN(value.Sum) {
@@ -135,7 +135,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 		}
 
 		out.HistogramValue = &delta
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		if metricID.IsFloatVal() {
 			value := metricPoint.FloatValue
 			prevValue := state.PrevPoint.FloatValue

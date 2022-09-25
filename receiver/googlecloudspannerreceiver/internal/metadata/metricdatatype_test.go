@@ -22,19 +22,19 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func TestNewMetricDataType(t *testing.T) {
-	metricDataType := NewMetricDataType(pmetric.MetricDataTypeGauge, pmetric.MetricAggregationTemporalityDelta, true)
+func TestNewMetricType(t *testing.T) {
+	metricDataType := NewMetricType(pmetric.MetricTypeGauge, pmetric.MetricAggregationTemporalityDelta, true)
 
 	require.NotNil(t, metricDataType)
-	assert.Equal(t, metricDataType.MetricDataType(), pmetric.MetricDataTypeGauge)
+	assert.Equal(t, metricDataType.MetricType(), pmetric.MetricTypeGauge)
 	assert.Equal(t, metricDataType.AggregationTemporality(), pmetric.MetricAggregationTemporalityDelta)
 	assert.True(t, metricDataType.IsMonotonic())
 }
 
-func TestMetricValueDataType_MetricDataType(t *testing.T) {
-	valueDataType := metricValueDataType{dataType: pmetric.MetricDataTypeGauge}
+func TestMetricValueDataType_MetricType(t *testing.T) {
+	valueDataType := metricValueDataType{dataType: pmetric.MetricTypeGauge}
 
-	assert.Equal(t, valueDataType.MetricDataType(), pmetric.MetricDataTypeGauge)
+	assert.Equal(t, valueDataType.MetricType(), pmetric.MetricTypeGauge)
 }
 
 func TestMetricValueDataType_AggregationTemporality(t *testing.T) {

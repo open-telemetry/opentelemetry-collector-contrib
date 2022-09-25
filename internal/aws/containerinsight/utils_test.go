@@ -175,15 +175,15 @@ func checkMetricsAreExpected(t *testing.T, md pmetric.Metrics, fields map[string
 			log.Printf("metric=%v", metricName)
 			assert.Equal(t, expectedUnits[metricName], m.Unit(), "Wrong unit for metric: "+metricName)
 			// we only need to worry about gauge types for container insights metrics
-			if m.DataType() == pmetric.MetricDataTypeGauge {
+			if m.Type() == pmetric.MetricTypeGauge {
 				dps := m.Gauge().DataPoints()
 				assert.Equal(t, 1, dps.Len())
 				dp := dps.At(0)
 				switch dp.ValueType() {
 				case pmetric.NumberDataPointValueTypeDouble:
-					assert.Equal(t, convertToFloat64(fields[metricName]), dp.DoubleVal())
+					assert.Equal(t, convertToFloat64(fields[metricName]), dp.DoubleValue())
 				case pmetric.NumberDataPointValueTypeInt:
-					assert.Equal(t, convertToInt64(fields[metricName]), dp.IntVal())
+					assert.Equal(t, convertToInt64(fields[metricName]), dp.IntValue())
 				}
 				assert.Equal(t, pcommon.Timestamp(timeUnixNano), dp.Timestamp())
 			}

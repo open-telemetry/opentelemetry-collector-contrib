@@ -63,12 +63,12 @@ func (b *metricsFromDataPointBuilder) Build(dataPoints []*MetricsDataPoint) (pme
 		metric.SetUnit(key.MetricUnit)
 
 		var dataPointSlice pmetric.NumberDataPointSlice
-		switch key.MetricDataType.MetricDataType() {
-		case pmetric.MetricDataTypeGauge:
+		switch key.MetricType.MetricType() {
+		case pmetric.MetricTypeGauge:
 			dataPointSlice = metric.SetEmptyGauge().DataPoints()
-		case pmetric.MetricDataTypeSum:
-			metric.SetEmptySum().SetAggregationTemporality(key.MetricDataType.AggregationTemporality())
-			metric.Sum().SetIsMonotonic(key.MetricDataType.IsMonotonic())
+		case pmetric.MetricTypeSum:
+			metric.SetEmptySum().SetAggregationTemporality(key.MetricType.AggregationTemporality())
+			metric.Sum().SetIsMonotonic(key.MetricType.IsMonotonic())
 			dataPointSlice = metric.Sum().DataPoints()
 		}
 

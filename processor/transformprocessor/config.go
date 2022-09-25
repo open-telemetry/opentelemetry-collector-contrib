@@ -20,8 +20,8 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
@@ -46,18 +46,18 @@ func (c *Config) Validate() error {
 		ottltraces.ParseEnum,
 		component.TelemetrySettings{},
 	)
-	_, err := ottlp.ParseQueries(c.Traces.Queries)
+	_, err := ottlp.ParseStatements(c.Traces.Queries)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
 
 	ottlp = ottl.NewParser(
 		metrics.Functions(),
-		ottlmetrics.ParsePath,
-		ottlmetrics.ParseEnum,
+		ottldatapoints.ParsePath,
+		ottldatapoints.ParseEnum,
 		component.TelemetrySettings{},
 	)
-	_, err = ottlp.ParseQueries(c.Metrics.Queries)
+	_, err = ottlp.ParseStatements(c.Metrics.Queries)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
@@ -68,7 +68,7 @@ func (c *Config) Validate() error {
 		ottllogs.ParseEnum,
 		component.TelemetrySettings{},
 	)
-	_, err = ottlp.ParseQueries(c.Logs.Queries)
+	_, err = ottlp.ParseStatements(c.Logs.Queries)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}

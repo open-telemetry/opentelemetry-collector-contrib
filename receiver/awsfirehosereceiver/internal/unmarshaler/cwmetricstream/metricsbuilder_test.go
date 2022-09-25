@@ -69,7 +69,7 @@ func TestMetricBuilder(t *testing.T) {
 		mb.Build(got)
 		require.Equal(t, metric.MetricName, got.Name())
 		require.Equal(t, metric.Unit, got.Unit())
-		require.Equal(t, pmetric.MetricDataTypeSummary, got.DataType())
+		require.Equal(t, pmetric.MetricTypeSummary, got.Type())
 		gotDps := got.Summary().DataPoints()
 		require.Equal(t, 1, gotDps.Len())
 		gotDp := gotDps.At(0)
