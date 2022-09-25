@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/container"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
 
@@ -210,9 +211,10 @@ func TestZeroValueStats(t *testing.T) {
 	}
 	containers := containerJSON(t)
 	config := &Config{}
+	rules := container.ExtractionRules{}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-	md := ContainerStatsToMetrics(now, stats, containers, config)
+	md := ContainerStatsToMetrics(now, stats, containers, rules, config)
 
 	metrics := []Metric{
 		{name: "container.cpu.usage.system", mtype: MetricTypeCumulative, unit: "ns", labelKeys: nil, values: []Value{{labelValues: nil, value: 0}}},
@@ -266,9 +268,10 @@ func TestStatsToDefaultMetrics(t *testing.T) {
 	stats := statsJSON(t)
 	containers := containerJSON(t)
 	config := &Config{}
+	rules := container.ExtractionRules{}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-	md := ContainerStatsToMetrics(now, stats, containers, config)
+	md := ContainerStatsToMetrics(now, stats, containers, rules, config)
 
 	assertMetricsDataEqual(t, now, defaultMetrics(), nil, md)
 }
@@ -279,9 +282,10 @@ func TestStatsToAllMetrics(t *testing.T) {
 	config := &Config{
 		ProvidePerCoreCPUMetrics: true,
 	}
+	rules := container.ExtractionRules{}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-	md := ContainerStatsToMetrics(now, stats, containers, config)
+	md := ContainerStatsToMetrics(now, stats, containers, rules, config)
 
 	metrics := []Metric{
 		{name: "container.blockio.io_service_bytes_recursive.read", mtype: MetricTypeCumulative, unit: "By", labelKeys: []string{"device_major", "device_minor"}, values: []Value{{labelValues: []string{"202", "0"}, value: 56500224}}},
@@ -372,15 +376,22 @@ func TestStatsToAllMetrics(t *testing.T) {
 func TestEnvVarToMetricLabels(t *testing.T) {
 	stats := statsJSON(t)
 	containers := containerJSON(t)
-	config := &Config{
-		EnvVarsToMetricLabels: map[string]string{
-			"MY_ENV_VAR":       "my.env.to.metric.label",
-			"MY_OTHER_ENV_VAR": "my.other.env.to.metric.label",
+	config := &Config{}
+	rules := container.ExtractionRules{
+		EnvVars: []container.FieldExtractionRule{
+			{
+				Name: "my.env.to.metric.label",
+				Key:  "MY_ENV_VAR",
+			},
+			{
+				Name: "my.other.env.to.metric.label",
+				Key:  "MY_OTHER_ENV_VAR",
+			},
 		},
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-	md := ContainerStatsToMetrics(now, stats, containers, config)
+	md := ContainerStatsToMetrics(now, stats, containers, rules, config)
 
 	expectedLabels := map[string]string{
 		"my.env.to.metric.label":       "my_env_var_value",
@@ -393,15 +404,22 @@ func TestEnvVarToMetricLabels(t *testing.T) {
 func TestContainerLabelToMetricLabels(t *testing.T) {
 	stats := statsJSON(t)
 	containers := containerJSON(t)
-	config := &Config{
-		ContainerLabelsToMetricLabels: map[string]string{
-			"my.specified.docker.label":    "my.docker.to.metric.label",
-			"other.specified.docker.label": "my.other.docker.to.metric.label",
+	config := &Config{}
+	rules := container.ExtractionRules{
+		Labels: []container.FieldExtractionRule{
+			{
+				Name: "my.docker.to.metric.label",
+				Key:  "my.specified.docker.label",
+			},
+			{
+				Name: "my.other.docker.to.metric.label",
+				Key:  "other.specified.docker.label",
+			},
 		},
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-	md := ContainerStatsToMetrics(now, stats, containers, config)
+	md := ContainerStatsToMetrics(now, stats, containers, rules, config)
 
 	expectedLabels := map[string]string{
 		"my.docker.to.metric.label":       "my_specified_docker_label_value",

@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/container"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
@@ -39,16 +40,23 @@ type receiver struct {
 	settings component.ReceiverCreateSettings
 	client   *docker.Client
 	mb       *metadata.MetricsBuilder
+	rules    container.ExtractionRules
 }
 
-func newReceiver(set component.ReceiverCreateSettings, config *Config) *receiver {
+func newReceiver(
+	set component.ReceiverCreateSettings,
+	rules container.ExtractionRules,
+	config *Config,
+) *receiver {
 	if config.ProvidePerCoreCPUMetrics {
 		config.MetricsConfig.ContainerCPUUsagePercpu.Enabled = config.ProvidePerCoreCPUMetrics
 	}
+
 	return &receiver{
 		config:   config,
 		settings: set,
 		mb:       metadata.NewMetricsBuilder(config.MetricsConfig, set.BuildInfo),
+		rules:    rules,
 	}
 }
 
@@ -82,7 +90,7 @@ func (r *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	wg := &sync.WaitGroup{}
 	wg.Add(len(containers))
-	for _, container := range containers {
+	for _, c := range containers {
 		go func(c docker.Container) {
 			defer wg.Done()
 			statsJSON, err := r.client.FetchContainerStatsAsJSON(ctx, c)
@@ -92,9 +100,15 @@ func (r *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			}
 
 			results <- result{
-				md:  ContainerStatsToMetrics(pcommon.NewTimestampFromTime(time.Now()), statsJSON, c, r.config),
+				md: ContainerStatsToMetrics(
+					pcommon.NewTimestampFromTime(time.Now()),
+					statsJSON,
+					c,
+					r.rules,
+					r.config,
+				),
 				err: nil}
-		}(container)
+		}(c)
 	}
 
 	wg.Wait()

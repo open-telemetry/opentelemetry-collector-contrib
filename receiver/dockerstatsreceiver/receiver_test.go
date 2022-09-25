@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/container"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
@@ -118,7 +119,7 @@ func TestNewReceiver(t *testing.T) {
 		Endpoint:         "unix:///run/some.sock",
 		DockerAPIVersion: defaultDockerAPIVersion,
 	}
-	mr := newReceiver(componenttest.NewNopReceiverCreateSettings(), cfg)
+	mr := newReceiver(componenttest.NewNopReceiverCreateSettings(), container.ExtractionRules{}, cfg)
 	assert.NotNil(t, mr)
 }
 
@@ -131,7 +132,7 @@ func TestErrorsInStart(t *testing.T) {
 		Endpoint:         unreachable,
 		DockerAPIVersion: defaultDockerAPIVersion,
 	}
-	recv := newReceiver(componenttest.NewNopReceiverCreateSettings(), cfg)
+	recv := newReceiver(componenttest.NewNopReceiverCreateSettings(), container.ExtractionRules{}, cfg)
 	assert.NotNil(t, recv)
 
 	cfg.Endpoint = "..not/a/valid/endpoint"
@@ -190,12 +191,24 @@ func TestScrapeV2(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Endpoint = tc.mockDockerEngine.URL
-			cfg.EnvVarsToMetricLabels = map[string]string{"ENV_VAR": "env-var-metric-label"}
-			cfg.ContainerLabelsToMetricLabels = map[string]string{"container.label": "container-metric-label"}
 			cfg.ProvidePerCoreCPUMetrics = true
 			cfg.MetricsConfig = allMetricsEnabled
+			extractionRules := container.ExtractionRules{
+				EnvVars: []container.FieldExtractionRule{
+					{
+						Name: "env-var-metric-label",
+						Key:  "ENV_VAR",
+					},
+				},
+				Labels: []container.FieldExtractionRule{
+					{
+						Name: "container-metric-label",
+						Key:  "container.label",
+					},
+				},
+			}
 
-			receiver := newReceiver(componenttest.NewNopReceiverCreateSettings(), cfg)
+			receiver := newReceiver(componenttest.NewNopReceiverCreateSettings(), extractionRules, cfg)
 			err := receiver.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
 

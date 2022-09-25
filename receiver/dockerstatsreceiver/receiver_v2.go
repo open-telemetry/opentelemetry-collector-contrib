@@ -88,7 +88,7 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 	r.recordNetworkMetrics(now, &containerStats.Networks)
 
 	// Always-present resource attrs + the user-configured resource attrs
-	resourceCapacity := defaultResourcesLen + len(r.config.EnvVarsToMetricLabels) + len(r.config.ContainerLabelsToMetricLabels)
+	resourceCapacity := defaultResourcesLen + len(r.rules.Labels) + len(r.rules.EnvVars)
 	resourceMetricsOptions := make([]metadata.ResourceMetricsOption, 0, resourceCapacity)
 	resourceMetricsOptions = append(resourceMetricsOptions,
 		metadata.WithContainerRuntime("docker"),
@@ -97,19 +97,16 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 		metadata.WithContainerImageName(container.Config.Image),
 		metadata.WithContainerName(strings.TrimPrefix(container.Name, "/")))
 
-	for k, label := range r.config.EnvVarsToMetricLabels {
-		if v := container.EnvMap[k]; v != "" {
-			resourceMetricsOptions = append(resourceMetricsOptions, func(rm pmetric.ResourceMetrics) {
-				rm.Resource().Attributes().PutString(label, v)
-			})
-		}
+	for _, r := range r.rules.Labels {
+		resourceMetricsOptions = append(resourceMetricsOptions, func(rm pmetric.ResourceMetrics) {
+			r.ExtractFromMetadata(container.Config.Labels, rm.Resource().Attributes(), "container.labels.%s")
+		})
 	}
-	for k, label := range r.config.ContainerLabelsToMetricLabels {
-		if v := container.Config.Labels[k]; v != "" {
-			resourceMetricsOptions = append(resourceMetricsOptions, func(rm pmetric.ResourceMetrics) {
-				rm.Resource().Attributes().PutString(label, v)
-			})
-		}
+
+	for _, r := range r.rules.EnvVars {
+		resourceMetricsOptions = append(resourceMetricsOptions, func(rm pmetric.ResourceMetrics) {
+			r.ExtractFromMetadata(container.EnvMap, rm.Resource().Attributes(), "container.env_vars.%s")
+		})
 	}
 
 	return r.mb.Emit(resourceMetricsOptions...)

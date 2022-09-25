@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.opentelemetry.io/collector/service/servicetest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/container"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -81,6 +83,25 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.False(t, ascfg.MetricsConfig.ContainerCPUUsageSystem.Enabled)
 	assert.True(t, ascfg.MetricsConfig.ContainerMemoryTotalRss.Enabled)
+
+	assert.Equal(t, ExtractConfig{
+		EnvVars: []container.FieldExtractConfig{
+			{
+				KeyRegex: ".*",
+			},
+		},
+		Labels: []container.FieldExtractConfig{
+			{
+				TagName: "label_1",
+				Key:     "some_container_label_1",
+				Regex:   "TEST_1=(?P<value>[\\w]+)",
+			},
+			{
+				TagName:  "$$1",
+				KeyRegex: "app/(.*)",
+			},
+		},
+	}, ascfg.Extract)
 }
 
 func TestValidateErrors(t *testing.T) {
@@ -92,4 +113,25 @@ func TestValidateErrors(t *testing.T) {
 
 	cfg = &Config{ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: 1 * time.Second}, Endpoint: "someEndpoint", DockerAPIVersion: 1.21}
 	assert.Equal(t, "api_version must be at least 1.22", cfg.Validate().Error())
+
+	cfg = &Config{
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			CollectionInterval: 1 * time.Second,
+		},
+		Endpoint:         "someEndpoint",
+		DockerAPIVersion: 1.24,
+		Extract: ExtractConfig{
+			EnvVars: []container.FieldExtractConfig{
+				{Key: "some-env-key", KeyRegex: "some-env-key-regex"},
+			},
+			Labels: []container.FieldExtractConfig{
+				{Key: "some-label-key", KeyRegex: "some-label-key-regex"},
+			},
+		},
+	}
+	assert.Equal(
+		t,
+		"failed to validate [0] extractor env var config: out of Key or KeyRegex only one option is expected to be configured at a time, currently Key:some-env-key and KeyRegex:some-env-key-regex; failed to validate [0] extractor label config: out of Key or KeyRegex only one option is expected to be configured at a time, currently Key:some-label-key and KeyRegex:some-label-key-regex",
+		cfg.Validate().Error(),
+	)
 }

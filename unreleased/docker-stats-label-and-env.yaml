@@ -1,0 +1,5 @@
+change_type: 'deprecation'
+component: dockerstatsreceiver
+note: "Deprecated 'container_labels_to_metric_labels' and 'env_vars_to_metric_labels' in favor of new 'extract' config option"
+issues: [13848]
+subtext:

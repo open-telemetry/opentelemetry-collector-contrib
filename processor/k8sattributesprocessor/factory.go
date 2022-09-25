@@ -220,8 +220,8 @@ func warnDeprecatedMetadataConfig(logger *zap.Logger, cfg config.Processor) {
 	for _, field := range oCfg.Extract.Metadata {
 		var oldName, newName string
 		switch field {
-		case metdataNamespace:
-			oldName = metdataNamespace
+		case metadataNamespace:
+			oldName = metadataNamespace
 			newName = conventions.AttributeK8SNamespaceName
 		case metadataPodName:
 			oldName = metadataPodName

@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/container"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
 
@@ -36,6 +37,7 @@ func ContainerStatsToMetrics(
 	now pcommon.Timestamp,
 	containerStats *dtypes.StatsJSON,
 	container docker.Container,
+	rules container.ExtractionRules,
 	config *Config,
 ) pmetric.Metrics {
 	md := pmetric.NewMetrics()
@@ -47,7 +49,15 @@ func ContainerStatsToMetrics(
 	resourceAttr.PutString(conventions.AttributeContainerImageName, container.Config.Image)
 	resourceAttr.PutString(conventions.AttributeContainerName, strings.TrimPrefix(container.Name, "/"))
 	resourceAttr.PutString("container.hostname", container.Config.Hostname)
-	updateConfiguredResourceAttributes(resourceAttr, container, config)
+
+	for _, r := range rules.Labels {
+		r.ExtractFromMetadata(container.Config.Labels, resourceAttr, "container.labels.%s")
+	}
+
+	for _, r := range rules.EnvVars {
+		r.ExtractFromMetadata(container.EnvMap, resourceAttr, "container.env_vars.%s")
+	}
+
 	ils := rs.ScopeMetrics().AppendEmpty()
 
 	appendBlockioMetrics(ils.Metrics(), &containerStats.BlkioStats, now)
@@ -56,20 +66,6 @@ func ContainerStatsToMetrics(
 	appendNetworkMetrics(ils.Metrics(), &containerStats.Networks, now)
 
 	return md
-}
-
-func updateConfiguredResourceAttributes(resourceAttr pcommon.Map, container docker.Container, config *Config) {
-	for k, label := range config.EnvVarsToMetricLabels {
-		if v := container.EnvMap[k]; v != "" {
-			resourceAttr.PutString(label, v)
-		}
-	}
-
-	for k, label := range config.ContainerLabelsToMetricLabels {
-		if v := container.Config.Labels[k]; v != "" {
-			resourceAttr.PutString(label, v)
-		}
-	}
 }
 
 type blkioStat struct {

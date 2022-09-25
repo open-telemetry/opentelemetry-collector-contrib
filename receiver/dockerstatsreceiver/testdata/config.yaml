@@ -20,6 +20,15 @@ receivers:
         enabled: false
       container.memory.total_rss:
         enabled: true
+    extract:
+      env_vars:
+        - key_regex: ".*"
+      labels:
+        - tag_name: "label_1"
+          key: "some_container_label_1"
+          regex: "TEST_1=(?P<value>[\\w]+)"
+        - tag_name: "$$1"
+          key_regex: "app/(.*)"
 
 processors:
   nop:

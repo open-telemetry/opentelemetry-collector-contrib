@@ -21,7 +21,9 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/container"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
@@ -40,6 +42,8 @@ type Config struct {
 	// for the mapped name.  E.g. `io.kubernetes.container.name: container_spec_name`
 	// would result in a MetricDescriptor label called `container_spec_name` whose
 	// Metric DataPoints have the value of the `io.kubernetes.container.name` container label.
+	// Deprecated: [v0.61.0]
+	// Please use extract config option
 	ContainerLabelsToMetricLabels map[string]string `mapstructure:"container_labels_to_metric_labels"`
 
 	// A mapping of container environment variable names to MetricDescriptor label
@@ -48,6 +52,8 @@ type Config struct {
 	// key called `version` whose DataPoint label values are the value of the
 	// `APP_VERSION` environment variable configured for that particular container, if
 	// present.
+	// Deprecated: [v0.61.0]
+	// Please use extract config option
 	EnvVarsToMetricLabels map[string]string `mapstructure:"env_vars_to_metric_labels"`
 
 	// A list of filters whose matching images are to be excluded.  Supports literals, globs, and regex.
@@ -61,6 +67,26 @@ type Config struct {
 
 	// Metrics config. Enable or disable stats by name.
 	MetricsConfig metadata.MetricsSettings `mapstructure:"metrics"`
+
+	// Extract section allows specifying extraction rules to extract
+	// data from container specs
+	Extract ExtractConfig `mapstructure:"extract"`
+}
+
+// ExtractConfig section allows specifying extraction rules to extract
+// data from container specs.
+type ExtractConfig struct {
+	// EnvVars allows extracting data from container env vars and record it
+	// as resource attributes.
+	// It is a list of FieldExtractConfig type. See FieldExtractConfig
+	// documentation for more details.
+	EnvVars []container.FieldExtractConfig `mapstructure:"env_vars"`
+
+	// Labels allows extracting data from container labels and record it
+	// as resource attributes.
+	// It is a list of FieldExtractConfig type. See FieldExtractConfig
+	// documentation for more details.
+	Labels []container.FieldExtractConfig `mapstructure:"labels"`
 }
 
 func (config Config) Validate() error {
@@ -73,5 +99,29 @@ func (config Config) Validate() error {
 	if config.DockerAPIVersion < minimalRequiredDockerAPIVersion {
 		return fmt.Errorf("api_version must be at least %v", minimalRequiredDockerAPIVersion)
 	}
+	if err := config.Extract.Validate(); err != nil {
+		return err
+	}
 	return nil
+}
+
+func (c ExtractConfig) Validate() (validationErr error) {
+	for i, envVarConfig := range c.EnvVars {
+		if err := envVarConfig.Validate(); err != nil {
+			validationErr = multierr.Append(
+				validationErr,
+				fmt.Errorf("failed to validate [%d] extractor env var config: %w", i, err),
+			)
+		}
+	}
+	for i, labelConfig := range c.Labels {
+		if err := labelConfig.Validate(); err != nil {
+			validationErr = multierr.Append(
+				validationErr,
+				fmt.Errorf("failed to validate [%d] extractor label config: %w", i, err),
+			)
+		}
+	}
+
+	return validationErr
 }

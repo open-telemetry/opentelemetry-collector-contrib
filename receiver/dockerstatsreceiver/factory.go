@@ -16,6 +16,7 @@ package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -67,7 +68,12 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	dockerConfig := config.(*Config)
-	dsr := newReceiver(params, dockerConfig)
+
+	rules, err := newExtractionRules(dockerConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to init extraction rules: %w", err)
+	}
+	dsr := newReceiver(params, rules, dockerConfig)
 
 	scrapeFunc := dsr.scrape
 	if featuregate.GetRegistry().IsEnabled(useScraperV2ID) {

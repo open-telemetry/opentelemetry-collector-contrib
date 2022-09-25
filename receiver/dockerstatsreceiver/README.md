@@ -22,10 +22,9 @@ The following settings are required:
 The following settings are optional:
 
 - `collection_interval` (default = `10s`): The interval at which to gather container stats.
-- `container_labels_to_metric_labels` (no default): A map of Docker container label names whose label values to use
-as the specified metric label key.
-- `env_vars_to_metric_labels` (no default): A map of Docker container environment variables whose values to use
-as the specified metric label key.
+- `extract` (no default): allows specifying extraction rules to extract data from container specs.
+    - `env_vars` allows extracting data from container env vars and record it as resource attributes.
+    - `labels` allows extracting data from container labels and record it as resource attributes.
 - `excluded_images` (no default, all running containers monitored): A list of strings,
 [regexes](https://golang.org/pkg/regexp/), or [globs](https://github.com/gobwas/glob) whose referent container image
 names will not be among the queried containers. `!`-prefixed negations are possible for all item types to signify that
@@ -47,17 +46,20 @@ receivers:
     collection_interval: 2s
     timeout: 20s
     api_version: 1.24
-    container_labels_to_metric_labels:
-      my.container.label: my-metric-label
-      my.other.container.label: my-other-metric-label
-    env_vars_to_metric_labels:
-      MY_ENVIRONMENT_VARIABLE: my-metric-label
-      MY_OTHER_ENVIRONMENT_VARIABLE: my-other-metric-label
     excluded_images:
       - undesired-container
       - /.*undesired.*/
       - another-*-container
     provide_per_core_cpu_metrics: true
+    extract:
+      env_vars:
+        - key_regex: ".*"
+      labels:
+        - tag_name: "label_1"
+          key: "some_container_label_1"
+          regex: "TEST_1=(?P<value>[\\w]+)"
+        - tag_name: "$$1"
+          key_regex: "app/(.*)"
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
@@ -73,7 +75,7 @@ See the [Collector feature gates](https://github.com/open-telemetry/opentelemetr
 
 **ALPHA**: `receiver.dockerstats.useScraperV2`
 
-The feature gate `receiver.dockerstatsd.useScraperV2` once enabled allows collection of selective metrics that is described in [documentation.md](./documentation.md). When the feature gate is disabled, the metrics settings are mostly ignored and not configurable with minor variation in metric name and attributes.
+The feature gate `receiver.dockerstats.useScraperV2` once enabled allows collection of selective metrics that is described in [documentation.md](./documentation.md). When the feature gate is disabled, the metrics settings are mostly ignored and not configurable with minor variation in metric name and attributes.
 
 This is considered a breaking change for existing users of this receiver, and it is recommended to migrate to the new implementation when possible. Any new users planning to adopt this receiver should enable this feature gate to avoid having to migrate any visualisations or alerts.
 

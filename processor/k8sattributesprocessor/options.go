@@ -32,7 +32,7 @@ const (
 	filterOPExists       = "exists"
 	filterOPDoesNotExist = "does-not-exist"
 	// Used for maintaining backward compatibility
-	metdataNamespace   = "namespace"
+	metadataNamespace  = "namespace"
 	metadataPodName    = "podName"
 	metadataPodUID     = "podUID"
 	metadataStartTime  = "startTime"
@@ -85,10 +85,10 @@ func withExtractMetadata(fields ...string) option {
 		}
 		for _, field := range fields {
 			switch field {
-			// Old conventions handled by the cases metdataNamespace, metadataPodName, metadataPodUID,
+			// Old conventions handled by the cases metadataNamespace, metadataPodName, metadataPodUID,
 			// metadataStartTime, metadataDeployment, deprecatedMetadataCluster, metadataNode are being supported for backward compatibility.
 			// These will be removed when new conventions get merged to https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go
-			case metdataNamespace, conventions.AttributeK8SNamespaceName:
+			case metadataNamespace, conventions.AttributeK8SNamespaceName:
 				p.rules.Namespace = true
 			case metadataPodName, conventions.AttributeK8SPodName:
 				p.rules.PodName = true
