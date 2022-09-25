@@ -268,7 +268,7 @@ func (f *factory) createTracesExporter(
 		pusher,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
-		// We don't do retries on traces as it may cause duplicates in the backend confusing the user
+		// We don't do retries on traces because of deduping concerns on APM Events.
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(stop),
