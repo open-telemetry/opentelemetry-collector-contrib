@@ -29,7 +29,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -115,22 +114,4 @@ func TestInputJournald(t *testing.T) {
 	case <-time.After(time.Second):
 		require.FailNow(t, "Timed out waiting for entry to be read")
 	}
-}
-
-func TestConfig(t *testing.T) {
-	expect := NewConfigWithID("my_journald_input")
-
-	input := map[string]interface{}{
-		"id":         "my_journald_input",
-		"type":       "journald_input",
-		"priority":   "info",
-		"start_at":   "end",
-		"attributes": map[string]interface{}{},
-		"resource":   map[string]interface{}{},
-	}
-
-	var actual Config
-	err := operatortest.UnmarshalMapstructure(input, &actual)
-	require.NoError(t, err)
-	require.Equal(t, expect, &actual)
 }

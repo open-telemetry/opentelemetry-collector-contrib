@@ -19,12 +19,10 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -277,39 +275,4 @@ func makeTestEntry(t *testing.T, field entry.Field, value interface{}) *entry.En
 	e := entry.New()
 	require.NoError(t, e.Set(field, value))
 	return e
-}
-
-func TestConfig(t *testing.T) {
-	expect := NewConfigWithID("test")
-	parseFrom := entry.NewBodyField("from")
-	expect.ParseFrom = &parseFrom
-	expect.Preset = "test"
-
-	t.Run("mapstructure", func(t *testing.T) {
-		input := map[string]interface{}{
-			"id":         "test",
-			"type":       "severity_parser",
-			"parse_from": "body.from",
-			"on_error":   "send",
-			"preset":     "test",
-		}
-		var actual Config
-		err := operatortest.UnmarshalMapstructure(input, &actual)
-		require.NoError(t, err)
-		require.Equal(t, expect, &actual)
-	})
-
-	t.Run("yaml", func(t *testing.T) {
-		input := `
-type: severity_parser
-id: test
-on_error: "send"
-parse_from: body.from
-preset: test
-`
-		var actual Config
-		err := yaml.Unmarshal([]byte(input), &actual)
-		require.NoError(t, err)
-		require.Equal(t, expect, &actual)
-	})
 }
