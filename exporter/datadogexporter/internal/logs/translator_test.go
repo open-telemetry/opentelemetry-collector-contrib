@@ -148,42 +148,7 @@ func TestTransform(t *testing.T) {
 			},
 		},
 		{
-			// here SeverityText should take precedence for datadog status
-			name: "log_with_severity_text_and_severity_number",
-			args: args{
-				lr: func() plog.LogRecord {
-					l := plog.NewLogRecord()
-					l.Attributes().PutString("app", "test")
-					l.SetSpanID(spanID)
-					l.SetTraceID(traceID)
-					l.Attributes().PutString(conventions.AttributeServiceName, "otlp_col")
-					l.SetSeverityText("alert")
-					l.SetSeverityNumber(5)
-					return l
-				}(),
-				res: func() pcommon.Resource {
-					r := pcommon.NewResource()
-					return r
-				}(),
-			},
-			want: datadogV2.HTTPLogItem{
-				Message: *datadog.PtrString(""),
-				Service: datadog.PtrString("otlp_col"),
-				AdditionalProperties: map[string]string{
-					"app":              "test",
-					"status":           "alert",
-					otelSeverityText:   "alert",
-					otelSeverityNumber: "5",
-					otelSpanID:         fmt.Sprintf("%x", string(spanID[:])),
-					otelTraceID:        fmt.Sprintf("%x", string(traceID[:])),
-					ddSpanID:           fmt.Sprintf("%d", ddSp),
-					ddTraceID:          fmt.Sprintf("%d", ddTr),
-					"service.name":     "otlp_col",
-				},
-			},
-		},
-		{
-			// here SeverityText should take precedence for datadog status
+			// here SeverityText should take precedence for log status
 			name: "log_with_severity_text_and_severity_number",
 			args: args{
 				lr: func() plog.LogRecord {
