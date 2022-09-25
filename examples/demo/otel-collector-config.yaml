@@ -11,17 +11,20 @@ exporters:
 
   logging:
 
-  zipkin:
-    endpoint: "http://zipkin-all-in-one:9411/api/v2/spans"
-    format: proto
-
-  jaeger:
-    endpoint: jaeger-all-in-one:14250
-    tls:
-      insecure: true
+#  zipkin:
+#    endpoint: "http://zipkin-all-in-one:9411/api/v2/spans"
+#    format: proto
+#
+#  jaeger:
+#    endpoint: jaeger-all-in-one:14250
+#    tls:
+#      insecure: true
 
 processors:
   batch:
+  probabilistic_sampler:
+    hash_seed: 22
+    sampling_percentage: 15.3
 
 extensions:
   health_check:
@@ -35,8 +38,8 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
-      exporters: [logging, zipkin, jaeger]
+      processors: [batch,probabilistic_sampler]
+      exporters: [logging]
     metrics:
       receivers: [otlp]
       processors: [batch]
