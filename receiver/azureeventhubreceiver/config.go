@@ -26,9 +26,10 @@ var (
 
 type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"`
-	Connection              string `mapstructure:"connection"`
-	Partition               string `mapstructure:"partition"`
-	Offset                  string `mapstructure:"offset"`
+	Connection              string              `mapstructure:"connection"`
+	Partition               string              `mapstructure:"partition"`
+	Offset                  string              `mapstructure:"offset"`
+	StorageID               *config.ComponentID `mapstructure:"storage"`
 }
 
 // Validate config

@@ -15,7 +15,6 @@
 package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 import (
 	"context"
-	"fmt"
 
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"go.opentelemetry.io/collector/component"
@@ -65,7 +64,7 @@ func (h *hubWrapperImpl) Close(ctx context.Context) error {
 }
 
 func (c *client) Start(ctx context.Context, host component.Host) error {
-	storageClient, err := adapter.GetStorageClient(ctx, c.config.ID(), component.KindReceiver, host)
+	storageClient, err := adapter.GetStorageClient(ctx, host, c.config.StorageID, c.config.ID())
 	if err != nil {
 		return err
 	}
@@ -127,16 +126,9 @@ func (c *client) handle(ctx context.Context, event *eventhub.Event) error {
 	c.obsrecv.StartLogsOp(ctx)
 	l := plog.NewLogs()
 	lr := l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	lr.Body().SetBytesVal(pcommon.NewImmutableByteSlice(event.Data))
-	for k, v := range event.Properties {
-		var newValue pcommon.Value
-		newValue, err := newValueFromRaw(v)
-		if err != nil {
-			c.logger.Warn("unsupported property", zap.Error(err))
-		} else {
-			lr.Attributes().Insert(k, newValue)
-		}
-	}
+	slice := lr.Body().SetEmptyBytesVal()
+	slice.Append(event.Data...)
+	lr.Attributes().FromRaw(event.Properties)
 	if event.SystemProperties.EnqueuedTime != nil {
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(*event.SystemProperties.EnqueuedTime))
 	}
@@ -150,52 +142,4 @@ func (c *client) Shutdown(ctx context.Context) error {
 		return nil
 	}
 	return c.hub.Close(ctx)
-}
-
-// copied from pcommon code.
-func newValueFromRaw(iv interface{}) (pcommon.Value, error) {
-	switch tv := iv.(type) {
-	case nil:
-		return pcommon.NewValueEmpty(), nil
-	case string:
-		return pcommon.NewValueString(tv), nil
-	case int:
-		return pcommon.NewValueInt(int64(tv)), nil
-	case int8:
-		return pcommon.NewValueInt(int64(tv)), nil
-	case int16:
-		return pcommon.NewValueInt(int64(tv)), nil
-	case int32:
-		return pcommon.NewValueInt(int64(tv)), nil
-	case int64:
-		return pcommon.NewValueInt(tv), nil
-	case uint:
-		return pcommon.NewValueInt(int64(tv)), nil
-	case uint8:
-		return pcommon.NewValueInt(int64(tv)), nil
-	case uint16:
-		return pcommon.NewValueInt(int64(tv)), nil
-	case uint32:
-		return pcommon.NewValueInt(int64(tv)), nil
-	case uint64:
-		return pcommon.NewValueInt(int64(tv)), nil
-	case float32:
-		return pcommon.NewValueDouble(float64(tv)), nil
-	case float64:
-		return pcommon.NewValueDouble(tv), nil
-	case bool:
-		return pcommon.NewValueBool(tv), nil
-	case []byte:
-		return pcommon.NewValueBytes(pcommon.NewImmutableByteSlice(tv)), nil
-	case map[string]interface{}:
-		mv := pcommon.NewValueMap()
-		pcommon.NewMapFromRaw(tv).CopyTo(mv.MapVal())
-		return mv, nil
-	case []interface{}:
-		av := pcommon.NewValueSlice()
-		pcommon.NewSliceFromRaw(tv).CopyTo(av.SliceVal())
-		return av, nil
-	default:
-		return pcommon.NewValueEmpty(), fmt.Errorf("unsupported value type %T>", tv)
-	}
 }
