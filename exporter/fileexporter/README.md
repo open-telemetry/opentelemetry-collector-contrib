@@ -15,7 +15,6 @@ Exporter supports the following features：
 + Support for compressing the telemetry data before exporting.
 
 
-
 Please note that there is no guarantee that exact field names will remain stable.
 This intended for primarily for debugging Collector without setting up backends.
 
