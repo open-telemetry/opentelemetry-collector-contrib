@@ -50,12 +50,3 @@ func JSONUnmarshalerHook() mapstructure.DecodeHookFunc {
 		return to.Interface(), nil
 	}
 }
-
-func UnmarshalMapstructure(input interface{}, result interface{}) error {
-	dc := &mapstructure.DecoderConfig{Result: result, DecodeHook: JSONUnmarshalerHook()}
-	ms, err := mapstructure.NewDecoder(dc)
-	if err != nil {
-		return err
-	}
-	return ms.Decode(input)
-}
