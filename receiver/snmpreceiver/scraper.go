@@ -57,6 +57,14 @@ func (s *snmpScraper) start(ctx context.Context, host component.Host) (err error
 	return
 }
 
+func (s *snmpScraper) shutdown(ctx context.Context, host component.Host) (err error) {
+	err = s.client.Close()
+	if err != nil {
+		return err
+	}
+
+	return
+}
 func (s *snmpScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
 

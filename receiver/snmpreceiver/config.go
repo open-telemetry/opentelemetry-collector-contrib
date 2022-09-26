@@ -82,7 +82,7 @@ type Config struct {
 	// The SNMP target to send data to. Must be formatted as udp/tcp[4/6]://{host}:{port}. Default: udp://localhost:161
 	Endpoint string `mapstructure:"endpoint"`
 
-	// The version of SNMP. Valid options: 1, v2c, 3. Default: v2c
+	// The version of SNMP. Valid options: v1, v2c, v3. Default: v2c
 	Version string `mapstructure:"version"`
 
 	// The SNMP community string to use. Default: public
