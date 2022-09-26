@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -50,7 +51,8 @@ type AlertConfig struct {
 	Mode     string                      `mapstructure:"mode"`
 
 	// these parameters are only relevant in retrieval mode
-	Projects []ProjectConfig `mapstructure:"projects"`
+	Projects     []ProjectConfig `mapstructure:"projects"`
+	PollInterval time.Duration   `mapstructure:"poll_interval"`
 }
 
 type LogConfig struct {

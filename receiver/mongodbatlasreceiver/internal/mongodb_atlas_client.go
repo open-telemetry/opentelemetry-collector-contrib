@@ -647,17 +647,6 @@ func (s *MongoDBAtlasClient) GetAlerts(ctx context.Context, groupID string) ([]m
 	return alertsResult, nil
 }
 
-func (s *MongoDBAtlasClient) retrieveAlerts(ctx context.Context, groupID string) ([]mongodbatlas.Alert, error) {
-	lo := mongodbatlas.ListOptions{}
-	options := mongodbatlas.AlertsListOptions{ListOptions: lo}
-	alerts, response, err := s.client.Alerts.List(ctx, groupID, &options)
-	err = checkMongoDBClientErr(err, response)
-	if err != nil {
-		return nil, err
-	}
-	return alerts.Results, nil
-}
-
 func toUnixString(t time.Time) string {
 	return strconv.Itoa(int(t.Unix()))
 }

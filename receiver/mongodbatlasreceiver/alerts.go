@@ -55,6 +55,8 @@ const (
 
 	alertModeListen    alertMode = "listen"
 	alertModeRetrieval alertMode = "retrieve"
+
+	defaultAlertsPollInterval = 30 * time.Second
 )
 
 type alertMode string
@@ -77,6 +79,7 @@ type alertsReceiver struct {
 	retrySettings exporterhelper.RetrySettings
 	pollInterval  time.Duration
 	cache         *buntdb.DB
+	doneChan      chan bool
 }
 
 func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer.Logs) (*alertsReceiver, error) {
@@ -103,6 +106,8 @@ func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer
 		publicKey:     baseConfig.PublicKey,
 		privateKey:    baseConfig.PrivateKey,
 		wg:            &sync.WaitGroup{},
+		pollInterval:  baseConfig.Alerts.PollInterval,
+		doneChan:      make(chan bool, 1),
 		logger:        logger,
 	}
 
@@ -143,11 +148,38 @@ func (a alertsReceiver) startRetrieving(ctx context.Context, host component.Host
 	}
 	a.cache = cache
 
+	time := time.NewTicker(a.pollInterval)
+	a.wg.Add(1)
+	go func() {
+		defer a.wg.Done()
+		for {
+			select {
+			case <-time.C:
+				if err := a.retrieveAndProcessAlerts(ctx); err != nil {
+					a.logger.Error("unable to retrieve alerts", zap.Error(err))
+				}
+			case <-a.doneChan:
+				return
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	return nil
+}
+
+func (a alertsReceiver) retrieveAndProcessAlerts(ctx context.Context) error {
 	var alerts []mongodbatlas.Alert
 	for _, p := range a.projects {
-		projectAlerts, err := a.client.GetAlerts(ctx, p.Name)
+		project, err := a.client.GetProject(ctx, p.Name)
 		if err != nil {
-			return fmt.Errorf("unable to get alerts for project: %w", err)
+			a.logger.Error("error retrieving project "+p.Name+":", zap.Error(err))
+			continue
+		}
+		projectAlerts, err := a.client.GetAlerts(ctx, project.ID)
+		if err != nil {
+			a.logger.Error("unable to get alerts for project", zap.Error(err))
+			continue
 		}
 		alerts = append(alerts, projectAlerts...)
 	}
@@ -156,7 +188,10 @@ func (a alertsReceiver) startRetrieving(ctx context.Context, host component.Host
 	if err != nil {
 		return err
 	}
-	return a.consumer.ConsumeLogs(ctx, logs)
+	if logs.LogRecordCount() > 0 {
+		return a.consumer.ConsumeLogs(ctx, logs)
+	}
+	return nil
 }
 
 func (a alertsReceiver) startListening(ctx context.Context, host component.Host) error {
@@ -284,7 +319,8 @@ func (a alertsReceiver) shutdownListener(ctx context.Context) error {
 }
 
 func (a alertsReceiver) shutdownRetriever(ctx context.Context) error {
-	a.logger.Debug("Shutting down clients")
+	a.logger.Debug("Shutting down client")
+	a.doneChan <- true
 	a.wg.Wait()
 	return nil
 }
@@ -304,7 +340,7 @@ func (a alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatl
 
 		ts, err := time.Parse(time.RFC3339, alert.Updated)
 		if err != nil {
-			a.logger.Warn(fmt.Sprintf("unable to interpret updated time for alert with timestamp: %s. Expecting a RFC3339 timestamp", alert.Updated))
+			a.logger.Warn("unable to interpret updated time for alert with timestamp. Expecting a RFC3339 timestamp", zap.String("timestamp", alert.Updated))
 			continue
 		}
 
