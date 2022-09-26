@@ -24,13 +24,13 @@ classifiers = [
 ]
 dependencies = [
   "opentelemetry-api ~= 1.12",
-  "opentelemetry-instrumentation == 0.33b0",
-  "opentelemetry-sdk == 1.12.0",
+  "opentelemetry-instrumentation == 0.34b0",
+  "opentelemetry-sdk == 1.13.0",
 ]
 
 [project.optional-dependencies]
 otlp = [
-  "opentelemetry-exporter-otlp == 1.12.0",
+  "opentelemetry-exporter-otlp == 1.13.0",
 ]
 test = []
 
