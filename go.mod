@@ -566,7 +566,7 @@ require (
 	go.opentelemetry.io/collector/pdata v0.60.1-0.20220923151520-96e9af35c002 // indirect
 	go.opentelemetry.io/collector/semconv v0.60.1-0.20220923151520-96e9af35c002 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.1 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.10.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.36.0 // indirect
 	go.opentelemetry.io/otel v1.10.0 // indirect
