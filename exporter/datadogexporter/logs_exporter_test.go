@@ -31,7 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
-func Test_logs_exporter_send_logs(t *testing.T) {
+func TestLogsExporter(t *testing.T) {
 	lr := testdata.GenerateLogsOneLogRecord()
 	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 
@@ -45,7 +45,7 @@ func Test_logs_exporter_send_logs(t *testing.T) {
 		want []map[string]interface{}
 	}{
 		{
-			name: "log_with_no_message",
+			name: "no-message",
 			args: args{
 				sendLogRecordBody: false,
 				ld:                lr,
@@ -68,7 +68,7 @@ func Test_logs_exporter_send_logs(t *testing.T) {
 			},
 		},
 		{
-			name: "log_with_message_from_log_record_body",
+			name: "message",
 			args: args{
 				sendLogRecordBody: true,
 				ld:                lr,

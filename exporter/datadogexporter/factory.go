@@ -39,9 +39,6 @@ import (
 const (
 	// typeStr is the type of the exporter
 	typeStr = "datadog"
-	// The stability level of the exporter.
-	stability     = component.StabilityLevelBeta
-	logsStability = component.StabilityLevelAlpha
 )
 
 type factory struct {
@@ -66,9 +63,9 @@ func newFactoryWithRegistry(registry *featuregate.Registry) component.ExporterFa
 	return component.NewExporterFactory(
 		typeStr,
 		f.createDefaultConfig,
-		component.WithMetricsExporter(f.createMetricsExporter, stability),
-		component.WithTracesExporter(f.createTracesExporter, stability),
-		component.WithLogsExporter(f.createLogsExporter, logsStability),
+		component.WithMetricsExporter(f.createMetricsExporter, component.StabilityLevelBeta),
+		component.WithTracesExporter(f.createTracesExporter, component.StabilityLevelBeta),
+		component.WithLogsExporter(f.createLogsExporter, component.StabilityLevelAlpha),
 	)
 }
 
@@ -275,7 +272,7 @@ func (f *factory) createTracesExporter(
 	)
 }
 
-// createLogsExporter creates a trace exporter based on this config.
+// createLogsExporter creates a logs exporter based on the config.
 func (f *factory) createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
@@ -307,12 +304,12 @@ func (f *factory) createLogsExporter(
 		}
 		pusher = exp.consumeLogs
 	}
-
 	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
 		cfg,
 		pusher,
+		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithQueue(cfg.QueueSettings),

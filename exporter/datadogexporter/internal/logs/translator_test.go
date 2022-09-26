@@ -44,7 +44,8 @@ func TestTransform(t *testing.T) {
 		want datadogV2.HTTPLogItem
 	}{
 		{
-			name: "log_with_attribute",
+			// log with an attribute
+			name: "basic",
 			args: args{
 				lr: func() plog.LogRecord {
 					l := plog.NewLogRecord()
@@ -64,7 +65,8 @@ func TestTransform(t *testing.T) {
 			},
 		},
 		{
-			name: "log_and_resource_with_attribute",
+			// log & resource with attribute
+			name: "resource",
 			args: args{
 				lr: func() plog.LogRecord {
 					l := plog.NewLogRecord()
@@ -90,7 +92,8 @@ func TestTransform(t *testing.T) {
 			},
 		},
 		{
-			name: "log_with_service_attribute",
+			// service name from log
+			name: "service",
 			args: args{
 				lr: func() plog.LogRecord {
 					l := plog.NewLogRecord()
@@ -116,7 +119,7 @@ func TestTransform(t *testing.T) {
 			},
 		},
 		{
-			name: "log_with_trace",
+			name: "trace",
 			args: args{
 				lr: func() plog.LogRecord {
 					l := plog.NewLogRecord()
@@ -149,7 +152,7 @@ func TestTransform(t *testing.T) {
 		},
 		{
 			// here SeverityText should take precedence for log status
-			name: "log_with_severity_text_and_severity_number",
+			name: "SeverityText",
 			args: args{
 				lr: func() plog.LogRecord {
 					l := plog.NewLogRecord()
@@ -183,7 +186,7 @@ func TestTransform(t *testing.T) {
 			},
 		},
 		{
-			name: "log_with_message_from_body",
+			name: "body",
 			args: args{
 				lr: func() plog.LogRecord {
 					l := plog.NewLogRecord()
@@ -239,7 +242,7 @@ func TestTransform(t *testing.T) {
 	}
 }
 
-func Test_deriveStatus(t *testing.T) {
+func TestDeriveStatus(t *testing.T) {
 	type args struct {
 		severity plog.SeverityNumber
 	}

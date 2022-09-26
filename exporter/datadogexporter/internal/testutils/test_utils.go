@@ -39,8 +39,6 @@ var (
 type DatadogServer struct {
 	*httptest.Server
 	MetadataChan chan []byte
-	// LogsData is the array of json requests sent to datadog backend
-	LogsData []map[string]interface{}
 }
 
 // DatadogServerMock mocks a Datadog backend server
@@ -48,11 +46,11 @@ func DatadogServerMock(overwriteHandlerFuncs ...OverwriteHandleFunc) *DatadogSer
 	metadataChan := make(chan []byte)
 	mux := http.NewServeMux()
 
-	server := &DatadogServer{}
 	handlers := map[string]http.HandlerFunc{
 		"/api/v1/validate": validateAPIKeyEndpoint,
 		"/api/v1/series":   metricsEndpoint,
 		"/intake":          newMetadataEndpoint(metadataChan),
+		"/":                func(w http.ResponseWriter, r *http.Request) {},
 	}
 	for _, f := range overwriteHandlerFuncs {
 		p, hf := f()
@@ -64,9 +62,10 @@ func DatadogServerMock(overwriteHandlerFuncs ...OverwriteHandleFunc) *DatadogSer
 
 	srv := httptest.NewServer(mux)
 
-	server.Server = srv
-	server.MetadataChan = metadataChan
-	return server
+	return &DatadogServer{
+		srv,
+		metadataChan,
+	}
 }
 
 // OverwriteHandleFuncs allows to overwrite the default handler functions

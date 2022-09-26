@@ -248,10 +248,11 @@ type LogsConfig struct {
 	// If unset, the value is obtained from the Site.
 	confignet.TCPAddr `mapstructure:",squash"`
 
-	// SendLogRecordBody when enabled would send string representation of body field of log record as message to Datadog
-	// By default this is enabled ,when we parse the body string into attributes we may want to disable
-	// Set this to true, if we are unable to parse body or we want use datadog backend for parsing
+	// SendLogRecordBody when enabled would send string representation of body field of Otel log record as message to Datadog
+	// By default this is enabled
+	// Most likely we want to disable this when using filelogreceiver. filelogreceiver by default reads a log line into body
 	// It is essential for Log Trace correlation to work, that we parse the body before reaching exporter.
+	// We would use stanza to parse the body into attributes. Once parsed, there is no need to send body to backend
 	SendLogRecordBody bool `mapstructure:"send_log_record_body"`
 }
 

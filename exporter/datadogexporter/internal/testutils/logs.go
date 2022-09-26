@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ func DatadogLogServerMock(overwriteHandlerFuncs ...OverwriteHandleFunc) *Datadog
 		// logs backend doesn't have validate endpoint
 		// but adding one here for ease of testing
 		"/api/v1/validate": validateAPIKeyEndpoint,
-		"/":                server.logsEndPoint,
+		"/":                server.logsEndpoint,
 	}
 	for _, f := range overwriteHandlerFuncs {
 		p, hf := f()
@@ -63,7 +63,7 @@ func DatadogLogServerMock(overwriteHandlerFuncs ...OverwriteHandleFunc) *Datadog
 	return server
 }
 
-func (s *DatadogLogsServer) logsEndPoint(w http.ResponseWriter, r *http.Request) {
+func (s *DatadogLogsServer) logsEndpoint(w http.ResponseWriter, r *http.Request) {
 	// we can reuse same response object for logs as well
 	res := metricsResponse{Status: "ok"}
 	resJSON, err := json.Marshal(res)
@@ -94,6 +94,7 @@ func (s *DatadogLogsServer) logsEndPoint(w http.ResponseWriter, r *http.Request)
 		log.Fatalln(err)
 	}
 }
+
 func gUnzipData(rg io.Reader) ([]byte, error) {
 	r, err := gzip.NewReader(rg)
 	if err != nil {

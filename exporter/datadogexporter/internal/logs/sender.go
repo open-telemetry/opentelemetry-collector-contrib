@@ -25,21 +25,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
-// Sender is wrapper for LogsApi from datadog-api-client-go which buffers the logs in memory
+// Sender submits logs to datadog intake
 type Sender struct {
-	logger     *zap.Logger
-	api        *datadogV2.LogsApi
-	submitOpts datadogV2.SubmitLogOptionalParameters
+	logger *zap.Logger
+	api    *datadogV2.LogsApi
+	opts   datadogV2.SubmitLogOptionalParameters
 }
 
-// logsV2 is the key in server configuration
+// logsV2 is the key in datadog ServerConfiguration
+// It is being used to customize the endpoint for datdog intake based on exporter configuration
 // https://github.com/DataDog/datadog-api-client-go/blob/be7e034424012c7ee559a2153802a45df73232ea/api/datadog/configuration.go#L308
 const logsV2 = "v2.LogsApi.SubmitLog"
 
 // NewSender can be used to create a new datadog api for sending logs to backend
 func NewSender(endpoint string, logger *zap.Logger, s exporterhelper.TimeoutSettings, insecureSkipVerify bool, apiKey string) *Sender {
 	cfg := datadog.NewConfiguration()
-	logger.Info("sending logs using endpoint", zap.String("endpoint", endpoint))
+	logger.Info("logs sender initialized", zap.String("endpoint", endpoint))
 	cfg.OperationServers[logsV2] = datadog.ServerConfigurations{
 		datadog.ServerConfiguration{
 			URL: endpoint,
@@ -48,21 +49,23 @@ func NewSender(endpoint string, logger *zap.Logger, s exporterhelper.TimeoutSett
 	cfg.HTTPClient = utils.NewHTTPClient(s, insecureSkipVerify)
 	cfg.AddDefaultHeader("DD-API-KEY", apiKey)
 	apiClient := datadog.NewAPIClient(cfg)
-	// enable sending gzip logs
-	var submitOpts = *datadogV2.NewSubmitLogOptionalParameters().WithContentEncoding(datadogV2.CONTENTENCODING_GZIP)
+	// enable sending gzip
+	opts := *datadogV2.NewSubmitLogOptionalParameters().WithContentEncoding(datadogV2.CONTENTENCODING_GZIP)
 	return &Sender{
-		api:        datadogV2.NewLogsApi(apiClient),
-		logger:     logger,
-		submitOpts: submitOpts,
+		api:    datadogV2.NewLogsApi(apiClient),
+		logger: logger,
+		opts:   opts,
 	}
 }
 
-// SubmitLogs would send the payload to the backend
+// submits the logs contained in payload to the Datadog intake
 func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem) error {
 	s.logger.Debug("submitting logs", zap.Any("payload", payload))
-	_, r, err := s.api.SubmitLog(ctx, payload, s.submitOpts)
+	_, r, err := s.api.SubmitLog(ctx, payload, s.opts)
 	if err != nil {
-		s.logger.Error("unable to send logs to datadog", zap.Error(err), zap.Any("response", r))
+		b := make([]byte, 1024) // 1KB message max
+		_, _ = r.Body.Read(b)   // ignore any error
+		s.logger.Error("Failed to send logs", zap.Error(err), zap.String("msg", string(b)), zap.String("status_code", r.Status))
 		return err
 	}
 	return nil

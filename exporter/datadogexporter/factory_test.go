@@ -373,7 +373,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	assert.NotNil(t, exp)
 }
 
-func TestCreateAPIExporterFailOnInvalidkey(t *testing.T) {
+func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 	server := testutils.DatadogServerMock(testutils.ValidateAPIKeyEndpointInvalid)
 	defer server.Close()
 
@@ -392,7 +392,7 @@ func TestCreateAPIExporterFailOnInvalidkey(t *testing.T) {
 	c.Metrics.TCPAddr.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
-	t.Run("fail_on_invalid_key is true", func(t *testing.T) {
+	t.Run("true", func(t *testing.T) {
 		c.API.FailOnInvalidKey = true
 		ctx := context.Background()
 		// metrics exporter
@@ -420,7 +420,7 @@ func TestCreateAPIExporterFailOnInvalidkey(t *testing.T) {
 		assert.EqualError(t, err, "API Key validation failed")
 		assert.Nil(t, lexp)
 	})
-	t.Run("fail_on_invalid_key is false", func(t *testing.T) {
+	t.Run("false", func(t *testing.T) {
 		c.API.FailOnInvalidKey = false
 		ctx := context.Background()
 		exp, err := factory.CreateMetricsExporter(

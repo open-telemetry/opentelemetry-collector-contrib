@@ -30,16 +30,18 @@ import (
 )
 
 const (
-	namespace          = "otel"
-	otelTraceID        = namespace + ".trace_id"
-	otelSpanID         = namespace + ".span_id"
-	otelSeverityNumber = namespace + ".severity_number"
-	otelSeverityText   = namespace + ".severity_text"
-	otelTimestamp      = namespace + ".timestamp"
-
+	otelNamespace      = "otel"
+	otelTraceID        = otelNamespace + ".trace_id"
+	otelSpanID         = otelNamespace + ".span_id"
+	otelSeverityNumber = otelNamespace + ".severity_number"
+	otelSeverityText   = otelNamespace + ".severity_text"
+	otelTimestamp      = otelNamespace + ".timestamp"
+)
+const (
+	ddNamespace = "dd"
+	ddTraceID   = ddNamespace + ".trace_id"
+	ddSpanID    = ddNamespace + ".span_id"
 	ddStatus    = "status"
-	ddTraceID   = "dd.trace_id"
-	ddSpanID    = "dd.span_id"
 	ddTimestamp = "@timestamp"
 )
 
@@ -52,22 +54,23 @@ const (
 	logLevelFatal = "fatal"
 )
 
-// Transform is responsible to convert LogRecord to datadog format
+// Transform converts the log record in lr, which came in with the resource in res to a Datadog log item.
+// the variable specifies if the log body should be sent as an attribute or as a plain message.
 func Transform(lr plog.LogRecord, res pcommon.Resource, sendLogRecordBody bool) datadogV2.HTTPLogItem {
-	hostName, serviceName := extractHostNameAndServiceName(res.Attributes(), lr.Attributes())
+	host, service := extractHostNameAndServiceName(res.Attributes(), lr.Attributes())
 
 	l := datadogV2.HTTPLogItem{
 		AdditionalProperties: make(map[string]string),
 	}
-	if hostName != "" {
-		l.Hostname = datadog.PtrString(hostName)
+	if host != "" {
+		l.Hostname = datadog.PtrString(host)
 	}
-
-	if serviceName != "" {
-		l.Service = datadog.PtrString(serviceName)
+	if service != "" {
+		l.Service = datadog.PtrString(service)
 	}
 
 	// we need to set log attributes as AdditionalProperties
+	// AdditionalProperties are treated as datdog Log Attributes
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		l.AdditionalProperties[k] = v.AsString()
 		return true
@@ -90,20 +93,16 @@ func Transform(lr plog.LogRecord, res pcommon.Resource, sendLogRecordBody bool) 
 	} else if lr.SeverityNumber() != 0 {
 		status = derviveStatusFromSeverityNumber(lr.SeverityNumber())
 	}
-
 	l.AdditionalProperties[ddStatus] = status
-	// if SeverityNumber is set , we want to retain it
 	if lr.SeverityNumber() != 0 {
 		l.AdditionalProperties[otelSeverityNumber] = strconv.Itoa(int(lr.SeverityNumber()))
 	}
-
 	// for datadog to use the same timestamp we need to set the additional property of "@timestamp"
 	if lr.Timestamp() != 0 {
 		// we are retaining the nano second precision in this property
 		l.AdditionalProperties[otelTimestamp] = strconv.FormatInt(lr.Timestamp().AsTime().UnixNano(), 10)
 		l.AdditionalProperties[ddTimestamp] = lr.Timestamp().AsTime().Format(time.RFC3339)
 	}
-
 	if sendLogRecordBody {
 		// set the Message
 		l.Message = lr.Body().AsString()
@@ -117,32 +116,28 @@ func Transform(lr plog.LogRecord, res pcommon.Resource, sendLogRecordBody bool) 
 	return l
 }
 
-func extractHostNameAndServiceName(resourceAttrs pcommon.Map, logAttrs pcommon.Map) (hostName string, serviceName string) {
+func extractHostNameAndServiceName(resourceAttrs pcommon.Map, logAttrs pcommon.Map) (host string, service string) {
 	if src, ok := attributes.SourceFromAttributes(resourceAttrs, true); ok && src.Kind == source.HostnameKind {
-		hostName = src.Identifier
+		host = src.Identifier
 	}
-
 	// hostName is blank from resource
 	// we need to derive from log attributes
-	if hostName == "" {
+	if host == "" {
 		if src, ok := attributes.SourceFromAttributes(logAttrs, true); ok && src.Kind == source.HostnameKind {
-			hostName = src.Identifier
+			host = src.Identifier
 		}
 	}
-
 	if s, ok := resourceAttrs.Get(conventions.AttributeServiceName); ok {
-		serviceName = s.AsString()
+		service = s.AsString()
 	}
-
 	// serviceName is blank from resource
 	// we need to derive from log attributes
-	if serviceName == "" {
+	if service == "" {
 		if s, ok := logAttrs.Get(conventions.AttributeServiceName); ok {
-			serviceName = s.AsString()
+			service = s.AsString()
 		}
 	}
-
-	return hostName, serviceName
+	return host, service
 }
 
 // traceIDToUint64 converts 128bit traceId to 64 bit uint64

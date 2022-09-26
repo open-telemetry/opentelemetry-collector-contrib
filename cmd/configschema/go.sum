@@ -299,8 +299,8 @@ github.com/aws/aws-sdk-go v1.32.6/go.mod h1:5zCpMtNQVjRREroY7sYe8lOMRSxkhG6MZveU
 github.com/aws/aws-sdk-go v1.35.24/go.mod h1:tlPOdRjfxPBpNIwqDj61rmsnA85v9jc0Ps9+muhnW+k=
 github.com/aws/aws-sdk-go v1.38.35/go.mod h1:hcU610XS61/+aQV88ixoOzUoG7v3b31pl2zKMmprdro=
 github.com/aws/aws-sdk-go v1.40.45/go.mod h1:585smgzpB/KqRA+K3y/NL/oYRqQvpNJYvLm+LY1U59Q=
-github.com/aws/aws-sdk-go v1.44.103 h1:tbhBHKgiZSIUkG8FcHy3wYKpPVvp65Wn7ZiX0B8phpY=
-github.com/aws/aws-sdk-go v1.44.103/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX4oIKwKHZo=
+github.com/aws/aws-sdk-go v1.44.105 h1:UUwoD1PRKIj3ltrDUYTDQj5fOTK3XsnqolLpRTMmSEM=
+github.com/aws/aws-sdk-go v1.44.105/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX4oIKwKHZo=
 github.com/aws/aws-sdk-go-v2 v0.18.0/go.mod h1:JWVYvqSMppoMJC0x5wdwiImzgXTI9FuZwxzkQq9wy+g=
 github.com/aws/aws-sdk-go-v2 v1.9.1/go.mod h1:cK/D0BBs0b/oWPIcX/Z/obahJK1TT7IPVjy53i/mX/4=
 github.com/aws/aws-sdk-go-v2 v1.9.2/go.mod h1:cK/D0BBs0b/oWPIcX/Z/obahJK1TT7IPVjy53i/mX/4=
@@ -2056,8 +2056,9 @@ go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.3
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.0 h1:+jrwcA4gF8tIZmdKWgTUysKtYW2VIzywjkfgd/5OPEM=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.0/go.mod h1:h8TWwRAhQpOd0aM5nYsRD8+flnkj+526GEIVlarH7eY=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.33.0/go.mod h1:U5rUt7Rw6zuORsWNfpMRy8XMNKLrmIlv/4HgLVW/d5M=
-go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.0 h1:qZ3KzA4qPzLBDtQyPk4ydjlg8zvXbNysnFHaVMKJbVo=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.0/go.mod h1:14Oo79mRwusSI02L0EfG3Gp1uF3+1wSL+D4zDysxyqs=
+go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.1 h1:ledXJmnPfXGbE/gO4/PWSBsJGonnq6czWLrdHfQxeTU=
+go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.1/go.mod h1:W6/Lb2w3nD2K/l+4SzaqJUr2Ibj2uHA+PdFZlO5cWus=
 go.opentelemetry.io/contrib/propagators/b3 v1.10.0 h1:6AD2VV8edRdEYNaD8cNckpzgdMLU2kbV9OYyxt2kvCg=
 go.opentelemetry.io/contrib/propagators/b3 v1.10.0/go.mod h1:oxvamQ/mTDFQVugml/uFS59+aEUnFLhmd1wsG+n5MOE=
 go.opentelemetry.io/contrib/zpages v0.33.0/go.mod h1:ddmD63NkBVE29GucaBBCR8/b/TRlY+PkpIbF3m2JF7Y=

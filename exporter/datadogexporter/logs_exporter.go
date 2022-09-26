@@ -68,7 +68,6 @@ var _ consumer.ConsumeLogsFunc = (*logsExporter)(nil).consumeLogs
 
 // consumeLogs is implementation of cosumer.ConsumeLogsFunc
 func (exp *logsExporter) consumeLogs(ctx context.Context, ld plog.Logs) (err error) {
-
 	defer func() { err = exp.scrubber.Scrub(err) }()
 	if exp.cfg.HostMetadata.Enabled {
 		// start host metadata with resource attributes from
@@ -98,7 +97,6 @@ func (exp *logsExporter) consumeLogs(ctx context.Context, ld plog.Logs) (err err
 				payload = append(payload, logs.Transform(log, res, exp.cfg.Logs.SendLogRecordBody))
 			}
 		}
-
 	}
 	return exp.sender.SubmitLogs(exp.ctx, payload)
 }
