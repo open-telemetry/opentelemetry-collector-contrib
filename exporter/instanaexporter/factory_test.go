@@ -66,12 +66,12 @@ func TestLoadConfig(t *testing.T) {
 		assert.Equal(t, &Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid")),
 			HTTPClientSettings: confighttp.HTTPClientSettings{
-				Endpoint:        "http://example.com/api/",
+				Endpoint:        "https://example.com/api/",
 				Timeout:         30 * time.Second,
 				Headers:         map[string]string{},
 				WriteBufferSize: 512 * 1024,
 			},
-			Endpoint: "http://example.com/api/",
+			Endpoint: "https://example.com/api/",
 			AgentKey: "key1",
 		}, validConfig)
 	})
@@ -79,6 +79,12 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("bad endpoint", func(t *testing.T) {
 		badEndpointConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "bad_endpoint")].(*Config)
 		err = badEndpointConfig.Validate()
+		require.Error(t, err)
+	})
+
+	t.Run("non https endpoint", func(t *testing.T) {
+		nonHTTPSEndpointConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "non_https_endpoint")].(*Config)
+		err = nonHTTPSEndpointConfig.Validate()
 		require.Error(t, err)
 	})
 

@@ -8,10 +8,13 @@ exporters:
   instana/bad_endpoint:
     endpoint: never a url
     agent_key: key1
+  instana/non_https_endpoint:
+    endpoint: http://example.com/api/
+    agent_key: key1
   instana/missing_agent_key:
-    endpoint: http://example.com/api/
+    endpoint: https://example.com/api/
   instana/valid:
-    endpoint: http://example.com/api/
+    endpoint: https://example.com/api/
     agent_key: key1
 
 
@@ -20,4 +23,4 @@ service:
     metrics:
       receivers: [nop]
       processors: [nop]
-      exporters: [instana/bad_endpoint, instana/valid, instana/missing_agent_key]
+      exporters: [instana/bad_endpoint, instana/non_https_endpoint, instana/valid, instana/missing_agent_key]
