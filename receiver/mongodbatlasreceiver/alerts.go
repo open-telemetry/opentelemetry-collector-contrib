@@ -31,6 +31,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/tidwall/buntdb"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -43,7 +44,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
-	"github.com/tidwall/buntdb"
 )
 
 // maxContentLength is the maximum payload size we will accept from incoming requests.
@@ -142,6 +142,7 @@ func (a alertsReceiver) startRetrieving(ctx context.Context, host component.Host
 	// may want to consider using disk storage for tracking which alerts have been sent
 	// or may want to revisit how we get alerts
 	// this is a memory cache used to keep track of unupdated alerts
+	// eventually it should be transferred over to the storage extension
 	cache, err := buntdb.Open(":memory:")
 	if err != nil {
 		return fmt.Errorf("unable to initialize cache for retrieval client: %w", err)
