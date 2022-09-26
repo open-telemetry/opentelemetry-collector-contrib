@@ -348,13 +348,14 @@ func (a alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatl
 
 		ts, err := time.Parse(time.RFC3339, alert.Updated)
 		if err != nil {
-			a.logger.Warn("unable to interpret updated time for alert with timestamp. Expecting a RFC3339 timestamp", zap.String("timestamp", alert.Updated))
+			a.logger.Warn("unable to interpret updated time for alert, expecting a RFC3339 timestamp", zap.String("timestamp", alert.Updated))
 			continue
 		}
 
 		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 		logRecord.SetSeverityNumber(severityFromAPIAlert(alert))
-		// this could be fairly expensive to do, maybe should evaulate
+		// this could be fairly expensive to do, expecting not too many issues unless there are a ton
+		// of unrecognized alerts to process.
 		bodyBytes, err := json.Marshal(alert)
 		if err != nil {
 			a.logger.Warn("unable to marshal alert into a body string")

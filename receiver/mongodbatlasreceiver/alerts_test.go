@@ -627,7 +627,7 @@ func TestAlertsRetrieval(t *testing.T) {
 							Updated:       time.Now().Format(time.RFC3339),
 							Enabled:       new(bool),
 							Status:        "TRACKING",
-							MetricName:    "",
+							MetricName:    "metric-name",
 							CurrentValue: &mongodbatlas.CurrentValue{
 								Number: new(float64),
 								Units:  "By",
@@ -644,20 +644,23 @@ func TestAlertsRetrieval(t *testing.T) {
 				return ac
 			},
 			validateEntries: func(t *testing.T, logs plog.Logs) error {
+				expectedStringAttributes := map[string]string{
+					"id":           testAlertID,
+					"status":       "TRACKING",
+					"event.domain": "mongodbatlas",
+					"metric.name":  "metric-name",
+				}
 				for i := 0; i < logs.ResourceLogs().Len(); i++ {
 					rl := logs.ResourceLogs().At(0)
 					for j := 0; j < rl.ScopeLogs().Len(); j++ {
 						sl := rl.ScopeLogs().At(j)
 						for k := 0; k < sl.LogRecords().Len(); k++ {
 							lr := sl.LogRecords().At(k)
-
-							val, ok := lr.Attributes().Get("id")
-							require.True(t, ok)
-							require.Equal(t, val.AsString(), testAlertID)
-
-							val, ok = lr.Attributes().Get("status")
-							require.True(t, ok)
-							require.Equal(t, val.AsString(), "TRACKING")
+							for k, v := range expectedStringAttributes {
+								val, ok := lr.Attributes().Get(k)
+								require.True(t, ok)
+								require.Equal(t, val.AsString(), v)
+							}
 						}
 					}
 				}
