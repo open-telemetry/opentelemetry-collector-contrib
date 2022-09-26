@@ -16,6 +16,7 @@ package mongodbatlasreceiver
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -28,11 +29,17 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/atlas/mongodbatlas"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
@@ -571,4 +578,126 @@ func compareLogRecord(expected, actual plog.LogRecord) error {
 	}
 
 	return nil
+}
+
+func TestAlertsRetrieval(t *testing.T) {
+	testAlertID := "6da34c5d-f216-477f-a2c4-b3045b54f229"
+	testProjectID := "test-project-id"
+	testProjectName := "test-project"
+	cases := []struct {
+		name            string
+		config          func() *Config
+		client          func() alertsClient
+		validateEntries func(*testing.T, plog.Logs) error
+	}{
+		{
+			name: "default",
+			config: func() *Config {
+				return &Config{
+					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+					Granularity:               defaultGranularity,
+					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					Alerts: AlertConfig{
+						Mode: string(alertModeRetrieval),
+						Projects: []ProjectConfig{
+							{
+								Name: testProjectName,
+							},
+						},
+						PollInterval: 1 * time.Second,
+					},
+				}
+			},
+			client: func() alertsClient {
+				ac := &mockAlertsClient{}
+				ac.On("GetProject", mock.Anything, mock.Anything).Return(&mongodbatlas.Project{
+					ID:    testProjectID,
+					OrgID: "test-org-id",
+					Name:  testProjectName,
+					Links: []*mongodbatlas.Link{},
+				}, nil)
+				ac.On("GetAlerts", mock.Anything, testProjectID).Return(
+					[]mongodbatlas.Alert{
+						{
+							ID:            testAlertID,
+							GroupID:       "",
+							AlertConfigID: "",
+							EventTypeName: "",
+							Created:       time.Now().Format(time.RFC3339),
+							Updated:       time.Now().Format(time.RFC3339),
+							Enabled:       new(bool),
+							Status:        "TRACKING",
+							MetricName:    "",
+							CurrentValue: &mongodbatlas.CurrentValue{
+								Number: new(float64),
+								Units:  "By",
+							},
+							ReplicaSetName:  "",
+							ClusterName:     "",
+							HostnameAndPort: "127.0.0.1:27017",
+							Matchers:        []mongodbatlas.Matcher{},
+							MetricThreshold: &mongodbatlas.MetricThreshold{},
+							Notifications:   []mongodbatlas.Notification{},
+						},
+					},
+					nil)
+				return ac
+			},
+			validateEntries: func(t *testing.T, logs plog.Logs) error {
+				for i := 0; i < logs.ResourceLogs().Len(); i++ {
+					rl := logs.ResourceLogs().At(0)
+					for j := 0; j < rl.ScopeLogs().Len(); j++ {
+						sl := rl.ScopeLogs().At(j)
+						for k := 0; k < sl.LogRecords().Len(); k++ {
+							lr := sl.LogRecords().At(k)
+
+							val, ok := lr.Attributes().Get("id")
+							require.True(t, ok)
+							require.Equal(t, val.AsString(), testAlertID)
+
+							val, ok = lr.Attributes().Get("status")
+							require.True(t, ok)
+							require.Equal(t, val.AsString(), "TRACKING")
+						}
+					}
+				}
+				return nil
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			logSink := &consumertest.LogsSink{}
+			alertsRcvr, err := newAlertsReceiver(zap.NewNop(), tc.config(), logSink)
+			require.NoError(t, err)
+			alertsRcvr.client = tc.client()
+
+			err = alertsRcvr.Start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err)
+
+			require.Eventually(t, func() bool {
+				return logSink.LogRecordCount() > 0
+			}, 10*time.Second, 10*time.Millisecond)
+
+			require.NoError(t, alertsRcvr.Shutdown(context.Background()))
+			logs := logSink.AllLogs()[0]
+
+			require.NoError(t, tc.validateEntries(t, logs))
+		})
+	}
+}
+
+type mockAlertsClient struct {
+	mock.Mock
+}
+
+func (mac *mockAlertsClient) GetProject(ctx context.Context, pID string) (*mongodbatlas.Project, error) {
+	args := mac.Called(ctx, pID)
+	return args.Get(0).(*mongodbatlas.Project), args.Error(1)
+}
+
+func (mac *mockAlertsClient) GetAlerts(ctx context.Context, pID string) ([]mongodbatlas.Alert, error) {
+	args := mac.Called(ctx, pID)
+	return args.Get(0).([]mongodbatlas.Alert), args.Error(1)
 }

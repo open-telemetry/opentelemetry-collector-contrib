@@ -61,6 +61,11 @@ const (
 
 type alertMode string
 
+type alertsClient interface {
+	GetProject(context.Context, string) (*mongodbatlas.Project, error)
+	GetAlerts(context.Context, string) ([]mongodbatlas.Alert, error)
+}
+
 type alertsReceiver struct {
 	addr        string
 	secret      string
@@ -73,7 +78,7 @@ type alertsReceiver struct {
 
 	// only relevant in `retrieval` mode
 	projects      []ProjectConfig
-	client        *internal.MongoDBAtlasClient
+	client        alertsClient
 	privateKey    string
 	publicKey     string
 	retrySettings exporterhelper.RetrySettings
@@ -111,12 +116,20 @@ func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer
 		logger:        logger,
 	}
 
-	s := &http.Server{
-		TLSConfig: tlsConfig,
-		Handler:   http.HandlerFunc(recv.handleRequest),
-	}
+	if recv.mode == alertModeRetrieval {
+		client, err := internal.NewMongoDBAtlasClient(recv.publicKey, recv.privateKey, recv.retrySettings, recv.logger)
+		if err != nil {
+			return nil, err
+		}
+		recv.client = client
+	} else {
+		s := &http.Server{
+			TLSConfig: tlsConfig,
+			Handler:   http.HandlerFunc(recv.handleRequest),
+		}
 
-	recv.server = s
+		recv.server = s
+	}
 
 	return recv, nil
 }
@@ -133,12 +146,6 @@ func (a alertsReceiver) Start(ctx context.Context, host component.Host) error {
 }
 
 func (a alertsReceiver) startRetrieving(ctx context.Context, _ component.Host) error {
-	client, err := internal.NewMongoDBAtlasClient(a.publicKey, a.privateKey, a.retrySettings, a.logger)
-	if err != nil {
-		return err
-	}
-	a.client = client
-
 	// may want to consider using disk storage for tracking which alerts have been sent
 	// or may want to revisit how we get alerts
 	// this is a memory cache used to keep track of unupdated alerts

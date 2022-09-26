@@ -28,6 +28,7 @@ require (
 	github.com/openlyinc/pointy v1.1.2 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/stretchr/objx v0.4.0 // indirect
 	github.com/tidwall/btree v1.4.3 // indirect
 	github.com/tidwall/gjson v1.14.3 // indirect
 	github.com/tidwall/grect v0.1.4 // indirect
