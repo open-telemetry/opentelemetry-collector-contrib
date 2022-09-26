@@ -483,6 +483,7 @@ type SpanStatusCase struct {
 	// output
 	status  sentry.SpanStatus
 	message string
+	tags    map[string]string
 }
 
 func TestStatusFromSpanStatus(t *testing.T) {
@@ -490,8 +491,9 @@ func TestStatusFromSpanStatus(t *testing.T) {
 		{
 			testName:   "with empty status",
 			spanStatus: ptrace.NewSpanStatus(),
-			status:     sentry.SpanStatusUndefined,
+			status:     sentry.SpanStatusOK,
 			message:    "",
+			tags:       map[string]string{},
 		},
 		{
 			testName: "with status code",
@@ -504,6 +506,7 @@ func TestStatusFromSpanStatus(t *testing.T) {
 			}(),
 			status:  sentry.SpanStatusUnknown,
 			message: "message",
+			tags:    map[string]string{},
 		},
 		{
 			testName: "with unimplemented status code",
@@ -516,12 +519,56 @@ func TestStatusFromSpanStatus(t *testing.T) {
 			}(),
 			status:  sentry.SpanStatusUnknown,
 			message: "error code 1337",
+			tags:    map[string]string{},
+		},
+		{
+			testName: "with ok status code",
+			spanStatus: func() ptrace.SpanStatus {
+				spanStatus := ptrace.NewSpanStatus()
+				spanStatus.SetMessage("message")
+				spanStatus.SetCode(ptrace.StatusCodeOk)
+
+				return spanStatus
+			}(),
+			status:  sentry.SpanStatusOK,
+			message: "message",
+			tags:    map[string]string{},
+		},
+		{
+			testName: "with 400 http status code",
+			spanStatus: func() ptrace.SpanStatus {
+				spanStatus := ptrace.NewSpanStatus()
+				spanStatus.SetMessage("message")
+				spanStatus.SetCode(ptrace.StatusCodeError)
+
+				return spanStatus
+			}(),
+			status:  sentry.SpanStatusUnauthenticated,
+			message: "message",
+			tags: map[string]string{
+				"http.status_code": "401",
+			},
+		},
+		{
+			testName: "with canceled grpc status code",
+			spanStatus: func() ptrace.SpanStatus {
+				spanStatus := ptrace.NewSpanStatus()
+				spanStatus.SetMessage("message")
+				spanStatus.SetCode(ptrace.StatusCodeError)
+
+				return spanStatus
+			}(),
+			status:  sentry.SpanStatusCanceled,
+			message: "message",
+			tags: map[string]string{
+				"rpc.grpc.status_code": "1",
+			},
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.testName, func(t *testing.T) {
-			status, message := statusFromSpanStatus(test.spanStatus)
+			status, message := statusFromSpanStatus(test.spanStatus, test.tags)
 			assert.Equal(t, test.status, status)
 			assert.Equal(t, test.message, message)
 		})
