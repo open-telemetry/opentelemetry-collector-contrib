@@ -15,12 +15,10 @@
 package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
 import (
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-type rawLogsUnmarshaler struct {
-}
+type rawLogsUnmarshaler struct{}
 
 func newRawLogsUnmarshaler() LogsUnmarshaler {
 	return rawLogsUnmarshaler{}
@@ -28,7 +26,7 @@ func newRawLogsUnmarshaler() LogsUnmarshaler {
 
 func (r rawLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 	l := plog.NewLogs()
-	l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetBytesVal(pcommon.NewImmutableByteSlice(buf))
+	l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetEmptyBytesVal().FromRaw(buf)
 	return l, nil
 }
 

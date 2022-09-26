@@ -18,8 +18,8 @@ import (
 	"strings"
 	"time"
 
-	as "github.com/aerospike/aerospike-client-go/v5"
-	"github.com/aerospike/aerospike-client-go/v5/types"
+	as "github.com/aerospike/aerospike-client-go/v6"
+	"github.com/aerospike/aerospike-client-go/v6/types"
 )
 
 // asconn is used to mock aerospike connections

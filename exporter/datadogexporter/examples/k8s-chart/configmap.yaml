@@ -31,9 +31,6 @@ data:
                 enabled: true
           load:
           memory:
-            metrics:
-              system.memory.utilization:
-                enabled: true
           network:
           processes:
       # # Comment out this block below to get access to system metrics regarding

@@ -48,7 +48,7 @@ func Test_FromMetrics(t *testing.T) {
 	const doubleVal = 1234.5678
 	initDoublePt := func(dp pmetric.NumberDataPoint) {
 		dp.SetTimestamp(ts)
-		dp.SetDoubleVal(doubleVal)
+		dp.SetDoubleValue(doubleVal)
 	}
 
 	initDoublePtWithLabels := func(dp pmetric.NumberDataPoint) {
@@ -59,7 +59,7 @@ func Test_FromMetrics(t *testing.T) {
 	const int64Val = int64(123)
 	initInt64Pt := func(dp pmetric.NumberDataPoint) {
 		dp.SetTimestamp(ts)
-		dp.SetIntVal(int64Val)
+		dp.SetIntValue(int64Val)
 	}
 
 	initInt64PtWithLabels := func(dp pmetric.NumberDataPoint) {

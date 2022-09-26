@@ -119,7 +119,7 @@ func toHecSpan(logger *zap.Logger, span ptrace.Span) hecSpan {
 			Attributes: linkAttributes,
 			TraceID:    link.TraceID().HexString(),
 			SpanID:     link.SpanID().HexString(),
-			TraceState: link.TraceStateStruct().AsRaw(),
+			TraceState: link.TraceState().AsRaw(),
 		}
 	}
 	events := make([]hecEvent, span.Events().Len())

@@ -125,37 +125,37 @@ func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pmetric
 			for k := 0; k < ilm.Metrics().Len(); k++ {
 				metric := ilm.Metrics().At(k)
 
-				switch metric.DataType() {
+				switch metric.Type() {
 
-				case pmetric.MetricDataTypeGauge:
+				case pmetric.MetricTypeGauge:
 					for pointIndex := 0; pointIndex < metric.Gauge().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.Gauge().DataPoints().At(pointIndex)
 						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, groupedResourceMetrics, rm, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.Gauge().DataPoints().AppendEmpty())
 					}
 
-				case pmetric.MetricDataTypeSum:
+				case pmetric.MetricTypeSum:
 					for pointIndex := 0; pointIndex < metric.Sum().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.Sum().DataPoints().At(pointIndex)
 						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, groupedResourceMetrics, rm, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.Sum().DataPoints().AppendEmpty())
 					}
 
-				case pmetric.MetricDataTypeSummary:
+				case pmetric.MetricTypeSummary:
 					for pointIndex := 0; pointIndex < metric.Summary().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.Summary().DataPoints().At(pointIndex)
 						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, groupedResourceMetrics, rm, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.Summary().DataPoints().AppendEmpty())
 					}
 
-				case pmetric.MetricDataTypeHistogram:
+				case pmetric.MetricTypeHistogram:
 					for pointIndex := 0; pointIndex < metric.Histogram().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.Histogram().DataPoints().At(pointIndex)
 						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, groupedResourceMetrics, rm, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.Histogram().DataPoints().AppendEmpty())
 					}
 
-				case pmetric.MetricDataTypeExponentialHistogram:
+				case pmetric.MetricTypeExponentialHistogram:
 					for pointIndex := 0; pointIndex < metric.ExponentialHistogram().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.ExponentialHistogram().DataPoints().At(pointIndex)
 						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, groupedResourceMetrics, rm, ilm, metric, dataPoint.Attributes())
@@ -210,7 +210,7 @@ func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric 
 	// (name and type)
 	for i := 0; i < ilm.Metrics().Len(); i++ {
 		metric := ilm.Metrics().At(i)
-		if metric.Name() == searchedMetric.Name() && metric.DataType() == searchedMetric.DataType() {
+		if metric.Name() == searchedMetric.Name() && metric.Type() == searchedMetric.Type() {
 			return metric
 		}
 	}
@@ -222,22 +222,22 @@ func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric 
 	metric.SetUnit(searchedMetric.Unit())
 
 	// Move other special type specific values
-	switch searchedMetric.DataType() {
+	switch searchedMetric.Type() {
 
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		metric.SetEmptyHistogram().SetAggregationTemporality(searchedMetric.Histogram().AggregationTemporality())
 
-	case pmetric.MetricDataTypeExponentialHistogram:
+	case pmetric.MetricTypeExponentialHistogram:
 		metric.SetEmptyExponentialHistogram().SetAggregationTemporality(searchedMetric.ExponentialHistogram().AggregationTemporality())
 
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		metric.SetEmptySum().SetAggregationTemporality(searchedMetric.Sum().AggregationTemporality())
 		metric.Sum().SetIsMonotonic(searchedMetric.Sum().IsMonotonic())
 
-	case pmetric.MetricDataTypeGauge:
+	case pmetric.MetricTypeGauge:
 		metric.SetEmptyGauge()
 
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		metric.SetEmptySummary()
 
 	}

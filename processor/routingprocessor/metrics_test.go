@@ -40,7 +40,7 @@ func TestMetricProcessorCapabilities(t *testing.T) {
 	}
 
 	// test
-	p := newMetricProcessor(zap.NewNop(), config)
+	p := newMetricProcessor(component.TelemetrySettings{}, config)
 	require.NotNil(t, p)
 
 	// verify
@@ -63,7 +63,7 @@ func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		},
 	}
 
-	exp := newMetricProcessor(zap.NewNop(), &Config{
+	exp := newMetricProcessor(component.TelemetrySettings{}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -126,7 +126,7 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 		},
 	}
 
-	exp := newMetricProcessor(zap.NewNop(), &Config{
+	exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  contextAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -190,7 +190,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 		},
 	}
 
-	exp := newMetricProcessor(zap.NewNop(), &Config{
+	exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -248,7 +248,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing
 		},
 	}
 
-	exp := newMetricProcessor(zap.NewNop(), &Config{
+	exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		AttributeSource:              resourceAttributeSource,
 		FromAttribute:                "X-Tenant",
 		DropRoutingResourceAttribute: true,
@@ -313,7 +313,7 @@ func Benchmark_MetricsRouting_ResourceAttribute(b *testing.B) {
 			},
 		}
 
-		exp := newMetricProcessor(zap.NewNop(), cfg)
+		exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, cfg)
 		assert.NoError(b, exp.Start(context.Background(), host))
 
 		for i := 0; i < b.N; i++ {
@@ -350,7 +350,7 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithOTTL(t *testing.
 		},
 	}
 
-	exp := newMetricProcessor(zap.NewNop(), &Config{
+	exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		DefaultExporters: []string{"otlp"},
 		Table: []RoutingTableItem{
 			{

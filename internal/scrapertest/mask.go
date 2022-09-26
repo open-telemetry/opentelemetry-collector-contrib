@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -54,8 +54,8 @@ func maskMetricSliceValues(metrics pmetric.MetricSlice) {
 func maskDataPointSliceValues(dataPoints pmetric.NumberDataPointSlice) {
 	for i := 0; i < dataPoints.Len(); i++ {
 		dataPoint := dataPoints.At(i)
-		dataPoint.SetIntVal(0)
-		dataPoint.SetDoubleVal(0)
+		dataPoint.SetIntValue(0)
+		dataPoint.SetDoubleValue(0)
 	}
 }
 
@@ -106,10 +106,10 @@ func maskMetricSliceAttributeValues(metrics pmetric.MetricSlice, attributeName s
 			// indistinguishable from each other, but sorting by value allows
 			// for a reasonably thorough comparison and a deterministic outcome.
 			dps.Sort(func(a, b pmetric.NumberDataPoint) bool {
-				if a.IntVal() < b.IntVal() {
+				if a.IntValue() < b.IntValue() {
 					return true
 				}
-				if a.DoubleVal() < b.DoubleVal() {
+				if a.DoubleValue() < b.DoubleValue() {
 					return true
 				}
 				return false

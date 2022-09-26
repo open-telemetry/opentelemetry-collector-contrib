@@ -103,7 +103,7 @@ func doublePointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timestam
 
 func doublePoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, value float64) pmetric.NumberDataPoint {
 	ndp := doublePointRaw(attributes, startTimestamp, timestamp)
-	ndp.SetDoubleVal(value)
+	ndp.SetDoubleValue(value)
 	return ndp
 }
 

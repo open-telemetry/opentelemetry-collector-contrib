@@ -104,7 +104,7 @@ func initSpan(name string, ts pcommon.Timestamp, span ptrace.Span) {
 	span.SetName(name)
 	span.SetStartTimestamp(ts)
 	spanLink := span.Links().AppendEmpty()
-	spanLink.TraceStateStruct().FromRaw("OK")
+	spanLink.TraceState().FromRaw("OK")
 	bytes, _ := hex.DecodeString("12345678")
 	var traceID [16]byte
 	copy(traceID[:], bytes)

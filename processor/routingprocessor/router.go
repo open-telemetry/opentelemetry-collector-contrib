@@ -22,8 +22,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqllogs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
 
@@ -34,7 +34,7 @@ var errExporterNotFound = errors.New("exporter not found")
 // component.LogsExporter type arguments.
 type router[E component.Exporter] struct {
 	logger *zap.Logger
-	parser tql.Parser
+	parser ottl.Parser
 
 	defaultExporterIDs []string
 	table              []RoutingTableItem
@@ -48,15 +48,15 @@ type router[E component.Exporter] struct {
 func newRouter[E component.Exporter](
 	table []RoutingTableItem,
 	defaultExporterIDs []string,
-	logger *zap.Logger,
+	settings component.TelemetrySettings,
 ) router[E] {
 	return router[E]{
-		logger: logger,
-		parser: tql.NewParser(
+		logger: settings.Logger,
+		parser: ottl.NewParser(
 			common.Functions(),
-			tqllogs.ParsePath,
-			tqllogs.ParseEnum,
-			common.NewOTTLLogger(logger),
+			ottllogs.ParsePath,
+			ottllogs.ParseEnum,
+			settings,
 		),
 
 		table:              table,
@@ -68,7 +68,7 @@ func newRouter[E component.Exporter](
 
 type routingItem[E component.Exporter] struct {
 	exporters  []E
-	expression tql.Query
+	expression ottl.Statement
 }
 
 func (r *router[E]) registerExporters(available map[config.ComponentID]component.Exporter) error {
@@ -136,10 +136,10 @@ func (r *router[E]) registerRouteExporters(available map[config.ComponentID]comp
 // routingExpression builds a routing OTTL expressions from provided
 // routing table entry configuration. If routing table entry configuration
 // does not contain a OTTL expressions then nil is returned.
-func (r *router[E]) routingExpression(item RoutingTableItem) (tql.Query, error) {
-	var e tql.Query
+func (r *router[E]) routingExpression(item RoutingTableItem) (ottl.Statement, error) {
+	var e ottl.Statement
 	if item.Expression != "" {
-		queries, err := r.parser.ParseQueries([]string{item.Expression})
+		queries, err := r.parser.ParseStatements([]string{item.Expression})
 		if err != nil {
 			return e, err
 		}

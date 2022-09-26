@@ -126,14 +126,14 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		m.SetName("gauge_double_with_dims")
 		doublePt := m.SetEmptyGauge().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(ts)
-		doublePt.SetDoubleVal(doubleVal)
+		doublePt.SetDoubleValue(doubleVal)
 	}
 	{
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("gauge_int_with_dims")
 		int64Pt := m.SetEmptyGauge().DataPoints().AppendEmpty()
 		int64Pt.SetTimestamp(ts)
-		int64Pt.SetIntVal(int64Val)
+		int64Pt.SetIntValue(int64Val)
 	}
 	{
 		m := ilm.Metrics().AppendEmpty()
@@ -142,7 +142,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		m.Sum().SetIsMonotonic(true)
 		doublePt := m.Sum().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(ts)
-		doublePt.SetDoubleVal(doubleVal)
+		doublePt.SetDoubleValue(doubleVal)
 	}
 	{
 		m := ilm.Metrics().AppendEmpty()
@@ -151,7 +151,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		m.Sum().SetIsMonotonic(true)
 		int64Pt := m.Sum().DataPoints().AppendEmpty()
 		int64Pt.SetTimestamp(ts)
-		int64Pt.SetIntVal(int64Val)
+		int64Pt.SetIntValue(int64Val)
 	}
 
 	expCfg := &signalfxexporter.Config{
@@ -569,7 +569,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	dps := m.SetEmptyGauge().DataPoints()
 	dp := dps.AppendEmpty()
 	dp.SetTimestamp(pcommon.Timestamp(msec * 1e6))
-	dp.SetIntVal(13)
+	dp.SetIntValue(13)
 
 	dp.Attributes().PutString("k0", "v0")
 	dp.Attributes().PutString("k1", "v1")

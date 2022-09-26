@@ -68,11 +68,6 @@ func (c *Config) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
-// MarshalJSON will marshal a config to JSON.
-func (c Config) MarshalJSON() ([]byte, error) {
-	return json.Marshal(c.Builder)
-}
-
 // UnmarshalYAML will unmarshal a config from YAML.
 func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	rawConfig := map[string]interface{}{}
@@ -103,11 +98,6 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 	c.Builder = builder
 	return nil
-}
-
-// MarshalYAML will marshal a config to YAML.
-func (c Config) MarshalYAML() (interface{}, error) {
-	return c.Builder, nil
 }
 
 func (c *Config) Unmarshal(component *confmap.Conf) error {

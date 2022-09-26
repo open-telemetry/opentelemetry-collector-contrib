@@ -26,6 +26,10 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -40,17 +44,22 @@ func TestCreateProcessor(t *testing.T) {
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		BaseConfig: adapter.BaseConfig{
-			Operators: adapter.OperatorConfigs{
-				map[string]interface{}{
-					"type":  "regex_parser",
-					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
-					"severity": map[string]interface{}{
-						"parse_from": "body.sev",
-					},
-					"timestamp": map[string]interface{}{
-						"layout":     "%Y-%m-%d",
-						"parse_from": "body.time",
-					},
+			Operators: []operator.Config{
+				{
+					Builder: func() *regex.Config {
+						cfg := regex.NewConfig()
+						cfg.Regex = "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$"
+						sevField := entry.NewAttributeField("sev")
+						sevCfg := helper.NewSeverityConfig()
+						sevCfg.ParseFrom = &sevField
+						cfg.SeverityConfig = &sevCfg
+						timeField := entry.NewAttributeField("time")
+						timeCfg := helper.NewTimeParser()
+						timeCfg.Layout = "%Y-%m-%d"
+						timeCfg.ParseFrom = &timeField
+						cfg.TimeParser = &timeCfg
+						return cfg
+					}(),
 				},
 			},
 			Converter: adapter.ConverterConfig{
@@ -70,9 +79,10 @@ func TestInvalidOperators(t *testing.T) {
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		BaseConfig: adapter.BaseConfig{
-			Operators: adapter.OperatorConfigs{
-				map[string]interface{}{
-					"type": "nonsense",
+			Operators: []operator.Config{
+				{
+					// invalid due to missing regex
+					Builder: regex.NewConfig(),
 				},
 			},
 		},

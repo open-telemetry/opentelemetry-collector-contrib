@@ -21,7 +21,8 @@ Example configuration:
 exporters:
   coralogix:
     # The Coralogix traces ingress endpoint
-    endpoint: "tracing-ingress.coralogix.com:9443"
+    traces:
+      endpoint: "otel-traces.coralogix.com:443"
     metrics:
       endpoint: "otel-metrics.coralogix.com:443"
     logs:
@@ -38,17 +39,40 @@ exporters:
     # (Optional) Timeout is the timeout for every attempt to send data to the backend.
     timeout: 30s
 ```
+### Tracing deprecation 
+
+The v0.60 version deprecates old Jaeger based tracing endpoint in favour of Opentelemetry based one.
+
+To migrate, please remove the old endpoint field, and change the configuration to `traces.endpoint` using the new Tracing endpoint.
+
+Old configuration:
+```
+exporters:
+  coralogix:
+    # The Coralogix traces ingress endpoint
+    endpoint: "tracing-ingress.coralogix.com:9443"
+```
+
+New configuration:
+```
+exporters
+  coralogix:
+    # The Coralogix traces ingress endpoint
+    traces:
+      endpoint: "otel-traces.coralogix.com:443"
+```
+
 ### Coralogix's Endpoints 
 
 Depending on your region, you might need to use a different endpoint. Here are the available Endpoints:
 
 | Region  | Traces Endpoint                          | Metrics Endpoint                     | Logs Endpoint                     |
 |---------|------------------------------------------|------------------------------------- | --------------------------------- |
-| USA1    | `tracing-ingress.coralogix.us:9443`      | `otel-metrics.coralogix.us:443`      | `otel-logs.coralogix.us:443`      |
-| APAC1   | `tracing-ingress.app.coralogix.in:9443`  | `otel-metrics.coralogix.in:443`      | `otel-logs.coralogix.in:443`      | 
-| APAC2   | `tracing-ingress.coralogixsg.com:9443`   | `otel-metrics.coralogixsg.com:443`   | `otel-logs.coralogixsg.com:443`   |
-| EUROPE1 | `tracing-ingress.coralogix.com:9443`     | `otel-metrics.coralogix.com:443`     | `otel-logs.coralogix.com:443`     |
-| EUROPE2 | `tracing-ingress.eu2.coralogix.com:9443` | `otel-metrics.eu2.coralogix.com:443` | `otel-logs.eu2.coralogix.com:443` |
+| USA1    | `otel-traces.coralogix.us:443`      | `otel-metrics.coralogix.us:443`      | `otel-logs.coralogix.us:443`      |
+| APAC1   | `otel-traces.app.coralogix.in:443`  | `otel-metrics.coralogix.in:443`      | `otel-logs.coralogix.in:443`      | 
+| APAC2   | `otel-traces.coralogixsg.com:443`   | `otel-metrics.coralogixsg.com:443`   | `otel-logs.coralogixsg.com:443`   |
+| EUROPE1 | `otel-traces.coralogix.com:443`     | `otel-metrics.coralogix.com:443`     | `otel-logs.coralogix.com:443`     |
+| EUROPE2 | `otel-traces.eu2.coralogix.com:443` | `otel-metrics.eu2.coralogix.com:443` | `otel-logs.eu2.coralogix.com:443` |
 
 ### Need help?
 We love to assist our customers, simply [book your implementation session](https://calendly.com/info-coralogix/implementation),

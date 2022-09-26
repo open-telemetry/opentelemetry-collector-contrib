@@ -20,7 +20,6 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -50,7 +49,7 @@ func Test_RawMarshaler(t *testing.T) {
 			name: "[]byte",
 			logRecord: func() plog.LogRecord {
 				lr := plog.NewLogRecord()
-				lr.Body().SetBytesVal(pcommon.NewImmutableByteSlice([]byte("foo")))
+				lr.Body().SetEmptyBytesVal().FromRaw([]byte("foo"))
 				return lr
 			},
 			errorExpected: false,
@@ -100,12 +99,10 @@ func Test_RawMarshaler(t *testing.T) {
 			name: "slice",
 			logRecord: func() plog.LogRecord {
 				lr := plog.NewLogRecord()
-
-				slice := pcommon.NewValueSlice()
-				slice.SliceVal().AppendEmpty().SetStringVal("foo")
-				slice.SliceVal().AppendEmpty().SetStringVal("bar")
-				slice.SliceVal().AppendEmpty().SetBoolVal(false)
-				slice.CopyTo(lr.Body())
+				slice := lr.Body().SetEmptySliceVal()
+				slice.AppendEmpty().SetStringVal("foo")
+				slice.AppendEmpty().SetStringVal("bar")
+				slice.AppendEmpty().SetBoolVal(false)
 				return lr
 			},
 			errorExpected: false,
@@ -115,11 +112,10 @@ func Test_RawMarshaler(t *testing.T) {
 			name: "map",
 			logRecord: func() plog.LogRecord {
 				lr := plog.NewLogRecord()
-				m := pcommon.NewValueMap()
-				m.MapVal().Insert("foo", pcommon.NewValueString("foo"))
-				m.MapVal().Insert("bar", pcommon.NewValueString("bar"))
-				m.MapVal().Insert("foobar", pcommon.NewValueBool(false))
-				m.CopyTo(lr.Body())
+				m := lr.Body().SetEmptyMapVal()
+				m.PutString("foo", "foo")
+				m.PutString("bar", "bar")
+				m.PutBool("foobar", false)
 				return lr
 			},
 			errorExpected: false,

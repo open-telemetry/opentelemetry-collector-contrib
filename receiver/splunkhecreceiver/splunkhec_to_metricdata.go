@@ -109,7 +109,7 @@ func addIntGauge(metrics pmetric.MetricSlice, metricName string, value int64, ts
 	metric.SetName(metricName)
 	intPt := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 	intPt.SetTimestamp(ts)
-	intPt.SetIntVal(value)
+	intPt.SetIntValue(value)
 	attributes.CopyTo(intPt.Attributes())
 }
 
@@ -118,7 +118,7 @@ func addDoubleGauge(metrics pmetric.MetricSlice, metricName string, value float6
 	metric.SetName(metricName)
 	doublePt := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 	doublePt.SetTimestamp(ts)
-	doublePt.SetDoubleVal(value)
+	doublePt.SetDoubleValue(value)
 	attributes.CopyTo(doublePt.Attributes())
 }
 

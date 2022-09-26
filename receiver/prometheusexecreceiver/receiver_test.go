@@ -117,8 +117,8 @@ func assertTwoUniqueValuesScraped(t *testing.T, metricsSlice []pmetric.Metrics) 
 			}
 		}
 		require.True(t, ok, "timestamp_now metric not found")
-		assert.Equal(t, pmetric.MetricDataTypeGauge, tempM.DataType())
-		tempV := tempM.Gauge().DataPoints().At(0).DoubleVal()
+		assert.Equal(t, pmetric.MetricTypeGauge, tempM.Type())
+		tempV := tempM.Gauge().DataPoints().At(0).DoubleValue()
 		if i != 0 && tempV != value {
 			return
 		}

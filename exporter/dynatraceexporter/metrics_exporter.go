@@ -139,7 +139,7 @@ func (e *exporter) serializeMetrics(md pmetric.Metrics) []string {
 					e.settings.Logger.Warn(
 						"failed to serialize",
 						zap.String("name", metric.Name()),
-						zap.String("data-type", metric.DataType().String()),
+						zap.String("data-type", metric.Type().String()),
 						zap.Error(err),
 					)
 				}
@@ -150,7 +150,7 @@ func (e *exporter) serializeMetrics(md pmetric.Metrics) []string {
 				e.settings.Logger.Debug(
 					"Serialized metric data",
 					zap.String("name", metric.Name()),
-					zap.String("data-type", metric.DataType().String()),
+					zap.String("data-type", metric.Type().String()),
 					zap.Int("data-len", len(metricLines)),
 				)
 			}
