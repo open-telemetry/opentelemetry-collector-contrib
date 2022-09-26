@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunk
 go 1.18
 
 require (
-	github.com/census-instrumentation/opencensus-proto v0.4.0
+	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.60.0
