@@ -16,12 +16,14 @@ package helper
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -476,4 +478,46 @@ func (tc severityTestCase) run(parseFrom entry.Field) func(*testing.T) {
 
 		require.Equal(t, tc.expected, ent.Severity)
 	}
+}
+
+func TestUnmarshalSeverityConfig(t *testing.T) {
+	operatortest.ConfigUnmarshalTests{
+		DefaultConfig: newHelpersConfig(),
+		TestsFile:     filepath.Join(".", "testdata", "severity.yaml"),
+		Tests: []operatortest.ConfigUnmarshalTest{
+			{
+				Name: "mapping",
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Severity = NewSeverityConfig()
+					c.Severity.Mapping = map[interface{}]interface{}{
+						"critical": "5xx",
+						"error":    "4xx",
+						"info":     "3xx",
+						"debug":    "2xx",
+					}
+					return c
+				}(),
+			},
+			{
+				Name: "parse_from",
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Severity = NewSeverityConfig()
+					from := entry.NewBodyField("from")
+					c.Severity.ParseFrom = &from
+					return c
+				}(),
+			},
+			{
+				Name: "preset",
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Severity = NewSeverityConfig()
+					c.Severity.Preset = "http"
+					return c
+				}(),
+			},
+		},
+	}.Run(t)
 }
