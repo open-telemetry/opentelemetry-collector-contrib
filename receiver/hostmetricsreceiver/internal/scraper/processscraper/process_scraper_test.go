@@ -66,8 +66,8 @@ func TestScrape(t *testing.T) {
 		},
 	}
 
-	const createTime = 100
-	const expectedStartTime = 100 * 1e6
+	const createTime = 1664198907123 // 2022-09-26T13:28:27.123Z
+	const expectedStartTime = 1664198907123 * 1e6
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
@@ -105,7 +105,7 @@ func TestScrape(t *testing.T) {
 			}
 
 			require.Greater(t, md.ResourceMetrics().Len(), 1)
-			assertProcessResourceAttributesExist(t, md.ResourceMetrics())
+			assertProcessResourceAttributesValid(t, md.ResourceMetrics())
 			assertCPUTimeMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			assertMemoryUsageMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			assertOldDiskIOMetricValid(t, md.ResourceMetrics(), expectedStartTime)
@@ -122,7 +122,7 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice) {
+func assertProcessResourceAttributesValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice) {
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		attr := resourceMetrics.At(0).Resource().Attributes()
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessPID)
@@ -132,6 +132,7 @@ func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pmetric.
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessCommandLine)
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessOwner)
 		internal.AssertContainsAttribute(t, attr, "process.parent_pid")
+		internal.AssertStringAttributeValue(t, attr, "process.start", "2022-09-26T13:28:27.123Z")
 	}
 }
 

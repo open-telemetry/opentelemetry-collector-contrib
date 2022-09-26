@@ -16,6 +16,7 @@ package processscraper // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"strings"
+	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/process"
@@ -55,6 +56,7 @@ func (m *processMetadata) resourceOptions() []metadata.ResourceMetricsOption {
 		metadata.WithProcessParentPid(int64(m.parentPid)),
 		metadata.WithProcessExecutableName(m.executable.name),
 		metadata.WithProcessExecutablePath(m.executable.path),
+		metadata.WithProcessStart(time.UnixMilli(m.createTime).UTC().Format("2006-01-02T15:04:05.999Z")),
 	)
 	if m.command != nil {
 		opts = append(opts, metadata.WithProcessCommand(m.command.command))

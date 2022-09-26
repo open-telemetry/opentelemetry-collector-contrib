@@ -35,6 +35,7 @@ metrics:
 | process.owner | The username of the user that owns the process. | Str |
 | process.parent_pid | Parent Process identifier (PPID). | Int |
 | process.pid | Process identifier (PID). | Int |
+| process.start | The time the process started, e.g. '2016-05-23T08:05:34.853Z'. | Str |
 
 ## Metric attributes
 

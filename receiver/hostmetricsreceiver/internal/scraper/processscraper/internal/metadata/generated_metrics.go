@@ -569,6 +569,13 @@ func WithProcessPid(val int64) ResourceMetricsOption {
 	}
 }
 
+// WithProcessStart sets provided value as "process.start" attribute for current resource.
+func WithProcessStart(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().PutStr("process.start", val)
+	}
+}
+
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {

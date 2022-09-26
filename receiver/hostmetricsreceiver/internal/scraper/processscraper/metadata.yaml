@@ -37,6 +37,9 @@ resource_attributes:
   process.owner:
     description: The username of the user that owns the process.
     type: string
+  process.start:
+    description: The time the process started, e.g. '2016-05-23T08:05:34.853Z'.
+    type: string
 
 attributes:
   direction:
