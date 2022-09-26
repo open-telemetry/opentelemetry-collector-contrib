@@ -17,6 +17,7 @@ package otto
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"go.opentelemetry.io/collector/consumer"
@@ -34,22 +35,18 @@ type metricsRepeater struct {
 	stop      chan struct{}
 }
 
+func (r *metricsRepeater) setNext(next consumer.Metrics) {
+	r.next = next
+}
+
 func (*metricsRepeater) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 
 func (r *metricsRepeater) ConsumeMetrics(ctx context.Context, pmetrics pmetric.Metrics) error {
-	envelopeJson, err := json.Marshal(wsMessageEnvelope{
-		Payload: metrics(pmetrics),
-	})
+	err := doWritePayload(r.ws, metrics(pmetrics), r.stop)
 	if err != nil {
-		r.logger.Printf("error marshaling envelope: %v", err)
-		return nil
-	}
-	_, err = r.ws.Write(envelopeJson)
-	if err != nil {
-		r.logger.Printf("error writing envelope json to websocket: %v\n", err)
-		r.stop <- struct{}{}
+		r.logger.Printf("metricsRepeater: %v", err)
 		return nil
 	}
 	if r.next == nil {
@@ -71,23 +68,19 @@ func (*logsRepeater) Capabilities() consumer.Capabilities {
 }
 
 func (r *logsRepeater) ConsumeLogs(ctx context.Context, plogs plog.Logs) error {
-	envelopeJson, err := json.Marshal(wsMessageEnvelope{
-		Payload: logs(plogs),
-	})
+	err := doWritePayload(r.ws, logs(plogs), r.stop)
 	if err != nil {
-		r.logger.Printf("error marshaling envelope: %v", err)
-		return nil
-	}
-	_, err = r.ws.Write(envelopeJson)
-	if err != nil {
-		r.logger.Printf("error writing envelope json to websocket: %v\n", err)
-		r.stop <- struct{}{}
+		r.logger.Printf("logsRepeater: %v\n", err)
 		return nil
 	}
 	if r.next == nil {
 		return nil
 	}
 	return r.next.ConsumeLogs(ctx, plogs)
+}
+
+func (r *logsRepeater) setNext(next consumer.Logs) {
+	r.next = next
 }
 
 type tracesRepeater struct {
@@ -103,21 +96,39 @@ func (r *tracesRepeater) Capabilities() consumer.Capabilities {
 }
 
 func (r *tracesRepeater) ConsumeTraces(ctx context.Context, ptraces ptrace.Traces) error {
-	envelopeJson, err := json.Marshal(wsMessageEnvelope{
-		Payload: traces(ptraces),
-	})
+	err := doWritePayload(r.ws, traces(ptraces), r.stop)
 	if err != nil {
-		r.logger.Printf("error marshaling envelope: %v", err)
-		return nil
-	}
-	_, err = r.ws.Write(envelopeJson)
-	if err != nil {
-		r.logger.Printf("error writing envelope json to websocket: %v\n", err)
-		r.stop <- struct{}{}
+		r.logger.Printf("tracesRepeater: %v\n", err)
 		return nil
 	}
 	if r.next == nil {
 		return nil
 	}
 	return r.next.ConsumeTraces(ctx, ptraces)
+}
+
+func (r *tracesRepeater) setNext(next consumer.Traces) {
+	r.next = next
+}
+
+func doWritePayload(ws *websocket.Conn, payload json.Marshaler, stop chan struct{}) error {
+	err := writePayload(ws, payload)
+	if err != nil {
+		stop <- struct{}{}
+	}
+	return err
+}
+
+func writePayload(ws *websocket.Conn, payload json.Marshaler) error {
+	envelopeJson, err := json.Marshal(wsMessageEnvelope{
+		Payload: payload,
+	})
+	if err != nil {
+		return fmt.Errorf("error marshaling envelope: %w", err)
+	}
+	_, err = ws.Write(envelopeJson)
+	if err != nil {
+		return fmt.Errorf("error writing envelope json to websocket: %v\n", err)
+	}
+	return nil
 }

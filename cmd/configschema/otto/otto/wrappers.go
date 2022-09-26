@@ -25,7 +25,7 @@ type metricsReceiverWrapper struct {
 }
 
 func (w metricsReceiverWrapper) setNextMetricsConsumer(next consumer.Metrics) {
-	w.repeater.next = next
+	w.repeater.setNext(next)
 }
 
 type logsReceiverWrapper struct {
@@ -34,7 +34,7 @@ type logsReceiverWrapper struct {
 }
 
 func (w logsReceiverWrapper) setNextLogsConsumer(next consumer.Logs) {
-	w.repeater.next = next
+	w.repeater.setNext(next)
 }
 
 type tracesReceiverWrapper struct {
@@ -43,7 +43,7 @@ type tracesReceiverWrapper struct {
 }
 
 func (w tracesReceiverWrapper) setNextTracesConsumer(next consumer.Traces) {
-	w.repeater.next = next
+	w.repeater.setNext(next)
 }
 
 type metricsProcessorWrapper struct {
@@ -52,7 +52,7 @@ type metricsProcessorWrapper struct {
 }
 
 func (w metricsProcessorWrapper) setNextMetricsConsumer(next consumer.Metrics) {
-	w.repeater.next = next
+	w.repeater.setNext(next)
 }
 
 type logsProcessorWrapper struct {
@@ -61,7 +61,7 @@ type logsProcessorWrapper struct {
 }
 
 func (w logsProcessorWrapper) setNextLogsConsumer(next consumer.Logs) {
-	w.repeater.next = next
+	w.repeater.setNext(next)
 }
 
 type tracesProcessorWrapper struct {
@@ -70,7 +70,7 @@ type tracesProcessorWrapper struct {
 }
 
 func (w tracesProcessorWrapper) setNextTracesConsumer(next consumer.Traces) {
-	w.repeater.next = next
+	w.repeater.setNext(next)
 }
 
 type metricsExporterWrapper struct {
