@@ -436,7 +436,7 @@ func transactionFromSpan(span *sentry.Span) *sentry.Event {
 	transaction := sentry.NewEvent()
 	transaction.EventID = generateEventID()
 
-	transaction.Contexts["trace"] = sentry.TraceContext{
+	transaction.Contexts["trace"] = &sentry.TraceContext{
 		TraceID:      span.TraceID,
 		SpanID:       span.SpanID,
 		ParentSpanID: span.ParentSpanID,
