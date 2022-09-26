@@ -25,6 +25,8 @@ cmd/otelcontribcol/                                  @open-telemetry/collector-c
 cmd/telemetrygen/                                    @open-telemetry/collector-contrib-approvers @mx-psi @amenasria @codeboten
 cmd/tracegen/                                        @open-telemetry/collector-contrib-approvers @jpkrohling
 
+confmap/provider/s3mapprovider/                      @open-telemetry/collector-contrib-approvers @Aneurysm9
+
 exporter/alibabacloudlogserviceexporter/             @open-telemetry/collector-contrib-approvers @shabicheng @kongluoxing @qiansheng91
 exporter/awscloudwatchlogsexporter/                  @open-telemetry/collector-contrib-approvers @boostchicken
 exporter/awsemfexporter/                             @open-telemetry/collector-contrib-approvers @Aneurysm9 @shaochengwang @mxiamxia
