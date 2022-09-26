@@ -22,9 +22,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"golang.org/x/net/websocket"
 )
 
@@ -68,26 +65,10 @@ func (h receiverSocketHandler) startMetricsReceiver(
 	ws *websocket.Conn,
 	cfg config.Receiver,
 ) {
-	stop := make(chan struct{})
-	repeater := &metricsRepeater{
-		logger:    h.logger,
-		ws:        ws,
-		marshaler: pmetric.NewJSONMarshaler(),
-		stop:      stop,
-	}
-	receiver, err := h.receiverFactory.CreateMetricsReceiver(
-		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
-		cfg,
-		repeater,
-	)
+	wrapper, err := newMetricsReceiverWrapper(h.logger, ws, cfg, h.receiverFactory)
 	if err != nil {
-		sendErr(ws, h.logger, "failed to create metrics receiver", err)
+		sendErr(ws, h.logger, "failed to create metrics receiver wrapper", err)
 		return
-	}
-	wrapper := metricsReceiverWrapper{
-		MetricsReceiver: receiver,
-		repeater:        repeater,
 	}
 	h.pipeline.connectMetricsReceiverWrapper(wrapper)
 	err = wrapper.Start(context.Background(), componenttest.NewNopHost())
@@ -95,7 +76,7 @@ func (h receiverSocketHandler) startMetricsReceiver(
 		sendErr(ws, h.logger, "failed to start metrics receiver", err)
 		return
 	}
-	<-stop
+	wrapper.waitForStopMessage()
 	err = wrapper.Shutdown(context.Background())
 	if err != nil {
 		sendErr(ws, h.logger, "failed to shut down metrics receiver", err)
@@ -108,25 +89,10 @@ func (h receiverSocketHandler) startLogsReceiver(
 	ws *websocket.Conn,
 	cfg config.Receiver,
 ) {
-	stop := make(chan struct{})
-	repeater := &logsRepeater{
-		ws:        ws,
-		marshaler: plog.NewJSONMarshaler(),
-		stop:      stop,
-	}
-	receiver, err := h.receiverFactory.CreateLogsReceiver(
-		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
-		cfg,
-		repeater,
-	)
+	wrapper, err := newLogsReceiverWrapper(h.logger, ws, cfg, h.receiverFactory)
 	if err != nil {
-		sendErr(ws, h.logger, "failed to create logs receiver", err)
+		sendErr(ws, h.logger, "failed to create logs receiver wrapper", err)
 		return
-	}
-	wrapper := logsReceiverWrapper{
-		LogsReceiver: receiver,
-		repeater:     repeater,
 	}
 	h.pipeline.connectLogsReceiverWrapper(wrapper)
 	err = wrapper.Start(context.Background(), componenttest.NewNopHost())
@@ -134,7 +100,7 @@ func (h receiverSocketHandler) startLogsReceiver(
 		sendErr(ws, h.logger, "failed to start logs receiver", err)
 		return
 	}
-	<-stop
+	wrapper.waitForStopMessage()
 	err = wrapper.Shutdown(context.Background())
 	if err != nil {
 		sendErr(ws, h.logger, "failed to shut down logs receiver", err)
@@ -147,25 +113,10 @@ func (h receiverSocketHandler) startTracesReceiver(
 	ws *websocket.Conn,
 	cfg config.Receiver,
 ) {
-	stop := make(chan struct{})
-	repeater := &tracesRepeater{
-		ws:        ws,
-		marshaler: ptrace.NewJSONMarshaler(),
-		stop:      stop,
-	}
-	receiver, err := h.receiverFactory.CreateTracesReceiver(
-		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
-		cfg,
-		repeater,
-	)
+	wrapper, err := newTracesReceiverWrapper(h.logger, ws, cfg, h.receiverFactory)
 	if err != nil {
-		sendErr(ws, h.logger, "failed to create traces receiver", err)
+		sendErr(ws, h.logger, "failed to create traces receiver wrapper", err)
 		return
-	}
-	wrapper := tracesReceiverWrapper{
-		TracesReceiver: receiver,
-		repeater:       repeater,
 	}
 	h.pipeline.connectTracesReceiverWrapper(wrapper)
 	err = wrapper.Start(context.Background(), componenttest.NewNopHost())
@@ -173,7 +124,7 @@ func (h receiverSocketHandler) startTracesReceiver(
 		sendErr(ws, h.logger, "failed to start traces receiver", err)
 		return
 	}
-	<-stop
+	wrapper.waitForStopMessage()
 	err = wrapper.Shutdown(context.Background())
 	if err != nil {
 		sendErr(ws, h.logger, "failed to shut down traces receiver", err)

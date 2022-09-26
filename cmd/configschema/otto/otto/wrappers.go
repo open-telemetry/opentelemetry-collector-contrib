@@ -15,8 +15,14 @@
 package otto
 
 import (
+	"context"
+	"log"
+
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"golang.org/x/net/websocket"
 )
 
 type metricsReceiverWrapper struct {
@@ -24,8 +30,26 @@ type metricsReceiverWrapper struct {
 	repeater *metricsRepeater
 }
 
+func newMetricsReceiverWrapper(logger *log.Logger, ws *websocket.Conn, cfg config.Receiver, factory component.ReceiverFactory) (metricsReceiverWrapper, error) {
+	repeater := newMetricsRepeater(logger, ws)
+	receiver, err := factory.CreateMetricsReceiver(
+		context.Background(),
+		componenttest.NewNopReceiverCreateSettings(),
+		cfg,
+		repeater,
+	)
+	return metricsReceiverWrapper{
+		MetricsReceiver: receiver,
+		repeater:        repeater,
+	}, err
+}
+
 func (w metricsReceiverWrapper) setNextMetricsConsumer(next consumer.Metrics) {
 	w.repeater.setNext(next)
+}
+
+func (w metricsReceiverWrapper) waitForStopMessage() {
+	w.repeater.waitForStopMessage()
 }
 
 type logsReceiverWrapper struct {
@@ -33,8 +57,26 @@ type logsReceiverWrapper struct {
 	repeater *logsRepeater
 }
 
+func newLogsReceiverWrapper(logger *log.Logger, ws *websocket.Conn, cfg config.Receiver, factory component.ReceiverFactory) (logsReceiverWrapper, error) {
+	repeater := newLogsRepeater(logger, ws)
+	receiver, err := factory.CreateLogsReceiver(
+		context.Background(),
+		componenttest.NewNopReceiverCreateSettings(),
+		cfg,
+		repeater,
+	)
+	return logsReceiverWrapper{
+		LogsReceiver: receiver,
+		repeater:     repeater,
+	}, err
+}
+
 func (w logsReceiverWrapper) setNextLogsConsumer(next consumer.Logs) {
 	w.repeater.setNext(next)
+}
+
+func (w logsReceiverWrapper) waitForStopMessage() {
+	w.repeater.waitForStopMessage()
 }
 
 type tracesReceiverWrapper struct {
@@ -42,8 +84,26 @@ type tracesReceiverWrapper struct {
 	repeater *tracesRepeater
 }
 
+func newTracesReceiverWrapper(logger *log.Logger, ws *websocket.Conn, cfg config.Receiver, factory component.ReceiverFactory) (tracesReceiverWrapper, error) {
+	repeater := newTracesRepeater(logger, ws)
+	receiver, err := factory.CreateTracesReceiver(
+		context.Background(),
+		componenttest.NewNopReceiverCreateSettings(),
+		cfg,
+		repeater,
+	)
+	return tracesReceiverWrapper{
+		TracesReceiver: receiver,
+		repeater:       repeater,
+	}, err
+}
+
 func (w tracesReceiverWrapper) setNextTracesConsumer(next consumer.Traces) {
 	w.repeater.setNext(next)
+}
+
+func (w tracesReceiverWrapper) waitForStopMessage() {
+	w.repeater.waitForStopMessage()
 }
 
 type metricsProcessorWrapper struct {

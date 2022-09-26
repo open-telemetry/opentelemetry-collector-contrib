@@ -35,6 +35,15 @@ type metricsRepeater struct {
 	stop      chan struct{}
 }
 
+func newMetricsRepeater(logger *log.Logger, ws *websocket.Conn) *metricsRepeater {
+	return &metricsRepeater{
+		logger:    logger,
+		ws:        ws,
+		marshaler: pmetric.NewJSONMarshaler(),
+		stop:      make(chan struct{}),
+	}
+}
+
 func (r *metricsRepeater) setNext(next consumer.Metrics) {
 	r.next = next
 }
@@ -55,6 +64,10 @@ func (r *metricsRepeater) ConsumeMetrics(ctx context.Context, pmetrics pmetric.M
 	return r.next.ConsumeMetrics(ctx, pmetrics)
 }
 
+func (r *metricsRepeater) waitForStopMessage() {
+	<-r.stop
+}
+
 type logsRepeater struct {
 	logger    *log.Logger
 	ws        *websocket.Conn
@@ -63,8 +76,21 @@ type logsRepeater struct {
 	stop      chan struct{}
 }
 
+func newLogsRepeater(logger *log.Logger, ws *websocket.Conn) *logsRepeater {
+	return &logsRepeater{
+		logger:    logger,
+		ws:        ws,
+		marshaler: plog.NewJSONMarshaler(),
+		stop:      make(chan struct{}),
+	}
+}
+
 func (*logsRepeater) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
+}
+
+func (r *logsRepeater) waitForStopMessage() {
+	<-r.stop
 }
 
 func (r *logsRepeater) ConsumeLogs(ctx context.Context, plogs plog.Logs) error {
@@ -91,6 +117,15 @@ type tracesRepeater struct {
 	stop      chan struct{}
 }
 
+func newTracesRepeater(logger *log.Logger, ws *websocket.Conn) *tracesRepeater {
+	return &tracesRepeater{
+		logger:    logger,
+		ws:        ws,
+		marshaler: ptrace.NewJSONMarshaler(),
+		stop:      make(chan struct{}),
+	}
+}
+
 func (r *tracesRepeater) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
@@ -109,6 +144,10 @@ func (r *tracesRepeater) ConsumeTraces(ctx context.Context, ptraces ptrace.Trace
 
 func (r *tracesRepeater) setNext(next consumer.Traces) {
 	r.next = next
+}
+
+func (r *tracesRepeater) waitForStopMessage() {
+	<-r.stop
 }
 
 func doWritePayload(ws *websocket.Conn, payload json.Marshaler, stop chan struct{}) error {
