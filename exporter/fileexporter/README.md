@@ -58,7 +58,7 @@ Telemetry data is encoded according to the `format` setting and then written to 
 
 When `format` is json and `compression` is none , telemetry data is written to file in JSON format. Each line in the file is a JSON object.
 
-Besides, each encoded object is preceded by 4 bytes (an unsigned 32 bit integer) which represent the number of bytes contained in the encoded object.When we need read the messages back in, we read the size, then read the bytes into a separate buffer, then parse from that buffer.
+Otherwise, when using `proto` format or any kind of encoding, each encoded object is preceded by 4 bytes (an unsigned 32 bit integer) which represent the number of bytes contained in the encoded object.When we need read the messages back in, we read the size, then read the bytes into a separate buffer, then parse from that buffer.
 
 
 ## Example:
