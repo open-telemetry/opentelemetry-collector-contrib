@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opence
 go 1.18
 
 require (
-	github.com/census-instrumentation/opencensus-proto v0.4.0
+	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.60.0
