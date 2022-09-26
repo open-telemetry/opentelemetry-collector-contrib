@@ -49,7 +49,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension v0.60.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetter v0.60.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension v0.60.0
@@ -747,7 +747,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/bear
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension => ./extension/fluentbitextension
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetter => ./extension/headerssetter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension => ./extension/headerssetterextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension => ./extension/healthcheckextension
 

@@ -5,9 +5,6 @@
 | Stability     | [alpha]   |
 | Distributions | [contrib] |
 
-*Deprecated:* module `github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetter`
-is deprecated, use `github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension` instead.
-
 The `headers_setter` extension implements `ClientAuthenticator` and is used to
 set requests headers in `gRPC` / `HTTP` exporters with values provided via
 extension configurations or requests metadata (context).
