@@ -37,7 +37,7 @@ type Config struct {
 	FormatType string `mapstructure:"format"`
 
 	// Compression Codec used to export telemetry data
-	// The options are: 'none'  and 'zstd'
+	// Supported compression algorithms:`zstd`
 	Compression string `mapstructure:"compression"`
 }
 
