@@ -29,16 +29,16 @@ import (
 
 // Marshaler configuration used for marhsaling Protobuf
 var tracesMarshalers = map[string]ptrace.Marshaler{
-	defaultFormatType: ptrace.NewJSONMarshaler(),
-	formatTypeProto:   ptrace.NewProtoMarshaler(),
+	formatTypeJSON:  ptrace.NewJSONMarshaler(),
+	formatTypeProto: ptrace.NewProtoMarshaler(),
 }
 var metricsMarshalers = map[string]pmetric.Marshaler{
-	defaultFormatType: pmetric.NewJSONMarshaler(),
-	formatTypeProto:   pmetric.NewProtoMarshaler(),
+	formatTypeJSON:  pmetric.NewJSONMarshaler(),
+	formatTypeProto: pmetric.NewProtoMarshaler(),
 }
 var logsMarshalers = map[string]plog.Marshaler{
-	defaultFormatType: plog.NewJSONMarshaler(),
-	formatTypeProto:   plog.NewProtoMarshaler(),
+	formatTypeJSON:  plog.NewJSONMarshaler(),
+	formatTypeProto: plog.NewProtoMarshaler(),
 }
 
 // exportFunc defines how to export encoded telemetry data.
@@ -130,7 +130,11 @@ func (e *fileExporter) Shutdown(context.Context) error {
 }
 
 func buildExportFunc(cfg *Config) func(e *fileExporter, buf []byte) error {
-	if cfg.FormatType == formatTypeProto || cfg.Compression != defaultCompression {
+	if cfg.FormatType == formatTypeProto {
+		return exportMessageAsBuffer
+	}
+	// if the data format is JSON and needs to be compressed, telemetry data can't be written to file in JSON format.
+	if cfg.FormatType == formatTypeJSON && cfg.Compression != "" {
 		return exportMessageAsBuffer
 	}
 	return exportMessageAsLine

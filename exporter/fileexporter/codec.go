@@ -21,9 +21,15 @@ type compressFunc func(src []byte) []byte
 
 var encoder, _ = zstd.NewWriter(nil)
 
-var compressFuncs = map[string]compressFunc{
-	defaultCompression: noneCompress,
-	compressionZSTD:    zstdCompress,
+var encoders = map[string]compressFunc{
+	compressionZSTD: zstdCompress,
+}
+
+func buildCompressor(compression string) compressFunc {
+	if compression == "" {
+		return noneCompress
+	}
+	return encoders[compression]
 }
 
 // zstdCompress compress a buffer with zstd

@@ -71,10 +71,10 @@ func (cfg *Config) Validate() error {
 	if cfg.Path == "" {
 		return errors.New("path must be non-empty")
 	}
-	if cfg.FormatType != defaultFormatType && cfg.FormatType != formatTypeProto {
+	if cfg.FormatType != formatTypeJSON && cfg.FormatType != formatTypeProto {
 		return errors.New("format type is not supported")
 	}
-	if cfg.Compression != defaultCompression && cfg.Compression != compressionZSTD {
+	if cfg.Compression != "" && cfg.Compression != compressionZSTD {
 		return errors.New("compression is not supported")
 	}
 	return nil

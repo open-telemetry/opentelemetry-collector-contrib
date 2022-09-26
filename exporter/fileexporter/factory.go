@@ -35,12 +35,11 @@ const (
 	defaultMaxBackups = 100
 
 	// the format of encoded telemetry data
-	defaultFormatType = "json"
-	formatTypeProto   = "proto"
+	formatTypeJSON  = "json"
+	formatTypeProto = "proto"
 
 	// the type of compression codec
-	defaultCompression = "none"
-	compressionZSTD    = "zstd"
+	compressionZSTD = "zstd"
 )
 
 // NewFactory creates a factory for OTLP exporter.
@@ -57,8 +56,7 @@ func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		Rotation:         Rotation{MaxBackups: defaultMaxBackups},
-		FormatType:       defaultFormatType,
-		Compression:      defaultCompression,
+		FormatType:       formatTypeJSON,
 	}
 }
 
@@ -82,7 +80,7 @@ func createTracesExporter(
 			tracesMarshaler: tracesMarshalers[conf.FormatType],
 			exporter:        buildExportFunc(conf),
 			compression:     conf.Compression,
-			compressor:      compressFuncs[conf.Compression],
+			compressor:      buildCompressor(conf.Compression),
 		}
 	})
 	return exporterhelper.NewTracesExporter(
@@ -115,7 +113,7 @@ func createMetricsExporter(
 			metricsMarshaler: metricsMarshalers[conf.FormatType],
 			exporter:         buildExportFunc(conf),
 			compression:      conf.Compression,
-			compressor:       compressFuncs[conf.Compression],
+			compressor:       buildCompressor(conf.Compression),
 		}
 	})
 	return exporterhelper.NewMetricsExporter(
@@ -148,7 +146,7 @@ func createLogsExporter(
 			logsMarshaler: logsMarshalers[conf.FormatType],
 			exporter:      buildExportFunc(conf),
 			compression:   conf.Compression,
-			compressor:    compressFuncs[conf.Compression],
+			compressor:    buildCompressor(conf.Compression),
 		}
 	})
 	return exporterhelper.NewLogsExporter(
