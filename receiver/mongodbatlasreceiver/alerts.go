@@ -132,7 +132,7 @@ func (a alertsReceiver) Start(ctx context.Context, host component.Host) error {
 	}
 }
 
-func (a alertsReceiver) startRetrieving(ctx context.Context, host component.Host) error {
+func (a alertsReceiver) startRetrieving(ctx context.Context, _ component.Host) error {
 	client, err := internal.NewMongoDBAtlasClient(a.publicKey, a.privateKey, a.retrySettings, a.logger)
 	if err != nil {
 		return err
@@ -319,7 +319,7 @@ func (a alertsReceiver) shutdownListener(ctx context.Context) error {
 	return nil
 }
 
-func (a alertsReceiver) shutdownRetriever(ctx context.Context) error {
+func (a alertsReceiver) shutdownRetriever(_ context.Context) error {
 	a.logger.Debug("Shutting down client")
 	a.doneChan <- true
 	a.wg.Wait()
@@ -350,7 +350,7 @@ func (a alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatl
 		// this could be fairly expensive to do, maybe should evaulate
 		bodyBytes, err := json.Marshal(alert)
 		if err != nil {
-			a.logger.Warn(fmt.Sprintf("unable to marshal alert into a body string"))
+			a.logger.Warn("unable to marshal alert into a body string")
 			continue
 		}
 
@@ -385,9 +385,9 @@ func (a alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatl
 			attrs.PutString("metric.units", alert.CurrentValue.Units)
 		}
 
-		host, portStr, err := net.SplitHostPort(*&alert.HostnameAndPort)
+		host, portStr, err := net.SplitHostPort(alert.HostnameAndPort)
 		if err != nil {
-			errs = multierr.Append(errs, fmt.Errorf("failed to split host:port %s: %w", *&alert.HostnameAndPort, err))
+			errs = multierr.Append(errs, fmt.Errorf("failed to split host:port %s: %w", alert.HostnameAndPort, err))
 			continue
 		}
 

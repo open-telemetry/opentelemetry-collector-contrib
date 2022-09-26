@@ -83,7 +83,7 @@ func (c *Config) Validate() error {
 	var errs error
 
 	errs = multierr.Append(errs, c.ScraperControllerSettings.Validate())
-	errs = multierr.Append(errs, c.Alerts.validate(c))
+	errs = multierr.Append(errs, c.Alerts.validate())
 	errs = multierr.Append(errs, c.Logs.validate())
 
 	return errs
@@ -108,7 +108,7 @@ func (l *LogConfig) validate() error {
 	return errs
 }
 
-func (a *AlertConfig) validate(c *Config) error {
+func (a *AlertConfig) validate() error {
 	if !a.Enabled {
 		// No need to further validate, receiving alerts is disabled.
 		return nil
