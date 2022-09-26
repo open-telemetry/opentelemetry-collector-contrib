@@ -111,8 +111,26 @@ type metricsProcessorWrapper struct {
 	repeater *metricsRepeater
 }
 
+func newMetricsProcessorWrapper(logger *log.Logger, ws *websocket.Conn, cfg config.Processor, factory component.ProcessorFactory) (metricsProcessorWrapper, error) {
+	repeater := newMetricsRepeater(logger, ws)
+	processor, err := factory.CreateMetricsProcessor(
+		context.Background(),
+		componenttest.NewNopProcessorCreateSettings(),
+		cfg,
+		repeater,
+	)
+	return metricsProcessorWrapper{
+		MetricsProcessor: processor,
+		repeater:         repeater,
+	}, err
+}
+
 func (w metricsProcessorWrapper) setNextMetricsConsumer(next consumer.Metrics) {
 	w.repeater.setNext(next)
+}
+
+func (w metricsProcessorWrapper) waitForStopMessage() {
+	w.repeater.waitForStopMessage()
 }
 
 type logsProcessorWrapper struct {
@@ -120,8 +138,26 @@ type logsProcessorWrapper struct {
 	repeater *logsRepeater
 }
 
+func newLogsProcessorWrapper(logger *log.Logger, ws *websocket.Conn, cfg config.Processor, factory component.ProcessorFactory) (logsProcessorWrapper, error) {
+	repeater := newLogsRepeater(logger, ws)
+	processor, err := factory.CreateLogsProcessor(
+		context.Background(),
+		componenttest.NewNopProcessorCreateSettings(),
+		cfg,
+		repeater,
+	)
+	return logsProcessorWrapper{
+		LogsProcessor: processor,
+		repeater:      repeater,
+	}, err
+}
+
 func (w logsProcessorWrapper) setNextLogsConsumer(next consumer.Logs) {
 	w.repeater.setNext(next)
+}
+
+func (w logsProcessorWrapper) waitForStopMessage() {
+	w.repeater.waitForStopMessage()
 }
 
 type tracesProcessorWrapper struct {
@@ -129,8 +165,26 @@ type tracesProcessorWrapper struct {
 	repeater *tracesRepeater
 }
 
+func newTracesProcessorWrapper(logger *log.Logger, ws *websocket.Conn, cfg config.Processor, factory component.ProcessorFactory) (tracesProcessorWrapper, error) {
+	repeater := newTracesRepeater(logger, ws)
+	processor, err := factory.CreateTracesProcessor(
+		context.Background(),
+		componenttest.NewNopProcessorCreateSettings(),
+		cfg,
+		repeater,
+	)
+	return tracesProcessorWrapper{
+		TracesProcessor: processor,
+		repeater:        repeater,
+	}, err
+}
+
 func (w tracesProcessorWrapper) setNextTracesConsumer(next consumer.Traces) {
 	w.repeater.setNext(next)
+}
+
+func (w tracesProcessorWrapper) waitForStopMessage() {
+	w.repeater.waitForStopMessage()
 }
 
 type metricsExporterWrapper struct {

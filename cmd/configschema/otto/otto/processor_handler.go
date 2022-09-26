@@ -15,16 +15,11 @@
 package otto
 
 import (
-	"context"
 	"log"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"golang.org/x/net/websocket"
 )
 
@@ -46,13 +41,11 @@ func (h processorSocketHandler) doHandle(ws *websocket.Conn) error {
 	if err != nil {
 		return err
 	}
-
 	processorConfig := h.processorFactory.CreateDefaultConfig()
 	err = unmarshalProcessorConfig(processorConfig, conf)
 	if err != nil {
 		return err
 	}
-
 	switch pipelineType {
 	case "metrics":
 		h.attachMetricsProcessor(ws, processorConfig)
@@ -66,89 +59,43 @@ func (h processorSocketHandler) doHandle(ws *websocket.Conn) error {
 
 func (h processorSocketHandler) attachMetricsProcessor(
 	ws *websocket.Conn,
-	processorConfig config.Processor,
+	cfg config.Processor,
 ) {
-	stop := make(chan struct{})
-	repeater := &metricsRepeater{
-		logger:    h.logger,
-		ws:        ws,
-		marshaler: pmetric.NewJSONMarshaler(),
-		stop:      stop,
-	}
-	proc, err := h.processorFactory.CreateMetricsProcessor(
-		context.Background(),
-		componenttest.NewNopProcessorCreateSettings(),
-		processorConfig,
-		repeater,
-	)
+	wrapper, err := newMetricsProcessorWrapper(h.logger, ws, cfg, h.processorFactory)
 	if err != nil {
-		sendErr(ws, h.logger, "failed to create metrics processor", err)
+		sendErr(ws, h.logger, "failed to create metrics processor wrapper", err)
 		return
 	}
-	wrapper := metricsProcessorWrapper{
-		MetricsProcessor: proc,
-		repeater:         repeater,
-	}
 	h.pipeline.connectMetricsProcessorWrapper(wrapper)
-	<-stop
+	wrapper.waitForStopMessage()
 	h.pipeline.disconnectMetricsProcessorWrapper()
 }
 
 func (h processorSocketHandler) attachLogsProcessor(
 	ws *websocket.Conn,
-	processorConfig config.Processor,
+	cfg config.Processor,
 ) {
-	stop := make(chan struct{})
-	repeater := &logsRepeater{
-		ws:        ws,
-		marshaler: plog.NewJSONMarshaler(),
-		stop:      stop,
-	}
-	proc, err := h.processorFactory.CreateLogsProcessor(
-		context.Background(),
-		componenttest.NewNopProcessorCreateSettings(),
-		processorConfig,
-		repeater,
-	)
+	wrapper, err := newLogsProcessorWrapper(h.logger, ws, cfg, h.processorFactory)
 	if err != nil {
-		sendErr(ws, h.logger, "failed to create logs processor", err)
+		sendErr(ws, h.logger, "failed to create logs processor wrapper", err)
 		return
 	}
-	wrapper := logsProcessorWrapper{
-		LogsProcessor: proc,
-		repeater:      repeater,
-	}
 	h.pipeline.connectLogsProcessorWrapper(wrapper)
-	<-stop
+	wrapper.waitForStopMessage()
 	h.pipeline.disconnectLogsProcessorWrapper()
 }
 
 func (h processorSocketHandler) attachTracesProcessor(
 	ws *websocket.Conn,
-	processorConfig config.Processor,
+	cfg config.Processor,
 ) {
-	stop := make(chan struct{})
-	repeater := &tracesRepeater{
-		ws:        ws,
-		marshaler: ptrace.NewJSONMarshaler(),
-		stop:      stop,
-	}
-	proc, err := h.processorFactory.CreateTracesProcessor(
-		context.Background(),
-		componenttest.NewNopProcessorCreateSettings(),
-		processorConfig,
-		repeater,
-	)
+	wrapper, err := newTracesProcessorWrapper(h.logger, ws, cfg, h.processorFactory)
 	if err != nil {
-		sendErr(ws, h.logger, "failed to create traces processor", err)
+		sendErr(ws, h.logger, "failed to create traces processor wrapper", err)
 		return
 	}
-	wrapper := tracesProcessorWrapper{
-		TracesProcessor: proc,
-		repeater:        repeater,
-	}
 	h.pipeline.connectTracesProcessorWrapper(wrapper)
-	<-stop
+	wrapper.waitForStopMessage()
 	h.pipeline.disconnectTracesProcessorWrapper()
 }
 

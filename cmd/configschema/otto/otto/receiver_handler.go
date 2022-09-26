@@ -43,13 +43,11 @@ func (h receiverSocketHandler) doHandle(ws *websocket.Conn) error {
 	if err != nil {
 		return err
 	}
-
 	receiverConfig := h.receiverFactory.CreateDefaultConfig()
 	err = unmarshalReceiverConfig(receiverConfig, conf)
 	if err != nil {
 		return err
 	}
-
 	switch pipelineType {
 	case "metrics":
 		h.startMetricsReceiver(ws, receiverConfig)
