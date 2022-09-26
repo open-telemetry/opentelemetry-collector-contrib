@@ -15,12 +15,14 @@
 package helper
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 )
 
 const testScopeName = "my.logger"
@@ -104,4 +106,22 @@ func TestScopeNameParser(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUnmarshalScopeNameConfig(t *testing.T) {
+	operatortest.ConfigUnmarshalTests{
+		DefaultConfig: newHelpersConfig(),
+		TestsFile:     filepath.Join(".", "testdata", "scope_name.yaml"),
+		Tests: []operatortest.ConfigUnmarshalTest{
+			{
+				Name: "parse_from",
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Scope = NewScopeNameParser()
+					c.Scope.ParseFrom = entry.NewBodyField("from")
+					return c
+				}(),
+			},
+		},
+	}.Run(t)
 }
