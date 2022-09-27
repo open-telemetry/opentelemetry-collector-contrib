@@ -21,6 +21,10 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
+type cmp struct {
+	logger *zap.Logger
+}
+
 // The functions in this file implement a general-purpose comparison of two
 // values of type any, which for the purposes of OTTL mean values that are one of
 // int, float, string, bool, or pointers to those, or []byte, or nil.
@@ -28,8 +32,8 @@ import (
 // invalidComparison returns false for everything except NE (where it returns true to indicate that the
 // objects were definitely not equivalent).
 // It also gives us an opportunity to log something.
-func invalidComparison(msg string, op CompareOp, logger *zap.Logger) bool {
-	logger.Debug(msg, zap.Any("op", op))
+func (c cmp) invalidComparison(msg string, op CompareOp) bool {
+	c.logger.Debug(msg, zap.Any("op", op))
 	return op == NE
 }
 
@@ -92,25 +96,25 @@ func compareBytes(a []byte, b []byte, op CompareOp) bool {
 	}
 }
 
-func compareBool(a bool, b any, op CompareOp, logger *zap.Logger) bool {
+func (c cmp) compareBool(a bool, b any, op CompareOp) bool {
 	switch v := b.(type) {
 	case bool:
 		return compareBools(a, v, op)
 	default:
-		return invalidComparison("bool to non-bool", op, logger)
+		return c.invalidComparison("bool to non-bool", op)
 	}
 }
 
-func compareString(a string, b any, op CompareOp, logger *zap.Logger) bool {
+func (c cmp) compareString(a string, b any, op CompareOp) bool {
 	switch v := b.(type) {
 	case string:
 		return comparePrimitives(a, v, op)
 	default:
-		return invalidComparison("string to non-string", op, logger)
+		return c.invalidComparison("string to non-string", op)
 	}
 }
 
-func compareByte(a []byte, b any, op CompareOp, logger *zap.Logger) bool {
+func (c cmp) compareByte(a []byte, b any, op CompareOp) bool {
 	switch v := b.(type) {
 	case nil:
 		return op == NE
@@ -120,35 +124,35 @@ func compareByte(a []byte, b any, op CompareOp, logger *zap.Logger) bool {
 		}
 		return compareBytes(a, v, op)
 	default:
-		return invalidComparison("Bytes to non-Bytes", op, logger)
+		return c.invalidComparison("Bytes to non-Bytes", op)
 	}
 }
 
-func compareInt64(a int64, b any, op CompareOp, logger *zap.Logger) bool {
+func (c cmp) compareInt64(a int64, b any, op CompareOp) bool {
 	switch v := b.(type) {
 	case int64:
 		return comparePrimitives(a, v, op)
 	case float64:
 		return comparePrimitives(float64(a), v, op)
 	default:
-		return invalidComparison("int to non-numeric value", op, logger)
+		return c.invalidComparison("int to non-numeric value", op)
 	}
 }
 
-func compareFloat64(a float64, b any, op CompareOp, logger *zap.Logger) bool {
+func (c cmp) compareFloat64(a float64, b any, op CompareOp) bool {
 	switch v := b.(type) {
 	case int64:
 		return comparePrimitives(a, float64(v), op)
 	case float64:
 		return comparePrimitives(a, v, op)
 	default:
-		return invalidComparison("float to non-numeric value", op, logger)
+		return c.invalidComparison("float to non-numeric value", op)
 	}
 }
 
 // a and b are the return values from a Getter; we try to compare them
 // according to the given operator.
-func compare(a any, b any, op CompareOp, logger *zap.Logger) bool {
+func (c cmp) compare(a any, b any, op CompareOp) bool {
 	// nils are equal to each other and never equal to anything else,
 	// so if they're both nil, report equality.
 	if a == nil && b == nil {
@@ -159,20 +163,20 @@ func compare(a any, b any, op CompareOp, logger *zap.Logger) bool {
 	case nil:
 		// If a was nil, it means b wasn't and inequalities don't apply,
 		// so let's swap and give it the chance to get evaluated.
-		return compare(b, nil, op, logger)
+		return c.compare(b, nil, op)
 	case bool:
-		return compareBool(v, b, op, logger)
+		return c.compareBool(v, b, op)
 	case int64:
-		return compareInt64(v, b, op, logger)
+		return c.compareInt64(v, b, op)
 	case float64:
-		return compareFloat64(v, b, op, logger)
+		return c.compareFloat64(v, b, op)
 	case string:
-		return compareString(v, b, op, logger)
+		return c.compareString(v, b, op)
 	case []byte:
 		if v == nil {
-			return compare(b, nil, op, logger)
+			return c.compare(b, nil, op)
 		}
-		return compareByte(v, b, op, logger)
+		return c.compareByte(v, b, op)
 	default:
 		// If we don't know what type it is, we can't do inequalities yet. So we can fall back to the old behavior where we just
 		// use Go's standard equality.
@@ -182,7 +186,7 @@ func compare(a any, b any, op CompareOp, logger *zap.Logger) bool {
 		case NE:
 			return a != b
 		default:
-			return invalidComparison("unsupported type for inequality on left", op, logger)
+			return c.invalidComparison("unsupported type for inequality on left", op)
 		}
 	}
 }
