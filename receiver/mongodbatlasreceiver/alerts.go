@@ -136,7 +136,6 @@ func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer
 			TLSConfig: tlsConfig,
 			Handler:   http.HandlerFunc(recv.handleRequest),
 		}
-
 		recv.server = s
 	}
 
@@ -576,7 +575,7 @@ func (a *alertsReceiver) writeCheckpoint(ctx context.Context) error {
 		return nil
 	}
 	c := *a.storageClient
-	marshalBytes, err := json.Marshal(a.cache)
+	marshalBytes, err := json.Marshal(&a.cache)
 	if err != nil {
 		return fmt.Errorf("unable to write checkpoint: %w", err)
 	}
