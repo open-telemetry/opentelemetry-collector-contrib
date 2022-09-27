@@ -113,7 +113,7 @@ func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
 		l.AdditionalProperties[ddTimestamp] = lr.Timestamp().AsTime().Format(time.RFC3339)
 	}
 	if l.Message == "" {
-		// set the Message from body as it isn't present as AdditionalProperties
+		// set the Message to the Body in case it wasn't already parsed as part of the attributes
 		l.Message = lr.Body().AsString()
 	}
 

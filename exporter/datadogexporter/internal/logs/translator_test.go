@@ -194,7 +194,7 @@ func TestTransform(t *testing.T) {
 					l.SetTraceID(traceID)
 					l.Attributes().PutString(conventions.AttributeServiceName, "otlp_col")
 					l.SetSeverityNumber(13)
-					l.Body().SetStringVal("This is log")
+					l.Body().SetStr("This is log")
 					return l
 				}(),
 				res: func() pcommon.Resource {

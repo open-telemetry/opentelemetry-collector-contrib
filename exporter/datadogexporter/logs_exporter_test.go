@@ -70,10 +70,10 @@ func TestLogsExporter(t *testing.T) {
 			name: "message-attribute",
 			args: args{
 				ld: func() plog.Logs {
-					lr := testdata.GenerateLogsOneLogRecord()
-					ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-					ld.Attributes().PutString("message", "hello")
-					return lr
+					lrr := testdata.GenerateLogsOneLogRecord()
+					ldd := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+					ldd.Attributes().PutString("message", "hello")
+					return lrr
 				}(),
 			},
 
