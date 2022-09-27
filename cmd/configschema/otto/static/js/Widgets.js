@@ -23,7 +23,7 @@ class SelectWidget extends View {
   }
 
   addOption(label, value) {
-    let opt = document.createElement('option');
+    const opt = document.createElement('option');
     opt.setAttribute('value', value == null ? "" : value);
     opt.appendChild(document.createTextNode(label));
     this.appendElement(opt);
@@ -54,7 +54,7 @@ class FieldsetWidget extends View {
 
   constructor(name) {
     super('fieldset');
-    let legend = document.createElement('legend');
+    const legend = document.createElement('legend');
     legend.appendChild(document.createTextNode(name));
     this.appendElement(legend);
   }
@@ -126,7 +126,7 @@ class FormWidget extends View {
   }
 
   forEachFormElement(f) {
-    let formEl = this.getRootEl();
+    const formEl = this.getRootEl();
     for (let i = 0; i < formEl.elements.length; i++) {
       f(this.rootEl.elements[i]);
     }

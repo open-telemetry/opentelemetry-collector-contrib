@@ -17,7 +17,7 @@ class FieldView extends View {
   constructor(labelStr, tooltipStr) {
     super();
     this.addClass('field-view');
-    let lbl = document.createElement('label');
+    const lbl = document.createElement('label');
     lbl.setAttribute('title', tooltipStr);
     lbl.appendChild(document.createTextNode(labelStr));
     this.appendElement(lbl);

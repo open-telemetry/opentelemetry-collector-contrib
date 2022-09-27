@@ -17,7 +17,7 @@ class HeaderView extends View {
   constructor() {
     super();
     this.addClass('header-view');
-    let logoView = new DivWidget('logo');
+    const logoView = new DivWidget('logo');
     logoView.appendText('otto');
     this.appendView(logoView);
     this.pipelineTypeSelectionView = new PipelineTypeSelectionView();

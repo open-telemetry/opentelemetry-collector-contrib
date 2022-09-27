@@ -63,6 +63,7 @@ func Server(logger *log.Logger, port int) {
 		Addr:    fmt.Sprintf("localhost:%d", port),
 		Handler: mux,
 	}
+	println("otto started")
 	err = svr.ListenAndServe()
 	if err != nil {
 		logger.Fatalf("http serve error: %v", err)

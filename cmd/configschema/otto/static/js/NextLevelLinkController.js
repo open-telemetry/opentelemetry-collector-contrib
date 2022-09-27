@@ -45,7 +45,7 @@ class NextLevelLinkController {
   handleClick() {
     this.highlightLink()
     this.parentController.nextLevelClicked();
-    let userInputs = this.parentController.getUserInputsForKey(this.parentKey)
+    const userInputs = this.parentController.getUserInputsForKey(this.parentKey)
     switch (this.cfgSchema["Kind"]) {
       case 'slice':
         new FieldsetSliceFormController(

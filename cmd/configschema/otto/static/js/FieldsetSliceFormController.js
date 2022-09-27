@@ -37,7 +37,7 @@ class FieldsetSliceFormController {
   }
 
   addField() {
-    let fieldView = new FieldView(this.cfgSchema["Type"] + " element");
+    const fieldView = new FieldView(this.cfgSchema["Type"] + " element");
     fieldView.appendInputWidget(new TextInputWidget())
     this.rootView.appendToFormView(fieldView);
   }

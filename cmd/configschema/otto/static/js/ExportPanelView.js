@@ -21,7 +21,7 @@ class ExportPanelView extends View {
     this.exportContainerView = new View();
     this.appendView(this.exportContainerView);
 
-    let titleView = new View();
+    const titleView = new View();
     titleView.addClass('title');
     titleView.appendText('Collector Config');
 

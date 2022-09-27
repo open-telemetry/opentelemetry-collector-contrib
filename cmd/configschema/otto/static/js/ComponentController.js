@@ -36,8 +36,8 @@ class ComponentController {
     this.resetMessagePanel();
     this.pipelineType = pipelineType;
     this.messagePanelController.pipelineTypeSelected(pipelineType);
-    let componentNames = this.componentRegistry.getComponents(pipelineType, this.componentType + 's');
-    let componentSelectWidget = new SelectWidget();
+    const componentNames = this.componentRegistry.getComponents(pipelineType, this.componentType + 's');
+    const componentSelectWidget = new SelectWidget();
     componentSelectWidget.addOption('-- Select ' + this.componentTitle + ' --');
     componentNames.forEach(name => componentSelectWidget.addOption(name, name));
     componentSelectWidget.onSelected(
@@ -139,7 +139,7 @@ class ComponentController {
 
   startComponent(yaml) {
     this.yaml = yaml;
-    let path = 'ws://' + location.host + '/ws/' + this.componentType + '/' + this.componentName;
+    const path = 'ws://' + location.host + '/ws/' + this.componentType + '/' + this.componentName;
     this.socket = new WebSocket(path);
     let msgIdx = 0;
     this.messagePanelController.showView();
@@ -147,7 +147,7 @@ class ComponentController {
       'message',
       event => {
         msgIdx++;
-        let envelope = JSON.parse(event.data);
+        const envelope = JSON.parse(event.data);
         if (envelope['Error'] !== null) {
           this.configYamlView.disableStopButton();
           this.configYamlView.enableStartButton();
@@ -194,7 +194,7 @@ function flagUnrenderableFields(cfgSchema) {
   if (cfgSchema['Fields'] !== null) {
     unrenderable = true;
     cfgSchema['Fields'].forEach(field => {
-      let fieldUnrenderable = flagUnrenderableFields(field);
+      const fieldUnrenderable = flagUnrenderableFields(field);
       if (!fieldUnrenderable) {
         unrenderable = false;
       }

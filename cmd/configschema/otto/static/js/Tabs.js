@@ -27,11 +27,11 @@ class TabController {
   }
 
   addTab(name, tabContentView) {
-    let tabBarItemView = new TabBarItemView(this.tabPairs.length, name);
+    const tabBarItemView = new TabBarItemView(this.tabPairs.length, name);
     tabBarItemView.onSelect(idx => this.select(idx));
     this.tabBarContainerView.appendView(tabBarItemView);
 
-    let tabPanelItemView = new DivWidget('tab-content-view');
+    const tabPanelItemView = new DivWidget('tab-content-view');
     tabPanelItemView.appendView(tabContentView);
     this.tabPanelContainerView.appendView(tabPanelItemView);
 

@@ -15,16 +15,16 @@
 window.onload = main;
 
 function main() {
-  let componentRegistry = new ComponentRegistry();
-  let mainView = new View();
+  const componentRegistry = new ComponentRegistry();
+  const mainView = new View();
   document.body.appendChild(mainView.getRootEl());
-  let headerController = new HeaderController(mainView, componentRegistry);
+  const headerController = new HeaderController(mainView, componentRegistry);
   headerController.fetchComponents();
-  let receiverController = new ComponentController('receiver', mainView, componentRegistry, new MessagePanelController());
-  let processorController = new ComponentController('processor', mainView, componentRegistry, new MessagePanelController());
-  let exporterController = new ComponentController('exporter', mainView, componentRegistry, new NopMessagePanelController());
+  const receiverController = new ComponentController('receiver', mainView, componentRegistry, new MessagePanelController());
+  const processorController = new ComponentController('processor', mainView, componentRegistry, new MessagePanelController());
+  const exporterController = new ComponentController('exporter', mainView, componentRegistry, new NopMessagePanelController());
 
-  let exportPanelController = new ExportPanelController(mainView);
+  const exportPanelController = new ExportPanelController(mainView);
   exportPanelController.setPipelineTypeProvider(headerController);
   exportPanelController.setReceiverController(receiverController);
   exportPanelController.setProcessorController(processorController);

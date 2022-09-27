@@ -132,7 +132,7 @@ func (h receiverSocketHandler) startTracesReceiver(
 }
 
 func unmarshalReceiverConfig(receiverConfig config.Receiver, conf *confmap.Conf) error {
-	if unmarshallable, ok := receiverConfig.(config.Unmarshallable); ok {
+	if unmarshallable, ok := receiverConfig.(confmap.Unmarshaler); ok {
 		return unmarshallable.Unmarshal(conf)
 	}
 	return conf.UnmarshalExact(receiverConfig)

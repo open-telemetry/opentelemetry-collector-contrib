@@ -17,12 +17,12 @@ class NextLevelLinkView extends View {
   constructor(labelStr, titleStr, onclick) {
     super();
     this.addClass('next-level-link-view');
-    let lbl = document.createElement('label');
+    const lbl = document.createElement('label');
     lbl.setAttribute('title', titleStr);
     lbl.appendChild(document.createTextNode(labelStr));
     this.appendElement(lbl);
 
-    let inputWrapperView = new DivWidget('input');
+    const inputWrapperView = new DivWidget('input');
     this.appendView(inputWrapperView);
 
     this.linkWidget = new LinkWidget('configure', onclick, 'next-level');

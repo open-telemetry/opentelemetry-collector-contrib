@@ -20,7 +20,7 @@ class FieldsetStructFormController {
     this.onSubmit = onSubmit;
     this.multiFieldsetView = multiFieldsetView;
     this.isSubField = isSubField;
-    let name = cfgSchemaToFieldsetName(cfgSchema);
+    const name = cfgSchemaToFieldsetName(cfgSchema);
     this.rootView = new FieldsetFormView(name);
     this.rootView.onApplyButtonClick(() => this.submitForm());
     multiFieldsetView.appendView(this.rootView);
@@ -29,9 +29,9 @@ class FieldsetStructFormController {
 
   renderFields(cfgSchema, userInputs) {
     cfgSchema["Fields"].forEach(cfgSchema => {
-      let fieldName = cfgSchema["Name"];
+      const fieldName = cfgSchema["Name"];
       this.childSchemasByName[fieldName] = cfgSchema;
-      let userInput = userInputs === undefined ? undefined : userInputs[fieldName];
+      const userInput = userInputs === undefined ? undefined : userInputs[fieldName];
       this.renderField(cfgSchema, userInput);
     });
   }
@@ -40,8 +40,8 @@ class FieldsetStructFormController {
     if (cfgSchema['_unrenderable']) {
       return;
     }
-    let kind = cfgSchema["Kind"];
-    let fieldName = cfgSchema["Name"];
+    const kind = cfgSchema["Kind"];
+    const fieldName = cfgSchema["Name"];
     if (kind === "struct" || kind === "ptr" || kind === "slice" || kind === "map") {
       this.renderCompoundField(cfgSchema, fieldName);
     } else {
@@ -50,13 +50,13 @@ class FieldsetStructFormController {
   }
 
   renderCompoundField(cfgSchema, key) {
-    let nextLevelLinkController = new NextLevelLinkController(
+    const nextLevelLinkController = new NextLevelLinkController(
       cfgSchema,
       key,
       this,
       this.multiFieldsetView
     );
-    let nextLevelLinkView = nextLevelLinkController.getView();
+    const nextLevelLinkView = nextLevelLinkController.getView();
     this.rootView.registerLinkView(nextLevelLinkView);
     this.rootView.appendToFormView(nextLevelLinkView);
   }
@@ -75,18 +75,18 @@ class FieldsetStructFormController {
   }
 
   renderInlineField(cfgSchema, kind, userInput, fieldName) {
-    let defaultVal = cfgSchema["Default"];
+    const defaultVal = cfgSchema["Default"];
     let widget;
     switch (kind) {
       case "bool":
         widget = new BoolSelectView(cfgSchema.Name, defaultVal);
         break;
       default:
-        let placeholder = defaultVal != null ? defaultVal : undefined;
+        const placeholder = defaultVal != null ? defaultVal : undefined;
         widget = new TextInputWidget(cfgSchema.Name, placeholder, userInput);
         break;
     }
-    let fieldView = new FieldView(fieldName, cfgSchemaToTitleStr(cfgSchema));
+    const fieldView = new FieldView(fieldName, cfgSchemaToTitleStr(cfgSchema));
     fieldView.appendInputWidget(widget);
     this.rootView.appendToFormView(fieldView);
   }
@@ -94,7 +94,7 @@ class FieldsetStructFormController {
   submitForm() {
     this.rootView.forEachFormElement(el => {
       if (el.value !== '') {
-        let childSchema = this.childSchemasByName[el.name];
+        const childSchema = this.childSchemasByName[el.name];
         this.userInputs[el.name] = convertUserInput(el.value, childSchema['Kind'], childSchema['Type']);
       }
     });
@@ -133,18 +133,18 @@ function cfgSchemaToFieldsetName(cfgSchema) {
 
 function cfgSchemaToTitleStr(cfgSchema) {
   let out = '';
-  let kind = cfgSchema["Kind"];
+  const kind = cfgSchema["Kind"];
   if (kind != null) {
     out += 'Kind: ' + kind;
   }
-  let typ = cfgSchema["Type"];
+  const typ = cfgSchema["Type"];
   if (typ !== undefined && typ.length > 0) {
     if (out.length > 0) {
       out += ',';
     }
     out += 'Type: ' + typ;
   }
-  let doc = cfgSchema["Doc"];
+  const doc = cfgSchema["Doc"];
   if (doc) {
     out += '\n\n' + doc;
   }

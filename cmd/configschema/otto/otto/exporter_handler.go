@@ -132,7 +132,7 @@ func (h exporterSocketHandler) connectTracesExporter(
 }
 
 func unmarshalExporterConfig(exporterConfig config.Exporter, conf *confmap.Conf) error {
-	if unmarshallable, ok := exporterConfig.(config.Unmarshallable); ok {
+	if unmarshallable, ok := exporterConfig.(confmap.Unmarshaler); ok {
 		return unmarshallable.Unmarshal(conf)
 	}
 	return conf.UnmarshalExact(exporterConfig)

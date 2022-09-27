@@ -19,7 +19,7 @@ class ConfigYamlView extends View {
     this.textArea = document.createElement('textarea');
     this.appendElement(this.textArea);
 
-    let buttonBar = new DivWidget('button-bar');
+    const buttonBar = new DivWidget('button-bar');
     this.appendView(buttonBar);
 
     this.startButtonWidget = new ButtonWidget('Start ' + componentType);

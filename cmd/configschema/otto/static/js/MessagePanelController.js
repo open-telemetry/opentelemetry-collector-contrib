@@ -17,9 +17,9 @@ class MessagePanelController {
   constructor() {
     this.rootView = new DivWidget('message-panel');
     this.messageSummaryView = new MessageSummaryView();
-    let tabBarParentView = new DivWidget();
+    const tabBarParentView = new DivWidget();
     this.rootView.appendView(tabBarParentView);
-    let tabPanelParentView = new DivWidget();
+    const tabPanelParentView = new DivWidget();
     this.rootView.appendView(tabPanelParentView);
     this.tabController = new TabController(tabBarParentView, tabPanelParentView);
     this.tabController.addTab('Messages', this.messageSummaryView);
@@ -48,43 +48,43 @@ class MessagePanelController {
 
   handleMetricMessage(msgIdx, metricMessage) {
     this.messageSummaryView.setNumMessages(msgIdx);
-    let rowData = metricsToRowData(metricMessage, msgIdx);
+    const rowData = metricsToRowData(metricMessage, msgIdx);
     if (this.cols === undefined) {
       this.cols = sortColsFromRowData(rowData);
-      let headerWidget = new HeaderTableRowWidget();
+      const headerWidget = new HeaderTableRowWidget();
       this.cols.forEach(col => {
-        let shortName = col.split('.').pop();
-        let th = new TableHeaderWidget(shortName, col);
+        const shortName = col.split('.').pop();
+        const th = new TableHeaderWidget(shortName, col);
         headerWidget.appendView(th);
       });
       this.messageSummaryView.appendToTable(headerWidget);
     }
-    let colValues = getColumnValues(rowData, this.cols);
-    let tableRowWidget = new AutoTableRowWidget(colValues);
+    const colValues = getColumnValues(rowData, this.cols);
+    const tableRowWidget = new AutoTableRowWidget(colValues);
     tableRowWidget.onClick(() => this.handleGetDetailsClicked(metricMessage));
     this.messageSummaryView.appendToTable(tableRowWidget);
   }
 
   handleLogMessage(msgIdx, logMessage) {
     this.messageSummaryView.setNumMessages(msgIdx);
-    let rowData = logsToRowData(logMessage, msgIdx);
+    const rowData = logsToRowData(logMessage, msgIdx);
     if (this.cols === undefined) {
       this.cols = Object.keys(rowData);
       this.messageSummaryView.appendToTable(new AutoHeaderTableRowWidget(this.cols));
     }
-    let tableRowWidget = new AutoTableRowWidget(Object.values(rowData));
+    const tableRowWidget = new AutoTableRowWidget(Object.values(rowData));
     tableRowWidget.onClick(() => this.handleGetDetailsClicked(logMessage));
     this.messageSummaryView.appendToTable(tableRowWidget);
   }
 
   handleTraceMessage(msgIdx, traceMessage) {
     this.messageSummaryView.setNumMessages(msgIdx);
-    let rowData = tracesToRowData(traceMessage, msgIdx);
+    const rowData = tracesToRowData(traceMessage, msgIdx);
     if (this.cols === undefined) {
       this.cols = Object.keys(rowData);
       this.messageSummaryView.appendToTable(new AutoHeaderTableRowWidget(this.cols));
     }
-    let tableRowWidget = new AutoTableRowWidget(Object.values(rowData));
+    const tableRowWidget = new AutoTableRowWidget(Object.values(rowData));
     tableRowWidget.onClick(() => this.handleGetDetailsClicked(traceMessage));
     this.messageSummaryView.appendToTable(tableRowWidget);
   }
@@ -115,35 +115,35 @@ class MessagePanelController {
 }
 
 function tracesToRowData(traceMessage, msgIdx) {
-  let out = {msg: msgIdx};
+  const out = {msg: msgIdx};
 
-  let resourceSpan = traceMessage['resourceSpans'][0];
-  let resource = resourceSpan['resource'];
-  let resourceAttrs = resource['attributes'];
+  const resourceSpan = traceMessage['resourceSpans'][0];
+  const resource = resourceSpan['resource'];
+  const resourceAttrs = resource['attributes'];
 
-  for (let resourceAttr of resourceAttrs) {
-    let key = resourceAttr['key'];
+  for (const resourceAttr of resourceAttrs) {
+    const key = resourceAttr['key'];
     out[key] = resourceAttr['value']['stringValue'];
   }
 
-  let scopeSpan = resourceSpan['scopeSpans'][0];
-  let spans = scopeSpan['spans'];
-  let span = spans[0];
+  const scopeSpan = resourceSpan['scopeSpans'][0];
+  const spans = scopeSpan['spans'];
+  const span = spans[0];
   out['kind'] = span['kind'];
   out['name'] = span['name'];
-  for (let attr of span['attributes']) {
+  for (const attr of span['attributes']) {
     out[attr['key']] = attr['value']['stringValue'];
   }
   return out;
 }
 
 function logsToRowData(logData, msgIdx) {
-  let out = {message: msgIdx};
-  for (let resourceLog of logData['resourceLogs']) {
-    for (let scopeLog of resourceLog['scopeLogs']) {
-      for (let logRecord of scopeLog['logRecords']) {
+  const out = {message: msgIdx};
+  for (const resourceLog of logData['resourceLogs']) {
+    for (const scopeLog of resourceLog['scopeLogs']) {
+      for (const logRecord of scopeLog['logRecords']) {
         out['body'] = logRecord['body']['stringValue'];
-        for (let attr of logRecord['attributes']) {
+        for (const attr of logRecord['attributes']) {
           out[attr['key']] = attr['value']['stringValue'];
         }
       }
@@ -153,15 +153,15 @@ function logsToRowData(logData, msgIdx) {
 }
 
 function metricsToRowData(metrics, idx) {
-  let out = {msg: idx};
+  const out = {msg: idx};
   const resourceMetrics = metrics['resourceMetrics'];
   for (const resourceMetric of resourceMetrics) {
     const scopeMetrics = resourceMetric['scopeMetrics']
     for (const scopeMetric of scopeMetrics) {
       const metrics = scopeMetric['metrics'];
       for (const metric of metrics) {
-        let metricName = metric['name'];
-        // let stripped = stripMetricName(metricName);
+        const metricName = metric['name'];
+        // const stripped = stripMetricName(metricName);
         out[metricName] = extractDatapointValue(metric);
       }
     }
@@ -170,8 +170,8 @@ function metricsToRowData(metrics, idx) {
 }
 
 function sortColsFromRowData(rowData) {
-  let out = [];
-  let zeroCols = [];
+  const out = [];
+  const zeroCols = [];
   for (const [key, value] of Object.entries(rowData)) {
     if (value > 0) {
       out.push(key);
@@ -179,24 +179,24 @@ function sortColsFromRowData(rowData) {
       zeroCols.push(key);
     }
   }
-  for (let zeroCol of zeroCols) {
+  for (const zeroCol of zeroCols) {
     out.push(zeroCol);
   }
   return out;
 }
 
 function getColumnValues(rowData, cols) {
-  let out = [];
-  for (let col of cols) {
+  const out = [];
+  for (const col of cols) {
     out.push(rowData[col]);
   }
   return out;
 }
 
 function extractDatapointValue(metric) {
-  let key = metric.hasOwnProperty('sum') ? 'sum' : 'gauge';
-  let dataPoints = metric[key]["dataPoints"];
-  let pt = dataPoints[0];
-  let ptKey = pt.hasOwnProperty('asInt') ? 'asInt' : 'asDouble';
+  const key = metric.hasOwnProperty('sum') ? 'sum' : 'gauge';
+  const dataPoints = metric[key]["dataPoints"];
+  const pt = dataPoints[0];
+  const ptKey = pt.hasOwnProperty('asInt') ? 'asInt' : 'asDouble';
   return pt[ptKey];
 }

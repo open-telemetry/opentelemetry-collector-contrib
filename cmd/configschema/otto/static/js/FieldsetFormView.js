@@ -19,7 +19,7 @@ class FieldsetFormView extends View {
     this.linkViews = [];
     this.formWidget = new FormWidget();
     this.btnWidget = new ButtonWidget('Apply');
-    let fieldset = new FieldsetWidget(name);
+    const fieldset = new FieldsetWidget(name);
     fieldset.appendView(this.formWidget);
     fieldset.appendView(this.btnWidget);
     this.appendView(fieldset);

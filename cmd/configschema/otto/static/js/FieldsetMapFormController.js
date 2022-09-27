@@ -24,7 +24,7 @@ class FieldsetMapFormController {
     multiFieldsetView.appendView(this.rootView);
     this.addPlusMinusButtons();
     const searchString = "map[string]";
-    let schemaType = this.cfgSchema["Type"];
+    const schemaType = this.cfgSchema["Type"];
     if (schemaType.startsWith(searchString)) {
       this.mapValueType = schemaType.slice(searchString.length);
     }
@@ -33,7 +33,7 @@ class FieldsetMapFormController {
   }
 
   addPlusMinusButtons() {
-    let className = 'plusminus';
+    const className = 'plusminus';
     this.rootView.appendToFormView(
       new LinkWidget('+', () => this.addField(), className)
     );
@@ -43,21 +43,21 @@ class FieldsetMapFormController {
   }
 
   addField() {
-    let fieldView = new FieldView("map key");
+    const fieldView = new FieldView("map key");
     fieldView.appendInputWidget(new TextInputWidget())
     this.rootView.appendToFormView(fieldView);
-    let key = this.fieldIdx++;
+    const key = this.fieldIdx++;
     if (this.mapValueType === 'string') {
-      let fieldView = new FieldView("map value");
+      const fieldView = new FieldView("map value");
       fieldView.appendInputWidget(new TextInputWidget())
       this.rootView.appendToFormView(fieldView);
     } else {
-      let cfgSchema = {
+      const cfgSchema = {
         Name: this.mapValueType,
         Type: this.mapValueType,
         Kind: "map"
       };
-      let nextLevelLinkController = new NextLevelLinkController(
+      const nextLevelLinkController = new NextLevelLinkController(
         cfgSchema,
         key,
         this,
@@ -92,12 +92,12 @@ class FieldsetMapFormController {
   }
 
   submitSingleLevelForm() {
-    let map = {};
+    const map = {};
     for (let i = 0; i < this.rootView.numFormElements(); i++) {
-      let keyEl = this.rootView.getFormElement(i);
-      let key = keyEl.value;
+      const keyEl = this.rootView.getFormElement(i);
+      const key = keyEl.value;
       i++;
-      let valEl = this.rootView.getFormElement(i);
+      const valEl = this.rootView.getFormElement(i);
       map[key] = valEl.value;
     }
     this.onSubmit(map);
@@ -105,11 +105,11 @@ class FieldsetMapFormController {
 
   submitMutliLevelForm() {
     let i = 0;
-    let map = {};
+    const map = {};
     this.rootView.forEachFormElement(el => {
       if (el.value !== '') {
-        let val = this.userInputs[i];
-        let key = el.value;
+        const val = this.userInputs[i];
+        const key = el.value;
         map[key] = val === undefined ? {} : val;
       }
       i++;

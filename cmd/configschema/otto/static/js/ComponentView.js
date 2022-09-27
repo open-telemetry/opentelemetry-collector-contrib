@@ -19,7 +19,7 @@ class ComponentView extends View {
 
     this.addClass('component-view');
 
-    let titleView = new View();
+    const titleView = new View();
     titleView.addClass('title');
     titleView.appendText(componentTitle);
     this.appendView(titleView);
@@ -27,7 +27,7 @@ class ComponentView extends View {
     this.selectParentView = new DivWidget('component-pulldown');
     this.appendView(this.selectParentView);
 
-    let configDialogView = new DivWidget('config-dialog');
+    const configDialogView = new DivWidget('config-dialog');
     this.appendView(configDialogView);
 
     this.tabBarView = new View();

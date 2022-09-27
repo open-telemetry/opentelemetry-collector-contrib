@@ -100,7 +100,7 @@ func (h processorSocketHandler) attachTracesProcessor(
 }
 
 func unmarshalProcessorConfig(processorConfig config.Processor, conf *confmap.Conf) error {
-	if unmarshallable, ok := processorConfig.(config.Unmarshallable); ok {
+	if unmarshallable, ok := processorConfig.(confmap.Unmarshaler); ok {
 		return unmarshallable.Unmarshal(conf)
 	}
 	return conf.UnmarshalExact(processorConfig)

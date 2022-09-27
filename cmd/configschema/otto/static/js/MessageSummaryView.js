@@ -19,7 +19,7 @@ class MessageSummaryView extends View {
     this.addClass('message-summary-view');
     this.numMessagesView = new NumMessagesView()
     this.appendView(this.numMessagesView);
-    let tableParentView = new DivWidget('table-parent');
+    const tableParentView = new DivWidget('table-parent');
     this.appendView(tableParentView);
     this.tableWidget = new TableWidget();
     tableParentView.appendView(this.tableWidget);

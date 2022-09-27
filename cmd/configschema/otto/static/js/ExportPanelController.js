@@ -59,13 +59,12 @@ class ExportPanelController {
   }
 
   reset() {
-
   }
 
 }
 
 function buildCollectorYaml(pipelineType, receiverName, receiverYaml, processorName, processorYaml, exporterName, exporterYaml) {
-  let indenter = new Indenter('  ');
+  const indenter = new Indenter('  ');
   let yaml = '';
   yaml += buildReceiverYaml(indenter, receiverName, receiverYaml);
   yaml += buildProcessorYaml(indenter, processorName, processorYaml);
@@ -107,8 +106,8 @@ function buildServiceYaml(indenter, pipelineType, receiverName, processorName, e
   if (exporterName !== "") {
     componentsBlock += 'exporters: [' + exporterName + ']\n'
   }
-  let pipelineTypeBlock = pipelineType + ':\n' + indenter.indent(componentsBlock);
-  let pipelinesBlock = 'pipelines:\n' + indenter.indent(pipelineTypeBlock);
+  const pipelineTypeBlock = pipelineType + ':\n' + indenter.indent(componentsBlock);
+  const pipelinesBlock = 'pipelines:\n' + indenter.indent(pipelineTypeBlock);
   return 'service:\n' + indenter.indent(pipelinesBlock);
 }
 
@@ -119,10 +118,9 @@ class Indenter {
   }
 
   indent(text, level) {
-    let padding = this.mkPadding(level === undefined ? 1 : level);
-
+    const padding = this.mkPadding(level === undefined ? 1 : level);
     let out = '';
-    let lines = text.split(/\r?\n/);
+    const lines = text.split(/\r?\n/);
     lines.forEach(line => {
       if (line.length) {
         out += padding + line + '\n';
