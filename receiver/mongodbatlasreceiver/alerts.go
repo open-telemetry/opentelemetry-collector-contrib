@@ -203,7 +203,7 @@ func (a alertsReceiver) retrieveAndProcessAlerts(ctx context.Context) error {
 		alerts = append(alerts, projectAlerts...)
 	}
 	now := pcommon.NewTimestampFromTime(time.Now())
-	logs, err := a.convertAlerts(now, alerts)
+	logs, err := a.convertAlerts(ctx, now, alerts)
 	if err != nil {
 		return err
 	}
@@ -345,12 +345,12 @@ func (a alertsReceiver) shutdownRetriever(ctx context.Context) error {
 	return a.writeCheckpoint(ctx)
 }
 
-func (a alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatlas.Alert) (plog.Logs, error) {
+func (a alertsReceiver) convertAlerts(ctx context.Context, now pcommon.Timestamp, alerts []mongodbatlas.Alert) (plog.Logs, error) {
 	logs := plog.NewLogs()
 
 	var errs error
 	for _, alert := range alerts {
-		if a.hasProcessed(alert) {
+		if a.hasProcessed(ctx, alert) {
 			continue
 		}
 
@@ -545,16 +545,17 @@ func (a *alertCache) MarshalJSON() ([]byte, error) {
 	return json.Marshal(candidate)
 }
 
-func (a *alertCache) Has(k string) bool {
+func (a *alertCache) Has(k string) (hasItem, shouldSync bool) {
 	val, ok := a.data.Load(k)
 	if ok {
 		v := val.(cachePutOptions)
 		now := time.Now()
 		if now.Sub(now.Add(-v.TTL)).Seconds() > v.TTL.Seconds() {
 			a.data.Delete(k)
+			return false, true
 		}
 	}
-	return ok
+	return ok, false
 }
 
 func (a *alertCache) Put(k string, opts cachePutOptions) {
@@ -616,8 +617,12 @@ func (a *alertsReceiver) writeCheckpoint(ctx context.Context) error {
 	return c.Set(ctx, alertCacheKey, marshalBytes)
 }
 
-func (a *alertsReceiver) hasProcessed(alert mongodbatlas.Alert) bool {
-	return a.cache.Has(alertKey(alert))
+func (a *alertsReceiver) hasProcessed(ctx context.Context, alert mongodbatlas.Alert) bool {
+	hasItem, shouldSync := a.cache.Has(alertKey(alert))
+	if shouldSync {
+		a.writeCheckpoint(ctx)
+	}
+	return hasItem
 }
 
 // alertKey is a key to index the alert to see if it has already been processed.
