@@ -31,17 +31,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tidwall/buntdb"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 )
@@ -55,8 +57,10 @@ const (
 
 	alertModeListen    alertMode = "listen"
 	alertModeRetrieval alertMode = "retrieve"
+	alertCacheKey                = "logging_alerts_cache"
 
 	defaultAlertsPollInterval = 30 * time.Second
+	defaultAlertsTTL          = 30 * time.Minute
 )
 
 type alertMode string
@@ -83,8 +87,11 @@ type alertsReceiver struct {
 	publicKey     string
 	retrySettings exporterhelper.RetrySettings
 	pollInterval  time.Duration
-	cache         *buntdb.DB
+	cache         *alertCache
 	doneChan      chan bool
+	id            config.ComponentID  // ID of the receiver component
+	storageID     *config.ComponentID // ID of the storage extension component
+	storageClient *storage.Client
 }
 
 func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer.Logs) (*alertsReceiver, error) {
@@ -114,6 +121,8 @@ func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer
 		pollInterval:  baseConfig.Alerts.PollInterval,
 		doneChan:      make(chan bool, 1),
 		logger:        logger,
+		id:            baseConfig.ID(),
+		storageID:     baseConfig.StorageID,
 	}
 
 	if recv.mode == alertModeRetrieval {
@@ -145,24 +154,24 @@ func (a alertsReceiver) Start(ctx context.Context, host component.Host) error {
 	}
 }
 
-func (a alertsReceiver) startRetrieving(ctx context.Context, _ component.Host) error {
-	// may want to consider using disk storage for tracking which alerts have been sent
-	// or may want to revisit how we get alerts
-	// this is a memory cache used to keep track of unupdated alerts
-	// eventually it should be transferred over to the storage extension
-	cache, err := buntdb.Open(":memory:")
+func (a alertsReceiver) startRetrieving(ctx context.Context, host component.Host) error {
+	storageClient, err := adapter.GetStorageClient(ctx, host, a.storageID, a.id)
 	if err != nil {
-		return fmt.Errorf("unable to initialize cache for retrieval client: %w", err)
+		return fmt.Errorf("failed to set up storage: %w", err)
 	}
-	a.cache = cache
+	a.storageClient = &storageClient
+	err = a.syncPersistence(ctx)
+	if err != nil {
+		return fmt.Errorf("there was an error syncing the receiver with checkpoint: %w", err)
+	}
 
-	time := time.NewTicker(a.pollInterval)
+	t := time.NewTicker(a.pollInterval)
 	a.wg.Add(1)
 	go func() {
 		defer a.wg.Done()
 		for {
 			select {
-			case <-time.C:
+			case <-t.C:
 				if err := a.retrieveAndProcessAlerts(ctx); err != nil {
 					a.logger.Error("unable to retrieve alerts", zap.Error(err))
 				}
@@ -173,6 +182,10 @@ func (a alertsReceiver) startRetrieving(ctx context.Context, _ component.Host) e
 			}
 		}
 	}()
+
+	a.wg.Add(1)
+	go a.startCheckpointer(ctx)
+
 	return nil
 }
 
@@ -326,10 +339,12 @@ func (a alertsReceiver) shutdownListener(ctx context.Context) error {
 	return nil
 }
 
-func (a alertsReceiver) shutdownRetriever(_ context.Context) error {
+func (a alertsReceiver) shutdownRetriever(ctx context.Context) error {
 	a.logger.Debug("Shutting down client")
 	a.doneChan <- true
 	a.wg.Wait()
+
+	a.writeCheckpoint(ctx)
 	return nil
 }
 
@@ -407,14 +422,10 @@ func (a alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatl
 
 		attrs.PutString("net.peer.name", host)
 		attrs.PutInt("net.peer.port", port)
-
-		errs = multierr.Append(errs, a.cache.Update(func(tx *buntdb.Tx) error {
-			_, _, err := tx.Set(alertKey(alert), "processed", &buntdb.SetOptions{
-				Expires: true,
-				TTL:     30 * time.Minute,
-			})
-			return err
-		}))
+		a.cache.Put(alertKey(alert), cachePutOptions{
+			TTL:     30 * time.Minute,
+			Expires: true,
+		})
 	}
 
 	return logs, errs
@@ -505,15 +516,129 @@ func payloadToLogs(now time.Time, payload []byte) (plog.Logs, error) {
 	return logs, nil
 }
 
-func (a *alertsReceiver) hasProcessed(alert mongodbatlas.Alert) bool {
-	err := a.cache.View(func(tx *buntdb.Tx) error {
-		_, err := tx.Get(alertKey(alert))
-		if err != nil {
-			return err
+// startCheckpointer is a subprocesses that will go through the cached alerts to see which
+// ones we can remove from the cache. Once finished, it will checkpoint current progress
+func (a *alertsReceiver) startCheckpointer(ctx context.Context) {
+	defer a.wg.Done()
+	// check every 30 minutes
+	t := time.NewTicker(time.Minute * 30)
+	for {
+		select {
+		case <-t.C:
+			now := time.Now()
+			a.cache.Clean(now)
+			a.writeCheckpoint(ctx)
+		case <-a.doneChan:
+			return
+		case <-ctx.Done():
+			return
 		}
-		return nil
+	}
+}
+
+type cache interface {
+	Has(string) bool
+	Put(string, cachePutOptions)
+	Clean(now time.Time)
+}
+
+type cachePutOptions struct {
+	Expires bool          `mapstructure:"expires"`
+	TTL     time.Duration `mapstructure:"ttl"`
+}
+
+// alertCache wraps a sync Map so it is goroutine safe as well as
+// can have custom marshalling
+type alertCache struct {
+	data sync.Map `mapstructure:"data"`
+}
+
+func (a *alertCache) UnmarshalJSON(data []byte) error {
+	var candidate map[string]any
+	if err := json.Unmarshal(data, &candidate); err != nil {
+		return err
+	}
+	for k, v := range candidate {
+		a.data.Store(k, v)
+	}
+	return nil
+}
+
+func (a *alertCache) MarshalJSON() ([]byte, error) {
+	candidate := make(map[any]any)
+	a.data.Range(func(key, value any) bool {
+		candidate[key] = value
+		return true
 	})
-	return err == nil
+	return json.Marshal(candidate)
+}
+
+func (a *alertCache) Has(k string) bool {
+	_, ok := a.data.Load(k)
+	return ok
+}
+
+func (a *alertCache) Put(k string, opts cachePutOptions) {
+	a.data.Store(k, opts)
+}
+
+func (a *alertCache) Clean(now time.Time) {
+	a.data.Range(func(key, value any) bool {
+		v, ok := value.(cachePutOptions)
+		if !ok || !v.Expires {
+			// keep going since we don't necessarily know what to do with this object
+			return true
+		}
+		// delete the key if it expires
+		if now.Sub(now.Add(-v.TTL)).Seconds() > v.TTL.Seconds() {
+			a.data.Delete(key)
+		}
+		return true
+	})
+}
+
+func (a *alertsReceiver) syncPersistence(ctx context.Context) error {
+	if a.storageClient == nil {
+		return nil
+	}
+	c := *a.storageClient
+	cBytes, err := c.Get(ctx, alertCacheKey)
+	if err != nil {
+		return err
+	}
+
+	if cBytes != nil {
+		var cache alertCache
+		if err = json.Unmarshal(cBytes, &cache); err != nil {
+			return fmt.Errorf("unable to decode stored cache: %w", err)
+		}
+		a.cache = &cache
+		return nil
+	}
+
+	// create if not already loaded
+	newC := &alertCache{
+		data: sync.Map{},
+	}
+	a.cache = newC
+
+	return nil
+}
+
+func (a *alertsReceiver) writeCheckpoint(ctx context.Context) error {
+	if a.storageClient == nil {
+		return nil
+	}
+	c := *a.storageClient
+	marshalBytes, err := a.cache.MarshalJSON()
+	if err != nil {
+		return fmt.Errorf("unable to write checkpoint: %w", err)
+	}
+	return c.Set(ctx, alertCacheKey, marshalBytes)
+}
+
+func (a *alertsReceiver) hasProcessed(alert mongodbatlas.Alert) bool {
+	return a.cache.Has(alertKey(alert))
 }
 
 // alertKey is a key to index the alert to see if it has already been processed.

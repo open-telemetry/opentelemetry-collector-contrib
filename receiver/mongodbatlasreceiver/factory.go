@@ -67,7 +67,7 @@ func createMetricsReceiver(
 }
 
 func createCombinedLogReceiver(
-	_ context.Context,
+	ctx context.Context,
 	params component.ReceiverCreateSettings,
 	rConf config.Receiver,
 	consumer consumer.Logs,

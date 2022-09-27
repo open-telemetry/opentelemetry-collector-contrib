@@ -34,6 +34,7 @@ var _ config.Receiver = (*Config)(nil)
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+	config.ReceiverSettings                 `mapstructure:",squash"`
 	PublicKey                               string                       `mapstructure:"public_key"`
 	PrivateKey                              string                       `mapstructure:"private_key"`
 	Granularity                             string                       `mapstructure:"granularity"`
@@ -41,6 +42,7 @@ type Config struct {
 	Alerts                                  AlertConfig                  `mapstructure:"alerts"`
 	Logs                                    LogConfig                    `mapstructure:"logs"`
 	RetrySettings                           exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
+	StorageID                               *config.ComponentID          `mapstructure:"storage"`
 }
 
 type AlertConfig struct {
