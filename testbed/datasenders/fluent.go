@@ -110,20 +110,20 @@ func (f *FluentLogsForwarder) ConsumeLogs(_ context.Context, logs plog.Logs) err
 func (f *FluentLogsForwarder) convertLogToMap(lr plog.LogRecord) map[string]string {
 	out := map[string]string{}
 
-	if lr.Body().Type() == pcommon.ValueTypeString {
-		out["log"] = lr.Body().StringVal()
+	if lr.Body().Type() == pcommon.ValueTypeStr {
+		out["log"] = lr.Body().Str()
 	}
 
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch v.Type() {
-		case pcommon.ValueTypeString:
-			out[k] = v.StringVal()
+		case pcommon.ValueTypeStr:
+			out[k] = v.Str()
 		case pcommon.ValueTypeInt:
-			out[k] = strconv.FormatInt(v.IntVal(), 10)
+			out[k] = strconv.FormatInt(v.Int(), 10)
 		case pcommon.ValueTypeDouble:
-			out[k] = strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64)
+			out[k] = strconv.FormatFloat(v.Double(), 'f', -1, 64)
 		case pcommon.ValueTypeBool:
-			out[k] = strconv.FormatBool(v.BoolVal())
+			out[k] = strconv.FormatBool(v.Bool())
 		default:
 			panic("missing case")
 		}
@@ -137,18 +137,18 @@ func (f *FluentLogsForwarder) convertLogToJSON(lr plog.LogRecord) []byte {
 	rec := map[string]string{
 		"time": time.Unix(0, int64(lr.Timestamp())).Format("02/01/2006:15:04:05Z"),
 	}
-	rec["log"] = lr.Body().StringVal()
+	rec["log"] = lr.Body().Str()
 
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch v.Type() {
-		case pcommon.ValueTypeString:
-			rec[k] = v.StringVal()
+		case pcommon.ValueTypeStr:
+			rec[k] = v.Str()
 		case pcommon.ValueTypeInt:
-			rec[k] = strconv.FormatInt(v.IntVal(), 10)
+			rec[k] = strconv.FormatInt(v.Int(), 10)
 		case pcommon.ValueTypeDouble:
-			rec[k] = strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64)
+			rec[k] = strconv.FormatFloat(v.Double(), 'f', -1, 64)
 		case pcommon.ValueTypeBool:
-			rec[k] = strconv.FormatBool(v.BoolVal())
+			rec[k] = strconv.FormatBool(v.Bool())
 		default:
 			panic("missing case")
 		}

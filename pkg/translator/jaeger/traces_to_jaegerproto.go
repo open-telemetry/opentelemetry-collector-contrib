@@ -91,7 +91,7 @@ func resourceToJaegerProtoProcess(resource pcommon.Resource) *model.Process {
 	}
 	attrsCount := attrs.Len()
 	if serviceName, ok := attrs.Get(conventions.AttributeServiceName); ok {
-		process.ServiceName = serviceName.StringVal()
+		process.ServiceName = serviceName.Str()
 		attrsCount--
 	}
 	if attrsCount == 0 {
@@ -133,20 +133,20 @@ func appendTagsFromAttributes(dest []model.KeyValue, attrs pcommon.Map) []model.
 func attributeToJaegerProtoTag(key string, attr pcommon.Value) model.KeyValue {
 	tag := model.KeyValue{Key: key}
 	switch attr.Type() {
-	case pcommon.ValueTypeString:
+	case pcommon.ValueTypeStr:
 		// Jaeger-to-Internal maps binary tags to string attributes and encodes them as
 		// base64 strings. Blindingly attempting to decode base64 seems too much.
 		tag.VType = model.ValueType_STRING
-		tag.VStr = attr.StringVal()
+		tag.VStr = attr.Str()
 	case pcommon.ValueTypeInt:
 		tag.VType = model.ValueType_INT64
-		tag.VInt64 = attr.IntVal()
+		tag.VInt64 = attr.Int()
 	case pcommon.ValueTypeBool:
 		tag.VType = model.ValueType_BOOL
-		tag.VBool = attr.BoolVal()
+		tag.VBool = attr.Bool()
 	case pcommon.ValueTypeDouble:
 		tag.VType = model.ValueType_FLOAT64
-		tag.VFloat64 = attr.DoubleVal()
+		tag.VFloat64 = attr.Double()
 	case pcommon.ValueTypeMap, pcommon.ValueTypeSlice:
 		tag.VType = model.ValueType_STRING
 		tag.VStr = attr.AsString()

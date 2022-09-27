@@ -74,12 +74,12 @@ func getNamespace(rm pmetric.ResourceMetrics, namespace string) string {
 		serviceName, svcNameOk := rm.Resource().Attributes().Get(conventions.AttributeServiceName)
 		serviceNamespace, svcNsOk := rm.Resource().Attributes().Get(conventions.AttributeServiceNamespace)
 		switch {
-		case svcNameOk && svcNsOk && serviceName.Type() == pcommon.ValueTypeString && serviceNamespace.Type() == pcommon.ValueTypeString:
-			namespace = fmt.Sprintf("%s/%s", serviceNamespace.StringVal(), serviceName.StringVal())
-		case svcNameOk && serviceName.Type() == pcommon.ValueTypeString:
-			namespace = serviceName.StringVal()
-		case svcNsOk && serviceNamespace.Type() == pcommon.ValueTypeString:
-			namespace = serviceNamespace.StringVal()
+		case svcNameOk && svcNsOk && serviceName.Type() == pcommon.ValueTypeStr && serviceNamespace.Type() == pcommon.ValueTypeStr:
+			namespace = fmt.Sprintf("%s/%s", serviceNamespace.Str(), serviceName.Str())
+		case svcNameOk && serviceName.Type() == pcommon.ValueTypeStr:
+			namespace = serviceName.Str()
+		case svcNsOk && serviceNamespace.Type() == pcommon.ValueTypeStr:
+			namespace = serviceNamespace.Str()
 		}
 	}
 

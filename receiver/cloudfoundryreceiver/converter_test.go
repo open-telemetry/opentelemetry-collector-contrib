@@ -159,6 +159,6 @@ func assertAttributes(t *testing.T, attributes pcommon.Map, expected map[string]
 	for key, expectedValue := range expected {
 		value, present := attributes.Get(key)
 		assert.True(t, present, "Attribute %s presence", key)
-		assert.Equal(t, expectedValue, value.StringVal(), "Attribute %s value", key)
+		assert.Equal(t, expectedValue, value.Str(), "Attribute %s value", key)
 	}
 }

@@ -217,9 +217,9 @@ func TestResourceToOCAndBack(t *testing.T) {
 				case pcommon.ValueTypeInt:
 					// conventions.AttributeProcessID is special because we preserve the type for this.
 					if k == conventions.AttributeProcessPID {
-						assert.Equal(t, v.IntVal(), a.IntVal())
+						assert.Equal(t, v.Int(), a.Int())
 					} else {
-						assert.Equal(t, strconv.FormatInt(v.IntVal(), 10), a.StringVal())
+						assert.Equal(t, strconv.FormatInt(v.Int(), 10), a.Str())
 					}
 				case pcommon.ValueTypeMap, pcommon.ValueTypeSlice:
 					assert.Equal(t, a, a)

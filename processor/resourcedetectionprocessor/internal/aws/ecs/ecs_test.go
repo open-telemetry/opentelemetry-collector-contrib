@@ -111,10 +111,10 @@ func Test_ecsDetectV4(t *testing.T) {
 	attr.PutString("cloud.availability_zone", "us-west-2a")
 	attr.PutString("cloud.account.id", "123456789123")
 	attr.PutString("aws.ecs.launchtype", "ec2")
-	attr.PutEmptySlice("aws.log.group.names").AppendEmpty().SetStringVal("group")
-	attr.PutEmptySlice("aws.log.group.arns").AppendEmpty().SetStringVal("arn:aws:logs:us-east-1:123456789123:log-group:group")
-	attr.PutEmptySlice("aws.log.stream.names").AppendEmpty().SetStringVal("stream")
-	attr.PutEmptySlice("aws.log.stream.arns").AppendEmpty().SetStringVal("arn:aws:logs:us-east-1:123456789123:log-group:group:log-stream:stream")
+	attr.PutEmptySlice("aws.log.group.names").AppendEmpty().SetStr("group")
+	attr.PutEmptySlice("aws.log.group.arns").AppendEmpty().SetStr("arn:aws:logs:us-east-1:123456789123:log-group:group")
+	attr.PutEmptySlice("aws.log.stream.names").AppendEmpty().SetStr("stream")
+	attr.PutEmptySlice("aws.log.stream.arns").AppendEmpty().SetStr("arn:aws:logs:us-east-1:123456789123:log-group:group:log-stream:stream")
 
 	d := Detector{provider: &mockMetaDataProvider{isV4: true}}
 	got, _, err := d.Detect(context.TODO())

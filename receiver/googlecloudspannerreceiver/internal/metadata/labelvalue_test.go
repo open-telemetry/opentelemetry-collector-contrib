@@ -118,7 +118,7 @@ func TestStringLabelValue(t *testing.T) {
 	attributeValue, exists := attributes.Get(labelName)
 
 	assert.True(t, exists)
-	assert.Equal(t, stringValue, attributeValue.StringVal())
+	assert.Equal(t, stringValue, attributeValue.Str())
 }
 
 func TestInt64LabelValue(t *testing.T) {
@@ -138,7 +138,7 @@ func TestInt64LabelValue(t *testing.T) {
 	attributeValue, exists := attributes.Get(labelName)
 
 	assert.True(t, exists)
-	assert.Equal(t, int64Value, attributeValue.IntVal())
+	assert.Equal(t, int64Value, attributeValue.Int())
 }
 
 func TestBoolLabelValue(t *testing.T) {
@@ -158,7 +158,7 @@ func TestBoolLabelValue(t *testing.T) {
 	attributeValue, exists := attributes.Get(labelName)
 
 	assert.True(t, exists)
-	assert.Equal(t, boolValue, attributeValue.BoolVal())
+	assert.Equal(t, boolValue, attributeValue.Bool())
 }
 
 func TestStringSliceLabelValue(t *testing.T) {
@@ -178,7 +178,7 @@ func TestStringSliceLabelValue(t *testing.T) {
 	attributeValue, exists := attributes.Get(labelName)
 
 	assert.True(t, exists)
-	assert.Equal(t, stringValue, attributeValue.StringVal())
+	assert.Equal(t, stringValue, attributeValue.Str())
 }
 
 func TestByteSliceLabelValue(t *testing.T) {
@@ -198,7 +198,7 @@ func TestByteSliceLabelValue(t *testing.T) {
 	attributeValue, exists := attributes.Get(labelName)
 
 	assert.True(t, exists)
-	assert.Equal(t, stringValue, attributeValue.StringVal())
+	assert.Equal(t, stringValue, attributeValue.Str())
 }
 
 func TestLockRequestSliceLabelValue(t *testing.T) {
@@ -218,7 +218,7 @@ func TestLockRequestSliceLabelValue(t *testing.T) {
 	attributeValue, exists := attributes.Get(labelName)
 
 	assert.True(t, exists)
-	assert.Equal(t, stringValue, attributeValue.StringVal())
+	assert.Equal(t, stringValue, attributeValue.Str())
 }
 
 func TestNewStringLabelValue(t *testing.T) {

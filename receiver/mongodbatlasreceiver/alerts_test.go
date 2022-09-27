@@ -83,7 +83,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 				lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2022, time.June, 3, 22, 30, 31, 0, time.UTC)))
 				lr.SetSeverityNumber(plog.SeverityNumberInfo)
 
-				lr.Body().SetStringVal(payload)
+				lr.Body().SetStr(payload)
 
 				return logs
 			},
@@ -154,7 +154,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 				lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2022, time.June, 3, 22, 30, 35, 0, time.UTC)))
 				lr.SetSeverityNumber(plog.SeverityNumberInfo)
 
-				lr.Body().SetStringVal(payload)
+				lr.Body().SetStr(payload)
 
 				return logs
 			},

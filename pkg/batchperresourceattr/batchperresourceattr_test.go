@@ -237,11 +237,11 @@ func sortTraces(tds []ptrace.Traces, attrKey string) {
 	sort.Slice(tds, func(i, j int) bool {
 		valI := ""
 		if av, ok := tds[i].ResourceSpans().At(0).Resource().Attributes().Get(attrKey); ok {
-			valI = av.StringVal()
+			valI = av.Str()
 		}
 		valJ := ""
 		if av, ok := tds[j].ResourceSpans().At(0).Resource().Attributes().Get(attrKey); ok {
-			valJ = av.StringVal()
+			valJ = av.Str()
 		}
 		return valI < valJ
 	})
@@ -271,11 +271,11 @@ func sortMetrics(tds []pmetric.Metrics, attrKey string) {
 	sort.Slice(tds, func(i, j int) bool {
 		valI := ""
 		if av, ok := tds[i].ResourceMetrics().At(0).Resource().Attributes().Get(attrKey); ok {
-			valI = av.StringVal()
+			valI = av.Str()
 		}
 		valJ := ""
 		if av, ok := tds[j].ResourceMetrics().At(0).Resource().Attributes().Get(attrKey); ok {
-			valJ = av.StringVal()
+			valJ = av.Str()
 		}
 		return valI < valJ
 	})
@@ -305,11 +305,11 @@ func sortLogs(tds []plog.Logs, attrKey string) {
 	sort.Slice(tds, func(i, j int) bool {
 		valI := ""
 		if av, ok := tds[i].ResourceLogs().At(0).Resource().Attributes().Get(attrKey); ok {
-			valI = av.StringVal()
+			valI = av.Str()
 		}
 		valJ := ""
 		if av, ok := tds[j].ResourceLogs().At(0).Resource().Attributes().Get(attrKey); ok {
-			valJ = av.StringVal()
+			valJ = av.Str()
 		}
 		return valI < valJ
 	})

@@ -229,14 +229,14 @@ func TestScraper_MultiRow(t *testing.T) {
 		dp := metric.Gauge().DataPoints().At(0)
 		assert.EqualValues(t, 42, dp.IntValue())
 		val, _ := dp.Attributes().Get("genre")
-		assert.Equal(t, "action", val.StringVal())
+		assert.Equal(t, "action", val.Str())
 	}
 	{
 		metric := ms.At(1)
 		dp := metric.Gauge().DataPoints().At(0)
 		assert.EqualValues(t, 111, dp.IntValue())
 		val, _ := dp.Attributes().Get("genre")
-		assert.Equal(t, "sci-fi", val.StringVal())
+		assert.Equal(t, "sci-fi", val.Str())
 	}
 }
 

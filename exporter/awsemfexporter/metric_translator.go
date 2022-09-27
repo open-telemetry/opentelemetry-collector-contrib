@@ -108,7 +108,7 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 	ilms := rm.ScopeMetrics()
 	var metricReceiver string
 	if receiver, ok := rm.Resource().Attributes().Get(attributeReceiver); ok {
-		metricReceiver = receiver.StringVal()
+		metricReceiver = receiver.Str()
 	}
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)

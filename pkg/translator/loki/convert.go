@@ -70,10 +70,10 @@ func parseAttributeNames(attrsToSelect pcommon.Value) []string {
 	var out []string
 
 	switch attrsToSelect.Type() {
-	case pcommon.ValueTypeString:
+	case pcommon.ValueTypeStr:
 		out = strings.Split(attrsToSelect.AsString(), ",")
 	case pcommon.ValueTypeSlice:
-		as := attrsToSelect.SliceVal().AsRaw()
+		as := attrsToSelect.Slice().AsRaw()
 		for _, a := range as {
 			out = append(out, fmt.Sprintf("%v", a))
 		}
