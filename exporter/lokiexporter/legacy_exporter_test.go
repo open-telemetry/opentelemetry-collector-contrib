@@ -57,9 +57,8 @@ var (
 	}
 )
 
-func createTestLogData(numberOfLogs int, attributes map[string]interface{}) plog.Logs {
-	logs := plog.NewLogs()
-	sl := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+func appendTestLogData(dest plog.Logs, numberOfLogs int, attributes map[string]interface{}) {
+	sl := dest.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
@@ -68,8 +67,6 @@ func createTestLogData(numberOfLogs int, attributes map[string]interface{}) plog
 		logRecord.Attributes().FromRaw(attributes)
 		logRecord.SetTimestamp(ts)
 	}
-
-	return logs
 }
 
 func TestExporter_new(t *testing.T) {
@@ -107,12 +104,14 @@ func TestExporter_pushLogData(t *testing.T) {
 	}
 
 	genericGenLogsFunc := func() plog.Logs {
-		return createTestLogData(10, map[string]interface{}{
+		logs := plog.NewLogs()
+		appendTestLogData(logs, 10, map[string]interface{}{
 			conventions.AttributeContainerName:  "api",
 			conventions.AttributeK8SClusterName: "local",
 			"resource.name":                     "myresource",
 			"severity":                          "debug",
 		})
+		return logs
 	}
 
 	genericConfig := &Config{
@@ -185,9 +184,11 @@ func TestExporter_pushLogData(t *testing.T) {
 			httpResponseCode: http.StatusOK,
 			testServer:       true,
 			genLogsFunc: func() plog.Logs {
-				return createTestLogData(10, map[string]interface{}{
+				logs := plog.NewLogs()
+				appendTestLogData(logs, 10, map[string]interface{}{
 					"not.a.match": "random",
 				})
+				return logs
 			},
 			errFunc: func(err error) {
 				require.True(t, consumererror.IsPermanent(err))
@@ -201,21 +202,16 @@ func TestExporter_pushLogData(t *testing.T) {
 			httpResponseCode: http.StatusOK,
 			testServer:       true,
 			genLogsFunc: func() plog.Logs {
-				outLogs := plog.NewLogs()
-
-				matchingLogs := createTestLogData(10, map[string]interface{}{
+				logs := plog.NewLogs()
+				appendTestLogData(logs, 10, map[string]interface{}{
 					conventions.AttributeContainerName:  "api",
 					conventions.AttributeK8SClusterName: "local",
 					"severity":                          "debug",
 				})
-				matchingLogs.ResourceLogs().MoveAndAppendTo(outLogs.ResourceLogs())
-
-				nonMatchingLogs := createTestLogData(5, map[string]interface{}{
+				appendTestLogData(logs, 5, map[string]interface{}{
 					"not.a.match": "random",
 				})
-				nonMatchingLogs.ResourceLogs().MoveAndAppendTo(outLogs.ResourceLogs())
-
-				return outLogs
+				return logs
 			},
 		},
 		{
