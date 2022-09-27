@@ -85,7 +85,7 @@ func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSett
 	})
 	cfg := configuration.(*Config)
 	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
-		ctx = obsrecv.StartMetricsOp(ctx)
+		ctx = obsrecv.StartLogsOp(ctx)
 		l, err := logsUnmarshaler.UnmarshalLogs(token)
 		if err != nil {
 			obsrecv.EndLogsOp(ctx, typeStr, 0, err)
