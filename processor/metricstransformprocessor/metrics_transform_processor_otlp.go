@@ -224,7 +224,7 @@ func matchAttrs(attrMatchers map[string]StringMatcher, attrs pcommon.Map) bool {
 	for k, v := range attrMatchers {
 		attrVal, ok := attrs.Get(k)
 		// attribute values doesn't match, drop datapoint
-		if ok && !v.MatchString(attrVal.StringVal()) {
+		if ok && !v.MatchString(attrVal.Str()) {
 			return false
 		}
 

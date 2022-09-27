@@ -29,10 +29,10 @@ func Test_replacePattern(t *testing.T) {
 
 	target := &ottl.StandardGetSetter{
 		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem().(pcommon.Value).StringVal()
+			return ctx.GetItem().(pcommon.Value).Str()
 		},
 		Setter: func(ctx ottl.TransformContext, val interface{}) {
-			ctx.GetItem().(pcommon.Value).SetStringVal(val.(string))
+			ctx.GetItem().(pcommon.Value).SetStr(val.(string))
 		},
 	}
 
@@ -49,7 +49,7 @@ func Test_replacePattern(t *testing.T) {
 			pattern:     `passwd\=[^\s]*(\s?)`,
 			replacement: "passwd=*** ",
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStringVal("application passwd=*** otherarg=notsensitive key1 key2")
+				expectedValue.SetStr("application passwd=*** otherarg=notsensitive key1 key2")
 			},
 		},
 		{
@@ -58,7 +58,7 @@ func Test_replacePattern(t *testing.T) {
 			pattern:     `nomatch\=[^\s]*(\s?)`,
 			replacement: "shouldnotbeinoutput",
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStringVal("application passwd=sensitivedtata otherarg=notsensitive key1 key2")
+				expectedValue.SetStr("application passwd=sensitivedtata otherarg=notsensitive key1 key2")
 			},
 		},
 		{
@@ -67,13 +67,13 @@ func Test_replacePattern(t *testing.T) {
 			pattern:     `key[^\s]*(\s?)`,
 			replacement: "**** ",
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStringVal("application passwd=sensitivedtata otherarg=notsensitive **** **** ")
+				expectedValue.SetStr("application passwd=sensitivedtata otherarg=notsensitive **** **** ")
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scenarioValue := pcommon.NewValueString(input.StringVal())
+			scenarioValue := pcommon.NewValueString(input.Str())
 
 			ctx := ottltest.TestTransformContext{
 				Item: scenarioValue,

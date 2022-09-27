@@ -37,9 +37,9 @@ func ReplaceAllPatterns(target ottl.GetSetter, regexPattern string, replacement 
 			updated := pcommon.NewMap()
 			attrs.CopyTo(updated)
 			updated.Range(func(key string, value pcommon.Value) bool {
-				stringVal := value.StringVal()
+				stringVal := value.Str()
 				if compiledPattern.MatchString(stringVal) {
-					value.SetStringVal(compiledPattern.ReplaceAllLiteralString(stringVal, replacement))
+					value.SetStr(compiledPattern.ReplaceAllLiteralString(stringVal, replacement))
 				}
 				return true
 			})

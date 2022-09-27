@@ -27,14 +27,17 @@ func init() {
 
 type helpersConfig struct {
 	BasicConfig `mapstructure:",squash"`
+	Writer      WriterConfig    `mapstructure:"writer"`
 	Time        TimeParser      `mapstructure:"time"`
 	Severity    SeverityConfig  `mapstructure:"severity"`
 	Scope       ScopeNameParser `mapstructure:"scope"`
+	Size        ByteSize        `mapstructure:"size"`
 }
 
 func newHelpersConfig() *helpersConfig {
 	return &helpersConfig{
 		BasicConfig: NewBasicConfig(helpersTestType, helpersTestType),
+		Writer:      NewWriterConfig(helpersTestType, helpersTestType),
 		Time:        NewTimeParser(),
 		Severity:    NewSeverityConfig(),
 		Scope:       NewScopeNameParser(),

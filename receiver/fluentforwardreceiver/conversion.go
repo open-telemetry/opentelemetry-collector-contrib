@@ -85,7 +85,7 @@ func (em EventMode) String() string {
 // parseInterfaceToMap takes map of interface objects and returns
 // AttributeValueMap
 func parseInterfaceToMap(msi map[string]interface{}, dest pcommon.Value) {
-	am := dest.SetEmptyMapVal()
+	am := dest.SetEmptyMap()
 	am.EnsureCapacity(len(msi))
 	for k, value := range msi {
 		parseToAttributeValue(value, am.PutEmpty(k))
@@ -95,7 +95,7 @@ func parseInterfaceToMap(msi map[string]interface{}, dest pcommon.Value) {
 // parseInterfaceToArray takes array of interface objects and returns
 // AttributeValueArray
 func parseInterfaceToArray(ai []interface{}, dest pcommon.Value) {
-	av := dest.SetEmptySliceVal()
+	av := dest.SetEmptySlice()
 	av.EnsureCapacity(len(ai))
 	for _, value := range ai {
 		parseToAttributeValue(value, av.AppendEmpty())
@@ -107,27 +107,27 @@ func parseToAttributeValue(val interface{}, dest pcommon.Value) {
 	// See https://github.com/tinylib/msgp/wiki/Type-Mapping-Rules
 	switch r := val.(type) {
 	case bool:
-		dest.SetBoolVal(r)
+		dest.SetBool(r)
 	case string:
-		dest.SetStringVal(r)
+		dest.SetStr(r)
 	case uint64:
-		dest.SetIntVal(int64(r))
+		dest.SetInt(int64(r))
 	case int64:
-		dest.SetIntVal(r)
+		dest.SetInt(r)
 	// Sometimes strings come in as bytes array
 	case []byte:
-		dest.SetStringVal(string(r))
+		dest.SetStr(string(r))
 	case map[string]interface{}:
 		parseInterfaceToMap(r, dest)
 	case []interface{}:
 		parseInterfaceToArray(r, dest)
 	case float32:
-		dest.SetDoubleVal(float64(r))
+		dest.SetDouble(float64(r))
 	case float64:
-		dest.SetDoubleVal(r)
+		dest.SetDouble(r)
 	case nil:
 	default:
-		dest.SetStringVal(fmt.Sprintf("%v", val))
+		dest.SetStr(fmt.Sprintf("%v", val))
 	}
 }
 

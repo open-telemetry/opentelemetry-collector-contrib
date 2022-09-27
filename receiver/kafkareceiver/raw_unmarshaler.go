@@ -26,7 +26,7 @@ func newRawLogsUnmarshaler() LogsUnmarshaler {
 
 func (r rawLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 	l := plog.NewLogs()
-	l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetEmptyBytesVal().FromRaw(buf)
+	l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetEmptyBytes().FromRaw(buf)
 	return l, nil
 }
 

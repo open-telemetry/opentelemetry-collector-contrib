@@ -89,7 +89,7 @@ func (c *client) pushMetricsData(
 		if md.ResourceMetrics().Len() != 0 {
 			accessToken, found := md.ResourceMetrics().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
 			if found {
-				localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.StringVal()
+				localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
 			}
 		}
 
@@ -135,7 +135,7 @@ func (c *client) pushTraceData(
 		if td.ResourceSpans().Len() != 0 {
 			accessToken, found := td.ResourceSpans().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
 			if found {
-				localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.StringVal()
+				localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
 			}
 		}
 
@@ -190,7 +190,7 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 				for k, v := range headers {
 					localHeaders[k] = v
 				}
-				localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.StringVal()
+				localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
 			}
 		}
 

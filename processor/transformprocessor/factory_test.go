@@ -94,7 +94,7 @@ func TestFactoryCreateTracesProcessor(t *testing.T) {
 
 	val, ok := span.Attributes().Get("test")
 	assert.True(t, ok)
-	assert.Equal(t, "pass", val.StringVal())
+	assert.Equal(t, "pass", val.Str())
 }
 
 func TestFactoryCreateMetricsProcessor_InvalidActions(t *testing.T) {
@@ -129,7 +129,7 @@ func TestFactoryCreateMetricsProcessor(t *testing.T) {
 
 	val, ok := metric.Sum().DataPoints().At(0).Attributes().Get("test")
 	assert.True(t, ok)
-	assert.Equal(t, "pass", val.StringVal())
+	assert.Equal(t, "pass", val.Str())
 }
 
 func TestFactoryCreateLogsProcessor(t *testing.T) {
@@ -144,7 +144,7 @@ func TestFactoryCreateLogsProcessor(t *testing.T) {
 
 	ld := plog.NewLogs()
 	log := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	log.Body().SetStringVal("operationA")
+	log.Body().SetStr("operationA")
 
 	_, ok := log.Attributes().Get("test")
 	assert.False(t, ok)
@@ -154,7 +154,7 @@ func TestFactoryCreateLogsProcessor(t *testing.T) {
 
 	val, ok := log.Attributes().Get("test")
 	assert.True(t, ok)
-	assert.Equal(t, "pass", val.StringVal())
+	assert.Equal(t, "pass", val.Str())
 }
 
 func TestFactoryCreateLogsProcessor_InvalidActions(t *testing.T) {

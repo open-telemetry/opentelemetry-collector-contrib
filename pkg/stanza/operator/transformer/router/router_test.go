@@ -43,7 +43,7 @@ func TestTransformer(t *testing.T) {
 		name               string
 		input              *entry.Entry
 		routes             []*RouteConfig
-		defaultOutput      helper.OutputIDs
+		defaultOutput      []string
 		expectedCounts     map[string]int
 		expectedAttributes map[string]interface{}
 	}{

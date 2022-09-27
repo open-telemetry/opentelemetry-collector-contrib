@@ -30,7 +30,7 @@ func TestLogsToLoki(t *testing.T) {
 		attrs         map[string]interface{}
 		res           map[string]interface{}
 		expectedLabel string
-		expectedLine  string
+		expectedLines []string
 	}{
 		{
 			desc: "with attribute to label and regular attribute",
@@ -42,7 +42,11 @@ func TestLogsToLoki(t *testing.T) {
 				hintAttributes: "host.name",
 			},
 			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
-			expectedLine:  `{"traceid":"01020304000000000000000000000000","attributes":{"http.status":200}}`,
+			expectedLines: []string{
+				`{"traceid":"01020304000000000000000000000000","attributes":{"http.status":200}}`,
+				`{"traceid":"01020304050000000000000000000000","attributes":{"http.status":200}}`,
+				`{"traceid":"01020304050600000000000000000000","attributes":{"http.status":200}}`,
+			},
 		},
 		{
 			desc: "with resource to label and regular resource",
@@ -54,7 +58,11 @@ func TestLogsToLoki(t *testing.T) {
 				hintResources: "host.name",
 			},
 			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
-			expectedLine:  `{"traceid":"01020304000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
+			expectedLines: []string{
+				`{"traceid":"01020304000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
+				`{"traceid":"01020304050000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
+				`{"traceid":"01020304050600000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
+			},
 		},
 	}
 	for _, tC := range testCases {
@@ -64,11 +72,17 @@ func TestLogsToLoki(t *testing.T) {
 			ld.ResourceLogs().AppendEmpty()
 			ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty()
 			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().AppendEmpty()
+			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().AppendEmpty()
+			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().AppendEmpty()
 			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
+			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4, 5}))
+			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6}))
 
 			// copy the attributes from the test case to the log entry
 			if len(tC.attrs) > 0 {
 				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().FromRaw(tC.attrs)
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().FromRaw(tC.attrs)
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).Attributes().FromRaw(tC.attrs)
 			}
 			if len(tC.res) > 0 {
 				ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(tC.res)
@@ -77,21 +91,28 @@ func TestLogsToLoki(t *testing.T) {
 			// we can't use copy here, as the value (Value) will be used as string lookup later, so, we need to convert it to string now
 			for k, v := range tC.hints {
 				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString(k, fmt.Sprintf("%v", v))
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutString(k, fmt.Sprintf("%v", v))
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).Attributes().PutString(k, fmt.Sprintf("%v", v))
 			}
 
 			// test
 			pushRequest, report := LogsToLoki(ld)
+			entries := pushRequest.Streams[0].Entries
+
+			var entriesLines []string
+			for i := 0; i < len(entries); i++ {
+				entriesLines = append(entriesLines, entries[i].Line)
+			}
 
 			// actualPushRequest is populated within the test http server, we check it here as assertions are better done at the
 			// end of the test function
 			assert.Empty(t, report.Errors)
 			assert.Equal(t, 0, report.NumDropped)
-			assert.Equal(t, 1, report.NumSubmitted)
+			assert.Equal(t, ld.LogRecordCount(), report.NumSubmitted)
 			assert.Len(t, pushRequest.Streams, 1)
 			assert.Equal(t, tC.expectedLabel, pushRequest.Streams[0].Labels)
-
-			assert.Len(t, pushRequest.Streams[0].Entries, 1)
-			assert.Equal(t, tC.expectedLine, pushRequest.Streams[0].Entries[0].Line)
+			assert.Len(t, entries, ld.LogRecordCount())
+			assert.ElementsMatch(t, tC.expectedLines, entriesLines)
 		})
 	}
 }

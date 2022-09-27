@@ -20,7 +20,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -504,77 +503,4 @@ func TestBuild(t *testing.T) {
 			tc.validate(t, input)
 		})
 	}
-}
-
-func NewTestConfig() *Config {
-	cfg := NewConfig()
-	cfg.Include = []string{"i1", "i2"}
-	cfg.Exclude = []string{"e1", "e2"}
-	cfg.Splitter = helper.NewSplitterConfig()
-	cfg.Splitter.Multiline = helper.MultilineConfig{
-		LineStartPattern: "start",
-		LineEndPattern:   "end",
-	}
-	cfg.FingerprintSize = 1024
-	cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "utf16"}
-	return cfg
-}
-
-func TestMapStructureDecodeConfigWithHook(t *testing.T) {
-	expect := NewTestConfig()
-	cfgMap := map[string]interface{}{
-		"attributes":    map[string]interface{}{},
-		"resource":      map[string]interface{}{},
-		"include":       expect.Include,
-		"exclude":       expect.Exclude,
-		"poll_interval": 200 * time.Millisecond,
-		"multiline": map[string]interface{}{
-			"line_start_pattern": expect.Splitter.Multiline.LineStartPattern,
-			"line_end_pattern":   expect.Splitter.Multiline.LineEndPattern,
-		},
-		"force_flush_period":   500 * time.Millisecond,
-		"include_file_name":    true,
-		"include_file_path":    false,
-		"start_at":             "end",
-		"fingerprint_size":     "1024",
-		"max_log_size":         "1mib",
-		"max_concurrent_files": 1024,
-		"encoding":             "utf16",
-	}
-
-	var actual Config
-	dc := &mapstructure.DecoderConfig{Result: &actual, DecodeHook: operatortest.JSONUnmarshalerHook()}
-	ms, err := mapstructure.NewDecoder(dc)
-	require.NoError(t, err)
-	err = ms.Decode(cfgMap)
-	require.NoError(t, err)
-	require.Equal(t, expect, &actual)
-}
-
-func TestMapStructureDecodeConfig(t *testing.T) {
-	expect := NewTestConfig()
-	cfgMap := map[string]interface{}{
-		"attributes":    map[string]interface{}{},
-		"resource":      map[string]interface{}{},
-		"include":       expect.Include,
-		"exclude":       expect.Exclude,
-		"poll_interval": 200 * time.Millisecond,
-		"multiline": map[string]interface{}{
-			"line_start_pattern": expect.Splitter.Multiline.LineStartPattern,
-			"line_end_pattern":   expect.Splitter.Multiline.LineEndPattern,
-		},
-		"include_file_name":    true,
-		"include_file_path":    false,
-		"start_at":             "end",
-		"fingerprint_size":     1024,
-		"max_log_size":         1024 * 1024,
-		"max_concurrent_files": 1024,
-		"encoding":             "utf16",
-		"force_flush_period":   500 * time.Millisecond,
-	}
-
-	var actual Config
-	err := mapstructure.Decode(cfgMap, &actual)
-	require.NoError(t, err)
-	require.Equal(t, expect, &actual)
 }

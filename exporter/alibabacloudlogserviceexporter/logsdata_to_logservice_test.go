@@ -32,7 +32,7 @@ func fillComplexAttributeValueMap(m pcommon.Map) {
 	m.PutDouble("value", 1.3)
 	m.PutInt("code", 200)
 	m.PutEmpty("null")
-	m.PutEmptySlice("array").AppendEmpty().SetStringVal("array")
+	m.PutEmptySlice("array").AppendEmpty().SetStr("array")
 	m.PutEmptyMap("map").PutString("data", "hello world")
 	m.PutString("status", "ok")
 }
@@ -55,21 +55,21 @@ func createLogData(numberOfLogs int) plog.Logs {
 		case 0:
 			// do nothing, left body null
 		case 1:
-			logRecord.Body().SetBoolVal(true)
+			logRecord.Body().SetBool(true)
 		case 2:
-			logRecord.Body().SetIntVal(2.0)
+			logRecord.Body().SetInt(2.0)
 		case 3:
-			logRecord.Body().SetDoubleVal(3.0)
+			logRecord.Body().SetDouble(3.0)
 		case 4:
-			logRecord.Body().SetStringVal("4")
+			logRecord.Body().SetStr("4")
 		case 5:
 			fillComplexAttributeValueMap(logRecord.Attributes().PutEmptyMap("map-value"))
-			logRecord.Body().SetStringVal("log contents")
+			logRecord.Body().SetStr("log contents")
 		case 6:
-			logRecord.Attributes().PutEmptySlice("array-value").AppendEmpty().SetStringVal("array")
-			logRecord.Body().SetStringVal("log contents")
+			logRecord.Attributes().PutEmptySlice("array-value").AppendEmpty().SetStr("array")
+			logRecord.Body().SetStr("log contents")
 		default:
-			logRecord.Body().SetStringVal("log contents")
+			logRecord.Body().SetStr("log contents")
 		}
 		logRecord.Attributes().PutString(conventions.AttributeServiceName, "myapp")
 		logRecord.Attributes().PutString("my-label", "myapp-type")
