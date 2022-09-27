@@ -192,12 +192,61 @@ type metricsExporterWrapper struct {
 	repeater *metricsRepeater
 }
 
+func newMetricsExporterWrapper(logger *log.Logger, ws *websocket.Conn, cfg config.Exporter, factory component.ExporterFactory) (metricsExporterWrapper, error) {
+	repeater := newMetricsRepeater(logger, ws)
+	exporter, err := factory.CreateMetricsExporter(
+		context.Background(),
+		componenttest.NewNopExporterCreateSettings(),
+		cfg,
+	)
+	return metricsExporterWrapper{
+		MetricsExporter: exporter,
+		repeater:        repeater,
+	}, err
+}
+
+func (w metricsExporterWrapper) waitForStopMessage() {
+	w.repeater.waitForStopMessage()
+}
+
 type logsExporterWrapper struct {
 	component.LogsExporter
 	repeater *logsRepeater
 }
 
+func newLogsExporterWrapper(logger *log.Logger, ws *websocket.Conn, cfg config.Exporter, factory component.ExporterFactory) (logsExporterWrapper, error) {
+	exporter, err := factory.CreateLogsExporter(
+		context.Background(),
+		componenttest.NewNopExporterCreateSettings(),
+		cfg,
+	)
+	return logsExporterWrapper{
+		LogsExporter: exporter,
+		repeater:     newLogsRepeater(logger, ws),
+	}, err
+}
+
+func (w logsExporterWrapper) waitForStopMessage() {
+	w.repeater.waitForStopMessage()
+}
+
 type tracesExporterWrapper struct {
 	component.TracesExporter
 	repeater *tracesRepeater
+}
+
+func newTracesExporterWrapper(logger *log.Logger, ws *websocket.Conn, cfg config.Exporter, factory component.ExporterFactory) (tracesExporterWrapper, error) {
+	exporter, err := factory.CreateTracesExporter(
+		context.Background(),
+		componenttest.NewNopExporterCreateSettings(),
+		cfg,
+	)
+	return tracesExporterWrapper{
+		TracesExporter: exporter,
+		repeater:       newTracesRepeater(logger, ws),
+	}, err
+}
+
+func (w tracesExporterWrapper) waitForStopMessage() {
+	w.repeater.waitForStopMessage()
 }

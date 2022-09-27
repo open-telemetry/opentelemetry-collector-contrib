@@ -22,9 +22,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"golang.org/x/net/websocket"
 )
 
@@ -46,13 +43,11 @@ func (h exporterSocketHandler) doHandle(ws *websocket.Conn) error {
 	if err != nil {
 		return err
 	}
-
 	exporterConfig := h.exporterFactory.CreateDefaultConfig()
 	err = unmarshalExporterConfig(exporterConfig, conf)
 	if err != nil {
 		return err
 	}
-
 	switch pipelineType {
 	case "metrics":
 		h.connectMetricsExporter(ws, exporterConfig)
@@ -66,27 +61,12 @@ func (h exporterSocketHandler) doHandle(ws *websocket.Conn) error {
 
 func (h exporterSocketHandler) connectMetricsExporter(
 	ws *websocket.Conn,
-	exporterConfig config.Exporter,
+	cfg config.Exporter,
 ) {
-	stop := make(chan struct{})
-	repeater := &metricsRepeater{
-		logger:    h.logger,
-		ws:        ws,
-		marshaler: pmetric.NewJSONMarshaler(),
-		stop:      stop,
-	}
-	exporter, err := h.exporterFactory.CreateMetricsExporter(
-		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
-		exporterConfig,
-	)
+	wrapper, err := newMetricsExporterWrapper(h.logger, ws, cfg, h.exporterFactory)
 	if err != nil {
-		sendErr(ws, h.logger, "failed to create metrics expoerter", err)
+		sendErr(ws, h.logger, "failed to create metrics processor wrapper", err)
 		return
-	}
-	wrapper := metricsExporterWrapper{
-		MetricsExporter: exporter,
-		repeater:        repeater,
 	}
 	h.pipeline.connectMetricsExporterWrapper(&wrapper)
 	err = wrapper.Start(context.Background(), componenttest.NewNopHost())
@@ -94,7 +74,7 @@ func (h exporterSocketHandler) connectMetricsExporter(
 		sendErr(ws, h.logger, "failed to start metrics exporter", err)
 		return
 	}
-	<-stop
+	wrapper.waitForStopMessage()
 	err = wrapper.Shutdown(context.Background())
 	if err != nil {
 		sendErr(ws, h.logger, "failed to unmarshal receiver", err)
@@ -105,37 +85,23 @@ func (h exporterSocketHandler) connectMetricsExporter(
 
 func (h exporterSocketHandler) connectLogsExporter(
 	ws *websocket.Conn,
-	exporterConfig config.Exporter,
+	cfg config.Exporter,
 ) {
-	stop := make(chan struct{})
-	repeater := &logsRepeater{
-		ws:        ws,
-		marshaler: plog.NewJSONMarshaler(),
-		stop:      stop,
-	}
-	proc, err := h.exporterFactory.CreateLogsExporter(
-		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
-		exporterConfig,
-	)
+	wrapper, err := newLogsExporterWrapper(h.logger, ws, cfg, h.exporterFactory)
 	if err != nil {
-		sendErr(ws, h.logger, "failed to create logs exporter", err)
+		sendErr(ws, h.logger, "failed to create logs processor wrapper", err)
 		return
 	}
-	wrapper := logsExporterWrapper{
-		LogsExporter: proc,
-		repeater:     repeater,
-	}
+	h.pipeline.connectLogsExporterWrapper(&wrapper)
 	err = wrapper.Start(context.Background(), componenttest.NewNopHost())
 	if err != nil {
 		sendErr(ws, h.logger, "failed to start logs exporter", err)
 		return
 	}
-	h.pipeline.connectLogsExporterWrapper(&wrapper)
-	<-stop
+	wrapper.waitForStopMessage()
 	err = wrapper.Shutdown(context.Background())
 	if err != nil {
-		sendErr(ws, h.logger, "failed to shut down logs exporter", err)
+		sendErr(ws, h.logger, "failed to unmarshal receiver", err)
 		return
 	}
 	h.pipeline.disconnectLogsExporterWrapper()
@@ -143,37 +109,23 @@ func (h exporterSocketHandler) connectLogsExporter(
 
 func (h exporterSocketHandler) connectTracesExporter(
 	ws *websocket.Conn,
-	exporterConfig config.Exporter,
+	cfg config.Exporter,
 ) {
-	stop := make(chan struct{})
-	repeater := &tracesRepeater{
-		ws:        ws,
-		marshaler: ptrace.NewJSONMarshaler(),
-		stop:      stop,
-	}
-	exporter, err := h.exporterFactory.CreateTracesExporter(
-		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
-		exporterConfig,
-	)
+	wrapper, err := newTracesExporterWrapper(h.logger, ws, cfg, h.exporterFactory)
 	if err != nil {
-		sendErr(ws, h.logger, "failed to create traces exporter", err)
+		sendErr(ws, h.logger, "failed to create traces processor wrapper", err)
 		return
 	}
-	wrapper := tracesExporterWrapper{
-		TracesExporter: exporter,
-		repeater:       repeater,
-	}
+	h.pipeline.connectTracesExporterWrapper(&wrapper)
 	err = wrapper.Start(context.Background(), componenttest.NewNopHost())
 	if err != nil {
 		sendErr(ws, h.logger, "failed to start traces exporter", err)
 		return
 	}
-	h.pipeline.connectTracesExporterWrapper(&wrapper)
-	<-stop
+	wrapper.waitForStopMessage()
 	err = wrapper.Shutdown(context.Background())
 	if err != nil {
-		sendErr(ws, h.logger, "failed to shut down traces exporter", err)
+		sendErr(ws, h.logger, "failed to unmarshal receiver", err)
 		return
 	}
 	h.pipeline.disconnectTracesExporterWrapper()
