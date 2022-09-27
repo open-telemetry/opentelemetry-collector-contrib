@@ -79,7 +79,7 @@ func (p *tracesProcessor) ConsumeTraces(ctx context.Context, t ptrace.Traces) er
 
 type spanGroup struct {
 	exporters []component.TracesExporter
-	resSpans  ptrace.ResourceSpansSlice
+	traces    ptrace.Traces
 }
 
 func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
@@ -114,12 +114,8 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 	}
 
 	for _, g := range groups {
-		t := ptrace.NewTraces()
-		t.ResourceSpans().EnsureCapacity(g.resSpans.Len())
-		g.resSpans.MoveAndAppendTo(t.ResourceSpans())
-
 		for _, e := range g.exporters {
-			errs = multierr.Append(errs, e.ConsumeTraces(ctx, t))
+			errs = multierr.Append(errs, e.ConsumeTraces(ctx, g.traces))
 		}
 	}
 	return errs
@@ -128,10 +124,10 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 func (p *tracesProcessor) group(key string, groups map[string]spanGroup, exporters []component.TracesExporter, spans ptrace.ResourceSpans) {
 	group, ok := groups[key]
 	if !ok {
-		group.resSpans = ptrace.NewResourceSpansSlice()
+		group.traces = ptrace.NewTraces()
 		group.exporters = exporters
 	}
-	spans.CopyTo(group.resSpans.AppendEmpty())
+	spans.CopyTo(group.traces.ResourceSpans().AppendEmpty())
 	groups[key] = group
 }
 
