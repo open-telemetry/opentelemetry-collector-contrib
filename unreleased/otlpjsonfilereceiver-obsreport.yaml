@@ -7,3 +7,4 @@ component: otlpjsonfilereceiver
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note:  logs receive operations should use StartLogsOp/EndLogsOp
 
+issues: [14535]
