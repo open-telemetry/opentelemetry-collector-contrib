@@ -346,7 +346,7 @@ func assertDatapointValueAndStringAttributes(t *testing.T, dp pmetric.NumberData
 	for k, v := range attrs {
 		cpuAttribute, exists := dp.Attributes().Get(k)
 		assert.True(t, exists)
-		assert.Equal(t, v, cpuAttribute.StringVal())
+		assert.Equal(t, v, cpuAttribute.Str())
 	}
 }
 

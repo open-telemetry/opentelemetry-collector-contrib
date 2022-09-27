@@ -37,8 +37,8 @@ func ReplaceAllMatches(target ottl.GetSetter, pattern string, replacement string
 			updated := pcommon.NewMap()
 			attrs.CopyTo(updated)
 			updated.Range(func(key string, value pcommon.Value) bool {
-				if glob.Match(value.StringVal()) {
-					value.SetStringVal(replacement)
+				if glob.Match(value.Str()) {
+					value.SetStr(replacement)
 				}
 				return true
 			})

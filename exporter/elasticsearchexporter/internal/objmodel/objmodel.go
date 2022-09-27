@@ -166,7 +166,7 @@ func (doc *Document) AddAttribute(key string, attribute pcommon.Value) {
 	case pcommon.ValueTypeEmpty:
 		// do not add 'null'
 	case pcommon.ValueTypeMap:
-		doc.AddAttributes(key, attribute.MapVal())
+		doc.AddAttributes(key, attribute.Map())
 	default:
 		doc.Add(key, ValueFromAttribute(attribute))
 	}
@@ -371,18 +371,18 @@ func TimestampValue(ts time.Time) Value {
 func ValueFromAttribute(attr pcommon.Value) Value {
 	switch attr.Type() {
 	case pcommon.ValueTypeInt:
-		return IntValue(attr.IntVal())
+		return IntValue(attr.Int())
 	case pcommon.ValueTypeDouble:
-		return DoubleValue(attr.DoubleVal())
-	case pcommon.ValueTypeString:
-		return StringValue(attr.StringVal())
+		return DoubleValue(attr.Double())
+	case pcommon.ValueTypeStr:
+		return StringValue(attr.Str())
 	case pcommon.ValueTypeBool:
-		return BoolValue(attr.BoolVal())
+		return BoolValue(attr.Bool())
 	case pcommon.ValueTypeSlice:
-		sub := arrFromAttributes(attr.SliceVal())
+		sub := arrFromAttributes(attr.Slice())
 		return ArrValue(sub...)
 	case pcommon.ValueTypeMap:
-		sub := DocumentFromAttributes(attr.MapVal())
+		sub := DocumentFromAttributes(attr.Map())
 		return Value{kind: KindObject, doc: sub}
 	default:
 		return nilValue
@@ -491,7 +491,7 @@ func appendAttributeValue(fields []field, path string, key string, attr pcommon.
 	}
 
 	if attr.Type() == pcommon.ValueTypeMap {
-		return appendAttributeFields(fields, flattenKey(path, key), attr.MapVal())
+		return appendAttributeFields(fields, flattenKey(path, key), attr.Map())
 	}
 
 	return append(fields, field{

@@ -276,7 +276,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing
 	assert.False(t, ok, "routing attribute should have been dropped")
 	v, ok := attrs.Get("attr")
 	assert.True(t, ok, "non routing attributes shouldn't be dropped")
-	assert.Equal(t, "acme", v.StringVal())
+	assert.Equal(t, "acme", v.Str())
 }
 
 type mockMetricsExporter struct {
@@ -465,6 +465,6 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithOTTL(t *testing.
 		rmetric := defaultExp.AllMetrics()[0].ResourceMetrics().At(0)
 		attr, ok := rmetric.Resource().Attributes().Get("value")
 		assert.True(t, ok, "routing attribute must exists")
-		assert.Equal(t, attr.DoubleVal(), float64(-1.0))
+		assert.Equal(t, attr.Double(), float64(-1.0))
 	})
 }

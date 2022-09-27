@@ -54,7 +54,7 @@ func (bt *batchTraces) ConsumeTraces(ctx context.Context, td ptrace.Traces) erro
 		rs := rss.At(i)
 		var attrVal string
 		if attributeValue, ok := rs.Resource().Attributes().Get(bt.attrKey); ok {
-			attrVal = attributeValue.StringVal()
+			attrVal = attributeValue.Str()
 		}
 
 		tracesForAttr, ok := tracesByAttr[attrVal]
@@ -104,7 +104,7 @@ func (bt *batchMetrics) ConsumeMetrics(ctx context.Context, td pmetric.Metrics) 
 		rm := rms.At(i)
 		var attrVal string
 		if attributeValue, ok := rm.Resource().Attributes().Get(bt.attrKey); ok {
-			attrVal = attributeValue.StringVal()
+			attrVal = attributeValue.Str()
 		}
 
 		metricsForAttr, ok := metricsByAttr[attrVal]
@@ -154,7 +154,7 @@ func (bt *batchLogs) ConsumeLogs(ctx context.Context, td plog.Logs) error {
 		rl := rls.At(i)
 		var attrVal string
 		if attributeValue, ok := rl.Resource().Attributes().Get(bt.attrKey); ok {
-			attrVal = attributeValue.StringVal()
+			attrVal = attributeValue.Str()
 		}
 
 		logsForAttr, ok := logsByAttr[attrVal]

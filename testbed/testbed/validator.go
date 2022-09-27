@@ -461,8 +461,8 @@ func (v *CorrectnessTestValidator) compareKeyValueList(
 	spanName string, sentVal pcommon.Value, recdVal pcommon.Value, fmtStr string, attrKey string) {
 	switch recdVal.Type() {
 	case pcommon.ValueTypeMap:
-		v.diffAttributeMap(spanName, sentVal.MapVal(), recdVal.MapVal(), fmtStr)
-	case pcommon.ValueTypeString:
+		v.diffAttributeMap(spanName, sentVal.Map(), recdVal.Map(), fmtStr)
+	case pcommon.ValueTypeStr:
 		v.compareSimpleValues(spanName, sentVal, recdVal, fmtStr, attrKey)
 	default:
 		af := &TraceAssertionFailure{

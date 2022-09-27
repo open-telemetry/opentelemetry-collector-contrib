@@ -63,7 +63,7 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
 
 	// The Message field contains description about the event,
 	// which is best suited for the "Body" of the LogRecordSlice.
-	lr.Body().SetStringVal(ev.Message)
+	lr.Body().SetStr(ev.Message)
 
 	// Set the "SeverityNumber" and "SeverityText" if a known type of
 	// severity is found.

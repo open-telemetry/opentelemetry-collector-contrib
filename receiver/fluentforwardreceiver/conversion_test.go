@@ -253,18 +253,18 @@ func TestBodyConversion(t *testing.T) {
 	le.Attributes().Sort()
 
 	body := pcommon.NewValueMap()
-	body.MapVal().PutString("a", "value")
+	body.Map().PutString("a", "value")
 
-	bv := body.MapVal().PutEmptySlice("b")
-	bv.AppendEmpty().SetStringVal("first")
-	bv.AppendEmpty().SetStringVal("second")
+	bv := body.Map().PutEmptySlice("b")
+	bv.AppendEmpty().SetStr("first")
+	bv.AppendEmpty().SetStr("second")
 
-	cv := body.MapVal().PutEmptyMap("c")
+	cv := body.Map().PutEmptyMap("c")
 	cv.PutInt("d", 24)
 
 	// Sort the map, sometimes may get in a different order.
 	require.Equal(t, pcommon.ValueTypeMap, le.Body().Type())
-	le.Body().MapVal().Sort()
+	le.Body().Map().Sort()
 	assert.EqualValues(t, Logs(
 		Log{
 			Timestamp: 5000000000000,

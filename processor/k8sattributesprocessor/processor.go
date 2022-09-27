@@ -194,9 +194,9 @@ func (kp *kubernetesprocessor) getAttributesForPodsNamespace(namespace string) m
 func intFromAttribute(val pcommon.Value) (int, error) {
 	switch val.Type() {
 	case pcommon.ValueTypeInt:
-		return int(val.IntVal()), nil
-	case pcommon.ValueTypeString:
-		i, err := strconv.Atoi(val.StringVal())
+		return int(val.Int()), nil
+	case pcommon.ValueTypeStr:
+		i, err := strconv.Atoi(val.Str())
 		if err != nil {
 			return 0, err
 		}

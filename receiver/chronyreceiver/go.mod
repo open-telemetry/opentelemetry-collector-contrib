@@ -6,8 +6,8 @@ require (
 	github.com/facebook/time v0.0.0-20220713225404-f7a0d7702d50
 	github.com/stretchr/testify v1.8.0
 	github.com/tilinna/clock v1.1.0
-	go.opentelemetry.io/collector v0.60.1-0.20220923151520-96e9af35c002
-	go.opentelemetry.io/collector/pdata v0.60.1-0.20220923151520-96e9af35c002
+	go.opentelemetry.io/collector v0.60.1-0.20220927015850-e98116922cf6
+	go.opentelemetry.io/collector/pdata v0.60.1-0.20220927015850-e98116922cf6
 	go.uber.org/multierr v1.8.0
 )
 

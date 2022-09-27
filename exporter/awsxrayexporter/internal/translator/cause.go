@@ -57,7 +57,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 	case hasExceptions:
 		language := ""
 		if val, ok := resource.Attributes().Get(conventions.AttributeTelemetrySDKLanguage); ok {
-			language = val.StringVal()
+			language = val.Str()
 		}
 
 		var exceptions []awsxray.Exception
@@ -69,15 +69,15 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 				stacktrace := ""
 
 				if val, ok := event.Attributes().Get(conventions.AttributeExceptionType); ok {
-					exceptionType = val.StringVal()
+					exceptionType = val.Str()
 				}
 
 				if val, ok := event.Attributes().Get(conventions.AttributeExceptionMessage); ok {
-					message = val.StringVal()
+					message = val.Str()
 				}
 
 				if val, ok := event.Attributes().Get(conventions.AttributeExceptionStacktrace); ok {
-					stacktrace = val.StringVal()
+					stacktrace = val.Str()
 				}
 
 				parsed := parseException(exceptionType, message, stacktrace, language)
@@ -100,7 +100,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 			switch key {
 			case "http.status_text":
 				if message == "" {
-					message = value.StringVal()
+					message = value.Str()
 				}
 			default:
 				filtered[key] = value
@@ -134,7 +134,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		isThrottle = false
 		isFault = false
 	case ok:
-		code := val.IntVal()
+		code := val.Int()
 		// We only differentiate between faults (server errors) and errors (client errors) for HTTP spans.
 		if code >= 400 && code <= 499 {
 			isError = true

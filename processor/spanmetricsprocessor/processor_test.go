@@ -531,13 +531,13 @@ func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metr
 	dp.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch k {
 		case serviceNameKey:
-			mID.service = v.StringVal()
+			mID.service = v.Str()
 		case operationKey:
-			mID.operation = v.StringVal()
+			mID.operation = v.Str()
 		case spanKindKey:
-			mID.kind = v.StringVal()
+			mID.kind = v.Str()
 		case statusCodeKey:
-			mID.statusCode = v.StringVal()
+			mID.statusCode = v.Str()
 		case notInSpanAttrName1:
 			assert.Fail(t, notInSpanAttrName1+" should not be in this metric")
 		default:

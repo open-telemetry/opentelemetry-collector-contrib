@@ -285,7 +285,7 @@ func oCensusResource(res pcommon.Resource) *resourcepb.Resource {
 
 	mp := make(map[string]string, res.Attributes().Len())
 	res.Attributes().Range(func(k string, v pcommon.Value) bool {
-		mp[k] = v.StringVal()
+		mp[k] = v.Str()
 		return true
 	})
 

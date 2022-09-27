@@ -128,21 +128,21 @@ func parseSpanSamplingPriority(span ptrace.Span) samplingPriority {
 	// between different formats.
 	switch samplingPriorityAttrib.Type() {
 	case pcommon.ValueTypeInt:
-		value := samplingPriorityAttrib.IntVal()
+		value := samplingPriorityAttrib.Int()
 		if value == 0 {
 			decision = doNotSampleSpan
 		} else if value > 0 {
 			decision = mustSampleSpan
 		}
 	case pcommon.ValueTypeDouble:
-		value := samplingPriorityAttrib.DoubleVal()
+		value := samplingPriorityAttrib.Double()
 		if value == 0.0 {
 			decision = doNotSampleSpan
 		} else if value > 0.0 {
 			decision = mustSampleSpan
 		}
-	case pcommon.ValueTypeString:
-		attribVal := samplingPriorityAttrib.StringVal()
+	case pcommon.ValueTypeStr:
+		attribVal := samplingPriorityAttrib.Str()
 		if value, err := strconv.ParseFloat(attribVal, 64); err == nil {
 			if value == 0.0 {
 				decision = doNotSampleSpan
