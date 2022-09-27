@@ -75,6 +75,14 @@ attributes:
   index_name:
     value: index
     description: The name of the index.
+  read_lock_type:
+    value: kind
+    description: Read operation types.
+    enum: [normal, with_shared_locks, high_priority, no_insert, external]
+  write_lock_type:
+    value: kind
+    description: Write operation types.
+    enum: [allow_write, concurrent_insert, low_priority, normal, external]
   tmp_resource:
     value: resource
     description: The kind of temporary resources.
@@ -283,6 +291,42 @@ metrics:
       monotonic: false
       aggregation: cumulative
     attributes: [threads]
+  mysql.table.lock_wait.read.count:
+    enabled: false
+    description: The total table lock wait read events.
+    unit: "1"
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation: cumulative
+    attributes: [schema, table_name, read_lock_type]
+  mysql.table.lock_wait.read.time:
+    enabled: false
+    description: The total table lock wait read events times.
+    unit: ns
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation: cumulative
+    attributes: [schema, table_name, read_lock_type]
+  mysql.table.lock_wait.write.count:
+    enabled: false
+    description: The total table lock wait write events.
+    unit: "1"
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation: cumulative
+    attributes: [schema, table_name, write_lock_type]
+  mysql.table.lock_wait.write.time:
+    enabled: false
+    description: The total table lock wait write events times.
+    unit: ns
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation: cumulative
+    attributes: [schema, table_name, write_lock_type]
   mysql.locked_connects:
     enabled: true
     description: The number of attempts to connect to locked user accounts.

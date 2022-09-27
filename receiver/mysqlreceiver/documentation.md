@@ -29,6 +29,10 @@ These are the metrics available for this scraper.
 | **mysql.sorts** | The number of MySQL sorts. | 1 | Sum(Int) | <ul> <li>sorts</li> </ul> |
 | **mysql.table.io.wait.count** | The total count of I/O wait events for a table. | 1 | Sum(Int) | <ul> <li>io_waits_operations</li> <li>table_name</li> <li>schema</li> </ul> |
 | **mysql.table.io.wait.time** | The total time of I/O wait events for a table. | ns | Sum(Int) | <ul> <li>io_waits_operations</li> <li>table_name</li> <li>schema</li> </ul> |
+| mysql.table.lock_wait.read.count | The total table lock wait read events. | 1 | Sum(Int) | <ul> <li>schema</li> <li>table_name</li> <li>read_lock_type</li> </ul> |
+| mysql.table.lock_wait.read.time | The total table lock wait read events times. | ns | Sum(Int) | <ul> <li>schema</li> <li>table_name</li> <li>read_lock_type</li> </ul> |
+| mysql.table.lock_wait.write.count | The total table lock wait write events. | 1 | Sum(Int) | <ul> <li>schema</li> <li>table_name</li> <li>write_lock_type</li> </ul> |
+| mysql.table.lock_wait.write.time | The total table lock wait write events times. | ns | Sum(Int) | <ul> <li>schema</li> <li>table_name</li> <li>write_lock_type</li> </ul> |
 | **mysql.threads** | The state of MySQL threads. | 1 | Sum(Int) | <ul> <li>threads</li> </ul> |
 | **mysql.tmp_resources** | The number of created temporary resources. | 1 | Sum(Int) | <ul> <li>tmp_resource</li> </ul> |
 
@@ -63,6 +67,7 @@ metrics:
 | log_operations (operation) | The log operation types. | waits, write_requests, writes |
 | operations (operation) | The operation types. | fsyncs, reads, writes |
 | page_operations (operation) | The page operation types. | created, read, written |
+| read_lock_type (kind) | Read operation types. | normal, with_shared_locks, high_priority, no_insert, external |
 | row_locks (kind) | The row lock type. | waits, time |
 | row_operations (operation) | The row operation type. | deleted, inserted, read, updated |
 | schema (schema) | The schema of the object. |  |
@@ -70,3 +75,4 @@ metrics:
 | table_name (table) | Table name for event or process. |  |
 | threads (kind) | The thread count type. | cached, connected, created, running |
 | tmp_resource (resource) | The kind of temporary resources. | disk_tables, files, tables |
+| write_lock_type (kind) | Write operation types. | allow_write, concurrent_insert, low_priority, normal, external |
