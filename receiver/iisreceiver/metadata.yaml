@@ -1,5 +1,13 @@
 name: iisreceiver
 
+resource_attributes:
+  iis.site:
+    description: The site of the web server.
+    type: string
+  iis.app_pool:
+    description: The application pool, which is associated with worker processes of one or more applications.
+    type: string
+
 attributes:
   direction:
     value: direction
@@ -18,6 +26,12 @@ attributes:
       - post
       - put
       - trace
+  site:
+    value: site
+    description: The site of the web server.
+  app_pool:
+    value: app_pool
+    description: The application pool, which is associated with worker processes of one or more applications.
 
 metrics:
   iis.request.count:
@@ -110,6 +124,93 @@ metrics:
       value_type: int
     enabled: true
   iis.uptime:
+    description: The amount of time the server has been up.
+    unit: s
+    gauge:
+      value_type: int
+    enabled: true
+  iis.site.request.count:
+    description: Total number of requests of a given type.
+    unit: "{requests}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    enabled: true
+    attributes: [ request ]
+  iis.app_pool.request.rejected:
+    description: Total number of requests rejected.
+    unit: "{requests}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    enabled: true
+  iis.app_pool.request.queue.count:
+    description: Current number of requests in the queue.
+    unit: "{requests}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    enabled: true
+  iis.app_pool.request.queue.age.max:
+    description: Age of oldest request in the queue.
+    unit: ms
+    gauge:
+      value_type: int
+    enabled: true
+  iis.site.network.file.count:
+    description: Number of transmitted files.
+    unit: "{files}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    enabled: true
+    attributes: [ direction ]
+  iis.site.network.blocked:
+    description: Number of bytes blocked due to bandwidth throttling.
+    unit: By
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    enabled: true
+  iis.site.network.io:
+    description: Total amount of bytes sent and received.
+    unit: By
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    enabled: true
+    attributes: [ direction ]
+  iis.site.connection.attempt.count:
+    description: Total number of attempts to connect to the server.
+    unit: "{attempts}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    enabled: true
+  iis.site.connection.active:
+    description: Number of active connections.
+    unit: "{connections}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    enabled: true
+  iis.site.connection.anonymous:
+    description: Number of connections established anonymously.
+    unit: "{connections}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    enabled: true
+  iis.site.uptime:
     description: The amount of time the server has been up.
     unit: s
     gauge:

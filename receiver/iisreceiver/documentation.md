@@ -8,6 +8,9 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
+| **iis.app_pool.request.queue.age.max** | Age of oldest request in the queue. | ms | Gauge(Int) | <ul> </ul> |
+| **iis.app_pool.request.queue.count** | Current number of requests in the queue. | {requests} | Sum(Int) | <ul> </ul> |
+| **iis.app_pool.request.rejected** | Total number of requests rejected. | {requests} | Sum(Int) | <ul> </ul> |
 | **iis.connection.active** | Number of active connections. | {connections} | Sum(Int) | <ul> </ul> |
 | **iis.connection.anonymous** | Number of connections established anonymously. | {connections} | Sum(Int) | <ul> </ul> |
 | **iis.connection.attempt.count** | Total number of attempts to connect to the server. | {attempts} | Sum(Int) | <ul> </ul> |
@@ -18,6 +21,14 @@ These are the metrics available for this scraper.
 | **iis.request.queue.age.max** | Age of oldest request in the queue. | ms | Gauge(Int) | <ul> </ul> |
 | **iis.request.queue.count** | Current number of requests in the queue. | {requests} | Sum(Int) | <ul> </ul> |
 | **iis.request.rejected** | Total number of requests rejected. | {requests} | Sum(Int) | <ul> </ul> |
+| **iis.site.connection.active** | Number of active connections. | {connections} | Sum(Int) | <ul> </ul> |
+| **iis.site.connection.anonymous** | Number of connections established anonymously. | {connections} | Sum(Int) | <ul> </ul> |
+| **iis.site.connection.attempt.count** | Total number of attempts to connect to the server. | {attempts} | Sum(Int) | <ul> </ul> |
+| **iis.site.network.blocked** | Number of bytes blocked due to bandwidth throttling. | By | Sum(Int) | <ul> </ul> |
+| **iis.site.network.file.count** | Number of transmitted files. | {files} | Sum(Int) | <ul> <li>direction</li> </ul> |
+| **iis.site.network.io** | Total amount of bytes sent and received. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
+| **iis.site.request.count** | Total number of requests of a given type. | {requests} | Sum(Int) | <ul> <li>request</li> </ul> |
+| **iis.site.uptime** | The amount of time the server has been up. | s | Gauge(Int) | <ul> </ul> |
 | **iis.thread.active** | Current number of active threads. | {threads} | Sum(Int) | <ul> </ul> |
 | **iis.uptime** | The amount of time the server has been up. | s | Gauge(Int) | <ul> </ul> |
 
@@ -30,9 +41,18 @@ metrics:
     enabled: <true|false>
 ```
 
+## Resource attributes
+
+| Name | Description | Type |
+| ---- | ----------- | ---- |
+| iis.app_pool | The application pool, which is associated with worker processes of one or more applications. | String |
+| iis.site | The site of the web server. | String |
+
 ## Metric attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
+| app_pool (app_pool) | The application pool, which is associated with worker processes of one or more applications. |  |
 | direction (direction) | The direction data is moving. | sent, received |
 | request (request) | The type of request sent by a client. | delete, get, head, options, post, put, trace |
+| site (site) | The site of the web server. |  |
