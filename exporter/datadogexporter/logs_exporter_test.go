@@ -44,28 +44,6 @@ func TestLogsExporter(t *testing.T) {
 		want []map[string]interface{}
 	}{
 		{
-			name: "no-message",
-			args: args{
-				ld: lr,
-			},
-			want: []map[string]interface{}{
-				{
-					"message":              "",
-					"app":                  "server",
-					"instance_num":         "1",
-					"@timestamp":           testdata.TestLogTime.Format(time.RFC3339),
-					"status":               "Info",
-					"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
-					"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
-					"otel.severity_text":   "Info",
-					"otel.severity_number": "9",
-					"otel.span_id":         ld.SpanID().HexString(),
-					"otel.trace_id":        ld.TraceID().HexString(),
-					"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
-				},
-			},
-		},
-		{
 			name: "message",
 			args: args{
 				ld: lr,
@@ -88,10 +66,37 @@ func TestLogsExporter(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "message-attribute",
+			args: args{
+				ld: func() plog.Logs {
+					lr := testdata.GenerateLogsOneLogRecord()
+					ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+					ld.Attributes().PutString("message", "hello")
+					return lr
+				}(),
+			},
+
+			want: []map[string]interface{}{
+				{
+					"message":              "hello",
+					"app":                  "server",
+					"instance_num":         "1",
+					"@timestamp":           testdata.TestLogTime.Format(time.RFC3339),
+					"status":               "Info",
+					"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
+					"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
+					"otel.severity_text":   "Info",
+					"otel.severity_number": "9",
+					"otel.span_id":         ld.SpanID().HexString(),
+					"otel.trace_id":        ld.TraceID().HexString(),
+					"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			server := testutils.DatadogLogServerMock()
 			defer server.Close()
 			cfg := &Config{
