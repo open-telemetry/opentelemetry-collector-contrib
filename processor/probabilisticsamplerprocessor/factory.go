@@ -18,11 +18,10 @@ import (
 	"context"
 	"sync"
 
-	"go.opentelemetry.io/collector/config/configtelemetry"
-
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 )
 
