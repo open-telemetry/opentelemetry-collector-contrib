@@ -96,36 +96,37 @@ func (b *BearerTokenAuth) Start(ctx context.Context, host component.Host) error 
 	if err != nil {
 		return err
 	}
-
 	// start file watcher
-	go func(ctx context.Context) {
-		defer watcher.Close()
-		for {
-			select {
-			case _, ok := <-b.shutdownCH:
-				_ = ok
-				return
-			case <-ctx.Done():
-				return
-			case event, ok := <-watcher.Events:
-				if !ok {
-					continue
-				}
-				if event.Op == fsnotify.Write {
-					token, err := os.ReadFile(b.tokenFilename)
-					if err != nil {
-						b.logger.Error(err.Error())
-						continue
-					}
-					b.muTokenString.Lock()
-					b.tokenString = string(token)
-					b.muTokenString.Unlock()
-				}
-			}
-		}
-	}(ctx)
+	go b.startWatcher(ctx, watcher)
 
 	return watcher.Add(b.tokenFilename)
+}
+
+func (b *BearerTokenAuth) startWatcher(ctx context.Context, watcher *fsnotify.Watcher) {
+	defer watcher.Close()
+	for {
+		select {
+		case _, ok := <-b.shutdownCH:
+			_ = ok
+			return
+		case <-ctx.Done():
+			return
+		case event, ok := <-watcher.Events:
+			if !ok {
+				continue
+			}
+			if event.Op == fsnotify.Write {
+				token, err := os.ReadFile(b.tokenFilename)
+				if err != nil {
+					b.logger.Error(err.Error())
+					continue
+				}
+				b.muTokenString.Lock()
+				b.tokenString = string(token)
+				b.muTokenString.Unlock()
+			}
+		}
+	}
 }
 
 // Shutdown of BearerTokenAuth does nothing and returns nil
