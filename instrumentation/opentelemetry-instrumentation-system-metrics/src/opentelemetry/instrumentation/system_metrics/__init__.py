@@ -420,7 +420,9 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
             if hasattr(system_swap, metric):
                 self._system_swap_utilization_labels["state"] = metric
                 yield Observation(
-                    getattr(system_swap, metric) / system_swap.total,
+                    getattr(system_swap, metric) / system_swap.total
+                    if system_swap.total
+                    else 0,
                     self._system_swap_utilization_labels.copy(),
                 )
 
