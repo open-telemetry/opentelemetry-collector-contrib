@@ -281,7 +281,7 @@
                {
                   "key": "iis.app_pool",
                   "value": {
-                     "stringValue": "---2"
+                     "stringValue": "---1"
                   }
                }
             ]
