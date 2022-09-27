@@ -389,7 +389,7 @@ func (a alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatl
 			continue
 		}
 
-		logRecord.Body().SetStringVal(string(bodyBytes))
+		logRecord.Body().SetStr(string(bodyBytes))
 
 		resourceAttrs := resourceLogs.Resource().Attributes()
 		resourceAttrs.PutString("mongodbatlas.group.id", alert.GroupID)
