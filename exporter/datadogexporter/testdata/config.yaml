@@ -37,6 +37,9 @@ exporters:
         "old_name4": "new_name4"
       endpoint: https://trace.agent.datadoghq.test
 
+    logs:
+      endpoint: https://http-intake.logs.datadoghq.test
+
   datadog/default:
     api:
       key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
@@ -49,6 +52,10 @@ service:
       exporters: [datadog/api]
 
     traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [datadog/api]
+    logs:
       receivers: [nop]
       processors: [nop]
       exporters: [datadog/api]
