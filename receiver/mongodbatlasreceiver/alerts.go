@@ -348,9 +348,7 @@ func (a alertsReceiver) shutdownRetriever(ctx context.Context) error {
 	a.doneChan <- true
 	a.checkpointDoneChan <- true
 	a.wg.Wait()
-
-	a.writeCheckpoint(ctx)
-	return nil
+	return a.writeCheckpoint(ctx)
 }
 
 func (a alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatlas.Alert) (plog.Logs, error) {
@@ -532,7 +530,9 @@ func (a *alertsReceiver) startCheckpointer(ctx context.Context) {
 		case <-t.C:
 			now := time.Now()
 			a.cache.Clean(now)
-			a.writeCheckpoint(ctx)
+			if err := a.writeCheckpoint(ctx); err != nil {
+				a.logger.Error("error writing a checkpoint", zap.Error(err))
+			}
 		case <-a.checkpointDoneChan:
 			return
 		case <-ctx.Done():
@@ -541,19 +541,13 @@ func (a *alertsReceiver) startCheckpointer(ctx context.Context) {
 	}
 }
 
-type cache interface {
-	Has(string) bool
-	Put(string, cachePutOptions)
-	Clean(now time.Time)
-}
-
 type cachePutOptions struct {
 	Expires bool          `mapstructure:"expires"`
 	TTL     time.Duration `mapstructure:"ttl"`
 }
 
 // alertCache wraps a sync Map so it is goroutine safe as well as
-// can have custom marshalling
+// can have custom marshaling
 type alertCache struct {
 	data sync.Map `mapstructure:"data"`
 }
@@ -570,9 +564,10 @@ func (a *alertCache) UnmarshalJSON(data []byte) error {
 }
 
 func (a *alertCache) MarshalJSON() ([]byte, error) {
-	candidate := make(map[any]any)
+	candidate := make(map[string]any)
 	a.data.Range(func(key, value any) bool {
-		candidate[key] = value
+		k, _ := key.(string)
+		candidate[k] = value
 		return true
 	})
 	return json.Marshal(candidate)
