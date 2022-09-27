@@ -1,10 +1,10 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -41,9 +41,9 @@ type logsExporter struct {
 	sourceProvider source.Provider
 }
 
-// NewExporter creates a new instance of LogsExporter
+// newLogsExporter creates a new instance of logsExporter
 func newLogsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*logsExporter, error) {
-	// create datadog client
+	// create Datadog client
 	// validation endpoint is provided by Metrics
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	// validate the apiKey
@@ -94,7 +94,7 @@ func (exp *logsExporter) consumeLogs(ctx context.Context, ld plog.Logs) (err err
 			// iterate over Logs
 			for k := 0; k < lsl.Len(); k++ {
 				log := lsl.At(k)
-				payload = append(payload, logs.Transform(log, res, exp.cfg.Logs.SendLogRecordBody))
+				payload = append(payload, logs.Transform(log, res))
 			}
 		}
 	}

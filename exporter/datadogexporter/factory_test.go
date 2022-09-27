@@ -75,7 +75,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://http-intake.logs.datadoghq.com",
 			},
-			SendLogRecordBody: true,
 		},
 
 		HostMetadata: HostMetadataConfig{
@@ -181,7 +180,6 @@ func TestLoadConfig(t *testing.T) {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://http-intake.logs.datadoghq.com",
 			},
-			SendLogRecordBody: true,
 		},
 
 		HostMetadata: HostMetadataConfig{
@@ -238,7 +236,6 @@ func TestLoadConfig(t *testing.T) {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://http-intake.logs.datadoghq.test",
 			},
-			SendLogRecordBody: true,
 		},
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,

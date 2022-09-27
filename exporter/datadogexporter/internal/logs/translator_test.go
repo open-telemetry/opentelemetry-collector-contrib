@@ -34,9 +34,8 @@ func TestTransform(t *testing.T) {
 	ddSp := spanIDToUint64(spanID)
 
 	type args struct {
-		lr       plog.LogRecord
-		res      pcommon.Resource
-		sendBody bool
+		lr  plog.LogRecord
+		res pcommon.Resource
 	}
 	tests := []struct {
 		name string
@@ -202,7 +201,6 @@ func TestTransform(t *testing.T) {
 					r := pcommon.NewResource()
 					return r
 				}(),
-				sendBody: true,
 			},
 			want: datadogV2.HTTPLogItem{
 				Message: *datadog.PtrString(""),
@@ -223,7 +221,7 @@ func TestTransform(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := Transform(tt.args.lr, tt.args.res, tt.args.sendBody)
+			got := Transform(tt.args.lr, tt.args.res)
 
 			gs, err := got.MarshalJSON()
 			if err != nil {
@@ -352,7 +350,7 @@ func TestDeriveStatus(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, derviveStatusFromSeverityNumber(tt.args.severity), "derviveDdStatusFromSeverityNumber(%v)", tt.args.severity)
+			assert.Equalf(t, tt.want, statusFromSeverityNumber(tt.args.severity), "derviveDdStatusFromSeverityNumber(%v)", tt.args.severity)
 		})
 	}
 }

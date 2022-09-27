@@ -129,7 +129,6 @@ func (f *factory) createDefaultConfig() config.Exporter {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://http-intake.logs.datadoghq.com",
 			},
-			SendLogRecordBody: true,
 		},
 
 		HostMetadata: HostMetadataConfig{

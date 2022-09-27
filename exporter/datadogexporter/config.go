@@ -247,13 +247,6 @@ type LogsConfig struct {
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send logs to.
 	// If unset, the value is obtained from the Site.
 	confignet.TCPAddr `mapstructure:",squash"`
-
-	// SendLogRecordBody when enabled would send string representation of body field of Otel log record as message to Datadog
-	// By default this is enabled
-	// Most likely we want to disable this when using filelogreceiver. filelogreceiver by default reads a log line into body
-	// It is essential for Log Trace correlation to work, that we parse the body before reaching exporter.
-	// We would use stanza to parse the body into attributes. Once parsed, there is no need to send body to backend
-	SendLogRecordBody bool `mapstructure:"send_log_record_body"`
 }
 
 // TagsConfig defines the tag-related configuration
@@ -501,7 +494,6 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 		c.Traces.TCPAddr.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
 	}
 	if !configMap.IsSet("logs::endpoint") {
-		// this is v2 endpoint
 		c.Logs.TCPAddr.Endpoint = fmt.Sprintf("https://http-intake.logs.%s", c.API.Site)
 	}
 	return nil

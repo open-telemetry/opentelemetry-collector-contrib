@@ -39,7 +39,6 @@ exporters:
 
     logs:
       endpoint: https://http-intake.logs.datadoghq.test
-      send_log_record_body: true
 
   datadog/default:
     api:

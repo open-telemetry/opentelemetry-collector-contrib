@@ -36,8 +36,7 @@ func TestLogsExporter(t *testing.T) {
 	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 
 	type args struct {
-		sendLogRecordBody bool
-		ld                plog.Logs
+		ld plog.Logs
 	}
 	tests := []struct {
 		name string
@@ -47,8 +46,7 @@ func TestLogsExporter(t *testing.T) {
 		{
 			name: "no-message",
 			args: args{
-				sendLogRecordBody: false,
-				ld:                lr,
+				ld: lr,
 			},
 			want: []map[string]interface{}{
 				{
@@ -70,8 +68,7 @@ func TestLogsExporter(t *testing.T) {
 		{
 			name: "message",
 			args: args{
-				sendLogRecordBody: true,
-				ld:                lr,
+				ld: lr,
 			},
 
 			want: []map[string]interface{}{
@@ -107,7 +104,6 @@ func TestLogsExporter(t *testing.T) {
 					TCPAddr: confignet.TCPAddr{
 						Endpoint: server.URL,
 					},
-					SendLogRecordBody: tt.args.sendLogRecordBody,
 				},
 			}
 

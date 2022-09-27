@@ -30,6 +30,8 @@ import (
 )
 
 const (
+	// This set of constants specify the keys of the attributes that will be used to preserve
+	// the original OpenTelemetry logs attributes.
 	otelNamespace      = "otel"
 	otelTraceID        = otelNamespace + ".trace_id"
 	otelSpanID         = otelNamespace + ".span_id"
@@ -38,6 +40,8 @@ const (
 	otelTimestamp      = otelNamespace + ".timestamp"
 )
 const (
+	// This set of constants specify the keys of the attributes that will be used to represent Datadog
+	// counterparts to the OpenTelemetry Logs attributes.
 	ddNamespace = "dd"
 	ddTraceID   = ddNamespace + ".trace_id"
 	ddSpanID    = ddNamespace + ".span_id"
@@ -56,7 +60,7 @@ const (
 
 // Transform converts the log record in lr, which came in with the resource in res to a Datadog log item.
 // the variable specifies if the log body should be sent as an attribute or as a plain message.
-func Transform(lr plog.LogRecord, res pcommon.Resource, sendLogRecordBody bool) datadogV2.HTTPLogItem {
+func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
 	host, service := extractHostNameAndServiceName(res.Attributes(), lr.Attributes())
 
 	l := datadogV2.HTTPLogItem{
@@ -70,9 +74,14 @@ func Transform(lr plog.LogRecord, res pcommon.Resource, sendLogRecordBody bool) 
 	}
 
 	// we need to set log attributes as AdditionalProperties
-	// AdditionalProperties are treated as datdog Log Attributes
+	// AdditionalProperties are treated as Datadog Log Attributes
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
-		l.AdditionalProperties[k] = v.AsString()
+		switch strings.ToLower(k) {
+		case "msg", "message":
+			l.Message = v.AsString()
+		default:
+			l.AdditionalProperties[k] = v.AsString()
+		}
 		return true
 	})
 	if !lr.TraceID().IsEmpty() {
@@ -91,20 +100,20 @@ func Transform(lr plog.LogRecord, res pcommon.Resource, sendLogRecordBody bool) 
 		status = lr.SeverityText()
 		l.AdditionalProperties[otelSeverityText] = lr.SeverityText()
 	} else if lr.SeverityNumber() != 0 {
-		status = derviveStatusFromSeverityNumber(lr.SeverityNumber())
+		status = statusFromSeverityNumber(lr.SeverityNumber())
 	}
 	l.AdditionalProperties[ddStatus] = status
 	if lr.SeverityNumber() != 0 {
 		l.AdditionalProperties[otelSeverityNumber] = strconv.Itoa(int(lr.SeverityNumber()))
 	}
-	// for datadog to use the same timestamp we need to set the additional property of "@timestamp"
+	// for Datadog to use the same timestamp we need to set the additional property of "@timestamp"
 	if lr.Timestamp() != 0 {
 		// we are retaining the nano second precision in this property
 		l.AdditionalProperties[otelTimestamp] = strconv.FormatInt(lr.Timestamp().AsTime().UnixNano(), 10)
 		l.AdditionalProperties[ddTimestamp] = lr.Timestamp().AsTime().Format(time.RFC3339)
 	}
-	if sendLogRecordBody {
-		// set the Message
+	if l.Message == "" {
+		// set the Message from body as it isn't present as AdditionalProperties
 		l.Message = lr.Body().AsString()
 	}
 
@@ -150,11 +159,11 @@ func spanIDToUint64(b [8]byte) uint64 {
 	return binary.BigEndian.Uint64(b[:])
 }
 
-// derviveStatusFromSeverityNumber converts the severity number to log level
+// statusFromSeverityNumber converts the severity number to log level
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-severitynumber
 // this is not exactly datadog log levels , but derived from range name from above link
 // see https://docs.datadoghq.com/logs/log_configuration/processors/?tab=ui#log-status-remapper for details on how it maps to datadog level
-func derviveStatusFromSeverityNumber(severity plog.SeverityNumber) string {
+func statusFromSeverityNumber(severity plog.SeverityNumber) string {
 	switch {
 	case severity <= 4:
 		return logLevelTrace

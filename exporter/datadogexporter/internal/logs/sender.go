@@ -25,7 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
-// Sender submits logs to datadog intake
+// Sender submits logs to Datadog intake
 type Sender struct {
 	logger *zap.Logger
 	api    *datadogV2.LogsApi
@@ -37,10 +37,10 @@ type Sender struct {
 // https://github.com/DataDog/datadog-api-client-go/blob/be7e034424012c7ee559a2153802a45df73232ea/api/datadog/configuration.go#L308
 const logsV2 = "v2.LogsApi.SubmitLog"
 
-// NewSender can be used to create a new datadog api for sending logs to backend
+// NewSender creates a new Sender
 func NewSender(endpoint string, logger *zap.Logger, s exporterhelper.TimeoutSettings, insecureSkipVerify bool, apiKey string) *Sender {
 	cfg := datadog.NewConfiguration()
-	logger.Info("logs sender initialized", zap.String("endpoint", endpoint))
+	logger.Info("Logs sender initialized", zap.String("endpoint", endpoint))
 	cfg.OperationServers[logsV2] = datadog.ServerConfigurations{
 		datadog.ServerConfiguration{
 			URL: endpoint,
@@ -58,14 +58,14 @@ func NewSender(endpoint string, logger *zap.Logger, s exporterhelper.TimeoutSett
 	}
 }
 
-// submits the logs contained in payload to the Datadog intake
+// SubmitLogs submits the logs contained in payload to the Datadog intake
 func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem) error {
-	s.logger.Debug("submitting logs", zap.Any("payload", payload))
+	s.logger.Debug("Submitting logs", zap.Any("payload", payload))
 	_, r, err := s.api.SubmitLog(ctx, payload, s.opts)
 	if err != nil {
 		b := make([]byte, 1024) // 1KB message max
-		_, _ = r.Body.Read(b)   // ignore any error
-		s.logger.Error("Failed to send logs", zap.Error(err), zap.String("msg", string(b)), zap.String("status_code", r.Status))
+		n, _ := r.Body.Read(b)  // ignore any error
+		s.logger.Error("Failed to send logs", zap.Error(err), zap.String("msg", string(b[:n])), zap.String("status_code", r.Status))
 		return err
 	}
 	return nil
