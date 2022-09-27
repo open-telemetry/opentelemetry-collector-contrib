@@ -29,21 +29,20 @@ func NewParserConfig(operatorID, operatorType string) ParserConfig {
 	return ParserConfig{
 		TransformerConfig: NewTransformerConfig(operatorID, operatorType),
 		ParseFrom:         entry.NewBodyField(),
-		ParseTo:           entry.NewAttributeField(),
+		ParseTo:           entry.RootableField{Field: entry.NewAttributeField()},
 	}
 }
 
 // ParserConfig provides the basic implementation of a parser config.
 type ParserConfig struct {
 	TransformerConfig `mapstructure:",squash" yaml:",inline"`
-
-	ParseFrom       entry.Field      `mapstructure:"parse_from"          json:"parse_from"          yaml:"parse_from"`
-	ParseTo         entry.Field      `mapstructure:"parse_to"            json:"parse_to"            yaml:"parse_to"`
-	BodyField       *entry.Field     `mapstructure:"body"                json:"body"                yaml:"body"`
-	TimeParser      *TimeParser      `mapstructure:"timestamp,omitempty" json:"timestamp,omitempty" yaml:"timestamp,omitempty"`
-	SeverityConfig  *SeverityConfig  `mapstructure:"severity,omitempty"  json:"severity,omitempty"  yaml:"severity,omitempty"`
-	TraceParser     *TraceParser     `mapstructure:"trace,omitempty"     json:"trace,omitempty"     yaml:"trace,omitempty"`
-	ScopeNameParser *ScopeNameParser `mapstructure:"scope_name,omitempty"     json:"scope_name,omitempty"     yaml:"scope_name,omitempty"`
+	ParseFrom         entry.Field         `mapstructure:"parse_from"          json:"parse_from"          yaml:"parse_from"`
+	ParseTo           entry.RootableField `mapstructure:"parse_to"            json:"parse_to"            yaml:"parse_to"`
+	BodyField         *entry.Field        `mapstructure:"body"                json:"body"                yaml:"body"`
+	TimeParser        *TimeParser         `mapstructure:"timestamp,omitempty" json:"timestamp,omitempty" yaml:"timestamp,omitempty"`
+	SeverityConfig    *SeverityConfig     `mapstructure:"severity,omitempty"  json:"severity,omitempty"  yaml:"severity,omitempty"`
+	TraceParser       *TraceParser        `mapstructure:"trace,omitempty"     json:"trace,omitempty"     yaml:"trace,omitempty"`
+	ScopeNameParser   *ScopeNameParser    `mapstructure:"scope_name,omitempty"     json:"scope_name,omitempty"     yaml:"scope_name,omitempty"`
 }
 
 // Build will build a parser operator.
@@ -60,7 +59,7 @@ func (c ParserConfig) Build(logger *zap.SugaredLogger) (ParserOperator, error) {
 	parserOperator := ParserOperator{
 		TransformerOperator: transformerOperator,
 		ParseFrom:           c.ParseFrom,
-		ParseTo:             c.ParseTo,
+		ParseTo:             c.ParseTo.Field,
 		BodyField:           c.BodyField,
 	}
 

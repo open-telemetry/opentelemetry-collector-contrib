@@ -104,7 +104,7 @@ func TestProcess(t *testing.T) {
 			func() (operator.Operator, error) {
 				cfg := NewConfigWithID("test_id")
 				cfg.ParseFrom = entry.NewBodyField("url")
-				cfg.ParseTo = entry.NewBodyField("url2")
+				cfg.ParseTo = entry.RootableField{Field: entry.NewBodyField("url2")}
 				return cfg.Build(testutil.Logger(t))
 			},
 			&entry.Entry{
