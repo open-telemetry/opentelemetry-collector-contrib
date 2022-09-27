@@ -2069,6 +2069,546 @@
                      "unit": "1"
                   },
                   {
+                     "description": "The total table lock wait read events.",
+                     "name": "mysql.table.lock_wait.read.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "normal"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "with_shared_locks"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "high_priority"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "no_insert"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "4",
+                              "attributes": [
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "external"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ]
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The total table lock wait read events times.",
+                     "name": "mysql.table.lock_wait.read.time",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "10",
+                              "attributes": [
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "normal"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "11",
+                              "attributes": [
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "with_shared_locks"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "12",
+                              "attributes": [
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "high_priority"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "13",
+                              "attributes": [
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "no_insert"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "14",
+                              "attributes": [
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "external"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ]
+                     },
+                     "unit": "ns"
+                  },
+                  {
+                     "description": "The total table lock wait write events.",
+                     "name": "mysql.table.lock_wait.write.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "5",
+                              "attributes": [
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "allow_write"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "6",
+                              "attributes": [
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "concurrent_insert"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "7",
+                              "attributes": [
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "low_priority"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "8",
+                              "attributes": [
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "normal"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "9",
+                              "attributes": [
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "external"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ]
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The total table lock wait write events times.",
+                     "name": "mysql.table.lock_wait.write.time",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "15",
+                              "attributes": [
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "allow_write"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "16",
+                              "attributes": [
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "concurrent_insert"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "17",
+                              "attributes": [
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "low_priority"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "18",
+                              "attributes": [
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "normal"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "19",
+                              "attributes": [
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "external"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ]
+                     },
+                     "unit": "ns"
+                  },
+                  {
                      "description": "The number of attempts to connect to locked user accounts.",
                      "name": "mysql.locked_connects",
                      "sum": {

@@ -19,3 +19,4 @@ subtext: |
   - Add mysql.joins metric (#14728)
   - Add mysql.table_open_cache metric (#14737)
   - Add mysql queries (all, client and slow) count metrics (#14738)
+  - Add metrics based on events_statements_summary_by_digest table (#14770)
