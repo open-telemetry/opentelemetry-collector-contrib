@@ -341,7 +341,7 @@ func (a alertsReceiver) shutdownListener(ctx context.Context) error {
 
 func (a alertsReceiver) shutdownRetriever(ctx context.Context) error {
 	a.logger.Debug("Shutting down client")
-	a.doneChan <- true
+	close(a.doneChan)
 	a.wg.Wait()
 	return a.writeCheckpoint(ctx)
 }
@@ -421,8 +421,7 @@ func (a alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatl
 		attrs.PutString("net.peer.name", host)
 		attrs.PutInt("net.peer.port", port)
 		a.cache.Put(alertKey(alert), cachePutOptions{
-			TTL:     30 * time.Minute,
-			Expires: true,
+			ExpiresAt: now.AsTime().Add(30 * time.Minute),
 		})
 	}
 
@@ -515,44 +514,24 @@ func payloadToLogs(now time.Time, payload []byte) (plog.Logs, error) {
 }
 
 type cachePutOptions struct {
-	Expires bool          `mapstructure:"expires"`
-	TTL     time.Duration `mapstructure:"ttl"`
+	ExpiresAt time.Time `mapstructure:"expires_at"`
 }
 
 // alertCache wraps a sync Map so it is goroutine safe as well as
 // can have custom marshaling
 type alertCache struct {
-	data sync.Map `mapstructure:"data"`
-}
-
-func (a *alertCache) UnmarshalJSON(data []byte) error {
-	var candidate map[string]any
-	if err := json.Unmarshal(data, &candidate); err != nil {
-		return err
-	}
-	for k, v := range candidate {
-		a.data.Store(k, v)
-	}
-	return nil
-}
-
-func (a *alertCache) MarshalJSON() ([]byte, error) {
-	candidate := make(map[string]any)
-	a.data.Range(func(key, value any) bool {
-		k, _ := key.(string)
-		candidate[k] = value
-		return true
-	})
-	return json.Marshal(candidate)
+	sync.Mutex
+	Data map[string]cachePutOptions `mapstructure:"data"`
 }
 
 func (a *alertCache) Has(k string) bool {
-	val, ok := a.data.Load(k)
+	a.Lock()
+	val, ok := a.Data[k]
+	a.Unlock()
 	if ok {
-		v := val.(cachePutOptions)
 		now := time.Now()
-		if now.Sub(now.Add(-v.TTL)).Seconds() > v.TTL.Seconds() {
-			a.data.Delete(k)
+		if now.After(val.ExpiresAt) {
+			delete(a.Data, k)
 			return false
 		}
 	}
@@ -560,22 +539,9 @@ func (a *alertCache) Has(k string) bool {
 }
 
 func (a *alertCache) Put(k string, opts cachePutOptions) {
-	a.data.Store(k, opts)
-}
-
-func (a *alertCache) Clean(now time.Time) {
-	a.data.Range(func(key, value any) bool {
-		v, ok := value.(cachePutOptions)
-		if !ok || !v.Expires {
-			// keep going since we don't necessarily know what to do with this object
-			return true
-		}
-		// delete the key if it expires
-		if now.Sub(now.Add(-v.TTL)).Seconds() > v.TTL.Seconds() {
-			a.data.Delete(key)
-		}
-		return true
-	})
+	a.Lock()
+	a.Data[k] = opts
+	a.Unlock()
 }
 
 func (a *alertsReceiver) syncPersistence(ctx context.Context) error {
@@ -599,7 +565,7 @@ func (a *alertsReceiver) syncPersistence(ctx context.Context) error {
 
 	// create if not already loaded
 	newC := &alertCache{
-		data: sync.Map{},
+		Data: map[string]cachePutOptions{},
 	}
 	a.cache = newC
 
@@ -611,7 +577,7 @@ func (a *alertsReceiver) writeCheckpoint(ctx context.Context) error {
 		return nil
 	}
 	c := *a.storageClient
-	marshalBytes, err := a.cache.MarshalJSON()
+	marshalBytes, err := json.Marshal(a.cache)
 	if err != nil {
 		return fmt.Errorf("unable to write checkpoint: %w", err)
 	}
