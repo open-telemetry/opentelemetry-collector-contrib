@@ -81,7 +81,7 @@ receivers:
       - name: Project 0
         include_clusters: [Cluster0]
       poll_interval: 1m
-    # setting up storage extensions is reccommended to reduce chance of 
+    # setting up storage extensions is recommended to reduce chance of 
     # duplicated alerts
     storage: file_storage
 ```
