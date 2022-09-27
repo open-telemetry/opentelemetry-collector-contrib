@@ -81,18 +81,17 @@ type alertsReceiver struct {
 	logger      *zap.Logger
 
 	// only relevant in `retrieval` mode
-	projects           []ProjectConfig
-	client             alertsClient
-	privateKey         string
-	publicKey          string
-	retrySettings      exporterhelper.RetrySettings
-	pollInterval       time.Duration
-	cache              *alertCache
-	doneChan           chan bool
-	checkpointDoneChan chan bool
-	id                 config.ComponentID  // ID of the receiver component
-	storageID          *config.ComponentID // ID of the storage extension component
-	storageClient      *storage.Client
+	projects      []ProjectConfig
+	client        alertsClient
+	privateKey    string
+	publicKey     string
+	retrySettings exporterhelper.RetrySettings
+	pollInterval  time.Duration
+	cache         *alertCache
+	doneChan      chan bool
+	id            config.ComponentID  // ID of the receiver component
+	storageID     *config.ComponentID // ID of the storage extension component
+	storageClient *storage.Client
 }
 
 func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer.Logs) (*alertsReceiver, error) {
@@ -109,22 +108,21 @@ func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer
 	}
 
 	recv := &alertsReceiver{
-		addr:               cfg.Endpoint,
-		secret:             cfg.Secret,
-		tlsSettings:        cfg.TLS,
-		consumer:           consumer,
-		mode:               alertMode(cfg.Mode),
-		projects:           cfg.Projects,
-		retrySettings:      baseConfig.RetrySettings,
-		publicKey:          baseConfig.PublicKey,
-		privateKey:         baseConfig.PrivateKey,
-		wg:                 &sync.WaitGroup{},
-		pollInterval:       baseConfig.Alerts.PollInterval,
-		doneChan:           make(chan bool, 1),
-		checkpointDoneChan: make(chan bool, 1),
-		logger:             logger,
-		id:                 baseConfig.ID(),
-		storageID:          baseConfig.StorageID,
+		addr:          cfg.Endpoint,
+		secret:        cfg.Secret,
+		tlsSettings:   cfg.TLS,
+		consumer:      consumer,
+		mode:          alertMode(cfg.Mode),
+		projects:      cfg.Projects,
+		retrySettings: baseConfig.RetrySettings,
+		publicKey:     baseConfig.PublicKey,
+		privateKey:    baseConfig.PrivateKey,
+		wg:            &sync.WaitGroup{},
+		pollInterval:  baseConfig.Alerts.PollInterval,
+		doneChan:      make(chan bool, 1),
+		logger:        logger,
+		id:            baseConfig.ID(),
+		storageID:     baseConfig.StorageID,
 	}
 
 	if recv.mode == alertModeRetrieval {
@@ -185,9 +183,6 @@ func (a alertsReceiver) startRetrieving(ctx context.Context, host component.Host
 			}
 		}
 	}()
-
-	a.wg.Add(1)
-	go a.startCheckpointer(ctx)
 
 	return nil
 }
@@ -346,7 +341,6 @@ func (a alertsReceiver) shutdownListener(ctx context.Context) error {
 func (a alertsReceiver) shutdownRetriever(ctx context.Context) error {
 	a.logger.Debug("Shutting down client")
 	a.doneChan <- true
-	a.checkpointDoneChan <- true
 	a.wg.Wait()
 	return a.writeCheckpoint(ctx)
 }
@@ -519,28 +513,6 @@ func payloadToLogs(now time.Time, payload []byte) (plog.Logs, error) {
 	return logs, nil
 }
 
-// startCheckpointer is a subprocesses that will go through the cached alerts to see which
-// ones we can remove from the cache. Once finished, it will checkpoint current progress
-func (a *alertsReceiver) startCheckpointer(ctx context.Context) {
-	defer a.wg.Done()
-	// check every 30 minutes
-	t := time.NewTicker(time.Minute * 30)
-	for {
-		select {
-		case <-t.C:
-			now := time.Now()
-			a.cache.Clean(now)
-			if err := a.writeCheckpoint(ctx); err != nil {
-				a.logger.Error("error writing a checkpoint", zap.Error(err))
-			}
-		case <-a.checkpointDoneChan:
-			return
-		case <-ctx.Done():
-			return
-		}
-	}
-}
-
 type cachePutOptions struct {
 	Expires bool          `mapstructure:"expires"`
 	TTL     time.Duration `mapstructure:"ttl"`
@@ -574,7 +546,14 @@ func (a *alertCache) MarshalJSON() ([]byte, error) {
 }
 
 func (a *alertCache) Has(k string) bool {
-	_, ok := a.data.Load(k)
+	val, ok := a.data.Load(k)
+	if ok {
+		v := val.(cachePutOptions)
+		now := time.Now()
+		if now.Sub(now.Add(-v.TTL)).Seconds() > v.TTL.Seconds() {
+			a.data.Delete(k)
+		}
+	}
 	return ok
 }
 
