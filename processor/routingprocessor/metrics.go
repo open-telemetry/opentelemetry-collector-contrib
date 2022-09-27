@@ -77,8 +77,8 @@ func (p *metricsProcessor) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 }
 
 type metricsGroup struct {
-	exporters  []component.MetricsExporter
-	resMetrics pmetric.ResourceMetricsSlice
+	exporters []component.MetricsExporter
+	metrics   pmetric.Metrics
 }
 
 func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error {
@@ -116,12 +116,8 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 	}
 
 	for _, g := range groups {
-		m := pmetric.NewMetrics()
-		m.ResourceMetrics().EnsureCapacity(g.resMetrics.Len())
-		g.resMetrics.MoveAndAppendTo(m.ResourceMetrics())
-
 		for _, e := range g.exporters {
-			errs = multierr.Append(errs, e.ConsumeMetrics(ctx, m))
+			errs = multierr.Append(errs, e.ConsumeMetrics(ctx, g.metrics))
 		}
 	}
 	return errs
@@ -135,10 +131,10 @@ func (p *metricsProcessor) group(
 ) {
 	group, ok := groups[key]
 	if !ok {
-		group.resMetrics = pmetric.NewResourceMetricsSlice()
+		group.metrics = pmetric.NewMetrics()
 		group.exporters = exporters
 	}
-	metrics.CopyTo(group.resMetrics.AppendEmpty())
+	metrics.CopyTo(group.metrics.ResourceMetrics().AppendEmpty())
 	groups[key] = group
 }
 

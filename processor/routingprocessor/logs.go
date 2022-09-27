@@ -78,7 +78,7 @@ func (p *logProcessor) ConsumeLogs(ctx context.Context, l plog.Logs) error {
 
 type logsGroup struct {
 	exporters []component.LogsExporter
-	resLogs   plog.ResourceLogsSlice
+	logs      plog.Logs
 }
 
 func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
@@ -113,12 +113,8 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 		}
 	}
 	for _, g := range groups {
-		l := plog.NewLogs()
-		l.ResourceLogs().EnsureCapacity(g.resLogs.Len())
-		g.resLogs.MoveAndAppendTo(l.ResourceLogs())
-
 		for _, e := range g.exporters {
-			errs = multierr.Append(errs, e.ConsumeLogs(ctx, l))
+			errs = multierr.Append(errs, e.ConsumeLogs(ctx, g.logs))
 		}
 	}
 	return errs
@@ -132,10 +128,10 @@ func (p *logProcessor) group(
 ) {
 	group, ok := groups[key]
 	if !ok {
-		group.resLogs = plog.NewResourceLogsSlice()
+		group.logs = plog.NewLogs()
 		group.exporters = exporters
 	}
-	spans.CopyTo(group.resLogs.AppendEmpty())
+	spans.CopyTo(group.logs.ResourceLogs().AppendEmpty())
 	groups[key] = group
 }
 
