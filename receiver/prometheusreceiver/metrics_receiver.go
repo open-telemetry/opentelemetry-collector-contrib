@@ -17,6 +17,7 @@ package prometheusreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"fmt"
+	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/http"
@@ -105,6 +106,16 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 					continue
 				}
 				savedHash = hash
+				//for jobName, targets := range r.scrapeManager.TargetsAll() {
+				//	for _, target := range targets {
+				//		r.settings.Logger.Info("target info", zap.String("job", jobName),
+				//			zap.String("url", target.String()),
+				//			zap.String("labels", target.Labels().String()))
+				//	}
+				//}
+				//for _, provider := range r.discoveryManager.Providers() {
+				//	r.settings.Logger.Info("discovery provider info", zap.Any("conf", provider.Config()))
+				//}
 			}
 		}()
 	}
@@ -116,7 +127,7 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 // baseDiscoveryCfg can be used to provide additional ScrapeConfigs which will be added to the retrieved jobs.
 func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *targetAllocator, baseCfg *config.Config) (uint64, error) {
 	r.settings.Logger.Debug("Syncing target allocator jobs")
-	scrapeConfigsResponse, err := getScrapeConfigsResponse(allocConf.Endpoint)
+	scrapeConfigsResponse, err := r.getScrapeConfigsResponse(allocConf.Endpoint)
 	if err != nil {
 		r.settings.Logger.Error("Failed to retrieve job list", zap.Error(err))
 		return 0, err
@@ -143,6 +154,7 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *targetAll
 		}
 		escapedJob := url.QueryEscape(jobName)
 		httpSD.URL = fmt.Sprintf("%s/jobs/%s/targets?collector_id=%s", allocConf.Endpoint, escapedJob, allocConf.CollectorID)
+		httpSD.HTTPClientConfig.FollowRedirects = false
 		scrapeConfig.ServiceDiscoveryConfigs = discovery.Configs{
 			&httpSD,
 		}
@@ -159,7 +171,7 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *targetAll
 	return hash, nil
 }
 
-func getScrapeConfigsResponse(baseURL string) (map[string]*config.ScrapeConfig, error) {
+func (r *pReceiver) getScrapeConfigsResponse(baseURL string) (map[string]*config.ScrapeConfig, error) {
 	scrapeConfigsURL := fmt.Sprintf("%s/scrape_configs", baseURL)
 	_, err := url.Parse(scrapeConfigsURL) // check if valid
 	if err != nil {
@@ -172,15 +184,20 @@ func getScrapeConfigsResponse(baseURL string) (map[string]*config.ScrapeConfig, 
 	}
 
 	defer resp.Body.Close()
-
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
+	r.settings.Logger.Info("body", zap.String("body", string(body)))
 	jobToScrapeConfig := map[string]*config.ScrapeConfig{}
 	err = yaml.Unmarshal(body, &jobToScrapeConfig)
 	if err != nil {
 		return nil, err
+	}
+	for jobName, scrapeConfig := range jobToScrapeConfig {
+		for _, relabelConfig := range scrapeConfig.RelabelConfigs {
+			r.settings.Logger.Info("relabel config", zap.String("job", jobName), zap.Any("relabel", *relabelConfig), zap.String("regex", relabelConfig.Regex.String()))
+		}
 	}
 	return jobToScrapeConfig, nil
 }
@@ -193,7 +210,10 @@ func (r *pReceiver) applyCfg(cfg *config.Config) error {
 	discoveryCfg := make(map[string]discovery.Configs)
 	for _, scrapeConfig := range cfg.ScrapeConfigs {
 		discoveryCfg[scrapeConfig.JobName] = scrapeConfig.ServiceDiscoveryConfigs
-		r.settings.Logger.Info("Scrape job added", zap.String("jobName", scrapeConfig.JobName))
+		//r.settings.Logger.Info("Scrape job added", zap.String("jobName", scrapeConfig.JobName))
+		r.settings.Logger.Info("Scrape job added", zap.String("jobName", scrapeConfig.JobName),
+			zap.Any("conf", *scrapeConfig),
+		)
 	}
 	if err := r.discoveryManager.ApplyConfig(discoveryCfg); err != nil {
 		return err
@@ -230,8 +250,23 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 	)
 	r.scrapeManager = scrape.NewManager(&scrape.Options{PassMetadataInContext: true}, logger, store)
+
+	c := make(chan map[string][]*targetgroup.Group)
 	go func() {
-		if err := r.scrapeManager.Run(r.discoveryManager.SyncCh()); err != nil {
+		for {
+			select {
+			case m := <-r.discoveryManager.SyncCh():
+				for job, groups := range m {
+					for _, group := range groups {
+						r.settings.Logger.Info("target group info", zap.String("job", job), zap.Any("l", group.Labels), zap.Any("t", group.Targets))
+					}
+				}
+				c <- m
+			}
+		}
+	}()
+	go func() {
+		if err := r.scrapeManager.Run(c); err != nil {
 			r.settings.Logger.Error("Scrape manager failed", zap.Error(err))
 			host.ReportFatalError(err)
 		}
