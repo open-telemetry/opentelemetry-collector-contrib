@@ -186,12 +186,12 @@ func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) 
 
 				seqnumAttr, ok := span.Attributes().Get("load_generator.span_seq_num")
 				if ok {
-					spanSeqnum = seqnumAttr.IntVal()
+					spanSeqnum = seqnumAttr.Int()
 				}
 
 				seqnumAttr, ok = span.Attributes().Get("load_generator.trace_seq_num")
 				if ok {
-					traceSeqnum = seqnumAttr.IntVal()
+					traceSeqnum = seqnumAttr.Int()
 				}
 
 				// Ignore the seqnums for now. We will use them later.

@@ -157,7 +157,7 @@ func (dp *perfTestDataProvider) GenerateLogs() (plog.Logs, bool) {
 		record := logRecords.AppendEmpty()
 		record.SetSeverityNumber(plog.SeverityNumberInfo3)
 		record.SetSeverityText("INFO3")
-		record.Body().SetStringVal("Load Generator Counter #" + strconv.Itoa(i))
+		record.Body().SetStr("Load Generator Counter #" + strconv.Itoa(i))
 		record.SetFlags(plog.DefaultLogRecordFlags.WithIsSampled(true))
 		record.SetTimestamp(now)
 

@@ -40,9 +40,9 @@ func TruncateAll(target ottl.GetSetter, limit int64) (ottl.ExprFunc, error) {
 			updated := pcommon.NewMap()
 			attrs.CopyTo(updated)
 			updated.Range(func(key string, value pcommon.Value) bool {
-				stringVal := value.StringVal()
+				stringVal := value.Str()
 				if int64(len(stringVal)) > limit {
-					value.SetStringVal(stringVal[:limit])
+					value.SetStr(stringVal[:limit])
 				}
 				return true
 			})

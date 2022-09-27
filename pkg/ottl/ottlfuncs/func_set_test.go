@@ -29,7 +29,7 @@ func Test_set(t *testing.T) {
 
 	target := &ottl.StandardGetSetter{
 		Setter: func(ctx ottl.TransformContext, val interface{}) {
-			ctx.GetItem().(pcommon.Value).SetStringVal(val.(string))
+			ctx.GetItem().(pcommon.Value).SetStr(val.(string))
 		},
 	}
 
@@ -48,7 +48,7 @@ func Test_set(t *testing.T) {
 				},
 			},
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStringVal("new name")
+				expectedValue.SetStr("new name")
 			},
 		},
 		{
@@ -60,13 +60,13 @@ func Test_set(t *testing.T) {
 				},
 			},
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStringVal("original name")
+				expectedValue.SetStr("original name")
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scenarioValue := pcommon.NewValueString(input.StringVal())
+			scenarioValue := pcommon.NewValueString(input.Str())
 
 			ctx := ottltest.TestTransformContext{
 				Item: scenarioValue,

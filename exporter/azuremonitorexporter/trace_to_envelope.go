@@ -118,7 +118,7 @@ func spanToEnvelope(
 
 	// Copy all the resource labels into the base data properties. Resource values are always strings
 	resourceAttributes.Range(func(k string, v pcommon.Value) bool {
-		dataProperties[k] = v.StringVal()
+		dataProperties[k] = v.Str()
 		return true
 	})
 
@@ -134,17 +134,17 @@ func spanToEnvelope(
 	// Extract key service.* labels from the Resource labels and construct CloudRole and CloudRoleInstance envelope tags
 	// https://github.com/open-telemetry/opentelemetry-specification/tree/main/specification/resource/semantic_conventions
 	if serviceName, serviceNameExists := resourceAttributes.Get(conventions.AttributeServiceName); serviceNameExists {
-		cloudRole := serviceName.StringVal()
+		cloudRole := serviceName.Str()
 
 		if serviceNamespace, serviceNamespaceExists := resourceAttributes.Get(conventions.AttributeServiceNamespace); serviceNamespaceExists {
-			cloudRole = serviceNamespace.StringVal() + "." + cloudRole
+			cloudRole = serviceNamespace.Str() + "." + cloudRole
 		}
 
 		envelope.Tags[contracts.CloudRole] = cloudRole
 	}
 
 	if serviceInstance, exists := resourceAttributes.Get(conventions.AttributeServiceInstanceID); exists {
-		envelope.Tags[contracts.CloudRoleInstance] = serviceInstance.StringVal()
+		envelope.Tags[contracts.CloudRoleInstance] = serviceInstance.Str()
 	}
 
 	// Sanitize the base data, the envelope and envelope tags
@@ -650,16 +650,16 @@ func setAttributeValueAsPropertyOrMeasurement(
 
 	switch attributeValue.Type() {
 	case pcommon.ValueTypeBool:
-		properties[key] = strconv.FormatBool(attributeValue.BoolVal())
+		properties[key] = strconv.FormatBool(attributeValue.Bool())
 
-	case pcommon.ValueTypeString:
-		properties[key] = attributeValue.StringVal()
+	case pcommon.ValueTypeStr:
+		properties[key] = attributeValue.Str()
 
 	case pcommon.ValueTypeInt:
-		measurements[key] = float64(attributeValue.IntVal())
+		measurements[key] = float64(attributeValue.Int())
 
 	case pcommon.ValueTypeDouble:
-		measurements[key] = attributeValue.DoubleVal()
+		measurements[key] = attributeValue.Double()
 	}
 }
 

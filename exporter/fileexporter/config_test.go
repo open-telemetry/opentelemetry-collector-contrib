@@ -62,7 +62,8 @@ func TestLoadConfig(t *testing.T) {
 				MaxBackups:   3,
 				LocalTime:    true,
 			},
-			FormatType: formatTypeProto,
+			FormatType:  formatTypeProto,
+			Compression: compressionZSTD,
 		})
 }
 
@@ -75,5 +76,15 @@ func TestLoadConfigFormatError(t *testing.T) {
 	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-format-error.yaml"), factories)
 	require.EqualError(t, err, "exporter \"file\" has invalid configuration: format type is not supported")
 	require.NotNil(t, cfg)
+}
 
+func TestLoadConfiCompressionError(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-compression-error.yaml"), factories)
+	require.EqualError(t, err, "exporter \"file\" has invalid configuration: compression is not supported")
+	require.NotNil(t, cfg)
 }

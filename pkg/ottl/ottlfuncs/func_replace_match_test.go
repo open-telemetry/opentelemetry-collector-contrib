@@ -29,10 +29,10 @@ func Test_replaceMatch(t *testing.T) {
 
 	target := &ottl.StandardGetSetter{
 		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem().(pcommon.Value).StringVal()
+			return ctx.GetItem().(pcommon.Value).Str()
 		},
 		Setter: func(ctx ottl.TransformContext, val interface{}) {
-			ctx.GetItem().(pcommon.Value).SetStringVal(val.(string))
+			ctx.GetItem().(pcommon.Value).SetStr(val.(string))
 		},
 	}
 
@@ -49,7 +49,7 @@ func Test_replaceMatch(t *testing.T) {
 			pattern:     "hello*",
 			replacement: "hello {universe}",
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStringVal("hello {universe}")
+				expectedValue.SetStr("hello {universe}")
 			},
 		},
 		{
@@ -58,13 +58,13 @@ func Test_replaceMatch(t *testing.T) {
 			pattern:     "goodbye*",
 			replacement: "goodbye {universe}",
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStringVal("hello world")
+				expectedValue.SetStr("hello world")
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scenarioValue := pcommon.NewValueString(input.StringVal())
+			scenarioValue := pcommon.NewValueString(input.Str())
 
 			ctx := ottltest.TestTransformContext{
 				Item: scenarioValue,

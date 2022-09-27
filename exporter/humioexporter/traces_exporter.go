@@ -174,7 +174,7 @@ func (e *humioTracesExporter) spanToHumioEvent(span ptrace.Span, inst pcommon.In
 	if sName, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
 		// No need to store the service name in two places
 		delete(attr, conventions.AttributeServiceName)
-		serviceName = sName.StringVal()
+		serviceName = sName.Str()
 	}
 
 	return &HumioStructuredEvent{
@@ -223,18 +223,18 @@ func toHumioAttributes(attrMaps ...pcommon.Map) map[string]interface{} {
 
 func toHumioAttributeValue(rawVal pcommon.Value) interface{} {
 	switch rawVal.Type() {
-	case pcommon.ValueTypeString:
-		return rawVal.StringVal()
+	case pcommon.ValueTypeStr:
+		return rawVal.Str()
 	case pcommon.ValueTypeInt:
-		return rawVal.IntVal()
+		return rawVal.Int()
 	case pcommon.ValueTypeDouble:
-		return rawVal.DoubleVal()
+		return rawVal.Double()
 	case pcommon.ValueTypeBool:
-		return rawVal.BoolVal()
+		return rawVal.Bool()
 	case pcommon.ValueTypeMap:
-		return toHumioAttributes(rawVal.MapVal())
+		return toHumioAttributes(rawVal.Map())
 	case pcommon.ValueTypeSlice:
-		arrVal := rawVal.SliceVal()
+		arrVal := rawVal.Slice()
 		arr := make([]interface{}, 0, arrVal.Len())
 		for i := 0; i < arrVal.Len(); i++ {
 			arr = append(arr, toHumioAttributeValue(arrVal.At(i)))

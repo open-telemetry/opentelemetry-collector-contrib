@@ -197,21 +197,21 @@ func TestProcess(t *testing.T) {
 			statement: `set(attributes["test"], Split(attributes["flags"], "|"))`,
 			want: func(td ptrace.Traces) {
 				v1 := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutEmptySlice("test")
-				v1.AppendEmpty().SetStringVal("A")
-				v1.AppendEmpty().SetStringVal("B")
-				v1.AppendEmpty().SetStringVal("C")
+				v1.AppendEmpty().SetStr("A")
+				v1.AppendEmpty().SetStr("B")
+				v1.AppendEmpty().SetStr("C")
 				v2 := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutEmptySlice("test")
-				v2.AppendEmpty().SetStringVal("C")
-				v2.AppendEmpty().SetStringVal("D")
+				v2.AppendEmpty().SetStr("C")
+				v2.AppendEmpty().SetStr("D")
 			},
 		},
 		{
 			statement: `set(attributes["test"], Split(attributes["flags"], "|")) where name == "operationA"`,
 			want: func(td ptrace.Traces) {
 				v1 := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutEmptySlice("test")
-				v1.AppendEmpty().SetStringVal("A")
-				v1.AppendEmpty().SetStringVal("B")
-				v1.AppendEmpty().SetStringVal("C")
+				v1.AppendEmpty().SetStr("A")
+				v1.AppendEmpty().SetStr("B")
+				v1.AppendEmpty().SetStr("C")
 			},
 		},
 		{
