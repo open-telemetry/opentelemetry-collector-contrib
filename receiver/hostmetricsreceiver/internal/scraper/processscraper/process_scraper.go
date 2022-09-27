@@ -28,6 +28,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/ucal"
 )
 
 const (
@@ -51,6 +52,7 @@ type scraper struct {
 	includeFS          filterset.FilterSet
 	excludeFS          filterset.FilterSet
 	scrapeProcessDelay time.Duration
+	ucal               *ucal.CPUUtilizationCalculator
 	// for mocking
 	getProcessCreateTime func(p processHandle) (int64, error)
 	getProcessHandles    func() (processHandles, error)
@@ -64,6 +66,7 @@ func newProcessScraper(settings component.ReceiverCreateSettings, cfg *Config) (
 		getProcessCreateTime: processHandle.CreateTime,
 		getProcessHandles:    getProcessHandlesInternal,
 		scrapeProcessDelay:   cfg.ScrapeProcessDelay,
+		ucal:                 &ucal.CPUUtilizationCalculator{},
 	}
 
 	var err error
@@ -228,7 +231,9 @@ func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, handle pro
 	}
 
 	s.recordCPUTimeMetric(now, times)
-	return nil
+
+	err = s.ucal.CalculateAndRecord(now, times, s.recordCPUUtilization)
+	return err
 }
 
 func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pcommon.Timestamp, handle processHandle) error {

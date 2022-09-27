@@ -10,6 +10,7 @@ These are the metrics available for this scraper.
 | ---- | ----------- | ---- | ---- | ---------- |
 | process.context_switches | Number of times the process has been context switched. | {count} | Sum(Int) | <ul> <li>context_switch_type</li> </ul> |
 | **process.cpu.time** | Total CPU seconds broken down by different states. | s | Sum(Double) | <ul> <li>state</li> </ul> |
+| process.cpu.utilization | Percentage of total CPU time used by the process since last scrape, expressed as a value between 0 and 1. On the first scrape, no data point is emitted for this metric. | 1 | Gauge(Double) | <ul> <li>state</li> </ul> |
 | **process.disk.io** | Disk bytes transferred. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
 | **process.memory.physical_usage** | Deprecated: use `process.memory.usage` metric instead. The amount of physical memory in use. | By | Sum(Int) | <ul> </ul> |
 | process.memory.usage | The amount of physical memory in use. | By | Sum(Int) | <ul> </ul> |
