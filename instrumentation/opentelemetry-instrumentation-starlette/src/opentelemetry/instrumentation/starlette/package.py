@@ -14,3 +14,5 @@
 
 
 _instruments = ("starlette ~= 0.13.0",)
+
+_supports_metrics = True
