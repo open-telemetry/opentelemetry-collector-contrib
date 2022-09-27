@@ -48,6 +48,7 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
 Examples:
 
 Receive metrics:
+
 ```yaml
 receivers:
   mongodbatlas:
@@ -55,7 +56,8 @@ receivers:
     private_key: ${MONGODB_ATLAS_PRIVATE_KEY}
 ```
 
-Receive alerts:
+Listen for alerts (default mode):
+
 ```yaml
 receivers:
   mongodbatlas:
@@ -63,6 +65,25 @@ receivers:
       enabled: true
       secret: "some_secret"
       endpoint: "0.0.0.0:7706"
+```
+
+Retrieve alerts from API:
+
+```yaml
+receivers:
+  mongodbatlas:
+    public_key: <redacted>
+    private_key: <redacted>
+    alerts:
+      enabled: true
+      mode: retrieve
+      projects:
+      - name: Project 0
+        include_clusters: [Cluster0]
+      poll_interval: 1m
+    # setting up storage extensions is reccommended to reduce chance of 
+    # duplicated alerts
+    storage: file_storage
 ```
 
 Receive logs:

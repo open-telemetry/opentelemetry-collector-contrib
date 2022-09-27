@@ -71,10 +71,14 @@ type ProjectConfig struct {
 
 var (
 	// Alerts Receiver Errors
-	errNoEndpoint = errors.New("an endpoint must be specified")
-	errNoSecret   = errors.New("a webhook secret must be specified")
-	errNoCert     = errors.New("tls was configured, but no cert file was specified")
-	errNoKey      = errors.New("tls was configured, but no key file was specified")
+	errNoEndpoint       = errors.New("an endpoint must be specified")
+	errNoSecret         = errors.New("a webhook secret must be specified")
+	errNoCert           = errors.New("tls was configured, but no cert file was specified")
+	errNoKey            = errors.New("tls was configured, but no key file was specified")
+	errNoModeRecognized = fmt.Errorf("alert mode not recognized for mode. Known alert modes are: %s", strings.Join([]string{
+		string(alertModeListen),
+		string(alertModeRetrieval),
+	}, ","))
 
 	// Logs Receiver Errors
 	errNoProjects    = errors.New("at least one 'project' must be specified")
@@ -124,10 +128,7 @@ func (a *AlertConfig) validate() error {
 		return a.validateListen()
 	}
 
-	return fmt.Errorf("alert mode not recognized for mode: %s. Known alert modes are: %s", a.Mode, strings.Join([]string{
-		string(alertModeListen),
-		string(alertModeRetrieval),
-	}, ","))
+	return errNoModeRecognized
 }
 
 func (a AlertConfig) validateRetrieval() error {

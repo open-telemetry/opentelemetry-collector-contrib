@@ -580,15 +580,23 @@ func compareLogRecord(expected, actual plog.LogRecord) error {
 	return nil
 }
 
+const (
+	testAlertID         = "633335c99998645b1803c60b"
+	testGroupID         = "5bc762b579358e3332046e6a"
+	testProjectID       = "test-project-id"
+	testProjectName     = "test-project"
+	testMetricName      = "metric-name"
+	testTypeName        = "OUTSIDE_METRIC_THRESHOLD"
+	testHostNameAndPort = "127.0.0.1:27017"
+	testClusterName     = "Cluster1"
+)
+
 func TestAlertsRetrieval(t *testing.T) {
-	testAlertID := "6da34c5d-f216-477f-a2c4-b3045b54f229"
-	testProjectID := "test-project-id"
-	testProjectName := "test-project"
 	cases := []struct {
 		name            string
 		config          func() *Config
 		client          func() alertsClient
-		validateEntries func(*testing.T, plog.Logs) error
+		validateEntries func(*testing.T, plog.Logs)
 	}{
 		{
 			name: "default",
@@ -609,62 +617,43 @@ func TestAlertsRetrieval(t *testing.T) {
 				}
 			},
 			client: func() alertsClient {
-				ac := &mockAlertsClient{}
-				ac.On("GetProject", mock.Anything, mock.Anything).Return(&mongodbatlas.Project{
-					ID:    testProjectID,
-					OrgID: "test-org-id",
-					Name:  testProjectName,
-					Links: []*mongodbatlas.Link{},
-				}, nil)
-				ac.On("GetAlerts", mock.Anything, testProjectID).Return(
-					[]mongodbatlas.Alert{
-						{
-							ID:            testAlertID,
-							GroupID:       "",
-							AlertConfigID: "",
-							EventTypeName: "",
-							Created:       time.Now().Format(time.RFC3339),
-							Updated:       time.Now().Format(time.RFC3339),
-							Enabled:       new(bool),
-							Status:        "TRACKING",
-							MetricName:    "metric-name",
-							CurrentValue: &mongodbatlas.CurrentValue{
-								Number: new(float64),
-								Units:  "By",
-							},
-							ReplicaSetName:  "",
-							ClusterName:     "",
-							HostnameAndPort: "127.0.0.1:27017",
-							Matchers:        []mongodbatlas.Matcher{},
-							MetricThreshold: &mongodbatlas.MetricThreshold{},
-							Notifications:   []mongodbatlas.Notification{},
-						},
-					},
-					nil)
-				return ac
+				return testClient()
 			},
-			validateEntries: func(t *testing.T, logs plog.Logs) error {
+			validateEntries: func(t *testing.T, logs plog.Logs) {
 				expectedStringAttributes := map[string]string{
 					"id":           testAlertID,
 					"status":       "TRACKING",
 					"event.domain": "mongodbatlas",
-					"metric.name":  "metric-name",
+					"metric.name":  testMetricName,
+					"type_name":    testTypeName,
 				}
-				for i := 0; i < logs.ResourceLogs().Len(); i++ {
-					rl := logs.ResourceLogs().At(0)
-					for j := 0; j < rl.ScopeLogs().Len(); j++ {
-						sl := rl.ScopeLogs().At(j)
-						for k := 0; k < sl.LogRecords().Len(); k++ {
-							lr := sl.LogRecords().At(k)
-							for k, v := range expectedStringAttributes {
-								val, ok := lr.Attributes().Get(k)
-								require.True(t, ok)
-								require.Equal(t, val.AsString(), v)
-							}
-						}
-					}
+				validateAttributes(t, expectedStringAttributes, logs)
+			},
+		},
+		{
+			name: "project cluster inclusions",
+			config: func() *Config {
+				return &Config{
+					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+					Granularity:               defaultGranularity,
+					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					Alerts: AlertConfig{
+						Mode: string(alertModeRetrieval),
+						Projects: []ProjectConfig{
+							{
+								Name:            testProjectName,
+								IncludeClusters: []string{testClusterName},
+							},
+						},
+						PollInterval: 1 * time.Second,
+					},
 				}
-				return nil
+			},
+			client: func() alertsClient {
+				return testClient()
+			},
+			validateEntries: func(t *testing.T, logs plog.Logs) {
+				require.Equal(t, logs.LogRecordCount(), 1)
 			},
 		},
 	}
@@ -686,8 +675,61 @@ func TestAlertsRetrieval(t *testing.T) {
 			require.NoError(t, alertsRcvr.Shutdown(context.Background()))
 			logs := logSink.AllLogs()[0]
 
-			require.NoError(t, tc.validateEntries(t, logs))
+			tc.validateEntries(t, logs)
 		})
+	}
+}
+
+func testClient() *mockAlertsClient {
+	ac := &mockAlertsClient{}
+	ac.On("GetProject", mock.Anything, mock.Anything).Return(&mongodbatlas.Project{
+		ID:    testProjectID,
+		OrgID: "test-org-id",
+		Name:  testProjectName,
+		Links: []*mongodbatlas.Link{},
+	}, nil)
+	ac.On("GetAlerts", mock.Anything, testProjectID).Return(
+		[]mongodbatlas.Alert{
+			{
+				ID:            testAlertID,
+				GroupID:       testGroupID,
+				AlertConfigID: "",
+				EventTypeName: testTypeName,
+				Created:       time.Now().Format(time.RFC3339),
+				Updated:       time.Now().Format(time.RFC3339),
+				Enabled:       new(bool),
+				Status:        "TRACKING",
+				MetricName:    testMetricName,
+				CurrentValue: &mongodbatlas.CurrentValue{
+					Number: new(float64),
+					Units:  "By",
+				},
+				ReplicaSetName:  "",
+				ClusterName:     testClusterName,
+				HostnameAndPort: testHostNameAndPort,
+				Matchers:        []mongodbatlas.Matcher{},
+				MetricThreshold: &mongodbatlas.MetricThreshold{},
+				Notifications:   []mongodbatlas.Notification{},
+			},
+		},
+		nil)
+	return ac
+}
+
+func validateAttributes(t *testing.T, expectedStringAttributes map[string]string, logs plog.Logs) {
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		rl := logs.ResourceLogs().At(0)
+		for j := 0; j < rl.ScopeLogs().Len(); j++ {
+			sl := rl.ScopeLogs().At(j)
+			for k := 0; k < sl.LogRecords().Len(); k++ {
+				lr := sl.LogRecords().At(k)
+				for k, v := range expectedStringAttributes {
+					val, ok := lr.Attributes().Get(k)
+					require.True(t, ok)
+					require.Equal(t, val.AsString(), v)
+				}
+			}
+		}
 	}
 }
 

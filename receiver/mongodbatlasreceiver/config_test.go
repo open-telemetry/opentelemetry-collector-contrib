@@ -150,6 +150,46 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: errClusterConfig.Error(),
 		},
+		{
+			name: "Invalid Alerts Retrieval ProjectConfig",
+			input: Config{
+				Alerts: AlertConfig{
+					Enabled: true,
+					Mode:    string(alertModeRetrieval),
+					Projects: []ProjectConfig{
+						{
+							Name:            "Project1",
+							EnableAuditLogs: false,
+							ExcludeClusters: []string{"cluster1"},
+							IncludeClusters: []string{"cluster2"},
+						},
+					},
+				},
+			},
+			expectedErr: errClusterConfig.Error(),
+		},
+		{
+			name: "Invalid Alerts Retrieval No Projects",
+			input: Config{
+				Alerts: AlertConfig{
+					Enabled:  true,
+					Mode:     string(alertModeRetrieval),
+					Projects: []ProjectConfig{},
+				},
+			},
+			expectedErr: errNoProjects.Error(),
+		},
+		{
+			name: "Invalid Alerts Mode",
+			input: Config{
+				Alerts: AlertConfig{
+					Enabled:  true,
+					Mode:     "invalid type",
+					Projects: []ProjectConfig{},
+				},
+			},
+			expectedErr: errNoModeRecognized.Error(),
+		},
 	}
 
 	for _, tc := range testCases {
