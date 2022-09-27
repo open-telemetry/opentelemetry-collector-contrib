@@ -1456,10 +1456,10 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-// WithIisAppPool sets provided value as "iis.app_pool" attribute for current resource.
-func WithIisAppPool(val string) ResourceMetricsOption {
+// WithIisApplicationPool sets provided value as "iis.application_pool" attribute for current resource.
+func WithIisApplicationPool(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("iis.app_pool", val)
+		rm.Resource().Attributes().PutString("iis.application_pool", val)
 	}
 }
 

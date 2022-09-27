@@ -4,7 +4,7 @@ resource_attributes:
   iis.site:
     description: The site of the web server.
     type: string
-  iis.app_pool:
+  iis.application_pool:
     description: The application pool, which is associated with worker processes of one or more applications.
     type: string
 
@@ -26,12 +26,6 @@ attributes:
       - post
       - put
       - trace
-  site:
-    value: site
-    description: The site of the web server.
-  app_pool:
-    value: app_pool
-    description: The application pool, which is associated with worker processes of one or more applications.
 
 metrics:
   iis.request.count:

@@ -45,14 +45,12 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| iis.app_pool | The application pool, which is associated with worker processes of one or more applications. | String |
+| iis.application_pool | The application pool, which is associated with worker processes of one or more applications. | String |
 | iis.site | The site of the web server. | String |
 
 ## Metric attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| app_pool (app_pool) | The application pool, which is associated with worker processes of one or more applications. |  |
 | direction (direction) | The direction data is moving. | sent, received |
 | request (request) | The type of request sent by a client. | delete, get, head, options, post, put, trace |
-| site (site) | The site of the web server. |  |

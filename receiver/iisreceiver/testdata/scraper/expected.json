@@ -279,7 +279,7 @@
          "resource": {
             "attributes": [
                {
-                  "key": "iis.app_pool",
+                  "key": "iis.application_pool",
                   "value": {
                      "stringValue": "Instance"
                   }
@@ -300,12 +300,12 @@
                            }
                         ]
                      },
-                     "name": "iis.app_pool.request.queue.age.max",
+                     "name": "iis.application_pool.request.queue.age.max",
                      "unit": "ms"
                   },
                   {
                      "description": "Current number of requests in the queue.",
-                     "name": "iis.app_pool.request.queue.count",
+                     "name": "iis.application_pool.request.queue.count",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
@@ -320,7 +320,7 @@
                   },
                   {
                      "description": "Total number of requests rejected.",
-                     "name": "iis.app_pool.request.rejected",
+                     "name": "iis.application_pool.request.rejected",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
