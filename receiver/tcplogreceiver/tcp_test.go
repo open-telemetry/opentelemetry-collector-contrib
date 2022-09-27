@@ -69,7 +69,7 @@ func testTCP(t *testing.T, cfg *TCPLogConfig) {
 		log := logs.At(i)
 
 		msg := log.Body()
-		require.Equal(t, msg.StringVal(), fmt.Sprintf("<86>1 2021-02-28T00:0%d:02.003Z test msg %d", i, i))
+		require.Equal(t, msg.Str(), fmt.Sprintf("<86>1 2021-02-28T00:0%d:02.003Z test msg %d", i, i))
 	}
 }
 

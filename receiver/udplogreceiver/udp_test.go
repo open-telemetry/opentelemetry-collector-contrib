@@ -73,7 +73,7 @@ func testUDP(t *testing.T, cfg *UDPLogConfig) {
 	}
 
 	for i := 0; i < numLogs; i++ {
-		assert.Contains(t, expectedLogs, logs.At(i).Body().StringVal())
+		assert.Contains(t, expectedLogs, logs.At(i).Body().Str())
 	}
 }
 

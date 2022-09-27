@@ -48,7 +48,7 @@ func deleteLabelValueOp(metric pmetric.Metric, mtpOp internalOperation) {
 
 func hasAttr(attrs pcommon.Map, k, v string) bool {
 	if val, ok := attrs.Get(k); ok {
-		return val.StringVal() == v
+		return val.Str() == v
 	}
 	return false
 }

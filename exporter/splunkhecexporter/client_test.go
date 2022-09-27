@@ -154,7 +154,7 @@ func createLogDataWithCustomLibraries(numResources int, libraries []string, numR
 			for k := 0; k < numRecords[j]; k++ {
 				ts := pcommon.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
 				logRecord := sl.LogRecords().AppendEmpty()
-				logRecord.Body().SetStringVal("mylog")
+				logRecord.Body().SetStr("mylog")
 				logRecord.Attributes().PutString(splunk.DefaultNameLabel, fmt.Sprintf("%d_%d_%d", i, j, k))
 				logRecord.Attributes().PutString(splunk.DefaultSourceLabel, "myapp")
 				logRecord.Attributes().PutString(splunk.DefaultSourceTypeLabel, "myapp-type")
@@ -947,7 +947,7 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 	logs := plog.NewLogs()
 	log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	// Invalid log value
-	log.Body().SetDoubleVal(math.Inf(1))
+	log.Body().SetDouble(math.Inf(1))
 
 	err := c.pushLogData(context.Background(), logs)
 

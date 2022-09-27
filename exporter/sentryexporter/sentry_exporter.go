@@ -178,9 +178,9 @@ func convertEventsToSentryExceptions(eventList *[]*sentry.Event, events ptrace.S
 		event.Attributes().Range(func(k string, v pcommon.Value) bool {
 			switch k {
 			case conventions.AttributeExceptionMessage:
-				exceptionMessage = v.StringVal()
+				exceptionMessage = v.Str()
 			case conventions.AttributeExceptionType:
-				exceptionType = v.StringVal()
+				exceptionType = v.Str()
 			}
 			return true
 		})
@@ -323,7 +323,7 @@ func generateSpanDescriptors(name string, attrs pcommon.Map, spanKind ptrace.Spa
 		}
 
 		// Ex. description="GET /api/users/{user_id}".
-		fmt.Fprintf(&dBuilder, "%s %s", httpMethod.StringVal(), name)
+		fmt.Fprintf(&dBuilder, "%s %s", httpMethod.Str(), name)
 
 		return opBuilder.String(), dBuilder.String()
 	}
@@ -334,7 +334,7 @@ func generateSpanDescriptors(name string, attrs pcommon.Map, spanKind ptrace.Spa
 
 		// Use DB statement (Ex "SELECT * FROM table") if possible as description.
 		if statement, okInst := attrs.Get(conventions.AttributeDBStatement); okInst {
-			dBuilder.WriteString(statement.StringVal())
+			dBuilder.WriteString(statement.Str())
 		} else {
 			dBuilder.WriteString(name)
 		}
@@ -358,7 +358,7 @@ func generateSpanDescriptors(name string, attrs pcommon.Map, spanKind ptrace.Spa
 
 	// If faas.trigger exists then this is a function as a service span.
 	if trigger, ok := attrs.Get("faas.trigger"); ok {
-		opBuilder.WriteString(trigger.StringVal())
+		opBuilder.WriteString(trigger.Str())
 
 		return opBuilder.String(), name
 	}
@@ -376,14 +376,14 @@ func generateTagsFromAttributes(attrs pcommon.Map) map[string]string {
 
 	attrs.Range(func(key string, attr pcommon.Value) bool {
 		switch attr.Type() {
-		case pcommon.ValueTypeString:
-			tags[key] = attr.StringVal()
+		case pcommon.ValueTypeStr:
+			tags[key] = attr.Str()
 		case pcommon.ValueTypeBool:
-			tags[key] = strconv.FormatBool(attr.BoolVal())
+			tags[key] = strconv.FormatBool(attr.Bool())
 		case pcommon.ValueTypeDouble:
-			tags[key] = strconv.FormatFloat(attr.DoubleVal(), 'g', -1, 64)
+			tags[key] = strconv.FormatFloat(attr.Double(), 'g', -1, 64)
 		case pcommon.ValueTypeInt:
-			tags[key] = strconv.FormatInt(attr.IntVal(), 10)
+			tags[key] = strconv.FormatInt(attr.Int(), 10)
 		}
 		return true
 	})

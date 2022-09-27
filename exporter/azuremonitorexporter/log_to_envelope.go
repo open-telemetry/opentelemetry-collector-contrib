@@ -47,7 +47,7 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord) *contract
 
 	messageData.SeverityLevel = packer.toAiSeverityLevel(logRecord.SeverityText())
 
-	messageData.Message = logRecord.Body().StringVal()
+	messageData.Message = logRecord.Body().Str()
 
 	envelope.Tags[contracts.OperationId] = logRecord.TraceID().HexString()
 	envelope.Tags[contracts.OperationParentId] = logRecord.SpanID().HexString()

@@ -51,7 +51,7 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
-		logRecord.Body().SetStringVal("10byteslog")
+		logRecord.Body().SetStr("10byteslog")
 		logRecord.Attributes().PutString(conventions.AttributeServiceName, "myapp")
 		logRecord.Attributes().PutString("my-label", "myapp-type")
 		logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
@@ -71,7 +71,7 @@ func createMinimalAttributesLogData(numberOfLogs int) plog.Logs {
 
 	for i := 0; i < numberOfLogs; i++ {
 		logRecord := sl.LogRecords().AppendEmpty()
-		logRecord.Body().SetStringVal("minimal attribute log")
+		logRecord.Body().SetStr("minimal attribute log")
 	}
 
 	return logs
@@ -91,7 +91,7 @@ func createMaxLogData() plog.Logs {
 	for i := 0; i < lineCnt; i++ {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
-		logRecord.Body().SetStringVal(randString(maxMessageSize))
+		logRecord.Body().SetStr(randString(maxMessageSize))
 		logRecord.SetTimestamp(ts)
 	}
 
@@ -109,7 +109,7 @@ func createSizedPayloadLogData(payloadSize int) plog.Logs {
 
 	ts := pcommon.Timestamp(0)
 	logRecord := sl.LogRecords().AppendEmpty()
-	logRecord.Body().SetStringVal(maxMsg)
+	logRecord.Body().SetStr(maxMsg)
 	logRecord.SetTimestamp(ts)
 
 	return logs

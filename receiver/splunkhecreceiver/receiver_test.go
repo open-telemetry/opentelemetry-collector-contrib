@@ -406,7 +406,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	sec := float64(msecInt64) / 1e3
 	lr.SetTimestamp(pcommon.Timestamp(int64(sec * 1e9)))
 
-	lr.Body().SetStringVal("foo")
+	lr.Body().SetStr("foo")
 	lr.Attributes().PutString("com.splunk.sourcetype", "custom:sourcetype")
 	lr.Attributes().PutString("com.splunk.index", "myindex")
 	want := logs

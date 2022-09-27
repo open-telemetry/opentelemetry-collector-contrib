@@ -488,7 +488,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 			for i, expectedName := range test.expectedNames {
 				rm := md.ResourceMetrics().At(i)
 				name, _ := rm.Resource().Attributes().Get(conventions.AttributeProcessExecutableName)
-				assert.Equal(t, expectedName, name.StringVal())
+				assert.Equal(t, expectedName, name.Str())
 			}
 		})
 	}

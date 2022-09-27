@@ -27,8 +27,8 @@ func aggregateLabelValuesOp(metric pmetric.Metric, mtpOp internalOperation) {
 			return true
 		}
 
-		if _, ok := mtpOp.aggregatedValuesSet[val.StringVal()]; ok {
-			val.SetStringVal(mtpOp.configOperation.NewValue)
+		if _, ok := mtpOp.aggregatedValuesSet[val.Str()]; ok {
+			val.SetStr(mtpOp.configOperation.NewValue)
 		}
 		return true
 	})
