@@ -13,17 +13,18 @@ as well as alerts via a configured [webhook](https://www.mongodb.com/docs/atlas/
 ## Getting Started
 
 The MongoDB Atlas receiver takes the following parameters. `public_key` and 
-`private_key` are the only two required values to receive metrics and logs and are obtained via the 
+`private_key` are the only two required values to receive metrics and logs and are obtained via the
 "API Keys" tab of the MongoDB Atlas Project Access Manager. In the example
 below both values are being pulled from the environment.
 
 In order to collect logs, at least one project must be specified. By default, logs for all clusters within a project will be collected. Clusters can be limited using either the `include_clusters` or `exclude_clusters` setting.
 
-MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/logs/#logs) recommends a polling interval of 5 minutes. 
+MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/logs/#logs) recommends a polling interval of 5 minutes.
 
 - `public_key` (required for metrics)
 - `private_key` (required for metrics)
 - `granularity` (default `PT1M` - See [MongoDB Atlas Documentation](https://docs.atlas.mongodb.com/reference/api/process-measurements/))
+- `storage` configure the component ID of a storage extension. Currently only works for alerts in `retrieval` mode
 - `retry_on_failure`
   - `enabled` (default true)
   - `initial_interval` (default 5s)
@@ -31,9 +32,15 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
   - `max_elapsed_time` (default 5m)
 - `alerts`
   - `enabled` (default false)
-  - `secret` (required if enabled)
-  - `endpoint` (required if enabled)
-  - `tls`
+  - `mode` (default `listen`. Options are `retrieval` or `listen`)
+  - `secret` (required if enabled, only relevant in `listen` mode)
+  - `endpoint` (required if enabled, only relevant in `listen` mode)
+  - `poll_interval` (only relevant in `retrieval mode`)
+  - `projects` (required if enabled and in `retrieval` mode)
+    - `name` (required if enabled)
+    - `include_clusters` (default empty, exclusive with `exclude_clusters`)
+    - `exclude_clusters` (default empty, exclusive with `include_clusters`)
+  - `tls` (relevant only for `listen` mode)
     - `key_file`
     - `cert_file`
 - `logs`
@@ -43,7 +50,6 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
     - `collect_audit_logs` (default false)
     - `include_clusters` (default empty)
     - `exclude_clusters` (default empty)
-
 
 Examples:
 
