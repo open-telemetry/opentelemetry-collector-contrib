@@ -51,6 +51,8 @@ github.com/DataDog/datadog-agent/pkg/util/log v0.40.0-rc.2 h1:mrY3EUDvf4yzyIZMku
 github.com/DataDog/datadog-agent/pkg/util/log v0.40.0-rc.2/go.mod h1:JP26/gelKjKKohbJ+c7HOnuewHrq52/oj6r7GF5ZGMA=
 github.com/DataDog/datadog-agent/pkg/util/scrubber v0.40.0-rc.2 h1:wRgHIasxWuuZljrP9lB1j33Fd4cdikmqNSqJHMqLz+4=
 github.com/DataDog/datadog-agent/pkg/util/scrubber v0.40.0-rc.2/go.mod h1:krN4Js8oeqZPtOkxJR8grwLgDbXhXQGc9dxfeEEmluQ=
+github.com/DataDog/datadog-api-client-go/v2 v2.2.0 h1:woWe+XBcYt29g1SJs+zbgwYPfyATb+gxeA2pKqUu02Y=
+github.com/DataDog/datadog-api-client-go/v2 v2.2.0/go.mod h1:98b/MtTwSAr/yhTfhCR1oxAqQ/4tMkdrgKH7fYiDA0g=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/datadog-go/v5 v5.1.0/go.mod h1:KhiYb2Badlv9/rofz+OznKoEF5XKTonWyhx5K83AP8E=
 github.com/DataDog/datadog-go/v5 v5.1.1 h1:JLZ6s2K1pG2h9GkvEvMdEGqMDyVLEAccdX5TltWcLMU=
@@ -59,6 +61,8 @@ github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc h1:gtlKB6B50/UEuFm1L
 github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc/go.mod h1:oyPC4jWHHjVVNjslDAKp8EqfQBaSmODjHt4HCX+C+9Q=
 github.com/DataDog/sketches-go v1.4.1 h1:j5G6as+9FASM2qC36lvpvQAj9qsv/jUs3FtO8CwZNAY=
 github.com/DataDog/sketches-go v1.4.1/go.mod h1:xJIXldczJyyjnbDop7ZZcLxJdV3+7Kra7H1KMgpgkLk=
+github.com/DataDog/zstd v1.5.0 h1:+K/VEwIAaPcHiMtQvpLD4lqW7f0Gk3xdYZmI1hD+CXo=
+github.com/DataDog/zstd v1.5.0/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwSAmyw=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.8 h1:XV1a1MCXc63vOb2EH+Utbypl1Hmr2mqRLSKx82F2Mh4=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.8/go.mod h1:s7Gpwj0tk7XnVCm4BQEmx/mbS36SuTCY/vMB2SNxe8o=
 github.com/Microsoft/go-winio v0.5.0/go.mod h1:JPGBdM1cNvN/6ISo+n8V5iA4v8pBzdOpzfwIujj1a84=

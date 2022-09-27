@@ -160,6 +160,8 @@ github.com/DataDog/datadog-agent/pkg/util/log v0.40.0-rc.2 h1:mrY3EUDvf4yzyIZMku
 github.com/DataDog/datadog-agent/pkg/util/log v0.40.0-rc.2/go.mod h1:JP26/gelKjKKohbJ+c7HOnuewHrq52/oj6r7GF5ZGMA=
 github.com/DataDog/datadog-agent/pkg/util/scrubber v0.40.0-rc.2 h1:wRgHIasxWuuZljrP9lB1j33Fd4cdikmqNSqJHMqLz+4=
 github.com/DataDog/datadog-agent/pkg/util/scrubber v0.40.0-rc.2/go.mod h1:krN4Js8oeqZPtOkxJR8grwLgDbXhXQGc9dxfeEEmluQ=
+github.com/DataDog/datadog-api-client-go/v2 v2.2.0 h1:woWe+XBcYt29g1SJs+zbgwYPfyATb+gxeA2pKqUu02Y=
+github.com/DataDog/datadog-api-client-go/v2 v2.2.0/go.mod h1:98b/MtTwSAr/yhTfhCR1oxAqQ/4tMkdrgKH7fYiDA0g=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/datadog-go/v5 v5.1.0/go.mod h1:KhiYb2Badlv9/rofz+OznKoEF5XKTonWyhx5K83AP8E=
 github.com/DataDog/datadog-go/v5 v5.1.1 h1:JLZ6s2K1pG2h9GkvEvMdEGqMDyVLEAccdX5TltWcLMU=

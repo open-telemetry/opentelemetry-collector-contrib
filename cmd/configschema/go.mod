@@ -53,6 +53,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.40.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.40.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.40.0-rc.2 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.2.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc // indirect
 	github.com/DataDog/sketches-go v1.4.1 // indirect
