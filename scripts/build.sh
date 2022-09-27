@@ -41,3 +41,6 @@ DISTDIR=dist
    done
  )
 )
+
+# FIXME: This is a temporary workaround, see #1357.
+rm -rf $DISTDIR/opentelemetry_exporter_datadog-0.30b0.tar.gz
