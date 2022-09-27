@@ -137,11 +137,6 @@ func (tsp *tracesamplerprocessor) processTraces(ctx context.Context, td ptrace.T
 	if td.ResourceSpans().Len() == 0 {
 		return td, processorhelper.ErrSkipProcessingData
 	}
-
-	tsp.logger.Debug("Sampling policy evaluation completed",
-		zap.Int64("sampled", metrics.decisionSampled),
-		zap.Int64("notSampled", metrics.decisionNotSampled),
-	)
 	return td, nil
 }
 
