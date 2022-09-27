@@ -536,7 +536,7 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				"messaging.solace.client_username":                        "someClientUsername",
 				"messaging.solace.client_name":                            "someClient1234",
 				"messaging.solace.dmq_eligible":                           true,
-				"messaging.solace.delivery_mode":                          "UNKNOWN",
+				"messaging.solace.delivery_mode":                          "Unknown Delivery Mode (1000)",
 				"messaging.solace.dropped_enqueue_events_success":         int64(42),
 				"messaging.solace.dropped_enqueue_events_failed":          int64(24),
 				"net.host.port":                                           int64(55555),
@@ -763,18 +763,22 @@ func TestUnmarshallerEvents(t *testing.T) {
 			},
 		},
 		{ // Type of transaction not handled
-			name: "Invalid Transaction Type",
+			name: "Unknown Transaction Type and no ID",
 			spanData: &model_v1.SpanData{
 				TransactionEvent: &model_v1.SpanData_TransactionEvent{
 					TimeUnixNano: 123456789,
 					Type:         model_v1.SpanData_TransactionEvent_Type(12345),
 				},
 			},
-			populateExpectedSpan: func(span ptrace.Span) {},
-			unmarshallingErrors:  1,
+			populateExpectedSpan: func(span ptrace.Span) {
+				populateEvent(t, span, "Unknown Transaction Event (12345)", 123456789, map[string]interface{}{
+					"messaging.solace.transaction_initiator": "client",
+				})
+			},
+			unmarshallingErrors: 2,
 		},
 		{ // Type of ID not handled, type of initiator not handled
-			name: "Invalid Transaction Initiator and ID",
+			name: "Unknown Transaction Initiator and no ID",
 			spanData: &model_v1.SpanData{
 				TransactionEvent: &model_v1.SpanData_TransactionEvent{
 					TimeUnixNano:  123456789,
@@ -785,7 +789,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "rollback", 123456789, map[string]interface{}{
-					"messaging.solace.transaction_initiator": "",
+					"messaging.solace.transaction_initiator": "Unknown Transaction Initiator (12345)",
 				})
 			},
 			unmarshallingErrors: 2,

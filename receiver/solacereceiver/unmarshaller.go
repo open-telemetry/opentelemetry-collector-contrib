@@ -243,8 +243,8 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 	case model_v1.SpanData_PERSISTENT:
 		deliveryMode = "persistent"
 	default:
-		deliveryMode = "UNKNOWN"
-		u.logger.Warn(fmt.Sprintf("Unknown delivery mode %d", spanData.DeliveryMode))
+		deliveryMode = fmt.Sprintf("Unknown Delivery Mode (%s)", spanData.DeliveryMode.String())
+		u.logger.Warn(fmt.Sprintf("Received span with unknown delivery mode %s", spanData.DeliveryMode))
 		u.metrics.recordRecoverableUnmarshallingError()
 	}
 	attrMap.PutString(deliveryModeAttrKey, deliveryMode)
@@ -377,9 +377,10 @@ func (u *solaceMessageUnmarshallerV1) mapTransactionEvent(transactionEvent *mode
 	case model_v1.SpanData_TransactionEvent_ROLLBACK_ONLY:
 		name = "rollback_only"
 	default:
-		u.logger.Warn(fmt.Sprintf("Unknown transaction type %d", transactionEvent.GetType()))
+		// Set the name to the unknown transaction event type to ensure forward compat.
+		name = fmt.Sprintf("Unknown Transaction Event (%s)", transactionEvent.GetType().String())
+		u.logger.Warn(fmt.Sprintf("Received span with unknown transaction event %s", transactionEvent.GetType()))
 		u.metrics.recordRecoverableUnmarshallingError()
-		return // exit when we don't have a valid type since we should not add a span without a name
 	}
 	clientEvent := clientSpanEvents.AppendEmpty()
 	clientEvent.SetName(name)
@@ -394,7 +395,8 @@ func (u *solaceMessageUnmarshallerV1) mapTransactionEvent(transactionEvent *mode
 	case model_v1.SpanData_TransactionEvent_BROKER:
 		initiator = "broker"
 	default:
-		u.logger.Warn(fmt.Sprintf("Unknown transaction initiator %d", transactionEvent.GetInitiator()))
+		initiator = fmt.Sprintf("Unknown Transaction Initiator (%s)", transactionEvent.GetInitiator().String())
+		u.logger.Warn(fmt.Sprintf("Received span with unknown transaction initiator %s", transactionEvent.GetInitiator()))
 		u.metrics.recordRecoverableUnmarshallingError()
 	}
 	clientEvent.Attributes().PutString(transactionInitiatorEventKey, initiator)
