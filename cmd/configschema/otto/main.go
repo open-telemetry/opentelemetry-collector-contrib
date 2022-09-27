@@ -21,11 +21,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/otto/otto"
 )
 
-const defaultPort = 8888
+const defaultAddress = ":8888"
 
 func main() {
 	logger := log.Default()
-	portPtr := flag.Int("port", defaultPort, "the port that the server listens on")
+	addrPtr := flag.String("port", defaultAddress, "the address (host:port) that otto will listen on")
+	collectorDirPtr := flag.String("collector_src", ".", "the root directory of a locally checked-out collector repo")
 	flag.Parse()
-	otto.Server(logger, *portPtr)
+	otto.Server(logger, *addrPtr, *collectorDirPtr)
 }

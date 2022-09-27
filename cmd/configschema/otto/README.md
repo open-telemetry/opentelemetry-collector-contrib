@@ -19,7 +19,7 @@ When Otto loads, it presents you with a select menu where you can choose which k
 When you select a pipeline type, Otto populates the UI with the components that support the selected pipeline type. At this point, you can select a component.
 
 When you select a component, Otto creates a dynamic form for you to configure it. This form is pre-populated with default values, which
-appear as placeholder text or a select boxe with the default value indicated. You can leave these blank to accept the defaults or change them to provide your
+appear as placeholder text or a select box with the default value indicated. You can leave these blank to accept the defaults or change them to provide your
 own values. If you are unsure about what a field means, or what type of data it accepts, you can hover your mouse over the name of the field to view documentation
 for that field in a tooltip.
 

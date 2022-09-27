@@ -3,7 +3,7 @@
 ## Views
 
 Views are [Humble Objects](https://martinfowler.com/bliki/HumbleObject.html) containing a minimal amount of logic just to manipulate the DOM.
-Views inherit from the View class
+Views inherit from the View class.
 
 ## Widgets
 

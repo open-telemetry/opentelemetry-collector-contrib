@@ -15,7 +15,6 @@
 package otto
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -25,7 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
 )
 
-func Server(logger *log.Logger, port int) {
+func Server(logger *log.Logger, addr string, collectorDir string) {
 	mux := http.NewServeMux()
 
 	mux.Handle("/", http.FileServer(http.Dir("static")))
@@ -41,7 +40,7 @@ func Server(logger *log.Logger, port int) {
 	})
 
 	ottoPipeline := &pipeline{
-		dr:        configschema.NewDirResolver("../../..", configschema.DefaultModule),
+		dr:        configschema.NewDirResolver(collectorDir, configschema.DefaultModule),
 		factories: factories,
 	}
 	mux.Handle("/cfgschema/", cfgschemaHandler{
@@ -60,7 +59,7 @@ func Server(logger *log.Logger, port int) {
 	mux.Handle("/ws/", httpWsHandler{handlers: wsHandlers})
 
 	svr := http.Server{
-		Addr:    fmt.Sprintf("localhost:%d", port),
+		Addr:    addr,
 		Handler: mux,
 	}
 	println("otto started")
