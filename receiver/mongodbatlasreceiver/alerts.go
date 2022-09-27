@@ -210,8 +210,7 @@ func (a alertsReceiver) retrieveAndProcessAlerts(ctx context.Context) error {
 	if logs.LogRecordCount() > 0 {
 		return a.consumer.ConsumeLogs(ctx, logs)
 	}
-	a.writeCheckpoint(ctx)
-	return nil
+	return a.writeCheckpoint(ctx)
 }
 
 func (a alertsReceiver) startListening(ctx context.Context, host component.Host) error {
