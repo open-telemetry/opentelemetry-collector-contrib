@@ -135,16 +135,7 @@ func protoBatchToResourceSpans(batch model.Batch, dest ptrace.ResourceSpans) {
 		return
 	}
 
-	groupByLibrary := jSpansToInternal(jSpans)
-	ilss := dest.ScopeSpans()
-	for library, spans := range groupByLibrary {
-		ils := ilss.AppendEmpty()
-		if library.name != "" {
-			ils.Scope().SetName(library.name)
-			ils.Scope().SetVersion(library.version)
-		}
-		spans.MoveAndAppendTo(ils.Spans())
-	}
+	jSpansToInternal(jSpans, dest.ScopeSpans())
 }
 
 func jProcessToInternalResource(process *model.Process, dest pcommon.Resource) {
@@ -193,31 +184,31 @@ func translateJaegerVersionAttr(attrs pcommon.Map) {
 	}
 }
 
-func jSpansToInternal(spans []*model.Span) map[scope]ptrace.SpanSlice {
+type scope struct {
+	name, version string
+}
+
+func jSpansToInternal(spans []*model.Span, dest ptrace.ScopeSpansSlice) {
 	spansByLibrary := make(map[scope]ptrace.SpanSlice)
 
 	for _, span := range spans {
 		if span == nil || reflect.DeepEqual(span, blankJaegerProtoSpan) {
 			continue
 		}
-		jSpanToInternal(span, spansByLibrary)
+		il := getScope(span)
+		sps, found := spansByLibrary[il]
+		if !found {
+			ss := dest.AppendEmpty()
+			ss.Scope().SetName(il.name)
+			ss.Scope().SetVersion(il.version)
+			sps = ss.Spans()
+			spansByLibrary[il] = sps
+		}
+		jSpanToInternal(span, sps.AppendEmpty())
 	}
-	return spansByLibrary
 }
 
-type scope struct {
-	name, version string
-}
-
-func jSpanToInternal(span *model.Span, spansByLibrary map[scope]ptrace.SpanSlice) {
-	il := getScope(span)
-	ss, found := spansByLibrary[il]
-	if !found {
-		ss = ptrace.NewSpanSlice()
-		spansByLibrary[il] = ss
-	}
-
-	dest := ss.AppendEmpty()
+func jSpanToInternal(span *model.Span, dest ptrace.Span) {
 	dest.SetTraceID(idutils.UInt64ToTraceID(span.TraceID.High, span.TraceID.Low))
 	dest.SetSpanID(idutils.UInt64ToSpanID(uint64(span.SpanID)))
 	dest.SetName(span.OperationName)
