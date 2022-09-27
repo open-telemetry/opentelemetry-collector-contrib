@@ -44,7 +44,7 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a noop operator.
 type Config struct {
-	helper.TransformerConfig `yaml:",inline"`
+	helper.TransformerConfig `mapstructure:",squash"`
 }
 
 // Build will build a noop operator.

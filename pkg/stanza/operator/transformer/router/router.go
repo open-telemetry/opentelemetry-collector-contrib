@@ -47,16 +47,16 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a router operator
 type Config struct {
-	helper.BasicConfig `mapstructure:",squash" yaml:",inline"`
-	Routes             []*RouteConfig `mapstructure:"routes" json:"routes" yaml:"routes"`
-	Default            []string       `mapstructure:"default" json:"default" yaml:"default"`
+	helper.BasicConfig `mapstructure:",squash"`
+	Routes             []*RouteConfig `mapstructure:"routes"`
+	Default            []string       `mapstructure:"default"`
 }
 
 // RouteConfig is the configuration of a route on a router operator
 type RouteConfig struct {
-	helper.AttributerConfig `mapstructure:",squash" yaml:",inline"`
-	Expression              string   `mapstructure:"expr" json:"expr"   yaml:"expr"`
-	OutputIDs               []string `mapstructure:"output" json:"output" yaml:"output"`
+	helper.AttributerConfig `mapstructure:",squash"`
+	Expression              string   `mapstructure:"expr"`
+	OutputIDs               []string `mapstructure:"output"`
 }
 
 // Build will build a router operator from the supplied configuration
