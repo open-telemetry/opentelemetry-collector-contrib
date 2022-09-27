@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclu
 go 1.18
 
 require (
-	github.com/census-instrumentation/opencensus-proto v0.4.0
+	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/iancoleman/strcase v0.2.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.60.0

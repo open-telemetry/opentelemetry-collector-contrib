@@ -27,6 +27,7 @@ exporters:
       max_backups: 3
       localtime: true
     format: proto
+    compression: zstd
 
 service:
   pipelines:

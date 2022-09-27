@@ -49,7 +49,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension v0.60.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetter v0.60.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension v0.60.0
@@ -219,7 +219,7 @@ require (
 	github.com/aerospike/aerospike-client-go/v6 v6.4.0 // indirect
 	github.com/alecthomas/participle/v2 v2.0.0-beta.5 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
-	github.com/aliyun/aliyun-log-go-sdk v0.1.37 // indirect
+	github.com/aliyun/aliyun-log-go-sdk v0.1.38 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/antonmedv/expr v1.9.0 // indirect
 	github.com/apache/arrow/go/arrow v0.0.0-20211112161151-bc219186db40 // indirect
@@ -253,7 +253,7 @@ require (
 	github.com/caio/go-tdigest v3.1.0+incompatible // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
-	github.com/census-instrumentation/opencensus-proto v0.4.0 // indirect
+	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/checkpoint-restore/go-criu/v5 v5.3.0 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
@@ -748,7 +748,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/bear
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension => ./extension/fluentbitextension
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetter => ./extension/headerssetter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension => ./extension/headerssetterextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension => ./extension/healthcheckextension
 
