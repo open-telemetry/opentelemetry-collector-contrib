@@ -81,17 +81,18 @@ type alertsReceiver struct {
 	logger      *zap.Logger
 
 	// only relevant in `retrieval` mode
-	projects      []ProjectConfig
-	client        alertsClient
-	privateKey    string
-	publicKey     string
-	retrySettings exporterhelper.RetrySettings
-	pollInterval  time.Duration
-	cache         *alertCache
-	doneChan      chan bool
-	id            config.ComponentID  // ID of the receiver component
-	storageID     *config.ComponentID // ID of the storage extension component
-	storageClient *storage.Client
+	projects           []ProjectConfig
+	client             alertsClient
+	privateKey         string
+	publicKey          string
+	retrySettings      exporterhelper.RetrySettings
+	pollInterval       time.Duration
+	cache              *alertCache
+	doneChan           chan bool
+	checkpointDoneChan chan bool
+	id                 config.ComponentID  // ID of the receiver component
+	storageID          *config.ComponentID // ID of the storage extension component
+	storageClient      *storage.Client
 }
 
 func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer.Logs) (*alertsReceiver, error) {
@@ -108,21 +109,22 @@ func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer
 	}
 
 	recv := &alertsReceiver{
-		addr:          cfg.Endpoint,
-		secret:        cfg.Secret,
-		tlsSettings:   cfg.TLS,
-		consumer:      consumer,
-		mode:          alertMode(cfg.Mode),
-		projects:      cfg.Projects,
-		retrySettings: baseConfig.RetrySettings,
-		publicKey:     baseConfig.PublicKey,
-		privateKey:    baseConfig.PrivateKey,
-		wg:            &sync.WaitGroup{},
-		pollInterval:  baseConfig.Alerts.PollInterval,
-		doneChan:      make(chan bool, 1),
-		logger:        logger,
-		id:            baseConfig.ID(),
-		storageID:     baseConfig.StorageID,
+		addr:               cfg.Endpoint,
+		secret:             cfg.Secret,
+		tlsSettings:        cfg.TLS,
+		consumer:           consumer,
+		mode:               alertMode(cfg.Mode),
+		projects:           cfg.Projects,
+		retrySettings:      baseConfig.RetrySettings,
+		publicKey:          baseConfig.PublicKey,
+		privateKey:         baseConfig.PrivateKey,
+		wg:                 &sync.WaitGroup{},
+		pollInterval:       baseConfig.Alerts.PollInterval,
+		doneChan:           make(chan bool, 1),
+		checkpointDoneChan: make(chan bool, 1),
+		logger:             logger,
+		id:                 baseConfig.ID(),
+		storageID:          baseConfig.StorageID,
 	}
 
 	if recv.mode == alertModeRetrieval {
@@ -155,6 +157,7 @@ func (a alertsReceiver) Start(ctx context.Context, host component.Host) error {
 }
 
 func (a alertsReceiver) startRetrieving(ctx context.Context, host component.Host) error {
+	a.logger.Debug("starting alerts receiver in retrieval mode")
 	storageClient, err := adapter.GetStorageClient(ctx, host, a.storageID, a.id)
 	if err != nil {
 		return fmt.Errorf("failed to set up storage: %w", err)
@@ -216,6 +219,7 @@ func (a alertsReceiver) retrieveAndProcessAlerts(ctx context.Context) error {
 }
 
 func (a alertsReceiver) startListening(ctx context.Context, host component.Host) error {
+	a.logger.Debug("starting alerts receiver in listening mode")
 	// We use a.server.Serve* over a.server.ListenAndServe*
 	// So that we can catch and return errors relating to binding to network interface on start.
 	var lc net.ListenConfig
@@ -342,6 +346,7 @@ func (a alertsReceiver) shutdownListener(ctx context.Context) error {
 func (a alertsReceiver) shutdownRetriever(ctx context.Context) error {
 	a.logger.Debug("Shutting down client")
 	a.doneChan <- true
+	a.checkpointDoneChan <- true
 	a.wg.Wait()
 
 	a.writeCheckpoint(ctx)
@@ -528,7 +533,7 @@ func (a *alertsReceiver) startCheckpointer(ctx context.Context) {
 			now := time.Now()
 			a.cache.Clean(now)
 			a.writeCheckpoint(ctx)
-		case <-a.doneChan:
+		case <-a.checkpointDoneChan:
 			return
 		case <-ctx.Done():
 			return
@@ -643,7 +648,7 @@ func (a *alertsReceiver) hasProcessed(alert mongodbatlas.Alert) bool {
 
 // alertKey is a key to index the alert to see if it has already been processed.
 func alertKey(alert mongodbatlas.Alert) string {
-	return fmt.Sprintf("%s|%s", alert.ID, alert.Status)
+	return fmt.Sprintf("%s|%s|%s", alert.ID, alert.Status, alert.Updated)
 }
 
 func timestampFromAlert(a model.Alert) pcommon.Timestamp {
