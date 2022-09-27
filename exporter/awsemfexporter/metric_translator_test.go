@@ -317,8 +317,7 @@ func (d dimensionality) Less(i, j int) bool {
 	dim1 := d[i]
 	dim2 := d[j]
 
-	k := 0
-	for ; k < min(len(dim1), len(dim2)); k++ {
+	for k := 0; k < min(len(dim1), len(dim2)); k++ {
 		if dim1[k] != dim2[k] {
 			return dim1[k] < dim2[k]
 		}
