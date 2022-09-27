@@ -5,8 +5,8 @@ go 1.18
 require (
 	cloud.google.com/go/compute v1.10.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.8
-	github.com/aws/aws-sdk-go v1.44.103
-	github.com/census-instrumentation/opencensus-proto v0.4.0
+	github.com/aws/aws-sdk-go v1.44.106
+	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/hashicorp/consul/api v1.15.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.60.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.60.0
@@ -78,7 +78,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/stretchr/objx v0.4.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.1 // indirect
 	go.opentelemetry.io/otel v1.10.0 // indirect
 	go.opentelemetry.io/otel/metric v0.32.1 // indirect
 	go.opentelemetry.io/otel/trace v1.10.0 // indirect

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,13 +49,4 @@ func JSONUnmarshalerHook() mapstructure.DecodeHookFunc {
 		}
 		return to.Interface(), nil
 	}
-}
-
-func UnmarshalMapstructure(input interface{}, result interface{}) error {
-	dc := &mapstructure.DecoderConfig{Result: result, DecodeHook: JSONUnmarshalerHook()}
-	ms, err := mapstructure.NewDecoder(dc)
-	if err != nil {
-		return err
-	}
-	return ms.Decode(input)
 }
