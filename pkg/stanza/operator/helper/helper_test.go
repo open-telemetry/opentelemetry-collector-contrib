@@ -30,6 +30,7 @@ type helpersConfig struct {
 	Time        TimeParser      `mapstructure:"time"`
 	Severity    SeverityConfig  `mapstructure:"severity"`
 	Scope       ScopeNameParser `mapstructure:"scope"`
+	Size        ByteSize        `mapstructure:"size"`
 }
 
 func newHelpersConfig() *helpersConfig {
