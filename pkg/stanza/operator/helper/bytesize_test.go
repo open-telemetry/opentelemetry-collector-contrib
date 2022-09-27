@@ -15,113 +15,169 @@
 package helper
 
 import (
-	"encoding/json"
+	"path/filepath"
 	"testing"
-
-	"github.com/mitchellh/mapstructure"
-	"github.com/stretchr/testify/require"
-	yaml "gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 )
 
-type testCase struct {
-	input       string
-	expected    ByteSize
-	expectError bool
-}
-
-var sharedTestCases = []testCase{
-	{`1`, 1, false},
-	{`3.3`, 3, false},
-	{`0`, 0, false},
-	{`10101010`, 10101010, false},
-	{`0.01`, 0, false},
-	{`"1"`, 1, false},
-	{`"1kb"`, 1000, false},
-	{`"1KB"`, 1000, false},
-	{`"1kib"`, 1024, false},
-	{`"1KiB"`, 1024, false},
-	{`"1mb"`, 1000 * 1000, false},
-	{`"1mib"`, 1024 * 1024, false},
-	{`"1gb"`, 1000 * 1000 * 1000, false},
-	{`"1gib"`, 1024 * 1024 * 1024, false},
-	{`"1tb"`, 1000 * 1000 * 1000 * 1000, false},
-	{`"1tib"`, 1024 * 1024 * 1024 * 1024, false},
-	{`"1pB"`, 1000 * 1000 * 1000 * 1000 * 1000, false},
-	{`"1pib"`, 1024 * 1024 * 1024 * 1024 * 1024, false},
-	{`"3ii3"`, 0, true},
-	{`3ii3`, 0, true},
-	{`--ii3`, 0, true},
-	{`{"test":"val"}`, 0, true},
-	// {`1e3`, 1000, false},   not supported in mapstructure
-}
-
-func TestByteSizeUnmarshalJSON(t *testing.T) {
-	for _, tc := range sharedTestCases {
-		t.Run("json/"+tc.input, func(t *testing.T) {
-			var bs ByteSize
-			err := json.Unmarshal([]byte(tc.input), &bs)
-			if tc.expectError {
-				require.Error(t, err)
-				return
-			}
-
-			require.NoError(t, err)
-			require.Equal(t, tc.expected, bs)
-		})
-	}
-}
-
-func TestByteSizeUnmarshalYAML(t *testing.T) {
-	additionalCases := []testCase{
-		{`1kb`, 1000, false},
-		{`1KB`, 1000, false},
-		{`1kib`, 1024, false},
-		{`1KiB`, 1024, false},
-		{`1mb`, 1000 * 1000, false},
-		{`1mib`, 1024 * 1024, false},
-		{`1gb`, 1000 * 1000 * 1000, false},
-		{`1gib`, 1024 * 1024 * 1024, false},
-		{`1tb`, 1000 * 1000 * 1000 * 1000, false},
-		{`1tib`, 1024 * 1024 * 1024 * 1024, false},
-		{`1pB`, 1000 * 1000 * 1000 * 1000 * 1000, false},
-		{`1pib`, 1024 * 1024 * 1024 * 1024 * 1024, false},
-		{`test: val`, 0, true},
-	}
-
-	var cases []testCase
-	cases = append(cases, sharedTestCases...)
-	cases = append(cases, additionalCases...)
-
-	for _, tc := range cases {
-		t.Run("yaml/"+tc.input, func(t *testing.T) {
-			var bs ByteSize
-			yamlErr := yaml.Unmarshal([]byte(tc.input), &bs)
-			if tc.expectError {
-				require.Error(t, yamlErr)
-				return
-			}
-			require.NoError(t, yamlErr)
-			require.Equal(t, tc.expected, bs)
-		})
-		t.Run("mapstructure/"+tc.input, func(t *testing.T) {
-			var bs ByteSize
-			var raw string
-			_ = yaml.Unmarshal([]byte(tc.input), &raw)
-
-			dc := &mapstructure.DecoderConfig{Result: &bs, DecodeHook: operatortest.JSONUnmarshalerHook()}
-			ms, err := mapstructure.NewDecoder(dc)
-			require.NoError(t, err)
-
-			err = ms.Decode(raw)
-			if tc.expectError {
-				require.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
-
-			require.Equal(t, tc.expected, bs)
-		})
-	}
+func TestUnmarshalByteSize(t *testing.T) {
+	operatortest.ConfigUnmarshalTests{
+		DefaultConfig: newHelpersConfig(),
+		TestsFile:     filepath.Join(".", "testdata", "bytesize.yaml"),
+		Tests: []operatortest.ConfigUnmarshalTest{
+			{
+				Name: `valid_0`,
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Size = ByteSize(0)
+					return c
+				}(),
+			},
+			{
+				Name: `valid_1`,
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Size = ByteSize(1)
+					return c
+				}(),
+			},
+			{
+				Name: `valid_3.3`,
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Size = ByteSize(3)
+					return c
+				}(),
+			},
+			{
+				Name: `valid_10101010`,
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Size = ByteSize(10101010)
+					return c
+				}(),
+			},
+			{
+				Name: `valid_0.01`,
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Size = ByteSize(0)
+					return c
+				}(),
+			},
+			{
+				Name: `valid_1kb`,
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Size = ByteSize(1000)
+					return c
+				}(),
+			},
+			{
+				Name: `valid_1KB`,
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Size = ByteSize(1000)
+					return c
+				}(),
+			},
+			{
+				Name: `valid_1kib`,
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Size = ByteSize(1024)
+					return c
+				}(),
+			},
+			{
+				Name: `valid_1KiB`,
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Size = ByteSize(1024)
+					return c
+				}(),
+			},
+			{
+				Name: `valid_1mb`,
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Size = ByteSize(1000 * 1000)
+					return c
+				}(),
+			},
+			{
+				Name: `valid_1mib`,
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Size = ByteSize(1024 * 1024)
+					return c
+				}(),
+			},
+			{
+				Name: `valid_1gb`,
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Size = ByteSize(1000 * 1000 * 1000)
+					return c
+				}(),
+			},
+			{
+				Name: `valid_1gib`,
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Size = ByteSize(1024 * 1024 * 1024)
+					return c
+				}(),
+			},
+			{
+				Name: `valid_1tb`,
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Size = ByteSize(1000 * 1000 * 1000 * 1000)
+					return c
+				}(),
+			},
+			{
+				Name: `valid_1tib`,
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Size = ByteSize(1024 * 1024 * 1024 * 1024)
+					return c
+				}(),
+			},
+			{
+				Name: `valid_1pB`,
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Size = ByteSize(1000 * 1000 * 1000 * 1000 * 1000)
+					return c
+				}(),
+			},
+			{
+				Name: `valid_1pib`,
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Size = ByteSize(1024 * 1024 * 1024 * 1024 * 1024)
+					return c
+				}(),
+			},
+			{
+				Name:      `invalid_3ii3`,
+				ExpectErr: true,
+			},
+			{
+				Name:      `invalid_--ii3`,
+				ExpectErr: true,
+			},
+			{
+				Name:      `invalid_map`,
+				ExpectErr: true,
+			},
+			{
+				Name:      `invalid_map2`,
+				ExpectErr: true,
+			},
+		},
+	}.Run(t)
 }
