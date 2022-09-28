@@ -55,7 +55,6 @@ func TestScrape(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
-	require.NoError(t, golden.WriteMetrics(expectedFile, actualMetrics))
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
