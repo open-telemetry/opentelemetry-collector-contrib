@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ func TestChronyScraper(t *testing.T) {
 				m.SetUnit("ppm")
 				m.SetDescription("This is the estimated error bound on the frequency.")
 				g := m.SetEmptyGauge().DataPoints().AppendEmpty()
-				g.SetDoubleVal(1000.300)
+				g.SetDoubleValue(1000.300)
 				g.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(100, 0)))
 				g.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(100, 0)))
 
@@ -87,7 +87,7 @@ func TestChronyScraper(t *testing.T) {
 				m.SetDescription("The number of seconds difference between the system's clock and the reference clock")
 				g = m.SetEmptyGauge().DataPoints().AppendEmpty()
 				g.Attributes().PutString("leap.status", "normal")
-				g.SetDoubleVal(0.00043)
+				g.SetDoubleValue(0.00043)
 				g.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(100, 0)))
 				g.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(100, 0)))
 
@@ -97,7 +97,7 @@ func TestChronyScraper(t *testing.T) {
 				m.SetDescription("The estimated local offset on the last clock update")
 				g = m.SetEmptyGauge().DataPoints().AppendEmpty()
 				g.Attributes().PutString("leap.status", "normal")
-				g.SetDoubleVal(0.00034)
+				g.SetDoubleValue(0.00034)
 				g.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(100, 0)))
 				g.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(100, 0)))
 				return metrics

@@ -1,2 +1,0 @@
-severity:
-  parse_from: body.severity_field

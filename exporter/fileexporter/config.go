@@ -29,6 +29,16 @@ type Config struct {
 
 	// Rotation defines an option about rotation of telemetry files
 	Rotation Rotation `mapstructure:"rotation"`
+
+	// FormatType define the data format of encoded telemetry data
+	// Options:
+	// - json[default]:  OTLP json bytes.
+	// - proto:  OTLP binary protobuf bytes.
+	FormatType string `mapstructure:"format"`
+
+	// Compression Codec used to export telemetry data
+	// Supported compression algorithms:`zstd`
+	Compression string `mapstructure:"compression"`
 }
 
 // Rotation an option to rolling log files
@@ -61,6 +71,11 @@ func (cfg *Config) Validate() error {
 	if cfg.Path == "" {
 		return errors.New("path must be non-empty")
 	}
-
+	if cfg.FormatType != formatTypeJSON && cfg.FormatType != formatTypeProto {
+		return errors.New("format type is not supported")
+	}
+	if cfg.Compression != "" && cfg.Compression != compressionZSTD {
+		return errors.New("compression is not supported")
+	}
 	return nil
 }

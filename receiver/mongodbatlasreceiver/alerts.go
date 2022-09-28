@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -237,7 +237,7 @@ func payloadToLogs(now time.Time, payload []byte) (plog.Logs, error) {
 	logRecord.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
 	logRecord.SetTimestamp(timestampFromAlert(alert))
 	logRecord.SetSeverityNumber(severityFromAlert(alert))
-	logRecord.Body().SetStringVal(string(payload))
+	logRecord.Body().SetStr(string(payload))
 
 	resourceAttrs := resourceLogs.Resource().Attributes()
 	resourceAttrs.PutString("mongodbatlas.group.id", alert.GroupID)

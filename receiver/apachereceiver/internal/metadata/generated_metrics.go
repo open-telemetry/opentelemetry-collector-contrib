@@ -240,7 +240,7 @@ func (m *metricApacheCPULoad) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("server_name", serverNameAttributeValue)
 }
 
@@ -293,7 +293,7 @@ func (m *metricApacheCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("server_name", serverNameAttributeValue)
 	dp.Attributes().PutString("level", cpuLevelAttributeValue)
 	dp.Attributes().PutString("mode", cpuModeAttributeValue)
@@ -348,7 +348,7 @@ func (m *metricApacheCurrentConnections) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("server_name", serverNameAttributeValue)
 }
 
@@ -399,7 +399,7 @@ func (m *metricApacheLoad1) recordDataPoint(start pcommon.Timestamp, ts pcommon.
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("server_name", serverNameAttributeValue)
 }
 
@@ -450,7 +450,7 @@ func (m *metricApacheLoad15) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("server_name", serverNameAttributeValue)
 }
 
@@ -501,7 +501,7 @@ func (m *metricApacheLoad5) recordDataPoint(start pcommon.Timestamp, ts pcommon.
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("server_name", serverNameAttributeValue)
 }
 
@@ -554,7 +554,7 @@ func (m *metricApacheRequestTime) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("server_name", serverNameAttributeValue)
 }
 
@@ -607,7 +607,7 @@ func (m *metricApacheRequests) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("server_name", serverNameAttributeValue)
 }
 
@@ -660,7 +660,7 @@ func (m *metricApacheScoreboard) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("server_name", serverNameAttributeValue)
 	dp.Attributes().PutString("state", scoreboardStateAttributeValue)
 }
@@ -714,7 +714,7 @@ func (m *metricApacheTraffic) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("server_name", serverNameAttributeValue)
 }
 
@@ -767,7 +767,7 @@ func (m *metricApacheUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("server_name", serverNameAttributeValue)
 }
 
@@ -820,7 +820,7 @@ func (m *metricApacheWorkers) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("server_name", serverNameAttributeValue)
 	dp.Attributes().PutString("state", workersStateAttributeValue)
 }
@@ -926,10 +926,10 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {

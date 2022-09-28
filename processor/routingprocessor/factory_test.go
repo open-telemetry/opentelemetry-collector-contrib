@@ -193,7 +193,7 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 			require.NoError(t, err)
 			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
 
-			exp := newMetricProcessor(zap.NewNop(), cfg)
+			exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, cfg)
 			err = exp.Start(context.Background(), host)
 			// assert that no error is thrown due to multiple pipelines and exporters not using the routing processor
 			assert.NoError(t, err)

@@ -20,11 +20,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -106,7 +104,7 @@ func TestProcess(t *testing.T) {
 			func() (operator.Operator, error) {
 				cfg := NewConfigWithID("test_id")
 				cfg.ParseFrom = entry.NewBodyField("url")
-				cfg.ParseTo = entry.NewBodyField("url2")
+				cfg.ParseTo = entry.RootableField{Field: entry.NewBodyField("url2")}
 				return cfg.Build(testutil.Logger(t))
 			},
 			&entry.Entry{
@@ -706,37 +704,4 @@ func BenchmarkQueryParamValuesToMap(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		queryParamValuesToMap(v)
 	}
-}
-
-func TestConfig(t *testing.T) {
-	expect := NewConfigWithID("test")
-	expect.ParseFrom = entry.NewBodyField("from")
-	expect.ParseTo = entry.NewBodyField("to")
-
-	t.Run("mapstructure", func(t *testing.T) {
-		input := map[string]interface{}{
-			"id":         "test",
-			"type":       "uri_parser",
-			"parse_from": "body.from",
-			"parse_to":   "body.to",
-			"on_error":   "send",
-		}
-		var actual Config
-		err := helper.UnmarshalMapstructure(input, &actual)
-		require.NoError(t, err)
-		require.Equal(t, expect, &actual)
-	})
-
-	t.Run("yaml", func(t *testing.T) {
-		input := `
-type: uri_parser
-id: test
-on_error: "send"
-parse_from: body.from
-parse_to: body.to`
-		var actual Config
-		err := yaml.Unmarshal([]byte(input), &actual)
-		require.NoError(t, err)
-		require.Equal(t, expect, &actual)
-	})
 }

@@ -124,7 +124,7 @@ func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, d
 			for k := 0; k < dataPointCount; k++ {
 				dataPoint := dps.AppendEmpty()
 				dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-				dataPoint.SetIntVal(int64(k))
+				dataPoint.SetIntValue(int64(k))
 				dataPoint.Attributes().PutString("commonGroupedAttr", "abc")
 				dataPoint.Attributes().PutString("commonNonGroupedAttr", "xyz")
 			}
@@ -765,7 +765,7 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	assert.Equal(t, 1, localhost.ScopeMetrics().At(0).Metrics().Len())
 	localhostMetric := localhost.ScopeMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, "dont-move", localhostMetric.Name())
-	assert.Equal(t, pmetric.MetricDataTypeGauge, localhostMetric.DataType())
+	assert.Equal(t, pmetric.MetricTypeGauge, localhostMetric.Type())
 
 	// We must have host-A
 	hostA, foundHostA := retrieveHostResource(processedMetrics.ResourceMetrics(), "host-A")
@@ -773,17 +773,17 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	assert.Equal(t, 1, hostA.Resource().Attributes().Len())
 	assert.Equal(t, 1, hostA.ScopeMetrics().Len())
 	assert.Equal(t, 3, hostA.ScopeMetrics().At(0).Metrics().Len())
-	hostAGauge1, foundHostAGauge1 := retrieveMetric(hostA.ScopeMetrics().At(0).Metrics(), "gauge-1", pmetric.MetricDataTypeGauge)
+	hostAGauge1, foundHostAGauge1 := retrieveMetric(hostA.ScopeMetrics().At(0).Metrics(), "gauge-1", pmetric.MetricTypeGauge)
 	assert.True(t, foundHostAGauge1)
 	assert.Equal(t, 4, hostAGauge1.Gauge().DataPoints().Len())
 	assert.Equal(t, 1, hostAGauge1.Gauge().DataPoints().At(0).Attributes().Len())
 	metricIDAttribute, foundMetricIDAttribute := hostAGauge1.Gauge().DataPoints().At(0).Attributes().Get("id")
 	assert.True(t, foundMetricIDAttribute)
 	assert.Equal(t, "eth0", metricIDAttribute.AsString())
-	hostAMixedGauge, foundHostAMixedGauge := retrieveMetric(hostA.ScopeMetrics().At(0).Metrics(), "mixed-type", pmetric.MetricDataTypeGauge)
+	hostAMixedGauge, foundHostAMixedGauge := retrieveMetric(hostA.ScopeMetrics().At(0).Metrics(), "mixed-type", pmetric.MetricTypeGauge)
 	assert.True(t, foundHostAMixedGauge)
 	assert.Equal(t, 2, hostAMixedGauge.Gauge().DataPoints().Len())
-	hostAMixedSum, foundHostAMixedSum := retrieveMetric(hostA.ScopeMetrics().At(0).Metrics(), "mixed-type", pmetric.MetricDataTypeSum)
+	hostAMixedSum, foundHostAMixedSum := retrieveMetric(hostA.ScopeMetrics().At(0).Metrics(), "mixed-type", pmetric.MetricTypeSum)
 	assert.True(t, foundHostAMixedSum)
 	assert.Equal(t, 2, hostAMixedSum.Sum().DataPoints().Len())
 
@@ -793,10 +793,10 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	assert.Equal(t, 1, hostB.Resource().Attributes().Len())
 	assert.Equal(t, 1, hostB.ScopeMetrics().Len())
 	assert.Equal(t, 2, hostB.ScopeMetrics().At(0).Metrics().Len())
-	hostBGauge1, foundHostBGauge1 := retrieveMetric(hostB.ScopeMetrics().At(0).Metrics(), "gauge-1", pmetric.MetricDataTypeGauge)
+	hostBGauge1, foundHostBGauge1 := retrieveMetric(hostB.ScopeMetrics().At(0).Metrics(), "gauge-1", pmetric.MetricTypeGauge)
 	assert.True(t, foundHostBGauge1)
 	assert.Equal(t, 2, hostBGauge1.Gauge().DataPoints().Len())
-	hostBMixedGauge, foundHostBMixedGauge := retrieveMetric(hostB.ScopeMetrics().At(0).Metrics(), "mixed-type", pmetric.MetricDataTypeGauge)
+	hostBMixedGauge, foundHostBMixedGauge := retrieveMetric(hostB.ScopeMetrics().At(0).Metrics(), "mixed-type", pmetric.MetricTypeGauge)
 	assert.True(t, foundHostBMixedGauge)
 	assert.Equal(t, 1, hostBMixedGauge.Gauge().DataPoints().Len())
 }
@@ -814,10 +814,10 @@ func retrieveHostResource(resources pmetric.ResourceMetricsSlice, hostname strin
 }
 
 // Test helper function that retrieves the specified metric
-func retrieveMetric(metrics pmetric.MetricSlice, name string, metricType pmetric.MetricDataType) (pmetric.Metric, bool) {
+func retrieveMetric(metrics pmetric.MetricSlice, name string, metricType pmetric.MetricType) (pmetric.Metric, bool) {
 	for i := 0; i < metrics.Len(); i++ {
 		metric := metrics.At(i)
-		if metric.Name() == name && metric.DataType() == metricType {
+		if metric.Name() == name && metric.Type() == metricType {
 			return metric, true
 		}
 	}

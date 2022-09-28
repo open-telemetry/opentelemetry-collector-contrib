@@ -21,7 +21,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -83,7 +83,7 @@ func TestUnmarshal(t *testing.T) {
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.Protocol = RFC5424
-					cfg.ParseTo = entry.NewBodyField("log")
+					cfg.ParseTo = entry.RootableField{Field: entry.NewBodyField("log")}
 					return cfg
 				}(),
 			},

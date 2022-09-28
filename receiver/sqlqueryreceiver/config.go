@@ -76,7 +76,7 @@ type MetricCfg struct {
 	AttributeColumns []string          `mapstructure:"attribute_columns"`
 	Monotonic        bool              `mapstructure:"monotonic"`
 	ValueType        MetricValueType   `mapstructure:"value_type"`
-	DataType         MetricDataType    `mapstructure:"data_type"`
+	DataType         MetricType        `mapstructure:"data_type"`
 	Aggregation      MetricAggregation `mapstructure:"aggregation"`
 	Unit             string            `mapstructure:"unit"`
 	Description      string            `mapstructure:"description"`
@@ -100,7 +100,7 @@ func (c MetricCfg) Validate() error {
 	if err := c.Aggregation.Validate(); err != nil {
 		errs = multierr.Append(errs, err)
 	}
-	if c.DataType == MetricDataTypeGauge && c.Aggregation != "" {
+	if c.DataType == MetricTypeGauge && c.Aggregation != "" {
 		errs = multierr.Append(errs, fmt.Errorf("aggregation=%s but data_type=%s does not support aggregation", c.Aggregation, c.DataType))
 	}
 	if errs != nil && c.MetricName != "" {
@@ -109,17 +109,17 @@ func (c MetricCfg) Validate() error {
 	return errs
 }
 
-type MetricDataType string
+type MetricType string
 
 const (
-	MetricDataTypeUnspecified MetricDataType = ""
-	MetricDataTypeGauge       MetricDataType = "gauge"
-	MetricDataTypeSum         MetricDataType = "sum"
+	MetricTypeUnspecified MetricType = ""
+	MetricTypeGauge       MetricType = "gauge"
+	MetricTypeSum         MetricType = "sum"
 )
 
-func (t MetricDataType) Validate() error {
+func (t MetricType) Validate() error {
 	switch t {
-	case MetricDataTypeUnspecified, MetricDataTypeGauge, MetricDataTypeSum:
+	case MetricTypeUnspecified, MetricTypeGauge, MetricTypeSum:
 		return nil
 	}
 	return fmt.Errorf("metric config has unsupported data_type: '%s'", t)

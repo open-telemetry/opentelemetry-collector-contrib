@@ -164,7 +164,7 @@ func initializeMetricDps(metric pmetric.Metric, now pcommon.Timestamp, counterVa
 	attributes map[string]string) {
 	var dps pmetric.NumberDataPointSlice
 
-	if metric.DataType() == pmetric.MetricDataTypeGauge {
+	if metric.Type() == pmetric.MetricTypeGauge {
 		dps = metric.Gauge().DataPoints()
 	} else {
 		dps = metric.Sum().DataPoints()
@@ -181,7 +181,7 @@ func initializeMetricDps(metric pmetric.Metric, now pcommon.Timestamp, counterVa
 	}
 
 	dp.SetTimestamp(now)
-	dp.SetDoubleVal(counterValue.Value)
+	dp.SetDoubleValue(counterValue.Value)
 }
 
 func instancesFromConfig(oc ObjectConfig) []string {

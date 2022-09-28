@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
@@ -26,15 +25,10 @@ import (
 // BaseConfig is the common configuration of a stanza-based receiver
 type BaseConfig struct {
 	config.ReceiverSettings `mapstructure:",squash"`
-	Operators               OperatorConfigs     `mapstructure:"operators"`
+	Operators               []operator.Config   `mapstructure:"operators"`
 	Converter               ConverterConfig     `mapstructure:"converter"`
 	StorageID               *config.ComponentID `mapstructure:"storage"`
 }
-
-// OperatorConfigs is an alias that allows for unmarshaling outside of mapstructure
-// Stanza operators should will be migrated to mapstructure for greater compatibility
-// but this allows a temporary solution
-type OperatorConfigs []map[string]interface{}
 
 // ConverterConfig controls how the internal entry.Entry to plog.Logs converter
 // works.
@@ -49,19 +43,4 @@ type ConverterConfig struct {
 	// log records translation should be spawned.
 	// By default: math.Max(1, runtime.NumCPU()/4) workers are spawned.
 	WorkerCount int `mapstructure:"worker_count"`
-}
-
-// decodeOperatorConfigs is an unmarshaling workaround for stanza operators
-// This is needed only until stanza operators are migrated to mapstructure
-func (cfg BaseConfig) DecodeOperatorConfigs() ([]operator.Config, error) {
-	if len(cfg.Operators) == 0 {
-		return []operator.Config{}, nil
-	}
-
-	yamlBytes, _ := yaml.Marshal(cfg.Operators)
-	var operatorCfgs []operator.Config
-	if err := yaml.Unmarshal(yamlBytes, &operatorCfgs); err != nil {
-		return nil, err
-	}
-	return operatorCfgs, nil
 }

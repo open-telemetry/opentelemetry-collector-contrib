@@ -30,7 +30,7 @@ import (
 func Test_serializeGaugePoint(t *testing.T) {
 	t.Run("float with prefix and dimension", func(t *testing.T) {
 		dp := pmetric.NewNumberDataPoint()
-		dp.SetDoubleVal(5.5)
+		dp.SetDoubleValue(5.5)
 		dp.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		got, err := serializeGaugePoint("dbl_gauge", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), dp)
@@ -40,7 +40,7 @@ func Test_serializeGaugePoint(t *testing.T) {
 
 	t.Run("int with prefix and dimension", func(t *testing.T) {
 		dp := pmetric.NewNumberDataPoint()
-		dp.SetIntVal(5)
+		dp.SetIntValue(5)
 		dp.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		got, err := serializeGaugePoint("int_gauge", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), dp)
@@ -50,7 +50,7 @@ func Test_serializeGaugePoint(t *testing.T) {
 
 	t.Run("without timestamp", func(t *testing.T) {
 		dp := pmetric.NewNumberDataPoint()
-		dp.SetIntVal(5)
+		dp.SetIntValue(5)
 
 		got, err := serializeGaugePoint("int_gauge", "prefix", dimensions.NewNormalizedDimensionList(), dp)
 		assert.NoError(t, err)
@@ -168,12 +168,12 @@ func Test_serializeGauge(t *testing.T) {
 					t.Fatal("both int and float values set")
 				}
 				for _, intVal := range tt.args.intValues {
-					dataPoints.AppendEmpty().SetIntVal(intVal)
+					dataPoints.AppendEmpty().SetIntValue(intVal)
 				}
 			}
 			if tt.args.floatValues != nil {
 				for _, floatVal := range tt.args.floatValues {
-					dataPoints.AppendEmpty().SetDoubleVal(floatVal)
+					dataPoints.AppendEmpty().SetDoubleValue(floatVal)
 				}
 			}
 

@@ -38,12 +38,43 @@ const (
 	otelSentryExporterName    = "sentry.opentelemetry"
 )
 
-// canonicalCodes maps OpenTelemetry span codes to Sentry's span status.
-// See numeric codes in https://github.com/open-telemetry/opentelemetry-proto/blob/6cf77b2f544f6bc7fe1e4b4a8a52e5a42cb50ead/opentelemetry/proto/trace/v1/trace.proto#L303
-var canonicalCodes = [...]sentry.SpanStatus{
-	sentry.SpanStatusUndefined,
-	sentry.SpanStatusOK,
-	sentry.SpanStatusUnknown,
+// See OpenTelemetry span statuses in https://github.com/open-telemetry/opentelemetry-proto/blob/6cf77b2f544f6bc7fe1e4b4a8a52e5a42cb50ead/opentelemetry/proto/trace/v1/trace.proto#L303
+
+// OpenTelemetry span status can be Unset, Ok, Error. HTTP and Grpc codes contained in tags can make it more detailed.
+
+// canonicalCodesHTTPMap maps some HTTP codes to Sentry's span statuses. See possible mapping in https://develop.sentry.dev/sdk/event-payloads/span/
+var canonicalCodesHTTPMap = map[string]sentry.SpanStatus{
+	"400": sentry.SpanStatusFailedPrecondition, // SpanStatusInvalidArgument, SpanStatusOutOfRange
+	"401": sentry.SpanStatusUnauthenticated,
+	"403": sentry.SpanStatusPermissionDenied,
+	"404": sentry.SpanStatusNotFound,
+	"409": sentry.SpanStatusAborted, // SpanStatusAlreadyExists
+	"429": sentry.SpanStatusResourceExhausted,
+	"499": sentry.SpanStatusCanceled,
+	"500": sentry.SpanStatusInternalError, // SpanStatusDataLoss, SpanStatusUnknown
+	"501": sentry.SpanStatusUnimplemented,
+	"503": sentry.SpanStatusUnavailable,
+	"504": sentry.SpanStatusDeadlineExceeded,
+}
+
+// canonicalCodesGrpcMap maps some GRPC codes to Sentry's span statuses. See description in grpc documentation.
+var canonicalCodesGrpcMap = map[string]sentry.SpanStatus{
+	"1":  sentry.SpanStatusCanceled,
+	"2":  sentry.SpanStatusUnknown,
+	"3":  sentry.SpanStatusInvalidArgument,
+	"4":  sentry.SpanStatusDeadlineExceeded,
+	"5":  sentry.SpanStatusNotFound,
+	"6":  sentry.SpanStatusAlreadyExists,
+	"7":  sentry.SpanStatusPermissionDenied,
+	"8":  sentry.SpanStatusResourceExhausted,
+	"9":  sentry.SpanStatusFailedPrecondition,
+	"10": sentry.SpanStatusAborted,
+	"11": sentry.SpanStatusOutOfRange,
+	"12": sentry.SpanStatusUnimplemented,
+	"13": sentry.SpanStatusInternalError,
+	"14": sentry.SpanStatusUnavailable,
+	"15": sentry.SpanStatusDataLoss,
+	"16": sentry.SpanStatusUnauthenticated,
 }
 
 // SentryExporter defines the Sentry Exporter.
@@ -147,9 +178,9 @@ func convertEventsToSentryExceptions(eventList *[]*sentry.Event, events ptrace.S
 		event.Attributes().Range(func(k string, v pcommon.Value) bool {
 			switch k {
 			case conventions.AttributeExceptionMessage:
-				exceptionMessage = v.StringVal()
+				exceptionMessage = v.Str()
 			case conventions.AttributeExceptionType:
-				exceptionType = v.StringVal()
+				exceptionType = v.Str()
 			}
 			return true
 		})
@@ -235,7 +266,7 @@ func convertToSentrySpan(span ptrace.Span, library pcommon.InstrumentationScope,
 		tags[k] = v
 	}
 
-	status, message := statusFromSpanStatus(span.Status())
+	status, message := statusFromSpanStatus(span.Status(), tags)
 
 	if message != "" {
 		tags["status_message"] = message
@@ -292,7 +323,7 @@ func generateSpanDescriptors(name string, attrs pcommon.Map, spanKind ptrace.Spa
 		}
 
 		// Ex. description="GET /api/users/{user_id}".
-		fmt.Fprintf(&dBuilder, "%s %s", httpMethod.StringVal(), name)
+		fmt.Fprintf(&dBuilder, "%s %s", httpMethod.Str(), name)
 
 		return opBuilder.String(), dBuilder.String()
 	}
@@ -303,7 +334,7 @@ func generateSpanDescriptors(name string, attrs pcommon.Map, spanKind ptrace.Spa
 
 		// Use DB statement (Ex "SELECT * FROM table") if possible as description.
 		if statement, okInst := attrs.Get(conventions.AttributeDBStatement); okInst {
-			dBuilder.WriteString(statement.StringVal())
+			dBuilder.WriteString(statement.Str())
 		} else {
 			dBuilder.WriteString(name)
 		}
@@ -327,7 +358,7 @@ func generateSpanDescriptors(name string, attrs pcommon.Map, spanKind ptrace.Spa
 
 	// If faas.trigger exists then this is a function as a service span.
 	if trigger, ok := attrs.Get("faas.trigger"); ok {
-		opBuilder.WriteString(trigger.StringVal())
+		opBuilder.WriteString(trigger.Str())
 
 		return opBuilder.String(), name
 	}
@@ -345,14 +376,14 @@ func generateTagsFromAttributes(attrs pcommon.Map) map[string]string {
 
 	attrs.Range(func(key string, attr pcommon.Value) bool {
 		switch attr.Type() {
-		case pcommon.ValueTypeString:
-			tags[key] = attr.StringVal()
+		case pcommon.ValueTypeStr:
+			tags[key] = attr.Str()
 		case pcommon.ValueTypeBool:
-			tags[key] = strconv.FormatBool(attr.BoolVal())
+			tags[key] = strconv.FormatBool(attr.Bool())
 		case pcommon.ValueTypeDouble:
-			tags[key] = strconv.FormatFloat(attr.DoubleVal(), 'g', -1, 64)
+			tags[key] = strconv.FormatFloat(attr.Double(), 'g', -1, 64)
 		case pcommon.ValueTypeInt:
-			tags[key] = strconv.FormatInt(attr.IntVal(), 10)
+			tags[key] = strconv.FormatInt(attr.Int(), 10)
 		}
 		return true
 	})
@@ -360,13 +391,37 @@ func generateTagsFromAttributes(attrs pcommon.Map) map[string]string {
 	return tags
 }
 
-func statusFromSpanStatus(spanStatus ptrace.SpanStatus) (status sentry.SpanStatus, message string) {
+func statusFromSpanStatus(spanStatus ptrace.SpanStatus, tags map[string]string) (status sentry.SpanStatus, message string) {
 	code := spanStatus.Code()
-	if code < 0 || int(code) >= len(canonicalCodes) {
+	if code < 0 || int(code) > 2 {
 		return sentry.SpanStatusUnknown, fmt.Sprintf("error code %d", code)
 	}
-
-	return canonicalCodes[code], spanStatus.Message()
+	httpCode, foundHTTPCode := tags["http.status_code"]
+	grpcCode, foundGrpcCode := tags["rpc.grpc.status_code"]
+	var sentryStatus sentry.SpanStatus
+	switch {
+	case code == 1 || code == 0:
+		sentryStatus = sentry.SpanStatusOK
+	case foundHTTPCode:
+		httpStatus, foundHTTPStatus := canonicalCodesHTTPMap[httpCode]
+		switch {
+		case foundHTTPStatus:
+			sentryStatus = httpStatus
+		default:
+			sentryStatus = sentry.SpanStatusUnknown
+		}
+	case foundGrpcCode:
+		grpcStatus, foundGrpcStatus := canonicalCodesGrpcMap[grpcCode]
+		switch {
+		case foundGrpcStatus:
+			sentryStatus = grpcStatus
+		default:
+			sentryStatus = sentry.SpanStatusUnknown
+		}
+	default:
+		sentryStatus = sentry.SpanStatusUnknown
+	}
+	return sentryStatus, spanStatus.Message()
 }
 
 // spanIsTransaction determines if a span should be sent to Sentry as a transaction.
@@ -381,7 +436,7 @@ func transactionFromSpan(span *sentry.Span) *sentry.Event {
 	transaction := sentry.NewEvent()
 	transaction.EventID = generateEventID()
 
-	transaction.Contexts["trace"] = sentry.TraceContext{
+	transaction.Contexts["trace"] = &sentry.TraceContext{
 		TraceID:      span.TraceID,
 		SpanID:       span.SpanID,
 		ParentSpanID: span.ParentSpanID,

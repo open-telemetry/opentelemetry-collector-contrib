@@ -25,7 +25,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqltraces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
 )
 
 var _ component.TracesProcessor = (*tracesProcessor)(nil)
@@ -38,18 +38,18 @@ type tracesProcessor struct {
 	router    router[component.TracesExporter]
 }
 
-func newTracesProcessor(logger *zap.Logger, config config.Processor) *tracesProcessor {
+func newTracesProcessor(settings component.TelemetrySettings, config config.Processor) *tracesProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
 	return &tracesProcessor{
-		logger: logger,
+		logger: settings.Logger,
 		config: cfg,
 		router: newRouter[component.TracesExporter](
 			cfg.Table,
 			cfg.DefaultExporters,
-			logger,
+			settings,
 		),
-		extractor: newExtractor(cfg.FromAttribute, logger),
+		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
 }
 
@@ -79,7 +79,7 @@ func (p *tracesProcessor) ConsumeTraces(ctx context.Context, t ptrace.Traces) er
 
 type spanGroup struct {
 	exporters []component.TracesExporter
-	resSpans  ptrace.ResourceSpansSlice
+	traces    ptrace.Traces
 }
 
 func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
@@ -91,7 +91,7 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 	var errs error
 	for i := 0; i < t.ResourceSpans().Len(); i++ {
 		rspans := t.ResourceSpans().At(i)
-		stx := tqltraces.NewTransformContext(
+		stx := ottltraces.NewTransformContext(
 			ptrace.Span{},
 			pcommon.InstrumentationScope{},
 			rspans.Resource(),
@@ -114,12 +114,8 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 	}
 
 	for _, g := range groups {
-		t := ptrace.NewTraces()
-		t.ResourceSpans().EnsureCapacity(g.resSpans.Len())
-		g.resSpans.MoveAndAppendTo(t.ResourceSpans())
-
 		for _, e := range g.exporters {
-			errs = multierr.Append(errs, e.ConsumeTraces(ctx, t))
+			errs = multierr.Append(errs, e.ConsumeTraces(ctx, g.traces))
 		}
 	}
 	return errs
@@ -128,10 +124,10 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 func (p *tracesProcessor) group(key string, groups map[string]spanGroup, exporters []component.TracesExporter, spans ptrace.ResourceSpans) {
 	group, ok := groups[key]
 	if !ok {
-		group.resSpans = ptrace.NewResourceSpansSlice()
+		group.traces = ptrace.NewTraces()
 		group.exporters = exporters
 	}
-	spans.CopyTo(group.resSpans.AppendEmpty())
+	spans.CopyTo(group.traces.ResourceSpans().AppendEmpty())
 	groups[key] = group
 }
 

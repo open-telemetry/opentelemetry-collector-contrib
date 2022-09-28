@@ -29,6 +29,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"github.com/grafana/loki/pkg/logproto"
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -38,7 +39,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/tenant"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 )
 
 const (
@@ -290,11 +291,11 @@ func (l *lokiExporter) convertAttributesToLabels(attributes pcommon.Map, allowed
 	for attr, attrLabelName := range allowedLabels {
 		av, ok := attributes.Get(attr)
 		if ok {
-			if av.Type() != pcommon.ValueTypeString {
+			if av.Type() != pcommon.ValueTypeStr {
 				l.settings.Logger.Debug("Failed to convert attribute value to Loki label value, value is not a string", zap.String("attribute", attr))
 				continue
 			}
-			ls[attrLabelName] = model.LabelValue(av.StringVal())
+			ls[attrLabelName] = model.LabelValue(av.Str())
 		}
 	}
 
@@ -372,7 +373,7 @@ func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Reso
 		return true
 	})
 
-	b.WriteString(lr.Body().StringVal())
+	b.WriteString(lr.Body().Str())
 
 	return &logproto.Entry{
 		Timestamp: timestampFromLogRecord(lr),
@@ -381,7 +382,7 @@ func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Reso
 }
 
 func (l *lokiExporter) convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource) (*logproto.Entry, error) {
-	line, err := encodeJSON(lr, res)
+	line, err := loki.Encode(lr, res)
 	if err != nil {
 		return nil, err
 	}

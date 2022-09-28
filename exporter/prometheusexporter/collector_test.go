@@ -74,18 +74,18 @@ func TestConvertInvalidDataType(t *testing.T) {
 }
 
 func TestConvertInvalidMetric(t *testing.T) {
-	for _, mType := range []pmetric.MetricDataType{
-		pmetric.MetricDataTypeHistogram,
-		pmetric.MetricDataTypeSum,
-		pmetric.MetricDataTypeGauge,
+	for _, mType := range []pmetric.MetricType{
+		pmetric.MetricTypeHistogram,
+		pmetric.MetricTypeSum,
+		pmetric.MetricTypeGauge,
 	} {
 		metric := pmetric.NewMetric()
 		switch mType {
-		case pmetric.MetricDataTypeGauge:
+		case pmetric.MetricTypeGauge:
 			metric.SetEmptyGauge().DataPoints().AppendEmpty()
-		case pmetric.MetricDataTypeSum:
+		case pmetric.MetricTypeSum:
 			metric.SetEmptySum().DataPoints().AppendEmpty()
-		case pmetric.MetricDataTypeHistogram:
+		case pmetric.MetricTypeHistogram:
 			metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 		}
 		c := collector{}
@@ -135,7 +135,7 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 	// add each exemplar value to the metric
 	for _, e := range exemplars {
 		pde := hd.Exemplars().AppendEmpty()
-		pde.SetDoubleVal(e.Value)
+		pde.SetDoubleValue(e.Value)
 		for k, v := range e.Labels {
 			pde.FilteredAttributes().PutString(k, v)
 		}
@@ -212,7 +212,7 @@ func TestCollectMetricsLabelSanitize(t *testing.T) {
 	metric.SetName("test_metric")
 	metric.SetDescription("test description")
 	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetIntVal(42)
+	dp.SetIntValue(42)
 	dp.Attributes().PutString("label.1", "1")
 	dp.Attributes().PutString("label/2", "2")
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
@@ -266,7 +266,7 @@ func TestCollectMetrics(t *testing.T) {
 				metric.SetName("test_metric")
 				metric.SetDescription("test description")
 				dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
-				dp.SetIntVal(42)
+				dp.SetIntValue(42)
 				dp.Attributes().PutString("label_1", "1")
 				dp.Attributes().PutString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
@@ -283,7 +283,7 @@ func TestCollectMetrics(t *testing.T) {
 				metric.SetName("test_metric")
 				metric.SetDescription("test description")
 				dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
-				dp.SetDoubleVal(42.42)
+				dp.SetDoubleValue(42.42)
 				dp.Attributes().PutString("label_1", "1")
 				dp.Attributes().PutString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
@@ -302,7 +302,7 @@ func TestCollectMetrics(t *testing.T) {
 				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
-				dp.SetIntVal(42)
+				dp.SetIntValue(42)
 				dp.Attributes().PutString("label_1", "1")
 				dp.Attributes().PutString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
@@ -321,7 +321,7 @@ func TestCollectMetrics(t *testing.T) {
 				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
-				dp.SetDoubleVal(42.42)
+				dp.SetDoubleValue(42.42)
 				dp.Attributes().PutString("label_1", "1")
 				dp.Attributes().PutString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
@@ -340,7 +340,7 @@ func TestCollectMetrics(t *testing.T) {
 				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
-				dp.SetIntVal(42)
+				dp.SetIntValue(42)
 				dp.Attributes().PutString("label_1", "1")
 				dp.Attributes().PutString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
@@ -359,7 +359,7 @@ func TestCollectMetrics(t *testing.T) {
 				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
-				dp.SetDoubleVal(42.42)
+				dp.SetDoubleValue(42.42)
 				dp.Attributes().PutString("label_1", "1")
 				dp.Attributes().PutString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))

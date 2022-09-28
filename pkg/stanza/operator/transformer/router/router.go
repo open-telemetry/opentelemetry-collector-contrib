@@ -48,15 +48,15 @@ func NewConfigWithID(operatorID string) *Config {
 // Config is the configuration of a router operator
 type Config struct {
 	helper.BasicConfig `mapstructure:",squash" yaml:",inline"`
-	Routes             []*RouteConfig   `mapstructure:"routes" json:"routes" yaml:"routes"`
-	Default            helper.OutputIDs `mapstructure:"default" json:"default" yaml:"default"`
+	Routes             []*RouteConfig `mapstructure:"routes" json:"routes" yaml:"routes"`
+	Default            []string       `mapstructure:"default" json:"default" yaml:"default"`
 }
 
 // RouteConfig is the configuration of a route on a router operator
 type RouteConfig struct {
 	helper.AttributerConfig `mapstructure:",squash" yaml:",inline"`
-	Expression              string           `mapstructure:"expr" json:"expr"   yaml:"expr"`
-	OutputIDs               helper.OutputIDs `mapstructure:"output" json:"output" yaml:"output"`
+	Expression              string   `mapstructure:"expr" json:"expr"   yaml:"expr"`
+	OutputIDs               []string `mapstructure:"output" json:"output" yaml:"output"`
 }
 
 // Build will build a router operator from the supplied configuration
@@ -110,7 +110,7 @@ type Transformer struct {
 type Route struct {
 	helper.Attributer
 	Expression      *vm.Program
-	OutputIDs       helper.OutputIDs
+	OutputIDs       []string
 	OutputOperators []operator.Operator
 }
 

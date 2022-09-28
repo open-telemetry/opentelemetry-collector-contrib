@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,18 +34,18 @@ var (
 
 func TestProcess(t *testing.T) {
 	tests := []struct {
-		query []string
-		want  func(pmetric.Metrics)
+		statements []string
+		want       func(pmetric.Metrics)
 	}{
 		{
-			query: []string{`set(attributes["test"], "pass") where metric.name == "operationA"`},
+			statements: []string{`set(attributes["test"], "pass") where metric.name == "operationA"`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutString("test", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutString("test", "pass")
 			},
 		},
 		{
-			query: []string{`set(attributes["test"], "pass") where resource.attributes["host.name"] == "myhost"`},
+			statements: []string{`set(attributes["test"], "pass") where resource.attributes["host.name"] == "myhost"`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutString("test", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutString("test", "pass")
@@ -58,7 +58,7 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			query: []string{`keep_keys(attributes, "attr2") where metric.name == "operationA"`},
+			statements: []string{`keep_keys(attributes, "attr2") where metric.name == "operationA"`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Clear()
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutString("attr2", "test2")
@@ -67,7 +67,7 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			query: []string{`set(metric.description, "test") where attributes["attr1"] == "test1"`},
+			statements: []string{`set(metric.description, "test") where attributes["attr1"] == "test1"`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetDescription("test")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetDescription("test")
@@ -76,7 +76,7 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			query: []string{`set(metric.unit, "new unit")`},
+			statements: []string{`set(metric.unit, "new unit")`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetUnit("new unit")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetUnit("new unit")
@@ -85,13 +85,13 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			query: []string{`set(metric.description, "Sum") where metric.type == METRIC_DATA_TYPE_SUM`},
+			statements: []string{`set(metric.description, "Sum") where metric.type == METRIC_DATA_TYPE_SUM`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetDescription("Sum")
 			},
 		},
 		{
-			query: []string{`set(metric.aggregation_temporality, AGGREGATION_TEMPORALITY_DELTA) where metric.aggregation_temporality == 0`},
+			statements: []string{`set(metric.aggregation_temporality, AGGREGATION_TEMPORALITY_DELTA) where metric.aggregation_temporality == 0`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
@@ -99,44 +99,44 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			query: []string{`set(metric.is_monotonic, true) where metric.is_monotonic == false`},
+			statements: []string{`set(metric.is_monotonic, true) where metric.is_monotonic == false`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().SetIsMonotonic(true)
 			},
 		},
 		{
-			query: []string{`set(attributes["test"], "pass") where count == 1`},
+			statements: []string{`set(attributes["test"], "pass") where count == 1`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().PutString("test", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
-			query: []string{`set(attributes["test"], "pass") where scale == 1`},
+			statements: []string{`set(attributes["test"], "pass") where scale == 1`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
-			query: []string{`set(attributes["test"], "pass") where zero_count == 1`},
+			statements: []string{`set(attributes["test"], "pass") where zero_count == 1`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
-			query: []string{`set(attributes["test"], "pass") where positive.offset == 1`},
+			statements: []string{`set(attributes["test"], "pass") where positive.offset == 1`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
-			query: []string{`set(attributes["test"], "pass") where negative.offset == 1`},
+			statements: []string{`set(attributes["test"], "pass") where negative.offset == 1`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
-			query: []string{`replace_pattern(attributes["attr1"], "test1", "pass")`},
+			statements: []string{`replace_pattern(attributes["attr1"], "test1", "pass")`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutString("attr1", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutString("attr1", "pass")
@@ -148,7 +148,7 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			query: []string{`replace_all_patterns(attributes, "test1", "pass")`},
+			statements: []string{`replace_all_patterns(attributes, "test1", "pass")`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutString("attr1", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutString("attr1", "pass")
@@ -160,7 +160,7 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			query: []string{`convert_summary_count_val_to_sum("delta", true) where metric.name == "operationD"`},
+			statements: []string{`convert_summary_count_val_to_sum("delta", true) where metric.name == "operationD"`},
 			want: func(td pmetric.Metrics) {
 				sumMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
 				sumDp := sumMetric.SetEmptySum().DataPoints().AppendEmpty()
@@ -176,13 +176,13 @@ func TestProcess(t *testing.T) {
 				sumMetric.SetUnit(summaryMetric.Unit())
 
 				summaryDp.Attributes().CopyTo(sumDp.Attributes())
-				sumDp.SetIntVal(int64(summaryDp.Count()))
+				sumDp.SetIntValue(int64(summaryDp.Count()))
 				sumDp.SetStartTimestamp(StartTimestamp)
 				sumDp.SetTimestamp(TestTimeStamp)
 			},
 		},
 		{
-			query: []string{`convert_summary_sum_val_to_sum("delta", true) where metric.name == "operationD"`},
+			statements: []string{`convert_summary_sum_val_to_sum("delta", true) where metric.name == "operationD"`},
 			want: func(td pmetric.Metrics) {
 				sumMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
 				sumDp := sumMetric.SetEmptySum().DataPoints().AppendEmpty()
@@ -198,13 +198,13 @@ func TestProcess(t *testing.T) {
 				sumMetric.SetUnit(summaryMetric.Unit())
 
 				summaryDp.Attributes().CopyTo(sumDp.Attributes())
-				sumDp.SetDoubleVal(summaryDp.Sum())
+				sumDp.SetDoubleValue(summaryDp.Sum())
 				sumDp.SetStartTimestamp(StartTimestamp)
 				sumDp.SetTimestamp(TestTimeStamp)
 			},
 		},
 		{
-			query: []string{
+			statements: []string{
 				`convert_summary_sum_val_to_sum("delta", true) where metric.name == "operationD"`,
 				`set(metric.unit, "new unit")`,
 			},
@@ -223,7 +223,7 @@ func TestProcess(t *testing.T) {
 				sumMetric.SetUnit("new unit")
 
 				summaryDp.Attributes().CopyTo(sumDp.Attributes())
-				sumDp.SetDoubleVal(summaryDp.Sum())
+				sumDp.SetDoubleValue(summaryDp.Sum())
 				sumDp.SetStartTimestamp(StartTimestamp)
 				sumDp.SetTimestamp(TestTimeStamp)
 
@@ -234,7 +234,7 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			query: []string{`set(attributes["test"], "pass") where IsMatch(metric.name, "operation[AC]") == true`},
+			statements: []string{`set(attributes["test"], "pass") where IsMatch(metric.name, "operation[AC]") == true`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutString("test", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutString("test", "pass")
@@ -243,38 +243,78 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			query: []string{`delete_key(attributes, "attr3") where metric.name == "operationA"`},
+			statements: []string{`delete_key(attributes, "attr3") where metric.name == "operationA"`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Clear()
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutString("attr1", "test1")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutString("attr2", "test2")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutString("flags", "A|B|C")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().Clear()
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutString("attr1", "test1")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutString("attr2", "test2")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutString("flags", "A|B|C")
 			},
 		},
 		{
-			query: []string{`delete_matching_keys(attributes, "[23]") where metric.name == "operationA"`},
+			statements: []string{`delete_matching_keys(attributes, "[23]") where metric.name == "operationA"`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Clear()
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutString("attr1", "test1")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutString("flags", "A|B|C")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().Clear()
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutString("attr1", "test1")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutString("flags", "A|B|C")
 			},
 		},
 		{
-			query: []string{`set(attributes["test"], Concat("-", attributes["attr1"], attributes["attr2"])) where metric.name == Concat("", "operation", "A")`},
+			statements: []string{`set(attributes["test"], Concat("-", attributes["attr1"], attributes["attr2"])) where metric.name == Concat("", "operation", "A")`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutString("test", "test1-test2")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutString("test", "test1-test2")
 			},
 		},
+		{
+			statements: []string{`set(attributes["test"], Split(attributes["flags"], "|"))`},
+			want: func(td pmetric.Metrics) {
+				v00 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutEmptySlice("test")
+				v00.AppendEmpty().SetStr("A")
+				v00.AppendEmpty().SetStr("B")
+				v00.AppendEmpty().SetStr("C")
+				v01 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutEmptySlice("test")
+				v01.AppendEmpty().SetStr("A")
+				v01.AppendEmpty().SetStr("B")
+				v01.AppendEmpty().SetStr("C")
+				v10 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().PutEmptySlice("test")
+				v10.AppendEmpty().SetStr("C")
+				v10.AppendEmpty().SetStr("D")
+				v11 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().PutEmptySlice("test")
+				v11.AppendEmpty().SetStr("C")
+				v11.AppendEmpty().SetStr("D")
+			},
+		},
+		{
+			statements: []string{`set(attributes["test"], Split(attributes["flags"], "|")) where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				v00 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutEmptySlice("test")
+				v00.AppendEmpty().SetStr("A")
+				v00.AppendEmpty().SetStr("B")
+				v00.AppendEmpty().SetStr("C")
+				v01 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutEmptySlice("test")
+				v01.AppendEmpty().SetStr("A")
+				v01.AppendEmpty().SetStr("B")
+				v01.AppendEmpty().SetStr("C")
+			},
+		},
+		{
+			statements: []string{`set(attributes["test"], Split(attributes["not_exist"], "|"))`},
+			want:       func(td pmetric.Metrics) {},
+		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.query[0], func(t *testing.T) {
+		t.Run(tt.statements[0], func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor(tt.query, Functions(), component.ProcessorCreateSettings{})
+			processor, err := NewProcessor(tt.statements, Functions(), component.TelemetrySettings{})
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(context.Background(), td)
@@ -307,16 +347,18 @@ func fillMetricOne(m pmetric.Metric) {
 
 	dataPoint0 := m.SetEmptySum().DataPoints().AppendEmpty()
 	dataPoint0.SetStartTimestamp(StartTimestamp)
-	dataPoint0.SetDoubleVal(1.0)
+	dataPoint0.SetDoubleValue(1.0)
 	dataPoint0.Attributes().PutString("attr1", "test1")
 	dataPoint0.Attributes().PutString("attr2", "test2")
 	dataPoint0.Attributes().PutString("attr3", "test3")
+	dataPoint0.Attributes().PutString("flags", "A|B|C")
 
 	dataPoint1 := m.Sum().DataPoints().AppendEmpty()
 	dataPoint1.SetStartTimestamp(StartTimestamp)
 	dataPoint1.Attributes().PutString("attr1", "test1")
 	dataPoint1.Attributes().PutString("attr2", "test2")
 	dataPoint1.Attributes().PutString("attr3", "test3")
+	dataPoint1.Attributes().PutString("flags", "A|B|C")
 }
 
 func fillMetricTwo(m pmetric.Metric) {
@@ -329,6 +371,7 @@ func fillMetricTwo(m pmetric.Metric) {
 	dataPoint0.Attributes().PutString("attr1", "test1")
 	dataPoint0.Attributes().PutString("attr2", "test2")
 	dataPoint0.Attributes().PutString("attr3", "test3")
+	dataPoint0.Attributes().PutString("flags", "C|D")
 	dataPoint0.SetCount(1)
 
 	dataPoint1 := m.Histogram().DataPoints().AppendEmpty()
@@ -336,6 +379,7 @@ func fillMetricTwo(m pmetric.Metric) {
 	dataPoint1.Attributes().PutString("attr1", "test1")
 	dataPoint1.Attributes().PutString("attr2", "test2")
 	dataPoint1.Attributes().PutString("attr3", "test3")
+	dataPoint1.Attributes().PutString("flags", "C|D")
 }
 
 func fillMetricThree(m pmetric.Metric) {
