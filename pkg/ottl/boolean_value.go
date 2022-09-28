@@ -68,14 +68,11 @@ func (p *Parser) newComparisonEvaluator(comparison *Comparison) (boolExpressionE
 		return nil, err
 	}
 
-	comparator := cmp{
-		logger: p.telemetrySettings.Logger,
-	}
 	// The parser ensures that we'll never get an invalid comparison.Op, so we don't have to check that case.
 	return func(ctx TransformContext) bool {
 		a := left.Get(ctx)
 		b := right.Get(ctx)
-		return comparator.compare(a, b, comparison.Op)
+		return p.compare(a, b, comparison.Op)
 	}, nil
 
 }
