@@ -16,10 +16,14 @@ package nsxtreceiver // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestMetricValidation(t *testing.T) {
@@ -83,4 +87,25 @@ func TestMetricValidation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+
+	expected := factory.CreateDefaultConfig().(*Config)
+	expected.Endpoint = "https://nsx-manager-endpoint"
+	expected.Username = "admin"
+	expected.Password = "$NSXT_PASSWORD"
+	expected.TLSSetting.Insecure = true
+	expected.CollectionInterval = time.Minute
+
+	require.Equal(t, expected, cfg)
 }
