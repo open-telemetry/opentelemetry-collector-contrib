@@ -51,6 +51,7 @@ func TestIisIntegration(t *testing.T) {
 	actualMetrics := consumer.AllMetrics()[0]
 
 	expectedFile := filepath.Join("testdata", "integration", "expected.json")
+	require.NoError(t, golden.WriteMetrics(expectedFile, actualMetrics))
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
