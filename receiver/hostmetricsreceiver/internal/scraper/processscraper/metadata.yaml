@@ -192,3 +192,13 @@ metrics:
       aggregation: cumulative
       monotonic: true
     attributes: [context_switch_type]
+
+  process.disk.operations:
+    enabled: false
+    description: Number of disk operations performed by the process.
+    unit: "{operations}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [direction]
