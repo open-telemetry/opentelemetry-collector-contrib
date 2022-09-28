@@ -85,7 +85,7 @@ type alertsReceiver struct {
 	publicKey                string
 	retrySettings            exporterhelper.RetrySettings
 	pollInterval             time.Duration
-	cache                    *alertCache
+	record                   *alertRecord
 	doneChan                 chan bool
 	projectClusterInclusions map[string]bool
 	projectClusterExclusions map[string]bool
@@ -354,20 +354,22 @@ func (a alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatl
 	logs := plog.NewLogs()
 
 	var errs error
+	var lastRecordedTime = a.record.LastRecordedTime
 	for _, alert := range alerts {
-		if a.hasProcessed(alert) {
-			continue
-		}
-
-		resourceLogs := logs.ResourceLogs().AppendEmpty()
-		logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-		logRecord.SetObservedTimestamp(now)
 
 		ts, err := time.Parse(time.RFC3339, alert.Updated)
 		if err != nil {
 			a.logger.Warn("unable to interpret updated time for alert, expecting a RFC3339 timestamp", zap.String("timestamp", alert.Updated))
 			continue
 		}
+
+		if lastRecordedTime != nil && lastRecordedTime.After(ts) {
+			continue
+		}
+
+		resourceLogs := logs.ResourceLogs().AppendEmpty()
+		logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		logRecord.SetObservedTimestamp(now)
 
 		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 		logRecord.SetSeverityNumber(severityFromAPIAlert(alert))
@@ -424,11 +426,13 @@ func (a alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatl
 
 		attrs.PutString("net.peer.name", host)
 		attrs.PutInt("net.peer.port", port)
-		a.cache.Put(alertKey(alert), cachePutOptions{
-			ExpiresAt: now.AsTime().Add(defaultAlertsTTL),
-		})
+
+		if lastRecordedTime == nil || lastRecordedTime.Before(ts) {
+			lastRecordedTime = &ts
+		}
 	}
 
+	a.record.SetLastRecorded(lastRecordedTime)
 	return logs, errs
 }
 
@@ -517,34 +521,16 @@ func payloadToLogs(now time.Time, payload []byte) (plog.Logs, error) {
 	return logs, nil
 }
 
-type cachePutOptions struct {
-	ExpiresAt time.Time `mapstructure:"expires_at"`
-}
-
-// alertCache wraps a sync Map so it is goroutine safe as well as
+// alertRecord wraps a sync Map so it is goroutine safe as well as
 // can have custom marshaling
-type alertCache struct {
+type alertRecord struct {
 	sync.Mutex
-	Data map[string]cachePutOptions `mapstructure:"data"`
+	LastRecordedTime *time.Time `mapstructure:"last_recorded"`
 }
 
-func (a *alertCache) Has(k string) bool {
+func (a *alertRecord) SetLastRecorded(lastUpdated *time.Time) {
 	a.Lock()
-	val, ok := a.Data[k]
-	a.Unlock()
-	if ok {
-		now := time.Now()
-		if now.After(val.ExpiresAt) {
-			delete(a.Data, k)
-			return false
-		}
-	}
-	return ok
-}
-
-func (a *alertCache) Put(k string, opts cachePutOptions) {
-	a.Lock()
-	a.Data[k] = opts
+	a.LastRecordedTime = lastUpdated
 	a.Unlock()
 }
 
@@ -555,24 +541,22 @@ func (a *alertsReceiver) syncPersistence(ctx context.Context) error {
 	c := *a.storageClient
 	cBytes, err := c.Get(ctx, alertCacheKey)
 	if err != nil {
-		a.cache = &alertCache{}
+		a.record = &alertRecord{}
 		return err
 	}
 
 	if cBytes != nil {
-		var cache alertCache
+		var cache alertRecord
 		if err = json.Unmarshal(cBytes, &cache); err != nil {
 			return fmt.Errorf("unable to decode stored cache: %w", err)
 		}
-		a.cache = &cache
+		a.record = &cache
 		return nil
 	}
 
 	// create if not already loaded
-	newC := &alertCache{
-		Data: map[string]cachePutOptions{},
-	}
-	a.cache = newC
+	newC := &alertRecord{}
+	a.record = newC
 
 	return nil
 }
@@ -582,7 +566,7 @@ func (a *alertsReceiver) writeCheckpoint(ctx context.Context) error {
 		return nil
 	}
 	c := *a.storageClient
-	marshalBytes, err := json.Marshal(&a.cache)
+	marshalBytes, err := json.Marshal(&a.record)
 	if err != nil {
 		return fmt.Errorf("unable to write checkpoint: %w", err)
 	}
@@ -611,16 +595,6 @@ func (a *alertsReceiver) applyFilters(pConf ProjectConfig, alerts []mongodbatlas
 		}
 	}
 	return filtered
-}
-
-func (a *alertsReceiver) hasProcessed(alert mongodbatlas.Alert) bool {
-	hasItem := a.cache.Has(alertKey(alert))
-	return hasItem
-}
-
-// alertKey is a key to index the alert to see if it has already been processed.
-func alertKey(alert mongodbatlas.Alert) string {
-	return fmt.Sprintf("%s|%s|%s", alert.ID, alert.Status, alert.Updated)
 }
 
 func projectClusterKey(project ProjectConfig, clusterName string) string {
