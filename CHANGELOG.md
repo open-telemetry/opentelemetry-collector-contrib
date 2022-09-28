@@ -64,7 +64,7 @@
 - `mysqlreceiver`: The receiver now scraper 16 new metrics related to io_waits. (#14138)
 - `filelog`, `journald`, `syslog`, `tcplog`, `udplog`, `windowseventlog`: Allow 'parse_to' fields to accept 'attributes' and 'resource' (#14089)
 - `sentryexporter`: Make sentry status more detailed - use HTTP and Grpc codes from tags (#13407)
-- `processor/routingprocessor`: Add support for using OpenTelemetry Transformation Language (OTTL) expressions as routing conditions. (#13158)
+- `routingprocessor`: Add support for using OpenTelemetry Transformation Language (OTTL) expressions as routing conditions. (#13158)
 - `transformprocessor`: Add `Split` function, which separates a string by the delimiter and returns an array of substrings. (#11790)
 - `pkg/winperfcounters`: Add counter path to error if scraping fails (#14443)
 
