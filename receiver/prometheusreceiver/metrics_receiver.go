@@ -18,10 +18,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/model/relabel"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -31,6 +29,7 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/mitchellh/hashstructure/v2"
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
@@ -47,6 +46,7 @@ const (
 	gcIntervalDelta   = 1 * time.Minute
 )
 
+// closeOnce ensures that the scrape manager is started after the discovery manager
 type closeOnce struct {
 	C     chan struct{}
 	once  sync.Once
@@ -125,7 +125,11 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 func (r *pReceiver) initTargetAllocator(allocConf *targetAllocator, baseCfg *config.Config) {
 	r.settings.Logger.Info("Starting target allocator discovery")
 	// immediately sync jobs and not wait for the first tick
-	savedHash, _ := r.syncTargetAllocator(uint64(0), allocConf, baseCfg)
+	savedHash, err := r.syncTargetAllocator(uint64(0), allocConf, baseCfg)
+	if err != nil {
+		r.settings.Logger.Error(err.Error())
+		return
+	}
 	r.targetAllocatorIntervalTicker = time.NewTicker(allocConf.Interval)
 	go func() {
 		<-r.reloadReady.C
@@ -161,15 +165,10 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *targetAll
 		return hash, nil
 	}
 
+	// Clear out the current configurations
+	baseCfg.ScrapeConfigs = []*config.ScrapeConfig{}
+
 	for jobName, scrapeConfig := range scrapeConfigsResponse {
-		var filteredList []*relabel.Config
-		for _, relabelConfig := range scrapeConfig.RelabelConfigs {
-			if relabelConfig.SourceLabels.Len() > 0 && relabelConfig.SourceLabels[0] == "__tmp_hash" {
-				continue
-			}
-			filteredList = append(filteredList, relabelConfig)
-		}
-		scrapeConfig.RelabelConfigs = filteredList
 		var httpSD promHTTP.SDConfig
 		if allocConf.HTTPSDConfig == nil {
 			httpSD = promHTTP.SDConfig{
@@ -197,8 +196,13 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *targetAll
 	return hash, nil
 }
 
+// instantiateShard inserts the SHARD environment variable in the returned configuration
 func (r *pReceiver) instantiateShard(body []byte) []byte {
-	return bytes.ReplaceAll(body, []byte("$(SHARD)"), []byte(os.Getenv("SHARD")))
+	shard, ok := os.LookupEnv("SHARD")
+	if !ok {
+		shard = "0"
+	}
+	return bytes.ReplaceAll(body, []byte("$(SHARD)"), []byte(shard))
 }
 
 func (r *pReceiver) getScrapeConfigsResponse(baseURL string) (map[string]*config.ScrapeConfig, error) {
@@ -214,7 +218,7 @@ func (r *pReceiver) getScrapeConfigsResponse(baseURL string) (map[string]*config
 	}
 
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
