@@ -21,8 +21,8 @@ In order to collect logs, at least one project must be specified. By default, lo
 
 MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/logs/#logs) recommends a polling interval of 5 minutes.
 
-- `public_key` (required for metrics or alerts in `poll` mode)
-- `private_key` (required for metrics or alerts in `poll` mode)
+- `public_key` (required for metrics, logs or alerts in `poll` mode)
+- `private_key` (required for metrics, logs or alerts in `poll` mode)
 - `granularity` (default `PT1M` - See [MongoDB Atlas Documentation](https://docs.atlas.mongodb.com/reference/api/process-measurements/))
 - `storage` configure the component ID of a storage extension. If specified, alerts `poll` mode will utilize the extension to ensure alerts are not duplicated after a collector restart.
 - `retry_on_failure`
