@@ -27,7 +27,7 @@ import (
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	ft := factory.Type()
-	require.EqualValues(t, "mongodbatlas", ft)
+	require.EqualValues(t, typeStr, ft)
 }
 
 func TestBadAlertsReceiver(t *testing.T) {
