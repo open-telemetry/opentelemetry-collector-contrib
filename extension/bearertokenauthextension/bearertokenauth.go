@@ -115,18 +115,34 @@ func (b *BearerTokenAuth) startWatcher(ctx context.Context, watcher *fsnotify.Wa
 			if !ok {
 				continue
 			}
-			if event.Op == fsnotify.Write {
-				token, err := os.ReadFile(b.filename)
-				if err != nil {
-					b.logger.Error(err.Error())
-					continue
-				}
-				b.muTokenString.Lock()
-				b.tokenString = string(token)
-				b.muTokenString.Unlock()
+
+			// NOTE: k8s configmaps uses symlinks, we need this workaround.
+			// original configmap file is removed.
+			// SEE: https://martensson.io/go-fsnotify-and-kubernetes-configmaps/
+			if event.Op == fsnotify.Remove {
+				// remove the watcher since the file is removed
+				watcher.Remove(event.Name)
+				// add a new watcher pointing to the new symlink/file
+				watcher.Add(b.filename)
+				b.refreshToken()
+			}
+			// also allow normal files to be modified and reloaded.
+			if event.Op&fsnotify.Write == fsnotify.Write {
+				b.refreshToken()
 			}
 		}
 	}
+}
+
+func (b *BearerTokenAuth) refreshToken() {
+	token, err := os.ReadFile(b.filename)
+	if err != nil {
+		b.logger.Error(err.Error())
+		return
+	}
+	b.muTokenString.Lock()
+	b.tokenString = string(token)
+	b.muTokenString.Unlock()
 }
 
 // Shutdown of BearerTokenAuth does nothing and returns nil
