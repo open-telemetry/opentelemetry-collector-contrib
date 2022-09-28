@@ -128,7 +128,7 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: false,
 		},
 		ContainerCPUUsageSystem: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerCPUUsageTotal: MetricSettings{
 			Enabled: true,
@@ -1032,7 +1032,7 @@ type metricContainerCPUUsageSystem struct {
 // init fills container.cpu.usage.system metric with initial data.
 func (m *metricContainerCPUUsageSystem) init() {
 	m.data.SetName("container.cpu.usage.system")
-	m.data.SetDescription("System CPU usage.")
+	m.data.SetDescription("System CPU usage, as reported by docker.")
 	m.data.SetUnit("ns")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)

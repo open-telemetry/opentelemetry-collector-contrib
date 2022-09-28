@@ -374,7 +374,7 @@
               "unit": "{operations}"
             },
             {
-              "description": "System CPU usage.",
+              "description": "System CPU usage, as reported by docker.",
               "name": "container.cpu.usage.system",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
