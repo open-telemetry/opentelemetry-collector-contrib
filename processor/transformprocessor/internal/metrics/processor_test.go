@@ -277,32 +277,32 @@ func TestProcess(t *testing.T) {
 			statements: []string{`set(attributes["test"], Split(attributes["flags"], "|"))`},
 			want: func(td pmetric.Metrics) {
 				v00 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutEmptySlice("test")
-				v00.AppendEmpty().SetStringVal("A")
-				v00.AppendEmpty().SetStringVal("B")
-				v00.AppendEmpty().SetStringVal("C")
+				v00.AppendEmpty().SetStr("A")
+				v00.AppendEmpty().SetStr("B")
+				v00.AppendEmpty().SetStr("C")
 				v01 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutEmptySlice("test")
-				v01.AppendEmpty().SetStringVal("A")
-				v01.AppendEmpty().SetStringVal("B")
-				v01.AppendEmpty().SetStringVal("C")
+				v01.AppendEmpty().SetStr("A")
+				v01.AppendEmpty().SetStr("B")
+				v01.AppendEmpty().SetStr("C")
 				v10 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().PutEmptySlice("test")
-				v10.AppendEmpty().SetStringVal("C")
-				v10.AppendEmpty().SetStringVal("D")
+				v10.AppendEmpty().SetStr("C")
+				v10.AppendEmpty().SetStr("D")
 				v11 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().PutEmptySlice("test")
-				v11.AppendEmpty().SetStringVal("C")
-				v11.AppendEmpty().SetStringVal("D")
+				v11.AppendEmpty().SetStr("C")
+				v11.AppendEmpty().SetStr("D")
 			},
 		},
 		{
 			statements: []string{`set(attributes["test"], Split(attributes["flags"], "|")) where metric.name == "operationA"`},
 			want: func(td pmetric.Metrics) {
 				v00 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutEmptySlice("test")
-				v00.AppendEmpty().SetStringVal("A")
-				v00.AppendEmpty().SetStringVal("B")
-				v00.AppendEmpty().SetStringVal("C")
+				v00.AppendEmpty().SetStr("A")
+				v00.AppendEmpty().SetStr("B")
+				v00.AppendEmpty().SetStr("C")
 				v01 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutEmptySlice("test")
-				v01.AppendEmpty().SetStringVal("A")
-				v01.AppendEmpty().SetStringVal("B")
-				v01.AppendEmpty().SetStringVal("C")
+				v01.AppendEmpty().SetStr("A")
+				v01.AppendEmpty().SetStr("B")
+				v01.AppendEmpty().SetStr("C")
 			},
 		},
 		{

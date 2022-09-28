@@ -267,7 +267,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	for sc.Scan() {
 		logRecord := sl.LogRecords().AppendEmpty()
 		logLine := sc.Text()
-		logRecord.Body().SetStringVal(logLine)
+		logRecord.Body().SetStr(logLine)
 	}
 	consumerErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 

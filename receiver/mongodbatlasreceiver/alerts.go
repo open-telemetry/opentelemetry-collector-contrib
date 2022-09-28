@@ -237,7 +237,7 @@ func payloadToLogs(now time.Time, payload []byte) (plog.Logs, error) {
 	logRecord.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
 	logRecord.SetTimestamp(timestampFromAlert(alert))
 	logRecord.SetSeverityNumber(severityFromAlert(alert))
-	logRecord.Body().SetStringVal(string(payload))
+	logRecord.Body().SetStr(string(payload))
 
 	resourceAttrs := resourceLogs.Resource().Attributes()
 	resourceAttrs.PutString("mongodbatlas.group.id", alert.GroupID)

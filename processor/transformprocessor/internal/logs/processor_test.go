@@ -157,21 +157,21 @@ func TestProcess(t *testing.T) {
 			statement: `set(attributes["test"], Split(attributes["flags"], "|"))`,
 			want: func(td plog.Logs) {
 				v1 := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutEmptySlice("test")
-				v1.AppendEmpty().SetStringVal("A")
-				v1.AppendEmpty().SetStringVal("B")
-				v1.AppendEmpty().SetStringVal("C")
+				v1.AppendEmpty().SetStr("A")
+				v1.AppendEmpty().SetStr("B")
+				v1.AppendEmpty().SetStr("C")
 				v2 := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutEmptySlice("test")
-				v2.AppendEmpty().SetStringVal("C")
-				v2.AppendEmpty().SetStringVal("D")
+				v2.AppendEmpty().SetStr("C")
+				v2.AppendEmpty().SetStr("D")
 			},
 		},
 		{
 			statement: `set(attributes["test"], Split(attributes["flags"], "|")) where body == "operationA"`,
 			want: func(td plog.Logs) {
 				newValue := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutEmptySlice("test")
-				newValue.AppendEmpty().SetStringVal("A")
-				newValue.AppendEmpty().SetStringVal("B")
-				newValue.AppendEmpty().SetStringVal("C")
+				newValue.AppendEmpty().SetStr("A")
+				newValue.AppendEmpty().SetStr("B")
+				newValue.AppendEmpty().SetStr("C")
 			},
 		},
 		{
@@ -208,7 +208,7 @@ func constructLogs() plog.Logs {
 }
 
 func fillLogOne(log plog.LogRecord) {
-	log.Body().SetStringVal("operationA")
+	log.Body().SetStr("operationA")
 	log.SetTimestamp(TestLogTimestamp)
 	log.SetObservedTimestamp(TestObservedTimestamp)
 	log.SetDroppedAttributesCount(1)
@@ -224,7 +224,7 @@ func fillLogOne(log plog.LogRecord) {
 }
 
 func fillLogTwo(log plog.LogRecord) {
-	log.Body().SetStringVal("operationB")
+	log.Body().SetStr("operationB")
 	log.SetTimestamp(TestLogTimestamp)
 	log.SetObservedTimestamp(TestObservedTimestamp)
 	log.Attributes().PutString("http.method", "get")

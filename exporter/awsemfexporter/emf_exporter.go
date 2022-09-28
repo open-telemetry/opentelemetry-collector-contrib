@@ -125,7 +125,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 		am := rm.Resource().Attributes()
 		if am.Len() > 0 {
 			am.Range(func(k string, v pcommon.Value) bool {
-				labels[k] = v.StringVal()
+				labels[k] = v.Str()
 				return true
 			})
 		}

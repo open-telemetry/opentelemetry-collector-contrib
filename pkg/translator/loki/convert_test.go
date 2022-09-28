@@ -100,10 +100,10 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 
 func TestConvertAttributesToLabels(t *testing.T) {
 	attrsToSelectSlice := pcommon.NewValueSlice()
-	attrsToSelectSlice.SliceVal().AppendEmpty()
-	attrsToSelectSlice.SliceVal().At(0).SetStringVal("host.name")
-	attrsToSelectSlice.SliceVal().AppendEmpty()
-	attrsToSelectSlice.SliceVal().At(1).SetStringVal("pod.name")
+	attrsToSelectSlice.Slice().AppendEmpty()
+	attrsToSelectSlice.Slice().At(0).SetStr("host.name")
+	attrsToSelectSlice.Slice().AppendEmpty()
+	attrsToSelectSlice.Slice().At(1).SetStr("pod.name")
 
 	testCases := []struct {
 		desc           string

@@ -376,8 +376,8 @@ func TestLogGroups(t *testing.T) {
 	resource := pcommon.NewResource()
 	ava := resource.Attributes().PutEmptySlice(conventions.AttributeAWSLogGroupNames)
 	ava.EnsureCapacity(2)
-	ava.AppendEmpty().SetStringVal("group1")
-	ava.AppendEmpty().SetStringVal("group2")
+	ava.AppendEmpty().SetStr("group1")
+	ava.AppendEmpty().SetStr("group2")
 
 	filtered, awsData := makeAws(attributes, resource)
 
@@ -404,8 +404,8 @@ func TestLogGroupsFromArns(t *testing.T) {
 	resource := pcommon.NewResource()
 	ava := resource.Attributes().PutEmptySlice(conventions.AttributeAWSLogGroupARNs)
 	ava.EnsureCapacity(2)
-	ava.AppendEmpty().SetStringVal(group1)
-	ava.AppendEmpty().SetStringVal(group2)
+	ava.AppendEmpty().SetStr(group1)
+	ava.AppendEmpty().SetStr(group2)
 
 	filtered, awsData := makeAws(attributes, resource)
 

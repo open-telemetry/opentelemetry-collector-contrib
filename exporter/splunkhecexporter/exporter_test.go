@@ -225,7 +225,7 @@ func generateLargeLogsBatch() plog.Logs {
 	ts := pcommon.Timestamp(123)
 	for i := 0; i < 65000; i++ {
 		logRecord := sl.LogRecords().AppendEmpty()
-		logRecord.Body().SetStringVal("mylog")
+		logRecord.Body().SetStr("mylog")
 		logRecord.Attributes().PutString(splunk.DefaultSourceLabel, "myapp")
 		logRecord.Attributes().PutString(splunk.DefaultSourceTypeLabel, "myapp-type")
 		logRecord.Attributes().PutString(splunk.DefaultIndexLabel, "myindex")
@@ -240,7 +240,7 @@ func generateLargeLogsBatch() plog.Logs {
 func TestConsumeLogsData(t *testing.T) {
 	smallBatch := plog.NewLogs()
 	logRecord := smallBatch.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	logRecord.Body().SetStringVal("mylog")
+	logRecord.Body().SetStr("mylog")
 	logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
 	logRecord.Attributes().PutString("custom", "custom")
 	logRecord.SetTimestamp(123)

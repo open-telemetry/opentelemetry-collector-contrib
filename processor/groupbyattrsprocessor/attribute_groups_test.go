@@ -57,10 +57,9 @@ func randomGroups(count int) []pcommon.Map {
 }
 
 var (
-	count    = 1000
-	groups   = randomGroups(count)
-	res      = simpleResource()
-	lagAttrs = newLogsGroupedByAttrs()
+	count  = 1000
+	groups = randomGroups(count)
+	res    = simpleResource()
 )
 
 func TestResourceAttributeScenarios(t *testing.T) {
@@ -107,6 +106,7 @@ func TestResourceAttributeScenarios(t *testing.T) {
 		},
 	}
 
+	logs := plog.NewLogs()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			recordAttributeMap := pcommon.NewMap()
@@ -119,7 +119,7 @@ func TestResourceAttributeScenarios(t *testing.T) {
 				tt.fillExpectedResourceFun(tt.baseResource, expectedResource)
 			}
 
-			rl := lagAttrs.findResourceOrElseCreate(tt.baseResource, recordAttributeMap)
+			rl := findOrCreateResourceLogs(logs, tt.baseResource, recordAttributeMap)
 			assert.EqualValues(t, expectedResource.Attributes(), rl.Resource().Attributes())
 		})
 	}
@@ -158,5 +158,9 @@ func TestInstrumentationLibraryMatching(t *testing.T) {
 }
 
 func BenchmarkAttrGrouping(b *testing.B) {
-	lagAttrs.findResourceOrElseCreate(res, groups[rand.Intn(count)])
+	logs := plog.NewLogs()
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		findOrCreateResourceLogs(logs, res, groups[rand.Intn(count)])
+	}
 }

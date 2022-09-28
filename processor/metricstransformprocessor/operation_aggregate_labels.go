@@ -248,7 +248,6 @@ func mergeHistogramDataPoints(dpsMap map[string]pmetric.HistogramDataPointSlice,
 			if dp.HasMax() && dp.Max() < dps.At(i).Max() {
 				dp.SetMax(dps.At(i).Max())
 			}
-			dps.At(i).Exemplars().MoveAndAppendTo(dp.Exemplars())
 			for b := 0; b < dps.At(i).BucketCounts().Len(); b++ {
 				counts.SetAt(b, counts.At(b)+dps.At(i).BucketCounts().At(b))
 			}

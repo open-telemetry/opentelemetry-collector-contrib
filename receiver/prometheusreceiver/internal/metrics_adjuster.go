@@ -133,7 +133,7 @@ func (tsm *timeseriesMap) get(metric pmetric.Metric, kv pcommon.Map) (*timeserie
 func getAttributesSignature(kv pcommon.Map) string {
 	labelValues := make([]string, 0, kv.Len())
 	kv.Sort().Range(func(_ string, attrValue pcommon.Value) bool {
-		value := attrValue.StringVal()
+		value := attrValue.Str()
 		if value != "" {
 			labelValues = append(labelValues, value)
 		}
@@ -268,7 +268,7 @@ func (ma *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 	if !found {
 		return errors.New("adjusting metrics without instance")
 	}
-	tsm := ma.jobsMap.get(job.StringVal(), instance.StringVal())
+	tsm := ma.jobsMap.get(job.Str(), instance.Str())
 
 	// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
 	// nothing else can modify the data used for adjustment.

@@ -27,9 +27,9 @@ require (
 	github.com/prometheus/prometheus v0.38.0
 	github.com/shirou/gopsutil/v3 v3.22.8
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.60.1-0.20220923151520-96e9af35c002
-	go.opentelemetry.io/collector/pdata v0.60.1-0.20220923151520-96e9af35c002
-	go.opentelemetry.io/collector/semconv v0.60.1-0.20220923151520-96e9af35c002
+	go.opentelemetry.io/collector v0.60.1-0.20220927015850-e98116922cf6
+	go.opentelemetry.io/collector/pdata v0.60.1-0.20220927015850-e98116922cf6
+	go.opentelemetry.io/collector/semconv v0.60.1-0.20220927015850-e98116922cf6
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0

@@ -120,7 +120,7 @@ func TestConvertSpansToTraceSpans_json(t *testing.T) {
 
 	req := reqs.ResourceSpans().At(0)
 	sn, _ := req.Resource().Attributes().Get(conventions.AttributeServiceName)
-	assert.Equal(t, "frontend", sn.StringVal())
+	assert.Equal(t, "frontend", sn.Str())
 
 	// Expecting 9 non-nil spans
 	require.Equal(t, 9, reqs.SpanCount(), "Incorrect non-nil spans count")
@@ -458,5 +458,5 @@ func TestFromBytesWithNoTimestamp(t *testing.T) {
 
 	wasAbsent, mapContainedKey := gs.Attributes().Get("otel.zipkin.absentField.startTime")
 	assert.True(t, mapContainedKey)
-	assert.True(t, wasAbsent.BoolVal())
+	assert.True(t, wasAbsent.Bool())
 }

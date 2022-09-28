@@ -119,7 +119,7 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	require.Equal(t, 1, records.Len())
 
 	record := records.At(0)
-	body := record.Body().MapVal().AsRaw()
+	body := record.Body().Map().AsRaw()
 
 	strs := []string{"Test log"}
 	test := make([]interface{}, len(strs))

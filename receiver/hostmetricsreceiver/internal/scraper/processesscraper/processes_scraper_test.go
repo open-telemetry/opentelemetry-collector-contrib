@@ -141,7 +141,7 @@ func validateRealData(t *testing.T, metrics pmetric.MetricSlice) {
 			points := countMetric.Sum().DataPoints()
 			for i := 0; i < points.Len(); i++ {
 				v, ok := points.At(i).Attributes().Get("status")
-				if ok && v.StringVal() == statusVal {
+				if ok && v.Str() == statusVal {
 					return
 				}
 			}
@@ -210,7 +210,7 @@ func validateFakeData(t *testing.T, metrics pmetric.MetricSlice) {
 			point := points.At(i)
 			val, ok := point.Attributes().Get("status")
 			assert.Truef(t, ok, "Missing status attribute in data point %d", i)
-			attrs[val.StringVal()] = point.IntValue()
+			attrs[val.Str()] = point.IntValue()
 		}
 
 		assert.Equal(t, attrs, map[string]int64{
