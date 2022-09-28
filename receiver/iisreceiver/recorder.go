@@ -33,8 +33,20 @@ type perfCounterRecorderConf struct {
 
 var totalPerfCounterRecorders = []perfCounterRecorderConf{
 	{
-		object:   "Web Service",
+		object:   "Process",
 		instance: "_Total",
+		recorders: map[string]recordFunc{
+			"Thread Count": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+				mb.RecordIisThreadActiveDataPoint(ts, int64(val))
+			},
+		},
+	},
+}
+
+var sitePerfCounterRecorders = []perfCounterRecorderConf{
+	{
+		object:   "Web Service",
+		instance: "*",
 		recorders: map[string]recordFunc{
 			"Current Connections": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisConnectionActiveDataPoint(ts, int64(val))
@@ -87,6 +99,9 @@ var totalPerfCounterRecorders = []perfCounterRecorderConf{
 			},
 		},
 	},
+}
+
+var appPoolPerfCounterRecorders = []perfCounterRecorderConf{
 	{
 		object:   "HTTP Service Request Queues",
 		instance: "*",
@@ -99,91 +114,6 @@ var totalPerfCounterRecorders = []perfCounterRecorderConf{
 			},
 			"MaxQueueItemAge": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisRequestQueueAgeMaxDataPoint(ts, int64(val))
-			},
-		},
-	},
-	{
-		object:   "Process",
-		instance: "_Total",
-		recorders: map[string]recordFunc{
-			"Thread Count": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisThreadActiveDataPoint(ts, int64(val))
-			},
-		},
-	},
-}
-
-var sitePerfCounterRecorders = []perfCounterRecorderConf{
-	{
-		object:   "Web Service",
-		instance: "*",
-		recorders: map[string]recordFunc{
-			"Current Connections": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisSiteConnectionActiveDataPoint(ts, int64(val))
-			},
-			"Total Bytes Received": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisSiteNetworkIoDataPoint(ts, int64(val), metadata.AttributeDirectionReceived)
-			},
-			"Total Bytes Sent": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisSiteNetworkIoDataPoint(ts, int64(val), metadata.AttributeDirectionSent)
-			},
-			"Total Connection Attempts (all instances)": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp,
-				val float64) {
-				mb.RecordIisSiteConnectionAttemptCountDataPoint(ts, int64(val))
-			},
-			"Total Delete Requests": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisSiteRequestCountDataPoint(ts, int64(val), metadata.AttributeRequestDelete)
-			},
-			"Total Get Requests": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisSiteRequestCountDataPoint(ts, int64(val), metadata.AttributeRequestGet)
-			},
-			"Total Head Requests": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisSiteRequestCountDataPoint(ts, int64(val), metadata.AttributeRequestHead)
-			},
-			"Total Options Requests": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisSiteRequestCountDataPoint(ts, int64(val), metadata.AttributeRequestOptions)
-			},
-			"Total Post Requests": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisSiteRequestCountDataPoint(ts, int64(val), metadata.AttributeRequestPost)
-			},
-			"Total Put Requests": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisSiteRequestCountDataPoint(ts, int64(val), metadata.AttributeRequestPut)
-			},
-			"Total Trace Requests": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisSiteRequestCountDataPoint(ts, int64(val), metadata.AttributeRequestTrace)
-			},
-			"Total Files Received": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisSiteNetworkFileCountDataPoint(ts, int64(val), metadata.AttributeDirectionReceived)
-			},
-			"Total Files Sent": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisSiteNetworkFileCountDataPoint(ts, int64(val), metadata.AttributeDirectionSent)
-			},
-			"Total Anonymous Users": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisSiteConnectionAnonymousDataPoint(ts, int64(val))
-			},
-			"Total blocked bandwidth bytes.": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisSiteNetworkBlockedDataPoint(ts, int64(val))
-			},
-			"Service Uptime": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisSiteUptimeDataPoint(ts, int64(val))
-			},
-		},
-	},
-}
-
-var appPoolPerfCounterRecorders = []perfCounterRecorderConf{
-	{
-		object:   "HTTP Service Request Queues",
-		instance: "*",
-		recorders: map[string]recordFunc{
-			"RejectedRequests": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisAppPoolRequestRejectedDataPoint(ts, int64(val))
-			},
-			"CurrentQueueSize": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisAppPoolRequestQueueCountDataPoint(ts, int64(val))
-			},
-			"MaxQueueItemAge": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisAppPoolRequestQueueAgeMaxDataPoint(ts, int64(val))
 			},
 		},
 	},

@@ -80,7 +80,7 @@ func (rcvr *iisReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	rcvr.scrapeInstanceMetrics(now, rcvr.siteWatcherRecorders, metadata.WithIisSite)
-	rcvr.scrapeInstanceMetrics(now, rcvr.appPoolWatcherRecorders, metadata.WithIisAppPool)
+	rcvr.scrapeInstanceMetrics(now, rcvr.appPoolWatcherRecorders, metadata.WithIisApplicationPool)
 	rcvr.scrapeTotalMetrics(now)
 
 	return rcvr.metricBuilder.Emit(), errs
