@@ -37,7 +37,7 @@ func init() {
 
 // UnstartableConfig is the configuration of an unstartable mock operator
 type UnstartableConfig struct {
-	helper.OutputConfig `yaml:",inline"`
+	helper.OutputConfig `mapstructure:",squash"`
 }
 
 // UnstartableOperator is an operator that will build but not start
