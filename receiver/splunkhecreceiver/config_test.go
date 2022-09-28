@@ -20,72 +20,85 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 3)
-
-	r0 := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
-	assert.Equal(t, r0, createDefaultConfig())
-
-	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "allsettings")].(*Config)
-	expectedAllSettings := &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "allsettings")),
-		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: "localhost:8088",
+	tests := []struct {
+		id       config.ComponentID
+		expected config.Receiver
+	}{
+		{
+			id:       config.NewComponentID(typeStr),
+			expected: createDefaultConfig(),
 		},
-		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
-			AccessTokenPassthrough: true,
-		},
-		RawPath: "/foo",
-		HecToOtelAttrs: splunk.HecToOtelAttrs{
-			Source:     "file.name",
-			SourceType: "foobar",
-			Index:      "myindex",
-			Host:       "myhostfield",
-		},
-	}
-	assert.Equal(t, expectedAllSettings, r1)
-
-	r2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "tls")].(*Config)
-	expectedTLSConfig := &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "tls")),
-		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":8088",
-			TLSSetting: &configtls.TLSServerSetting{
-				TLSSetting: configtls.TLSSetting{
-					CertFile: "/test.crt",
-					KeyFile:  "/test.key",
+		{
+			id: config.NewComponentIDWithName(typeStr, "allsettings"),
+			expected: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: "localhost:8088",
+				},
+				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+					AccessTokenPassthrough: true,
+				},
+				RawPath: "/foo",
+				HecToOtelAttrs: splunk.HecToOtelAttrs{
+					Source:     "file.name",
+					SourceType: "foobar",
+					Index:      "myindex",
+					Host:       "myhostfield",
 				},
 			},
 		},
-		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
-			AccessTokenPassthrough: false,
-		},
-		RawPath: "/services/collector/raw",
-		HecToOtelAttrs: splunk.HecToOtelAttrs{
-			Source:     "com.splunk.source",
-			SourceType: "com.splunk.sourcetype",
-			Index:      "com.splunk.index",
-			Host:       "host.name",
+		{
+			id: config.NewComponentIDWithName(typeStr, "tls"),
+			expected: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: ":8088",
+					TLSSetting: &configtls.TLSServerSetting{
+						TLSSetting: configtls.TLSSetting{
+							CertFile: "/test.crt",
+							KeyFile:  "/test.key",
+						},
+					},
+				},
+				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+					AccessTokenPassthrough: false,
+				},
+				RawPath: "/services/collector/raw",
+				HecToOtelAttrs: splunk.HecToOtelAttrs{
+					Source:     "com.splunk.source",
+					SourceType: "com.splunk.sourcetype",
+					Index:      "com.splunk.index",
+					Host:       "host.name",
+				},
+			},
 		},
 	}
-	assert.Equal(t, expectedTLSConfig, r2)
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
