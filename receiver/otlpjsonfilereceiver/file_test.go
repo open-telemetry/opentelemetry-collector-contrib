@@ -26,11 +26,11 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
@@ -145,14 +145,16 @@ func testdataConfigYamlAsMap() *Config {
 }
 
 func TestLoadConfig(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
+	factories, err := componenttest.NopFactories()
+	assert.Nil(t, err)
+
 	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	factories.Receivers[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NotNil(t, cfg)
 
-	assert.Equal(t, testdataConfigYamlAsMap(), cfg)
+	assert.Equal(t, len(cfg.Receivers), 2)
+
+	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewComponentID("otlpjsonfile")])
 }

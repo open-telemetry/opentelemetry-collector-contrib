@@ -18,21 +18,23 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
+	factories, err := componenttest.NopFactories()
+	require.Nil(t, err)
+
 	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	factories.Receivers[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NotNil(t, cfg)
 
-	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
+	require.Equal(t, len(cfg.Receivers), 1)
+
+	require.Equal(t, factory.CreateDefaultConfig(), cfg.Receivers[config.NewComponentID("nginx")])
 }
