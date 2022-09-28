@@ -15,14 +15,18 @@
 package prometheusreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"github.com/prometheus/prometheus/discovery/targetgroup"
+	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/model/relabel"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
+	"sync"
 	"time"
 
 	"github.com/go-kit/log"
@@ -43,11 +47,18 @@ const (
 	gcIntervalDelta   = 1 * time.Minute
 )
 
+type closeOnce struct {
+	C     chan struct{}
+	once  sync.Once
+	Close func()
+}
+
 // pReceiver is the type that provides Prometheus scraper/receiver functionality.
 type pReceiver struct {
-	cfg        *Config
-	consumer   consumer.Metrics
-	cancelFunc context.CancelFunc
+	cfg         *Config
+	consumer    consumer.Metrics
+	cancelFunc  context.CancelFunc
+	reloadReady *closeOnce
 
 	settings                      component.ReceiverCreateSettings
 	scrapeManager                 *scrape.Manager
@@ -61,10 +72,19 @@ type linkJSON struct {
 
 // New creates a new prometheus.Receiver reference.
 func newPrometheusReceiver(set component.ReceiverCreateSettings, cfg *Config, next consumer.Metrics) *pReceiver {
+	reloadReady := &closeOnce{
+		C: make(chan struct{}),
+	}
+	reloadReady.Close = func() {
+		reloadReady.once.Do(func() {
+			close(reloadReady.C)
+		})
+	}
 	pr := &pReceiver{
-		cfg:      cfg,
-		consumer: next,
-		settings: set,
+		cfg:         cfg,
+		consumer:    next,
+		settings:    set,
+		reloadReady: reloadReady,
 	}
 	return pr
 }
@@ -94,33 +114,31 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 
 	allocConf := r.cfg.TargetAllocator
 	if allocConf != nil {
-		go func() {
-			// immediately sync jobs and not wait for the first tick
-			savedHash, _ := r.syncTargetAllocator(uint64(0), allocConf, baseCfg)
-			r.targetAllocatorIntervalTicker = time.NewTicker(allocConf.Interval)
-			for {
-				<-r.targetAllocatorIntervalTicker.C
-				hash, err := r.syncTargetAllocator(savedHash, allocConf, baseCfg)
-				if err != nil {
-					r.settings.Logger.Error(err.Error())
-					continue
-				}
-				savedHash = hash
-				//for jobName, targets := range r.scrapeManager.TargetsAll() {
-				//	for _, target := range targets {
-				//		r.settings.Logger.Info("target info", zap.String("job", jobName),
-				//			zap.String("url", target.String()),
-				//			zap.String("labels", target.Labels().String()))
-				//	}
-				//}
-				//for _, provider := range r.discoveryManager.Providers() {
-				//	r.settings.Logger.Info("discovery provider info", zap.Any("conf", provider.Config()))
-				//}
-			}
-		}()
+		r.initTargetAllocator(allocConf, baseCfg)
 	}
 
+	r.reloadReady.Close()
+
 	return nil
+}
+
+func (r *pReceiver) initTargetAllocator(allocConf *targetAllocator, baseCfg *config.Config) {
+	r.settings.Logger.Info("Starting target allocator discovery")
+	// immediately sync jobs and not wait for the first tick
+	savedHash, _ := r.syncTargetAllocator(uint64(0), allocConf, baseCfg)
+	r.targetAllocatorIntervalTicker = time.NewTicker(allocConf.Interval)
+	go func() {
+		<-r.reloadReady.C
+		for {
+			<-r.targetAllocatorIntervalTicker.C
+			hash, err := r.syncTargetAllocator(savedHash, allocConf, baseCfg)
+			if err != nil {
+				r.settings.Logger.Error(err.Error())
+				continue
+			}
+			savedHash = hash
+		}
+	}()
 }
 
 // syncTargetAllocator request jobs from targetAllocator and update underlying receiver, if the response does not match the provided compareHash.
@@ -143,12 +161,20 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *targetAll
 		return hash, nil
 	}
 
-	cfg := *baseCfg
-
 	for jobName, scrapeConfig := range scrapeConfigsResponse {
+		var filteredList []*relabel.Config
+		for _, relabelConfig := range scrapeConfig.RelabelConfigs {
+			if relabelConfig.SourceLabels.Len() > 0 && relabelConfig.SourceLabels[0] == "__tmp_hash" {
+				continue
+			}
+			filteredList = append(filteredList, relabelConfig)
+		}
+		scrapeConfig.RelabelConfigs = filteredList
 		var httpSD promHTTP.SDConfig
 		if allocConf.HTTPSDConfig == nil {
-			httpSD = promHTTP.SDConfig{}
+			httpSD = promHTTP.SDConfig{
+				RefreshInterval: model.Duration(30 * time.Second),
+			}
 		} else {
 			httpSD = *allocConf.HTTPSDConfig
 		}
@@ -159,16 +185,20 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *targetAll
 			&httpSD,
 		}
 
-		cfg.ScrapeConfigs = append(cfg.ScrapeConfigs, scrapeConfig)
+		baseCfg.ScrapeConfigs = append(baseCfg.ScrapeConfigs, scrapeConfig)
 	}
 
-	err = r.applyCfg(&cfg)
+	err = r.applyCfg(baseCfg)
 	if err != nil {
 		r.settings.Logger.Error("Failed to apply new scrape configuration", zap.Error(err))
 		return 0, err
 	}
 
 	return hash, nil
+}
+
+func (r *pReceiver) instantiateShard(body []byte) []byte {
+	return bytes.ReplaceAll(body, []byte("$(SHARD)"), []byte(os.Getenv("SHARD")))
 }
 
 func (r *pReceiver) getScrapeConfigsResponse(baseURL string) (map[string]*config.ScrapeConfig, error) {
@@ -188,16 +218,12 @@ func (r *pReceiver) getScrapeConfigsResponse(baseURL string) (map[string]*config
 	if err != nil {
 		return nil, err
 	}
-	r.settings.Logger.Info("body", zap.String("body", string(body)))
+
 	jobToScrapeConfig := map[string]*config.ScrapeConfig{}
-	err = yaml.Unmarshal(body, &jobToScrapeConfig)
+	envReplacedBody := r.instantiateShard(body)
+	err = yaml.Unmarshal(envReplacedBody, &jobToScrapeConfig)
 	if err != nil {
 		return nil, err
-	}
-	for jobName, scrapeConfig := range jobToScrapeConfig {
-		for _, relabelConfig := range scrapeConfig.RelabelConfigs {
-			r.settings.Logger.Info("relabel config", zap.String("job", jobName), zap.Any("relabel", *relabelConfig), zap.String("regex", relabelConfig.Regex.String()))
-		}
 	}
 	return jobToScrapeConfig, nil
 }
@@ -210,10 +236,7 @@ func (r *pReceiver) applyCfg(cfg *config.Config) error {
 	discoveryCfg := make(map[string]discovery.Configs)
 	for _, scrapeConfig := range cfg.ScrapeConfigs {
 		discoveryCfg[scrapeConfig.JobName] = scrapeConfig.ServiceDiscoveryConfigs
-		//r.settings.Logger.Info("Scrape job added", zap.String("jobName", scrapeConfig.JobName))
-		r.settings.Logger.Info("Scrape job added", zap.String("jobName", scrapeConfig.JobName),
-			zap.Any("conf", *scrapeConfig),
-		)
+		r.settings.Logger.Info("Scrape job added", zap.String("jobName", scrapeConfig.JobName))
 	}
 	if err := r.discoveryManager.ApplyConfig(discoveryCfg); err != nil {
 		return err
@@ -225,6 +248,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 	r.discoveryManager = discovery.NewManager(ctx, logger)
 
 	go func() {
+		r.settings.Logger.Info("Starting discovery manager")
 		if err := r.discoveryManager.Run(); err != nil {
 			r.settings.Logger.Error("Discovery manager failed", zap.Error(err))
 			host.ReportFatalError(err)
@@ -251,22 +275,10 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 	)
 	r.scrapeManager = scrape.NewManager(&scrape.Options{PassMetadataInContext: true}, logger, store)
 
-	c := make(chan map[string][]*targetgroup.Group)
 	go func() {
-		for {
-			select {
-			case m := <-r.discoveryManager.SyncCh():
-				for job, groups := range m {
-					for _, group := range groups {
-						r.settings.Logger.Info("target group info", zap.String("job", job), zap.Any("l", group.Labels), zap.Any("t", group.Targets))
-					}
-				}
-				c <- m
-			}
-		}
-	}()
-	go func() {
-		if err := r.scrapeManager.Run(c); err != nil {
+		<-r.reloadReady.C
+		r.settings.Logger.Info("Starting scrape manager")
+		if err := r.scrapeManager.Run(r.discoveryManager.SyncCh()); err != nil {
 			r.settings.Logger.Error("Scrape manager failed", zap.Error(err))
 			host.ReportFatalError(err)
 		}
@@ -294,6 +306,7 @@ func gcInterval(cfg *config.Config) time.Duration {
 func (r *pReceiver) Shutdown(context.Context) error {
 	r.cancelFunc()
 	r.scrapeManager.Stop()
+	r.reloadReady.Close()
 	if r.targetAllocatorIntervalTicker != nil {
 		r.targetAllocatorIntervalTicker.Stop()
 	}
