@@ -59,16 +59,16 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a recombine operator
 type Config struct {
-	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
-	IsFirstEntry             string        `mapstructure:"is_first_entry"     json:"is_first_entry"     yaml:"is_first_entry"`
-	IsLastEntry              string        `mapstructure:"is_last_entry"      json:"is_last_entry"      yaml:"is_last_entry"`
-	MaxBatchSize             int           `mapstructure:"max_batch_size"     json:"max_batch_size"     yaml:"max_batch_size"`
-	CombineField             entry.Field   `mapstructure:"combine_field"      json:"combine_field"      yaml:"combine_field"`
-	CombineWith              string        `mapstructure:"combine_with"       json:"combine_with"       yaml:"combine_with"`
-	SourceIdentifier         entry.Field   `mapstructure:"source_identifier"  json:"source_identifier"  yaml:"source_identifier"`
-	OverwriteWith            string        `mapstructure:"overwrite_with"     json:"overwrite_with"     yaml:"overwrite_with"`
-	ForceFlushTimeout        time.Duration `mapstructure:"force_flush_period" json:"force_flush_period" yaml:"force_flush_period"`
-	MaxSources               int           `mapstructure:"max_sources"        json:"max_sources"        yaml:"max_sources"`
+	helper.TransformerConfig `mapstructure:",squash"`
+	IsFirstEntry             string        `mapstructure:"is_first_entry"`
+	IsLastEntry              string        `mapstructure:"is_last_entry"`
+	MaxBatchSize             int           `mapstructure:"max_batch_size"`
+	CombineField             entry.Field   `mapstructure:"combine_field"`
+	CombineWith              string        `mapstructure:"combine_with"`
+	SourceIdentifier         entry.Field   `mapstructure:"source_identifier"`
+	OverwriteWith            string        `mapstructure:"overwrite_with"`
+	ForceFlushTimeout        time.Duration `mapstructure:"force_flush_period"`
+	MaxSources               int           `mapstructure:"max_sources"`
 }
 
 // Build creates a new Transformer from a config

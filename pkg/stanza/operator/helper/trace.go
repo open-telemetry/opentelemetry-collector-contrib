@@ -42,21 +42,21 @@ func NewTraceParser() TraceParser {
 
 // TraceParser is a helper that parses trace spans (and flags) onto an entry.
 type TraceParser struct {
-	TraceID    *TraceIDConfig    `mapstructure:"trace_id,omitempty"    json:"trace_id,omitempty"    yaml:"trace_id,omitempty"`
-	SpanID     *SpanIDConfig     `mapstructure:"span_id,omitempty"     json:"span_id,omitempty"     yaml:"span_id,omitempty"`
-	TraceFlags *TraceFlagsConfig `mapstructure:"trace_flags,omitempty" json:"trace_flags,omitempty" yaml:"trace_flags,omitempty"`
+	TraceID    *TraceIDConfig    `mapstructure:"trace_id,omitempty"`
+	SpanID     *SpanIDConfig     `mapstructure:"span_id,omitempty"`
+	TraceFlags *TraceFlagsConfig `mapstructure:"trace_flags,omitempty"`
 }
 
 type TraceIDConfig struct {
-	ParseFrom *entry.Field `mapstructure:"parse_from,omitempty"  json:"parse_from,omitempty"  yaml:"parse_from,omitempty"`
+	ParseFrom *entry.Field `mapstructure:"parse_from,omitempty"`
 }
 
 type SpanIDConfig struct {
-	ParseFrom *entry.Field `mapstructure:"parse_from,omitempty"  json:"parse_from,omitempty"  yaml:"parse_from,omitempty"`
+	ParseFrom *entry.Field `mapstructure:"parse_from,omitempty"`
 }
 
 type TraceFlagsConfig struct {
-	ParseFrom *entry.Field `mapstructure:"parse_from,omitempty"  json:"parse_from,omitempty"  yaml:"parse_from,omitempty"`
+	ParseFrom *entry.Field `mapstructure:"parse_from,omitempty"`
 }
 
 // Validate validates a TraceParser, and reconfigures it if necessary

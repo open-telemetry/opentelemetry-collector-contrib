@@ -45,8 +45,8 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a logger name parser operator.
 type Config struct {
-	helper.TransformerConfig `mapstructure:",squash"           yaml:",inline"`
-	helper.ScopeNameParser   `mapstructure:",omitempty,squash" yaml:",omitempty,inline"`
+	helper.TransformerConfig `mapstructure:",squash"`
+	helper.ScopeNameParser   `mapstructure:",omitempty,squash"`
 }
 
 // Build will build a logger name parser operator.

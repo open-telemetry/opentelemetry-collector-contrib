@@ -41,7 +41,7 @@ func NewConfig(operatorID string) *Config {
 
 // Config is the configuration of a stdin input operator.
 type Config struct {
-	helper.InputConfig `yaml:",inline"`
+	helper.InputConfig `mapstructure:",squash"`
 }
 
 // Build will build a stdin input operator.
