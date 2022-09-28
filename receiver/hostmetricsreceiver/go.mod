@@ -4,12 +4,12 @@ go 1.18
 
 require (
 	github.com/leoluk/perflib_exporter v0.1.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.60.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.61.0
 	github.com/shirou/gopsutil/v3 v3.22.8
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.60.1-0.20220928061250-1c217b366fbd
-	go.opentelemetry.io/collector/pdata v0.60.1-0.20220928061250-1c217b366fbd
-	go.opentelemetry.io/collector/semconv v0.60.1-0.20220928061250-1c217b366fbd
+	go.opentelemetry.io/collector v0.61.0
+	go.opentelemetry.io/collector/pdata v0.61.0
+	go.opentelemetry.io/collector/semconv v0.61.0
 	go.uber.org/zap v1.23.0
 	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664
 

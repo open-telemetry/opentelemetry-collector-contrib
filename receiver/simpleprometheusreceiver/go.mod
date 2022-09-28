@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simple
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.60.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.61.0
 	github.com/prometheus/common v0.37.0
 	github.com/prometheus/prometheus v0.38.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.60.1-0.20220928061250-1c217b366fbd
+	go.opentelemetry.io/collector v0.61.0
 	k8s.io/client-go v0.25.2
 )
 
@@ -117,8 +117,8 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/vultr/govultr/v2 v2.17.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.60.1-0.20220928061250-1c217b366fbd // indirect
-	go.opentelemetry.io/collector/semconv v0.60.1-0.20220928061250-1c217b366fbd // indirect
+	go.opentelemetry.io/collector/pdata v0.61.0 // indirect
+	go.opentelemetry.io/collector/semconv v0.61.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.1 // indirect
 	go.opentelemetry.io/otel v1.10.0 // indirect
 	go.opentelemetry.io/otel/metric v0.32.1 // indirect

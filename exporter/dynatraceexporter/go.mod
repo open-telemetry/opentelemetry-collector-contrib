@@ -4,11 +4,11 @@ go 1.18
 
 require (
 	github.com/dynatrace-oss/dynatrace-metric-utils-go v0.5.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.60.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.60.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.61.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.60.1-0.20220928061250-1c217b366fbd
-	go.opentelemetry.io/collector/pdata v0.60.1-0.20220928061250-1c217b366fbd
+	go.opentelemetry.io/collector v0.61.0
+	go.opentelemetry.io/collector/pdata v0.61.0
 	go.uber.org/zap v1.23.0
 )
 
