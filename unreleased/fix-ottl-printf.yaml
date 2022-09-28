@@ -5,7 +5,7 @@ change_type: bug_fix
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Remove a stray fmt.Printf, use a logger
+note: Replace invalid comparison print statement with a debug log entry
 
 # One or more tracking issues related to the change
 issues: [14467]
