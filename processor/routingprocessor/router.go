@@ -23,8 +23,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
 
 var errExporterNotFound = errors.New("exporter not found")
@@ -32,46 +30,42 @@ var errExporterNotFound = errors.New("exporter not found")
 // router registers exporters and default exporters for an exporter. router can
 // be instantiated with component.TracesExporter, component.MetricsExporter, and
 // component.LogsExporter type arguments.
-type router[E component.Exporter] struct {
+type router[E component.Exporter, K any] struct {
 	logger *zap.Logger
-	parser ottl.Parser
+	parser ottl.Parser[K]
 
 	defaultExporterIDs []string
 	table              []RoutingTableItem
 
 	defaultExporters []E
-	routes           map[string]routingItem[E]
+	routes           map[string]routingItem[E, K]
 }
 
 // newRouter creates a new router instance with its type parameter constrained
 // to component.Exporter.
-func newRouter[E component.Exporter](
+func newRouter[E component.Exporter, K any](
 	table []RoutingTableItem,
 	defaultExporterIDs []string,
 	settings component.TelemetrySettings,
-) router[E] {
-	return router[E]{
+	parser ottl.Parser[K],
+) router[E, K] {
+	return router[E, K]{
 		logger: settings.Logger,
-		parser: ottl.NewParser(
-			common.Functions(),
-			ottllogs.ParsePath,
-			ottllogs.ParseEnum,
-			settings,
-		),
+		parser: parser,
 
 		table:              table,
 		defaultExporterIDs: defaultExporterIDs,
 
-		routes: make(map[string]routingItem[E]),
+		routes: make(map[string]routingItem[E, K]),
 	}
 }
 
-type routingItem[E component.Exporter] struct {
+type routingItem[E component.Exporter, K any] struct {
 	exporters  []E
-	expression ottl.Statement
+	expression ottl.Statement[K]
 }
 
-func (r *router[E]) registerExporters(available map[config.ComponentID]component.Exporter) error {
+func (r *router[E, K]) registerExporters(available map[config.ComponentID]component.Exporter) error {
 	// register default exporters
 	err := r.registerDefaultExporters(available)
 	if err != nil {
@@ -89,7 +83,7 @@ func (r *router[E]) registerExporters(available map[config.ComponentID]component
 
 // registerDefaultExporters registers the configured default exporters
 // using the provided available exporters map.
-func (r *router[E]) registerDefaultExporters(available map[config.ComponentID]component.Exporter) error {
+func (r *router[E, K]) registerDefaultExporters(available map[config.ComponentID]component.Exporter) error {
 	for _, name := range r.defaultExporterIDs {
 		e, err := r.extractExporter(name, available)
 		if errors.Is(err, errExporterNotFound) {
@@ -106,7 +100,7 @@ func (r *router[E]) registerDefaultExporters(available map[config.ComponentID]co
 
 // registerRouteExporters registers route exporters using the provided
 // available exporters map to check if they were available.
-func (r *router[E]) registerRouteExporters(available map[config.ComponentID]component.Exporter) error {
+func (r *router[E, K]) registerRouteExporters(available map[config.ComponentID]component.Exporter) error {
 	for _, item := range r.table {
 		e, err := r.routingExpression(item)
 		if err != nil {
@@ -136,8 +130,8 @@ func (r *router[E]) registerRouteExporters(available map[config.ComponentID]comp
 // routingExpression builds a routing OTTL expressions from provided
 // routing table entry configuration. If routing table entry configuration
 // does not contain a OTTL expressions then nil is returned.
-func (r *router[E]) routingExpression(item RoutingTableItem) (ottl.Statement, error) {
-	var e ottl.Statement
+func (r *router[E, K]) routingExpression(item RoutingTableItem) (ottl.Statement[K], error) {
+	var e ottl.Statement[K]
 	if item.Expression != "" {
 		queries, err := r.parser.ParseStatements([]string{item.Expression})
 		if err != nil {
@@ -160,7 +154,7 @@ func key(entry RoutingTableItem) string {
 
 // extractExporter returns an exporter for the given name (type/name) and type
 // argument if it exists in the list of available exporters.
-func (r *router[E]) extractExporter(name string, available map[config.ComponentID]component.Exporter) (E, error) {
+func (r *router[E, K]) extractExporter(name string, available map[config.ComponentID]component.Exporter) (E, error) {
 	var exporter E
 
 	id, err := config.NewComponentIDFromString(name)
@@ -190,7 +184,7 @@ func (r *router[E]) extractExporter(name string, available map[config.ComponentI
 	return exporter, nil
 }
 
-func (r *router[E]) getExporters(key string) []E {
+func (r *router[E, K]) getExporters(key string) []E {
 	e, ok := r.routes[key]
 	if !ok {
 		return r.defaultExporters

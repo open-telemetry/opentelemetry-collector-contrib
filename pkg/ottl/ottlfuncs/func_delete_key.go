@@ -20,8 +20,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func DeleteKey(target ottl.Getter, key string) (ottl.ExprFunc, error) {
-	return func(ctx ottl.TransformContext) interface{} {
+func DeleteKey[K any](target ottl.Getter[K], key string) (ottl.ExprFunc[K], error) {
+	return func(ctx K) interface{} {
 		val := target.Get(ctx)
 		if val == nil {
 			return nil

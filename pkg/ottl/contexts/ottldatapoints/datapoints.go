@@ -26,6 +26,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ottlcommon"
 )
 
+var _ ottlcommon.ResourceContext = TransformContext{}
+var _ ottlcommon.InstrumentationScopeContext = TransformContext{}
+
 type TransformContext struct {
 	dataPoint            interface{}
 	metric               pmetric.Metric
@@ -44,7 +47,7 @@ func NewTransformContext(dataPoint interface{}, metric pmetric.Metric, metrics p
 	}
 }
 
-func (ctx TransformContext) GetItem() interface{} {
+func (ctx TransformContext) GetDataPoint() interface{} {
 	return ctx.dataPoint
 }
 
@@ -88,19 +91,19 @@ func ParseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	return nil, fmt.Errorf("enum symbol not provided")
 }
 
-func ParsePath(val *ottl.Path) (ottl.GetSetter, error) {
+func ParsePath(val *ottl.Path) (ottl.GetSetter[TransformContext], error) {
 	if val != nil && len(val.Fields) > 0 {
 		return newPathGetSetter(val.Fields)
 	}
 	return nil, fmt.Errorf("bad path %v", val)
 }
 
-func newPathGetSetter(path []ottl.Field) (ottl.GetSetter, error) {
+func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], error) {
 	switch path[0].Name {
 	case "resource":
-		return ottlcommon.ResourcePathGetSetter(path[1:])
+		return ottlcommon.ResourcePathGetSetter[TransformContext](path[1:])
 	case "instrumentation_scope":
-		return ottlcommon.ScopePathGetSetter(path[1:])
+		return ottlcommon.ScopePathGetSetter[TransformContext](path[1:])
 	case "metric":
 		if len(path) == 1 {
 			return accessMetric(), nil
@@ -175,74 +178,74 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter, error) {
 	return nil, fmt.Errorf("invalid path expression %v", path)
 }
 
-func accessMetric() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.(TransformContext).GetMetric()
+func accessMetric() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return ctx.GetMetric()
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newMetric, ok := val.(pmetric.Metric); ok {
-				newMetric.CopyTo(ctx.(TransformContext).GetMetric())
+				newMetric.CopyTo(ctx.GetMetric())
 			}
 		},
 	}
 }
 
-func accessMetricName() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.(TransformContext).GetMetric().Name()
+func accessMetricName() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return ctx.GetMetric().Name()
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.(TransformContext).GetMetric().SetName(str)
+				ctx.GetMetric().SetName(str)
 			}
 		},
 	}
 }
 
-func accessMetricDescription() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.(TransformContext).GetMetric().Description()
+func accessMetricDescription() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return ctx.GetMetric().Description()
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.(TransformContext).GetMetric().SetDescription(str)
+				ctx.GetMetric().SetDescription(str)
 			}
 		},
 	}
 }
 
-func accessMetricUnit() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.(TransformContext).GetMetric().Unit()
+func accessMetricUnit() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return ctx.GetMetric().Unit()
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.(TransformContext).GetMetric().SetUnit(str)
+				ctx.GetMetric().SetUnit(str)
 			}
 		},
 	}
 }
 
-func accessMetricType() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return int64(ctx.(TransformContext).GetMetric().Type())
+func accessMetricType() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return int64(ctx.GetMetric().Type())
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			// TODO Implement methods so correctly convert data types.
 			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10130
 		},
 	}
 }
 
-func accessMetricAggTemporality() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			metric := ctx.(TransformContext).GetMetric()
+func accessMetricAggTemporality() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			metric := ctx.GetMetric()
 			switch metric.Type() {
 			case pmetric.MetricTypeSum:
 				return int64(metric.Sum().AggregationTemporality())
@@ -253,9 +256,9 @@ func accessMetricAggTemporality() ottl.StandardGetSetter {
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newAggTemporality, ok := val.(int64); ok {
-				metric := ctx.(TransformContext).GetMetric()
+				metric := ctx.GetMetric()
 				switch metric.Type() {
 				case pmetric.MetricTypeSum:
 					metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporality(newAggTemporality))
@@ -269,19 +272,19 @@ func accessMetricAggTemporality() ottl.StandardGetSetter {
 	}
 }
 
-func accessMetricIsMonotonic() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			metric := ctx.(TransformContext).GetMetric()
+func accessMetricIsMonotonic() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			metric := ctx.GetMetric()
 			switch metric.Type() {
 			case pmetric.MetricTypeSum:
 				return metric.Sum().IsMonotonic()
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newIsMonotonic, ok := val.(bool); ok {
-				metric := ctx.(TransformContext).GetMetric()
+				metric := ctx.GetMetric()
 				switch metric.Type() {
 				case pmetric.MetricTypeSum:
 					metric.Sum().SetIsMonotonic(newIsMonotonic)
@@ -291,508 +294,508 @@ func accessMetricIsMonotonic() ottl.StandardGetSetter {
 	}
 }
 
-func accessAttributes() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			switch ctx.GetItem().(type) {
+func accessAttributes() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.NumberDataPoint:
-				return ctx.GetItem().(pmetric.NumberDataPoint).Attributes()
+				return ctx.GetDataPoint().(pmetric.NumberDataPoint).Attributes()
 			case pmetric.HistogramDataPoint:
-				return ctx.GetItem().(pmetric.HistogramDataPoint).Attributes()
+				return ctx.GetDataPoint().(pmetric.HistogramDataPoint).Attributes()
 			case pmetric.ExponentialHistogramDataPoint:
-				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Attributes()
+				return ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Attributes()
 			case pmetric.SummaryDataPoint:
-				return ctx.GetItem().(pmetric.SummaryDataPoint).Attributes()
+				return ctx.GetDataPoint().(pmetric.SummaryDataPoint).Attributes()
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
-			switch ctx.GetItem().(type) {
+		Setter: func(ctx TransformContext, val interface{}) {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.NumberDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
-					attrs.CopyTo(ctx.GetItem().(pmetric.NumberDataPoint).Attributes())
+					attrs.CopyTo(ctx.GetDataPoint().(pmetric.NumberDataPoint).Attributes())
 				}
 			case pmetric.HistogramDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
-					attrs.CopyTo(ctx.GetItem().(pmetric.HistogramDataPoint).Attributes())
+					attrs.CopyTo(ctx.GetDataPoint().(pmetric.HistogramDataPoint).Attributes())
 				}
 			case pmetric.ExponentialHistogramDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
-					attrs.CopyTo(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Attributes())
+					attrs.CopyTo(ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Attributes())
 				}
 			case pmetric.SummaryDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
-					attrs.CopyTo(ctx.GetItem().(pmetric.SummaryDataPoint).Attributes())
+					attrs.CopyTo(ctx.GetDataPoint().(pmetric.SummaryDataPoint).Attributes())
 				}
 			}
 		},
 	}
 }
 
-func accessAttributesKey(mapKey *string) ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			switch ctx.GetItem().(type) {
+func accessAttributesKey(mapKey *string) ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.NumberDataPoint:
-				return ottlcommon.GetMapValue(ctx.GetItem().(pmetric.NumberDataPoint).Attributes(), *mapKey)
+				return ottlcommon.GetMapValue(ctx.GetDataPoint().(pmetric.NumberDataPoint).Attributes(), *mapKey)
 			case pmetric.HistogramDataPoint:
-				return ottlcommon.GetMapValue(ctx.GetItem().(pmetric.HistogramDataPoint).Attributes(), *mapKey)
+				return ottlcommon.GetMapValue(ctx.GetDataPoint().(pmetric.HistogramDataPoint).Attributes(), *mapKey)
 			case pmetric.ExponentialHistogramDataPoint:
-				return ottlcommon.GetMapValue(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Attributes(), *mapKey)
+				return ottlcommon.GetMapValue(ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Attributes(), *mapKey)
 			case pmetric.SummaryDataPoint:
-				return ottlcommon.GetMapValue(ctx.GetItem().(pmetric.SummaryDataPoint).Attributes(), *mapKey)
+				return ottlcommon.GetMapValue(ctx.GetDataPoint().(pmetric.SummaryDataPoint).Attributes(), *mapKey)
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
-			switch ctx.GetItem().(type) {
+		Setter: func(ctx TransformContext, val interface{}) {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.NumberDataPoint:
-				ottlcommon.SetMapValue(ctx.GetItem().(pmetric.NumberDataPoint).Attributes(), *mapKey, val)
+				ottlcommon.SetMapValue(ctx.GetDataPoint().(pmetric.NumberDataPoint).Attributes(), *mapKey, val)
 			case pmetric.HistogramDataPoint:
-				ottlcommon.SetMapValue(ctx.GetItem().(pmetric.HistogramDataPoint).Attributes(), *mapKey, val)
+				ottlcommon.SetMapValue(ctx.GetDataPoint().(pmetric.HistogramDataPoint).Attributes(), *mapKey, val)
 			case pmetric.ExponentialHistogramDataPoint:
-				ottlcommon.SetMapValue(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Attributes(), *mapKey, val)
+				ottlcommon.SetMapValue(ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Attributes(), *mapKey, val)
 			case pmetric.SummaryDataPoint:
-				ottlcommon.SetMapValue(ctx.GetItem().(pmetric.SummaryDataPoint).Attributes(), *mapKey, val)
+				ottlcommon.SetMapValue(ctx.GetDataPoint().(pmetric.SummaryDataPoint).Attributes(), *mapKey, val)
 			}
 		},
 	}
 }
 
-func accessStartTimeUnixNano() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			switch ctx.GetItem().(type) {
+func accessStartTimeUnixNano() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.NumberDataPoint:
-				return ctx.GetItem().(pmetric.NumberDataPoint).StartTimestamp().AsTime().UnixNano()
+				return ctx.GetDataPoint().(pmetric.NumberDataPoint).StartTimestamp().AsTime().UnixNano()
 			case pmetric.HistogramDataPoint:
-				return ctx.GetItem().(pmetric.HistogramDataPoint).StartTimestamp().AsTime().UnixNano()
+				return ctx.GetDataPoint().(pmetric.HistogramDataPoint).StartTimestamp().AsTime().UnixNano()
 			case pmetric.ExponentialHistogramDataPoint:
-				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).StartTimestamp().AsTime().UnixNano()
+				return ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).StartTimestamp().AsTime().UnixNano()
 			case pmetric.SummaryDataPoint:
-				return ctx.GetItem().(pmetric.SummaryDataPoint).StartTimestamp().AsTime().UnixNano()
+				return ctx.GetDataPoint().(pmetric.SummaryDataPoint).StartTimestamp().AsTime().UnixNano()
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newTime, ok := val.(int64); ok {
-				switch ctx.GetItem().(type) {
+				switch ctx.GetDataPoint().(type) {
 				case pmetric.NumberDataPoint:
-					ctx.GetItem().(pmetric.NumberDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
+					ctx.GetDataPoint().(pmetric.NumberDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
 				case pmetric.HistogramDataPoint:
-					ctx.GetItem().(pmetric.HistogramDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
+					ctx.GetDataPoint().(pmetric.HistogramDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
+					ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
 				case pmetric.SummaryDataPoint:
-					ctx.GetItem().(pmetric.SummaryDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
+					ctx.GetDataPoint().(pmetric.SummaryDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
 				}
 			}
 		},
 	}
 }
 
-func accessTimeUnixNano() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			switch ctx.GetItem().(type) {
+func accessTimeUnixNano() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.NumberDataPoint:
-				return ctx.GetItem().(pmetric.NumberDataPoint).Timestamp().AsTime().UnixNano()
+				return ctx.GetDataPoint().(pmetric.NumberDataPoint).Timestamp().AsTime().UnixNano()
 			case pmetric.HistogramDataPoint:
-				return ctx.GetItem().(pmetric.HistogramDataPoint).Timestamp().AsTime().UnixNano()
+				return ctx.GetDataPoint().(pmetric.HistogramDataPoint).Timestamp().AsTime().UnixNano()
 			case pmetric.ExponentialHistogramDataPoint:
-				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Timestamp().AsTime().UnixNano()
+				return ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Timestamp().AsTime().UnixNano()
 			case pmetric.SummaryDataPoint:
-				return ctx.GetItem().(pmetric.SummaryDataPoint).Timestamp().AsTime().UnixNano()
+				return ctx.GetDataPoint().(pmetric.SummaryDataPoint).Timestamp().AsTime().UnixNano()
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newTime, ok := val.(int64); ok {
-				switch ctx.GetItem().(type) {
+				switch ctx.GetDataPoint().(type) {
 				case pmetric.NumberDataPoint:
-					ctx.GetItem().(pmetric.NumberDataPoint).SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
+					ctx.GetDataPoint().(pmetric.NumberDataPoint).SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
 				case pmetric.HistogramDataPoint:
-					ctx.GetItem().(pmetric.HistogramDataPoint).SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
+					ctx.GetDataPoint().(pmetric.HistogramDataPoint).SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
+					ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
 				case pmetric.SummaryDataPoint:
-					ctx.GetItem().(pmetric.SummaryDataPoint).SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
+					ctx.GetDataPoint().(pmetric.SummaryDataPoint).SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
 				}
 			}
 		},
 	}
 }
 
-func accessDoubleValue() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			switch ctx.GetItem().(type) {
+func accessDoubleValue() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.NumberDataPoint:
-				return ctx.GetItem().(pmetric.NumberDataPoint).DoubleValue()
+				return ctx.GetDataPoint().(pmetric.NumberDataPoint).DoubleValue()
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newDouble, ok := val.(float64); ok {
-				switch ctx.GetItem().(type) {
+				switch ctx.GetDataPoint().(type) {
 				case pmetric.NumberDataPoint:
-					ctx.GetItem().(pmetric.NumberDataPoint).SetDoubleValue(newDouble)
+					ctx.GetDataPoint().(pmetric.NumberDataPoint).SetDoubleValue(newDouble)
 				}
 			}
 		},
 	}
 }
 
-func accessIntValue() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			switch ctx.GetItem().(type) {
+func accessIntValue() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.NumberDataPoint:
-				return ctx.GetItem().(pmetric.NumberDataPoint).IntValue()
+				return ctx.GetDataPoint().(pmetric.NumberDataPoint).IntValue()
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newInt, ok := val.(int64); ok {
-				switch ctx.GetItem().(type) {
+				switch ctx.GetDataPoint().(type) {
 				case pmetric.NumberDataPoint:
-					ctx.GetItem().(pmetric.NumberDataPoint).SetIntValue(newInt)
+					ctx.GetDataPoint().(pmetric.NumberDataPoint).SetIntValue(newInt)
 				}
 			}
 		},
 	}
 }
 
-func accessExemplars() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			switch ctx.GetItem().(type) {
+func accessExemplars() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.NumberDataPoint:
-				return ctx.GetItem().(pmetric.NumberDataPoint).Exemplars()
+				return ctx.GetDataPoint().(pmetric.NumberDataPoint).Exemplars()
 			case pmetric.HistogramDataPoint:
-				return ctx.GetItem().(pmetric.HistogramDataPoint).Exemplars()
+				return ctx.GetDataPoint().(pmetric.HistogramDataPoint).Exemplars()
 			case pmetric.ExponentialHistogramDataPoint:
-				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Exemplars()
+				return ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Exemplars()
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newExemplars, ok := val.(pmetric.ExemplarSlice); ok {
-				switch ctx.GetItem().(type) {
+				switch ctx.GetDataPoint().(type) {
 				case pmetric.NumberDataPoint:
-					newExemplars.CopyTo(ctx.GetItem().(pmetric.NumberDataPoint).Exemplars())
+					newExemplars.CopyTo(ctx.GetDataPoint().(pmetric.NumberDataPoint).Exemplars())
 				case pmetric.HistogramDataPoint:
-					newExemplars.CopyTo(ctx.GetItem().(pmetric.HistogramDataPoint).Exemplars())
+					newExemplars.CopyTo(ctx.GetDataPoint().(pmetric.HistogramDataPoint).Exemplars())
 				case pmetric.ExponentialHistogramDataPoint:
-					newExemplars.CopyTo(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Exemplars())
+					newExemplars.CopyTo(ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Exemplars())
 				}
 			}
 		},
 	}
 }
 
-func accessFlags() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			switch ctx.GetItem().(type) {
+func accessFlags() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.NumberDataPoint:
-				return int64(ctx.GetItem().(pmetric.NumberDataPoint).Flags())
+				return int64(ctx.GetDataPoint().(pmetric.NumberDataPoint).Flags())
 			case pmetric.HistogramDataPoint:
-				return int64(ctx.GetItem().(pmetric.HistogramDataPoint).Flags())
+				return int64(ctx.GetDataPoint().(pmetric.HistogramDataPoint).Flags())
 			case pmetric.ExponentialHistogramDataPoint:
-				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Flags())
+				return int64(ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Flags())
 			case pmetric.SummaryDataPoint:
-				return int64(ctx.GetItem().(pmetric.SummaryDataPoint).Flags())
+				return int64(ctx.GetDataPoint().(pmetric.SummaryDataPoint).Flags())
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newFlags, ok := val.(int64); ok {
-				switch ctx.GetItem().(type) {
+				switch ctx.GetDataPoint().(type) {
 				case pmetric.NumberDataPoint:
-					ctx.GetItem().(pmetric.NumberDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
+					ctx.GetDataPoint().(pmetric.NumberDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
 				case pmetric.HistogramDataPoint:
-					ctx.GetItem().(pmetric.HistogramDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
+					ctx.GetDataPoint().(pmetric.HistogramDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
+					ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
 				case pmetric.SummaryDataPoint:
-					ctx.GetItem().(pmetric.SummaryDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
+					ctx.GetDataPoint().(pmetric.SummaryDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
 				}
 			}
 		},
 	}
 }
 
-func accessCount() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			switch ctx.GetItem().(type) {
+func accessCount() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.HistogramDataPoint:
-				return int64(ctx.GetItem().(pmetric.HistogramDataPoint).Count())
+				return int64(ctx.GetDataPoint().(pmetric.HistogramDataPoint).Count())
 			case pmetric.ExponentialHistogramDataPoint:
-				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Count())
+				return int64(ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Count())
 			case pmetric.SummaryDataPoint:
-				return int64(ctx.GetItem().(pmetric.SummaryDataPoint).Count())
+				return int64(ctx.GetDataPoint().(pmetric.SummaryDataPoint).Count())
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newCount, ok := val.(int64); ok {
-				switch ctx.GetItem().(type) {
+				switch ctx.GetDataPoint().(type) {
 				case pmetric.HistogramDataPoint:
-					ctx.GetItem().(pmetric.HistogramDataPoint).SetCount(uint64(newCount))
+					ctx.GetDataPoint().(pmetric.HistogramDataPoint).SetCount(uint64(newCount))
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetCount(uint64(newCount))
+					ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).SetCount(uint64(newCount))
 				case pmetric.SummaryDataPoint:
-					ctx.GetItem().(pmetric.SummaryDataPoint).SetCount(uint64(newCount))
+					ctx.GetDataPoint().(pmetric.SummaryDataPoint).SetCount(uint64(newCount))
 				}
 			}
 		},
 	}
 }
 
-func accessSum() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			switch ctx.GetItem().(type) {
+func accessSum() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.HistogramDataPoint:
-				return ctx.GetItem().(pmetric.HistogramDataPoint).Sum()
+				return ctx.GetDataPoint().(pmetric.HistogramDataPoint).Sum()
 			case pmetric.ExponentialHistogramDataPoint:
-				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Sum()
+				return ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Sum()
 			case pmetric.SummaryDataPoint:
-				return ctx.GetItem().(pmetric.SummaryDataPoint).Sum()
+				return ctx.GetDataPoint().(pmetric.SummaryDataPoint).Sum()
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newSum, ok := val.(float64); ok {
-				switch ctx.GetItem().(type) {
+				switch ctx.GetDataPoint().(type) {
 				case pmetric.HistogramDataPoint:
-					ctx.GetItem().(pmetric.HistogramDataPoint).SetSum(newSum)
+					ctx.GetDataPoint().(pmetric.HistogramDataPoint).SetSum(newSum)
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetSum(newSum)
+					ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).SetSum(newSum)
 				case pmetric.SummaryDataPoint:
-					ctx.GetItem().(pmetric.SummaryDataPoint).SetSum(newSum)
+					ctx.GetDataPoint().(pmetric.SummaryDataPoint).SetSum(newSum)
 				}
 			}
 		},
 	}
 }
 
-func accessExplicitBounds() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			switch ctx.GetItem().(type) {
+func accessExplicitBounds() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.HistogramDataPoint:
-				return ctx.GetItem().(pmetric.HistogramDataPoint).ExplicitBounds().AsRaw()
+				return ctx.GetDataPoint().(pmetric.HistogramDataPoint).ExplicitBounds().AsRaw()
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newExplicitBounds, ok := val.([]float64); ok {
-				switch ctx.GetItem().(type) {
+				switch ctx.GetDataPoint().(type) {
 				case pmetric.HistogramDataPoint:
-					ctx.GetItem().(pmetric.HistogramDataPoint).ExplicitBounds().FromRaw(newExplicitBounds)
+					ctx.GetDataPoint().(pmetric.HistogramDataPoint).ExplicitBounds().FromRaw(newExplicitBounds)
 				}
 			}
 		},
 	}
 }
 
-func accessBucketCounts() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			switch ctx.GetItem().(type) {
+func accessBucketCounts() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.HistogramDataPoint:
-				return ctx.GetItem().(pmetric.HistogramDataPoint).BucketCounts().AsRaw()
+				return ctx.GetDataPoint().(pmetric.HistogramDataPoint).BucketCounts().AsRaw()
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newBucketCount, ok := val.([]uint64); ok {
-				switch ctx.GetItem().(type) {
+				switch ctx.GetDataPoint().(type) {
 				case pmetric.HistogramDataPoint:
-					ctx.GetItem().(pmetric.HistogramDataPoint).BucketCounts().FromRaw(newBucketCount)
+					ctx.GetDataPoint().(pmetric.HistogramDataPoint).BucketCounts().FromRaw(newBucketCount)
 				}
 			}
 		},
 	}
 }
 
-func accessScale() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			switch ctx.GetItem().(type) {
+func accessScale() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
-				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Scale())
+				return int64(ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Scale())
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newScale, ok := val.(int64); ok {
-				switch ctx.GetItem().(type) {
+				switch ctx.GetDataPoint().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetScale(int32(newScale))
+					ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).SetScale(int32(newScale))
 				}
 			}
 		},
 	}
 }
 
-func accessZeroCount() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			switch ctx.GetItem().(type) {
+func accessZeroCount() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
-				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).ZeroCount())
+				return int64(ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).ZeroCount())
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newZeroCount, ok := val.(int64); ok {
-				switch ctx.GetItem().(type) {
+				switch ctx.GetDataPoint().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetZeroCount(uint64(newZeroCount))
+					ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).SetZeroCount(uint64(newZeroCount))
 				}
 			}
 		},
 	}
 }
 
-func accessPositive() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			switch ctx.GetItem().(type) {
+func accessPositive() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
-				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive()
+				return ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Positive()
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newPositive, ok := val.(pmetric.Buckets); ok {
-				switch ctx.GetItem().(type) {
+				switch ctx.GetDataPoint().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					newPositive.CopyTo(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive())
+					newPositive.CopyTo(ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Positive())
 				}
 			}
 		},
 	}
 }
 
-func accessPositiveOffset() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			switch ctx.GetItem().(type) {
+func accessPositiveOffset() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
-				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().Offset())
+				return int64(ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Positive().Offset())
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newPositiveOffset, ok := val.(int64); ok {
-				switch ctx.GetItem().(type) {
+				switch ctx.GetDataPoint().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().SetOffset(int32(newPositiveOffset))
+					ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Positive().SetOffset(int32(newPositiveOffset))
 				}
 			}
 		},
 	}
 }
 
-func accessPositiveBucketCounts() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			switch ctx.GetItem().(type) {
+func accessPositiveBucketCounts() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
-				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().BucketCounts().AsRaw()
+				return ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Positive().BucketCounts().AsRaw()
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newPositiveBucketCounts, ok := val.([]uint64); ok {
-				switch ctx.GetItem().(type) {
+				switch ctx.GetDataPoint().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().BucketCounts().FromRaw(newPositiveBucketCounts)
+					ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Positive().BucketCounts().FromRaw(newPositiveBucketCounts)
 				}
 			}
 		},
 	}
 }
 
-func accessNegative() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			switch ctx.GetItem().(type) {
+func accessNegative() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
-				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative()
+				return ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Negative()
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newNegative, ok := val.(pmetric.Buckets); ok {
-				switch ctx.GetItem().(type) {
+				switch ctx.GetDataPoint().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					newNegative.CopyTo(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative())
+					newNegative.CopyTo(ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Negative())
 				}
 			}
 		},
 	}
 }
 
-func accessNegativeOffset() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			switch ctx.GetItem().(type) {
+func accessNegativeOffset() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
-				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().Offset())
+				return int64(ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Negative().Offset())
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newNegativeOffset, ok := val.(int64); ok {
-				switch ctx.GetItem().(type) {
+				switch ctx.GetDataPoint().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().SetOffset(int32(newNegativeOffset))
+					ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Negative().SetOffset(int32(newNegativeOffset))
 				}
 			}
 		},
 	}
 }
 
-func accessNegativeBucketCounts() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			switch ctx.GetItem().(type) {
+func accessNegativeBucketCounts() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
-				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().BucketCounts().AsRaw()
+				return ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Negative().BucketCounts().AsRaw()
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newNegativeBucketCounts, ok := val.([]uint64); ok {
-				switch ctx.GetItem().(type) {
+				switch ctx.GetDataPoint().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().BucketCounts().FromRaw(newNegativeBucketCounts)
+					ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Negative().BucketCounts().FromRaw(newNegativeBucketCounts)
 				}
 			}
 		},
 	}
 }
 
-func accessQuantileValues() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			switch ctx.GetItem().(type) {
+func accessQuantileValues() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			switch ctx.GetDataPoint().(type) {
 			case pmetric.SummaryDataPoint:
-				return ctx.GetItem().(pmetric.SummaryDataPoint).QuantileValues()
+				return ctx.GetDataPoint().(pmetric.SummaryDataPoint).QuantileValues()
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newQuantileValues, ok := val.(pmetric.ValueAtQuantileSlice); ok {
-				switch ctx.GetItem().(type) {
+				switch ctx.GetDataPoint().(type) {
 				case pmetric.SummaryDataPoint:
-					newQuantileValues.CopyTo(ctx.GetItem().(pmetric.SummaryDataPoint).QuantileValues())
+					newQuantileValues.CopyTo(ctx.GetDataPoint().(pmetric.SummaryDataPoint).QuantileValues())
 				}
 			}
 		},

@@ -16,6 +16,7 @@ package ottl
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 	"testing"
 
@@ -466,14 +467,14 @@ func Test_parse_failure(t *testing.T) {
 	}
 }
 
-func testParsePath(val *Path) (GetSetter, error) {
+func testParsePath(val *Path) (GetSetter[interface{}], error) {
 	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "name" {
-		return &testGetSetter{
-			getter: func(ctx TransformContext) interface{} {
-				return ctx.GetItem()
+		return &StandardGetSetter[interface{}]{
+			Getter: func(ctx interface{}) interface{} {
+				return ctx
 			},
-			setter: func(ctx TransformContext, val interface{}) {
-				ctx.GetItem()
+			Setter: func(ctx interface{}, val interface{}) {
+				reflect.DeepEqual(ctx, val)
 			},
 		}, nil
 	}

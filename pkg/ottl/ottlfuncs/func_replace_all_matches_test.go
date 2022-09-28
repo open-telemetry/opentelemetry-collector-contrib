@@ -18,10 +18,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_replaceAllMatches(t *testing.T) {
@@ -30,19 +30,19 @@ func Test_replaceAllMatches(t *testing.T) {
 	input.PutString("test2", "hello")
 	input.PutString("test3", "goodbye")
 
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem()
+	target := &ottl.StandardGetSetter[pcommon.Map]{
+		Getter: func(ctx pcommon.Map) interface{} {
+			return ctx
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
-			ctx.GetItem().(pcommon.Map).Clear()
-			val.(pcommon.Map).CopyTo(ctx.GetItem().(pcommon.Map))
+		Setter: func(ctx pcommon.Map, val interface{}) {
+			ctx.Clear()
+			val.(pcommon.Map).CopyTo(ctx)
 		},
 	}
 
 	tests := []struct {
 		name        string
-		target      ottl.GetSetter
+		target      ottl.GetSetter[pcommon.Map]
 		pattern     string
 		replacement string
 		want        func(pcommon.Map)
@@ -77,12 +77,9 @@ func Test_replaceAllMatches(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			ctx := ottltest.TestTransformContext{
-				Item: scenarioMap,
-			}
-
-			exprFunc, _ := ReplaceAllMatches(tt.target, tt.pattern, tt.replacement)
-			exprFunc(ctx)
+			exprFunc, err := ReplaceAllMatches(tt.target, tt.pattern, tt.replacement)
+			require.NoError(t, err)
+			assert.Nil(t, exprFunc(scenarioMap))
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
@@ -94,39 +91,32 @@ func Test_replaceAllMatches(t *testing.T) {
 
 func Test_replaceAllMatches_bad_input(t *testing.T) {
 	input := pcommon.NewValueString("not a map")
-	ctx := ottltest.TestTransformContext{
-		Item: input,
-	}
-
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem()
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx interface{}) interface{} {
+			return ctx
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) {
 			t.Errorf("nothing should be set in this scenario")
 		},
 	}
 
-	exprFunc, _ := ReplaceAllMatches(target, "*", "{replacement}")
-	exprFunc(ctx)
-
+	exprFunc, err := ReplaceAllMatches[interface{}](target, "*", "{replacement}")
+	require.NoError(t, err)
+	assert.Nil(t, exprFunc(input))
 	assert.Equal(t, pcommon.NewValueString("not a map"), input)
 }
 
 func Test_replaceAllMatches_get_nil(t *testing.T) {
-	ctx := ottltest.TestTransformContext{
-		Item: nil,
-	}
-
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem()
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx interface{}) interface{} {
+			return ctx
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) {
 			t.Errorf("nothing should be set in this scenario")
 		},
 	}
 
-	exprFunc, _ := ReplaceAllMatches(target, "*", "{anything}")
-	exprFunc(ctx)
+	exprFunc, err := ReplaceAllMatches[interface{}](target, "*", "{anything}")
+	require.NoError(t, err)
+	assert.Nil(t, exprFunc(nil))
 }

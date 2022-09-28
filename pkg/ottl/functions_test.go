@@ -540,111 +540,111 @@ func Test_NewFunctionCall(t *testing.T) {
 	}
 }
 
-func functionWithStringSlice(_ []string) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
+func functionWithStringSlice(_ []string) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithFloatSlice(_ []float64) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
+func functionWithFloatSlice(_ []float64) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithIntSlice(_ []int64) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
+func functionWithIntSlice(_ []int64) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithByteSlice(_ []byte) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
+func functionWithByteSlice([]byte) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithGetterSlice(_ []Getter) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
+func functionWithGetterSlice([]Getter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithSetter(_ Setter) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
+func functionWithSetter(Setter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithGetSetter(_ GetSetter) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
+func functionWithGetSetter(GetSetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithGetter(_ Getter) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
+func functionWithGetter(Getter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithString(_ string) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
+func functionWithString(string) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithFloat(_ float64) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
+func functionWithFloat(float64) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithInt(_ int64) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
+func functionWithInt(int64) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithBool(_ bool) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
+func functionWithBool(bool) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithMultipleArgs(_ GetSetter, _ string, _ float64, _ int64, _ []string) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
+func functionWithMultipleArgs(GetSetter[interface{}], string, float64, int64, []string) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionThatHasAnError() (ExprFunc, error) {
+func functionThatHasAnError() (ExprFunc[interface{}], error) {
 	err := errors.New("testing")
-	return func(ctx TransformContext) interface{} {
+	return func(interface{}) interface{} {
 		return "anything"
 	}, err
 }
 
-func functionWithEnum(_ Enum) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
+func functionWithEnum(_ Enum) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithTelemetrySettingsFirst(_ component.TelemetrySettings, _ string, _ string, _ int64) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
+func functionWithTelemetrySettingsFirst(_ component.TelemetrySettings, _ string, _ string, _ int64) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithTelemetrySettingsMiddle(_ string, _ string, _ component.TelemetrySettings, _ int64) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
+func functionWithTelemetrySettingsMiddle(_ string, _ string, _ component.TelemetrySettings, _ int64) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithTelemetrySettingsLast(_ string, _ string, _ int64, _ component.TelemetrySettings) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
+func functionWithTelemetrySettingsLast(_ string, _ string, _ int64, _ component.TelemetrySettings) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
 }
