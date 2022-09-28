@@ -58,6 +58,20 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
+			statements: []string{`set(attributes["int_value"], Int("2")) where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutInt("int_value", 2)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutInt("int_value", 2)
+			},
+		},
+		{
+			statements: []string{`set(attributes["int_value"], Int(value_double)) where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutInt("int_value", 1)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutInt("int_value", 3)
+			},
+		},
+		{
 			statements: []string{`keep_keys(attributes, "attr2") where metric.name == "operationA"`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Clear()
@@ -355,6 +369,7 @@ func fillMetricOne(m pmetric.Metric) {
 
 	dataPoint1 := m.Sum().DataPoints().AppendEmpty()
 	dataPoint1.SetStartTimestamp(StartTimestamp)
+	dataPoint1.SetDoubleValue(3.7)
 	dataPoint1.Attributes().PutString("attr1", "test1")
 	dataPoint1.Attributes().PutString("attr2", "test2")
 	dataPoint1.Attributes().PutString("attr3", "test3")
