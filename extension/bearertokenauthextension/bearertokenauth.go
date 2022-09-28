@@ -82,13 +82,7 @@ func (b *BearerTokenAuth) Start(ctx context.Context, host component.Host) error 
 	}
 
 	// Read file once
-	tokenStr, err := os.ReadFile(b.filename)
-	if err != nil {
-		return err
-	}
-	b.muTokenString.Lock()
-	b.tokenString = string(tokenStr)
-	b.muTokenString.Unlock()
+	b.refreshToken()
 
 	b.shutdownCH = make(chan struct{})
 
@@ -115,11 +109,10 @@ func (b *BearerTokenAuth) startWatcher(ctx context.Context, watcher *fsnotify.Wa
 			if !ok {
 				continue
 			}
-
 			// NOTE: k8s configmaps uses symlinks, we need this workaround.
 			// original configmap file is removed.
 			// SEE: https://martensson.io/go-fsnotify-and-kubernetes-configmaps/
-			if event.Op == fsnotify.Remove {
+			if event.Op == fsnotify.Remove || event.Op == fsnotify.Chmod {
 				// remove the watcher since the file is removed
 				watcher.Remove(event.Name)
 				// add a new watcher pointing to the new symlink/file
@@ -127,7 +120,7 @@ func (b *BearerTokenAuth) startWatcher(ctx context.Context, watcher *fsnotify.Wa
 				b.refreshToken()
 			}
 			// also allow normal files to be modified and reloaded.
-			if event.Op&fsnotify.Write == fsnotify.Write {
+			if event.Op == fsnotify.Write {
 				b.refreshToken()
 			}
 		}
@@ -135,7 +128,7 @@ func (b *BearerTokenAuth) startWatcher(ctx context.Context, watcher *fsnotify.Wa
 }
 
 func (b *BearerTokenAuth) refreshToken() {
-	b.logger.Info("refresh token", zap.Field{Key: "filename", String: b.filename})
+	b.logger.Info("refresh token", zap.String("filename", b.filename))
 	token, err := os.ReadFile(b.filename)
 	if err != nil {
 		b.logger.Error(err.Error())
