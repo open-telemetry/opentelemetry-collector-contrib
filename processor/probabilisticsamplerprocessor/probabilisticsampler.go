@@ -78,7 +78,6 @@ func newTracesProcessor(ctx context.Context, set component.ProcessorCreateSettin
 }
 
 func (tsp *tracesamplerprocessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
-	metrics := policyMetrics{}
 	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
 		rs.ScopeSpans().RemoveIf(func(ils ptrace.ScopeSpans) bool {
 			ils.Spans().RemoveIf(func(s ptrace.Span) bool {
@@ -92,7 +91,6 @@ func (tsp *tracesamplerprocessor) processTraces(ctx context.Context, td ptrace.T
 						[]tag.Mutator{tag.Upsert(tagPolicyKey, "sampling_priority"), tag.Upsert(tagSampledKey, "false")},
 						statCountTracesSampled.M(int64(1)),
 					)
-					metrics.decisionNotSampled++
 					return true
 				}
 
@@ -101,7 +99,6 @@ func (tsp *tracesamplerprocessor) processTraces(ctx context.Context, td ptrace.T
 					[]tag.Mutator{tag.Upsert(tagPolicyKey, "sampling_priority"), tag.Upsert(tagSampledKey, "true")},
 					statCountTracesSampled.M(int64(1)),
 				)
-				metrics.decisionSampled++
 
 				// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
 				// with various different criteria to generate trace id and perhaps were already sampled without hashing.
@@ -116,14 +113,12 @@ func (tsp *tracesamplerprocessor) processTraces(ctx context.Context, td ptrace.T
 						[]tag.Mutator{tag.Upsert(tagPolicyKey, "trace_id_hash"), tag.Upsert(tagSampledKey, "true")},
 						statCountTracesSampled.M(int64(1)),
 					)
-					metrics.decisionSampled++
 				} else {
 					_ = stats.RecordWithTags(
 						ctx,
 						[]tag.Mutator{tag.Upsert(tagPolicyKey, "trace_id_hash"), tag.Upsert(tagSampledKey, "false")},
 						statCountTracesSampled.M(int64(1)),
 					)
-					metrics.decisionNotSampled++
 				}
 				return !sampled
 			})
@@ -242,8 +237,4 @@ func hash(key []byte, seed uint32) (hash uint32) {
 	hash ^= hash >> 16
 
 	return
-}
-
-type policyMetrics struct {
-	decisionSampled, decisionNotSampled int64
 }
