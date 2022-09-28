@@ -65,13 +65,13 @@ func newIisReceiver(settings component.ReceiverCreateSettings, cfg *Config, cons
 
 // start builds the paths to the watchers
 func (rcvr *iisReceiver) start(ctx context.Context, host component.Host) error {
-	errors := &scrapererror.ScrapeErrors{}
+	errs := &scrapererror.ScrapeErrors{}
 
-	rcvr.totalWatcherRecorders = rcvr.buildWatcherRecorders(totalPerfCounterRecorders, errors)
-	rcvr.siteWatcherRecorders = rcvr.buildWatcherRecorders(sitePerfCounterRecorders, errors)
-	rcvr.appPoolWatcherRecorders = rcvr.buildWatcherRecorders(appPoolPerfCounterRecorders, errors)
+	rcvr.totalWatcherRecorders = rcvr.buildWatcherRecorders(totalPerfCounterRecorders, errs)
+	rcvr.siteWatcherRecorders = rcvr.buildWatcherRecorders(sitePerfCounterRecorders, errs)
+	rcvr.appPoolWatcherRecorders = rcvr.buildWatcherRecorders(appPoolPerfCounterRecorders, errs)
 
-	return errors.Combine()
+	return errs.Combine()
 }
 
 // scrape pulls counter values from the watchers
@@ -101,6 +101,7 @@ func (rcvr *iisReceiver) scrapeTotalMetrics(now pcommon.Timestamp) {
 	}
 
 	// resource for total metrics is empty
+	// this makes it so that the order that the scrape functions are called doesn't matter
 	rcvr.metricBuilder.EmitForResource()
 }
 
