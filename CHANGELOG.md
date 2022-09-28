@@ -52,7 +52,7 @@
 - `loki`: Split the conversion OTLP -> Loki into its own package (#13649)
 - `kafkareceiver`: Add direct unmarshaler, inserting Kafka payload bytes as the body of a log record (#13252)
 - `apachereceiver`: The receiver now supports 6 more metrics, more information in the linked issue. (#14095)
-- `exporter/datadogexporter`: Add logs support (#2651)
+- `datadogexporter`: Add logs support (#2651)
 - `datadogexporter`: The "hostmetrics" receiver metrics are now correctly mapped to Datadog system metrics. (#14005)
 - `fileexporter`: support for compressing the telemetry data before exporting. (#13626)
 - `fileexporter`: support for encoding telemetry data using proto marshaler (#13626)
