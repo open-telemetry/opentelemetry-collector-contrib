@@ -15,6 +15,8 @@
 package jaeger // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 
 import (
+	"encoding/base64"
+
 	"github.com/jaegertracing/jaeger/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -147,6 +149,9 @@ func attributeToJaegerProtoTag(key string, attr pcommon.Value) model.KeyValue {
 	case pcommon.ValueTypeDouble:
 		tag.VType = model.ValueType_FLOAT64
 		tag.VFloat64 = attr.Double()
+	case pcommon.ValueTypeBytes:
+		tag.VType = model.ValueType_STRING
+		tag.VStr = base64.StdEncoding.EncodeToString(attr.Bytes().AsRaw())
 	case pcommon.ValueTypeMap, pcommon.ValueTypeSlice:
 		tag.VType = model.ValueType_STRING
 		tag.VStr = attr.AsString()
