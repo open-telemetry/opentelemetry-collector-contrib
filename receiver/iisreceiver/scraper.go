@@ -152,12 +152,9 @@ func (rcvr *iisReceiver) scrapeInstanceMetrics(now pcommon.Timestamp, wrs []watc
 // shutdown closes the watchers
 func (rcvr iisReceiver) shutdown(ctx context.Context) error {
 	var errs error
-	for _, wr := range rcvr.totalWatcherRecorders {
-		err := wr.watcher.Close()
-		if err != nil {
-			errs = multierr.Append(errs, err)
-		}
-	}
+	errs = multierr.Append(errs, closeWatcherRecorders(rcvr.totalWatcherRecorders))
+	errs = multierr.Append(errs, closeWatcherRecorders(rcvr.siteWatcherRecorders))
+	errs = multierr.Append(errs, closeWatcherRecorders(rcvr.appPoolWatcherRecorders))
 	return errs
 }
 
@@ -176,4 +173,15 @@ func (rcvr *iisReceiver) buildWatcherRecorders(confs []perfCounterRecorderConf, 
 	}
 
 	return wrs
+}
+
+func closeWatcherRecorders(wrs []watcherRecorder) error {
+	var errs error
+	for _, wr := range wrs {
+		err := wr.watcher.Close()
+		if err != nil {
+			errs = multierr.Append(errs, err)
+		}
+	}
+	return errs
 }
