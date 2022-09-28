@@ -201,7 +201,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 	}
 }
 
-func TestAtlasRetrieve(t *testing.T) {
+func TestAtlasPoll(t *testing.T) {
 	mockClient := mockAlertsClient{}
 
 	alerts := []mongodbatlas.Alert{}
@@ -230,7 +230,7 @@ func TestAtlasRetrieve(t *testing.T) {
 		&Config{
 			Alerts: AlertConfig{
 				Enabled: true,
-				Mode:    alertModeRetrieval,
+				Mode:    alertModePoll,
 				Projects: []ProjectConfig{
 					{
 						Name: testProjectName,
