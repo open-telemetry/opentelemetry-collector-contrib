@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
@@ -44,7 +45,7 @@ func (c *Config) Validate() error {
 		traces.Functions(),
 		ottltraces.ParsePath,
 		ottltraces.ParseEnum,
-		component.TelemetrySettings{},
+		component.TelemetrySettings{Logger: zap.NewNop()},
 	)
 	_, err := ottlp.ParseStatements(c.Traces.Queries)
 	if err != nil {
@@ -55,7 +56,7 @@ func (c *Config) Validate() error {
 		metrics.Functions(),
 		ottldatapoints.ParsePath,
 		ottldatapoints.ParseEnum,
-		component.TelemetrySettings{},
+		component.TelemetrySettings{Logger: zap.NewNop()},
 	)
 	_, err = ottlp.ParseStatements(c.Metrics.Queries)
 	if err != nil {
@@ -66,7 +67,7 @@ func (c *Config) Validate() error {
 		logs.Functions(),
 		ottllogs.ParsePath,
 		ottllogs.ParseEnum,
-		component.TelemetrySettings{},
+		component.TelemetrySettings{Logger: zap.NewNop()},
 	)
 	_, err = ottlp.ParseStatements(c.Logs.Queries)
 	if err != nil {

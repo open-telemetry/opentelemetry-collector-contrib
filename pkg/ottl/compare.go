@@ -16,8 +16,8 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"bytes"
-	"fmt"
 
+	"go.uber.org/zap"
 	"golang.org/x/exp/constraints"
 )
 
@@ -28,8 +28,8 @@ import (
 // invalidComparison returns false for everything except NE (where it returns true to indicate that the
 // objects were definitely not equivalent).
 // It also gives us an opportunity to log something.
-func invalidComparison(msg string, op CompareOp) bool {
-	fmt.Printf("%s with op %v\n", msg, op)
+func (p *Parser) invalidComparison(msg string, op CompareOp) bool {
+	p.telemetrySettings.Logger.Debug(msg, zap.Any("op", op))
 	return op == NE
 }
 
@@ -92,25 +92,25 @@ func compareBytes(a []byte, b []byte, op CompareOp) bool {
 	}
 }
 
-func compareBool(a bool, b any, op CompareOp) bool {
+func (p *Parser) compareBool(a bool, b any, op CompareOp) bool {
 	switch v := b.(type) {
 	case bool:
 		return compareBools(a, v, op)
 	default:
-		return invalidComparison("bool to non-bool", op)
+		return p.invalidComparison("bool to non-bool", op)
 	}
 }
 
-func compareString(a string, b any, op CompareOp) bool {
+func (p *Parser) compareString(a string, b any, op CompareOp) bool {
 	switch v := b.(type) {
 	case string:
 		return comparePrimitives(a, v, op)
 	default:
-		return invalidComparison("string to non-string", op)
+		return p.invalidComparison("string to non-string", op)
 	}
 }
 
-func compareByte(a []byte, b any, op CompareOp) bool {
+func (p *Parser) compareByte(a []byte, b any, op CompareOp) bool {
 	switch v := b.(type) {
 	case nil:
 		return op == NE
@@ -120,35 +120,35 @@ func compareByte(a []byte, b any, op CompareOp) bool {
 		}
 		return compareBytes(a, v, op)
 	default:
-		return invalidComparison("Bytes to non-Bytes", op)
+		return p.invalidComparison("Bytes to non-Bytes", op)
 	}
 }
 
-func compareInt64(a int64, b any, op CompareOp) bool {
+func (p *Parser) compareInt64(a int64, b any, op CompareOp) bool {
 	switch v := b.(type) {
 	case int64:
 		return comparePrimitives(a, v, op)
 	case float64:
 		return comparePrimitives(float64(a), v, op)
 	default:
-		return invalidComparison("int to non-numeric value", op)
+		return p.invalidComparison("int to non-numeric value", op)
 	}
 }
 
-func compareFloat64(a float64, b any, op CompareOp) bool {
+func (p *Parser) compareFloat64(a float64, b any, op CompareOp) bool {
 	switch v := b.(type) {
 	case int64:
 		return comparePrimitives(a, float64(v), op)
 	case float64:
 		return comparePrimitives(a, v, op)
 	default:
-		return invalidComparison("float to non-numeric value", op)
+		return p.invalidComparison("float to non-numeric value", op)
 	}
 }
 
 // a and b are the return values from a Getter; we try to compare them
 // according to the given operator.
-func compare(a any, b any, op CompareOp) bool {
+func (p *Parser) compare(a any, b any, op CompareOp) bool {
 	// nils are equal to each other and never equal to anything else,
 	// so if they're both nil, report equality.
 	if a == nil && b == nil {
@@ -159,20 +159,20 @@ func compare(a any, b any, op CompareOp) bool {
 	case nil:
 		// If a was nil, it means b wasn't and inequalities don't apply,
 		// so let's swap and give it the chance to get evaluated.
-		return compare(b, nil, op)
+		return p.compare(b, nil, op)
 	case bool:
-		return compareBool(v, b, op)
+		return p.compareBool(v, b, op)
 	case int64:
-		return compareInt64(v, b, op)
+		return p.compareInt64(v, b, op)
 	case float64:
-		return compareFloat64(v, b, op)
+		return p.compareFloat64(v, b, op)
 	case string:
-		return compareString(v, b, op)
+		return p.compareString(v, b, op)
 	case []byte:
 		if v == nil {
-			return compare(b, nil, op)
+			return p.compare(b, nil, op)
 		}
-		return compareByte(v, b, op)
+		return p.compareByte(v, b, op)
 	default:
 		// If we don't know what type it is, we can't do inequalities yet. So we can fall back to the old behavior where we just
 		// use Go's standard equality.
@@ -182,7 +182,7 @@ func compare(a any, b any, op CompareOp) bool {
 		case NE:
 			return a != b
 		default:
-			return invalidComparison("unsupported type for inequality on left", op)
+			return p.invalidComparison("unsupported type for inequality on left", op)
 		}
 	}
 }
