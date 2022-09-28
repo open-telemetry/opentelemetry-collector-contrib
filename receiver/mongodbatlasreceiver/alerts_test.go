@@ -606,7 +606,7 @@ func TestAlertsRetrieval(t *testing.T) {
 					Granularity:               defaultGranularity,
 					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
 					Alerts: AlertConfig{
-						Mode: string(alertModeRetrieval),
+						Mode: alertModePoll,
 						Projects: []ProjectConfig{
 							{
 								Name: testProjectName,
@@ -638,7 +638,7 @@ func TestAlertsRetrieval(t *testing.T) {
 					Granularity:               defaultGranularity,
 					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
 					Alerts: AlertConfig{
-						Mode: string(alertModeRetrieval),
+						Mode: alertModePoll,
 						Projects: []ProjectConfig{
 							{
 								Name:            testProjectName,

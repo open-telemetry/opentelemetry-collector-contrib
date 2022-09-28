@@ -72,7 +72,7 @@ func TestAlertsReceiver(t *testing.T) {
 				&Config{
 					Alerts: AlertConfig{
 						Enabled:  true,
-						Mode:     string(alertModeListen),
+						Mode:     alertModeListen,
 						Secret:   testSecret,
 						Endpoint: testAddr,
 					},
@@ -141,7 +141,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 					Alerts: AlertConfig{
 						Enabled:  true,
 						Secret:   testSecret,
-						Mode:     string(alertModeListen),
+						Mode:     alertModeListen,
 						Endpoint: testAddr,
 						TLS: &configtls.TLSServerSetting{
 							TLSSetting: configtls.TLSSetting{
@@ -230,7 +230,7 @@ func TestAtlasRetrieve(t *testing.T) {
 		&Config{
 			Alerts: AlertConfig{
 				Enabled: true,
-				Mode:    string(alertModeRetrieval),
+				Mode:    alertModeRetrieval,
 				Projects: []ProjectConfig{
 					{
 						Name: testProjectName,

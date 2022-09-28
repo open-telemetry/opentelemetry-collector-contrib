@@ -55,15 +55,13 @@ const (
 	maxContentLength    int64  = 16384
 	signatureHeaderName string = "X-MMS-Signature"
 
-	alertModeListen    alertMode = "listen"
-	alertModeRetrieval alertMode = "retrieve"
-	alertCacheKey                = "logging_alerts_cache"
+	alertModeListen = "listen"
+	alertModePoll   = "poll"
+	alertCacheKey   = "logging_alerts_cache"
 
 	defaultAlertsPollInterval = 5 * time.Minute
 	defaultAlertsTTL          = 24 * time.Hour
 )
-
-type alertMode string
 
 type alertsClient interface {
 	GetProject(context.Context, string) (*mongodbatlas.Project, error)
@@ -74,26 +72,26 @@ type alertsReceiver struct {
 	addr        string
 	secret      string
 	server      *http.Server
-	mode        alertMode
+	mode        string
 	tlsSettings *configtls.TLSServerSetting
 	consumer    consumer.Logs
 	wg          *sync.WaitGroup
 	logger      *zap.Logger
 
-	// only relevant in `retrieval` mode
-	projects          []ProjectConfig
-	client            alertsClient
-	privateKey        string
-	publicKey         string
-	retrySettings     exporterhelper.RetrySettings
-	pollInterval      time.Duration
-	cache             *alertCache
-	doneChan          chan bool
-	projectInclusions map[string]bool
-	projectExclusions map[string]bool
-	id                config.ComponentID  // ID of the receiver component
-	storageID         *config.ComponentID // ID of the storage extension component
-	storageClient     *storage.Client
+	// only relevant in `poll` mode
+	projects                 []ProjectConfig
+	client                   alertsClient
+	privateKey               string
+	publicKey                string
+	retrySettings            exporterhelper.RetrySettings
+	pollInterval             time.Duration
+	cache                    *alertCache
+	doneChan                 chan bool
+	projectClusterInclusions map[string]bool
+	projectClusterExclusions map[string]bool
+	id                       config.ComponentID  // ID of the receiver component
+	storageID                *config.ComponentID // ID of the storage extension component
+	storageClient            *storage.Client
 }
 
 func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer.Logs) (*alertsReceiver, error) {
@@ -121,26 +119,26 @@ func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer
 	}
 
 	recv := &alertsReceiver{
-		addr:              cfg.Endpoint,
-		secret:            cfg.Secret,
-		tlsSettings:       cfg.TLS,
-		consumer:          consumer,
-		mode:              alertMode(cfg.Mode),
-		projects:          cfg.Projects,
-		retrySettings:     baseConfig.RetrySettings,
-		publicKey:         baseConfig.PublicKey,
-		privateKey:        baseConfig.PrivateKey,
-		wg:                &sync.WaitGroup{},
-		pollInterval:      baseConfig.Alerts.PollInterval,
-		doneChan:          make(chan bool, 1),
-		logger:            logger,
-		projectInclusions: projectInclusionMap,
-		projectExclusions: projectExclusionMap,
-		id:                baseConfig.ID(),
-		storageID:         baseConfig.StorageID,
+		addr:                     cfg.Endpoint,
+		secret:                   cfg.Secret,
+		tlsSettings:              cfg.TLS,
+		consumer:                 consumer,
+		mode:                     cfg.Mode,
+		projects:                 cfg.Projects,
+		retrySettings:            baseConfig.RetrySettings,
+		publicKey:                baseConfig.PublicKey,
+		privateKey:               baseConfig.PrivateKey,
+		wg:                       &sync.WaitGroup{},
+		pollInterval:             baseConfig.Alerts.PollInterval,
+		doneChan:                 make(chan bool, 1),
+		logger:                   logger,
+		projectClusterInclusions: projectInclusionMap,
+		projectClusterExclusions: projectExclusionMap,
+		id:                       baseConfig.ID(),
+		storageID:                baseConfig.StorageID,
 	}
 
-	if recv.mode == alertModeRetrieval {
+	if recv.mode == alertModePoll {
 		client, err := internal.NewMongoDBAtlasClient(recv.publicKey, recv.privateKey, recv.retrySettings, recv.logger)
 		if err != nil {
 			return nil, err
@@ -158,17 +156,13 @@ func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer
 }
 
 func (a alertsReceiver) Start(ctx context.Context, host component.Host) error {
-	switch a.mode {
-	case alertModeListen:
-		return a.startListening(ctx, host)
-	case alertModeRetrieval:
-		return a.startRetrieving(ctx, host)
-	default:
-		return fmt.Errorf("receiver attempted to start without a known mode: %s", a.mode)
+	if a.mode == alertModePoll {
+		return a.startPolling(ctx, host)
 	}
+	return a.startListening(ctx, host)
 }
 
-func (a alertsReceiver) startRetrieving(ctx context.Context, host component.Host) error {
+func (a alertsReceiver) startPolling(ctx context.Context, host component.Host) error {
 	a.logger.Debug("starting alerts receiver in retrieval mode")
 	storageClient, err := adapter.GetStorageClient(ctx, host, a.storageID, a.id)
 	if err != nil {
@@ -177,7 +171,7 @@ func (a alertsReceiver) startRetrieving(ctx context.Context, host component.Host
 	a.storageClient = &storageClient
 	err = a.syncPersistence(ctx)
 	if err != nil {
-		return fmt.Errorf("there was an error syncing the receiver with checkpoint: %w", err)
+		a.logger.Error("there was an error syncing the receiver with checkpoint", zap.Error(err))
 	}
 
 	t := time.NewTicker(a.pollInterval)
@@ -331,14 +325,10 @@ func (a alertsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request)
 }
 
 func (a alertsReceiver) Shutdown(ctx context.Context) error {
-	switch a.mode {
-	case alertModeListen:
-		return a.shutdownListener(ctx)
-	case alertModeRetrieval:
-		return a.shutdownRetriever(ctx)
-	default:
-		return errors.New("alert receiver mode not set, unable to shutdown")
+	if a.mode == alertModePoll {
+		return a.shutdownPoller(ctx)
 	}
+	return a.shutdownListener(ctx)
 }
 
 func (a alertsReceiver) shutdownListener(ctx context.Context) error {
@@ -353,7 +343,7 @@ func (a alertsReceiver) shutdownListener(ctx context.Context) error {
 	return nil
 }
 
-func (a alertsReceiver) shutdownRetriever(ctx context.Context) error {
+func (a alertsReceiver) shutdownPoller(ctx context.Context) error {
 	a.logger.Debug("Shutting down client")
 	close(a.doneChan)
 	a.wg.Wait()
@@ -565,6 +555,7 @@ func (a *alertsReceiver) syncPersistence(ctx context.Context) error {
 	c := *a.storageClient
 	cBytes, err := c.Get(ctx, alertCacheKey)
 	if err != nil {
+		a.cache = &alertCache{}
 		return err
 	}
 
@@ -600,21 +591,21 @@ func (a *alertsReceiver) writeCheckpoint(ctx context.Context) error {
 
 func (a *alertsReceiver) applyFilters(pConf ProjectConfig, alerts []mongodbatlas.Alert) []mongodbatlas.Alert {
 	// default behavior, don't exclude or include projects
-	if len(a.projectInclusions) == 0 && len(a.projectExclusions) == 0 {
+	if len(a.projectClusterInclusions) == 0 && len(a.projectClusterExclusions) == 0 {
 		return alerts
 	}
 	filtered := []mongodbatlas.Alert{}
 	for _, alert := range alerts {
 		// if exclusions are specified, exclude them
-		if len(a.projectExclusions) > 0 {
-			if exclude, ok := a.projectExclusions[projectClusterKey(pConf, alert.ClusterName)]; exclude && ok {
+		if len(a.projectClusterExclusions) > 0 {
+			if exclude, ok := a.projectClusterExclusions[projectClusterKey(pConf, alert.ClusterName)]; exclude && ok {
 				// don't process
 				continue
 			}
 			filtered = append(filtered, alert)
 		} else {
 			// otherwise include based off the inclusion list
-			if include, ok := a.projectInclusions[projectClusterKey(pConf, alert.ClusterName)]; include && ok {
+			if include, ok := a.projectClusterInclusions[projectClusterKey(pConf, alert.ClusterName)]; include && ok {
 				filtered = append(filtered, alert)
 			}
 		}

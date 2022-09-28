@@ -106,7 +106,7 @@ func createDefaultConfig() config.Receiver {
 		Metrics:                   metadata.DefaultMetricsSettings(),
 		Alerts: AlertConfig{
 			Enabled:      defaultAlertsEnabled,
-			Mode:         string(alertModeListen),
+			Mode:         alertModeListen,
 			PollInterval: defaultAlertsPollInterval,
 		},
 		Logs: LogConfig{

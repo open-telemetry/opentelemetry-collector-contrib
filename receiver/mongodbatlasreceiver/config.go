@@ -75,8 +75,8 @@ var (
 	errNoCert           = errors.New("tls was configured, but no cert file was specified")
 	errNoKey            = errors.New("tls was configured, but no key file was specified")
 	errNoModeRecognized = fmt.Errorf("alert mode not recognized for mode. Known alert modes are: %s", strings.Join([]string{
-		string(alertModeListen),
-		string(alertModeRetrieval),
+		alertModeListen,
+		alertModePoll,
 	}, ","))
 
 	// Logs Receiver Errors
@@ -119,11 +119,11 @@ func (a *AlertConfig) validate() error {
 		return nil
 	}
 
-	if a.Mode == string(alertModeRetrieval) {
+	if a.Mode == alertModePoll {
 		return a.validateRetrieval()
 	}
 
-	if a.Mode == string(alertModeListen) {
+	if a.Mode == alertModeListen {
 		return a.validateListen()
 	}
 
