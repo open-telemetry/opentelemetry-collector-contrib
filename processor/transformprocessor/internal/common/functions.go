@@ -24,6 +24,7 @@ var registry = map[string]interface{}{
 	"IsMatch":              ottlfuncs.IsMatch,
 	"Concat":               ottlfuncs.Concat,
 	"Split":                ottlfuncs.Split,
+	"Int":                  ottlfuncs.Int,
 	"keep_keys":            ottlfuncs.KeepKeys,
 	"set":                  ottlfuncs.Set,
 	"truncate_all":         ottlfuncs.TruncateAll,
