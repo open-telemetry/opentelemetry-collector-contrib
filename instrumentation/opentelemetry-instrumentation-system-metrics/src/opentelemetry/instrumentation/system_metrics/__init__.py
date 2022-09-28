@@ -33,6 +33,7 @@ following metrics are configured:
         "system.network.errors": ["transmit", "receive"],
         "system.network.io": ["transmit", "receive"],
         "system.network.connections": ["family", "type"],
+        "system.thread_count": None
         "runtime.memory": ["rss", "vms"],
         "runtime.cpu.time": ["user", "system"],
     }
@@ -71,6 +72,7 @@ API
 
 import gc
 import os
+import threading
 from platform import python_implementation
 from typing import Collection, Dict, Iterable, List, Optional
 
@@ -99,6 +101,7 @@ _DEFAULT_CONFIG = {
     "system.network.errors": ["transmit", "receive"],
     "system.network.io": ["transmit", "receive"],
     "system.network.connections": ["family", "type"],
+    "system.thread_count": None,
     "runtime.memory": ["rss", "vms"],
     "runtime.cpu.time": ["user", "system"],
     "runtime.gc_count": None,
@@ -141,6 +144,8 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
         self._system_network_errors_labels = self._labels.copy()
         self._system_network_io_labels = self._labels.copy()
         self._system_network_connections_labels = self._labels.copy()
+
+        self._system_thread_count_labels = self._labels.copy()
 
         self._runtime_memory_labels = self._labels.copy()
         self._runtime_cpu_time_labels = self._labels.copy()
@@ -309,6 +314,13 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                 callbacks=[self._get_system_network_connections],
                 description="System network connections",
                 unit="connections",
+            )
+
+        if "system.thread_count" in self._config:
+            self._meter.create_observable_gauge(
+                name="system.thread_count",
+                callbacks=[self._get_system_thread_count],
+                description="System active threads count",
             )
 
         if "runtime.memory" in self._config:
@@ -592,6 +604,14 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                 connection_counter["counter"],
                 connection_counter["labels"],
             )
+
+    def _get_system_thread_count(
+        self, options: CallbackOptions
+    ) -> Iterable[Observation]:
+        """Observer callback for active thread count"""
+        yield Observation(
+            threading.active_count(), self._system_thread_count_labels
+        )
 
     def _get_runtime_memory(
         self, options: CallbackOptions

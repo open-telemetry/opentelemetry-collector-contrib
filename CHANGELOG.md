@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python/compare/v1.13.0-0.34b0...HEAD)
 
+### Added
+
+- `opentelemetry-instrumentation-system-metrics` add supports to collect system thread count. ([#1339](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1339))
+
 ## [1.13.0-0.34b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.13.0-0.34b0) - 2022-09-26
 
 
@@ -26,14 +30,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#1253](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1253))
 - Add metric instrumentation in starlette
   ([#1327](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1327))
-  
+
 
 ### Fixed
 
 - `opentelemetry-instrumentation-boto3sqs` Make propagation compatible with other SQS instrumentations, add 'messaging.url' span attribute, and fix missing package dependencies.
-  ([#1234](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1234)) 
+  ([#1234](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1234))
 - `opentelemetry-instrumentation-pymongo` Change span names to not contain queries but only database name and command name
-  ([#1247](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1247)) 
+  ([#1247](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1247))
 - restoring metrics in django framework
   ([#1208](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1208))
 - `opentelemetry-instrumentation-aiohttp-client` Fix producing additional spans with each newly created ClientSession

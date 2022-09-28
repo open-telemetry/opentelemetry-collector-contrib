@@ -51,6 +51,7 @@ class _SystemMetricsResult:
         self.value = value
 
 
+# pylint:disable=too-many-public-methods
 class TestSystemMetrics(TestBase):
     def setUp(self):
         super().setUp()
@@ -75,7 +76,7 @@ class TestSystemMetrics(TestBase):
             for scope_metrics in resource_metrics.scope_metrics:
                 for metric in scope_metrics.metrics:
                     metric_names.append(metric.name)
-        self.assertEqual(len(metric_names), 17)
+        self.assertEqual(len(metric_names), 18)
 
         observer_names = [
             "system.cpu.time",
@@ -92,6 +93,7 @@ class TestSystemMetrics(TestBase):
             "system.network.errors",
             "system.network.io",
             "system.network.connections",
+            "system.thread_count",
             f"runtime.{self.implementation}.memory",
             f"runtime.{self.implementation}.cpu_time",
             f"runtime.{self.implementation}.gc_count",
@@ -679,6 +681,13 @@ class TestSystemMetrics(TestBase):
             ),
         ]
         self._test_metrics("system.network.connections", expected)
+
+    @mock.patch("threading.active_count")
+    def test_system_thread_count(self, threading_active_count):
+        threading_active_count.return_value = 42
+
+        expected = [_SystemMetricsResult({}, 42)]
+        self._test_metrics("system.thread_count", expected)
 
     @mock.patch("psutil.Process.memory_info")
     def test_runtime_memory(self, mock_process_memory_info):
