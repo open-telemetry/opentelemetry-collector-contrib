@@ -78,7 +78,7 @@ func TestScrapeFailure(t *testing.T) {
 	expectedError := "failure to collect metric"
 	mockWatcher, err := newMockWatcherFactory(fmt.Errorf(expectedError), 1)("", "", "")
 	require.NoError(t, err)
-	scraper.watcherRecorders = []watcherRecorder{
+	scraper.totalWatcherRecorders = []watcherRecorder{
 		{
 			watcher: mockWatcher,
 			recorder: func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
@@ -115,7 +115,7 @@ func (mpc *mockPerfCounter) Path() string {
 
 // ScrapeData
 func (mpc *mockPerfCounter) ScrapeData() ([]winperfcounters.CounterValue, error) {
-	return []winperfcounters.CounterValue{{Value: 1}}, mpc.watchErr
+	return []winperfcounters.CounterValue{{InstanceName: "Instance", Value: 1}}, mpc.watchErr
 }
 
 // Close
