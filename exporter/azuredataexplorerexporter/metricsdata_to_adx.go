@@ -149,7 +149,9 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 					}, dataPoint.Attributes().AsRaw())
 
 				value += counts.At(bi)
-				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(), pcommon.NewMapFromRaw(customMap), func() float64 {
+				vMap := pcommon.NewMap()
+				vMap.FromRaw(customMap)
+				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(), vMap, func() float64 {
 					// Change int to float. The value is a float64 in the table
 					return float64(value)
 				},
@@ -164,7 +166,9 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 					copyMap(map[string]interface{}{
 						"le": float64ToDimValue(math.Inf(1)),
 					}, dataPoint.Attributes().AsRaw())
-				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(), pcommon.NewMapFromRaw(customMap), func() float64 {
+				vMap := pcommon.NewMap()
+				vMap.FromRaw(customMap)
+				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(), vMap, func() float64 {
 					// Change int to float. The value is a float64 in the table
 					return float64(value + counts.At(counts.Len()-1))
 				},
@@ -226,8 +230,10 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 				}
 				customMap :=
 					copyMap(metricQuantile, dataPoint.Attributes().AsRaw())
+				vMap := pcommon.NewMap()
+				vMap.FromRaw(customMap)
 				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(),
-					pcommon.NewMapFromRaw(customMap),
+					vMap,
 					dp.Value,
 					quantileName,
 					fmt.Sprintf("%s%s", md.Description(), countdescription),
