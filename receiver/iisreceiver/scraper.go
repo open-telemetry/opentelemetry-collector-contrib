@@ -118,7 +118,7 @@ func (rcvr *iisReceiver) scrapeInstanceMetrics(now pcommon.Timestamp, wrs []watc
 	for _, wr := range wrs {
 		counterValues, err := wr.watcher.ScrapeData()
 		if err != nil {
-			rcvr.params.Logger.Warn("some performance counters could not be scraped; ", zap.Error(err), zap.String("path", wr.watcher.Path()))
+			rcvr.params.Logger.Warn("some performance counters could not be scraped; ", zap.Error(err))
 			continue
 		}
 
@@ -126,6 +126,7 @@ func (rcvr *iisReceiver) scrapeInstanceMetrics(now pcommon.Timestamp, wrs []watc
 		// The _Total instance may be the only instance, because some instances require elevated permissions
 		// to list and scrape. In these cases, the per-instance metric is not available, and should not be recorded.
 		if len(counterValues) == 1 && counterValues[0].InstanceName == "" {
+			rcvr.params.Logger.Warn("Performance counter was scraped, but only the _Total instance was available, skipping metric...", zap.String("path", wr.watcher.Path()))
 			continue
 		}
 
