@@ -34,7 +34,6 @@ var _ config.Receiver = (*Config)(nil)
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	config.ReceiverSettings                 `mapstructure:",squash"`
 	PublicKey                               string                       `mapstructure:"public_key"`
 	PrivateKey                              string                       `mapstructure:"private_key"`
 	Granularity                             string                       `mapstructure:"granularity"`
