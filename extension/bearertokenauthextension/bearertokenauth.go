@@ -52,28 +52,28 @@ type BearerTokenAuth struct {
 
 	shutdownCH chan struct{}
 
-	tokenFilename string
-	logger        *zap.Logger
+	filename string
+	logger   *zap.Logger
 }
 
 var _ configauth.ClientAuthenticator = (*BearerTokenAuth)(nil)
 
 func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
-	if cfg.BearerTokenFilename != "" && cfg.BearerToken != "" {
+	if cfg.Filename != "" && cfg.BearerToken != "" {
 		logger.Warn("a filename is specified. Configured token is ignored!")
 	}
 	return &BearerTokenAuth{
-		tokenString:   cfg.BearerToken,
-		tokenFilename: cfg.BearerTokenFilename,
-		logger:        logger,
+		tokenString: cfg.BearerToken,
+		filename:    cfg.Filename,
+		logger:      logger,
 	}
 }
 
-// Start of BearerTokenAuth does nothing and returns nil if no tokenFilename
+// Start of BearerTokenAuth does nothing and returns nil if no filename
 // is specified. Otherwise a routine is started to monitor the file containing
 // the token to be transferred.
 func (b *BearerTokenAuth) Start(ctx context.Context, host component.Host) error {
-	if b.tokenFilename == "" {
+	if b.filename == "" {
 		return nil
 	}
 
@@ -82,7 +82,7 @@ func (b *BearerTokenAuth) Start(ctx context.Context, host component.Host) error 
 	}
 
 	// Read file once
-	tokenStr, err := os.ReadFile(b.tokenFilename)
+	tokenStr, err := os.ReadFile(b.filename)
 	if err != nil {
 		return err
 	}
@@ -99,7 +99,7 @@ func (b *BearerTokenAuth) Start(ctx context.Context, host component.Host) error 
 	// start file watcher
 	go b.startWatcher(ctx, watcher)
 
-	return watcher.Add(b.tokenFilename)
+	return watcher.Add(b.filename)
 }
 
 func (b *BearerTokenAuth) startWatcher(ctx context.Context, watcher *fsnotify.Watcher) {
@@ -116,7 +116,7 @@ func (b *BearerTokenAuth) startWatcher(ctx context.Context, watcher *fsnotify.Wa
 				continue
 			}
 			if event.Op == fsnotify.Write {
-				token, err := os.ReadFile(b.tokenFilename)
+				token, err := os.ReadFile(b.filename)
 				if err != nil {
 					b.logger.Error(err.Error())
 					continue
@@ -131,7 +131,7 @@ func (b *BearerTokenAuth) startWatcher(ctx context.Context, watcher *fsnotify.Wa
 
 // Shutdown of BearerTokenAuth does nothing and returns nil
 func (b *BearerTokenAuth) Shutdown(ctx context.Context) error {
-	if b.tokenFilename == "" {
+	if b.filename == "" {
 		return nil
 	}
 

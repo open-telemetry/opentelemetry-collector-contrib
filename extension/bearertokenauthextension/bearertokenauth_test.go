@@ -109,7 +109,7 @@ func TestBearerAuthenticator(t *testing.T) {
 
 func TestBearerStartWatchStop(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.BearerTokenFilename = "test.token"
+	cfg.Filename = "test.token"
 
 	bauth := newBearerTokenAuth(cfg, nil)
 	assert.NotNil(t, bauth)
@@ -121,7 +121,7 @@ func TestBearerStartWatchStop(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, credential)
 
-	token, err := os.ReadFile(bauth.tokenFilename)
+	token, err := os.ReadFile(bauth.filename)
 	assert.NoError(t, err)
 
 	tokenStr := fmt.Sprintf("Bearer %s", token)
@@ -134,7 +134,7 @@ func TestBearerStartWatchStop(t *testing.T) {
 	assert.True(t, credential.RequireTransportSecurity())
 
 	// change file content once
-	assert.Nil(t, os.WriteFile(bauth.tokenFilename, []byte(fmt.Sprintf("%stest", token)), 0600))
+	assert.Nil(t, os.WriteFile(bauth.filename, []byte(fmt.Sprintf("%stest", token)), 0600))
 	time.Sleep(5 * time.Second)
 	credential, _ = bauth.PerRPCCredentials()
 	md, err = credential.GetRequestMetadata(context.Background())
@@ -143,7 +143,7 @@ func TestBearerStartWatchStop(t *testing.T) {
 	assert.NoError(t, err)
 
 	// change file content back
-	assert.Nil(t, os.WriteFile(bauth.tokenFilename, token, 0600))
+	assert.Nil(t, os.WriteFile(bauth.filename, token, 0600))
 	time.Sleep(5 * time.Second)
 	credential, _ = bauth.PerRPCCredentials()
 	md, err = credential.GetRequestMetadata(context.Background())

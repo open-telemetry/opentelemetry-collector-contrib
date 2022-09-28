@@ -19,7 +19,7 @@ One of the following two options is required. If a token **and** a tokenfile are
   This token is prepended by "Bearer " before being sent as a value of "authorization" key in
   RPC metadata.
 
-- `tokenfile`: filename of file that contains a authorization token that needs to be sent on every
+- `filename`: filename of file that contains a authorization token that needs to be sent on every
   gRPC client call as metadata.
   This token is prepended by "Bearer " before being sent as a value of "authorization" key in
   RPC metadata.
@@ -32,7 +32,7 @@ One of the following two options is required. If a token **and** a tokenfile are
 extensions:
   bearertokenauth:
     token: "somerandomtoken"
-    token_filename: "file-containing.token"
+    filename: "file-containing.token"
 
 receivers:
   hostmetrics:
