@@ -135,6 +135,7 @@ func (b *BearerTokenAuth) startWatcher(ctx context.Context, watcher *fsnotify.Wa
 }
 
 func (b *BearerTokenAuth) refreshToken() {
+	b.logger.Info("refresh token", zap.Field{Key: "filename", String: b.filename})
 	token, err := os.ReadFile(b.filename)
 	if err != nil {
 		b.logger.Error(err.Error())
