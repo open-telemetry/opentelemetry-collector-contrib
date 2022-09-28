@@ -9,8 +9,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.60.0
 	github.com/stretchr/testify v1.8.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector/pdata v0.60.1-0.20220927015850-e98116922cf6
-	go.opentelemetry.io/collector/semconv v0.60.1-0.20220927015850-e98116922cf6
+	go.opentelemetry.io/collector/pdata v0.60.1-0.20220928061250-1c217b366fbd
+	go.opentelemetry.io/collector/semconv v0.60.1-0.20220928061250-1c217b366fbd
 	google.golang.org/protobuf v1.28.1
 )
 
