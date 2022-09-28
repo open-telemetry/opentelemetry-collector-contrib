@@ -99,6 +99,9 @@ func (rcvr *iisReceiver) scrapeTotalMetrics(now pcommon.Timestamp) {
 		}
 		wr.recorder(rcvr.metricBuilder, now, value)
 	}
+
+	// resource for total metrics is empty
+	rcvr.metricBuilder.EmitForResource()
 }
 
 type valRecorder struct {
