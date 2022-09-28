@@ -44,7 +44,7 @@ type logsExporter struct {
 	// Input configuration.
 	config *Config
 
-	logExporter plogotlp.Client
+	logExporter plogotlp.GRPCClient
 	clientConn  *grpc.ClientConn
 	metadata    metadata.MD
 	callOptions []grpc.CallOption
