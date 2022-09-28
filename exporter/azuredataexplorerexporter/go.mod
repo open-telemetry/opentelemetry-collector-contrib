@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azured
 go 1.18
 
 require (
-	github.com/Azure/azure-kusto-go v0.8.0
+	github.com/Azure/azure-kusto-go v0.8.1
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.11
 	github.com/json-iterator/go v1.1.12
 	github.com/stretchr/testify v1.8.0
