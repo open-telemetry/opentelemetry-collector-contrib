@@ -78,7 +78,7 @@ func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
 	var status string
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch strings.ToLower(k) {
-		// set of remapping are taken from https://github.com/DataDog/logs-backend/blob/prod/domains/event-platform/libs/processing/processing-model/src/main/java/com/fsmatic/workload/processing/RemappingConfiguration.java
+		// set of remapping are taken from Datadog Backend
 		case "msg", "message", "log":
 			l.Message = v.AsString()
 		case "status", "severity", "level", "syslog.severity":
