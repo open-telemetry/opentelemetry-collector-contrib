@@ -10,7 +10,7 @@ Otto is a self-contained executable that can be run from within a local OpenTele
 
 1) Download or clone a copy of the Collector.
 2) Change directories to `cmd/configschema/otto`
-3) Run `go run ./...`
+3) Run `go run .`
 4) Open localhost:8888 in a desktop browser (only Chrome is officially supported at this time, though other browsers may also work).
 
 ## Creating a component configuration

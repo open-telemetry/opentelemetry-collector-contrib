@@ -26,7 +26,7 @@ const defaultAddress = ":8888"
 func main() {
 	logger := log.Default()
 	addrPtr := flag.String("port", defaultAddress, "the address (host:port) that otto will listen on")
-	collectorDirPtr := flag.String("collector_src", ".", "the root directory of a locally checked-out collector repo")
+	collectorDirPtr := flag.String("collector_src", "../../..", "the root directory of a locally checked-out collector repo")
 	flag.Parse()
 	otto.Server(logger, *addrPtr, *collectorDirPtr)
 }
