@@ -53,11 +53,7 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
-	recv, err := newMongoDBAtlasReceiver(params, cfg)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create a MongoDB Atlas Receiver instance: %w", err)
-	}
-
+	recv := newMongoDBAtlasReceiver(params, cfg)
 	ms, err := newMongoDBAtlasScraper(recv)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create a MongoDB Atlas Scaper instance: %w", err)

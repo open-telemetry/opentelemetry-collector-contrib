@@ -45,10 +45,15 @@ type timeconstraints struct {
 	resolution string
 }
 
-func newMongoDBAtlasReceiver(settings component.ReceiverCreateSettings, cfg *Config) (*receiver, error) {
+func newMongoDBAtlasReceiver(settings component.ReceiverCreateSettings, cfg *Config) *receiver {
 	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, settings.Logger)
-	recv := &receiver{log: settings.Logger, cfg: cfg, client: client, mb: metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo), stopperChan: make(chan struct{})}
-	return recv, nil
+	return &receiver{
+		log:         settings.Logger,
+		cfg:         cfg,
+		client:      client,
+		mb:          metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+		stopperChan: make(chan struct{}),
+	}
 }
 
 func newMongoDBAtlasScraper(recv *receiver) (scraperhelper.Scraper, error) {
