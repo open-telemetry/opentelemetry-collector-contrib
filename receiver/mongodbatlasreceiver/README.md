@@ -37,7 +37,7 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
   - `endpoint` (required if using `listen` mode)
   - `poll_interval` (default `5m`, only relevant using `poll` mode)
   - `max_alerts` (default `1000`)
-    - When in `poll` mode, this is the maximum number of alerts the receiver will attempt to process per poll. Alerts are processed from most recently created to least recently created.mode.
+    - When in `poll` mode, this is the maximum number of alerts the receiver will attempt to process per poll. Alerts are processed from most recently created to least recently created.
   - `projects` (required if using `poll` mode)
     - `name` (required if using `poll mode`)
     - `include_clusters` (default empty, exclusive with `exclude_clusters`)
