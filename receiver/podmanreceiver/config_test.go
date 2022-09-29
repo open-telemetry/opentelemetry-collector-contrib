@@ -21,35 +21,59 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
-	assert.Equal(t, 2, len(cfg.Receivers))
 
-	defaultConfig := cfg.Receivers[config.NewComponentID(typeStr)]
-	assert.Equal(t, factory.CreateDefaultConfig(), defaultConfig)
+	tests := []struct {
+		id          config.ComponentID
+		expected    config.Receiver
+		expectedErr error
+	}{
+		{
+			id: config.NewComponentIDWithName(typeStr, ""),
+			expected: &Config{
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+					CollectionInterval: 10 * time.Second,
+				},
+				APIVersion: defaultAPIVersion,
+				Endpoint:   "unix:///run/podman/podman.sock",
+				Timeout:    5 * time.Second,
+			},
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "all"),
+			expected: &Config{
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+					CollectionInterval: 2 * time.Second,
+				},
+				APIVersion: defaultAPIVersion,
+				Endpoint:   "http://example.com/",
+				Timeout:    20 * time.Second,
+			},
+		},
+	}
 
-	dcfg := defaultConfig.(*Config)
-	assert.Equal(t, "podman_stats", dcfg.ID().String())
-	assert.Equal(t, "unix:///run/podman/podman.sock", dcfg.Endpoint)
-	assert.Equal(t, 10*time.Second, dcfg.CollectionInterval)
-	assert.Equal(t, 5*time.Second, dcfg.Timeout)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
 
-	ascfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "all")].(*Config)
-	assert.Equal(t, "podman_stats/all", ascfg.ID().String())
-	assert.Equal(t, "http://example.com/", ascfg.Endpoint)
-	assert.Equal(t, 2*time.Second, ascfg.CollectionInterval)
-	assert.Equal(t, 20*time.Second, ascfg.Timeout)
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }

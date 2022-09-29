@@ -16,8 +16,8 @@ package awsemfexporter
 
 import (
 	"os"
+	"reflect"
 	"sort"
-	"strings"
 	"testing"
 	"time"
 
@@ -296,17 +296,46 @@ func stringSlicesEqual(expected, actual []string) bool {
 	return true
 }
 
-// hashDimensions hashes dimensions for equality checking.
-func hashDimensions(dims [][]string) []string {
+func min(i, j int) int {
+	if i < j {
+		return i
+	}
+	return j
+}
+
+type dimensionality [][]string
+
+func (d dimensionality) Len() int {
+	return len(d)
+}
+
+func (d dimensionality) Swap(i, j int) {
+	d[i], d[j] = d[j], d[i]
+}
+
+func (d dimensionality) Less(i, j int) bool {
+	dim1 := d[i]
+	dim2 := d[j]
+
+	for k := 0; k < min(len(dim1), len(dim2)); k++ {
+		if dim1[k] != dim2[k] {
+			return dim1[k] < dim2[k]
+		}
+	}
+
+	return len(dim1) < len(dim2)
+}
+
+// normalizes a dimensionality lexicographically so that it can be compared
+func normalizeDimensionality(dims [][]string) [][]string {
 	// Convert to string for easier sorting
-	stringified := make([]string, len(dims))
+	sortedDimensions := make([][]string, len(dims))
 	for i, v := range dims {
 		sort.Strings(v)
-		stringified[i] = strings.Join(v, ",")
+		sortedDimensions[i] = v
 	}
-	// Sort across dimension sets for equality checking
-	sort.Strings(stringified)
-	return stringified
+	sort.Sort(dimensionality(sortedDimensions))
+	return sortedDimensions
 }
 
 // hashMetricSlice hashes a metrics slice for equality checking.
@@ -325,9 +354,9 @@ func hashMetricSlice(metricSlice []map[string]string) []string {
 // (i.e. has same sets of dimensions), regardless of order.
 func assertDimsEqual(t *testing.T, expected, actual [][]string) {
 	assert.Equal(t, len(expected), len(actual))
-	expectedHashedDimensions := hashDimensions(expected)
-	actualHashedDimensions := hashDimensions(actual)
-	assert.Equal(t, expectedHashedDimensions, actualHashedDimensions)
+	expectedDimensions := normalizeDimensionality(expected)
+	actualDimensions := normalizeDimensionality(actual)
+	assert.True(t, reflect.DeepEqual(expectedDimensions, actualDimensions))
 }
 
 // cWMeasurementEqual returns true if CW Measurements are equal.
@@ -351,9 +380,9 @@ func cWMeasurementEqual(expected, actual cWMeasurement) bool {
 	if len(expected.Dimensions) != len(actual.Dimensions) {
 		return false
 	}
-	expectedHashedDimensions := hashDimensions(expected.Dimensions)
-	actualHashedDimensions := hashDimensions(actual.Dimensions)
-	return stringSlicesEqual(expectedHashedDimensions, actualHashedDimensions)
+	expectedDimensions := normalizeDimensionality(expected.Dimensions)
+	actualDimensions := normalizeDimensionality(actual.Dimensions)
+	return reflect.DeepEqual(expectedDimensions, actualDimensions)
 }
 
 // assertCWMeasurementEqual asserts whether CW Measurements are equal.

@@ -58,13 +58,13 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a journald input operator
 type Config struct {
-	helper.InputConfig `mapstructure:",squash" yaml:",inline"`
+	helper.InputConfig `mapstructure:",squash"`
 
-	Directory *string  `mapstructure:"directory,omitempty" json:"directory,omitempty" yaml:"directory,omitempty"`
-	Files     []string `mapstructure:"files,omitempty"     json:"files,omitempty"     yaml:"files,omitempty"`
-	StartAt   string   `mapstructure:"start_at,omitempty"  json:"start_at,omitempty"  yaml:"start_at,omitempty"`
-	Units     []string `mapstructure:"units,omitempty"     json:"units,omitempty"     yaml:"units,omitempty"`
-	Priority  string   `mapstructure:"priority,omitempty"  json:"priority,omitempty"  yaml:"priority,omitempty"`
+	Directory *string  `mapstructure:"directory,omitempty"`
+	Files     []string `mapstructure:"files,omitempty"`
+	StartAt   string   `mapstructure:"start_at,omitempty"`
+	Units     []string `mapstructure:"units,omitempty"`
+	Priority  string   `mapstructure:"priority,omitempty"`
 }
 
 // Build will build a journald input operator from the supplied configuration

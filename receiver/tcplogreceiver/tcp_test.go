@@ -26,8 +26,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -74,17 +74,17 @@ func testTCP(t *testing.T, cfg *TCPLogConfig) {
 }
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, len(cfg.Receivers), 1)
-	assert.Equal(t, testdataConfigYaml(), cfg.Receivers[config.NewComponentID(typeStr)])
+	sub, err := cm.Sub("tcplog")
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+
+	assert.NoError(t, cfg.Validate())
+	assert.Equal(t, testdataConfigYaml(), cfg)
 }
 
 func testdataConfigYaml() *TCPLogConfig {

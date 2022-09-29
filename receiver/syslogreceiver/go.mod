@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslog
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.60.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.61.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.60.1-0.20220927015850-e98116922cf6
-	go.opentelemetry.io/collector/pdata v0.60.1-0.20220927015850-e98116922cf6
+	go.opentelemetry.io/collector v0.61.0
+	go.opentelemetry.io/collector/pdata v0.61.0
 )
 
 require (

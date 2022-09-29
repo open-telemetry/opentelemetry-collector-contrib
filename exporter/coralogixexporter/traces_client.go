@@ -32,7 +32,7 @@ type tracesExporter struct {
 	// Input configuration.
 	config *Config
 
-	traceExporter ptraceotlp.Client
+	traceExporter ptraceotlp.GRPCClient
 	clientConn    *grpc.ClientConn
 	metadata      metadata.MD
 	callOptions   []grpc.CallOption

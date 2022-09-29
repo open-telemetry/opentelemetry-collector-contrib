@@ -32,7 +32,7 @@ type readerConfig struct {
 
 // Reader manages a single file
 type Reader struct {
-	*zap.SugaredLogger `json:"-"`
+	*zap.SugaredLogger `json:"-"` // json tag excludes embedded fields from storage
 	*readerConfig
 	splitter *helper.Splitter
 

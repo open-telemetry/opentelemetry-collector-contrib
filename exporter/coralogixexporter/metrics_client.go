@@ -50,7 +50,7 @@ type exporter struct {
 	// Input configuration.
 	config *Config
 
-	metricExporter pmetricotlp.Client
+	metricExporter pmetricotlp.GRPCClient
 	clientConn     *grpc.ClientConn
 	metadata       metadata.MD
 	callOptions    []grpc.CallOption

@@ -37,7 +37,7 @@ func NewConfig(operatorID string) *Config {
 
 // Config is the configuration of a drop output operator.
 type Config struct {
-	helper.OutputConfig `yaml:",inline"`
+	helper.OutputConfig `mapstructure:",squash"`
 }
 
 // Build will build a drop output operator.
