@@ -56,6 +56,7 @@ var (
 	errMsgColumnAttributeBadName           = `metric '%s' column_oid attribute name '%s' must match an attribute config`
 	errMsgColumnAttributeBadValue          = `metric '%s' column_oid attribute '%s' value '%s' must match one of the possible enum values for the attribute config`
 	errMsgColumnResourceAttributeBadName   = `metric '%s' column_oid resource_attribute '%s' must match a resource_attribute config`
+	errMsgColumnIndexedAttributeRequired   = `metric '%s' column_oid must either have a resource_attribute or an indexed_value_prefix/oid attribute`
 )
 
 var (
@@ -421,8 +422,12 @@ func validateColumnOID(metricName string, columnOID ColumnOID, cfg *Config) erro
 		combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnOIDNoOID, metricName))
 	}
 
+	// Keep track of whether the different indexed values can be differentiated by either attribute within the same metric
+	// or by different resource attributes (in different resources)
+	hasIndexedIdentifier := false
+
 	// Check that any Attributes have a valid Name and a valid Value (if applicable)
-	if len(columnOID.Attributes) != 0 {
+	if len(columnOID.Attributes) > 0 {
 		for _, attribute := range columnOID.Attributes {
 			if attribute.Name == "" {
 				combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnAttributeNoName, metricName))
@@ -431,6 +436,13 @@ func validateColumnOID(metricName string, columnOID ColumnOID, cfg *Config) erro
 				if !ok {
 					combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnAttributeBadName, metricName, attribute.Name))
 				} else {
+					if len(attrCfg.Enum) > 0 {
+						if !contains(attrCfg.Enum, attribute.Value) {
+							combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnAttributeBadValue, metricName, attribute.Name, attribute.Value))
+						}
+					} else {
+						hasIndexedIdentifier = true
+					}
 					if len(attrCfg.Enum) != 0 && !contains(attrCfg.Enum, attribute.Value) {
 						combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnAttributeBadValue, metricName, attribute.Name, attribute.Value))
 					}
@@ -440,13 +452,19 @@ func validateColumnOID(metricName string, columnOID ColumnOID, cfg *Config) erro
 	}
 
 	// Check that any ResourceAttributes have a valid value
-	if len(columnOID.ResourceAttributes) != 0 {
+	if len(columnOID.ResourceAttributes) > 0 {
+		hasIndexedIdentifier = true
 		for _, name := range columnOID.ResourceAttributes {
 			_, ok := cfg.ResourceAttributes[name]
 			if !ok {
 				combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnResourceAttributeBadName, metricName, name))
 			}
 		}
+	}
+
+	if !hasIndexedIdentifier {
+		// TODO: correct error and write test
+		combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnIndexedAttributeRequired, metricName))
 	}
 
 	return combinedErr

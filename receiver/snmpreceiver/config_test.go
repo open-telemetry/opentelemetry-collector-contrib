@@ -1153,6 +1153,44 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			expectedErr: fmt.Sprintf(errMsgColumnResourceAttributeBadName, "m3", "a1"),
 		},
 		{
+			name:    "ColumnOIDWithoutIndexedAttributeOrResourceAttributeErrors",
+			cfgFile: "config_column_oid_no_indexed_attribute_or_resource_attribute.yaml",
+			expectedCfg: &Config{
+				Endpoint:  "udp://localhost:161",
+				Version:   "v2c",
+				Community: "public",
+				Attributes: map[string]AttributeConfig{
+					"a2": {
+						Enum: []string{
+							"val1",
+						},
+					},
+				},
+				Metrics: map[string]MetricConfig{
+					"m3": {
+						Unit: "By",
+						Sum: &SumMetric{
+							Monotonic:   true,
+							Aggregation: "cumulative",
+							ValueType:   "float",
+						},
+						ColumnOIDs: []ColumnOID{
+							{
+								OID: "1",
+								Attributes: []Attribute{
+									{
+										Name:  "a2",
+										Value: "val1",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedErr: fmt.Sprintf(errMsgColumnIndexedAttributeRequired, "m3"),
+		},
+		{
 			name:    "NoResourceAttributeConfigOIDOrPrefixErrors",
 			cfgFile: "config_no_resource_attribute_oid_or_prefix.yaml",
 			expectedCfg: &Config{

@@ -30,18 +30,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	loginResponseFile               = "post_login_response.json"
-	virtualServersResponseFile      = "get_virtual_servers_response.json"
-	virtualServersStatsResponseFile = "get_virtual_servers_stats_response.json"
-	virtualServersCombinedFile      = "virtual_servers_combined.json"
-	poolsStatsResponseFile          = "get_pools_stats_response.json"
-	poolMembersStatsResponse1File   = "get_pool_members_stats_response_1.json"
-	poolMembersStatsResponse2File   = "get_pool_members_stats_response_2.json"
-	poolMembersCombinedFile         = "pool_members_combined.json"
-	nodesStatsResponseFile          = "get_nodes_stats_response.json"
-)
-
 func TestNewClient(t *testing.T) {
 	testCase := []struct {
 		desc        string

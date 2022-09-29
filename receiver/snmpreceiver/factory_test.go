@@ -48,9 +48,12 @@ func TestNewFactory(t *testing.T) {
 						ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 						CollectionInterval: defaultCollectionInterval * time.Second,
 					},
-					Endpoint:  defaultEndpoint,
-					Version:   defaultVersion,
-					Community: defaultCommunity,
+					Endpoint:      defaultEndpoint,
+					Version:       defaultVersion,
+					Community:     defaultCommunity,
+					SecurityLevel: "no_auth_no_priv",
+					AuthType:      "MD5",
+					PrivacyType:   "DES",
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())
