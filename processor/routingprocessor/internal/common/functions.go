@@ -19,19 +19,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
-var registry = map[string]interface{}{
-	"IsMatch":              ottlfuncs.IsMatch,
-	"delete_key":           ottlfuncs.DeleteKey,
-	"delete_matching_keys": ottlfuncs.DeleteMatchingKeys,
-	// noop function, it is required since the parsing of conditions is not implemented yet,
-	// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13545
-	"route": func(_ []string) (ottl.ExprFunc, error) {
-		return func(ctx ottl.TransformContext) interface{} {
-			return true
-		}, nil
-	},
-}
-
-func Functions() map[string]interface{} {
-	return registry
+func Functions[K any]() map[string]interface{} {
+	return map[string]interface{}{
+		"IsMatch":              ottlfuncs.IsMatch[K],
+		"delete_key":           ottlfuncs.DeleteKey[K],
+		"delete_matching_keys": ottlfuncs.DeleteMatchingKeys[K],
+		// noop function, it is required since the parsing of conditions is not implemented yet,
+		// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13545
+		"route": func(_ []string) (ottl.ExprFunc[K], error) {
+			return func(K) interface{} {
+				return true
+			}, nil
+		},
+	}
 }

@@ -157,9 +157,9 @@ type Field struct {
 
 // Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
 // invocation and the expression to match telemetry for invoking the function.
-type Statement struct {
-	Function  ExprFunc
-	Condition boolExpressionEvaluator
+type Statement[K any] struct {
+	Function  ExprFunc[K]
+	Condition boolExpressionEvaluator[K]
 }
 
 // Bytes type for capturing byte arrays
@@ -193,15 +193,15 @@ func (n *IsNil) Capture(_ []string) error {
 
 type EnumSymbol string
 
-type Parser struct {
+type Parser[K any] struct {
 	functions         map[string]interface{}
-	pathParser        PathExpressionParser
+	pathParser        PathExpressionParser[K]
 	enumParser        EnumParser
 	telemetrySettings component.TelemetrySettings
 }
 
-func NewParser(functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser, telemetrySettings component.TelemetrySettings) Parser {
-	return Parser{
+func NewParser[K any](functions map[string]interface{}, pathParser PathExpressionParser[K], enumParser EnumParser, telemetrySettings component.TelemetrySettings) Parser[K] {
+	return Parser[K]{
 		functions:         functions,
 		pathParser:        pathParser,
 		enumParser:        enumParser,
@@ -209,8 +209,8 @@ func NewParser(functions map[string]interface{}, pathParser PathExpressionParser
 	}
 }
 
-func (p *Parser) ParseStatements(statements []string) ([]Statement, error) {
-	var queries []Statement
+func (p *Parser[K]) ParseStatements(statements []string) ([]Statement[K], error) {
+	var queries []Statement[K]
 	var errors error
 
 	for _, statement := range statements {
@@ -229,7 +229,7 @@ func (p *Parser) ParseStatements(statements []string) ([]Statement, error) {
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		queries = append(queries, Statement{
+		queries = append(queries, Statement[K]{
 			Function:  function,
 			Condition: expression,
 		})

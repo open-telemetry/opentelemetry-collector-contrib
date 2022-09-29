@@ -18,25 +18,23 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
-var registry = map[string]interface{}{
-	"TraceID":              ottlfuncs.TraceID,
-	"SpanID":               ottlfuncs.SpanID,
-	"IsMatch":              ottlfuncs.IsMatch,
-	"Concat":               ottlfuncs.Concat,
-	"Split":                ottlfuncs.Split,
-	"Int":                  ottlfuncs.Int,
-	"keep_keys":            ottlfuncs.KeepKeys,
-	"set":                  ottlfuncs.Set,
-	"truncate_all":         ottlfuncs.TruncateAll,
-	"limit":                ottlfuncs.Limit,
-	"replace_match":        ottlfuncs.ReplaceMatch,
-	"replace_all_matches":  ottlfuncs.ReplaceAllMatches,
-	"replace_pattern":      ottlfuncs.ReplacePattern,
-	"replace_all_patterns": ottlfuncs.ReplaceAllPatterns,
-	"delete_key":           ottlfuncs.DeleteKey,
-	"delete_matching_keys": ottlfuncs.DeleteMatchingKeys,
-}
-
-func Functions() map[string]interface{} {
-	return registry
+func Functions[K any]() map[string]interface{} {
+	return map[string]interface{}{
+		"TraceID":              ottlfuncs.TraceID[K],
+		"SpanID":               ottlfuncs.SpanID[K],
+		"IsMatch":              ottlfuncs.IsMatch[K],
+		"Concat":               ottlfuncs.Concat[K],
+		"Split":                ottlfuncs.Split[K],
+		"Int":                  ottlfuncs.Int[K],
+		"keep_keys":            ottlfuncs.KeepKeys[K],
+		"set":                  ottlfuncs.Set[K],
+		"truncate_all":         ottlfuncs.TruncateAll[K],
+		"limit":                ottlfuncs.Limit[K],
+		"replace_match":        ottlfuncs.ReplaceMatch[K],
+		"replace_all_matches":  ottlfuncs.ReplaceAllMatches[K],
+		"replace_pattern":      ottlfuncs.ReplacePattern[K],
+		"replace_all_patterns": ottlfuncs.ReplaceAllPatterns[K],
+		"delete_key":           ottlfuncs.DeleteKey[K],
+		"delete_matching_keys": ottlfuncs.DeleteMatchingKeys[K],
+	}
 }

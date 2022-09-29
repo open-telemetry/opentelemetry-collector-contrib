@@ -27,7 +27,7 @@ import (
 )
 
 type Processor struct {
-	queries []ottl.Statement
+	queries []ottl.Statement[ottldatapoints.TransformContext]
 	logger  *zap.Logger
 }
 
@@ -102,7 +102,7 @@ func (p *Processor) handleSummaryDataPoints(dps pmetric.SummaryDataPointSlice, m
 	}
 }
 
-func (p *Processor) callFunctions(ctx ottl.TransformContext) {
+func (p *Processor) callFunctions(ctx ottldatapoints.TransformContext) {
 	for _, statement := range p.queries {
 		if statement.Condition(ctx) {
 			statement.Function(ctx)

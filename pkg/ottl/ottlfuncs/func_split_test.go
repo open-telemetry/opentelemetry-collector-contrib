@@ -18,22 +18,22 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_split(t *testing.T) {
 	tests := []struct {
 		name      string
-		target    ottl.Getter
+		target    ottl.Getter[interface{}]
 		delimiter string
 		expected  interface{}
 	}{
 		{
 			name: "split string",
-			target: &ottl.StandardGetSetter{
-				Getter: func(ctx ottl.TransformContext) interface{} {
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx interface{}) interface{} {
 					return "A|B|C"
 				},
 			},
@@ -42,8 +42,8 @@ func Test_split(t *testing.T) {
 		},
 		{
 			name: "split empty string",
-			target: &ottl.StandardGetSetter{
-				Getter: func(ctx ottl.TransformContext) interface{} {
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx interface{}) interface{} {
 					return ""
 				},
 			},
@@ -52,8 +52,8 @@ func Test_split(t *testing.T) {
 		},
 		{
 			name: "split empty delimiter",
-			target: &ottl.StandardGetSetter{
-				Getter: func(ctx ottl.TransformContext) interface{} {
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx interface{}) interface{} {
 					return "A|B|C"
 				},
 			},
@@ -62,8 +62,8 @@ func Test_split(t *testing.T) {
 		},
 		{
 			name: "split empty string and empty delimiter",
-			target: &ottl.StandardGetSetter{
-				Getter: func(ctx ottl.TransformContext) interface{} {
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx interface{}) interface{} {
 					return ""
 				},
 			},
@@ -72,8 +72,8 @@ func Test_split(t *testing.T) {
 		},
 		{
 			name: "split non-string",
-			target: &ottl.StandardGetSetter{
-				Getter: func(ctx ottl.TransformContext) interface{} {
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx interface{}) interface{} {
 					return 123
 				},
 			},
@@ -83,12 +83,9 @@ func Test_split(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := ottltest.TestTransformContext{}
-
-			exprFunc, _ := Split(tt.target, tt.delimiter)
-			actual := exprFunc(ctx)
-
-			assert.Equal(t, tt.expected, actual)
+			exprFunc, err := Split(tt.target, tt.delimiter)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, exprFunc(nil))
 		})
 	}
 }
