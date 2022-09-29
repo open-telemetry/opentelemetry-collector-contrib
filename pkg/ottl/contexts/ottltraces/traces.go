@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/trace"
@@ -57,6 +58,10 @@ func (ctx TransformContext) GetResource() pcommon.Resource {
 	return ctx.resource
 }
 
+func NewParser(functions map[string]interface{}, telemetrySettings component.TelemetrySettings) ottl.Parser[TransformContext] {
+	return ottl.NewParser[TransformContext](functions, parsePath, parseEnum, telemetrySettings)
+}
+
 var symbolTable = map[ottl.EnumSymbol]ottl.Enum{
 	"SPAN_KIND_UNSPECIFIED": ottl.Enum(ptrace.SpanKindUnspecified),
 	"SPAN_KIND_INTERNAL":    ottl.Enum(ptrace.SpanKindInternal),
@@ -69,7 +74,7 @@ var symbolTable = map[ottl.EnumSymbol]ottl.Enum{
 	"STATUS_CODE_ERROR":     ottl.Enum(ptrace.StatusCodeError),
 }
 
-func ParseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
+func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	if val != nil {
 		if enum, ok := symbolTable[*val]; ok {
 			return &enum, nil
@@ -79,7 +84,7 @@ func ParseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	return nil, fmt.Errorf("enum symbol not provided")
 }
 
-func ParsePath(val *ottl.Path) (ottl.GetSetter[TransformContext], error) {
+func parsePath(val *ottl.Path) (ottl.GetSetter[TransformContext], error) {
 	if val != nil && len(val.Fields) > 0 {
 		return newPathGetSetter(val.Fields)
 	}
