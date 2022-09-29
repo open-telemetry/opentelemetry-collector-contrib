@@ -111,6 +111,9 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 	allocConf := r.cfg.TargetAllocator
 	if allocConf != nil {
 		err = r.initTargetAllocator(allocConf, baseCfg)
+		if err != nil {
+			return err
+		}
 	}
 
 	r.reloadReady.Close()
