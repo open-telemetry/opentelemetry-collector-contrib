@@ -35,8 +35,9 @@
                     "logRecords": [
                         {
                             "timeUnixNano": "1654288714000000000",
-                            "observedTimeUnixNano": "1664377061405317000",
+                            "observedTimeUnixNano": "1664476673977855000",
                             "severityNumber": "SEVERITY_NUMBER_INFO",
+                            "severityText": "CLOSED",
                             "body": {
                                 "stringValue": "{\"id\":\"629a646c75d64f1902578ff7\",\"groupId\":\"REDACTED-group\",\"alertConfigId\":\"REDACTED-alert\",\"eventTypeName\":\"OUTSIDE_METRIC_THRESHOLD\",\"created\":\"2022-06-03T19:43:40Z\",\"updated\":\"2022-06-03T20:38:34Z\",\"resolved\":\"2022-06-03T20:38:34Z\",\"status\":\"CLOSED\",\"lastNotified\":\"2022-06-03T19:45:57Z\",\"acknowledgedUntil\":\"2022-06-03T20:45:56Z\",\"acknowledgementComment\":\"Test\",\"acknowledgingUsername\":\"REDACTED@gmail.com\",\"hostnameAndPort\":\"REDACTED-shard-00-02.f1eir.mongodb.net:27017\",\"metricName\":\"CONNECTIONS\",\"currentValue\":{\"number\":0,\"units\":\"RAW\"},\"replicaSetName\":\"REDACTED-shard-0\",\"clusterName\":\"Cluster0\"}"
                             },
@@ -186,8 +187,9 @@
                     "logRecords": [
                         {
                             "timeUnixNano": "1654295431000000000",
-                            "observedTimeUnixNano": "1664377061405317000",
+                            "observedTimeUnixNano": "1664476673977855000",
                             "severityNumber": "SEVERITY_NUMBER_INFO",
+                            "severityText": "INFORMATIONAL",
                             "body": {
                                 "stringValue": "{\"id\":\"629a8b871dfc48492150a766\",\"groupId\":\"REDACTED-group\",\"alertConfigId\":\"REDACTED-alert\",\"eventTypeName\":\"PRIMARY_ELECTED\",\"created\":\"2022-06-03T22:30:31Z\",\"updated\":\"2022-06-03T22:30:31Z\",\"status\":\"INFORMATIONAL\",\"hostnameAndPort\":\"REDACTED-shard-00-02.f1eir.mongodb.net:27017\",\"replicaSetName\":\"REDACTED-shard-0\",\"clusterName\":\"Cluster0\"}"
                             },

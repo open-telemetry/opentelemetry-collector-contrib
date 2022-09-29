@@ -98,9 +98,10 @@ func createDefaultConfig() config.Receiver {
 		RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
 		Metrics:                   metadata.DefaultMetricsSettings(),
 		Alerts: AlertConfig{
-			Enabled:      defaultAlertsEnabled,
-			Mode:         alertModeListen,
-			PollInterval: defaultAlertsPollInterval,
+			Enabled:            defaultAlertsEnabled,
+			Mode:               alertModeListen,
+			PollInterval:       defaultAlertsPollInterval,
+			MaxAlertProcessing: defaultMaxAlerts,
 		},
 		Logs: LogConfig{
 			Enabled:  defaultLogsEnabled,

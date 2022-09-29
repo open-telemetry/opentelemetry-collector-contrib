@@ -52,9 +52,9 @@ type AlertConfig struct {
 	Mode     string                      `mapstructure:"mode"`
 
 	// these parameters are only relevant in retrieval mode
-	Projects           []ProjectConfig `mapstructure:"projects"`
-	PollInterval       time.Duration   `mapstructure:"poll_interval"`
-	MaxAlertProcessing int64           `mapstructure:"max_alert_processing"`
+	Projects           []*ProjectConfig `mapstructure:"projects"`
+	PollInterval       time.Duration    `mapstructure:"poll_interval"`
+	MaxAlertProcessing int64            `mapstructure:"max_alerts"`
 }
 
 type LogConfig struct {
@@ -67,6 +67,25 @@ type ProjectConfig struct {
 	ExcludeClusters []string `mapstructure:"exclude_clusters"`
 	IncludeClusters []string `mapstructure:"include_clusters"`
 	EnableAuditLogs bool     `mapstructure:"collect_audit_logs"`
+
+	includesByClusterName map[string]struct{}
+	excludesByClusterName map[string]struct{}
+}
+
+func (pc *ProjectConfig) populateIncludesAndExcludes() *ProjectConfig {
+	inclusionMap := map[string]struct{}{}
+	for _, inclusion := range pc.IncludeClusters {
+		inclusionMap[inclusion] = struct{}{}
+	}
+	pc.includesByClusterName = inclusionMap
+
+	exclusionMap := map[string]struct{}{}
+	for _, exclusion := range pc.ExcludeClusters {
+		exclusionMap[exclusion] = struct{}{}
+	}
+	pc.excludesByClusterName = exclusionMap
+
+	return pc
 }
 
 var (

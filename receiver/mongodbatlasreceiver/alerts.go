@@ -60,7 +60,7 @@ const (
 	alertCacheKey   = "last_recorded_alert"
 
 	defaultAlertsPollInterval = 5 * time.Minute
-	defaultMaxAlerts          = 50
+	defaultMaxAlerts          = 1000
 )
 
 type alertsClient interface {
@@ -79,7 +79,7 @@ type alertsReceiver struct {
 	logger      *zap.Logger
 
 	// only relevant in `poll` mode
-	projects      []ProjectConfig
+	projects      []*ProjectConfig
 	client        alertsClient
 	privateKey    string
 	publicKey     string
@@ -104,6 +104,10 @@ func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	for _, p := range cfg.Projects {
+		p.populateIncludesAndExcludes()
 	}
 
 	recv := &alertsReceiver{
@@ -137,16 +141,15 @@ func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer
 	return recv, nil
 }
 
-func (a alertsReceiver) Start(ctx context.Context, host component.Host) error {
+func (a *alertsReceiver) Start(ctx context.Context, host component.Host) error {
 	if a.mode == alertModePoll {
 		return a.startPolling(ctx, host)
 	}
 	return a.startListening(ctx, host)
 }
 
-func (a alertsReceiver) startPolling(ctx context.Context, host component.Host) error {
+func (a *alertsReceiver) startPolling(ctx context.Context, host component.Host) error {
 	a.logger.Debug("starting alerts receiver in retrieval mode")
-
 	storageClient, err := adapter.GetStorageClient(ctx, host, a.storageID, a.id)
 	if err != nil {
 		return fmt.Errorf("failed to set up storage: %w", err)
@@ -178,7 +181,7 @@ func (a alertsReceiver) startPolling(ctx context.Context, host component.Host) e
 	return nil
 }
 
-func (a alertsReceiver) retrieveAndProcessAlerts(ctx context.Context) error {
+func (a *alertsReceiver) retrieveAndProcessAlerts(ctx context.Context) error {
 	var alerts []mongodbatlas.Alert
 	for _, p := range a.projects {
 		project, err := a.client.GetProject(ctx, p.Name)
@@ -205,7 +208,7 @@ func (a alertsReceiver) retrieveAndProcessAlerts(ctx context.Context) error {
 	return a.writeCheckpoint(ctx)
 }
 
-func (a alertsReceiver) startListening(ctx context.Context, host component.Host) error {
+func (a *alertsReceiver) startListening(ctx context.Context, host component.Host) error {
 	a.logger.Debug("starting alerts receiver in listening mode")
 	// We use a.server.Serve* over a.server.ListenAndServe*
 	// So that we can catch and return errors relating to binding to network interface on start.
@@ -254,7 +257,7 @@ func (a alertsReceiver) startListening(ctx context.Context, host component.Host)
 	return nil
 }
 
-func (a alertsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) {
+func (a *alertsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) {
 	if req.ContentLength < 0 {
 		rw.WriteHeader(http.StatusLengthRequired)
 		a.logger.Debug("Got request with no Content-Length specified", zap.String("remote", req.RemoteAddr))
@@ -307,14 +310,14 @@ func (a alertsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request)
 	rw.WriteHeader(http.StatusOK)
 }
 
-func (a alertsReceiver) Shutdown(ctx context.Context) error {
+func (a *alertsReceiver) Shutdown(ctx context.Context) error {
 	if a.mode == alertModePoll {
 		return a.shutdownPoller(ctx)
 	}
 	return a.shutdownListener(ctx)
 }
 
-func (a alertsReceiver) shutdownListener(ctx context.Context) error {
+func (a *alertsReceiver) shutdownListener(ctx context.Context) error {
 	a.logger.Debug("Shutting down server")
 	err := a.server.Shutdown(ctx)
 	if err != nil {
@@ -326,14 +329,14 @@ func (a alertsReceiver) shutdownListener(ctx context.Context) error {
 	return nil
 }
 
-func (a alertsReceiver) shutdownPoller(ctx context.Context) error {
+func (a *alertsReceiver) shutdownPoller(ctx context.Context) error {
 	a.logger.Debug("Shutting down client")
 	close(a.doneChan)
 	a.wg.Wait()
 	return a.writeCheckpoint(ctx)
 }
 
-func (a alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatlas.Alert) (plog.Logs, error) {
+func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatlas.Alert) (plog.Logs, error) {
 	logs := plog.NewLogs()
 	var errs error
 	for _, alert := range alerts {
@@ -354,7 +357,7 @@ func (a alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatl
 		}
 
 		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
-		logRecord.SetSeverityNumber(severityFromAPIAlert(alert))
+		logRecord.SetSeverityNumber(severityFromAPIAlert(alert.Status))
 		logRecord.SetSeverityText(alert.Status)
 		// this could be fairly expensive to do, expecting not too many issues unless there are a ton
 		// of unrecognized alerts to process.
@@ -535,7 +538,7 @@ func (a *alertsReceiver) writeCheckpoint(ctx context.Context) error {
 	return a.storageClient.Set(ctx, alertCacheKey, marshalBytes)
 }
 
-func (a *alertsReceiver) applyFilters(pConf ProjectConfig, alerts []mongodbatlas.Alert) []mongodbatlas.Alert {
+func (a *alertsReceiver) applyFilters(pConf *ProjectConfig, alerts []mongodbatlas.Alert) []mongodbatlas.Alert {
 	filtered := []mongodbatlas.Alert{}
 
 	var lastRecordedTime = pcommon.Timestamp(0).AsTime()
@@ -557,26 +560,14 @@ func (a *alertsReceiver) applyFilters(pConf ProjectConfig, alerts []mongodbatlas
 			continue
 		}
 
-		if len(pConf.ExcludeClusters) > 0 {
-			var shouldExclude = false
-			for _, exclusion := range pConf.ExcludeClusters {
-				if alert.ClusterName == exclusion {
-					shouldExclude = true
-				}
-			}
-			if shouldExclude {
+		if len(pConf.excludesByClusterName) > 0 {
+			if _, ok := pConf.excludesByClusterName[alert.ClusterName]; ok {
 				continue
 			}
 		}
 
 		if len(pConf.IncludeClusters) > 0 {
-			var shouldInclude = false
-			for _, inclusion := range pConf.IncludeClusters {
-				if alert.ClusterName == inclusion {
-					shouldInclude = true
-				}
-			}
-			if !shouldInclude {
+			if _, ok := pConf.includesByClusterName[alert.ClusterName]; !ok {
 				continue
 			}
 		}
@@ -616,8 +607,8 @@ func severityFromAlert(a model.Alert) plog.SeverityNumber {
 }
 
 // severityFromAPIAlert is a workaround for shared types between the API and the model
-func severityFromAPIAlert(a mongodbatlas.Alert) plog.SeverityNumber {
-	switch a.Status {
+func severityFromAPIAlert(a string) plog.SeverityNumber {
+	switch a {
 	case "OPEN":
 		return plog.SeverityNumberWarn
 	default:

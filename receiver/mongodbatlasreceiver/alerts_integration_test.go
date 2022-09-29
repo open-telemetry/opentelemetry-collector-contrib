@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build integration
-
 package mongodbatlasreceiver
 
 import (
@@ -231,7 +229,7 @@ func TestAtlasPoll(t *testing.T) {
 			Alerts: AlertConfig{
 				Enabled: true,
 				Mode:    alertModePoll,
-				Projects: []ProjectConfig{
+				Projects: []*ProjectConfig{
 					{
 						Name: testProjectName,
 					},

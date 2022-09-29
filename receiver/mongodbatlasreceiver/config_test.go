@@ -156,7 +156,7 @@ func TestValidate(t *testing.T) {
 				Alerts: AlertConfig{
 					Enabled: true,
 					Mode:    alertModePoll,
-					Projects: []ProjectConfig{
+					Projects: []*ProjectConfig{
 						{
 							Name:            "Project1",
 							EnableAuditLogs: false,
@@ -174,7 +174,7 @@ func TestValidate(t *testing.T) {
 				Alerts: AlertConfig{
 					Enabled:  true,
 					Mode:     alertModePoll,
-					Projects: []ProjectConfig{},
+					Projects: []*ProjectConfig{},
 				},
 			},
 			expectedErr: errNoProjects.Error(),
@@ -185,7 +185,7 @@ func TestValidate(t *testing.T) {
 				Alerts: AlertConfig{
 					Enabled: true,
 					Mode:    alertModePoll,
-					Projects: []ProjectConfig{
+					Projects: []*ProjectConfig{
 						{
 							Name: "Project1",
 						},
@@ -199,7 +199,7 @@ func TestValidate(t *testing.T) {
 				Alerts: AlertConfig{
 					Enabled:  true,
 					Mode:     "invalid type",
-					Projects: []ProjectConfig{},
+					Projects: []*ProjectConfig{},
 				},
 			},
 			expectedErr: errNoModeRecognized.Error(),
