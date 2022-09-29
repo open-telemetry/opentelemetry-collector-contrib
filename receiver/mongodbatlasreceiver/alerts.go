@@ -126,16 +126,13 @@ func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer
 	}
 
 	if recv.mode == alertModePoll {
-		client := internal.NewMongoDBAtlasClient(recv.publicKey, recv.privateKey, recv.retrySettings, recv.logger)
-		recv.client = client
-	} else {
-		s := &http.Server{
-			TLSConfig: tlsConfig,
-			Handler:   http.HandlerFunc(recv.handleRequest),
-		}
-		recv.server = s
+		return recv, nil
 	}
-
+	s := &http.Server{
+		TLSConfig: tlsConfig,
+		Handler:   http.HandlerFunc(recv.handleRequest),
+	}
+	recv.server = s
 	return recv, nil
 }
 
@@ -148,6 +145,9 @@ func (a alertsReceiver) Start(ctx context.Context, host component.Host) error {
 
 func (a alertsReceiver) startPolling(ctx context.Context, host component.Host) error {
 	a.logger.Debug("starting alerts receiver in retrieval mode")
+
+	client := internal.NewMongoDBAtlasClient(a.publicKey, a.privateKey, a.retrySettings, a.logger)
+	a.client = client
 	storageClient, err := adapter.GetStorageClient(ctx, host, a.storageID, a.id)
 	if err != nil {
 		return fmt.Errorf("failed to set up storage: %w", err)
@@ -339,6 +339,12 @@ func (a alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatl
 	var errs error
 	for _, alert := range alerts {
 		resourceLogs := logs.ResourceLogs().AppendEmpty()
+		resourceAttrs := resourceLogs.Resource().Attributes()
+		resourceAttrs.PutString("mongodbatlas.group.id", alert.GroupID)
+		resourceAttrs.PutString("mongodbatlas.alert.config.id", alert.AlertConfigID)
+		putStringToMapNotNil(resourceAttrs, "mongodbatlas.cluster.name", &alert.ClusterName)
+		putStringToMapNotNil(resourceAttrs, "mongodbatlas.replica_set.name", &alert.ReplicaSetName)
+
 		logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		logRecord.SetObservedTimestamp(now)
 
@@ -350,6 +356,7 @@ func (a alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatl
 
 		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 		logRecord.SetSeverityNumber(severityFromAPIAlert(alert))
+		logRecord.SetSeverityText(alert.Status)
 		// this could be fairly expensive to do, expecting not too many issues unless there are a ton
 		// of unrecognized alerts to process.
 		bodyBytes, err := json.Marshal(alert)
@@ -359,12 +366,6 @@ func (a alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatl
 		}
 
 		logRecord.Body().SetStr(string(bodyBytes))
-
-		resourceAttrs := resourceLogs.Resource().Attributes()
-		resourceAttrs.PutString("mongodbatlas.group.id", alert.GroupID)
-		resourceAttrs.PutString("mongodbatlas.alert.config.id", alert.AlertConfigID)
-		putStringToMapNotNil(resourceAttrs, "mongodbatlas.cluster.name", &alert.ClusterName)
-		putStringToMapNotNil(resourceAttrs, "mongodbatlas.replica_set.name", &alert.ReplicaSetName)
 
 		attrs := logRecord.Attributes()
 		// These attributes are always present
@@ -525,7 +526,7 @@ func (a *alertsReceiver) syncPersistence(ctx context.Context) error {
 
 func (a *alertsReceiver) writeCheckpoint(ctx context.Context) error {
 	if a.storageClient == nil {
-		a.logger.Warn("unable to write checkpoint since no storage client was found")
+		a.logger.Error("unable to write checkpoint since no storage client was found")
 		return nil
 	}
 	marshalBytes, err := json.Marshal(&a.record)
