@@ -62,7 +62,7 @@ func (g exprGetter[K]) Get(ctx K) interface{} {
 	return g.expr(ctx)
 }
 
-func (p *Parser[K]) newGetter(val Value) (Getter[K], error) {
+func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 	if val.IsNil != nil && *val.IsNil {
 		return &literal[K]{value: nil}, nil
 	}

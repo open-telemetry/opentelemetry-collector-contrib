@@ -32,54 +32,54 @@ func hello[K any]() (ExprFunc[K], error) {
 func Test_newGetter(t *testing.T) {
 	tests := []struct {
 		name string
-		val  Value
+		val  value
 		want interface{}
 	}{
 		{
 			name: "string literal",
-			val: Value{
+			val: value{
 				String: ottltest.Strp("str"),
 			},
 			want: "str",
 		},
 		{
 			name: "float literal",
-			val: Value{
+			val: value{
 				Float: ottltest.Floatp(1.2),
 			},
 			want: 1.2,
 		},
 		{
 			name: "int literal",
-			val: Value{
+			val: value{
 				Int: ottltest.Intp(12),
 			},
 			want: int64(12),
 		},
 		{
 			name: "bytes literal",
-			val: Value{
-				Bytes: (*Bytes)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+			val: value{
+				Bytes: (*byteSlice)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
 			},
 			want: []byte{1, 2, 3, 4, 5, 6, 7, 8},
 		},
 		{
 			name: "nil literal",
-			val: Value{
-				IsNil: (*IsNil)(ottltest.Boolp(true)),
+			val: value{
+				IsNil: (*isNil)(ottltest.Boolp(true)),
 			},
 			want: nil,
 		},
 		{
 			name: "bool literal",
-			val: Value{
-				Bool: (*Boolean)(ottltest.Boolp(true)),
+			val: value{
+				Bool: (*boolean)(ottltest.Boolp(true)),
 			},
 			want: true,
 		},
 		{
 			name: "path expression",
-			val: Value{
+			val: value{
 				Path: &Path{
 					Fields: []Field{
 						{
@@ -92,8 +92,8 @@ func Test_newGetter(t *testing.T) {
 		},
 		{
 			name: "function call",
-			val: Value{
-				Invocation: &Invocation{
+			val: value{
+				Invocation: &invocation{
 					Function: "hello",
 				},
 			},
@@ -101,7 +101,7 @@ func Test_newGetter(t *testing.T) {
 		},
 		{
 			name: "enum",
-			val: Value{
+			val: value{
 				Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM_ONE")),
 			},
 			want: int64(1),
@@ -127,7 +127,7 @@ func Test_newGetter(t *testing.T) {
 	}
 
 	t.Run("empty value", func(t *testing.T) {
-		_, err := p.newGetter(Value{})
+		_, err := p.newGetter(value{})
 		assert.Error(t, err)
 	})
 }
