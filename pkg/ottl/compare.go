@@ -28,14 +28,14 @@ import (
 // invalidComparison returns false for everything except NE (where it returns true to indicate that the
 // objects were definitely not equivalent).
 // It also gives us an opportunity to log something.
-func (p *Parser[K]) invalidComparison(msg string, op CompareOp) bool {
+func (p *Parser[K]) invalidComparison(msg string, op compareOp) bool {
 	p.telemetrySettings.Logger.Debug(msg, zap.Any("op", op))
 	return op == NE
 }
 
 // comparePrimitives implements a generic comparison helper for all Ordered types (derived from Float, Int, or string).
 // According to benchmarks, it's faster than explicit comparison functions for these types.
-func comparePrimitives[T constraints.Ordered](a T, b T, op CompareOp) bool {
+func comparePrimitives[T constraints.Ordered](a T, b T, op compareOp) bool {
 	switch op {
 	case EQ:
 		return a == b
@@ -54,7 +54,7 @@ func comparePrimitives[T constraints.Ordered](a T, b T, op CompareOp) bool {
 	}
 }
 
-func compareBools(a bool, b bool, op CompareOp) bool {
+func compareBools(a bool, b bool, op compareOp) bool {
 	switch op {
 	case EQ:
 		return a == b
@@ -73,7 +73,7 @@ func compareBools(a bool, b bool, op CompareOp) bool {
 	}
 }
 
-func compareBytes(a []byte, b []byte, op CompareOp) bool {
+func compareBytes(a []byte, b []byte, op compareOp) bool {
 	switch op {
 	case EQ:
 		return bytes.Equal(a, b)
@@ -92,7 +92,7 @@ func compareBytes(a []byte, b []byte, op CompareOp) bool {
 	}
 }
 
-func (p *Parser[K]) compareBool(a bool, b any, op CompareOp) bool {
+func (p *Parser[K]) compareBool(a bool, b any, op compareOp) bool {
 	switch v := b.(type) {
 	case bool:
 		return compareBools(a, v, op)
@@ -101,7 +101,7 @@ func (p *Parser[K]) compareBool(a bool, b any, op CompareOp) bool {
 	}
 }
 
-func (p *Parser[K]) compareString(a string, b any, op CompareOp) bool {
+func (p *Parser[K]) compareString(a string, b any, op compareOp) bool {
 	switch v := b.(type) {
 	case string:
 		return comparePrimitives(a, v, op)
@@ -110,7 +110,7 @@ func (p *Parser[K]) compareString(a string, b any, op CompareOp) bool {
 	}
 }
 
-func (p *Parser[K]) compareByte(a []byte, b any, op CompareOp) bool {
+func (p *Parser[K]) compareByte(a []byte, b any, op compareOp) bool {
 	switch v := b.(type) {
 	case nil:
 		return op == NE
@@ -124,7 +124,7 @@ func (p *Parser[K]) compareByte(a []byte, b any, op CompareOp) bool {
 	}
 }
 
-func (p *Parser[K]) compareInt64(a int64, b any, op CompareOp) bool {
+func (p *Parser[K]) compareInt64(a int64, b any, op compareOp) bool {
 	switch v := b.(type) {
 	case int64:
 		return comparePrimitives(a, v, op)
@@ -135,7 +135,7 @@ func (p *Parser[K]) compareInt64(a int64, b any, op CompareOp) bool {
 	}
 }
 
-func (p *Parser[K]) compareFloat64(a float64, b any, op CompareOp) bool {
+func (p *Parser[K]) compareFloat64(a float64, b any, op compareOp) bool {
 	switch v := b.(type) {
 	case int64:
 		return comparePrimitives(a, float64(v), op)
@@ -148,7 +148,7 @@ func (p *Parser[K]) compareFloat64(a float64, b any, op CompareOp) bool {
 
 // a and b are the return values from a Getter; we try to compare them
 // according to the given operator.
-func (p *Parser[K]) compare(a any, b any, op CompareOp) bool {
+func (p *Parser[K]) compare(a any, b any, op compareOp) bool {
 	// nils are equal to each other and never equal to anything else,
 	// so if they're both nil, report equality.
 	if a == nil && b == nil {

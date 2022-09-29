@@ -112,7 +112,7 @@ func Test_compare(t *testing.T) {
 		{"non-prim, int type", testA{"hi"}, 5, []bool{false, true, false, false, false, false}},
 		{"int, non-prim", 5, testA{"hi"}, []bool{false, true, false, false, false, false}},
 	}
-	ops := []CompareOp{EQ, NE, LT, LTE, GTE, GT}
+	ops := []compareOp{EQ, NE, LT, LTE, GTE, GT}
 	for _, tt := range tests {
 		for _, op := range ops {
 			t.Run(fmt.Sprintf("%s %v", tt.name, op), func(t *testing.T) {
@@ -239,7 +239,7 @@ func BenchmarkCompareLTNil(b *testing.B) {
 
 // this is only used for benchmarking, and is a rough equivalent of the original compare function
 // before adding LT, LTE, GTE, and GT.
-func compareEq(a any, b any, op CompareOp) bool {
+func compareEq(a any, b any, op compareOp) bool {
 	switch op {
 	case EQ:
 		return a == b
