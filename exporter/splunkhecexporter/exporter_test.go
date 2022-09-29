@@ -26,10 +26,6 @@ import (
 	"testing"
 	"time"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -38,13 +34,11 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil/ocmetricstestutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 func TestNew(t *testing.T) {
@@ -81,26 +75,18 @@ func TestNew(t *testing.T) {
 }
 
 func TestConsumeMetricsData(t *testing.T) {
-	smallBatch := &agentmetricspb.ExportMetricsServiceRequest{
-		Node: &commonpb.Node{
-			Attributes: map[string]string{
-				"com.splunk.source": "test_splunk",
-			},
-		},
-		Resource: &resourcepb.Resource{Type: "test"},
-		Metrics: []*metricspb.Metric{
-			ocmetricstestutil.Gauge(
-				"test_gauge",
-				[]string{"k0", "k1"},
-				ocmetricstestutil.Timeseries(
-					time.Now(),
-					[]string{"v0", "v1"},
-					ocmetricstestutil.Double(time.Now(), 123))),
-		},
-	}
+	smallBatch := pmetric.NewMetrics()
+	smallBatch.ResourceMetrics().AppendEmpty().Resource().Attributes().PutString("com.splunk.source", "test_splunk")
+	m := smallBatch.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetName("test_gauge")
+	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.Attributes().PutString("k0", "v0")
+	dp.Attributes().PutString("k1", "v1")
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	dp.SetDoubleValue(123)
 	tests := []struct {
 		name             string
-		md               *agentmetricspb.ExportMetricsServiceRequest
+		md               pmetric.Metrics
 		reqTestFunc      func(t *testing.T, r *http.Request)
 		httpResponseCode int
 		wantErr          bool
@@ -176,8 +162,7 @@ func TestConsumeMetricsData(t *testing.T) {
 			sender, err := buildClient(options, config, zap.NewNop())
 			assert.NoError(t, err)
 
-			md := internaldata.OCToMetrics(tt.md.Node, tt.md.Resource, tt.md.Metrics)
-			err = sender.pushMetricsData(context.Background(), md)
+			err = sender.pushMetricsData(context.Background(), tt.md)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -188,33 +173,24 @@ func TestConsumeMetricsData(t *testing.T) {
 	}
 }
 
-func generateLargeBatch() *agentmetricspb.ExportMetricsServiceRequest {
-	md := &agentmetricspb.ExportMetricsServiceRequest{
-		Node: &commonpb.Node{
-			ServiceInfo: &commonpb.ServiceInfo{Name: "test_splunkhec"},
-		},
-		Resource: &resourcepb.Resource{Type: "test"},
-	}
-
+func generateLargeBatch() pmetric.Metrics {
 	ts := time.Now()
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutString(conventions.AttributeServiceName, "test_splunkhec")
+	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
+
 	for i := 0; i < 65000; i++ {
-		md.Metrics = append(md.Metrics,
-			ocmetricstestutil.Gauge(
-				"test_"+strconv.Itoa(i),
-				[]string{"k0", "k1"},
-				ocmetricstestutil.Timeseries(
-					time.Now(),
-					[]string{"v0", "v1"},
-					&metricspb.Point{
-						Timestamp: timestamppb.New(ts),
-						Value:     &metricspb.Point_Int64Value{Int64Value: int64(i)},
-					},
-				),
-			),
-		)
+		m := ms.AppendEmpty()
+		m.SetName("test_" + strconv.Itoa(i))
+		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp.Attributes().PutString("k0", "v0")
+		dp.Attributes().PutString("k1", "v1")
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+		dp.SetIntValue(int64(i))
 	}
 
-	return md
+	return metrics
 }
 
 func generateLargeLogsBatch() plog.Logs {
