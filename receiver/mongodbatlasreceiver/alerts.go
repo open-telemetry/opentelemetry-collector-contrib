@@ -527,7 +527,7 @@ func (a *alertsReceiver) syncPersistence(ctx context.Context) error {
 func (a *alertsReceiver) writeCheckpoint(ctx context.Context) error {
 	if a.storageClient == nil {
 		a.logger.Error("unable to write checkpoint since no storage client was found")
-		return nil
+		return errors.New("missing non-nil storage client")
 	}
 	marshalBytes, err := json.Marshal(&a.record)
 	if err != nil {
