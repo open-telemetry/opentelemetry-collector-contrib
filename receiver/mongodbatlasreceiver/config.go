@@ -73,17 +73,15 @@ type ProjectConfig struct {
 }
 
 func (pc *ProjectConfig) populateIncludesAndExcludes() *ProjectConfig {
-	inclusionMap := map[string]struct{}{}
+	pc.includesByClusterName = map[string]struct{}{}
 	for _, inclusion := range pc.IncludeClusters {
-		inclusionMap[inclusion] = struct{}{}
+		pc.includesByClusterName[inclusion] = struct{}{}
 	}
-	pc.includesByClusterName = inclusionMap
 
-	exclusionMap := map[string]struct{}{}
+	pc.excludesByClusterName = map[string]struct{}{}
 	for _, exclusion := range pc.ExcludeClusters {
-		exclusionMap[exclusion] = struct{}{}
+		pc.excludesByClusterName[exclusion] = struct{}{}
 	}
-	pc.excludesByClusterName = exclusionMap
 
 	return pc
 }
