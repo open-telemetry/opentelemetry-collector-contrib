@@ -26,7 +26,7 @@ import (
 )
 
 // This is not in ottltest because it depends on a type that's a member of OTTL.
-func Booleanp(b boolean) *boolean {
+func booleanp(b boolean) *boolean {
 	return &b
 }
 
@@ -516,7 +516,7 @@ func Test_parseWhere(t *testing.T) {
 			expected: setNameTest(&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
-						ConstExpr: Booleanp(true),
+						ConstExpr: booleanp(true),
 					},
 				},
 			}),
@@ -526,13 +526,13 @@ func Test_parseWhere(t *testing.T) {
 			expected: setNameTest(&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
-						ConstExpr: Booleanp(true),
+						ConstExpr: booleanp(true),
 					},
 					Right: []*opAndBooleanValue{
 						{
 							Operator: "and",
 							Value: &booleanValue{
-								ConstExpr: Booleanp(false),
+								ConstExpr: booleanp(false),
 							},
 						},
 					},
@@ -544,19 +544,19 @@ func Test_parseWhere(t *testing.T) {
 			expected: setNameTest(&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
-						ConstExpr: Booleanp(true),
+						ConstExpr: booleanp(true),
 					},
 					Right: []*opAndBooleanValue{
 						{
 							Operator: "and",
 							Value: &booleanValue{
-								ConstExpr: Booleanp(true),
+								ConstExpr: booleanp(true),
 							},
 						},
 						{
 							Operator: "and",
 							Value: &booleanValue{
-								ConstExpr: Booleanp(false),
+								ConstExpr: booleanp(false),
 							},
 						},
 					},
@@ -568,7 +568,7 @@ func Test_parseWhere(t *testing.T) {
 			expected: setNameTest(&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
-						ConstExpr: Booleanp(true),
+						ConstExpr: booleanp(true),
 					},
 				},
 				Right: []*opOrTerm{
@@ -576,7 +576,7 @@ func Test_parseWhere(t *testing.T) {
 						Operator: "or",
 						Term: &term{
 							Left: &booleanValue{
-								ConstExpr: Booleanp(false),
+								ConstExpr: booleanp(false),
 							},
 						},
 					},
@@ -588,13 +588,13 @@ func Test_parseWhere(t *testing.T) {
 			expected: setNameTest(&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
-						ConstExpr: Booleanp(false),
+						ConstExpr: booleanp(false),
 					},
 					Right: []*opAndBooleanValue{
 						{
 							Operator: "and",
 							Value: &booleanValue{
-								ConstExpr: Booleanp(true),
+								ConstExpr: booleanp(true),
 							},
 						},
 					},
@@ -604,7 +604,7 @@ func Test_parseWhere(t *testing.T) {
 						Operator: "or",
 						Term: &term{
 							Left: &booleanValue{
-								ConstExpr: Booleanp(false),
+								ConstExpr: booleanp(false),
 							},
 						},
 					},
@@ -619,13 +619,13 @@ func Test_parseWhere(t *testing.T) {
 						SubExpr: &booleanExpression{
 							Left: &term{
 								Left: &booleanValue{
-									ConstExpr: Booleanp(false),
+									ConstExpr: booleanp(false),
 								},
 								Right: []*opAndBooleanValue{
 									{
 										Operator: "and",
 										Value: &booleanValue{
-											ConstExpr: Booleanp(true),
+											ConstExpr: booleanp(true),
 										},
 									},
 								},
@@ -638,7 +638,7 @@ func Test_parseWhere(t *testing.T) {
 						Operator: "or",
 						Term: &term{
 							Left: &booleanValue{
-								ConstExpr: Booleanp(false),
+								ConstExpr: booleanp(false),
 							},
 						},
 					},
@@ -650,7 +650,7 @@ func Test_parseWhere(t *testing.T) {
 			expected: setNameTest(&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
-						ConstExpr: Booleanp(false),
+						ConstExpr: booleanp(false),
 					},
 					Right: []*opAndBooleanValue{
 						{
@@ -659,7 +659,7 @@ func Test_parseWhere(t *testing.T) {
 								SubExpr: &booleanExpression{
 									Left: &term{
 										Left: &booleanValue{
-											ConstExpr: Booleanp(true),
+											ConstExpr: booleanp(true),
 										},
 									},
 									Right: []*opOrTerm{
@@ -667,7 +667,7 @@ func Test_parseWhere(t *testing.T) {
 											Operator: "or",
 											Term: &term{
 												Left: &booleanValue{
-													ConstExpr: Booleanp(false),
+													ConstExpr: booleanp(false),
 												},
 											},
 										},

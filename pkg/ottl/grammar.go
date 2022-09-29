@@ -16,6 +16,7 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"encoding/hex"
 	"fmt"
+
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
