@@ -24,6 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/zap/zaptest"
 )
 
 func TestPerRPCAuth(t *testing.T) {
@@ -111,7 +112,7 @@ func TestBearerStartWatchStop(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Filename = "test.token"
 
-	bauth := newBearerTokenAuth(cfg, nil)
+	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
 	assert.NotNil(t, bauth)
 
 	assert.Nil(t, bauth.Start(context.Background(), componenttest.NewNopHost()))

@@ -114,9 +114,13 @@ func (b *BearerTokenAuth) startWatcher(ctx context.Context, watcher *fsnotify.Wa
 			// SEE: https://martensson.io/go-fsnotify-and-kubernetes-configmaps/
 			if event.Op == fsnotify.Remove || event.Op == fsnotify.Chmod {
 				// remove the watcher since the file is removed
-				watcher.Remove(event.Name)
+				if err := watcher.Remove(event.Name); err != nil {
+					b.logger.Error(err.Error())
+				}
 				// add a new watcher pointing to the new symlink/file
-				watcher.Add(b.filename)
+				if err := watcher.Add(b.filename); err != nil {
+					b.logger.Error(err.Error())
+				}
 				b.refreshToken()
 			}
 			// also allow normal files to be modified and reloaded.
