@@ -133,6 +133,8 @@ func parseToAttributeValue(val interface{}, dest pcommon.Value) {
 
 func timeFromTimestamp(ts interface{}) (time.Time, error) {
 	switch v := ts.(type) {
+	case uint64:
+		return time.Unix(int64(v), 0), nil
 	case int64:
 		return time.Unix(v, 0), nil
 	case *eventTimeExt:
