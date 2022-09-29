@@ -126,6 +126,8 @@ func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer
 	}
 
 	if recv.mode == alertModePoll {
+		client := internal.NewMongoDBAtlasClient(recv.publicKey, recv.privateKey, recv.retrySettings, recv.logger)
+		recv.client = client
 		return recv, nil
 	}
 	s := &http.Server{
@@ -146,8 +148,6 @@ func (a alertsReceiver) Start(ctx context.Context, host component.Host) error {
 func (a alertsReceiver) startPolling(ctx context.Context, host component.Host) error {
 	a.logger.Debug("starting alerts receiver in retrieval mode")
 
-	client := internal.NewMongoDBAtlasClient(a.publicKey, a.privateKey, a.retrySettings, a.logger)
-	a.client = client
 	storageClient, err := adapter.GetStorageClient(ctx, host, a.storageID, a.id)
 	if err != nil {
 		return fmt.Errorf("failed to set up storage: %w", err)
