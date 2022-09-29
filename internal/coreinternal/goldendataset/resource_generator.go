@@ -118,8 +118,8 @@ func appendFassAttributes(attrMap pcommon.Map) {
 func appendExecAttributes(attrMap pcommon.Map) {
 	attrMap.PutString(conventions.AttributeProcessExecutableName, "otelcol")
 	parts := attrMap.PutEmptySlice(conventions.AttributeProcessCommandLine)
-	parts.AppendEmpty().SetStringVal("otelcol")
-	parts.AppendEmpty().SetStringVal("--config=/etc/otel-collector-config.yaml")
+	parts.AppendEmpty().SetStr("otelcol")
+	parts.AppendEmpty().SetStr("--config=/etc/otel-collector-config.yaml")
 	attrMap.PutString(conventions.AttributeProcessExecutablePath, "/usr/local/bin/otelcol")
 	attrMap.PutInt(conventions.AttributeProcessPID, 2020)
 	attrMap.PutString(conventions.AttributeProcessOwner, "otel")

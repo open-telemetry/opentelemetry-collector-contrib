@@ -93,8 +93,8 @@ func (t *traceTransformer) Span(orig ptrace.Span) (span, error) {
 		tags[k] = v
 	}
 
-	traceState := orig.TraceStateStruct().AsRaw()
-	if orig.TraceStateStruct().AsRaw() != "" {
+	traceState := orig.TraceState().AsRaw()
+	if orig.TraceState().AsRaw() != "" {
 		tags[tracetranslator.TagW3CTraceState] = traceState
 	}
 

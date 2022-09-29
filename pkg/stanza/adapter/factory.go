@@ -52,12 +52,8 @@ func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsRec
 	) (component.LogsReceiver, error) {
 		inputCfg := logReceiverType.InputConfig(cfg)
 		baseCfg := logReceiverType.BaseConfig(cfg)
-		operatorCfgs, err := baseCfg.DecodeOperatorConfigs()
-		if err != nil {
-			return nil, err
-		}
 
-		operators := append([]operator.Config{inputCfg}, operatorCfgs...)
+		operators := append([]operator.Config{inputCfg}, baseCfg.Operators...)
 
 		emitterOpts := []LogEmitterOption{
 			LogEmitterWithLogger(params.Logger.Sugar()),

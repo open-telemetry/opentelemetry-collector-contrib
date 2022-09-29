@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,19 +17,19 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 )
 
-func convertSumToGauge() (tql.ExprFunc, error) {
-	return func(ctx tql.TransformContext) interface{} {
-		mtc, ok := ctx.(tqlmetrics.TransformContext)
+func convertSumToGauge() (ottl.ExprFunc, error) {
+	return func(ctx ottl.TransformContext) interface{} {
+		mtc, ok := ctx.(ottldatapoints.TransformContext)
 		if !ok {
 			return nil
 		}
 
 		metric := mtc.GetMetric()
-		if metric.DataType() != pmetric.MetricDataTypeSum {
+		if metric.Type() != pmetric.MetricTypeSum {
 			return nil
 		}
 

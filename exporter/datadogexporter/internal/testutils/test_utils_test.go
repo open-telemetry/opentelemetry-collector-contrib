@@ -48,16 +48,16 @@ func TestNewGaugeMetrics(t *testing.T) {
 	all := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	require.Equal(t, all.Len(), 2)
 	require.Equal(t, all.At(0).Name(), "metric1")
-	require.Equal(t, all.At(0).Gauge().DataPoints().At(0).DoubleVal(), float64(1))
+	require.Equal(t, all.At(0).Gauge().DataPoints().At(0).DoubleValue(), float64(1))
 	require.EqualValues(t, all.At(0).Gauge().DataPoints().At(0).Attributes().AsRaw(), map[string]interface{}{
 		"a": "b", "c": "d", "e": "f",
 	})
 	require.Equal(t, all.At(1).Name(), "metric2")
-	require.Equal(t, all.At(1).Gauge().DataPoints().At(0).DoubleVal(), float64(2))
+	require.Equal(t, all.At(1).Gauge().DataPoints().At(0).DoubleValue(), float64(2))
 	require.EqualValues(t, all.At(1).Gauge().DataPoints().At(0).Attributes().AsRaw(), map[string]interface{}{
 		"x": "y", "z": "q", "w": "e",
 	})
-	require.Equal(t, all.At(1).Gauge().DataPoints().At(1).DoubleVal(), float64(3))
+	require.Equal(t, all.At(1).Gauge().DataPoints().At(1).DoubleValue(), float64(3))
 	require.EqualValues(t, all.At(1).Gauge().DataPoints().At(1).Attributes().AsRaw(), map[string]interface{}{
 		"w": "n",
 	})

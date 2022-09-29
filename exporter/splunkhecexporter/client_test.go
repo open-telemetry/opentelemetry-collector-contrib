@@ -95,7 +95,7 @@ func createMetricsData(numberOfDataPoints int) pmetric.Metrics {
 		metric.SetName("gauge_double_with_dims")
 		doublePt := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
-		doublePt.SetDoubleVal(doubleVal)
+		doublePt.SetDoubleValue(doubleVal)
 		doublePt.Attributes().PutString("k/n0", "vn0")
 		doublePt.Attributes().PutString("k/n1", "vn1")
 		doublePt.Attributes().PutString("k/r0", "vr0")
@@ -118,7 +118,7 @@ func createTraceData(numberOfTraces int) ptrace.Traces {
 		span.SetEndTimestamp(pcommon.Timestamp((i + 2) * 1e9))
 		span.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
 		span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
-		span.TraceStateStruct().FromRaw("foo")
+		span.TraceState().FromRaw("foo")
 		if i%2 == 0 {
 			span.SetParentSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 			span.Status().SetCode(ptrace.StatusCodeOk)
@@ -154,7 +154,7 @@ func createLogDataWithCustomLibraries(numResources int, libraries []string, numR
 			for k := 0; k < numRecords[j]; k++ {
 				ts := pcommon.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
 				logRecord := sl.LogRecords().AppendEmpty()
-				logRecord.Body().SetStringVal("mylog")
+				logRecord.Body().SetStr("mylog")
 				logRecord.Attributes().PutString(splunk.DefaultNameLabel, fmt.Sprintf("%d_%d_%d", i, j, k))
 				logRecord.Attributes().PutString(splunk.DefaultSourceLabel, "myapp")
 				logRecord.Attributes().PutString(splunk.DefaultSourceTypeLabel, "myapp-type")
@@ -947,7 +947,7 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 	logs := plog.NewLogs()
 	log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	// Invalid log value
-	log.Body().SetDoubleVal(math.Inf(1))
+	log.Body().SetDouble(math.Inf(1))
 
 	err := c.pushLogData(context.Background(), logs)
 

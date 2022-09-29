@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 )
 
@@ -68,7 +69,7 @@ func testTCP(t *testing.T, cfg *TCPLogConfig) {
 		log := logs.At(i)
 
 		msg := log.Body()
-		require.Equal(t, msg.StringVal(), fmt.Sprintf("<86>1 2021-02-28T00:0%d:02.003Z test msg %d", i, i))
+		require.Equal(t, msg.Str(), fmt.Sprintf("<86>1 2021-02-28T00:0%d:02.003Z test msg %d", i, i))
 	}
 }
 
@@ -90,7 +91,7 @@ func testdataConfigYaml() *TCPLogConfig {
 	return &TCPLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
+			Operators:        []operator.Config{},
 			Converter: adapter.ConverterConfig{
 				WorkerCount: 1,
 			},
@@ -108,7 +109,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 	badCfg := &TCPLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
+			Operators:        []operator.Config{},
 		},
 		InputConfig: func() tcp.Config {
 			c := tcp.NewConfig()

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -114,12 +114,12 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 				}
 
 				log.Attributes().Range(func(k string, v pcommon.Value) bool {
-					attrs[k] = truncateString(v.StringVal(), maxMetaDataSize)
+					attrs[k] = truncateString(v.Str(), maxMetaDataSize)
 					return true
 				})
 
 				s, _ := log.Attributes().Get("appname")
-				app := s.StringVal()
+				app := s.Str()
 
 				tstamp := log.Timestamp().AsTime().UTC().UnixMilli()
 				if tstamp == 0 {
@@ -133,7 +133,7 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 
 				line := MezmoLogLine{
 					Timestamp: tstamp,
-					Line:      truncateString(log.Body().StringVal(), maxMessageSize),
+					Line:      truncateString(log.Body().Str(), maxMessageSize),
 					App:       truncateString(app, maxAppnameLen),
 					Level:     logLevel,
 					Meta:      attrs,

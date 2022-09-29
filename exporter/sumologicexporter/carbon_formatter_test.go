@@ -38,7 +38,7 @@ func TestCarbon2TagString(t *testing.T) {
 	assert.Equal(t, "foo=bar metric=gauge_metric_name_double_test", data)
 }
 
-func TestCarbonMetricDataTypeIntGauge(t *testing.T) {
+func TestCarbonMetricTypeIntGauge(t *testing.T) {
 	metric := exampleIntGaugeMetric()
 
 	result := carbon2Metric2String(metric)
@@ -47,7 +47,7 @@ foo=bar metric=gauge_metric_name  245 1608124662`
 	assert.Equal(t, expected, result)
 }
 
-func TestCarbonMetricDataTypeDoubleGauge(t *testing.T) {
+func TestCarbonMetricTypeDoubleGauge(t *testing.T) {
 	metric := exampleDoubleGaugeMetric()
 
 	result := carbon2Metric2String(metric)
@@ -56,7 +56,7 @@ foo=bar metric=gauge_metric_name_double_test  56.8 1608124662`
 	assert.Equal(t, expected, result)
 }
 
-func TestCarbonMetricDataTypeIntSum(t *testing.T) {
+func TestCarbonMetricTypeIntSum(t *testing.T) {
 	metric := exampleIntSumMetric()
 
 	result := carbon2Metric2String(metric)
@@ -65,7 +65,7 @@ foo=bar metric=sum_metric_int_test  1238 1608124699`
 	assert.Equal(t, expected, result)
 }
 
-func TestCarbonMetricDataTypeDoubleSum(t *testing.T) {
+func TestCarbonMetricTypeDoubleSum(t *testing.T) {
 	metric := exampleDoubleSumMetric()
 
 	result := carbon2Metric2String(metric)
@@ -74,7 +74,7 @@ foo=bar metric=sum_metric_double_test  1238.1 1608424699`
 	assert.Equal(t, expected, result)
 }
 
-func TestCarbonMetricDataTypeSummary(t *testing.T) {
+func TestCarbonMetricTypeSummary(t *testing.T) {
 	metric := exampleSummaryMetric()
 
 	result := carbon2Metric2String(metric)
@@ -86,7 +86,7 @@ func TestCarbonMetricDataTypeSummary(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
-func TestCarbonMetricDataTypeHistogram(t *testing.T) {
+func TestCarbonMetricTypeHistogram(t *testing.T) {
 	metric := exampleHistogramMetric()
 
 	result := carbon2Metric2String(metric)

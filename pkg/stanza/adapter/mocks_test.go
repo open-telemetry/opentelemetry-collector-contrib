@@ -95,7 +95,7 @@ func (f TestReceiverType) CreateDefaultConfig() config.Receiver {
 	return &TestConfig{
 		BaseConfig: BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(testType)),
-			Operators:        OperatorConfigs{},
+			Operators:        []operator.Config{},
 			Converter: ConverterConfig{
 				MaxFlushCount: 1,
 				FlushInterval: 100 * time.Millisecond,

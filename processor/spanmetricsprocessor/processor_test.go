@@ -462,7 +462,7 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 		require.Equal(t, 1, dps.Len())
 
 		dp := dps.At(0)
-		assert.Equal(t, int64(numCumulativeConsumptions), dp.IntVal(), "There should only be one metric per Service/operation/kind combination")
+		assert.Equal(t, int64(numCumulativeConsumptions), dp.IntValue(), "There should only be one metric per Service/operation/kind combination")
 		assert.NotZero(t, dp.StartTimestamp(), "StartTimestamp should be set")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
@@ -531,13 +531,13 @@ func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metr
 	dp.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch k {
 		case serviceNameKey:
-			mID.service = v.StringVal()
+			mID.service = v.Str()
 		case operationKey:
-			mID.operation = v.StringVal()
+			mID.operation = v.Str()
 		case spanKindKey:
-			mID.kind = v.StringVal()
+			mID.kind = v.Str()
 		case statusCodeKey:
-			mID.statusCode = v.StringVal()
+			mID.statusCode = v.Str()
 		case notInSpanAttrName1:
 			assert.Fail(t, notInSpanAttrName1+" should not be in this metric")
 		default:
@@ -857,7 +857,7 @@ func TestSetLatencyExemplars(t *testing.T) {
 	assert.True(t, exist)
 	assert.Equal(t, traceIDValue.AsString(), traceID.HexString())
 	assert.Equal(t, exemplarSlice.At(0).Timestamp(), timestamp)
-	assert.Equal(t, exemplarSlice.At(0).DoubleVal(), value)
+	assert.Equal(t, exemplarSlice.At(0).DoubleValue(), value)
 }
 
 func TestProcessorUpdateLatencyExemplars(t *testing.T) {

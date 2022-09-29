@@ -21,13 +21,13 @@ import (
 	"gopkg.in/zorkian/go-datadog-api.v2"
 )
 
-type MetricDataType string
+type MetricType string
 
 const (
 	// Gauge is the Datadog Gauge metric type
-	Gauge MetricDataType = "gauge"
+	Gauge MetricType = "gauge"
 	// Count is the Datadog Count metric type
-	Count MetricDataType = "count"
+	Count MetricType = "count"
 )
 
 // newMetric creates a new Datadog metric given a name, a Unix nanoseconds timestamp
@@ -47,7 +47,7 @@ func newMetric(name string, ts uint64, value float64, tags []string) datadog.Met
 
 // NewMetric creates a new Datadog metric given a name, a type, a Unix nanoseconds timestamp
 // a value and a slice of tags
-func NewMetric(name string, dt MetricDataType, ts uint64, value float64, tags []string) datadog.Metric {
+func NewMetric(name string, dt MetricType, ts uint64, value float64, tags []string) datadog.Metric {
 	metric := newMetric(name, ts, value, tags)
 	metric.SetType(string(dt))
 	return metric

@@ -136,15 +136,15 @@ func TestTopicScraper_scrapes(t *testing.T) {
 		dp := m.Gauge().DataPoints().At(0)
 		switch m.Name() {
 		case "kafka.topic.partitions":
-			assert.Equal(t, dp.IntVal(), int64(len(testPartitions)))
+			assert.Equal(t, dp.IntValue(), int64(len(testPartitions)))
 		case "kafka.partition.current_offset":
-			assert.Equal(t, dp.IntVal(), testOffset)
+			assert.Equal(t, dp.IntValue(), testOffset)
 		case "kafka.partition.oldest_offset":
-			assert.Equal(t, dp.IntVal(), testOffset)
+			assert.Equal(t, dp.IntValue(), testOffset)
 		case "kafka.partition.replicas":
-			assert.Equal(t, dp.IntVal(), int64(len(testReplicas)))
+			assert.Equal(t, dp.IntValue(), int64(len(testReplicas)))
 		case "kafka.partition.replicas_in_sync":
-			assert.Equal(t, dp.IntVal(), int64(len(testReplicas)))
+			assert.Equal(t, dp.IntValue(), int64(len(testReplicas)))
 		}
 	}
 }

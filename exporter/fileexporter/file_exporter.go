@@ -27,11 +27,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-const (
-	formatTypeProto = "proto"
-	formatTypeJSON  = "json"
-)
-
 // Marshaler configuration used for marhsaling Protobuf
 var tracesMarshalers = map[string]ptrace.Marshaler{
 	formatTypeJSON:  ptrace.NewJSONMarshaler(),
@@ -59,6 +54,9 @@ type fileExporter struct {
 	metricsMarshaler pmetric.Marshaler
 	logsMarshaler    plog.Marshaler
 
+	compression string
+	compressor  compressFunc
+
 	formatType string
 	exporter   exportFunc
 }
@@ -72,6 +70,7 @@ func (e *fileExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error 
 	if err != nil {
 		return err
 	}
+	buf = e.compressor(buf)
 	return e.exporter(e, buf)
 }
 
@@ -80,6 +79,7 @@ func (e *fileExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) err
 	if err != nil {
 		return err
 	}
+	buf = e.compressor(buf)
 	return e.exporter(e, buf)
 }
 
@@ -88,6 +88,7 @@ func (e *fileExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	if err != nil {
 		return err
 	}
+	buf = e.compressor(buf)
 	return e.exporter(e, buf)
 }
 
@@ -130,6 +131,10 @@ func (e *fileExporter) Shutdown(context.Context) error {
 
 func buildExportFunc(cfg *Config) func(e *fileExporter, buf []byte) error {
 	if cfg.FormatType == formatTypeProto {
+		return exportMessageAsBuffer
+	}
+	// if the data format is JSON and needs to be compressed, telemetry data can't be written to file in JSON format.
+	if cfg.FormatType == formatTypeJSON && cfg.Compression != "" {
 		return exportMessageAsBuffer
 	}
 	return exportMessageAsLine
