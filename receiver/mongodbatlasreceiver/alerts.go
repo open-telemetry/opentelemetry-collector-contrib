@@ -60,7 +60,6 @@ const (
 	alertCacheKey   = "logging_alerts_cache"
 
 	defaultAlertsPollInterval = 5 * time.Minute
-	defaultAlertsTTL          = 24 * time.Hour
 )
 
 type alertsClient interface {
