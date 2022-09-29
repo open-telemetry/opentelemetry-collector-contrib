@@ -230,7 +230,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := ResourcePathGetSetter(tt.path)
+			accessor, err := ResourcePathGetSetter[*resourceContext](tt.path)
 			assert.NoError(t, err)
 
 			resource := createResource()
@@ -289,18 +289,10 @@ type resourceContext struct {
 	resource pcommon.Resource
 }
 
-func (r *resourceContext) GetItem() interface{} {
-	return nil
-}
-
-func (r *resourceContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return pcommon.InstrumentationScope{}
-}
-
 func (r *resourceContext) GetResource() pcommon.Resource {
 	return r.resource
 }
 
-func newResourceContext(resource pcommon.Resource) ottl.TransformContext {
+func newResourceContext(resource pcommon.Resource) *resourceContext {
 	return &resourceContext{resource: resource}
 }

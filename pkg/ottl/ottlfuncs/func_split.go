@@ -20,8 +20,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Split(target ottl.Getter, delimiter string) (ottl.ExprFunc, error) {
-	return func(ctx ottl.TransformContext) interface{} {
+func Split[K any](target ottl.Getter[K], delimiter string) (ottl.ExprFunc[K], error) {
+	return func(ctx K) interface{} {
 		if val := target.Get(ctx); val != nil {
 			if valStr, ok := val.(string); ok {
 				return strings.Split(valStr, delimiter)
