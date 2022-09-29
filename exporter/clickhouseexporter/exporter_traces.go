@@ -43,7 +43,7 @@ func (e *clickhouseExporter) pushTraceData(ctx context.Context, td ptrace.Traces
 			resAttr := attributesToMap(res.Attributes())
 			var serviceName string
 			if v, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
-				serviceName = v.StringVal()
+				serviceName = v.Str()
 			}
 			for j := 0; j < spans.ScopeSpans().Len(); j++ {
 				rs := spans.ScopeSpans().At(j).Spans()
