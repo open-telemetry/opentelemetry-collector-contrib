@@ -431,7 +431,6 @@ func TestSetInternalSpanStatus(t *testing.T) {
 }
 
 func TestProtoBatchesToInternalTraces(t *testing.T) {
-	t.Skip("skipping flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/12591")
 	batches := []*model.Batch{
 		{
 			Process: generateProtoProcess(),
@@ -459,8 +458,29 @@ func TestProtoBatchesToInternalTraces(t *testing.T) {
 	twoSpans.CopyTo(tgt)
 
 	got, err := ProtoToTraces(batches)
+
 	assert.NoError(t, err)
-	assert.EqualValues(t, expected, got)
+
+	assert.Equal(t, expected.ResourceSpans().Len(), got.ResourceSpans().Len())
+	assert.Equal(t, expected.SpanCount(), got.SpanCount())
+
+	lenbatches := expected.ResourceSpans().Len()
+	found := 0
+
+	for i := 0; i < lenbatches; i++ {
+		rsExpected := expected.ResourceSpans().At(i)
+		for j := 0; j < lenbatches; j++ {
+			got.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
+				nameExpected := rsExpected.ScopeSpans().At(0).Spans().At(0).Name()
+				nameGot := got.ResourceSpans().At(j).ScopeSpans().At(0).Scope().Name()
+				if nameExpected == nameGot {
+					assert.Equal(t, nameGot, found)
+					assert.Equal(t, got.SpanCount(), found)
+				}
+				return nameExpected == nameGot
+			})
+		}
+	}
 }
 
 func TestJSpanKindToInternal(t *testing.T) {

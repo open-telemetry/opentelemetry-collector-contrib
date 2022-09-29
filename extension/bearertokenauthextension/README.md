@@ -13,19 +13,26 @@ The authenticator type has to be set to `bearertokenauth`.
 
 ## Configuration
 
-The following is the only setting and is required:
+One of the following two options is required. If a token **and** a tokenfile are specified, the token is **ignored**:
 
 - `token`: static authorization token that needs to be sent on every gRPC client call as metadata.
   This token is prepended by "Bearer " before being sent as a value of "authorization" key in
   RPC metadata.
-  
-  **Note**: bearertokenauth requires transport layer security enabled on the exporter.
+
+- `filename`: filename of file that contains a authorization token that needs to be sent on every
+  gRPC client call as metadata.
+  This token is prepended by "Bearer " before being sent as a value of "authorization" key in
+  RPC metadata.
+
+
+**Note**: bearertokenauth requires transport layer security enabled on the exporter.
 
 
 ```yaml
 extensions:
   bearertokenauth:
     token: "somerandomtoken"
+    filename: "file-containing.token"
 
 receivers:
   hostmetrics:
