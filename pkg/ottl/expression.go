@@ -16,79 +16,71 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"fmt"
-
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-type TransformContext interface {
-	GetItem() interface{}
-	GetInstrumentationScope() pcommon.InstrumentationScope
-	GetResource() pcommon.Resource
+type ExprFunc[K any] func(ctx K) interface{}
+
+type Getter[K any] interface {
+	Get(ctx K) interface{}
 }
 
-type ExprFunc func(ctx TransformContext) interface{}
-
-type Getter interface {
-	Get(ctx TransformContext) interface{}
+type Setter[K any] interface {
+	Set(ctx K, val interface{})
 }
 
-type Setter interface {
-	Set(ctx TransformContext, val interface{})
+type GetSetter[K any] interface {
+	Getter[K]
+	Setter[K]
 }
 
-type GetSetter interface {
-	Getter
-	Setter
+type StandardGetSetter[K any] struct {
+	Getter func(ctx K) interface{}
+	Setter func(ctx K, val interface{})
 }
 
-type StandardGetSetter struct {
-	Getter func(ctx TransformContext) interface{}
-	Setter func(ctx TransformContext, val interface{})
-}
-
-func (path StandardGetSetter) Get(ctx TransformContext) interface{} {
+func (path StandardGetSetter[K]) Get(ctx K) interface{} {
 	return path.Getter(ctx)
 }
 
-func (path StandardGetSetter) Set(ctx TransformContext, val interface{}) {
+func (path StandardGetSetter[K]) Set(ctx K, val interface{}) {
 	path.Setter(ctx, val)
 }
 
-type literal struct {
+type literal[K any] struct {
 	value interface{}
 }
 
-func (l literal) Get(ctx TransformContext) interface{} {
+func (l literal[K]) Get(K) interface{} {
 	return l.value
 }
 
-type exprGetter struct {
-	expr ExprFunc
+type exprGetter[K any] struct {
+	expr ExprFunc[K]
 }
 
-func (g exprGetter) Get(ctx TransformContext) interface{} {
+func (g exprGetter[K]) Get(ctx K) interface{} {
 	return g.expr(ctx)
 }
 
-func (p *Parser) newGetter(val Value) (Getter, error) {
+func (p *Parser[K]) newGetter(val Value) (Getter[K], error) {
 	if val.IsNil != nil && *val.IsNil {
-		return &literal{value: nil}, nil
+		return &literal[K]{value: nil}, nil
 	}
 
 	if s := val.String; s != nil {
-		return &literal{value: *s}, nil
+		return &literal[K]{value: *s}, nil
 	}
 	if f := val.Float; f != nil {
-		return &literal{value: *f}, nil
+		return &literal[K]{value: *f}, nil
 	}
 	if i := val.Int; i != nil {
-		return &literal{value: *i}, nil
+		return &literal[K]{value: *i}, nil
 	}
 	if b := val.Bool; b != nil {
-		return &literal{value: bool(*b)}, nil
+		return &literal[K]{value: bool(*b)}, nil
 	}
 	if b := val.Bytes; b != nil {
-		return &literal{value: ([]byte)(*b)}, nil
+		return &literal[K]{value: ([]byte)(*b)}, nil
 	}
 
 	if val.Enum != nil {
@@ -96,7 +88,7 @@ func (p *Parser) newGetter(val Value) (Getter, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &literal{value: int64(*enum)}, nil
+		return &literal[K]{value: int64(*enum)}, nil
 	}
 
 	if val.Path != nil {
@@ -111,7 +103,7 @@ func (p *Parser) newGetter(val Value) (Getter, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &exprGetter{
+	return &exprGetter[K]{
 		expr: call,
 	}, nil
 }

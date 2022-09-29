@@ -28,29 +28,32 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ottlcommon"
 )
 
-type transformContext struct {
+var _ ottlcommon.ResourceContext = TransformContext{}
+var _ ottlcommon.InstrumentationScopeContext = TransformContext{}
+
+type TransformContext struct {
 	span                 ptrace.Span
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
 }
 
-func NewTransformContext(span ptrace.Span, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) ottl.TransformContext {
-	return transformContext{
+func NewTransformContext(span ptrace.Span, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
+	return TransformContext{
 		span:                 span,
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
 	}
 }
 
-func (ctx transformContext) GetItem() interface{} {
+func (ctx TransformContext) GetSpan() ptrace.Span {
 	return ctx.span
 }
 
-func (ctx transformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
+func (ctx TransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
 	return ctx.instrumentationScope
 }
 
-func (ctx transformContext) GetResource() pcommon.Resource {
+func (ctx TransformContext) GetResource() pcommon.Resource {
 	return ctx.resource
 }
 
@@ -76,19 +79,19 @@ func ParseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	return nil, fmt.Errorf("enum symbol not provided")
 }
 
-func ParsePath(val *ottl.Path) (ottl.GetSetter, error) {
+func ParsePath(val *ottl.Path) (ottl.GetSetter[TransformContext], error) {
 	if val != nil && len(val.Fields) > 0 {
 		return newPathGetSetter(val.Fields)
 	}
 	return nil, fmt.Errorf("bad path %v", val)
 }
 
-func newPathGetSetter(path []ottl.Field) (ottl.GetSetter, error) {
+func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], error) {
 	switch path[0].Name {
 	case "resource":
-		return ottlcommon.ResourcePathGetSetter(path[1:])
+		return ottlcommon.ResourcePathGetSetter[TransformContext](path[1:])
 	case "instrumentation_library":
-		return ottlcommon.ScopePathGetSetter(path[1:])
+		return ottlcommon.ScopePathGetSetter[TransformContext](path[1:])
 	case "trace_id":
 		if len(path) == 1 {
 			return accessTraceID(), nil
@@ -152,88 +155,88 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter, error) {
 	return nil, fmt.Errorf("invalid path expression %v", path)
 }
 
-func accessTraceID() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).TraceID()
+func accessTraceID() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return ctx.GetSpan().TraceID()
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newTraceID, ok := val.(pcommon.TraceID); ok {
-				ctx.GetItem().(ptrace.Span).SetTraceID(newTraceID)
+				ctx.GetSpan().SetTraceID(newTraceID)
 			}
 		},
 	}
 }
 
-func accessStringTraceID() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).TraceID().HexString()
+func accessStringTraceID() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return ctx.GetSpan().TraceID().HexString()
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				if traceID, err := parseTraceID(str); err == nil {
-					ctx.GetItem().(ptrace.Span).SetTraceID(traceID)
+					ctx.GetSpan().SetTraceID(traceID)
 				}
 			}
 		},
 	}
 }
 
-func accessSpanID() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).SpanID()
+func accessSpanID() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return ctx.GetSpan().SpanID()
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newSpanID, ok := val.(pcommon.SpanID); ok {
-				ctx.GetItem().(ptrace.Span).SetSpanID(newSpanID)
+				ctx.GetSpan().SetSpanID(newSpanID)
 			}
 		},
 	}
 }
 
-func accessStringSpanID() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).SpanID().HexString()
+func accessStringSpanID() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return ctx.GetSpan().SpanID().HexString()
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				if spanID, err := parseSpanID(str); err == nil {
-					ctx.GetItem().(ptrace.Span).SetSpanID(spanID)
+					ctx.GetSpan().SetSpanID(spanID)
 				}
 			}
 		},
 	}
 }
 
-func accessTraceState() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).TraceState().AsRaw()
+func accessTraceState() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return ctx.GetSpan().TraceState().AsRaw()
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.GetItem().(ptrace.Span).TraceState().FromRaw(str)
+				ctx.GetSpan().TraceState().FromRaw(str)
 			}
 		},
 	}
 }
 
-func accessTraceStateKey(mapKey *string) ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			if ts, err := trace.ParseTraceState(ctx.GetItem().(ptrace.Span).TraceState().AsRaw()); err == nil {
+func accessTraceStateKey(mapKey *string) ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			if ts, err := trace.ParseTraceState(ctx.GetSpan().TraceState().AsRaw()); err == nil {
 				return ts.Get(*mapKey)
 			}
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				if ts, err := trace.ParseTraceState(ctx.GetItem().(ptrace.Span).TraceState().AsRaw()); err == nil {
+				if ts, err := trace.ParseTraceState(ctx.GetSpan().TraceState().AsRaw()); err == nil {
 					if updated, err := ts.Insert(*mapKey, str); err == nil {
-						ctx.GetItem().(ptrace.Span).TraceState().FromRaw(updated.String())
+						ctx.GetSpan().TraceState().FromRaw(updated.String())
 					}
 				}
 			}
@@ -241,200 +244,200 @@ func accessTraceStateKey(mapKey *string) ottl.StandardGetSetter {
 	}
 }
 
-func accessParentSpanID() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).ParentSpanID()
+func accessParentSpanID() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return ctx.GetSpan().ParentSpanID()
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if newParentSpanID, ok := val.(pcommon.SpanID); ok {
-				ctx.GetItem().(ptrace.Span).SetParentSpanID(newParentSpanID)
+				ctx.GetSpan().SetParentSpanID(newParentSpanID)
 			}
 		},
 	}
 }
 
-func accessName() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).Name()
+func accessName() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return ctx.GetSpan().Name()
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.GetItem().(ptrace.Span).SetName(str)
+				ctx.GetSpan().SetName(str)
 			}
 		},
 	}
 }
 
-func accessKind() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return int64(ctx.GetItem().(ptrace.Span).Kind())
+func accessKind() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return int64(ctx.GetSpan().Kind())
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
-				ctx.GetItem().(ptrace.Span).SetKind(ptrace.SpanKind(i))
+				ctx.GetSpan().SetKind(ptrace.SpanKind(i))
 			}
 		},
 	}
 }
 
-func accessStartTimeUnixNano() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).StartTimestamp().AsTime().UnixNano()
+func accessStartTimeUnixNano() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return ctx.GetSpan().StartTimestamp().AsTime().UnixNano()
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
-				ctx.GetItem().(ptrace.Span).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, i)))
+				ctx.GetSpan().SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, i)))
 			}
 		},
 	}
 }
 
-func accessEndTimeUnixNano() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).EndTimestamp().AsTime().UnixNano()
+func accessEndTimeUnixNano() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return ctx.GetSpan().EndTimestamp().AsTime().UnixNano()
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
-				ctx.GetItem().(ptrace.Span).SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, i)))
+				ctx.GetSpan().SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, i)))
 			}
 		},
 	}
 }
 
-func accessAttributes() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).Attributes()
+func accessAttributes() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return ctx.GetSpan().Attributes()
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if attrs, ok := val.(pcommon.Map); ok {
-				attrs.CopyTo(ctx.GetItem().(ptrace.Span).Attributes())
+				attrs.CopyTo(ctx.GetSpan().Attributes())
 			}
 		},
 	}
 }
 
-func accessAttributesKey(mapKey *string) ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ottlcommon.GetMapValue(ctx.GetItem().(ptrace.Span).Attributes(), *mapKey)
+func accessAttributesKey(mapKey *string) ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return ottlcommon.GetMapValue(ctx.GetSpan().Attributes(), *mapKey)
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
-			ottlcommon.SetMapValue(ctx.GetItem().(ptrace.Span).Attributes(), *mapKey, val)
+		Setter: func(ctx TransformContext, val interface{}) {
+			ottlcommon.SetMapValue(ctx.GetSpan().Attributes(), *mapKey, val)
 		},
 	}
 }
 
-func accessDroppedAttributesCount() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return int64(ctx.GetItem().(ptrace.Span).DroppedAttributesCount())
+func accessDroppedAttributesCount() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return int64(ctx.GetSpan().DroppedAttributesCount())
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
-				ctx.GetItem().(ptrace.Span).SetDroppedAttributesCount(uint32(i))
+				ctx.GetSpan().SetDroppedAttributesCount(uint32(i))
 			}
 		},
 	}
 }
 
-func accessEvents() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).Events()
+func accessEvents() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return ctx.GetSpan().Events()
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if slc, ok := val.(ptrace.SpanEventSlice); ok {
-				ctx.GetItem().(ptrace.Span).Events().RemoveIf(func(event ptrace.SpanEvent) bool {
+				ctx.GetSpan().Events().RemoveIf(func(event ptrace.SpanEvent) bool {
 					return true
 				})
-				slc.CopyTo(ctx.GetItem().(ptrace.Span).Events())
+				slc.CopyTo(ctx.GetSpan().Events())
 			}
 		},
 	}
 }
 
-func accessDroppedEventsCount() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return int64(ctx.GetItem().(ptrace.Span).DroppedEventsCount())
+func accessDroppedEventsCount() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return int64(ctx.GetSpan().DroppedEventsCount())
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
-				ctx.GetItem().(ptrace.Span).SetDroppedEventsCount(uint32(i))
+				ctx.GetSpan().SetDroppedEventsCount(uint32(i))
 			}
 		},
 	}
 }
 
-func accessLinks() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).Links()
+func accessLinks() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return ctx.GetSpan().Links()
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if slc, ok := val.(ptrace.SpanLinkSlice); ok {
-				ctx.GetItem().(ptrace.Span).Links().RemoveIf(func(event ptrace.SpanLink) bool {
+				ctx.GetSpan().Links().RemoveIf(func(event ptrace.SpanLink) bool {
 					return true
 				})
-				slc.CopyTo(ctx.GetItem().(ptrace.Span).Links())
+				slc.CopyTo(ctx.GetSpan().Links())
 			}
 		},
 	}
 }
 
-func accessDroppedLinksCount() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return int64(ctx.GetItem().(ptrace.Span).DroppedLinksCount())
+func accessDroppedLinksCount() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return int64(ctx.GetSpan().DroppedLinksCount())
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
-				ctx.GetItem().(ptrace.Span).SetDroppedLinksCount(uint32(i))
+				ctx.GetSpan().SetDroppedLinksCount(uint32(i))
 			}
 		},
 	}
 }
 
-func accessStatus() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).Status()
+func accessStatus() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return ctx.GetSpan().Status()
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if status, ok := val.(ptrace.SpanStatus); ok {
-				status.CopyTo(ctx.GetItem().(ptrace.Span).Status())
+				status.CopyTo(ctx.GetSpan().Status())
 			}
 		},
 	}
 }
 
-func accessStatusCode() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return int64(ctx.GetItem().(ptrace.Span).Status().Code())
+func accessStatusCode() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return int64(ctx.GetSpan().Status().Code())
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
-				ctx.GetItem().(ptrace.Span).Status().SetCode(ptrace.StatusCode(i))
+				ctx.GetSpan().Status().SetCode(ptrace.StatusCode(i))
 			}
 		},
 	}
 }
 
-func accessStatusMessage() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).Status().Message()
+func accessStatusMessage() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			return ctx.GetSpan().Status().Message()
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.GetItem().(ptrace.Span).Status().SetMessage(str)
+				ctx.GetSpan().Status().SetMessage(str)
 			}
 		},
 	}

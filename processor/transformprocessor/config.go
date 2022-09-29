@@ -41,35 +41,35 @@ var _ config.Processor = (*Config)(nil)
 func (c *Config) Validate() error {
 	var errors error
 
-	ottlp := ottl.NewParser(
+	ottltracesp := ottl.NewParser[ottltraces.TransformContext](
 		traces.Functions(),
 		ottltraces.ParsePath,
 		ottltraces.ParseEnum,
 		component.TelemetrySettings{Logger: zap.NewNop()},
 	)
-	_, err := ottlp.ParseStatements(c.Traces.Queries)
+	_, err := ottltracesp.ParseStatements(c.Traces.Queries)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
 
-	ottlp = ottl.NewParser(
+	ottlmetricsp := ottl.NewParser[ottldatapoints.TransformContext](
 		metrics.Functions(),
 		ottldatapoints.ParsePath,
 		ottldatapoints.ParseEnum,
 		component.TelemetrySettings{Logger: zap.NewNop()},
 	)
-	_, err = ottlp.ParseStatements(c.Metrics.Queries)
+	_, err = ottlmetricsp.ParseStatements(c.Metrics.Queries)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
 
-	ottlp = ottl.NewParser(
+	ottllogsp := ottl.NewParser[ottllogs.TransformContext](
 		logs.Functions(),
 		ottllogs.ParsePath,
 		ottllogs.ParseEnum,
 		component.TelemetrySettings{Logger: zap.NewNop()},
 	)
-	_, err = ottlp.ParseStatements(c.Logs.Queries)
+	_, err = ottllogsp.ParseStatements(c.Logs.Queries)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}

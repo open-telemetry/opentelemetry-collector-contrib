@@ -15,17 +15,19 @@
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 )
 
-type PathExpressionParser func(*Path) (GetSetter, error)
+type PathExpressionParser[K any] func(*Path) (GetSetter[K], error)
 
 type EnumParser func(*EnumSymbol) (*Enum, error)
 
 type Enum int64
 
-func (p *Parser) newFunctionCall(inv Invocation) (ExprFunc, error) {
+func (p *Parser[K]) newFunctionCall(inv Invocation) (ExprFunc[K], error) {
 	if f, ok := p.functions[inv.Function]; ok {
 		args, err := p.buildArgs(inv, reflect.TypeOf(f))
 		if err != nil {
@@ -40,12 +42,12 @@ func (p *Parser) newFunctionCall(inv Invocation) (ExprFunc, error) {
 			err = returnVals[1].Interface().(error)
 		}
 
-		return returnVals[0].Interface().(ExprFunc), err
+		return returnVals[0].Interface().(ExprFunc[K]), err
 	}
 	return nil, fmt.Errorf("undefined function %v", inv.Function)
 }
 
-func (p *Parser) buildArgs(inv Invocation, fType reflect.Type) ([]reflect.Value, error) {
+func (p *Parser[K]) buildArgs(inv Invocation, fType reflect.Type) ([]reflect.Value, error) {
 	var args []reflect.Value
 	// Some function arguments may be intended to take values from the calling processor
 	// instead of being passed by the caller of the OTTL function, so we have to keep
@@ -90,9 +92,10 @@ func (p *Parser) buildArgs(inv Invocation, fType reflect.Type) ([]reflect.Value,
 	return args, nil
 }
 
-func (p *Parser) buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args *[]reflect.Value) error {
-	switch argType.Elem().Name() {
-	case reflect.String.String():
+func (p *Parser[K]) buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args *[]reflect.Value) error {
+	name := argType.Elem().Name()
+	switch {
+	case name == reflect.String.String():
 		var arg []string
 		for j := startingIndex; j < len(inv.Arguments); j++ {
 			if inv.Arguments[j].String == nil {
@@ -101,7 +104,7 @@ func (p *Parser) buildSliceArg(inv Invocation, argType reflect.Type, startingInd
 			arg = append(arg, *inv.Arguments[j].String)
 		}
 		*args = append(*args, reflect.ValueOf(arg))
-	case reflect.Float64.String():
+	case name == reflect.Float64.String():
 		var arg []float64
 		for j := startingIndex; j < len(inv.Arguments); j++ {
 			if inv.Arguments[j].Float == nil {
@@ -110,7 +113,7 @@ func (p *Parser) buildSliceArg(inv Invocation, argType reflect.Type, startingInd
 			arg = append(arg, *inv.Arguments[j].Float)
 		}
 		*args = append(*args, reflect.ValueOf(arg))
-	case reflect.Int64.String():
+	case name == reflect.Int64.String():
 		var arg []int64
 		for j := startingIndex; j < len(inv.Arguments); j++ {
 			if inv.Arguments[j].Int == nil {
@@ -119,13 +122,13 @@ func (p *Parser) buildSliceArg(inv Invocation, argType reflect.Type, startingInd
 			arg = append(arg, *inv.Arguments[j].Int)
 		}
 		*args = append(*args, reflect.ValueOf(arg))
-	case reflect.Uint8.String():
+	case name == reflect.Uint8.String():
 		if inv.Arguments[startingIndex].Bytes == nil {
 			return fmt.Errorf("invalid argument for slice parameter at position %v, must be a byte slice literal", startingIndex)
 		}
 		*args = append(*args, reflect.ValueOf(([]byte)(*inv.Arguments[startingIndex].Bytes)))
-	case "Getter":
-		var arg []Getter
+	case strings.HasPrefix(name, "Getter"):
+		var arg []Getter[K]
 		for j := startingIndex; j < len(inv.Arguments); j++ {
 			val, err := p.newGetter(inv.Arguments[j])
 			if err != nil {
@@ -141,55 +144,58 @@ func (p *Parser) buildSliceArg(inv Invocation, argType reflect.Type, startingInd
 }
 
 // Handle interfaces that can be passed as arguments to OTTL function invocations.
-func (p *Parser) buildArg(argDef Value, argType reflect.Type, index int, args *[]reflect.Value) error {
-	switch argType.Name() {
-	case "Setter":
+func (p *Parser[K]) buildArg(argDef Value, argType reflect.Type, index int, args *[]reflect.Value) error {
+	name := argType.Name()
+	switch {
+	case strings.HasPrefix(name, "Setter"):
 		fallthrough
-	case "GetSetter":
+	case strings.HasPrefix(name, "GetSetter"):
 		arg, err := p.pathParser(argDef.Path)
 		if err != nil {
 			return fmt.Errorf("invalid argument at position %v %w", index, err)
 		}
 		*args = append(*args, reflect.ValueOf(arg))
-	case "Getter":
+	case strings.HasPrefix(name, "Getter"):
 		arg, err := p.newGetter(argDef)
 		if err != nil {
 			return fmt.Errorf("invalid argument at position %v %w", index, err)
 		}
 		*args = append(*args, reflect.ValueOf(arg))
-	case "Enum":
+	case name == "Enum":
 		arg, err := p.enumParser(argDef.Enum)
 		if err != nil {
 			return fmt.Errorf("invalid argument at position %v must be an Enum", index)
 		}
 		*args = append(*args, reflect.ValueOf(*arg))
-	case "string":
+	case name == "string":
 		if argDef.String == nil {
 			return fmt.Errorf("invalid argument at position %v, must be an string", index)
 		}
 		*args = append(*args, reflect.ValueOf(*argDef.String))
-	case "float64":
+	case name == "float64":
 		if argDef.Float == nil {
 			return fmt.Errorf("invalid argument at position %v, must be an float", index)
 		}
 		*args = append(*args, reflect.ValueOf(*argDef.Float))
-	case "int64":
+	case name == "int64":
 		if argDef.Int == nil {
 			return fmt.Errorf("invalid argument at position %v, must be an int", index)
 		}
 		*args = append(*args, reflect.ValueOf(*argDef.Int))
-	case "bool":
+	case name == "bool":
 		if argDef.Bool == nil {
 			return fmt.Errorf("invalid argument at position %v, must be a bool", index)
 		}
 		*args = append(*args, reflect.ValueOf(bool(*argDef.Bool)))
+	default:
+		return errors.New("unsupported argument type")
 	}
 	return nil
 }
 
 // Handle interfaces that can be declared as parameters to a OTTL function, but will
 // never be called in an invocation. Returns whether the arg is an internal arg.
-func (p *Parser) buildInternalArg(argType reflect.Type, args *[]reflect.Value) bool {
+func (p *Parser[K]) buildInternalArg(argType reflect.Type, args *[]reflect.Value) bool {
 	switch argType.Name() {
 	case "TelemetrySettings":
 		*args = append(*args, reflect.ValueOf(p.telemetrySettings))

@@ -26,7 +26,7 @@ import (
 )
 
 type Processor struct {
-	queries []ottl.Statement
+	queries []ottl.Statement[ottltraces.TransformContext]
 	logger  *zap.Logger
 }
 
