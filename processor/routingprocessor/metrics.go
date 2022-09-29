@@ -25,7 +25,6 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
@@ -50,12 +49,7 @@ func newMetricProcessor(settings component.TelemetrySettings, config config.Proc
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
-			ottl.NewParser[ottldatapoints.TransformContext](
-				common.Functions[ottldatapoints.TransformContext](),
-				ottldatapoints.ParsePath,
-				ottldatapoints.ParseEnum,
-				settings,
-			),
+			ottldatapoints.NewParser(common.Functions[ottldatapoints.TransformContext](), settings),
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
