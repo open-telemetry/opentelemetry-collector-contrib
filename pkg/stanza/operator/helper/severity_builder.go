@@ -149,9 +149,9 @@ func NewSeverityConfig() SeverityConfig {
 
 // SeverityConfig allows users to specify how to parse a severity from a field.
 type SeverityConfig struct {
-	ParseFrom *entry.Field                `mapstructure:"parse_from,omitempty"  json:"parse_from,omitempty"  yaml:"parse_from,omitempty"`
-	Preset    string                      `mapstructure:"preset,omitempty"      json:"preset,omitempty"      yaml:"preset,omitempty"`
-	Mapping   map[interface{}]interface{} `mapstructure:"mapping,omitempty"     json:"mapping,omitempty"     yaml:"mapping,omitempty"`
+	ParseFrom *entry.Field                `mapstructure:"parse_from,omitempty"`
+	Preset    string                      `mapstructure:"preset,omitempty"`
+	Mapping   map[interface{}]interface{} `mapstructure:"mapping,omitempty"`
 }
 
 // Build builds a SeverityParser from a SeverityConfig

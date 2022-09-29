@@ -30,7 +30,7 @@ func NewOutputConfig(operatorID, operatorType string) OutputConfig {
 
 // OutputConfig provides a basic implementation of an output operator config.
 type OutputConfig struct {
-	BasicConfig `mapstructure:",squash" yaml:",inline"`
+	BasicConfig `mapstructure:",squash"`
 }
 
 // Build will build an output operator.

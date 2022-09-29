@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
@@ -143,34 +142,4 @@ func NewConfigWithUDP(syslogCfg *syslog.BaseConfig) *Config {
 	cfg.UDP.ListenAddress = ":12032"
 	cfg.OutputIDs = []string{"fake"}
 	return cfg
-}
-
-func TestConfigYamlUnmarshalUDP(t *testing.T) {
-	base := `type: syslog_input
-protocol: rfc5424
-udp:
-  listen_address: localhost:1234
-`
-	var cfg Config
-	err := yaml.Unmarshal([]byte(base), &cfg)
-	require.NoError(t, err)
-	require.Equal(t, syslog.RFC5424, cfg.Protocol)
-	require.Nil(t, cfg.TCP)
-	require.NotNil(t, cfg.UDP)
-	require.Equal(t, "localhost:1234", cfg.UDP.ListenAddress)
-}
-
-func TestConfigYamlUnmarshalTCP(t *testing.T) {
-	base := `type: syslog_input
-protocol: rfc5424
-tcp:
-  listen_address: localhost:1234
-`
-	var cfg Config
-	err := yaml.Unmarshal([]byte(base), &cfg)
-	require.NoError(t, err)
-	require.Equal(t, syslog.RFC5424, cfg.Protocol)
-	require.Nil(t, cfg.UDP)
-	require.NotNil(t, cfg.TCP)
-	require.Equal(t, "localhost:1234", cfg.TCP.ListenAddress)
 }

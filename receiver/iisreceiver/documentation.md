@@ -30,6 +30,13 @@ metrics:
     enabled: <true|false>
 ```
 
+## Resource attributes
+
+| Name | Description | Type |
+| ---- | ----------- | ---- |
+| iis.application_pool | The application pool, which is associated with worker processes of one or more applications. | String |
+| iis.site | The site of the web server. | String |
+
 ## Metric attributes
 
 | Name | Description | Values |

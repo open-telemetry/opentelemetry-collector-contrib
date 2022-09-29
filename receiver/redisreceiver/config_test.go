@@ -21,25 +21,24 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/internal/metadata"
 )
 
 func TestConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-	factory := NewFactory()
-	factories.Receivers[factory.Type()] = factory
-
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
 
 	assert.Equal(t,
 		&Config{
@@ -57,6 +56,6 @@ func TestConfig(t *testing.T) {
 			},
 			Metrics: metadata.DefaultMetricsSettings(),
 		},
-		cfg.Receivers[config.NewComponentID(typeStr)],
+		cfg,
 	)
 }
