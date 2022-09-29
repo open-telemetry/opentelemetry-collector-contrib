@@ -218,12 +218,10 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 					"messaging.solace.user_properties.special_key":            true,
 				})
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]interface{}{
-					"messaging.destination":                 "somequeue",
 					"messaging.solace.destination_type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
 				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]interface{}{
-					"messaging.destination":                 "sometopic",
 					"messaging.solace.destination_type":     "topic-endpoint",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
@@ -584,7 +582,6 @@ func TestUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]interface{}{
-					"messaging.destination":                 "somequeue",
 					"messaging.solace.destination_type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
@@ -604,7 +601,6 @@ func TestUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "sometopic enqueue", 123456789, map[string]interface{}{
-					"messaging.destination":                  "sometopic",
 					"messaging.solace.destination_type":      "topic-endpoint",
 					"messaging.solace.enqueue_error_message": someErrorString,
 					"messaging.solace.rejects_all_enqueues":  true,
@@ -627,52 +623,12 @@ func TestUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]interface{}{
-					"messaging.destination":                 "somequeue",
 					"messaging.solace.destination_type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
 				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]interface{}{
-					"messaging.destination":                 "sometopic",
 					"messaging.solace.destination_type":     "topic-endpoint",
 					"messaging.solace.rejects_all_enqueues": false,
-				})
-			},
-		},
-		{ // when an enqueue event is present, expect it to be added to the span events
-			name: "Enqueue Event Anonymous Queue",
-			spanData: &model_v1.SpanData{
-				EnqueueEvents: []*model_v1.SpanData_EnqueueEvent{
-					{
-						Dest:         &model_v1.SpanData_EnqueueEvent_QueueName{QueueName: "#P2P/QUE/solbroker/some-topic-endpoint"},
-						TimeUnixNano: 123456789,
-					},
-				},
-			},
-			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "(anonymous) enqueue", 123456789, map[string]interface{}{
-					"messaging.destination":                 "#P2P/QUE/solbroker/some-topic-endpoint",
-					"messaging.solace.destination_type":     "queue",
-					"messaging.solace.rejects_all_enqueues": false,
-				})
-			},
-		},
-		{ // when a topic endpoint enqueue event is present, expect it to be added to the span events
-			name: "Enqueue Event Anonymous Topic Endpoint",
-			spanData: &model_v1.SpanData{
-				EnqueueEvents: []*model_v1.SpanData_EnqueueEvent{
-					{
-						Dest:             &model_v1.SpanData_EnqueueEvent_TopicEndpointName{TopicEndpointName: "#P2P/TE/solbroker/some-topic-endpoint"},
-						TimeUnixNano:     123456789,
-						ErrorDescription: &someErrorString,
-					},
-				},
-			},
-			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "(anonymous) enqueue", 123456789, map[string]interface{}{
-					"messaging.destination":                  "#P2P/TE/solbroker/some-topic-endpoint",
-					"messaging.solace.destination_type":      "topic-endpoint",
-					"messaging.solace.enqueue_error_message": someErrorString,
-					"messaging.solace.rejects_all_enqueues":  false,
 				})
 			},
 		},
@@ -823,12 +779,10 @@ func TestUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]interface{}{
-					"messaging.destination":                 "somequeue",
 					"messaging.solace.destination_type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
 				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]interface{}{
-					"messaging.destination":                 "sometopic",
 					"messaging.solace.destination_type":     "topic-endpoint",
 					"messaging.solace.rejects_all_enqueues": true,
 				})

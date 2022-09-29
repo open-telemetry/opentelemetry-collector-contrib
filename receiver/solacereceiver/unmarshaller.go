@@ -310,14 +310,11 @@ func (u *solaceMessageUnmarshallerV1) mapEvents(spanData *model_v1.SpanData, cli
 func (u *solaceMessageUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v1.SpanData_EnqueueEvent, clientSpanEvents ptrace.SpanEventSlice) {
 	const (
 		enqueueEventSuffix               = " enqueue" // Final should be `<dest> enqueue`
-		messagingDestinationEventKey     = "messaging.destination"
 		messagingDestinationTypeEventKey = "messaging.solace.destination_type"
 		statusMessageEventKey            = "messaging.solace.enqueue_error_message"
 		rejectsAllEnqueuesKey            = "messaging.solace.rejects_all_enqueues"
 		queueKind                        = "queue"
 		topicEndpointKind                = "topic-endpoint"
-		anonymousQueuePrefix             = "#P2P"
-		anonymousQueueEventName          = "(anonymous)" + enqueueEventSuffix
 	)
 	var destinationName string
 	var destinationType string
@@ -334,16 +331,9 @@ func (u *solaceMessageUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v1.Spa
 		return
 	}
 	clientEvent := clientSpanEvents.AppendEmpty()
-	var eventName string
-	if strings.HasPrefix(destinationName, anonymousQueuePrefix) {
-		eventName = anonymousQueueEventName
-	} else {
-		eventName = destinationName + enqueueEventSuffix
-	}
-	clientEvent.SetName(eventName)
+	clientEvent.SetName(destinationName + enqueueEventSuffix)
 	clientEvent.SetTimestamp(pcommon.Timestamp(enqueueEvent.TimeUnixNano))
 	clientEvent.Attributes().EnsureCapacity(3)
-	clientEvent.Attributes().PutString(messagingDestinationEventKey, destinationName)
 	clientEvent.Attributes().PutString(messagingDestinationTypeEventKey, destinationType)
 	clientEvent.Attributes().PutBool(rejectsAllEnqueuesKey, enqueueEvent.RejectsAllEnqueues)
 	if enqueueEvent.ErrorDescription != nil {
