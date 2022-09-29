@@ -89,10 +89,7 @@ func createCombinedLogReceiver(
 	}
 
 	if cfg.Logs.Enabled {
-		recv.logs, err = newMongoDBAtlasLogsReceiver(params, cfg, consumer)
-		if err != nil {
-			return nil, fmt.Errorf("unable to create a MongoDB Atlas Logs Receiver instance: %w", err)
-		}
+		recv.logs = newMongoDBAtlasLogsReceiver(params, cfg, consumer)
 	}
 
 	return recv, nil

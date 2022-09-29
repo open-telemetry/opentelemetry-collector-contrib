@@ -169,7 +169,7 @@ func TestValidate(t *testing.T) {
 			expectedErr: errClusterConfig.Error(),
 		},
 		{
-			name: "Invalid Alerts Retrieval No Projects",
+			name: "Invalid Alerts Poll No Projects",
 			input: Config{
 				Alerts: AlertConfig{
 					Enabled:  true,
@@ -178,6 +178,20 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			expectedErr: errNoProjects.Error(),
+		},
+		{
+			name: "Valid Alerts Config",
+			input: Config{
+				Alerts: AlertConfig{
+					Enabled: true,
+					Mode:    alertModePoll,
+					Projects: []ProjectConfig{
+						{
+							Name: "Project1",
+						},
+					},
+				},
+			},
 		},
 		{
 			name: "Invalid Alerts Mode",

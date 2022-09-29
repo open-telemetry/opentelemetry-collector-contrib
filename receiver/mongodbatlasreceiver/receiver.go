@@ -46,10 +46,7 @@ type timeconstraints struct {
 }
 
 func newMongoDBAtlasReceiver(settings component.ReceiverCreateSettings, cfg *Config) (*receiver, error) {
-	client, err := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, settings.Logger)
-	if err != nil {
-		return nil, err
-	}
+	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, settings.Logger)
 	recv := &receiver{log: settings.Logger, cfg: cfg, client: client, mb: metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo), stopperChan: make(chan struct{})}
 	return recv, nil
 }

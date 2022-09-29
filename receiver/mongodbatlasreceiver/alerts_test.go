@@ -680,6 +680,31 @@ func TestAlertsRetrieval(t *testing.T) {
 	}
 }
 
+func TestAlertPollingExclusions(t *testing.T) {
+	logSink := &consumertest.LogsSink{}
+	alertsRcvr, err := newAlertsReceiver(zap.NewNop(), &Config{
+		Alerts: AlertConfig{
+			Enabled: true,
+			Projects: []ProjectConfig{
+				{
+					Name:            testProjectName,
+					ExcludeClusters: []string{testClusterName},
+				},
+			},
+			PollInterval: 1 * time.Second,
+		},
+	}, logSink)
+	require.NoError(t, err)
+	alertsRcvr.client = testClient()
+
+	err = alertsRcvr.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	require.Never(t, func() bool {
+		return logSink.LogRecordCount() > 0
+	}, 3*time.Second, 10*time.Millisecond)
+}
+
 func testClient() *mockAlertsClient {
 	ac := &mockAlertsClient{}
 	ac.On("GetProject", mock.Anything, mock.Anything).Return(&mongodbatlas.Project{
@@ -688,7 +713,7 @@ func testClient() *mockAlertsClient {
 		Name:  testProjectName,
 		Links: []*mongodbatlas.Link{},
 	}, nil)
-	ac.On("GetAlerts", mock.Anything, testProjectID).Return(
+	ac.On("GetAlerts", mock.Anything, testProjectID, mock.Anything).Return(
 		[]mongodbatlas.Alert{
 			{
 				ID:            testAlertID,
@@ -742,7 +767,7 @@ func (mac *mockAlertsClient) GetProject(ctx context.Context, pID string) (*mongo
 	return args.Get(0).(*mongodbatlas.Project), args.Error(1)
 }
 
-func (mac *mockAlertsClient) GetAlerts(ctx context.Context, pID string) ([]mongodbatlas.Alert, error) {
-	args := mac.Called(ctx, pID)
+func (mac *mockAlertsClient) GetAlerts(ctx context.Context, pID string, maxAlerts int64) ([]mongodbatlas.Alert, error) {
+	args := mac.Called(ctx, pID, maxAlerts)
 	return args.Get(0).([]mongodbatlas.Alert), args.Error(1)
 }

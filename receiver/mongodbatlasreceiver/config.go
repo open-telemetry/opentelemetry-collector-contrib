@@ -52,8 +52,10 @@ type AlertConfig struct {
 	Mode     string                      `mapstructure:"mode"`
 
 	// these parameters are only relevant in retrieval mode
-	Projects     []ProjectConfig `mapstructure:"projects"`
-	PollInterval time.Duration   `mapstructure:"poll_interval"`
+	Projects           []ProjectConfig `mapstructure:"projects"`
+	PollInterval       time.Duration   `mapstructure:"poll_interval"`
+	MaxAlertProcessing int64           `mapstructure:"max_alert_processing"`
+	AlertTTL           time.Duration   `mapstructure:"alert_ttl"`
 }
 
 type LogConfig struct {
@@ -119,23 +121,22 @@ func (a *AlertConfig) validate() error {
 		return nil
 	}
 
-	if a.Mode == alertModePoll {
-		return a.validateRetrieval()
+	switch a.Mode {
+	case alertModePoll:
+		return a.validatePollConfig()
+	case alertModeListen:
+		return a.validateListenConfig()
+	default:
+		return errNoModeRecognized
 	}
-
-	if a.Mode == alertModeListen {
-		return a.validateListen()
-	}
-
-	return errNoModeRecognized
 }
 
-func (a AlertConfig) validateRetrieval() error {
-	var errs error
+func (a AlertConfig) validatePollConfig() error {
 	if len(a.Projects) == 0 {
-		errs = multierr.Append(errs, errNoProjects)
+		return errNoProjects
 	}
 
+	var errs error
 	for _, project := range a.Projects {
 		if len(project.ExcludeClusters) != 0 && len(project.IncludeClusters) != 0 {
 			errs = multierr.Append(errs, errClusterConfig)
@@ -144,12 +145,12 @@ func (a AlertConfig) validateRetrieval() error {
 	return errs
 }
 
-func (a AlertConfig) validateListen() error {
-	var errs error
+func (a AlertConfig) validateListenConfig() error {
 	if a.Endpoint == "" {
-		errs = multierr.Append(errs, errNoEndpoint)
+		return errNoEndpoint
 	}
 
+	var errs error
 	_, _, err := net.SplitHostPort(a.Endpoint)
 	if err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to split endpoint into 'host:port' pair: %w", err))

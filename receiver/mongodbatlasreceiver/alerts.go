@@ -57,14 +57,15 @@ const (
 
 	alertModeListen = "listen"
 	alertModePoll   = "poll"
-	alertCacheKey   = "logging_alerts_cache"
+	alertCacheKey   = "last_recorded_alert"
 
 	defaultAlertsPollInterval = 5 * time.Minute
+	defaultMaxAlerts          = 50
 )
 
 type alertsClient interface {
-	GetProject(context.Context, string) (*mongodbatlas.Project, error)
-	GetAlerts(context.Context, string) ([]mongodbatlas.Alert, error)
+	GetProject(ctx context.Context, groupID string) (*mongodbatlas.Project, error)
+	GetAlerts(ctx context.Context, groupID string, maxAlerts int64) ([]mongodbatlas.Alert, error)
 }
 
 type alertsReceiver struct {
@@ -78,19 +79,19 @@ type alertsReceiver struct {
 	logger      *zap.Logger
 
 	// only relevant in `poll` mode
-	projects                 []ProjectConfig
-	client                   alertsClient
-	privateKey               string
-	publicKey                string
-	retrySettings            exporterhelper.RetrySettings
-	pollInterval             time.Duration
-	record                   *alertRecord
-	doneChan                 chan bool
-	projectClusterInclusions map[string]bool
-	projectClusterExclusions map[string]bool
-	id                       config.ComponentID  // ID of the receiver component
-	storageID                *config.ComponentID // ID of the storage extension component
-	storageClient            *storage.Client
+	projects      []ProjectConfig
+	client        alertsClient
+	privateKey    string
+	publicKey     string
+	retrySettings exporterhelper.RetrySettings
+	pollInterval  time.Duration
+	record        *alertRecord
+	alertTTL      time.Duration
+	maxAlerts     int64
+	doneChan      chan bool
+	id            config.ComponentID  // ID of the receiver component
+	storageID     *config.ComponentID // ID of the storage extension component
+	storageClient storage.Client
 }
 
 func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer.Logs) (*alertsReceiver, error) {
@@ -106,42 +107,28 @@ func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer
 		}
 	}
 
-	projectExclusionMap := map[string]bool{}
-	projectInclusionMap := map[string]bool{}
-	for _, pc := range cfg.Projects {
-		for _, exclusion := range pc.ExcludeClusters {
-			projectExclusionMap[projectClusterKey(pc, exclusion)] = true
-		}
-		for _, inclusion := range pc.IncludeClusters {
-			projectInclusionMap[projectClusterKey(pc, inclusion)] = true
-		}
-	}
-
 	recv := &alertsReceiver{
-		addr:                     cfg.Endpoint,
-		secret:                   cfg.Secret,
-		tlsSettings:              cfg.TLS,
-		consumer:                 consumer,
-		mode:                     cfg.Mode,
-		projects:                 cfg.Projects,
-		retrySettings:            baseConfig.RetrySettings,
-		publicKey:                baseConfig.PublicKey,
-		privateKey:               baseConfig.PrivateKey,
-		wg:                       &sync.WaitGroup{},
-		pollInterval:             baseConfig.Alerts.PollInterval,
-		doneChan:                 make(chan bool, 1),
-		logger:                   logger,
-		projectClusterInclusions: projectInclusionMap,
-		projectClusterExclusions: projectExclusionMap,
-		id:                       baseConfig.ID(),
-		storageID:                baseConfig.StorageID,
+		addr:          cfg.Endpoint,
+		secret:        cfg.Secret,
+		tlsSettings:   cfg.TLS,
+		consumer:      consumer,
+		mode:          cfg.Mode,
+		projects:      cfg.Projects,
+		retrySettings: baseConfig.RetrySettings,
+		publicKey:     baseConfig.PublicKey,
+		privateKey:    baseConfig.PrivateKey,
+		wg:            &sync.WaitGroup{},
+		pollInterval:  baseConfig.Alerts.PollInterval,
+		maxAlerts:     baseConfig.Alerts.MaxAlertProcessing,
+		alertTTL:      baseConfig.Alerts.AlertTTL,
+		doneChan:      make(chan bool, 1),
+		logger:        logger,
+		id:            baseConfig.ID(),
+		storageID:     baseConfig.StorageID,
 	}
 
 	if recv.mode == alertModePoll {
-		client, err := internal.NewMongoDBAtlasClient(recv.publicKey, recv.privateKey, recv.retrySettings, recv.logger)
-		if err != nil {
-			return nil, err
-		}
+		client := internal.NewMongoDBAtlasClient(recv.publicKey, recv.privateKey, recv.retrySettings, recv.logger)
 		recv.client = client
 	} else {
 		s := &http.Server{
@@ -167,7 +154,7 @@ func (a alertsReceiver) startPolling(ctx context.Context, host component.Host) e
 	if err != nil {
 		return fmt.Errorf("failed to set up storage: %w", err)
 	}
-	a.storageClient = &storageClient
+	a.storageClient = storageClient
 	err = a.syncPersistence(ctx)
 	if err != nil {
 		a.logger.Error("there was an error syncing the receiver with checkpoint", zap.Error(err))
@@ -202,7 +189,7 @@ func (a alertsReceiver) retrieveAndProcessAlerts(ctx context.Context) error {
 			a.logger.Error("error retrieving project "+p.Name+":", zap.Error(err))
 			continue
 		}
-		projectAlerts, err := a.client.GetAlerts(ctx, project.ID)
+		projectAlerts, err := a.client.GetAlerts(ctx, project.ID, a.maxAlerts)
 		if err != nil {
 			a.logger.Error("unable to get alerts for project", zap.Error(err))
 			continue
@@ -351,24 +338,17 @@ func (a alertsReceiver) shutdownPoller(ctx context.Context) error {
 
 func (a alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatlas.Alert) (plog.Logs, error) {
 	logs := plog.NewLogs()
-
 	var errs error
-	var lastRecordedTime = a.record.LastRecordedTime
 	for _, alert := range alerts {
+		resourceLogs := logs.ResourceLogs().AppendEmpty()
+		logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		logRecord.SetObservedTimestamp(now)
 
 		ts, err := time.Parse(time.RFC3339, alert.Updated)
 		if err != nil {
 			a.logger.Warn("unable to interpret updated time for alert, expecting a RFC3339 timestamp", zap.String("timestamp", alert.Updated))
 			continue
 		}
-
-		if lastRecordedTime != nil && lastRecordedTime.After(ts) {
-			continue
-		}
-
-		resourceLogs := logs.ResourceLogs().AppendEmpty()
-		logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-		logRecord.SetObservedTimestamp(now)
 
 		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 		logRecord.SetSeverityNumber(severityFromAPIAlert(alert))
@@ -425,13 +405,7 @@ func (a alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatl
 
 		attrs.PutString("net.peer.name", host)
 		attrs.PutInt("net.peer.port", port)
-
-		if lastRecordedTime == nil || lastRecordedTime.Before(ts) {
-			lastRecordedTime = &ts
-		}
 	}
-
-	a.record.SetLastRecorded(lastRecordedTime)
 	return logs, errs
 }
 
@@ -537,67 +511,89 @@ func (a *alertsReceiver) syncPersistence(ctx context.Context) error {
 	if a.storageClient == nil {
 		return nil
 	}
-	c := *a.storageClient
-	cBytes, err := c.Get(ctx, alertCacheKey)
-	if err != nil {
+	cBytes, err := a.storageClient.Get(ctx, alertCacheKey)
+	if err != nil || cBytes == nil {
 		a.record = &alertRecord{}
-		return err
-	}
-
-	if cBytes != nil {
-		var cache alertRecord
-		if err = json.Unmarshal(cBytes, &cache); err != nil {
-			return fmt.Errorf("unable to decode stored cache: %w", err)
-		}
-		a.record = &cache
 		return nil
 	}
 
-	// create if not already loaded
-	newC := &alertRecord{}
-	a.record = newC
-
+	var cache alertRecord
+	if err = json.Unmarshal(cBytes, &cache); err != nil {
+		return fmt.Errorf("unable to decode stored cache: %w", err)
+	}
+	a.record = &cache
 	return nil
 }
 
 func (a *alertsReceiver) writeCheckpoint(ctx context.Context) error {
 	if a.storageClient == nil {
+		a.logger.Warn("unable to write checkpoint since no storage client was found")
 		return nil
 	}
-	c := *a.storageClient
 	marshalBytes, err := json.Marshal(&a.record)
 	if err != nil {
 		return fmt.Errorf("unable to write checkpoint: %w", err)
 	}
-	return c.Set(ctx, alertCacheKey, marshalBytes)
+	return a.storageClient.Set(ctx, alertCacheKey, marshalBytes)
 }
 
 func (a *alertsReceiver) applyFilters(pConf ProjectConfig, alerts []mongodbatlas.Alert) []mongodbatlas.Alert {
-	// default behavior, don't exclude or include projects
-	if len(a.projectClusterInclusions) == 0 && len(a.projectClusterExclusions) == 0 {
-		return alerts
-	}
 	filtered := []mongodbatlas.Alert{}
+
+	var lastRecordedTime = pcommon.Timestamp(0).AsTime()
+	if a.record.LastRecordedTime != nil {
+		lastRecordedTime = *a.record.LastRecordedTime
+	}
+	// we need to maintain two timestamps in order to not conflict while iterating
+	var latestInPayload time.Time = pcommon.Timestamp(0).AsTime()
+
 	for _, alert := range alerts {
-		// if exclusions are specified, exclude them
-		if len(a.projectClusterExclusions) > 0 {
-			if exclude, ok := a.projectClusterExclusions[projectClusterKey(pConf, alert.ClusterName)]; exclude && ok {
-				// don't process
+		updatedTime, err := time.Parse(time.RFC3339, alert.Updated)
+		if err != nil {
+			a.logger.Warn("unable to interpret updated time for alert, expecting a RFC3339 timestamp", zap.String("timestamp", alert.Updated))
+			continue
+		}
+
+		if updatedTime.Before(lastRecordedTime) || updatedTime.Equal(lastRecordedTime) {
+			// already processed if the updated time was before or equal to the last recorded
+			continue
+		}
+
+		if len(pConf.ExcludeClusters) > 0 {
+			var shouldExclude = false
+			for _, exclusion := range pConf.ExcludeClusters {
+				if alert.ClusterName == exclusion {
+					shouldExclude = true
+				}
+			}
+			if shouldExclude {
 				continue
 			}
-			filtered = append(filtered, alert)
-		} else {
-			// otherwise include based off the inclusion list
-			if include, ok := a.projectClusterInclusions[projectClusterKey(pConf, alert.ClusterName)]; include && ok {
-				filtered = append(filtered, alert)
+		}
+
+		if len(pConf.IncludeClusters) > 0 {
+			var shouldInclude = false
+			for _, inclusion := range pConf.IncludeClusters {
+				if alert.ClusterName == inclusion {
+					shouldInclude = true
+				}
+			}
+			if !shouldInclude {
+				continue
 			}
 		}
-	}
-	return filtered
-}
 
-func projectClusterKey(project ProjectConfig, clusterName string) string {
-	return fmt.Sprintf("%s|%s", project.Name, clusterName)
+		filtered = append(filtered, alert)
+		if updatedTime.After(latestInPayload) {
+			latestInPayload = updatedTime
+		}
+	}
+
+	if latestInPayload.After(lastRecordedTime) {
+		a.record.SetLastRecorded(&latestInPayload)
+	}
+
+	return filtered
 }
 
 func timestampFromAlert(a model.Alert) pcommon.Timestamp {

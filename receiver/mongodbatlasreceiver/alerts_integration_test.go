@@ -219,7 +219,7 @@ func TestAtlasPoll(t *testing.T) {
 	mockClient.On("GetProject", mock.Anything, testProjectName).Return(&mongodbatlas.Project{
 		ID: testProjectID,
 	}, nil)
-	mockClient.On("GetAlerts", mock.Anything, testProjectID).Return(alerts, nil)
+	mockClient.On("GetAlerts", mock.Anything, testProjectID, mock.Anything).Return(alerts, nil)
 
 	sink := &consumertest.LogsSink{}
 	fact := NewFactory()

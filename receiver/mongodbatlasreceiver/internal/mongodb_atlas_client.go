@@ -143,7 +143,7 @@ func NewMongoDBAtlasClient(
 	privateKey string,
 	retrySettings exporterhelper.RetrySettings,
 	log *zap.Logger,
-) (*MongoDBAtlasClient, error) {
+) *MongoDBAtlasClient {
 	t := digest.NewTransport(publicKey, privateKey)
 	roundTripper := newClientRoundTripper(t, log, retrySettings)
 	tc := &http.Client{Transport: roundTripper}
@@ -152,7 +152,7 @@ func NewMongoDBAtlasClient(
 		log,
 		client,
 		roundTripper,
-	}, nil
+	}
 }
 
 func (s *MongoDBAtlasClient) Shutdown() error {
@@ -627,7 +627,7 @@ func (s *MongoDBAtlasClient) GetClusters(ctx context.Context, groupID string) ([
 }
 
 // GetAlerts returns the alerts specified for the set projects
-func (s *MongoDBAtlasClient) GetAlerts(ctx context.Context, groupID string) ([]mongodbatlas.Alert, error) {
+func (s *MongoDBAtlasClient) GetAlerts(ctx context.Context, groupID string, maxAlerts int64) ([]mongodbatlas.Alert, error) {
 	pageNum := 1
 	alertsResult := []mongodbatlas.Alert{}
 	for {
@@ -639,7 +639,7 @@ func (s *MongoDBAtlasClient) GetAlerts(ctx context.Context, groupID string) ([]m
 			return nil, err
 		}
 		alertsResult = append(alertsResult, alerts.Results...)
-		if !hasNext(alerts.Links) {
+		if !hasNext(alerts.Links) || len(alertsResult) > int(maxAlerts) {
 			break
 		}
 		pageNum++
