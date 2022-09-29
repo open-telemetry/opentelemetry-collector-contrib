@@ -254,6 +254,7 @@ func renderCreateTraceIDTsTableSQL(cfg *Config) string {
 }
 
 func renderTraceIDTsMaterializedViewSQL(cfg *Config) string {
+	database, _ := parseDSNDatabase(cfg.DSN)
 	return fmt.Sprintf(createTraceIDTsMaterializedViewSQL, cfg.TracesTableName,
-		cfg.Database, cfg.TracesTableName, cfg.Database, cfg.TracesTableName)
+		database, cfg.TracesTableName, database, cfg.TracesTableName)
 }

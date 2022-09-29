@@ -44,8 +44,6 @@ type Config struct {
 	TracesTableName string `mapstructure:"traces_table_name"`
 	// TTLDays is The data time-to-live in days, 0 means no ttl.
 	TTLDays uint `mapstructure:"ttl_days"`
-	// Database is the database name parse from dsn.
-	Database string `mapstructure:"-"`
 }
 
 // QueueSettings is a subset of exporterhelper.QueueSettings.
@@ -63,12 +61,21 @@ func (cfg *Config) Validate() (err error) {
 	if cfg.DSN == "" {
 		err = multierr.Append(err, errConfigNoDSN)
 	}
-	u, e := url.Parse(cfg.DSN)
+	_, e := parseDSNDatabase(cfg.DSN)
 	if e != nil {
 		err = multierr.Append(err, fmt.Errorf("invalid dsn format:%w", err))
 	}
-	cfg.Database = strings.TrimPrefix(u.Path, "/")
 	return err
+}
+
+const defaultDatabase = "default"
+
+func parseDSNDatabase(dsn string) (string, error) {
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return defaultDatabase, err
+	}
+	return strings.TrimPrefix(u.Path, "/"), nil
 }
 
 func (cfg *Config) enforcedQueueSettings() exporterhelper.QueueSettings {

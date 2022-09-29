@@ -203,17 +203,17 @@ func newClickhouseClient(cfg *Config) (*sql.DB, error) {
 }
 
 func createDatabase(cfg *Config) error {
-	const defaultDatabase = "default"
-	if cfg.Database == defaultDatabase {
+	database, _ := parseDSNDatabase(cfg.DSN)
+	if database == defaultDatabase {
 		return nil
 	}
 	// use default database to create new database
-	dsnUseDefaultDatabase := strings.Replace(cfg.DSN, cfg.Database, defaultDatabase, 1)
+	dsnUseDefaultDatabase := strings.Replace(cfg.DSN, database, defaultDatabase, 1)
 	db, err := sql.Open(driverName, dsnUseDefaultDatabase)
 	if err != nil {
 		return fmt.Errorf("sql.Open:%w", err)
 	}
-	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", cfg.Database)
+	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", database)
 	_, err = db.Exec(query)
 	if err != nil {
 		return fmt.Errorf("create database:%w", err)
