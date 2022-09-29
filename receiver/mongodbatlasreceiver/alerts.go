@@ -126,8 +126,7 @@ func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer
 	}
 
 	if recv.mode == alertModePoll {
-		client := internal.NewMongoDBAtlasClient(recv.publicKey, recv.privateKey, recv.retrySettings, recv.logger)
-		recv.client = client
+		recv.client = internal.NewMongoDBAtlasClient(recv.publicKey, recv.privateKey, recv.retrySettings, recv.logger)
 		return recv, nil
 	}
 	s := &http.Server{
