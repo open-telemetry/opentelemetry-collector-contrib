@@ -21,8 +21,8 @@ In order to collect logs, at least one project must be specified. By default, lo
 
 MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/logs/#logs) recommends a polling interval of 5 minutes.
 
-- `public_key` (required for metrics, logs or alerts in `poll` mode)
-- `private_key` (required for metrics, logs or alerts in `poll` mode)
+- `public_key` (required for metrics, logs, or alerts in `poll` mode)
+- `private_key` (required for metrics, logs, or alerts in `poll` mode)
 - `granularity` (default `PT1M` - See [MongoDB Atlas Documentation](https://docs.atlas.mongodb.com/reference/api/process-measurements/))
 - `storage` configure the component ID of a storage extension. If specified, alerts `poll` mode will utilize the extension to ensure alerts are not duplicated after a collector restart.
 - `retry_on_failure`
@@ -35,11 +35,14 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
   - `mode` (default `listen`. Options are `poll` or `listen`)
   - `secret` (required if using `listen` mode)
   - `endpoint` (required if using `listen` mode)
-  - `poll_interval` (only relevant using `poll` mode)
+  - `poll_interval` (default `5m`, only relevant using `poll` mode)
+  - `max_alert_processing` (default `50`)
+    - This is the number of alerts the receiver will try to process per poll. Alerts are ordered by creation time descending i.e. by default the 50 newewst ones processed will be processed but none further. Only relevant using `poll` mode.
   - `projects` (required if using `poll` mode)
     - `name` (required if using `poll mode`)
     - `include_clusters` (default empty, exclusive with `exclude_clusters`)
     - `exclude_clusters` (default empty, exclusive with `include_clusters`)
+      - If both `include_clusters` and `exclude_clusters` are empty, then all clusters in the project will be included
   - `tls` (relevant only for `listen` mode)
     - `key_file`
     - `cert_file`

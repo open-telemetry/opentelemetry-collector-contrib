@@ -86,7 +86,6 @@ type alertsReceiver struct {
 	retrySettings exporterhelper.RetrySettings
 	pollInterval  time.Duration
 	record        *alertRecord
-	alertTTL      time.Duration
 	maxAlerts     int64
 	doneChan      chan bool
 	id            config.ComponentID  // ID of the receiver component
@@ -120,7 +119,6 @@ func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer
 		wg:            &sync.WaitGroup{},
 		pollInterval:  baseConfig.Alerts.PollInterval,
 		maxAlerts:     baseConfig.Alerts.MaxAlertProcessing,
-		alertTTL:      baseConfig.Alerts.AlertTTL,
 		doneChan:      make(chan bool, 1),
 		logger:        logger,
 		id:            baseConfig.ID(),

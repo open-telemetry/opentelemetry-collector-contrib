@@ -55,7 +55,6 @@ type AlertConfig struct {
 	Projects           []ProjectConfig `mapstructure:"projects"`
 	PollInterval       time.Duration   `mapstructure:"poll_interval"`
 	MaxAlertProcessing int64           `mapstructure:"max_alert_processing"`
-	AlertTTL           time.Duration   `mapstructure:"alert_ttl"`
 }
 
 type LogConfig struct {
