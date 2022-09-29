@@ -113,7 +113,7 @@ func Test_mapToAdxTrace(t *testing.T) {
 				link := span.Links().AppendEmpty()
 				link.SetSpanID(pcommon.SpanID(spanID))
 				link.SetTraceID(pcommon.TraceID(traceID))
-				link.TraceStateStruct().FromRaw("")
+				link.TraceState().FromRaw("")
 
 				return span
 			},

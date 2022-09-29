@@ -72,7 +72,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 	if h := resourceAttrs[hostkey]; h != nil {
 		host = h.(string)
 	}
-	createMetric := func(times time.Time, attr pcommon.Map, value func() float64, name string, desc string, mt pmetric.MetricDataType) *AdxMetric {
+	createMetric := func(times time.Time, attr pcommon.Map, value func() float64, name string, desc string, mt pmetric.MetricType) *AdxMetric {
 		clonedScopedAttributes := copyMap(cloneMap(scopeattrs), attr.AsRaw())
 		if isEmpty(name) {
 			name = md.Name()
@@ -92,8 +92,8 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			ResourceAttributes: resourceAttrs,
 		}
 	}
-	switch md.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch md.Type() {
+	case pmetric.MetricTypeGauge:
 		dataPoints := md.Gauge().DataPoints()
 		adxMetrics := make([]*AdxMetric, dataPoints.Len())
 		for gi := 0; gi < dataPoints.Len(); gi++ {
@@ -102,15 +102,15 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 				var metricValue float64
 				switch dataPoint.ValueType() {
 				case pmetric.NumberDataPointValueTypeInt:
-					metricValue = float64(dataPoint.IntVal())
+					metricValue = float64(dataPoint.IntValue())
 				case pmetric.NumberDataPointValueTypeDouble:
-					metricValue = dataPoint.DoubleVal()
+					metricValue = dataPoint.DoubleValue()
 				}
 				return metricValue
-			}, "", "", pmetric.MetricDataTypeGauge)
+			}, "", "", pmetric.MetricTypeGauge)
 		}
 		return adxMetrics
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		dataPoints := md.Histogram().DataPoints()
 		var adxMetrics []*AdxMetric
 		for gi := 0; gi < dataPoints.Len(); gi++ {
@@ -123,7 +123,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 					createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), dataPoint.Sum,
 						fmt.Sprintf("%s_%s", md.Name(), sumsuffix),
 						fmt.Sprintf("%s%s", md.Description(), sumdescription),
-						pmetric.MetricDataTypeHistogram))
+						pmetric.MetricTypeHistogram))
 			}
 			{
 				adxMetrics = append(adxMetrics,
@@ -133,7 +133,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 					},
 						fmt.Sprintf("%s_%s", md.Name(), countsuffix),
 						fmt.Sprintf("%s%s", md.Description(), countdescription),
-						pmetric.MetricDataTypeHistogram))
+						pmetric.MetricTypeHistogram))
 			}
 			// Spec says counts is optional but if present it must have one more
 			// element than the bounds array.
@@ -157,7 +157,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 				},
 					fmt.Sprintf("%s_bucket", md.Name()),
 					"",
-					pmetric.MetricDataTypeHistogram))
+					pmetric.MetricTypeHistogram))
 			}
 			// add an upper bound for +Inf
 			{
@@ -174,11 +174,11 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 				},
 					fmt.Sprintf("%s_bucket", md.Name()),
 					"",
-					pmetric.MetricDataTypeHistogram))
+					pmetric.MetricTypeHistogram))
 			}
 		}
 		return adxMetrics
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		dataPoints := md.Sum().DataPoints()
 		adxMetrics := make([]*AdxMetric, dataPoints.Len())
 		for gi := 0; gi < dataPoints.Len(); gi++ {
@@ -187,16 +187,16 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 				var metricValue float64
 				switch dataPoint.ValueType() {
 				case pmetric.NumberDataPointValueTypeInt:
-					metricValue = float64(dataPoint.IntVal())
+					metricValue = float64(dataPoint.IntValue())
 				case pmetric.NumberDataPointValueTypeDouble:
-					metricValue = dataPoint.DoubleVal()
+					metricValue = dataPoint.DoubleValue()
 				}
 				return metricValue
-			}, "", "", pmetric.MetricDataTypeSum)
+			}, "", "", pmetric.MetricTypeSum)
 
 		}
 		return adxMetrics
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		dataPoints := md.Summary().DataPoints()
 		var adxMetrics []*AdxMetric
 		for gi := 0; gi < dataPoints.Len(); gi++ {
@@ -206,7 +206,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), dataPoint.Sum,
 					fmt.Sprintf("%s_%s", md.Name(), sumsuffix),
 					fmt.Sprintf("%s%s", md.Description(), sumdescription),
-					pmetric.MetricDataTypeSummary))
+					pmetric.MetricTypeSummary))
 			}
 			// counts
 			{
@@ -217,7 +217,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 					},
 					fmt.Sprintf("%s_%s", md.Name(), countsuffix),
 					fmt.Sprintf("%s%s", md.Description(), countdescription),
-					pmetric.MetricDataTypeSummary))
+					pmetric.MetricTypeSummary))
 
 			}
 			// now create values for each quantile.
@@ -237,11 +237,11 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 					dp.Value,
 					quantileName,
 					fmt.Sprintf("%s%s", md.Description(), countdescription),
-					pmetric.MetricDataTypeSummary))
+					pmetric.MetricTypeSummary))
 			}
 		}
 		return adxMetrics
-	case pmetric.MetricDataTypeNone:
+	case pmetric.MetricTypeNone:
 		fallthrough
 	default:
 		logger.Warn(

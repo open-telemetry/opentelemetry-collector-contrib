@@ -48,7 +48,7 @@ func Test_mapToAdxLog(t *testing.T) {
 			name: "valid",
 			logRecordFn: func() plog.LogRecord {
 				logRecord := plog.NewLogRecord()
-				logRecord.Body().SetStringVal("mylogsample")
+				logRecord.Body().SetStr("mylogsample")
 				logRecord.Attributes().PutString("test", "value")
 				logRecord.SetTimestamp(ts)
 				logRecord.SetObservedTimestamp(ts)
@@ -79,7 +79,7 @@ func Test_mapToAdxLog(t *testing.T) {
 			name: "without severity",
 			logRecordFn: func() plog.LogRecord {
 				logRecord := plog.NewLogRecord()
-				logRecord.Body().SetStringVal("mylogsample")
+				logRecord.Body().SetStr("mylogsample")
 				logRecord.Attributes().PutString("test", "value")
 				logRecord.SetTimestamp(ts)
 				logRecord.SetObservedTimestamp(ts)
@@ -136,7 +136,7 @@ func Test_mapToAdxLog(t *testing.T) {
 			logRecordFn: func() plog.LogRecord {
 				logRecord := plog.NewLogRecord()
 				attVal := pcommon.NewValueMap()
-				attMap := attVal.MapVal()
+				attMap := attVal.Map()
 				attMap.PutDouble("23", 45)
 				attMap.PutString("foo", "bar")
 				attVal.CopyTo(logRecord.Body())

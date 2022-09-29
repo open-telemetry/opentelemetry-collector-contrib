@@ -55,16 +55,16 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 	mmap[scopeversion] = "SV"
 
 	tests := []struct {
-		name               string                                                                        // name of the test
-		metricsDataFn      func(metricType pmetric.MetricDataType, ts pcommon.Timestamp) pmetric.Metrics // function that generates the metric
-		metricDataType     pmetric.MetricDataType
+		name               string                                                                    // name of the test
+		metricsDataFn      func(metricType pmetric.MetricType, ts pcommon.Timestamp) pmetric.Metrics // function that generates the metric
+		metricDataType     pmetric.MetricType
 		expectedAdxMetrics []*AdxMetric // expected results
 	}{
 		{
 			//
 			name:           "metrics_counter_over_time",
 			metricsDataFn:  newMetrics,
-			metricDataType: pmetric.MetricDataTypeSum,
+			metricDataType: pmetric.MetricTypeSum,
 			expectedAdxMetrics: []*AdxMetric{
 				{
 					Timestamp:          tstr,
@@ -81,7 +81,7 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 		{
 			name:           "metrics_simple_histogram_with_value",
 			metricsDataFn:  newMetrics,
-			metricDataType: pmetric.MetricDataTypeHistogram,
+			metricDataType: pmetric.MetricTypeHistogram,
 			expectedAdxMetrics: []*AdxMetric{
 				{
 					Timestamp:          tstr,
@@ -207,7 +207,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				sumV.SetDescription("process page faults") // Only description and no units. Count units are just "number of / count of"
 				sumV.SetEmptySum()
 				dp := sumV.Sum().DataPoints().AppendEmpty()
-				dp.SetDoubleVal(22.0)
+				dp.SetDoubleValue(22.0)
 				dp.SetTimestamp(ts)
 				return sumV
 			},
@@ -237,7 +237,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				sumV.SetDescription("process page faults")
 				sumV.SetEmptySum()
 				dp := sumV.Sum().DataPoints().AppendEmpty()
-				dp.SetDoubleVal(221)
+				dp.SetDoubleValue(221)
 				dp.SetTimestamp(ts)
 				return sumV
 			},
@@ -393,7 +393,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				gauge.SetEmptyGauge()
 				dp := gauge.Gauge().DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
-				dp.SetIntVal(5)
+				dp.SetIntValue(5)
 				return gauge
 			},
 			configFn: func() *Config {
@@ -424,7 +424,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				gauge.SetEmptyGauge()
 				dp := gauge.Gauge().DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
-				dp.SetDoubleVal(5.32)
+				dp.SetDoubleValue(5.32)
 				return gauge
 			},
 			configFn: func() *Config {
@@ -599,7 +599,7 @@ func newMapFromAttr(jsonStr string) map[string]interface{} {
 	return dynamic
 }
 
-func newMetrics(metricType pmetric.MetricDataType, ts pcommon.Timestamp) pmetric.Metrics {
+func newMetrics(metricType pmetric.MetricType, ts pcommon.Timestamp) pmetric.Metrics {
 	// Create metrics
 	metrics := pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics().AppendEmpty()
@@ -613,15 +613,15 @@ func newMetrics(metricType pmetric.MetricDataType, ts pcommon.Timestamp) pmetric
 	//
 
 	switch metricType {
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		sumV := sms.Metrics().AppendEmpty()
 		sumV.SetName("page_faults")
 		sumV.SetDescription("process page faults") // Only description and no units. Count units are just "number of / count of"
 		sumV.SetEmptySum()
 		dp := sumV.Sum().DataPoints().AppendEmpty()
-		dp.SetDoubleVal(22.0)
+		dp.SetDoubleValue(22.0)
 		dp.SetTimestamp(ts)
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		histogram := sms.Metrics().AppendEmpty()
 		histogram.SetName("http.server.duration")
 		histogram.SetUnit("milliseconds")

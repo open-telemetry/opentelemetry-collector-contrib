@@ -211,7 +211,7 @@ func createMetricsData(numberOfDataPoints int) pmetric.Metrics {
 		metric.SetEmptyGauge()
 		doublePt := metric.Gauge().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
-		doublePt.SetDoubleVal(doubleVal)
+		doublePt.SetDoubleValue(doubleVal)
 	}
 	return metrics
 }
@@ -227,7 +227,7 @@ func createLogsData() plog.Logs {
 	ism.Scope().SetName("scopename")
 	ism.Scope().SetVersion("1.0")
 	log := ism.LogRecords().AppendEmpty()
-	log.Body().SetStringVal("mylogsample")
+	log.Body().SetStr("mylogsample")
 	log.Attributes().PutString("test", "value")
 	log.SetTimestamp(ts)
 	log.SetSpanID(pcommon.SpanID(spanID))
@@ -255,7 +255,7 @@ func createTracesData() ptrace.Traces {
 	span.SetEndTimestamp(ts)
 	span.SetSpanID(pcommon.SpanID(spanID))
 	span.SetTraceID(pcommon.TraceID(traceID))
-	span.TraceStateStruct().FromRaw("")
+	span.TraceState().FromRaw("")
 	span.Attributes().PutString("key", "val")
 	return traces
 }
