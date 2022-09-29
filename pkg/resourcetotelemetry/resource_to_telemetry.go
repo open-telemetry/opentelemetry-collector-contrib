@@ -58,7 +58,8 @@ func WrapMetricsExporter(set Settings, exporter component.MetricsExporter) compo
 }
 
 func convertToMetricsAttributes(md pmetric.Metrics) pmetric.Metrics {
-	cloneMd := md.Clone()
+	cloneMd := pmetric.NewMetrics()
+	md.CopyTo(cloneMd)
 	rms := cloneMd.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		resource := rms.At(i).Resource()
