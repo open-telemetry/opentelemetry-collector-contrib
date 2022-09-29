@@ -85,7 +85,7 @@ func newPrometheusReceiver(set component.ReceiverCreateSettings, cfg *Config, ne
 	return pr
 }
 
-// Start is the method that starts Prometheus scraping and it
+// Start is the method that starts Prometheus scraping. It
 // is controlled by having previously defined a Configuration using perhaps New.
 func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 	discoveryCtx, cancel := context.WithCancel(context.Background())
@@ -133,9 +133,9 @@ func (r *pReceiver) initTargetAllocator(allocConf *targetAllocator, baseCfg *con
 		<-r.reloadReady.C
 		for {
 			<-r.targetAllocatorIntervalTicker.C
-			hash, err := r.syncTargetAllocator(savedHash, allocConf, baseCfg)
-			if err != nil {
-				r.settings.Logger.Error(err.Error())
+			hash, newErr := r.syncTargetAllocator(savedHash, allocConf, baseCfg)
+			if newErr != nil {
+				r.settings.Logger.Error(newErr.Error())
 				continue
 			}
 			savedHash = hash
@@ -216,7 +216,6 @@ func (r *pReceiver) getScrapeConfigsResponse(baseURL string) (map[string]*config
 		return nil, err
 	}
 
-	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -225,6 +224,10 @@ func (r *pReceiver) getScrapeConfigsResponse(baseURL string) (map[string]*config
 	jobToScrapeConfig := map[string]*config.ScrapeConfig{}
 	envReplacedBody := r.instantiateShard(body)
 	err = yaml.Unmarshal(envReplacedBody, &jobToScrapeConfig)
+	if err != nil {
+		return nil, err
+	}
+	err = resp.Body.Close()
 	if err != nil {
 		return nil, err
 	}
