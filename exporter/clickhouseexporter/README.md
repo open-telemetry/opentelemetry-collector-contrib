@@ -238,8 +238,8 @@ The following settings can be optionally configured:
 
 - `ttl_days` (default= 0): The data time-to-live in days, 0 means no ttl.
 - `database` (default = otel): The database name.
-- `logs_table_name` (default = otel_traces): The table name for logs.
-- `traces_table_name` (default = otel_logs): The table name for traces.
+- `logs_table_name` (default = otel_logs): The table name for logs.
+- `traces_table_name` (default = otel_traces): The table name for traces.
 - `timeout` (default = 5s): The timeout for every attempt to send data to the backend.
 - `sending_queue`
     - `queue_size` (default = 5000): Maximum number of batches kept in memory before dropping data.
@@ -329,13 +329,17 @@ CREATE TABLE otel.otel_traces
     `Duration`      Int64 CODEC (ZSTD(1)),
     `StatusCode` LowCardinality(String) CODEC (ZSTD(1)),
     `StatusMessage` String CODEC (ZSTD(1)),
-    `Events.Timestamp` Array(DateTime64(9)) CODEC (ZSTD(1)),
-    `Events.Name` Array(LowCardinality(String)) CODEC (ZSTD(1)),
-    `Events.Attributes` Array(Map(LowCardinality(String), String)) CODEC (ZSTD(1)),
-    `Links.TraceId` Array(String) CODEC (ZSTD(1)),
-    `Links.SpanId` Array(String) CODEC (ZSTD(1)),
-    `Links.TraceState` Array(String) CODEC (ZSTD(1)),
-    `Links.Attributes` Array(Map(LowCardinality(String), String)) CODEC (ZSTD(1)),
+    `Events` Nested (
+        `Timestamp` DateTime64(9),
+        `Name` LowCardinality(String),
+        `Attributes` Map(LowCardinality(String), String)
+        ) CODEC(ZSTD(1)),
+    `Links` Nested (
+        `TraceId` String,
+        `SpanId` String,
+        `TraceState` String,
+        `Attributes` Map(LowCardinality(String), String)
+    ) CODEC(ZSTD(1)),
     INDEX idx_trace_id TraceId TYPE bloom_filter(0.001) GRANULARITY 1,
     INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
     INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
