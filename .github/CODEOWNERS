@@ -40,7 +40,7 @@ exporter/datadogexporter/                            @open-telemetry/collector-c
 exporter/dynatraceexporter/                          @open-telemetry/collector-contrib-approvers @dyladan @arminru
 exporter/elasticsearchexporter/                      @open-telemetry/collector-contrib-approvers @JaredTan95
 exporter/f5cloudexporter/                            @open-telemetry/collector-contrib-approvers @gramidt
-exporter/fileexporter/                               @open-telemetry/collector-contrib-approvers
+exporter/fileexporter/                               @open-telemetry/collector-contrib-approvers @atingchen
 exporter/googlecloudexporter/                        @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @tbarker25 @damemi
 exporter/googlemanagedprometheusexporter/            @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @tbarker25 @damemi
 exporter/googlecloudpubsubexporter/                  @open-telemetry/collector-contrib-approvers @alexvanboxel
