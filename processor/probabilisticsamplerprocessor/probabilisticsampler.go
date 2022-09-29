@@ -18,11 +18,14 @@ import (
 	"context"
 	"strconv"
 
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.uber.org/zap"
 )
 
 // samplingPriority has the semantic result of parsing the "sampling.priority"
@@ -52,6 +55,7 @@ const (
 type tracesamplerprocessor struct {
 	scaledSamplingRate uint32
 	hashSeed           uint32
+	logger             *zap.Logger
 }
 
 // newTracesProcessor returns a processor.TracesProcessor that will perform head sampling according to the given
@@ -61,6 +65,7 @@ func newTracesProcessor(ctx context.Context, set component.ProcessorCreateSettin
 		// Adjust sampling percentage on private so recalculations are avoided.
 		scaledSamplingRate: uint32(cfg.SamplingPercentage * percentageScaleFactor),
 		hashSeed:           cfg.HashSeed,
+		logger:             set.Logger,
 	}
 
 	return processorhelper.NewTracesProcessor(
@@ -72,7 +77,7 @@ func newTracesProcessor(ctx context.Context, set component.ProcessorCreateSettin
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }
 
-func (tsp *tracesamplerprocessor) processTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+func (tsp *tracesamplerprocessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
 		rs.ScopeSpans().RemoveIf(func(ils ptrace.ScopeSpans) bool {
 			ils.Spans().RemoveIf(func(s ptrace.Span) bool {
@@ -81,8 +86,19 @@ func (tsp *tracesamplerprocessor) processTraces(_ context.Context, td ptrace.Tra
 					// The OpenTelemetry mentions this as a "hint" we take a stronger
 					// approach and do not sample the span since some may use it to
 					// remove specific spans from traces.
+					_ = stats.RecordWithTags(
+						ctx,
+						[]tag.Mutator{tag.Upsert(tagPolicyKey, "sampling_priority"), tag.Upsert(tagSampledKey, "false")},
+						statCountTracesSampled.M(int64(1)),
+					)
 					return true
 				}
+
+				_ = stats.RecordWithTags(
+					ctx,
+					[]tag.Mutator{tag.Upsert(tagPolicyKey, "sampling_priority"), tag.Upsert(tagSampledKey, "true")},
+					statCountTracesSampled.M(int64(1)),
+				)
 
 				// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
 				// with various different criteria to generate trace id and perhaps were already sampled without hashing.
@@ -90,6 +106,20 @@ func (tsp *tracesamplerprocessor) processTraces(_ context.Context, td ptrace.Tra
 				tidBytes := s.TraceID()
 				sampled := sp == mustSampleSpan ||
 					hash(tidBytes[:], tsp.hashSeed)&bitMaskHashBuckets < tsp.scaledSamplingRate
+
+				if sampled {
+					_ = stats.RecordWithTags(
+						ctx,
+						[]tag.Mutator{tag.Upsert(tagPolicyKey, "trace_id_hash"), tag.Upsert(tagSampledKey, "true")},
+						statCountTracesSampled.M(int64(1)),
+					)
+				} else {
+					_ = stats.RecordWithTags(
+						ctx,
+						[]tag.Mutator{tag.Upsert(tagPolicyKey, "trace_id_hash"), tag.Upsert(tagSampledKey, "false")},
+						statCountTracesSampled.M(int64(1)),
+					)
+				}
 				return !sampled
 			})
 			// Filter out empty ScopeMetrics
