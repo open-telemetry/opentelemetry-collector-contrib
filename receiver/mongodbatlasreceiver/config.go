@@ -18,6 +18,8 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -39,6 +41,7 @@ type Config struct {
 	Alerts                                  AlertConfig                  `mapstructure:"alerts"`
 	Logs                                    LogConfig                    `mapstructure:"logs"`
 	RetrySettings                           exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
+	StorageID                               *config.ComponentID          `mapstructure:"storage"`
 }
 
 type AlertConfig struct {
@@ -46,6 +49,12 @@ type AlertConfig struct {
 	Endpoint string                      `mapstructure:"endpoint"`
 	Secret   string                      `mapstructure:"secret"`
 	TLS      *configtls.TLSServerSetting `mapstructure:"tls"`
+	Mode     string                      `mapstructure:"mode"`
+
+	// these parameters are only relevant in retrieval mode
+	Projects           []*ProjectConfig `mapstructure:"projects"`
+	PollInterval       time.Duration    `mapstructure:"poll_interval"`
+	MaxAlertProcessing int64            `mapstructure:"max_alerts"`
 }
 
 type LogConfig struct {
@@ -58,14 +67,35 @@ type ProjectConfig struct {
 	ExcludeClusters []string `mapstructure:"exclude_clusters"`
 	IncludeClusters []string `mapstructure:"include_clusters"`
 	EnableAuditLogs bool     `mapstructure:"collect_audit_logs"`
+
+	includesByClusterName map[string]struct{}
+	excludesByClusterName map[string]struct{}
+}
+
+func (pc *ProjectConfig) populateIncludesAndExcludes() *ProjectConfig {
+	pc.includesByClusterName = map[string]struct{}{}
+	for _, inclusion := range pc.IncludeClusters {
+		pc.includesByClusterName[inclusion] = struct{}{}
+	}
+
+	pc.excludesByClusterName = map[string]struct{}{}
+	for _, exclusion := range pc.ExcludeClusters {
+		pc.excludesByClusterName[exclusion] = struct{}{}
+	}
+
+	return pc
 }
 
 var (
 	// Alerts Receiver Errors
-	errNoEndpoint = errors.New("an endpoint must be specified")
-	errNoSecret   = errors.New("a webhook secret must be specified")
-	errNoCert     = errors.New("tls was configured, but no cert file was specified")
-	errNoKey      = errors.New("tls was configured, but no key file was specified")
+	errNoEndpoint       = errors.New("an endpoint must be specified")
+	errNoSecret         = errors.New("a webhook secret must be specified")
+	errNoCert           = errors.New("tls was configured, but no cert file was specified")
+	errNoKey            = errors.New("tls was configured, but no key file was specified")
+	errNoModeRecognized = fmt.Errorf("alert mode not recognized for mode. Known alert modes are: %s", strings.Join([]string{
+		alertModeListen,
+		alertModePoll,
+	}, ","))
 
 	// Logs Receiver Errors
 	errNoProjects    = errors.New("at least one 'project' must be specified")
@@ -102,17 +132,41 @@ func (l *LogConfig) validate() error {
 }
 
 func (a *AlertConfig) validate() error {
-	var errs error
-
 	if !a.Enabled {
 		// No need to further validate, receiving alerts is disabled.
 		return nil
 	}
 
-	if a.Endpoint == "" {
-		errs = multierr.Append(errs, errNoEndpoint)
+	switch a.Mode {
+	case alertModePoll:
+		return a.validatePollConfig()
+	case alertModeListen:
+		return a.validateListenConfig()
+	default:
+		return errNoModeRecognized
+	}
+}
+
+func (a AlertConfig) validatePollConfig() error {
+	if len(a.Projects) == 0 {
+		return errNoProjects
 	}
 
+	var errs error
+	for _, project := range a.Projects {
+		if len(project.ExcludeClusters) != 0 && len(project.IncludeClusters) != 0 {
+			errs = multierr.Append(errs, errClusterConfig)
+		}
+	}
+	return errs
+}
+
+func (a AlertConfig) validateListenConfig() error {
+	if a.Endpoint == "" {
+		return errNoEndpoint
+	}
+
+	var errs error
 	_, _, err := net.SplitHostPort(a.Endpoint)
 	if err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to split endpoint into 'host:port' pair: %w", err))
@@ -131,6 +185,5 @@ func (a *AlertConfig) validate() error {
 			errs = multierr.Append(errs, errNoKey)
 		}
 	}
-
 	return errs
 }
