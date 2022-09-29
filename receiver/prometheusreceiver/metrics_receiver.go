@@ -66,10 +66,6 @@ type pReceiver struct {
 	targetAllocatorIntervalTicker *time.Ticker
 }
 
-type linkJSON struct {
-	Link string `json:"_link"`
-}
-
 // New creates a new prometheus.Receiver reference.
 func newPrometheusReceiver(set component.ReceiverCreateSettings, cfg *Config, next consumer.Metrics) *pReceiver {
 	reloadReady := &closeOnce{
@@ -114,7 +110,7 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 
 	allocConf := r.cfg.TargetAllocator
 	if allocConf != nil {
-		r.initTargetAllocator(allocConf, baseCfg)
+		err = r.initTargetAllocator(allocConf, baseCfg)
 	}
 
 	r.reloadReady.Close()
@@ -122,13 +118,12 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (r *pReceiver) initTargetAllocator(allocConf *targetAllocator, baseCfg *config.Config) {
+func (r *pReceiver) initTargetAllocator(allocConf *targetAllocator, baseCfg *config.Config) error {
 	r.settings.Logger.Info("Starting target allocator discovery")
 	// immediately sync jobs and not wait for the first tick
 	savedHash, err := r.syncTargetAllocator(uint64(0), allocConf, baseCfg)
 	if err != nil {
-		r.settings.Logger.Error(err.Error())
-		return
+		return err
 	}
 	r.targetAllocatorIntervalTicker = time.NewTicker(allocConf.Interval)
 	go func() {
@@ -143,6 +138,7 @@ func (r *pReceiver) initTargetAllocator(allocConf *targetAllocator, baseCfg *con
 			savedHash = hash
 		}
 	}()
+	return err
 }
 
 // syncTargetAllocator request jobs from targetAllocator and update underlying receiver, if the response does not match the provided compareHash.
