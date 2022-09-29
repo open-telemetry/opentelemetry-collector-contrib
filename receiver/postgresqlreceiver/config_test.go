@@ -17,9 +17,14 @@ package postgresqlreceiver
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.uber.org/multierr"
 )
 
@@ -110,4 +115,50 @@ func TestValidate(t *testing.T) {
 			require.Equal(t, tC.expected, actual)
 		})
 	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	t.Run("postgresql", func(t *testing.T) {
+		sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+		require.NoError(t, err)
+		require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+
+		expected := factory.CreateDefaultConfig().(*Config)
+		expected.Endpoint = "localhost:5432"
+		expected.Username = "otel"
+		expected.Password = "$POSTGRESQL_PASSWORD"
+
+		require.Equal(t, expected, cfg)
+	})
+
+	t.Run("postgresql/all", func(t *testing.T) {
+		sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "all").String())
+		require.NoError(t, err)
+		require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+
+		expected := factory.CreateDefaultConfig().(*Config)
+		expected.Endpoint = "localhost:5432"
+		expected.NetAddr.Transport = "tcp"
+		expected.Username = "otel"
+		expected.Password = "$POSTGRESQL_PASSWORD"
+		expected.Databases = []string{"otel"}
+		expected.CollectionInterval = 10 * time.Second
+		expected.TLSClientSetting = configtls.TLSClientSetting{
+			Insecure:           false,
+			InsecureSkipVerify: false,
+			TLSSetting: configtls.TLSSetting{
+				CAFile:   "/home/otel/authorities.crt",
+				CertFile: "/home/otel/mypostgrescert.crt",
+				KeyFile:  "/home/otel/mypostgreskey.key",
+			},
+		}
+
+		require.Equal(t, expected, cfg)
+	})
 }

@@ -254,7 +254,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				return req
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
-				assert.Equal(t, http.StatusAccepted, status)
+				assert.Equal(t, http.StatusOK, status)
 				assert.Equal(t, responseOK, body)
 			},
 		},
@@ -275,7 +275,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				return req
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
-				assert.Equal(t, http.StatusAccepted, status)
+				assert.Equal(t, http.StatusOK, status)
 				assert.Equal(t, responseOK, body)
 			},
 		},
@@ -439,7 +439,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 
 	resp, err := client.Do(req)
 	require.NoErrorf(t, err, "should not have failed when sending to splunk HEC receiver %v", err)
-	assert.Equal(t, http.StatusAccepted, resp.StatusCode)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	t.Log("Splunk HEC Request Received")
 
 	got := sink.AllLogs()
@@ -519,7 +519,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 				_, err := io.Copy(io.Discard, req.Body)
 				assert.NoError(t, err)
-				rw.WriteHeader(http.StatusAccepted)
+				rw.WriteHeader(http.StatusOK)
 				accessTokensChan <- req.Header.Get("Authorization")
 			}))
 			defer endServer.Close()
@@ -619,7 +619,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 				body, err := io.ReadAll(req.Body)
 				assert.NoError(t, err)
-				rw.WriteHeader(http.StatusAccepted)
+				rw.WriteHeader(http.StatusOK)
 				receivedSplunkLogs <- body
 			}))
 			defer endServer.Close()
@@ -671,7 +671,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			assert.NoError(t, err)
 			var bodyStr string
 			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
-			assert.Equal(t, http.StatusAccepted, resp.StatusCode)
+			assert.Equal(t, http.StatusOK, resp.StatusCode)
 			assert.Equal(t, responseOK, bodyStr)
 			select {
 			case <-done:
@@ -712,7 +712,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 				body, err := io.ReadAll(req.Body)
 				assert.NoError(t, err)
-				rw.WriteHeader(http.StatusAccepted)
+				rw.WriteHeader(http.StatusOK)
 				receivedSplunkMetrics <- body
 			}))
 			defer endServer.Close()
@@ -765,7 +765,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			assert.NoError(t, err)
 			var bodyStr string
 			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
-			assert.Equal(t, http.StatusAccepted, resp.StatusCode)
+			assert.Equal(t, http.StatusOK, resp.StatusCode)
 			assert.Equal(t, responseOK, bodyStr)
 			select {
 			case <-done:
@@ -899,7 +899,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 				return req
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
-				assert.Equal(t, http.StatusAccepted, status)
+				assert.Equal(t, http.StatusOK, status)
 			},
 		},
 		{
@@ -911,7 +911,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 				return req
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
-				assert.Equal(t, http.StatusAccepted, status)
+				assert.Equal(t, http.StatusOK, status)
 			},
 		},
 		{
@@ -931,7 +931,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 				return req
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
-				assert.Equal(t, http.StatusAccepted, status)
+				assert.Equal(t, http.StatusOK, status)
 			},
 		},
 		{

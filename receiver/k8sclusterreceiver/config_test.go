@@ -21,55 +21,68 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	receiverType := "k8s_cluster"
-	factories.Receivers[config.Type(receiverType)] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 3)
-
-	r1 := cfg.Receivers[config.NewComponentID(typeStr)]
-	assert.Equal(t, r1, factory.CreateDefaultConfig())
-
-	r2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "all_settings")].(*Config)
-	assert.Equal(t, r2,
-		&Config{
-			ReceiverSettings:           config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "all_settings")),
-			Distribution:               distributionKubernetes,
-			CollectionInterval:         30 * time.Second,
-			NodeConditionTypesToReport: []string{"Ready", "MemoryPressure"},
-			AllocatableTypesToReport:   []string{"cpu", "memory"},
-			MetadataExporters:          []string{"nop"},
-			APIConfig: k8sconfig.APIConfig{
-				AuthType: k8sconfig.AuthTypeServiceAccount,
+	tests := []struct {
+		id          config.ComponentID
+		expected    config.Receiver
+		expectedErr error
+	}{
+		{
+			id:       config.NewComponentIDWithName(typeStr, ""),
+			expected: createDefaultConfig(),
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "all_settings"),
+			expected: &Config{
+				ReceiverSettings:           config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				Distribution:               distributionKubernetes,
+				CollectionInterval:         30 * time.Second,
+				NodeConditionTypesToReport: []string{"Ready", "MemoryPressure"},
+				AllocatableTypesToReport:   []string{"cpu", "memory"},
+				MetadataExporters:          []string{"nop"},
+				APIConfig: k8sconfig.APIConfig{
+					AuthType: k8sconfig.AuthTypeServiceAccount,
+				},
 			},
-		})
-
-	r3 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "partial_settings")].(*Config)
-	assert.Equal(t, r3,
-		&Config{
-			ReceiverSettings:           config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "partial_settings")),
-			Distribution:               distributionOpenShift,
-			CollectionInterval:         30 * time.Second,
-			NodeConditionTypesToReport: []string{"Ready"},
-			APIConfig: k8sconfig.APIConfig{
-				AuthType: k8sconfig.AuthTypeServiceAccount,
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "partial_settings"),
+			expected: &Config{
+				ReceiverSettings:           config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				Distribution:               distributionOpenShift,
+				CollectionInterval:         30 * time.Second,
+				NodeConditionTypesToReport: []string{"Ready"},
+				APIConfig: k8sconfig.APIConfig{
+					AuthType: k8sconfig.AuthTypeServiceAccount,
+				},
 			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
+	}
 }
 
 func TestInvalidConfig(t *testing.T) {

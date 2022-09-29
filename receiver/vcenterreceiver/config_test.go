@@ -16,10 +16,16 @@ package vcenterreceiver // import github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
 func TestConfigValidation(t *testing.T) {
@@ -83,4 +89,26 @@ func TestConfigValidation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+
+	expected := factory.CreateDefaultConfig().(*Config)
+	expected.Endpoint = "http://vcsa.host.localnet"
+	expected.Username = "otelu"
+	expected.Password = "$VCENTER_PASSWORD"
+	expected.Metrics = metadata.DefaultMetricsSettings()
+	expected.Metrics.VcenterHostCPUUtilization.Enabled = false
+	expected.CollectionInterval = 5 * time.Minute
+
+	require.Equal(t, expected, cfg)
 }

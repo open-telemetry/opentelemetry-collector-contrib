@@ -27,16 +27,14 @@ import (
 // Extracted metrics can have reduced number of data point if not all of them match the filter.
 // All matched metrics, including metrics with only a subset of matched data points,
 // are removed from the original ms metric slice.
-func extractAndRemoveMatchedMetrics(f internalFilter, ms pmetric.MetricSlice) pmetric.MetricSlice {
-	extractedMetrics := pmetric.NewMetricSlice()
+func extractAndRemoveMatchedMetrics(dest pmetric.MetricSlice, f internalFilter, ms pmetric.MetricSlice) {
 	ms.RemoveIf(func(metric pmetric.Metric) bool {
 		if extractedMetric := f.extractMatchedMetric(metric); extractedMetric != (pmetric.Metric{}) {
-			extractedMetric.MoveTo(extractedMetrics.AppendEmpty())
+			extractedMetric.MoveTo(dest.AppendEmpty())
 			return true
 		}
 		return false
 	})
-	return extractedMetrics
 }
 
 // matchMetrics returns a slice of metrics matching the filter f. Original metrics slice is not affected.
@@ -248,9 +246,9 @@ func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetr
 			for _, transform := range mtp.transforms {
 				switch transform.Action {
 				case Group:
-					extractedMetrics := extractAndRemoveMatchedMetrics(transform.MetricIncludeFilter, metrics)
-					groupMatchedMetrics(rm.Resource(), sm.Scope(), extractedMetrics,
-						transform).CopyTo(groupedRMs.AppendEmpty())
+					groupedRM := groupedRMs.AppendEmpty()
+					initResourceMetrics(groupedRM, rm.Resource(), sm.Scope(), transform)
+					extractAndRemoveMatchedMetrics(groupedRM.ScopeMetrics().At(0).Metrics(), transform.MetricIncludeFilter, metrics)
 				case Combine:
 					matchedMetrics := matchMetrics(transform.MetricIncludeFilter, metrics)
 					if len(matchedMetrics) == 0 {
@@ -263,7 +261,8 @@ func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetr
 						continue
 					}
 
-					extractedMetrics := extractAndRemoveMatchedMetrics(transform.MetricIncludeFilter, metrics)
+					extractedMetrics := pmetric.NewMetricSlice()
+					extractAndRemoveMatchedMetrics(extractedMetrics, transform.MetricIncludeFilter, metrics)
 					combinedMetric := combine(transform, extractedMetrics)
 					if transformMetric(combinedMetric, transform) {
 						combinedMetric.MoveTo(metrics.AppendEmpty())
@@ -309,20 +308,15 @@ func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetr
 	return md, nil
 }
 
-// groupMatchedMetrics groups matched metrics by moving them from matchedMetrics into a new pmetric.ResourceMetrics.
-func groupMatchedMetrics(resource pcommon.Resource, scope pcommon.InstrumentationScope, metrics pmetric.MetricSlice,
-	transform internalTransform) pmetric.ResourceMetrics {
-	rm := pmetric.NewResourceMetrics()
-	resource.CopyTo(rm.Resource())
+func initResourceMetrics(dest pmetric.ResourceMetrics, resource pcommon.Resource, scope pcommon.InstrumentationScope, transform internalTransform) {
+	resource.CopyTo(dest.Resource())
 
 	for k, v := range transform.GroupResourceLabels {
-		rm.Resource().Attributes().PutString(k, v)
+		dest.Resource().Attributes().PutString(k, v)
 	}
 
-	sm := rm.ScopeMetrics().AppendEmpty()
+	sm := dest.ScopeMetrics().AppendEmpty()
 	scope.CopyTo(sm.Scope())
-	metrics.MoveAndAppendTo(sm.Metrics())
-	return rm
 }
 
 // canBeCombined returns true if all the provided metrics share the same type, unit, and labels

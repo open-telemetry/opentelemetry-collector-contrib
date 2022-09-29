@@ -88,7 +88,7 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [David Ashpole](https://github.com/dashpole), Google
-- [Tyler Helmuth](https://github.com/TylerHelmuth), New Relic
+- [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
 
 Emeritus Approvers:
 - [Przemek Maciolek](https://github.com/pmm-sumo)
