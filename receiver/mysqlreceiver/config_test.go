@@ -12,59 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package flinkmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver"
+package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 
 import (
-	"errors"
-	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
-
-func TestValidate(t *testing.T) {
-	testCases := []struct {
-		desc        string
-		cfg         *Config
-		expectedErr error
-	}{
-		{
-			desc: "invalid endpoint",
-			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "invalid://endpoint:  12efg",
-				},
-			},
-			expectedErr: fmt.Errorf("\"endpoint\" must be in the form of <scheme>://<hostname>:<port>: %w", errors.New(`parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`)),
-		},
-		{
-			desc: "valid config",
-			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: defaultEndpoint,
-				},
-			},
-			expectedErr: nil,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.desc, func(t *testing.T) {
-			actualErr := tc.cfg.Validate()
-			if tc.expectedErr != nil {
-				require.EqualError(t, actualErr, tc.expectedErr.Error())
-			} else {
-				require.NoError(t, actualErr)
-			}
-
-		})
-	}
-}
 
 func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
@@ -78,7 +36,10 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
-	expected.Endpoint = "http://localhost:8081"
+	expected.Endpoint = "localhost:3306"
+	expected.Username = "otel"
+	expected.Password = "$MYSQL_PASSWORD"
+	expected.Database = "otel"
 	expected.CollectionInterval = 10 * time.Second
 
 	require.Equal(t, expected, cfg)
