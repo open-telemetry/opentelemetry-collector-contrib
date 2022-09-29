@@ -58,7 +58,7 @@ func (e *clickhouseExporter) pushTraceData(ctx context.Context, td ptrace.Traces
 						r.TraceID().HexString(),
 						r.SpanID().HexString(),
 						r.ParentSpanID().HexString(),
-						string(r.TraceState()),
+						r.TraceState().AsRaw(),
 						r.Name(),
 						r.Kind().String(),
 						serviceName,
@@ -115,7 +115,7 @@ func convertLinks(links ptrace.SpanLinkSlice) ([]string, []string, []string, []m
 		link := links.At(i)
 		traceIDs = append(traceIDs, link.TraceID().HexString())
 		spanIDs = append(spanIDs, link.SpanID().HexString())
-		states = append(states, string(link.TraceState()))
+		states = append(states, link.TraceState().AsRaw())
 		attrs = append(attrs, attributesToMap(link.Attributes()))
 	}
 	return traceIDs, spanIDs, states, attrs
