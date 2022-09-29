@@ -71,6 +71,7 @@ var resourceMetrics = []string{
 	"process.memory.physical_usage",
 	"process.memory.virtual_usage",
 	"process.disk.io",
+	"process.paging.faults",
 }
 
 var systemSpecificMetrics = map[string][]string{
