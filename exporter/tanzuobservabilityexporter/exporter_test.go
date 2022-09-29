@@ -33,9 +33,9 @@ import (
 
 func TestSpansRequireTraceAndSpanIDs(t *testing.T) {
 	spanWithNoTraceID := ptrace.NewSpan()
-	spanWithNoTraceID.SetSpanID(pcommon.NewSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9}))
+	spanWithNoTraceID.SetSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9})
 	spanWithNoSpanID := ptrace.NewSpan()
-	spanWithNoSpanID.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	spanWithNoSpanID.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
 	traces := constructTraces([]ptrace.Span{spanWithNoTraceID, spanWithNoSpanID})
 
 	_, err := consumeTraces(traces)
@@ -49,8 +49,8 @@ func TestExportTraceDataMinimum(t *testing.T) {
 	// getAllUsers source=localhost traceId=7b3bf470-9456-11e8-9eb6-529269fb1459 spanId=0313bafe-9457-11e8-9eb6-529269fb1459 parent=2f64e538-9457-11e8-9eb6-529269fb1459 application=Wavefront service=auth cluster=us-west-2 shard=secondary http.method=GET 1552949776000 343
 	minSpan := createSpan(
 		"root",
-		pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
-		pcommon.NewSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9}),
+		[16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+		[8]byte{9, 9, 9, 9, 9, 9, 9, 9},
 		pcommon.SpanID{},
 	)
 	traces := constructTraces([]ptrace.Span{minSpan})
@@ -69,19 +69,19 @@ func TestExportTraceDataMinimum(t *testing.T) {
 }
 
 func TestExportTraceDataFullTrace(t *testing.T) {
-	traceID := pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
+	traceID := pcommon.TraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
 
 	rootSpan := createSpan(
 		"root",
 		traceID,
-		pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}),
+		[8]byte{0, 0, 0, 0, 0, 0, 0, 1},
 		pcommon.SpanID{},
 	)
 
 	clientSpan := createSpan(
 		"client",
 		traceID,
-		pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2}),
+		[8]byte{0, 0, 0, 0, 0, 0, 0, 2},
 		rootSpan.SpanID(),
 	)
 
@@ -95,31 +95,27 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	status.SetMessage("an error event occurred")
 	status.CopyTo(clientSpan.Status())
 
-	clientAttrs := pcommon.NewMap()
-	clientAttrs.InsertString(labelApplication, "test-app")
-	clientAttrs.CopyTo(clientSpan.Attributes())
+	clientSpan.Attributes().PutString(labelApplication, "test-app")
 
 	serverSpan := createSpan(
 		"server",
 		traceID,
-		pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 3}),
+		pcommon.SpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 3}),
 		clientSpan.SpanID(),
 	)
 	serverSpan.SetKind(ptrace.SpanKindServer)
-	serverSpan.SetTraceState("key=val")
-	serverAttrs := pcommon.NewMap()
-	serverAttrs.InsertString(conventions.AttributeServiceName, "the-server")
-	serverAttrs.InsertString(conventions.AttributeHTTPMethod, "POST")
-	serverAttrs.InsertInt(conventions.AttributeHTTPStatusCode, 403)
-	serverAttrs.InsertString(labelSource, "test_source")
-	serverAttrs.CopyTo(serverSpan.Attributes())
+	serverSpan.TraceState().FromRaw("key=val")
+	serverAttrs := serverSpan.Attributes()
+	serverAttrs.PutString(conventions.AttributeServiceName, "the-server")
+	serverAttrs.PutString(conventions.AttributeHTTPMethod, "POST")
+	serverAttrs.PutInt(conventions.AttributeHTTPStatusCode, 403)
+	serverAttrs.PutString(labelSource, "test_source")
 
 	traces := constructTraces([]ptrace.Span{rootSpan, clientSpan, serverSpan})
-	resourceAttrs := pcommon.NewMap()
-	resourceAttrs.InsertString("resource", "R1")
-	resourceAttrs.InsertString(conventions.AttributeServiceName, "test-service")
-	resourceAttrs.InsertString(labelSource, "test-source")
-	resourceAttrs.CopyTo(traces.ResourceSpans().At(0).Resource().Attributes())
+	resourceAttrs := traces.ResourceSpans().At(0).Resource().Attributes()
+	resourceAttrs.PutString("resource", "R1")
+	resourceAttrs.PutString(conventions.AttributeServiceName, "test-service")
+	resourceAttrs.PutString(labelSource, "test-source")
 
 	expected := []*span{
 		{
@@ -196,8 +192,8 @@ func validateTraces(t *testing.T, expected []*span, traces ptrace.Traces) {
 func TestExportTraceDataWithInstrumentationDetails(t *testing.T) {
 	minSpan := createSpan(
 		"root",
-		pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
-		pcommon.NewSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9}),
+		pcommon.TraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
+		pcommon.SpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9}),
 		pcommon.SpanID{},
 	)
 	traces := constructTraces([]ptrace.Span{minSpan})
@@ -224,8 +220,8 @@ func TestExportTraceDataWithInstrumentationDetails(t *testing.T) {
 func TestExportTraceDataRespectsContext(t *testing.T) {
 	traces := constructTraces([]ptrace.Span{createSpan(
 		"root",
-		pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
-		pcommon.NewSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9}),
+		pcommon.TraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
+		pcommon.SpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9}),
 		pcommon.SpanID{},
 	)})
 
@@ -236,7 +232,7 @@ func TestExportTraceDataRespectsContext(t *testing.T) {
 		sender: sender,
 		logger: zap.NewNop(),
 	}
-	mockOTelTracesExporter, err := exporterhelper.NewTracesExporterWithContext(
+	mockOTelTracesExporter, err := exporterhelper.NewTracesExporter(
 		context.Background(),
 		componenttest.NewNopExporterCreateSettings(),
 		cfg,
@@ -287,7 +283,7 @@ func consumeTraces(ptrace ptrace.Traces) ([]*span, error) {
 		sender: sender,
 		logger: zap.NewNop(),
 	}
-	mockOTelTracesExporter, err := exporterhelper.NewTracesExporterWithContext(
+	mockOTelTracesExporter, err := exporterhelper.NewTracesExporter(
 		context.Background(),
 		componenttest.NewNopExporterCreateSettings(),
 		cfg,

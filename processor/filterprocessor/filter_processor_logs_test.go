@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
@@ -196,19 +195,19 @@ var (
 	inLogForSeverityNumber = []logWithResource{
 		{
 			logNames:       []string{"log1"},
-			severityNumber: plog.SeverityNumberDEBUG,
+			severityNumber: plog.SeverityNumberDebug,
 		},
 		{
 			logNames:       []string{"log2"},
-			severityNumber: plog.SeverityNumberINFO,
+			severityNumber: plog.SeverityNumberInfo,
 		},
 		{
 			logNames:       []string{"log3"},
-			severityNumber: plog.SeverityNumberERROR,
+			severityNumber: plog.SeverityNumberError,
 		},
 		{
 			logNames:       []string{"log4"},
-			severityNumber: plog.SeverityNumberUNDEFINED,
+			severityNumber: plog.SeverityNumberUndefined,
 		},
 	}
 
@@ -631,15 +630,15 @@ func testResourceLogs(lwrs []logWithResource) plog.Logs {
 		rl := ld.ResourceLogs().AppendEmpty()
 
 		// Add resource level attributes
-		pcommon.NewMapFromRaw(lwr.resourceAttributes).CopyTo(rl.Resource().Attributes())
+		rl.Resource().Attributes().FromRaw(lwr.resourceAttributes)
 		ls := rl.ScopeLogs().AppendEmpty().LogRecords()
 		for _, name := range lwr.logNames {
 			l := ls.AppendEmpty()
 			// Add record level attributes
-			pcommon.NewMapFromRaw(lwrs[i].recordAttributes).CopyTo(l.Attributes())
-			l.Attributes().InsertString("name", name)
+			l.Attributes().FromRaw(lwrs[i].recordAttributes)
+			l.Attributes().PutString("name", name)
 			// Set body & severity fields
-			l.Body().SetStringVal(lwr.body)
+			l.Body().SetStr(lwr.body)
 			l.SetSeverityText(lwr.severityText)
 			l.SetSeverityNumber(lwr.severityNumber)
 		}

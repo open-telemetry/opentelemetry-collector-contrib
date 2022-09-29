@@ -71,6 +71,11 @@ func TestCreateDefaultConfig(t *testing.T) {
 			},
 			IgnoreResources: []string{},
 		},
+		Logs: LogsConfig{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "https://http-intake.logs.datadoghq.com",
+			},
+		},
 
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
@@ -171,6 +176,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 			IgnoreResources: []string{},
 		},
+		Logs: LogsConfig{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "https://http-intake.logs.datadoghq.com",
+			},
+		},
 
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
@@ -222,6 +232,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 			IgnoreResources: []string{},
 		},
+		Logs: LogsConfig{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "https://http-intake.logs.datadoghq.test",
+			},
+		},
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: HostnameSourceConfigOrSystem,
@@ -236,30 +251,42 @@ func TestOverrideEndpoints(t *testing.T) {
 		expectedSite            string
 		expectedMetricsEndpoint string
 		expectedTracesEndpoint  string
+		expectedLogsEndpoint    string
 	}{
 		{
 			componentID:             "nositeandnoendpoints",
 			expectedSite:            "datadoghq.com",
 			expectedMetricsEndpoint: "https://api.datadoghq.com",
 			expectedTracesEndpoint:  "https://trace.agent.datadoghq.com",
+			expectedLogsEndpoint:    "https://http-intake.logs.datadoghq.com",
 		},
 		{
 			componentID:             "nositeandmetricsendpoint",
 			expectedSite:            "datadoghq.com",
 			expectedMetricsEndpoint: "metricsendpoint:1234",
 			expectedTracesEndpoint:  "https://trace.agent.datadoghq.com",
+			expectedLogsEndpoint:    "https://http-intake.logs.datadoghq.com",
 		},
 		{
 			componentID:             "nositeandtracesendpoint",
 			expectedSite:            "datadoghq.com",
 			expectedMetricsEndpoint: "https://api.datadoghq.com",
 			expectedTracesEndpoint:  "tracesendpoint:1234",
+			expectedLogsEndpoint:    "https://http-intake.logs.datadoghq.com",
 		},
 		{
-			componentID:             "nositeandbothendpoints",
+			componentID:             "nositeandlogsendpoint",
+			expectedSite:            "datadoghq.com",
+			expectedMetricsEndpoint: "https://api.datadoghq.com",
+			expectedTracesEndpoint:  "https://trace.agent.datadoghq.com",
+			expectedLogsEndpoint:    "logsendpoint:1234",
+		},
+		{
+			componentID:             "nositeandallendpoints",
 			expectedSite:            "datadoghq.com",
 			expectedMetricsEndpoint: "metricsendpoint:1234",
 			expectedTracesEndpoint:  "tracesendpoint:1234",
+			expectedLogsEndpoint:    "logsendpoint:1234",
 		},
 
 		{
@@ -267,24 +294,28 @@ func TestOverrideEndpoints(t *testing.T) {
 			expectedSite:            "datadoghq.eu",
 			expectedMetricsEndpoint: "https://api.datadoghq.eu",
 			expectedTracesEndpoint:  "https://trace.agent.datadoghq.eu",
+			expectedLogsEndpoint:    "https://http-intake.logs.datadoghq.eu",
 		},
 		{
 			componentID:             "siteandmetricsendpoint",
 			expectedSite:            "datadoghq.eu",
 			expectedMetricsEndpoint: "metricsendpoint:1234",
 			expectedTracesEndpoint:  "https://trace.agent.datadoghq.eu",
+			expectedLogsEndpoint:    "https://http-intake.logs.datadoghq.eu",
 		},
 		{
 			componentID:             "siteandtracesendpoint",
 			expectedSite:            "datadoghq.eu",
 			expectedMetricsEndpoint: "https://api.datadoghq.eu",
 			expectedTracesEndpoint:  "tracesendpoint:1234",
+			expectedLogsEndpoint:    "https://http-intake.logs.datadoghq.eu",
 		},
 		{
-			componentID:             "siteandbothendpoints",
+			componentID:             "siteandallendpoints",
 			expectedSite:            "datadoghq.eu",
 			expectedMetricsEndpoint: "metricsendpoint:1234",
 			expectedTracesEndpoint:  "tracesendpoint:1234",
+			expectedLogsEndpoint:    "logsendpoint:1234",
 		},
 	}
 
@@ -304,6 +335,7 @@ func TestOverrideEndpoints(t *testing.T) {
 			assert.Equal(t, testInstance.expectedSite, componentCfg.API.Site)
 			assert.Equal(t, testInstance.expectedMetricsEndpoint, componentCfg.Metrics.Endpoint)
 			assert.Equal(t, testInstance.expectedTracesEndpoint, componentCfg.Traces.Endpoint)
+			assert.Equal(t, testInstance.expectedLogsEndpoint, componentCfg.Logs.Endpoint)
 		})
 	}
 }
@@ -338,7 +370,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	assert.NotNil(t, exp)
 }
 
-func TestCreateAPIMetricsExporterFailOnInvalidkey(t *testing.T) {
+func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 	server := testutils.DatadogServerMock(testutils.ValidateAPIKeyEndpointInvalid)
 	defer server.Close()
 
@@ -357,18 +389,35 @@ func TestCreateAPIMetricsExporterFailOnInvalidkey(t *testing.T) {
 	c.Metrics.TCPAddr.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
-	t.Run("fail_on_invalid_key is true", func(t *testing.T) {
+	t.Run("true", func(t *testing.T) {
 		c.API.FailOnInvalidKey = true
 		ctx := context.Background()
-		exp, err := factory.CreateMetricsExporter(
+		// metrics exporter
+		mexp, err := factory.CreateMetricsExporter(
 			ctx,
 			componenttest.NewNopExporterCreateSettings(),
 			cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
 		)
 		assert.EqualError(t, err, "API Key validation failed")
-		assert.Nil(t, exp)
+		assert.Nil(t, mexp)
+
+		texp, err := factory.CreateTracesExporter(
+			ctx,
+			componenttest.NewNopExporterCreateSettings(),
+			cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
+		)
+		assert.EqualError(t, err, "API Key validation failed")
+		assert.Nil(t, texp)
+
+		lexp, err := factory.CreateLogsExporter(
+			ctx,
+			componenttest.NewNopExporterCreateSettings(),
+			cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
+		)
+		assert.EqualError(t, err, "API Key validation failed")
+		assert.Nil(t, lexp)
 	})
-	t.Run("fail_on_invalid_key is false", func(t *testing.T) {
+	t.Run("false", func(t *testing.T) {
 		c.API.FailOnInvalidKey = false
 		ctx := context.Background()
 		exp, err := factory.CreateMetricsExporter(
@@ -378,11 +427,27 @@ func TestCreateAPIMetricsExporterFailOnInvalidkey(t *testing.T) {
 		)
 		assert.Nil(t, err)
 		assert.NotNil(t, exp)
+
+		texp, err := factory.CreateTracesExporter(
+			ctx,
+			componenttest.NewNopExporterCreateSettings(),
+			cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, texp)
+
+		lexp, err := factory.CreateLogsExporter(
+			ctx,
+			componenttest.NewNopExporterCreateSettings(),
+			cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, lexp)
 	})
 }
 
-func TestCreateAPITracesExporter(t *testing.T) {
-	server := testutils.DatadogServerMock()
+func TestCreateAPILogsExporter(t *testing.T) {
+	server := testutils.DatadogLogServerMock()
 	defer server.Close()
 
 	factories, err := componenttest.NopFactories()
@@ -401,7 +466,7 @@ func TestCreateAPITracesExporter(t *testing.T) {
 	c.HostMetadata.Enabled = false
 
 	ctx := context.Background()
-	exp, err := factory.CreateTracesExporter(
+	exp, err := factory.CreateLogsExporter(
 		ctx,
 		componenttest.NewNopExporterCreateSettings(),
 		cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
@@ -409,49 +474,6 @@ func TestCreateAPITracesExporter(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
-}
-
-func TestCreateAPITracesExporterFailOnInvalidkey(t *testing.T) {
-	server := testutils.DatadogServerMock(testutils.ValidateAPIKeyEndpointInvalid)
-	defer server.Close()
-
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	// Use the mock server for API key validation
-	c := (cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")]).(*Config)
-	c.Metrics.TCPAddr.Endpoint = server.URL
-	c.HostMetadata.Enabled = false
-
-	t.Run("fail_on_invalid_key is true", func(t *testing.T) {
-		c.API.FailOnInvalidKey = true
-		ctx := context.Background()
-		exp, err := factory.CreateTracesExporter(
-			ctx,
-			componenttest.NewNopExporterCreateSettings(),
-			cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
-		)
-		assert.EqualError(t, err, "API Key validation failed")
-		assert.Nil(t, exp)
-	})
-	t.Run("fail_on_invalid_key is false", func(t *testing.T) {
-		c.API.FailOnInvalidKey = false
-		ctx := context.Background()
-		exp, err := factory.CreateTracesExporter(
-			ctx,
-			componenttest.NewNopExporterCreateSettings(),
-			cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
-		)
-		assert.Nil(t, err)
-		assert.NotNil(t, exp)
-	})
 }
 
 func TestOnlyMetadata(t *testing.T) {

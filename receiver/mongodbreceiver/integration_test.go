@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -284,7 +284,7 @@ func getContainer(t *testing.T, req testcontainers.ContainerRequest, script []st
 		})
 	require.NoError(t, err)
 
-	code, err := container.Exec(context.Background(), script)
+	code, _, err := container.Exec(context.Background(), script)
 	require.NoError(t, err)
 	require.Equal(t, 0, code)
 

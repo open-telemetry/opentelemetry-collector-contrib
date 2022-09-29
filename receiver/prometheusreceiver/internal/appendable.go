@@ -16,6 +16,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"regexp"
 	"time"
 
 	"github.com/prometheus/prometheus/model/labels"
@@ -23,18 +24,19 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/obsreport"
 )
 
 // appendable translates Prometheus scraping diffs into OpenTelemetry format.
 type appendable struct {
 	sink                 consumer.Metrics
-	jobsMap              *JobsMap
+	metricAdjuster       MetricsAdjuster
 	useStartTimeMetric   bool
-	startTimeMetricRegex string
-	receiverID           config.ComponentID
+	startTimeMetricRegex *regexp.Regexp
 	externalLabels       labels.Labels
 
 	settings component.ReceiverCreateSettings
+	obsrecv  *obsreport.Receiver
 }
 
 // NewAppendable returns a storage.Appendable instance that emits metrics to the sink.
@@ -43,24 +45,27 @@ func NewAppendable(
 	set component.ReceiverCreateSettings,
 	gcInterval time.Duration,
 	useStartTimeMetric bool,
-	startTimeMetricRegex string,
+	startTimeMetricRegex *regexp.Regexp,
 	receiverID config.ComponentID,
 	externalLabels labels.Labels) storage.Appendable {
-	var jobsMap *JobsMap
+	var metricAdjuster MetricsAdjuster
 	if !useStartTimeMetric {
-		jobsMap = NewJobsMap(gcInterval)
+		metricAdjuster = NewInitialPointAdjuster(set.Logger, gcInterval)
+	} else {
+		metricAdjuster = NewStartTimeMetricAdjuster(set.Logger, startTimeMetricRegex)
 	}
+
 	return &appendable{
 		sink:                 sink,
 		settings:             set,
-		jobsMap:              jobsMap,
+		metricAdjuster:       metricAdjuster,
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: startTimeMetricRegex,
-		receiverID:           receiverID,
 		externalLabels:       externalLabels,
+		obsrecv:              obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiverID, Transport: transport, ReceiverCreateSettings: set}),
 	}
 }
 
 func (o *appendable) Appender(ctx context.Context) storage.Appender {
-	return newTransaction(ctx, o.jobsMap, o.useStartTimeMetric, o.startTimeMetricRegex, o.receiverID, o.sink, o.externalLabels, o.settings)
+	return newTransaction(ctx, o.metricAdjuster, o.sink, o.externalLabels, o.settings, o.obsrecv)
 }

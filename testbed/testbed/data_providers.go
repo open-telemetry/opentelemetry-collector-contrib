@@ -87,11 +87,11 @@ func (dp *perfTestDataProvider) GenerateTraces() (ptrace.Traces, bool) {
 		span.SetName("load-generator-span")
 		span.SetKind(ptrace.SpanKindClient)
 		attrs := span.Attributes()
-		attrs.UpsertInt("load_generator.span_seq_num", int64(spanID))
-		attrs.UpsertInt("load_generator.trace_seq_num", int64(traceID))
+		attrs.PutInt("load_generator.span_seq_num", int64(spanID))
+		attrs.PutInt("load_generator.trace_seq_num", int64(traceID))
 		// Additional attributes.
 		for k, v := range dp.options.Attributes {
-			attrs.UpsertString(k, v)
+			attrs.PutString(k, v)
 		}
 		span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 		span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
@@ -109,7 +109,7 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pmetric.Metrics, bool) {
 		attrs := rm.Resource().Attributes()
 		attrs.EnsureCapacity(len(dp.options.Attributes))
 		for k, v := range dp.options.Attributes {
-			attrs.UpsertString(k, v)
+			attrs.PutString(k, v)
 		}
 	}
 	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
@@ -119,20 +119,17 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pmetric.Metrics, bool) {
 		metric := metrics.AppendEmpty()
 		metric.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
 		metric.SetUnit("1")
-		metric.SetDataType(pmetric.MetricDataTypeGauge)
-
+		dps := metric.SetEmptyGauge().DataPoints()
 		batchIndex := dp.traceIDSequence.Inc()
-
-		dps := metric.Gauge().DataPoints()
 		// Generate data points for the metric.
 		dps.EnsureCapacity(dataPointsPerMetric)
 		for j := 0; j < dataPointsPerMetric; j++ {
 			dataPoint := dps.AppendEmpty()
 			dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 			value := dp.dataItemsGenerated.Inc()
-			dataPoint.SetIntVal(int64(value))
-			dataPoint.Attributes().InsertString("item_index", "item_"+strconv.Itoa(j))
-			dataPoint.Attributes().InsertString("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))
+			dataPoint.SetIntValue(int64(value))
+			dataPoint.Attributes().PutString("item_index", "item_"+strconv.Itoa(j))
+			dataPoint.Attributes().PutString("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))
 		}
 	}
 	return md, false
@@ -145,7 +142,7 @@ func (dp *perfTestDataProvider) GenerateLogs() (plog.Logs, bool) {
 		attrs := rl.Resource().Attributes()
 		attrs.EnsureCapacity(len(dp.options.Attributes))
 		for k, v := range dp.options.Attributes {
-			attrs.UpsertString(k, v)
+			attrs.PutString(k, v)
 		}
 	}
 	logRecords := rl.ScopeLogs().AppendEmpty().LogRecords()
@@ -158,19 +155,19 @@ func (dp *perfTestDataProvider) GenerateLogs() (plog.Logs, bool) {
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 		itemIndex := dp.dataItemsGenerated.Inc()
 		record := logRecords.AppendEmpty()
-		record.SetSeverityNumber(plog.SeverityNumberINFO3)
+		record.SetSeverityNumber(plog.SeverityNumberInfo3)
 		record.SetSeverityText("INFO3")
-		record.Body().SetStringVal("Load Generator Counter #" + strconv.Itoa(i))
-		record.SetFlags(uint32(2))
+		record.Body().SetStr("Load Generator Counter #" + strconv.Itoa(i))
+		record.SetFlags(plog.DefaultLogRecordFlags.WithIsSampled(true))
 		record.SetTimestamp(now)
 
 		attrs := record.Attributes()
-		attrs.UpsertString("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))
-		attrs.UpsertString("item_index", "item_"+strconv.Itoa(int(itemIndex)))
-		attrs.UpsertString("a", "test")
-		attrs.UpsertDouble("b", 5.0)
-		attrs.UpsertInt("c", 3)
-		attrs.UpsertBool("d", true)
+		attrs.PutString("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))
+		attrs.PutString("item_index", "item_"+strconv.Itoa(int(itemIndex)))
+		attrs.PutString("a", "test")
+		attrs.PutDouble("b", 5.0)
+		attrs.PutInt("c", 3)
+		attrs.PutBool("d", true)
 	}
 	return logs, false
 }

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,24 +15,26 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/functions/tqlcommon"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/functions/tqlotel"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
 var registry = map[string]interface{}{
-	"TraceID":              tqlotel.TraceID,
-	"SpanID":               tqlotel.SpanID,
-	"IsMatch":              tqlcommon.IsMatch,
-	"keep_keys":            tqlotel.KeepKeys,
-	"set":                  tqlcommon.Set,
-	"truncate_all":         tqlotel.TruncateAll,
-	"limit":                tqlotel.Limit,
-	"replace_match":        tqlcommon.ReplaceMatch,
-	"replace_all_matches":  tqlotel.ReplaceAllMatches,
-	"replace_pattern":      tqlcommon.ReplacePattern,
-	"replace_all_patterns": tqlotel.ReplaceAllPatterns,
-	"delete_key":           tqlotel.DeleteKey,
-	"delete_matching_keys": tqlotel.DeleteMatchingKeys,
+	"TraceID":              ottlfuncs.TraceID,
+	"SpanID":               ottlfuncs.SpanID,
+	"IsMatch":              ottlfuncs.IsMatch,
+	"Concat":               ottlfuncs.Concat,
+	"Split":                ottlfuncs.Split,
+	"Int":                  ottlfuncs.Int,
+	"keep_keys":            ottlfuncs.KeepKeys,
+	"set":                  ottlfuncs.Set,
+	"truncate_all":         ottlfuncs.TruncateAll,
+	"limit":                ottlfuncs.Limit,
+	"replace_match":        ottlfuncs.ReplaceMatch,
+	"replace_all_matches":  ottlfuncs.ReplaceAllMatches,
+	"replace_pattern":      ottlfuncs.ReplacePattern,
+	"replace_all_patterns": ottlfuncs.ReplaceAllPatterns,
+	"delete_key":           ottlfuncs.DeleteKey,
+	"delete_matching_keys": ottlfuncs.DeleteMatchingKeys,
 }
 
 func Functions() map[string]interface{} {

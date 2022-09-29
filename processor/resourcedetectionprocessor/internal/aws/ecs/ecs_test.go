@@ -91,11 +91,9 @@ func Test_ecsFiltersInvalidContainers(t *testing.T) {
 
 	containers := []ecsutil.ContainerMetadata{c1, c2, c3, c4}
 
-	ld := getValidLogData(containers, &c4, "123")
-
-	for _, attrib := range ld {
-		assert.Equal(t, 0, attrib.SliceVal().Len())
-	}
+	dest := pcommon.NewMap()
+	addValidLogData(containers, &c4, "123", dest)
+	assert.Equal(t, 0, dest.Len())
 }
 
 func Test_ecsDetectV4(t *testing.T) {
@@ -103,27 +101,20 @@ func Test_ecsDetectV4(t *testing.T) {
 
 	want := pcommon.NewResource()
 	attr := want.Attributes()
-	attr.InsertString("cloud.provider", "aws")
-	attr.InsertString("cloud.platform", "aws_ecs")
-	attr.InsertString("aws.ecs.cluster.arn", "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster")
-	attr.InsertString("aws.ecs.task.arn", "arn:aws:ecs:us-west-2:123456789123:task/123")
-	attr.InsertString("aws.ecs.task.family", "family")
-	attr.InsertString("aws.ecs.task.revision", "26")
-	attr.InsertString("cloud.region", "us-west-2")
-	attr.InsertString("cloud.availability_zone", "us-west-2a")
-	attr.InsertString("cloud.account.id", "123456789123")
-	attr.InsertString("aws.ecs.launchtype", "ec2")
-
-	attribFields := []string{"aws.log.group.names", "aws.log.group.arns", "aws.log.stream.names", "aws.log.stream.arns"}
-	attribVals := []string{"group", "arn:aws:logs:us-east-1:123456789123:log-group:group", "stream", "arn:aws:logs:us-east-1:123456789123:log-group:group:log-stream:stream"}
-
-	for i, field := range attribFields {
-		ava := pcommon.NewValueSlice()
-		av := ava.SliceVal()
-		avs := av.AppendEmpty()
-		pcommon.NewValueString(attribVals[i]).CopyTo(avs)
-		attr.Insert(field, ava)
-	}
+	attr.PutString("cloud.provider", "aws")
+	attr.PutString("cloud.platform", "aws_ecs")
+	attr.PutString("aws.ecs.cluster.arn", "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster")
+	attr.PutString("aws.ecs.task.arn", "arn:aws:ecs:us-west-2:123456789123:task/123")
+	attr.PutString("aws.ecs.task.family", "family")
+	attr.PutString("aws.ecs.task.revision", "26")
+	attr.PutString("cloud.region", "us-west-2")
+	attr.PutString("cloud.availability_zone", "us-west-2a")
+	attr.PutString("cloud.account.id", "123456789123")
+	attr.PutString("aws.ecs.launchtype", "ec2")
+	attr.PutEmptySlice("aws.log.group.names").AppendEmpty().SetStr("group")
+	attr.PutEmptySlice("aws.log.group.arns").AppendEmpty().SetStr("arn:aws:logs:us-east-1:123456789123:log-group:group")
+	attr.PutEmptySlice("aws.log.stream.names").AppendEmpty().SetStr("stream")
+	attr.PutEmptySlice("aws.log.stream.arns").AppendEmpty().SetStr("arn:aws:logs:us-east-1:123456789123:log-group:group:log-stream:stream")
 
 	d := Detector{provider: &mockMetaDataProvider{isV4: true}}
 	got, _, err := d.Detect(context.TODO())
@@ -138,15 +129,15 @@ func Test_ecsDetectV3(t *testing.T) {
 
 	want := pcommon.NewResource()
 	attr := want.Attributes()
-	attr.InsertString("cloud.provider", "aws")
-	attr.InsertString("cloud.platform", "aws_ecs")
-	attr.InsertString("aws.ecs.cluster.arn", "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster")
-	attr.InsertString("aws.ecs.task.arn", "arn:aws:ecs:us-west-2:123456789123:task/123")
-	attr.InsertString("aws.ecs.task.family", "family")
-	attr.InsertString("aws.ecs.task.revision", "26")
-	attr.InsertString("cloud.region", "us-west-2")
-	attr.InsertString("cloud.availability_zone", "us-west-2a")
-	attr.InsertString("cloud.account.id", "123456789123")
+	attr.PutString("cloud.provider", "aws")
+	attr.PutString("cloud.platform", "aws_ecs")
+	attr.PutString("aws.ecs.cluster.arn", "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster")
+	attr.PutString("aws.ecs.task.arn", "arn:aws:ecs:us-west-2:123456789123:task/123")
+	attr.PutString("aws.ecs.task.family", "family")
+	attr.PutString("aws.ecs.task.revision", "26")
+	attr.PutString("cloud.region", "us-west-2")
+	attr.PutString("cloud.availability_zone", "us-west-2a")
+	attr.PutString("cloud.account.id", "123456789123")
 
 	d := Detector{provider: &mockMetaDataProvider{isV4: false}}
 	got, _, err := d.Detect(context.TODO())

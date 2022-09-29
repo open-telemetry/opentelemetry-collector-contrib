@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@ func TestProbabilisticSampling(t *testing.T) {
 
 			sampled := 0
 			for _, traceID := range genRandomTraceIDs(traceCount) {
-				trace := newTraceStringAttrs(pcommon.NewMap(), "example", "value")
+				trace := newTraceStringAttrs(nil, "example", "value")
 
 				decision, err := probabilisticSampler.Evaluate(traceID, trace)
 				assert.NoError(t, err)
@@ -107,7 +107,7 @@ func genRandomTraceIDs(num int) (ids []pcommon.TraceID) {
 		traceID := [16]byte{}
 		binary.BigEndian.PutUint64(traceID[:8], r.Uint64())
 		binary.BigEndian.PutUint64(traceID[8:], r.Uint64())
-		ids = append(ids, pcommon.NewTraceID(traceID))
+		ids = append(ids, pcommon.TraceID(traceID))
 	}
 	return ids
 }

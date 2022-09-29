@@ -15,9 +15,13 @@
 package apachereceiver
 
 import (
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestValidate(t *testing.T) {
@@ -84,4 +88,22 @@ func TestValidate(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+
+	expected := factory.CreateDefaultConfig().(*Config)
+	expected.Endpoint = "http://localhost:8080/server-status?auto"
+	expected.CollectionInterval = 10 * time.Second
+
+	require.Equal(t, expected, cfg)
 }

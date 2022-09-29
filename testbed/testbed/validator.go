@@ -84,7 +84,6 @@ func NewCorrectTestValidator(senderName string, receiverName string, provider Da
 	// TODO: Fix Jaeger span links attributes and tracestate.
 	return &CorrectnessTestValidator{
 		dataProvider:         provider,
-		assertionFailures:    make([]*TraceAssertionFailure, 0),
 		ignoreSpanLinksAttrs: senderName == "jaeger" || receiverName == "jaeger",
 	}
 }
@@ -187,13 +186,13 @@ func (v *CorrectnessTestValidator) diffSpanSpanID(sentSpan ptrace.Span, recdSpan
 }
 
 func (v *CorrectnessTestValidator) diffSpanTraceState(sentSpan ptrace.Span, recdSpan ptrace.Span) {
-	if sentSpan.TraceState() != recdSpan.TraceState() {
+	if sentSpan.TraceState().AsRaw() != recdSpan.TraceState().AsRaw() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name(),
 			fieldPath:     "TraceState",
-			expectedValue: sentSpan.TraceState,
-			actualValue:   recdSpan.TraceState,
+			expectedValue: sentSpan.TraceState().AsRaw(),
+			actualValue:   recdSpan.TraceState().AsRaw(),
 		}
 		v.assertionFailures = append(v.assertionFailures, af)
 	}
@@ -365,7 +364,7 @@ func (v *CorrectnessTestValidator) diffSpanLinks(sentSpan ptrace.Span, recdSpan 
 				if v.ignoreSpanLinksAttrs {
 					return
 				}
-				if sentLink.TraceState() != recdLink.TraceState() {
+				if sentLink.TraceState().AsRaw() != recdLink.TraceState().AsRaw() {
 					af := &TraceAssertionFailure{
 						typeName:      "Span",
 						dataComboName: sentSpan.Name(),
@@ -462,8 +461,8 @@ func (v *CorrectnessTestValidator) compareKeyValueList(
 	spanName string, sentVal pcommon.Value, recdVal pcommon.Value, fmtStr string, attrKey string) {
 	switch recdVal.Type() {
 	case pcommon.ValueTypeMap:
-		v.diffAttributeMap(spanName, sentVal.MapVal(), recdVal.MapVal(), fmtStr)
-	case pcommon.ValueTypeString:
+		v.diffAttributeMap(spanName, sentVal.Map(), recdVal.Map(), fmtStr)
+	case pcommon.ValueTypeStr:
 		v.compareSimpleValues(spanName, sentVal, recdVal, fmtStr, attrKey)
 	default:
 		af := &TraceAssertionFailure{

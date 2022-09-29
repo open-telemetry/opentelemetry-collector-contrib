@@ -26,12 +26,36 @@ type client interface {
 	Connect() error
 	getGlobalStats() (map[string]string, error)
 	getInnodbStats() (map[string]string, error)
+	getTableIoWaitsStats() ([]TableIoWaitsStats, error)
+	getIndexIoWaitsStats() ([]IndexIoWaitsStats, error)
 	Close() error
 }
 
 type mySQLClient struct {
 	connStr string
 	client  *sql.DB
+}
+
+type IoWaitsStats struct {
+	schema      string
+	name        string
+	countDelete int64
+	countFetch  int64
+	countInsert int64
+	countUpdate int64
+	timeDelete  int64
+	timeFetch   int64
+	timeInsert  int64
+	timeUpdate  int64
+}
+
+type TableIoWaitsStats struct {
+	IoWaitsStats
+}
+
+type IndexIoWaitsStats struct {
+	IoWaitsStats
+	index string
 }
 
 var _ client = (*mySQLClient)(nil)
@@ -71,6 +95,61 @@ func (c *mySQLClient) getGlobalStats() (map[string]string, error) {
 func (c *mySQLClient) getInnodbStats() (map[string]string, error) {
 	query := "SELECT name, count FROM information_schema.innodb_metrics WHERE name LIKE '%buffer_pool_size%';"
 	return Query(*c, query)
+}
+
+// getTableIoWaitsStats queries the db for table_io_waits metrics.
+func (c *mySQLClient) getTableIoWaitsStats() ([]TableIoWaitsStats, error) {
+	query := "SELECT OBJECT_SCHEMA, OBJECT_NAME, " +
+		"COUNT_DELETE, COUNT_FETCH, COUNT_INSERT, COUNT_UPDATE," +
+		"SUM_TIMER_DELETE, SUM_TIMER_FETCH, SUM_TIMER_INSERT, SUM_TIMER_UPDATE" +
+		"FROM performance_schema.table_io_waits_summary_by_table" +
+		"WHERE OBJECT_SCHEMA NOT IN ('mysql', 'performance_schema');"
+	rows, err := c.client.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var stats []TableIoWaitsStats
+	for rows.Next() {
+		var s TableIoWaitsStats
+		err := rows.Scan(&s.schema, &s.name,
+			&s.countDelete, &s.countFetch, &s.countInsert, &s.countUpdate,
+			&s.timeDelete, &s.timeFetch, &s.timeInsert, &s.timeUpdate)
+		if err != nil {
+			return nil, err
+		}
+		stats = append(stats, s)
+	}
+
+	return stats, nil
+}
+
+// getIndexIoWaitsStats queries the db for index_io_waits metrics.
+func (c *mySQLClient) getIndexIoWaitsStats() ([]IndexIoWaitsStats, error) {
+	query := "SELECT OBJECT_SCHEMA, OBJECT_NAME, ifnull(INDEX_NAME, 'NONE') as INDEX_NAME," +
+		"COUNT_FETCH, COUNT_INSERT, COUNT_UPDATE, COUNT_DELETE," +
+		"SUM_TIMER_FETCH, SUM_TIMER_INSERT, SUM_TIMER_UPDATE, SUM_TIMER_DELETE" +
+		"FROM performance_schema.table_io_waits_summary_by_index_usage" +
+		"WHERE OBJECT_SCHEMA NOT IN ('mysql', 'performance_schema');"
+
+	rows, err := c.client.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var stats []IndexIoWaitsStats
+	for rows.Next() {
+		var s IndexIoWaitsStats
+		err := rows.Scan(&s.schema, &s.name, &s.index,
+			&s.countDelete, &s.countFetch, &s.countInsert, &s.countUpdate,
+			&s.timeDelete, &s.timeFetch, &s.timeInsert, &s.timeUpdate)
+		if err != nil {
+			return nil, err
+		}
+		stats = append(stats, s)
+	}
+
+	return stats, nil
 }
 
 func Query(c mySQLClient, query string) (map[string]string, error) {

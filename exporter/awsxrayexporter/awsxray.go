@@ -47,7 +47,7 @@ func newTracesExporter(
 		return nil, err
 	}
 	xrayClient := newXRay(logger, awsConfig, set.BuildInfo, session)
-	return exporterhelper.NewTracesExporterWithContext(
+	return exporterhelper.NewTracesExporter(
 		context.TODO(),
 		set,
 		config,

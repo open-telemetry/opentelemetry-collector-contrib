@@ -241,7 +241,7 @@ func (zr *zipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if consumerErr != nil {
 		// Transient error, due to some internal condition.
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(errNextConsumerRespBody) // nolint:errcheck
+		_, _ = w.Write(errNextConsumerRespBody)
 		return
 	}
 

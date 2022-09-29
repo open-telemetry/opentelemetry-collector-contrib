@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,14 +16,16 @@ package postgresqlreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
@@ -37,7 +39,7 @@ const (
 var (
 	emitMetricsWithoutResourceAttributes = featuregate.Gate{
 		ID:      emitMetricsWithoutResourceAttributesFeatureGateID,
-		Enabled: true,
+		Enabled: false,
 		Description: "Postgresql metrics are transitioning from being reported with identifying metric attributes " +
 			"to being identified via resource attributes in order to fit the OpenTelemetry specification. This feature " +
 			"gate controls emitting the old metrics without resource attributes. For more details, see: " +
@@ -46,7 +48,7 @@ var (
 
 	emitMetricsWithResourceAttributes = featuregate.Gate{
 		ID:      emitMetricsWithResourceAttributesFeatureGateID,
-		Enabled: false,
+		Enabled: true,
 		Description: "Postgresql metrics are transitioning from being reported with identifying metric attributes " +
 			"to being identified via resource attributes in order to fit the OpenTelemetry specification. This feature " +
 			"gate controls emitting the new metrics with resource attributes. For more details, see: " +
@@ -155,6 +157,9 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	if p.emitMetricsWithResourceAttributes {
 		p.mb.RecordPostgresqlDatabaseCountDataPoint(now, int64(len(databases)))
 		p.collectBGWriterStats(ctx, now, listClient, &errs)
+		p.collectWalAge(ctx, now, listClient, &errs)
+		p.collectReplicationStats(ctx, now, listClient, &errs)
+		p.collectMaxConnections(ctx, now, listClient, &errs)
 	}
 
 	return p.mb.Emit(), errs.Combine()
@@ -295,11 +300,11 @@ func (p *postgreSQLScraper) collectBGWriterStats(
 	ctx context.Context,
 	now pcommon.Timestamp,
 	client client,
-	errors *scrapererror.ScrapeErrors,
+	errs *scrapererror.ScrapeErrors,
 ) {
 	bgStats, err := client.getBGWriterStats(ctx)
 	if err != nil {
-		errors.AddPartial(1, err)
+		errs.AddPartial(1, err)
 		return
 	}
 
@@ -317,6 +322,57 @@ func (p *postgreSQLScraper) collectBGWriterStats(
 	p.mb.RecordPostgresqlBgwriterDurationDataPoint(now, bgStats.checkpointWriteTime, metadata.AttributeBgDurationTypeWrite)
 
 	p.mb.RecordPostgresqlBgwriterMaxwrittenDataPoint(now, bgStats.maxWritten)
+}
+
+func (p *postgreSQLScraper) collectMaxConnections(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	errs *scrapererror.ScrapeErrors,
+) {
+	mc, err := client.getMaxConnections(ctx)
+	if err != nil {
+		errs.AddPartial(1, err)
+		return
+	}
+	p.mb.RecordPostgresqlConnectionMaxDataPoint(now, mc)
+}
+
+func (p *postgreSQLScraper) collectReplicationStats(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	errs *scrapererror.ScrapeErrors,
+) {
+	rss, err := client.getReplicationStats(ctx)
+	if err != nil {
+		errs.AddPartial(1, err)
+		return
+	}
+	for _, rs := range rss {
+		p.mb.RecordPostgresqlReplicationDataDelayDataPoint(now, rs.pendingBytes, rs.clientAddr)
+		p.mb.RecordPostgresqlWalLagDataPoint(now, rs.writeLag, metadata.AttributeWalOperationLagWrite, rs.clientAddr)
+		p.mb.RecordPostgresqlWalLagDataPoint(now, rs.replayLag, metadata.AttributeWalOperationLagReplay, rs.clientAddr)
+		p.mb.RecordPostgresqlWalLagDataPoint(now, rs.flushLag, metadata.AttributeWalOperationLagFlush, rs.clientAddr)
+	}
+}
+
+func (p *postgreSQLScraper) collectWalAge(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	errs *scrapererror.ScrapeErrors,
+) {
+	walAge, err := client.getLatestWalAgeSeconds(ctx)
+	if errors.Is(err, errNoLastArchive) {
+		// return no error as there is no last archive to derive the value from
+		return
+	}
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf("unable to determine latest WAL age: %w", err))
+		return
+	}
+	p.mb.RecordPostgresqlWalAgeDataPoint(now, walAge)
 }
 
 func (p *postgreSQLScraper) retrieveDatabaseStats(

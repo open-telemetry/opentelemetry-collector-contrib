@@ -267,7 +267,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	for sc.Scan() {
 		logRecord := sl.LogRecords().AppendEmpty()
 		logLine := sc.Text()
-		logRecord.Body().SetStringVal(logLine)
+		logRecord.Body().SetStr(logLine)
 	}
 	consumerErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 
@@ -276,7 +276,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	if consumerErr != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, sl.LogRecords().Len(), consumerErr)
 	} else {
-		resp.WriteHeader(http.StatusAccepted)
+		resp.WriteHeader(http.StatusOK)
 		r.obsrecv.EndLogsOp(ctx, typeStr, sl.LogRecords().Len(), nil)
 	}
 }
@@ -359,7 +359,7 @@ func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Ev
 	if decodeErr != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), decodeErr)
 	} else {
-		resp.WriteHeader(http.StatusAccepted)
+		resp.WriteHeader(http.StatusOK)
 		_, err := resp.Write(okRespBody)
 		if err != nil {
 			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), err)
@@ -380,7 +380,7 @@ func (r *splunkReceiver) consumeLogs(ctx context.Context, events []*splunk.Event
 	if decodeErr != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), decodeErr)
 	} else {
-		resp.WriteHeader(http.StatusAccepted)
+		resp.WriteHeader(http.StatusOK)
 		if _, err := resp.Write(okRespBody); err != nil {
 			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), err)
 		}
@@ -393,7 +393,7 @@ func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resour
 		if strings.HasPrefix(accessToken, splunk.HECTokenHeader+" ") {
 			accessTokenValue := accessToken[len(splunk.HECTokenHeader)+1:]
 			return func(resource pcommon.Resource) {
-				resource.Attributes().InsertString(splunk.HecTokenLabel, accessTokenValue)
+				resource.Attributes().PutString(splunk.HecTokenLabel, accessTokenValue)
 			}
 		}
 	}

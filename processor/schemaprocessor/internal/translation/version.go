@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,17 +28,6 @@ const separator = "."
 var (
 	ErrInvalidFamily  = errors.New("invalid schema family")
 	ErrInvalidVersion = errors.New("invalid schema version")
-)
-
-// The following status values define whether the transformer
-// has to revert changes or update changes to the signal being modified
-// These values match the Version.Compare out when performing:
-//
-//	from.Compare(to) // ie: (1.0.0).Compare(1.2.1)
-const (
-	Update   int = -1 // From is less than To
-	NoChange int = 0  // From equals To
-	Revert   int = 1  // From is greater than To
 )
 
 // Version is a machine readable version of the string

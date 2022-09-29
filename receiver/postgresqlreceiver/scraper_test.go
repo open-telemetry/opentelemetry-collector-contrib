@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,6 +35,9 @@ func TestUnsuccessfulScrape(t *testing.T) {
 	cfg.Endpoint = "fake:11111"
 
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &defaultClientFactory{})
+	scraper.emitMetricsWithResourceAttributes = false
+	scraper.emitMetricsWithoutResourceAttributes = true
+
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.Error(t, err)
 
@@ -48,6 +51,8 @@ func TestScraper(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{"otel"}
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, factory)
+	scraper.emitMetricsWithResourceAttributes = false
+	scraper.emitMetricsWithoutResourceAttributes = true
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -65,6 +70,8 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, factory)
+	scraper.emitMetricsWithResourceAttributes = false
+	scraper.emitMetricsWithoutResourceAttributes = true
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -82,6 +89,8 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
+	scraper.emitMetricsWithResourceAttributes = false
+	scraper.emitMetricsWithoutResourceAttributes = true
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -99,8 +108,6 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
-	scraper.emitMetricsWithResourceAttributes = true
-	scraper.emitMetricsWithoutResourceAttributes = false
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -118,8 +125,6 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
-	scraper.emitMetricsWithResourceAttributes = true
-	scraper.emitMetricsWithoutResourceAttributes = false
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -174,6 +179,21 @@ func (m *mockClient) getIndexStats(ctx context.Context, database string) (map[in
 func (m *mockClient) getBGWriterStats(ctx context.Context) (*bgStat, error) {
 	args := m.Called(ctx)
 	return args.Get(0).(*bgStat), args.Error(1)
+}
+
+func (m *mockClient) getMaxConnections(ctx context.Context) (int64, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *mockClient) getLatestWalAgeSeconds(ctx context.Context) (int64, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *mockClient) getReplicationStats(ctx context.Context) ([]replicationStats, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]replicationStats), args.Error(1)
 }
 
 func (m *mockClient) listDatabases(_ context.Context) ([]string, error) {
@@ -232,6 +252,17 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 			bufferCheckpoints:    9,
 			buffersAllocated:     10,
 			maxWritten:           11,
+		}, nil)
+		m.On("getMaxConnections", mock.Anything).Return(int64(100), nil)
+		m.On("getLatestWalAgeSeconds", mock.Anything).Return(int64(3600), nil)
+		m.On("getReplicationStats", mock.Anything).Return([]replicationStats{
+			{
+				clientAddr:   "unix",
+				pendingBytes: 1024,
+				flushLag:     600,
+				replayLag:    700,
+				writeLag:     800,
+			},
 		}, nil)
 	} else {
 		table1 := "public.table1"

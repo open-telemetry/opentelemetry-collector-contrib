@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,17 +21,23 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqltraces"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
 )
 
 type Processor struct {
-	queries []tql.Query
+	queries []ottl.Statement
 	logger  *zap.Logger
 }
 
-func NewProcessor(statements []string, functions map[string]interface{}, settings component.ProcessorCreateSettings) (*Processor, error) {
-	queries, err := tql.ParseQueries(statements, functions, tqltraces.ParsePath, tqltraces.ParseEnum)
+func NewProcessor(statements []string, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
+	ottlp := ottl.NewParser(
+		functions,
+		ottltraces.ParsePath,
+		ottltraces.ParseEnum,
+		settings,
+	)
+	queries, err := ottlp.ParseStatements(statements)
 	if err != nil {
 		return nil, err
 	}
@@ -42,17 +48,13 @@ func NewProcessor(statements []string, functions map[string]interface{}, setting
 }
 
 func (p *Processor) ProcessTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
-	ctx := tqltraces.SpanTransformContext{}
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
-		ctx.Resource = rspans.Resource()
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
 			sspan := rspans.ScopeSpans().At(j)
-			ctx.InstrumentationScope = sspan.Scope()
 			spans := sspan.Spans()
 			for k := 0; k < spans.Len(); k++ {
-				ctx.Span = spans.At(k)
-
+				ctx := ottltraces.NewTransformContext(spans.At(k), sspan.Scope(), rspans.Resource())
 				for _, statement := range p.queries {
 					if statement.Condition(ctx) {
 						statement.Function(ctx)

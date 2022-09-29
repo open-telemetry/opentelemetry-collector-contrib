@@ -26,11 +26,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/syslog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
@@ -54,7 +55,7 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
 	var conn net.Conn
-	if cfg.Config.TCP != nil {
+	if cfg.InputConfig.TCP != nil {
 		conn, err = net.Dial("tcp", "0.0.0.0:29018")
 		require.NoError(t, err)
 	} else {
@@ -87,30 +88,30 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 }
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, len(cfg.Receivers), 1)
-	assert.Equal(t, testdataConfigYaml(), cfg.Receivers[config.NewComponentID(typeStr)])
+	sub, err := cm.Sub("syslog")
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+
+	assert.NoError(t, cfg.Validate())
+	assert.Equal(t, testdataConfigYaml(), cfg)
 }
 
 func testdataConfigYaml() *SysLogConfig {
 	return &SysLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
+			Operators:        []operator.Config{},
 			Converter: adapter.ConverterConfig{
 				FlushInterval: 100 * time.Millisecond,
 				WorkerCount:   1,
 			},
 		},
-		Config: func() syslog.Config {
+		InputConfig: func() syslog.Config {
 			c := syslog.NewConfig()
 			c.TCP = &tcp.NewConfig().BaseConfig
 			c.TCP.ListenAddress = "0.0.0.0:29018"
@@ -124,13 +125,13 @@ func testdataUDPConfig() *SysLogConfig {
 	return &SysLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
+			Operators:        []operator.Config{},
 			Converter: adapter.ConverterConfig{
 				FlushInterval: 100 * time.Millisecond,
 				WorkerCount:   1,
 			},
 		},
-		Config: func() syslog.Config {
+		InputConfig: func() syslog.Config {
 			c := syslog.NewConfig()
 			c.UDP = &udp.NewConfig().BaseConfig
 			c.UDP.ListenAddress = "0.0.0.0:29018"
@@ -146,9 +147,9 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 	badCfg := &SysLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
+			Operators:        []operator.Config{},
 		},
-		Config: func() syslog.Config {
+		InputConfig: func() syslog.Config {
 			c := syslog.NewConfig()
 			c.TCP = &tcp.NewConfig().BaseConfig
 			c.Protocol = "fake"

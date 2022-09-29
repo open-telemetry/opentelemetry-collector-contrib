@@ -35,15 +35,15 @@ func makeSQL(attributes map[string]pcommon.Value) (map[string]pcommon.Value, *aw
 	for key, value := range attributes {
 		switch key {
 		case conventions.AttributeDBConnectionString:
-			dbURL = value.StringVal()
+			dbURL = value.Str()
 		case conventions.AttributeDBSystem:
-			dbSystem = value.StringVal()
+			dbSystem = value.Str()
 		case conventions.AttributeDBName:
-			dbInstance = value.StringVal()
+			dbInstance = value.Str()
 		case conventions.AttributeDBStatement:
-			dbStatement = value.StringVal()
+			dbStatement = value.Str()
 		case conventions.AttributeDBUser:
-			dbUser = value.StringVal()
+			dbUser = value.Str()
 		default:
 			filtered[key] = value
 		}

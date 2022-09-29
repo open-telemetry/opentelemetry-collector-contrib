@@ -60,7 +60,7 @@ func newTestClient(respCode int, respBody string) (*http.Client, *[]http.Header)
 
 func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Client, *[]http.Header) {
 	index := 0
-	headers := make([]http.Header, 0)
+	var headers []http.Header
 
 	return &http.Client{
 		Transport: testRoundTripper(func(req *http.Request) *http.Response {
@@ -84,8 +84,8 @@ func createMetricsData(numberOfDataPoints int) pmetric.Metrics {
 	doubleVal := 1234.5678
 	metrics := pmetric.NewMetrics()
 	rm := metrics.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().InsertString("k0", "v0")
-	rm.Resource().Attributes().InsertString("k1", "v1")
+	rm.Resource().Attributes().PutString("k0", "v0")
+	rm.Resource().Attributes().PutString("k1", "v1")
 
 	for i := 0; i < numberOfDataPoints; i++ {
 		tsUnix := time.Unix(int64(i), int64(i)*time.Millisecond.Nanoseconds())
@@ -93,14 +93,13 @@ func createMetricsData(numberOfDataPoints int) pmetric.Metrics {
 		ilm := rm.ScopeMetrics().AppendEmpty()
 		metric := ilm.Metrics().AppendEmpty()
 		metric.SetName("gauge_double_with_dims")
-		metric.SetDataType(pmetric.MetricDataTypeGauge)
-		doublePt := metric.Gauge().DataPoints().AppendEmpty()
+		doublePt := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
-		doublePt.SetDoubleVal(doubleVal)
-		doublePt.Attributes().InsertString("k/n0", "vn0")
-		doublePt.Attributes().InsertString("k/n1", "vn1")
-		doublePt.Attributes().InsertString("k/r0", "vr0")
-		doublePt.Attributes().InsertString("k/r1", "vr1")
+		doublePt.SetDoubleValue(doubleVal)
+		doublePt.Attributes().PutString("k/n0", "vn0")
+		doublePt.Attributes().PutString("k/n1", "vn1")
+		doublePt.Attributes().PutString("k/r0", "vr0")
+		doublePt.Attributes().PutString("k/r1", "vr1")
 	}
 
 	return metrics
@@ -109,7 +108,7 @@ func createMetricsData(numberOfDataPoints int) pmetric.Metrics {
 func createTraceData(numberOfTraces int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().InsertString("resource", "R1")
+	rs.Resource().Attributes().PutString("resource", "R1")
 	ils := rs.ScopeSpans().AppendEmpty()
 	ils.Spans().EnsureCapacity(numberOfTraces)
 	for i := 0; i < numberOfTraces; i++ {
@@ -117,11 +116,11 @@ func createTraceData(numberOfTraces int) ptrace.Traces {
 		span.SetName("root")
 		span.SetStartTimestamp(pcommon.Timestamp((i + 1) * 1e9))
 		span.SetEndTimestamp(pcommon.Timestamp((i + 2) * 1e9))
-		span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-		span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-		span.SetTraceState("foo")
+		span.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
+		span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
+		span.TraceState().FromRaw("foo")
 		if i%2 == 0 {
-			span.SetParentSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+			span.SetParentSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 			span.Status().SetCode(ptrace.StatusCodeOk)
 			span.Status().SetMessage("ok")
 		}
@@ -155,13 +154,13 @@ func createLogDataWithCustomLibraries(numResources int, libraries []string, numR
 			for k := 0; k < numRecords[j]; k++ {
 				ts := pcommon.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
 				logRecord := sl.LogRecords().AppendEmpty()
-				logRecord.Body().SetStringVal("mylog")
-				logRecord.Attributes().InsertString(splunk.DefaultNameLabel, fmt.Sprintf("%d_%d_%d", i, j, k))
-				logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
-				logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(splunk.DefaultIndexLabel, "myindex")
-				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-				logRecord.Attributes().InsertString("custom", "custom")
+				logRecord.Body().SetStr("mylog")
+				logRecord.Attributes().PutString(splunk.DefaultNameLabel, fmt.Sprintf("%d_%d_%d", i, j, k))
+				logRecord.Attributes().PutString(splunk.DefaultSourceLabel, "myapp")
+				logRecord.Attributes().PutString(splunk.DefaultSourceTypeLabel, "myapp-type")
+				logRecord.Attributes().PutString(splunk.DefaultIndexLabel, "myindex")
+				logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
+				logRecord.Attributes().PutString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 			}
 		}
@@ -948,7 +947,7 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 	logs := plog.NewLogs()
 	log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	// Invalid log value
-	log.Body().SetDoubleVal(math.Inf(1))
+	log.Body().SetDouble(math.Inf(1))
 
 	err := c.pushLogData(context.Background(), logs)
 
@@ -1237,7 +1236,7 @@ func TestSubLogs(t *testing.T) {
 
 	// Logs subset from leftmost index (resource 0, library 0, record 0).
 	_0_0_0 := &index{resource: 0, library: 0, record: 0} //revive:disable-line:var-naming
-	got := c.subLogs(&logs, _0_0_0, nil)
+	got := c.subLogs(logs, _0_0_0, nil)
 
 	// Number of logs in subset should equal original logs.
 	assert.Equal(t, logs.LogRecordCount(), got.LogRecordCount())
@@ -1251,7 +1250,7 @@ func TestSubLogs(t *testing.T) {
 
 	// Logs subset from some mid index (resource 0, library 1, log 2).
 	_0_1_2 := &index{resource: 0, library: 1, record: 2} //revive:disable-line:var-naming
-	got = c.subLogs(&logs, _0_1_2, nil)
+	got = c.subLogs(logs, _0_1_2, nil)
 
 	assert.Equal(t, 7, got.LogRecordCount())
 
@@ -1264,7 +1263,7 @@ func TestSubLogs(t *testing.T) {
 
 	// Logs subset from rightmost index (resource 1, library 1, log 2).
 	_1_1_2 := &index{resource: 1, library: 1, record: 2} //revive:disable-line:var-naming
-	got = c.subLogs(&logs, _1_1_2, nil)
+	got = c.subLogs(logs, _1_1_2, nil)
 
 	// Number of logs in subset should be 1.
 	assert.Equal(t, 1, got.LogRecordCount())
@@ -1278,7 +1277,7 @@ func TestSubLogs(t *testing.T) {
 	slice := &index{resource: 1, library: 0, record: 5}
 	profSlice := &index{resource: 0, library: 1, record: 8}
 
-	got = c.subLogs(&logs, slice, profSlice)
+	got = c.subLogs(logs, slice, profSlice)
 
 	assert.Equal(t, 5+2+10, got.LogRecordCount())
 	assert.Equal(t, "otel.logs", got.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Name())

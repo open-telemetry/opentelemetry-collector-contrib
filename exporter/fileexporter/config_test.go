@@ -43,5 +43,48 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
 			Path:             "./filename.json",
+			Rotation: Rotation{
+				MaxMegabytes: 10,
+				MaxDays:      3,
+				MaxBackups:   3,
+				LocalTime:    true,
+			},
+			FormatType: formatTypeJSON,
 		})
+	e2 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "3")]
+	assert.Equal(t, e2,
+		&Config{
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "3")),
+			Path:             "./filename",
+			Rotation: Rotation{
+				MaxMegabytes: 10,
+				MaxDays:      3,
+				MaxBackups:   3,
+				LocalTime:    true,
+			},
+			FormatType:  formatTypeProto,
+			Compression: compressionZSTD,
+		})
+}
+
+func TestLoadConfigFormatError(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-format-error.yaml"), factories)
+	require.EqualError(t, err, "exporter \"file\" has invalid configuration: format type is not supported")
+	require.NotNil(t, cfg)
+}
+
+func TestLoadConfiCompressionError(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-compression-error.yaml"), factories)
+	require.EqualError(t, err, "exporter \"file\" has invalid configuration: compression is not supported")
+	require.NotNil(t, cfg)
 }

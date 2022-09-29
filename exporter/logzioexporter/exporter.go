@@ -88,7 +88,7 @@ func newLogzioTracesExporter(config *Config, set component.ExporterCreateSetting
 		return nil, err
 	}
 	config.checkAndWarnDeprecatedOptions(exporter.logger)
-	return exporterhelper.NewTracesExporterWithContext(
+	return exporterhelper.NewTracesExporter(
 		context.TODO(),
 		set,
 		config,
@@ -113,7 +113,7 @@ func newLogzioLogsExporter(config *Config, set component.ExporterCreateSettings)
 		return nil, err
 	}
 	config.checkAndWarnDeprecatedOptions(exporter.logger)
-	return exporterhelper.NewLogsExporterWithContext(
+	return exporterhelper.NewLogsExporter(
 		context.TODO(),
 		set,
 		config,
@@ -226,7 +226,7 @@ func (exporter *logzioExporter) export(ctx context.Context, url string, request 
 
 	defer func() {
 		// Discard any remaining response body when we are done reading.
-		io.CopyN(io.Discard, resp.Body, maxHTTPResponseReadBytes) // nolint:errcheck
+		_, _ = io.CopyN(io.Discard, resp.Body, maxHTTPResponseReadBytes)
 		resp.Body.Close()
 	}()
 	exporter.logger.Debug(fmt.Sprintf("Response status code: %d", resp.StatusCode))

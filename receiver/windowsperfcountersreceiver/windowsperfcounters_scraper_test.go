@@ -376,7 +376,7 @@ func TestScrape(t *testing.T) {
 					dps := metric.Gauge().DataPoints()
 					assert.Equal(t, len(test.mockCounterValues), dps.Len())
 					for dpIdx, val := range test.mockCounterValues {
-						assert.Equal(t, val.Value, dps.At(dpIdx).DoubleVal())
+						assert.Equal(t, val.Value, dps.At(dpIdx).DoubleValue())
 						expectedAttributeLen := len(counterCfg.MetricRep.Attributes)
 						if val.InstanceName != "" {
 							expectedAttributeLen++
@@ -384,10 +384,10 @@ func TestScrape(t *testing.T) {
 						assert.Equal(t, expectedAttributeLen, dps.At(dpIdx).Attributes().Len())
 						dps.At(dpIdx).Attributes().Range(func(k string, v pcommon.Value) bool {
 							if k == instanceLabelName {
-								assert.Equal(t, val.InstanceName, v.StringVal())
+								assert.Equal(t, val.InstanceName, v.Str())
 								return true
 							}
-							assert.Equal(t, counterCfg.MetricRep.Attributes[k], v.StringVal())
+							assert.Equal(t, counterCfg.MetricRep.Attributes[k], v.Str())
 							return true
 						})
 					}

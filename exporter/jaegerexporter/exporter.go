@@ -42,7 +42,7 @@ import (
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
 func newTracesExporter(cfg *Config, set component.ExporterCreateSettings) (component.TracesExporter, error) {
 	s := newProtoGRPCSender(cfg, set.TelemetrySettings)
-	return exporterhelper.NewTracesExporterWithContext(
+	return exporterhelper.NewTracesExporter(
 		context.TODO(), set, cfg, s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(s.start),
@@ -181,8 +181,7 @@ func (s *protoGRPCSender) propagateStateChange(st connectivity.State) {
 }
 
 func (s *protoGRPCSender) onStateChange(st connectivity.State) {
-	mCtx, _ := tag.New(context.Background(), tag.Upsert(tag.MustNewKey("exporter_name"), s.name))
-	stats.Record(mCtx, mLastConnectionState.M(int64(st)))
+	_ = stats.RecordWithTags(context.Background(), []tag.Mutator{tag.Upsert(tag.MustNewKey("exporter_name"), s.name)}, mLastConnectionState.M(int64(st)))
 	s.settings.Logger.Info("State of the connection with the Jaeger Collector backend", zap.Stringer("state", st))
 }
 

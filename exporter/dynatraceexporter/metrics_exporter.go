@@ -43,7 +43,7 @@ const (
 
 // NewExporter exports to a Dynatrace Metrics v2 API
 func newMetricsExporter(params component.ExporterCreateSettings, cfg *config.Config) *exporter {
-	confDefaultDims := []dimensions.Dimension{}
+	var confDefaultDims []dimensions.Dimension
 	for key, value := range cfg.DefaultDimensions {
 		confDefaultDims = append(confDefaultDims, dimensions.NewDimension(key, value))
 	}
@@ -82,7 +82,7 @@ type exporter struct {
 
 // for backwards-compatibility with deprecated `Tags` config option
 func dimensionsFromTags(tags []string) dimensions.NormalizedDimensionList {
-	dims := []dimensions.Dimension{}
+	var dims []dimensions.Dimension
 	for _, tag := range tags {
 		parts := strings.SplitN(tag, "=", 2)
 		if len(parts) == 2 {
@@ -120,7 +120,7 @@ func (e *exporter) PushMetricsData(ctx context.Context, md pmetric.Metrics) erro
 }
 
 func (e *exporter) serializeMetrics(md pmetric.Metrics) []string {
-	lines := make([]string, 0)
+	var lines []string
 
 	resourceMetrics := md.ResourceMetrics()
 
@@ -139,7 +139,7 @@ func (e *exporter) serializeMetrics(md pmetric.Metrics) []string {
 					e.settings.Logger.Warn(
 						"failed to serialize",
 						zap.String("name", metric.Name()),
-						zap.String("data-type", metric.DataType().String()),
+						zap.String("data-type", metric.Type().String()),
 						zap.Error(err),
 					)
 				}
@@ -150,7 +150,7 @@ func (e *exporter) serializeMetrics(md pmetric.Metrics) []string {
 				e.settings.Logger.Debug(
 					"Serialized metric data",
 					zap.String("name", metric.Name()),
-					zap.String("data-type", metric.DataType().String()),
+					zap.String("data-type", metric.Type().String()),
 					zap.Int("data-len", len(metricLines)),
 				)
 			}

@@ -34,7 +34,7 @@ type hecLink struct {
 	Attributes map[string]interface{} `json:"attributes,omitempty"`
 	TraceID    string                 `json:"trace_id"`
 	SpanID     string                 `json:"span_id"`
-	TraceState ptrace.TraceState      `json:"trace_state"`
+	TraceState string                 `json:"trace_state"`
 }
 
 // hecSpanStatus is a data structure holding the status of a span to export explicitly to Splunk HEC.
@@ -72,13 +72,13 @@ func mapSpanToSplunkEvent(resource pcommon.Resource, span ptrace.Span, config *C
 	resource.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch k {
 		case hostKey:
-			host = v.StringVal()
+			host = v.Str()
 		case sourceKey:
-			source = v.StringVal()
+			source = v.Str()
 		case sourceTypeKey:
-			sourceType = v.StringVal()
+			sourceType = v.Str()
 		case indexKey:
-			index = v.StringVal()
+			index = v.Str()
 		case splunk.HecTokenLabel:
 			// ignore
 		default:
@@ -119,7 +119,7 @@ func toHecSpan(logger *zap.Logger, span ptrace.Span) hecSpan {
 			Attributes: linkAttributes,
 			TraceID:    link.TraceID().HexString(),
 			SpanID:     link.SpanID().HexString(),
-			TraceState: link.TraceState(),
+			TraceState: link.TraceState().AsRaw(),
 		}
 	}
 	events := make([]hecEvent, span.Events().Len())

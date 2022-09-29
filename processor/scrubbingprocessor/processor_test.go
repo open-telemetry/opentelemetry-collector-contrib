@@ -78,7 +78,7 @@ func generateTestEntry(body string) plog.Logs {
 	rl0 := ld.ResourceLogs().AppendEmpty()
 	sc := rl0.ScopeLogs().AppendEmpty()
 	e1 := sc.LogRecords().AppendEmpty()
-	e1.Body().SetStringVal(body)
+	e1.Body().SetStr(body)
 	return ld
 
 }
@@ -229,13 +229,13 @@ func generateLogs(body string, resourceAttributes map[string]string, recordAttri
 	ld := plog.NewLogs()
 	resourceLogs := ld.ResourceLogs().AppendEmpty()
 	for k, v := range resourceAttributes {
-		resourceLogs.Resource().Attributes().InsertString(k, v)
+		resourceLogs.Resource().Attributes().PutString(k, v)
 	}
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	logRecordEntry1 := scopeLogs.LogRecords().AppendEmpty()
 	for k, v := range recordAttributes {
-		logRecordEntry1.Attributes().InsertString(k, v)
+		logRecordEntry1.Attributes().PutString(k, v)
 	}
-	logRecordEntry1.Body().SetStringVal(body)
+	logRecordEntry1.Body().SetStr(body)
 	return ld
 }

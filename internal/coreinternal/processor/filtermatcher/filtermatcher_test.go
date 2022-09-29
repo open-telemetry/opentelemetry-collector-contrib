@@ -204,7 +204,8 @@ func Test_Matching_False(t *testing.T) {
 		},
 	}
 
-	atts := pcommon.NewMapFromRaw(map[string]interface{}{
+	attrs := pcommon.NewMap()
+	attrs.FromRaw(map[string]interface{}{
 		"keyInt": 123,
 		"keyMap": map[string]interface{}{},
 	})
@@ -219,7 +220,7 @@ func Test_Matching_False(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, matcher)
 
-			assert.False(t, matcher.Match(atts, resource("wrongSvc"), library))
+			assert.False(t, matcher.Match(attrs, resource("wrongSvc"), library))
 		})
 	}
 }
@@ -358,7 +359,8 @@ func Test_Matching_True(t *testing.T) {
 		},
 	}
 
-	atts := pcommon.NewMapFromRaw(map[string]interface{}{
+	attrs := pcommon.NewMap()
+	attrs.FromRaw(map[string]interface{}{
 		"keyString": "arithmetic",
 		"keyInt":    123,
 		"keyDouble": 3245.6,
@@ -367,8 +369,8 @@ func Test_Matching_True(t *testing.T) {
 	})
 
 	resource := pcommon.NewResource()
-	resource.Attributes().InsertString(conventions.AttributeServiceName, "svcA")
-	resource.Attributes().InsertString("resString", "arithmetic")
+	resource.Attributes().PutString(conventions.AttributeServiceName, "svcA")
+	resource.Attributes().PutString("resString", "arithmetic")
 
 	library := pcommon.NewInstrumentationScope()
 	library.SetName("lib")
@@ -380,13 +382,13 @@ func Test_Matching_True(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, mp)
 
-			assert.True(t, mp.Match(atts, resource, library))
+			assert.True(t, mp.Match(attrs, resource, library))
 		})
 	}
 }
 
 func resource(service string) pcommon.Resource {
 	r := pcommon.NewResource()
-	r.Attributes().InsertString(conventions.AttributeServiceName, service)
+	r.Attributes().PutString(conventions.AttributeServiceName, service)
 	return r
 }

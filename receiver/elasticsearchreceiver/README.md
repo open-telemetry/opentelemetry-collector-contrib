@@ -18,7 +18,7 @@ See the [Elasticsearch docs](https://www.elastic.co/guide/en/elasticsearch/refer
 ## Configuration
 
 The following settings are optional:
-- `metrics` (default: see `DefaultMetricsSettings` [here](./internal/metadata/generated_metrics_v2.go): Allows enabling and disabling specific metrics from being collected in this receiver.
+- `metrics` (default: see `DefaultMetricsSettings` [here](./internal/metadata/generated_metrics.go): Allows enabling and disabling specific metrics from being collected in this receiver.
 - `nodes` (default: `["_all"]`): Allows specifying node filters that define which nodes are scraped for node-level metrics. See [the Elasticsearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster.html#cluster-nodes) for allowed filters. If this option is left explicitly empty, then no node-level metrics will be scraped.
 - `skip_cluster_metrics` (default: `false`): If true, cluster-level metrics will not be scraped.
 - `endpoint` (default = `http://localhost:9200`): The base URL of the Elasticsearch API for the cluster to monitor.
@@ -46,47 +46,25 @@ The full list of settings exposed for this receiver are documented [here](./conf
 
 ## Metrics
 
+The following metric are available with versions:
+- `elasticsearch.indexing_pressure.memory.limit` >= [7.10](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/release-notes-7.10.0.html)
+- `elasticsearch.node.shards.data_set.size` >= [7.13](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/release-notes-7.13.0.html)
+- `elasticsearch.cluster.state_update.count` >= [7.16.0](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/release-notes-7.16.0.html)
+- `elasticsearch.cluster.state_update.time` >= [7.16.0](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/release-notes-7.16.0.html)
+
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
 
 ### Feature gate configurations
 
 #### Transition from metrics with "direction" attribute
 
-Some elasticsearch metrics reported are transitioning from being reported with a `direction` attribute to being reported with the
-direction included in the metric name to adhere to the OpenTelemetry specification
-(https://github.com/open-telemetry/opentelemetry-specification/pull/2617):
+The proposal to change metrics from being reported with a `direction` attribute has been reverted in the specification. As a result, the
+following feature gates will be removed in v0.62.0:
 
-- `elasticsearch.node.cluster.io` will become:
-  - `elasticsearch.node.cluster.io.received`
-  - `elasticsearch.node.cluster.io.sent`
+- **receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute**
+- **receiver.elasticsearchreceiver.emitMetricsWithDirectionAttribute**
 
-The following feature gates control the transition process:
-
-- **receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute**: controls if the new metrics without `direction` attribute are emitted by the receiver.
-- **receiver.elasticsearchreceiver.emitMetricsWithDirectionAttribute**: controls if the deprecated metrics with `direction` attribute are emitted by the receiver.
-
-##### Transition schedule:
-
-See this [tracking issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11815) for more details.
-
-1. Phase 1, v0.59.0, August 2022:
-
-- The new metrics are available for all scrapers, but disabled by default, they can be enabled with the feature gates.
-- `receiver.elasticsearchreceiver.emitMetricsWithDirectionAttribute` is enabled by default.
-- `receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute` is disabled by default.
-
-2. Phase 2, version and date TBD:
-
-- The new metrics are enabled by default, deprecated metrics disabled, they can be enabled with the feature gates.
-- `receiver.elasticsearchreceiver.emitMetricsWithDirectionAttribute` is disabled by default.
-- `receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute` is enabled by default.
-
-3. Phase 3, version and date TBD:
-
-- The feature gates are removed.
-- The new metrics without `direction` attribute are always emitted.
-- The deprecated metrics with `direction` attribute are no longer available.
-
+For additional information, see https://github.com/open-telemetry/opentelemetry-specification/issues/2726.
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

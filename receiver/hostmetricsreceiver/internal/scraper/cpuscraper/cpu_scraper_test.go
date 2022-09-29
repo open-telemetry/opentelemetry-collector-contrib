@@ -332,7 +332,7 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 
 		// remove empty values to make the test more simple
 		dp.RemoveIf(func(n pmetric.NumberDataPoint) bool {
-			return n.DoubleVal() == 0.0
+			return n.DoubleValue() == 0.0
 		})
 
 		for idx, expectedDp := range scrapeData.expectedDps {
@@ -342,11 +342,11 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 }
 
 func assertDatapointValueAndStringAttributes(t *testing.T, dp pmetric.NumberDataPoint, value float64, attrs map[string]string) {
-	assert.InDelta(t, value, dp.DoubleVal(), 0.0001)
+	assert.InDelta(t, value, dp.DoubleValue(), 0.0001)
 	for k, v := range attrs {
 		cpuAttribute, exists := dp.Attributes().Get(k)
 		assert.True(t, exists)
-		assert.Equal(t, v, cpuAttribute.StringVal())
+		assert.Equal(t, v, cpuAttribute.Str())
 	}
 }
 
@@ -355,7 +355,7 @@ func assertCPUMetricValid(t *testing.T, metric pmetric.Metric, startTime pcommon
 	expected.SetName("system.cpu.time")
 	expected.SetDescription("Total CPU seconds broken down by different states.")
 	expected.SetUnit("s")
-	expected.SetDataType(pmetric.MetricDataTypeSum)
+	expected.SetEmptySum()
 	internal.AssertDescriptorEqual(t, expected, metric)
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
@@ -388,7 +388,7 @@ func assertCPUUtilizationMetricValid(t *testing.T, metric pmetric.Metric, startT
 	expected.SetName("system.cpu.utilization")
 	expected.SetDescription("Percentage of CPU time broken down by different states.")
 	expected.SetUnit("1")
-	expected.SetDataType(pmetric.MetricDataTypeGauge)
+	expected.SetEmptyGauge()
 	internal.AssertDescriptorEqual(t, expected, metric)
 	if startTime != 0 {
 		internal.AssertGaugeMetricStartTimeEquals(t, metric, startTime)

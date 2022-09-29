@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
@@ -53,39 +52,39 @@ func runIndividualMetricTestCase(t *testing.T, mt metricTestCase, mp component.M
 func generateMetricData(resourceName string, attrs map[string]interface{}) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	res := md.ResourceMetrics().AppendEmpty()
-	res.Resource().Attributes().InsertString("name", resourceName)
+	res.Resource().Attributes().PutString("name", resourceName)
 	sl := res.ScopeMetrics().AppendEmpty()
 	m := sl.Metrics().AppendEmpty()
 
-	switch m.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch m.Type() {
+	case pmetric.MetricTypeGauge:
 		dps := m.Gauge().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			pcommon.NewMapFromRaw(attrs).CopyTo(dps.At(i).Attributes())
+			dps.At(i).Attributes().FromRaw(attrs)
 			dps.At(i).Attributes().Sort()
 		}
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		dps := m.Sum().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			pcommon.NewMapFromRaw(attrs).CopyTo(dps.At(i).Attributes())
+			dps.At(i).Attributes().FromRaw(attrs)
 			dps.At(i).Attributes().Sort()
 		}
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		dps := m.Histogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			pcommon.NewMapFromRaw(attrs).CopyTo(dps.At(i).Attributes())
+			dps.At(i).Attributes().FromRaw(attrs)
 			dps.At(i).Attributes().Sort()
 		}
-	case pmetric.MetricDataTypeExponentialHistogram:
+	case pmetric.MetricTypeExponentialHistogram:
 		dps := m.ExponentialHistogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			pcommon.NewMapFromRaw(attrs).CopyTo(dps.At(i).Attributes())
+			dps.At(i).Attributes().FromRaw(attrs)
 			dps.At(i).Attributes().Sort()
 		}
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		dps := m.Summary().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			pcommon.NewMapFromRaw(attrs).CopyTo(dps.At(i).Attributes())
+			dps.At(i).Attributes().FromRaw(attrs)
 			dps.At(i).Attributes().Sort()
 		}
 	}
@@ -104,28 +103,28 @@ func sortMetricAttributes(md pmetric.Metrics) {
 			for k := 0; k < metrics.Len(); k++ {
 				m := metrics.At(k)
 
-				switch m.DataType() {
-				case pmetric.MetricDataTypeGauge:
+				switch m.Type() {
+				case pmetric.MetricTypeGauge:
 					dps := m.Gauge().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dps.At(l).Attributes().Sort()
 					}
-				case pmetric.MetricDataTypeSum:
+				case pmetric.MetricTypeSum:
 					dps := m.Sum().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dps.At(l).Attributes().Sort()
 					}
-				case pmetric.MetricDataTypeHistogram:
+				case pmetric.MetricTypeHistogram:
 					dps := m.Histogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dps.At(l).Attributes().Sort()
 					}
-				case pmetric.MetricDataTypeExponentialHistogram:
+				case pmetric.MetricTypeExponentialHistogram:
 					dps := m.ExponentialHistogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dps.At(l).Attributes().Sort()
 					}
-				case pmetric.MetricDataTypeSummary:
+				case pmetric.MetricTypeSummary:
 					dps := m.Summary().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dps.At(l).Attributes().Sort()

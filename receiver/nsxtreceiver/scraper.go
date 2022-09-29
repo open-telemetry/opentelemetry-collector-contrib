@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ type interfaceInformation struct {
 }
 
 func (s *scraper) retrieve(ctx context.Context) ([]*nodeInfo, error) {
-	r := []*nodeInfo{}
+	var r []*nodeInfo
 	errs := &scrapererror.ScrapeErrors{}
 
 	tNodes, err := s.client.TransportNodes(ctx)

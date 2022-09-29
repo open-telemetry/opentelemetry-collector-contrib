@@ -195,21 +195,13 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 
 #### Transition from metrics with "direction" attribute
 
-Some kubeletstats metrics reported are transitioning from being reported with a `direction` attribute to being reported with the
-direction included in the metric name to adhere to the OpenTelemetry specification
-(https://github.com/open-telemetry/opentelemetry-specification/pull/2617):
+The proposal to change metrics from being reported with a `direction` attribute has been reverted in the specification. As a result, the
+following feature gates will be removed in v0.62.0:
 
-- `k8s.node.network.io` will become:
-  - `k8s.node.network.io.transmit`
-  - `k8s.node.network.io.receive`
-- `k8s.node.network.errors` will become:
-  - `k8s.node.network.errors.transmit`
-  - `k8s.node.network.errors.receive`
+- **receiver.kubeletstatsreceiver.emitMetricsWithoutDirectionAttribute**
+- **receiver.kubeletstatsreceiver.emitMetricsWithDirectionAttribute**
 
-The following feature gates control the transition process:
-
-- **receiver.kubeletstatsreceiver.emitMetricsWithoutDirectionAttribute**: controls if the new metrics without `direction` attribute are emitted by the receiver.
-- **receiver.kubeletstatsreceiver.emitMetricsWithDirectionAttribute**: controls if the deprecated metrics with `direction` attribute are emitted by the receiver.
+For additional information, see https://github.com/open-telemetry/opentelemetry-specification/issues/2726.
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

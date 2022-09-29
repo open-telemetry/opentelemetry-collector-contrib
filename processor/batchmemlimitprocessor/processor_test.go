@@ -1,6 +1,5 @@
 package batchmemlimitprocessor
 
-
 // func TestBatchMemoryLimitProcessor_extractBatch(t *testing.T) {
 // 	processor := batchMemoryLimitProcessor{
 // 		sendMemorySize: 100,

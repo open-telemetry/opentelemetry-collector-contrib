@@ -69,14 +69,14 @@ func (c *collector) processMetrics(rm pmetric.ResourceMetrics) (n int) {
 var errUnknownMetricType = fmt.Errorf("unknown metric type")
 
 func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.Map) (prometheus.Metric, error) {
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		return c.convertGauge(metric, resourceAttrs)
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		return c.convertSum(metric, resourceAttrs)
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		return c.convertDoubleHistogram(metric, resourceAttrs)
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		return c.convertSummary(metric, resourceAttrs)
 	}
 
@@ -123,9 +123,9 @@ func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Ma
 	var value float64
 	switch ip.ValueType() {
 	case pmetric.NumberDataPointValueTypeInt:
-		value = float64(ip.IntVal())
+		value = float64(ip.IntValue())
 	case pmetric.NumberDataPointValueTypeDouble:
-		value = ip.DoubleVal()
+		value = ip.DoubleValue()
 	}
 	m, err := prometheus.NewConstMetric(desc, prometheus.GaugeValue, value, attributes...)
 	if err != nil {
@@ -150,9 +150,9 @@ func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map)
 	var value float64
 	switch ip.ValueType() {
 	case pmetric.NumberDataPointValueTypeInt:
-		value = float64(ip.IntVal())
+		value = float64(ip.IntValue())
 	case pmetric.NumberDataPointValueTypeDouble:
-		value = ip.DoubleVal()
+		value = ip.DoubleValue()
 	}
 	m, err := prometheus.NewConstMetric(desc, metricType, value, attributes...)
 	if err != nil {
@@ -217,9 +217,34 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 		points[bucket] = cumCount
 	}
 
+	arrLen := ip.Exemplars().Len()
+	exemplars := make([]prometheus.Exemplar, arrLen)
+	for i := 0; i < arrLen; i++ {
+		e := ip.Exemplars().At(i)
+
+		labels := make(prometheus.Labels, e.FilteredAttributes().Len())
+		e.FilteredAttributes().Range(func(k string, v pcommon.Value) bool {
+			labels[k] = v.AsString()
+			return true
+		})
+
+		exemplars[i] = prometheus.Exemplar{
+			Value:     e.DoubleValue(),
+			Labels:    labels,
+			Timestamp: e.Timestamp().AsTime(),
+		}
+	}
+
 	m, err := prometheus.NewConstHistogram(desc, ip.Count(), ip.Sum(), points, attributes...)
 	if err != nil {
 		return nil, err
+	}
+
+	if arrLen > 0 {
+		m, err = prometheus.NewMetricWithExemplars(m, exemplars...)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if c.sendTimestamps {

@@ -63,7 +63,7 @@ func newTracesProcessor(ctx context.Context, set component.ProcessorCreateSettin
 		hashSeed:           cfg.HashSeed,
 	}
 
-	return processorhelper.NewTracesProcessorWithCreateSettings(
+	return processorhelper.NewTracesProcessor(
 		ctx,
 		set,
 		cfg,
@@ -87,7 +87,7 @@ func (tsp *tracesamplerprocessor) processTraces(_ context.Context, td ptrace.Tra
 				// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
 				// with various different criteria to generate trace id and perhaps were already sampled without hashing.
 				// Hashing here prevents bias due to such systems.
-				tidBytes := s.TraceID().Bytes()
+				tidBytes := s.TraceID()
 				sampled := sp == mustSampleSpan ||
 					hash(tidBytes[:], tsp.hashSeed)&bitMaskHashBuckets < tsp.scaledSamplingRate
 				return !sampled
@@ -128,21 +128,21 @@ func parseSpanSamplingPriority(span ptrace.Span) samplingPriority {
 	// between different formats.
 	switch samplingPriorityAttrib.Type() {
 	case pcommon.ValueTypeInt:
-		value := samplingPriorityAttrib.IntVal()
+		value := samplingPriorityAttrib.Int()
 		if value == 0 {
 			decision = doNotSampleSpan
 		} else if value > 0 {
 			decision = mustSampleSpan
 		}
 	case pcommon.ValueTypeDouble:
-		value := samplingPriorityAttrib.DoubleVal()
+		value := samplingPriorityAttrib.Double()
 		if value == 0.0 {
 			decision = doNotSampleSpan
 		} else if value > 0.0 {
 			decision = mustSampleSpan
 		}
-	case pcommon.ValueTypeString:
-		attribVal := samplingPriorityAttrib.StringVal()
+	case pcommon.ValueTypeStr:
+		attribVal := samplingPriorityAttrib.Str()
 		if value, err := strconv.ParseFloat(attribVal, 64); err == nil {
 			if value == 0.0 {
 				decision = doNotSampleSpan

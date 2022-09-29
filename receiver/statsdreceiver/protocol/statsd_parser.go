@@ -117,7 +117,6 @@ func (p *StatsDParser) Initialize(enableMetricType bool, isMonotonicCounter bool
 	p.lastIntervalTime = timeNowFunc()
 	p.gauges = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
 	p.counters = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
-	p.timersAndDistributions = make([]pmetric.ScopeMetrics, 0)
 	p.summaries = make(map[statsDMetricDescription]summaryMetric)
 
 	p.observeHistogram = DefaultObserverType
@@ -166,7 +165,7 @@ func (p *StatsDParser) GetMetrics() pmetric.Metrics {
 
 	p.gauges = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
 	p.counters = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
-	p.timersAndDistributions = make([]pmetric.ScopeMetrics, 0)
+	p.timersAndDistributions = nil
 	p.summaries = make(map[statsDMetricDescription]summaryMetric)
 	return metrics
 }
@@ -197,7 +196,7 @@ func (p *StatsDParser) Aggregate(line string) error {
 		} else {
 			if parsedMetric.addition {
 				point := p.gauges[parsedMetric.description].Metrics().At(0).Gauge().DataPoints().At(0)
-				point.SetDoubleVal(point.DoubleVal() + parsedMetric.gaugeValue())
+				point.SetDoubleValue(point.DoubleValue() + parsedMetric.gaugeValue())
 			} else {
 				p.gauges[parsedMetric.description] = buildGaugeMetric(parsedMetric, timeNowFunc())
 			}
@@ -211,7 +210,7 @@ func (p *StatsDParser) Aggregate(line string) error {
 			p.lastIntervalTime = timeNow
 		} else {
 			point := p.counters[parsedMetric.description].Metrics().At(0).Sum().DataPoints().At(0)
-			point.SetIntVal(point.IntVal() + parsedMetric.counterValue())
+			point.SetIntValue(point.IntValue() + parsedMetric.counterValue())
 		}
 
 	case TimingType, HistogramType:

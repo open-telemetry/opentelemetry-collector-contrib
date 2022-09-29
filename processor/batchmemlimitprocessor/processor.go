@@ -74,19 +74,19 @@ func (mp *batchMemoryLimitProcessor) startProcessingCycle() {
 	for {
 		select {
 		case <-mp.shutdownC:
-			DONE:
-				for {
-					select {
-					case item := <-mp.newItem:
-						mp.processItem(item)
-					default:
-						break DONE
-					}
+		DONE:
+			for {
+				select {
+				case item := <-mp.newItem:
+					mp.processItem(item)
+				default:
+					break DONE
 				}
-				// This is the close of the channel
-				if mp.batch.getLogCount() > 0 {
-					mp.sendItems()
-				}
+			}
+			// This is the close of the channel
+			if mp.batch.getLogCount() > 0 {
+				mp.sendItems()
+			}
 			return
 		case item := <-mp.newItem:
 			mp.processItem(item)

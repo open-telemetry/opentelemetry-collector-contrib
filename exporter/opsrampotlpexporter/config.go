@@ -70,7 +70,7 @@ type Config struct {
 	Security                      SecuritySettings         `mapstructure:"security"`
 	configgrpc.GRPCClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	Masking                       []MaskingSettings        `mapstructure:"masking"`
-	ExpirationSkip                time.Duration            `mapstructure"expiration_skip"`
+	ExpirationSkip                time.Duration            `mapstructure:"expiration_skip"`
 }
 
 var _ config.Exporter = (*Config)(nil)

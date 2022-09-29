@@ -84,60 +84,57 @@ func (em EventMode) String() string {
 
 // parseInterfaceToMap takes map of interface objects and returns
 // AttributeValueMap
-func parseInterfaceToMap(msi map[string]interface{}) pcommon.Value {
-	rv := pcommon.NewValueMap()
-	am := rv.MapVal()
+func parseInterfaceToMap(msi map[string]interface{}, dest pcommon.Value) {
+	am := dest.SetEmptyMap()
 	am.EnsureCapacity(len(msi))
 	for k, value := range msi {
-		am.Insert(k, parseToAttributeValue(value))
+		parseToAttributeValue(value, am.PutEmpty(k))
 	}
-	return rv
 }
 
 // parseInterfaceToArray takes array of interface objects and returns
 // AttributeValueArray
-func parseInterfaceToArray(ai []interface{}) pcommon.Value {
-	iv := pcommon.NewValueSlice()
-	av := iv.SliceVal()
+func parseInterfaceToArray(ai []interface{}, dest pcommon.Value) {
+	av := dest.SetEmptySlice()
 	av.EnsureCapacity(len(ai))
 	for _, value := range ai {
-		parseToAttributeValue(value).CopyTo(av.AppendEmpty())
+		parseToAttributeValue(value, av.AppendEmpty())
 	}
-	return iv
 }
 
 // parseToAttributeValue converts interface object to AttributeValue
-func parseToAttributeValue(val interface{}) pcommon.Value {
+func parseToAttributeValue(val interface{}, dest pcommon.Value) {
 	// See https://github.com/tinylib/msgp/wiki/Type-Mapping-Rules
 	switch r := val.(type) {
 	case bool:
-		return pcommon.NewValueBool(r)
+		dest.SetBool(r)
 	case string:
-		return pcommon.NewValueString(r)
+		dest.SetStr(r)
 	case uint64:
-		return pcommon.NewValueInt(int64(r))
+		dest.SetInt(int64(r))
 	case int64:
-		return pcommon.NewValueInt(r)
+		dest.SetInt(r)
 	// Sometimes strings come in as bytes array
 	case []byte:
-		return pcommon.NewValueString(string(r))
+		dest.SetStr(string(r))
 	case map[string]interface{}:
-		return parseInterfaceToMap(r)
+		parseInterfaceToMap(r, dest)
 	case []interface{}:
-		return parseInterfaceToArray(r)
+		parseInterfaceToArray(r, dest)
 	case float32:
-		return pcommon.NewValueDouble(float64(r))
+		dest.SetDouble(float64(r))
 	case float64:
-		return pcommon.NewValueDouble(r)
+		dest.SetDouble(r)
 	case nil:
-		return pcommon.NewValueEmpty()
 	default:
-		return pcommon.NewValueString(fmt.Sprintf("%v", val))
+		dest.SetStr(fmt.Sprintf("%v", val))
 	}
 }
 
 func timeFromTimestamp(ts interface{}) (time.Time, error) {
 	switch v := ts.(type) {
+	case uint64:
+		return time.Unix(int64(v), 0), nil
 	case int64:
 		return time.Unix(v, 0), nil
 	case *eventTimeExt:
@@ -187,13 +184,11 @@ func parseRecordToLogRecord(dc *msgp.Reader, lr plog.LogRecord) error {
 			return msgp.WrapError(err, "Record", key)
 		}
 
-		av := parseToAttributeValue(val)
-
 		// fluentd uses message, fluentbit log.
 		if key == "message" || key == "log" {
-			av.CopyTo(lr.Body())
+			parseToAttributeValue(val, lr.Body())
 		} else {
-			attrs.Insert(key, av)
+			parseToAttributeValue(val, attrs.PutEmpty(key))
 		}
 	}
 
@@ -230,7 +225,7 @@ func (melr *MessageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
 	}
 
 	attrs := log.Attributes()
-	attrs.InsertString(tagAttributeKey, tag)
+	attrs.PutString(tagAttributeKey, tag)
 
 	err = decodeTimestampToLogRecord(dc, log)
 	if err != nil {
@@ -316,7 +311,7 @@ func (fe *ForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) (err error) {
 		if err != nil {
 			return msgp.WrapError(err, "Entries", i)
 		}
-		fe.LogRecordSlice.At(i).Attributes().InsertString(tagAttributeKey, tag)
+		fe.LogRecordSlice.At(i).Attributes().PutString(tagAttributeKey, tag)
 	}
 
 	if arrLen == 3 {
@@ -441,9 +436,8 @@ func (pfe *PackedForwardEventLogRecords) parseEntries(entriesRaw []byte, isGzipp
 			return err
 		}
 
-		lr.Attributes().InsertString(tagAttributeKey, tag)
+		lr.Attributes().PutString(tagAttributeKey, tag)
 
-		tgt := pfe.LogRecordSlice.AppendEmpty()
-		lr.CopyTo(tgt)
+		lr.MoveTo(pfe.LogRecordSlice.AppendEmpty())
 	}
 }

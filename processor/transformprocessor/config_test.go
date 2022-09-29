@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlconfig"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -36,22 +38,24 @@ func TestLoadConfig(t *testing.T) {
 			id: config.NewComponentIDWithName(typeStr, ""),
 			expected: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-				Traces: SignalConfig{
-					Queries: []string{
-						`set(name, "bear") where attributes["http.path"] == "/animal"`,
-						`keep_keys(attributes, "http.method", "http.path")`,
+				Config: ottlconfig.Config{
+					Traces: ottlconfig.SignalConfig{
+						Queries: []string{
+							`set(name, "bear") where attributes["http.path"] == "/animal"`,
+							`keep_keys(attributes, "http.method", "http.path")`,
+						},
 					},
-				},
-				Metrics: SignalConfig{
-					Queries: []string{
-						`set(metric.name, "bear") where attributes["http.path"] == "/animal"`,
-						`keep_keys(attributes, "http.method", "http.path")`,
+					Metrics: ottlconfig.SignalConfig{
+						Queries: []string{
+							`set(metric.name, "bear") where attributes["http.path"] == "/animal"`,
+							`keep_keys(attributes, "http.method", "http.path")`,
+						},
 					},
-				},
-				Logs: SignalConfig{
-					Queries: []string{
-						`set(body, "bear") where attributes["http.path"] == "/animal"`,
-						`keep_keys(attributes, "http.method", "http.path")`,
+					Logs: ottlconfig.SignalConfig{
+						Queries: []string{
+							`set(body, "bear") where attributes["http.path"] == "/animal"`,
+							`keep_keys(attributes, "http.method", "http.path")`,
+						},
 					},
 				},
 			},
