@@ -613,7 +613,8 @@ func TestAlertsRetrieval(t *testing.T) {
 								Name: testProjectName,
 							},
 						},
-						PollInterval: 1 * time.Second,
+						MaxAlertProcessing: defaultMaxAlerts,
+						PollInterval:       1 * time.Second,
 					},
 				}
 			},
@@ -646,7 +647,8 @@ func TestAlertsRetrieval(t *testing.T) {
 								IncludeClusters: []string{testClusterName},
 							},
 						},
-						PollInterval: 1 * time.Second,
+						MaxAlertProcessing: defaultMaxAlerts,
+						PollInterval:       1 * time.Second,
 					},
 				}
 			},
@@ -686,13 +688,15 @@ func TestAlertPollingExclusions(t *testing.T) {
 	alertsRcvr, err := newAlertsReceiver(zap.NewNop(), &Config{
 		Alerts: AlertConfig{
 			Enabled: true,
+			Mode:    alertModePoll,
 			Projects: []*ProjectConfig{
 				{
 					Name:            testProjectName,
 					ExcludeClusters: []string{testClusterName},
 				},
 			},
-			PollInterval: 1 * time.Second,
+			MaxAlertProcessing: defaultMaxAlerts,
+			PollInterval:       1 * time.Second,
 		},
 	}, logSink)
 	require.NoError(t, err)
