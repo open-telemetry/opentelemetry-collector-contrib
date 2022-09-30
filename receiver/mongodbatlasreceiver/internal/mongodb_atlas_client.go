@@ -626,25 +626,24 @@ func (s *MongoDBAtlasClient) GetClusters(ctx context.Context, groupID string) ([
 	return clusters, nil
 }
 
+type AlertPollOptions struct {
+	PageNum  int
+	PageSize int
+}
+
 // GetAlerts returns the alerts specified for the set projects
-func (s *MongoDBAtlasClient) GetAlerts(ctx context.Context, groupID string, maxAlerts int64) ([]mongodbatlas.Alert, error) {
-	pageNum := 1
-	alertsResult := []mongodbatlas.Alert{}
-	for {
-		lo := mongodbatlas.ListOptions{PageNum: pageNum}
-		options := mongodbatlas.AlertsListOptions{ListOptions: lo}
-		alerts, response, err := s.client.Alerts.List(ctx, groupID, &options)
-		err = checkMongoDBClientErr(err, response)
-		if err != nil {
-			return nil, err
-		}
-		alertsResult = append(alertsResult, alerts.Results...)
-		if !hasNext(alerts.Links) || len(alertsResult) > int(maxAlerts) {
-			break
-		}
-		pageNum++
+func (s *MongoDBAtlasClient) GetAlerts(ctx context.Context, groupID string, opts *AlertPollOptions) (ret []mongodbatlas.Alert, nextPage bool, err error) {
+	lo := mongodbatlas.ListOptions{
+		PageNum:      opts.PageNum,
+		ItemsPerPage: opts.PageSize,
 	}
-	return alertsResult, nil
+	options := mongodbatlas.AlertsListOptions{ListOptions: lo}
+	alerts, response, err := s.client.Alerts.List(ctx, groupID, &options)
+	err = checkMongoDBClientErr(err, response)
+	if err != nil {
+		return nil, false, err
+	}
+	return alerts.Results, hasNext(response.Links), nil
 }
 
 func toUnixString(t time.Time) string {

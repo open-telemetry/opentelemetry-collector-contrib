@@ -60,12 +60,14 @@ const (
 	alertCacheKey   = "last_recorded_alert"
 
 	defaultAlertsPollInterval = 5 * time.Minute
-	defaultMaxAlerts          = 1000
+	// defaults were based off API docs https://www.mongodb.com/docs/atlas/reference/api/alerts-get-all-alerts/
+	defaultAlertsPageSize = 100
+	defaultAlertsMaxPages = 10
 )
 
 type alertsClient interface {
 	GetProject(ctx context.Context, groupID string) (*mongodbatlas.Project, error)
-	GetAlerts(ctx context.Context, groupID string, maxAlerts int64) ([]mongodbatlas.Alert, error)
+	GetAlerts(ctx context.Context, groupID string, opts *internal.AlertPollOptions) ([]mongodbatlas.Alert, bool, error)
 }
 
 type alertsReceiver struct {
@@ -86,7 +88,8 @@ type alertsReceiver struct {
 	retrySettings exporterhelper.RetrySettings
 	pollInterval  time.Duration
 	record        *alertRecord
-	maxAlerts     int64
+	pageSize      int64
+	maxPages      int64
 	doneChan      chan bool
 	id            config.ComponentID  // ID of the receiver component
 	storageID     *config.ComponentID // ID of the storage extension component
@@ -122,7 +125,8 @@ func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer
 		privateKey:    baseConfig.PrivateKey,
 		wg:            &sync.WaitGroup{},
 		pollInterval:  baseConfig.Alerts.PollInterval,
-		maxAlerts:     baseConfig.Alerts.MaxAlertProcessing,
+		maxPages:      baseConfig.Alerts.MaxPages,
+		pageSize:      baseConfig.Alerts.PageSize,
 		doneChan:      make(chan bool, 1),
 		logger:        logger,
 		id:            baseConfig.ID(),
@@ -182,30 +186,46 @@ func (a *alertsReceiver) startPolling(ctx context.Context, host component.Host) 
 }
 
 func (a *alertsReceiver) retrieveAndProcessAlerts(ctx context.Context) error {
-	var alerts []mongodbatlas.Alert
 	for _, p := range a.projects {
 		project, err := a.client.GetProject(ctx, p.Name)
 		if err != nil {
 			a.logger.Error("error retrieving project "+p.Name+":", zap.Error(err))
 			continue
 		}
-		projectAlerts, err := a.client.GetAlerts(ctx, project.ID, a.maxAlerts)
-		if err != nil {
-			a.logger.Error("unable to get alerts for project", zap.Error(err))
-			continue
-		}
-		filteredAlerts := a.applyFilters(p, projectAlerts)
-		alerts = append(alerts, filteredAlerts...)
-	}
-	now := pcommon.NewTimestampFromTime(time.Now())
-	logs, err := a.convertAlerts(now, alerts)
-	if err != nil {
-		return err
-	}
-	if logs.LogRecordCount() > 0 {
-		return a.consumer.ConsumeLogs(ctx, logs)
+		a.pollAndProcess(ctx, p, project)
 	}
 	return a.writeCheckpoint(ctx)
+}
+
+func (a *alertsReceiver) pollAndProcess(ctx context.Context, pc *ProjectConfig, project *mongodbatlas.Project) {
+	for pageNum := 1; pageNum <= int(a.maxPages); pageNum++ {
+		projectAlerts, hasNext, err := a.client.GetAlerts(ctx, project.ID, &internal.AlertPollOptions{
+			PageNum:  pageNum,
+			PageSize: int(a.pageSize),
+		})
+		if err != nil {
+			a.logger.Error("unable to get alerts for project", zap.Error(err))
+			break
+		}
+
+		filteredAlerts := a.applyFilters(pc, projectAlerts)
+		now := pcommon.NewTimestampFromTime(time.Now())
+		logs, err := a.convertAlerts(now, filteredAlerts)
+		if err != nil {
+			a.logger.Error("error processing alerts", zap.Error(err))
+			break
+		}
+
+		if logs.LogRecordCount() > 0 {
+			if err = a.consumer.ConsumeLogs(ctx, logs); err != nil {
+				a.logger.Error("error consuming alerts", zap.Error(err))
+				break
+			}
+		}
+		if !hasNext {
+			break
+		}
+	}
 }
 
 func (a *alertsReceiver) startListening(ctx context.Context, host component.Host) error {
