@@ -268,9 +268,9 @@ func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetr
 						combinedMetric.MoveTo(metrics.AppendEmpty())
 					}
 				case Insert:
-					newMetrics := pmetric.NewMetricSlice()
-					newMetrics.EnsureCapacity(metrics.Len())
-					for i := 0; i < metrics.Len(); i++ {
+					// Save len, so we don't iterate over the newly generated metrics that are appended at the end.
+					mLen := metrics.Len()
+					for i := 0; i < mLen; i++ {
 						metric := metrics.At(i)
 						newMetric := transform.MetricIncludeFilter.extractMatchedMetric(metric)
 						if newMetric == (pmetric.Metric{}) {
@@ -281,10 +281,9 @@ func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetr
 							metric.CopyTo(newMetric)
 						}
 						if transformMetric(newMetric, transform) {
-							newMetric.MoveTo(newMetrics.AppendEmpty())
+							newMetric.MoveTo(metrics.AppendEmpty())
 						}
 					}
-					newMetrics.MoveAndAppendTo(metrics)
 				case Update:
 					metrics.RemoveIf(func(metric pmetric.Metric) bool {
 						if !transform.MetricIncludeFilter.matchMetric(metric) {
