@@ -197,6 +197,10 @@ func (a *alertsReceiver) retrieveAndProcessAlerts(ctx context.Context) error {
 func (a *alertsReceiver) pollAndProcess(ctx context.Context, pc *ProjectConfig, project *mongodbatlas.Project, numAlertsPolled int64) {
 	pageNum := 0
 	for {
+		if a.maxAlerts <= numAlertsPolled {
+			break
+		}
+
 		projectAlerts, hasNext, err := a.client.GetAlerts(ctx, project.ID, internal.GetAlertOptions{PageNum: pageNum})
 		if err != nil {
 			a.logger.Error("unable to get alerts for project", zap.Error(err))
@@ -218,7 +222,7 @@ func (a *alertsReceiver) pollAndProcess(ctx context.Context, pc *ProjectConfig, 
 			}
 		}
 		numAlertsPolled += int64(len(projectAlerts))
-		if !hasNext || a.maxAlerts <= numAlertsPolled {
+		if !hasNext {
 			break
 		}
 	}
