@@ -12,7 +12,7 @@ These are the metrics available for this scraper.
 | **process.disk.io** | Disk bytes transferred. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
 | **process.memory.physical_usage** | The amount of physical memory in use. | By | Sum(Int) | <ul> </ul> |
 | **process.memory.virtual_usage** | Virtual memory size. | By | Sum(Int) | <ul> </ul> |
-| **process.paging.faults** | Number of page faults the process has made. | {faults} | Sum(Int) | <ul> <li>type</li> </ul> |
+| **process.paging.faults** | Number of page faults the process has made. This metric is only available on Linux. | {faults} | Sum(Int) | <ul> <li>type</li> </ul> |
 | process.threads | Process threads count. | {threads} | Sum(Int) | <ul> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.

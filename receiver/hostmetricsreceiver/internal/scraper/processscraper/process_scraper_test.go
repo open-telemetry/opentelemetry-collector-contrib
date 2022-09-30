@@ -101,7 +101,9 @@ func TestScrape(t *testing.T) {
 			assertCPUTimeMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			assertMemoryUsageMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			assertOldDiskIOMetricValid(t, md.ResourceMetrics(), expectedStartTime)
-			assertPagingMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+			if runtime.GOOS == "linux" {
+				assertPagingMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+			}
 			if test.expectThreadsCount {
 				assertThreadsCountValid(t, md.ResourceMetrics(), expectedStartTime)
 			} else {
