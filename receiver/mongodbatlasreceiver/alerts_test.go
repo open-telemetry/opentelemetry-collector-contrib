@@ -42,6 +42,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 )
 
@@ -767,7 +768,7 @@ func (mac *mockAlertsClient) GetProject(ctx context.Context, pID string) (*mongo
 	return args.Get(0).(*mongodbatlas.Project), args.Error(1)
 }
 
-func (mac *mockAlertsClient) GetAlerts(ctx context.Context, pID string, maxAlerts int64) ([]mongodbatlas.Alert, error) {
-	args := mac.Called(ctx, pID, maxAlerts)
-	return args.Get(0).([]mongodbatlas.Alert), args.Error(1)
+func (mac *mockAlertsClient) GetAlerts(ctx context.Context, pID string, options internal.GetAlertOptions) ([]mongodbatlas.Alert, bool, error) {
+	args := mac.Called(ctx, pID, options)
+	return args.Get(0).([]mongodbatlas.Alert), false, args.Error(1)
 }

@@ -65,7 +65,7 @@ const (
 
 type alertsClient interface {
 	GetProject(ctx context.Context, groupID string) (*mongodbatlas.Project, error)
-	GetAlerts(ctx context.Context, groupID string, maxAlerts int64) ([]mongodbatlas.Alert, error)
+	GetAlerts(ctx context.Context, groupID string, opts internal.GetAlertOptions) ([]mongodbatlas.Alert, bool, error)
 }
 
 type alertsReceiver struct {
@@ -182,30 +182,44 @@ func (a *alertsReceiver) startPolling(ctx context.Context, host component.Host) 
 }
 
 func (a *alertsReceiver) retrieveAndProcessAlerts(ctx context.Context) error {
-	var alerts []mongodbatlas.Alert
 	for _, p := range a.projects {
 		project, err := a.client.GetProject(ctx, p.Name)
 		if err != nil {
 			a.logger.Error("error retrieving project "+p.Name+":", zap.Error(err))
 			continue
 		}
-		projectAlerts, err := a.client.GetAlerts(ctx, project.ID, a.maxAlerts)
-		if err != nil {
-			a.logger.Error("unable to get alerts for project", zap.Error(err))
-			continue
-		}
-		filteredAlerts := a.applyFilters(p, projectAlerts)
-		alerts = append(alerts, filteredAlerts...)
-	}
-	now := pcommon.NewTimestampFromTime(time.Now())
-	logs, err := a.convertAlerts(now, alerts)
-	if err != nil {
-		return err
-	}
-	if logs.LogRecordCount() > 0 {
-		return a.consumer.ConsumeLogs(ctx, logs)
+		a.pollAndProcess(ctx, p, project)
 	}
 	return a.writeCheckpoint(ctx)
+}
+
+func (a *alertsReceiver) pollAndProcess(ctx context.Context, pc *ProjectConfig, project *mongodbatlas.Project) {
+	pageNum := 0
+	for {
+		projectAlerts, hasNext, err := a.client.GetAlerts(ctx, project.ID, internal.GetAlertOptions{PageNum: pageNum})
+		if err != nil {
+			a.logger.Error("unable to get alerts for project", zap.Error(err))
+			break
+		}
+
+		filteredAlerts := a.applyFilters(pc, projectAlerts)
+		now := pcommon.NewTimestampFromTime(time.Now())
+		logs, err := a.convertAlerts(now, filteredAlerts)
+		if err != nil {
+			a.logger.Error("error processing alerts", zap.Error(err))
+			break
+		}
+
+		if logs.LogRecordCount() > 0 {
+			if err = a.consumer.ConsumeLogs(ctx, logs); err != nil {
+				a.logger.Error("error consuming alerts", zap.Error(err))
+				break
+			}
+		}
+		if !hasNext {
+			break
+		}
+	}
 }
 
 func (a *alertsReceiver) startListening(ctx context.Context, host component.Host) error {
