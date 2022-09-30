@@ -65,7 +65,7 @@ const (
 
 type alertsClient interface {
 	GetProject(ctx context.Context, groupID string) (*mongodbatlas.Project, error)
-	GetAlerts(ctx context.Context, groupID string, opts internal.GetAlertOptions) ([]mongodbatlas.Alert, bool, error)
+	GetAlerts(ctx context.Context, groupID string, pageNum int) ([]mongodbatlas.Alert, bool, error)
 }
 
 type alertsReceiver struct {
@@ -201,7 +201,7 @@ func (a *alertsReceiver) pollAndProcess(ctx context.Context, pc *ProjectConfig, 
 			break
 		}
 
-		projectAlerts, hasNext, err := a.client.GetAlerts(ctx, project.ID, internal.GetAlertOptions{PageNum: pageNum})
+		projectAlerts, hasNext, err := a.client.GetAlerts(ctx, project.ID, pageNum)
 		if err != nil {
 			a.logger.Error("unable to get alerts for project", zap.Error(err))
 			break
