@@ -371,10 +371,10 @@ func (c CustomizedConfig) Build(flusher *Flusher) (bufio.SplitFunc, error) {
 
 // SplitterConfig consolidates MultilineConfig and FlusherConfig
 type SplitterConfig struct {
-	EncodingConfig EncodingConfig  `mapstructure:",squash,omitempty"`
-	Multiline      MultilineConfig `mapstructure:"multiline,omitempty"`
-	Flusher        FlusherConfig   `mapstructure:",squash,omitempty"`
-	Customization  CustomizedConfig
+	EncodingConfig EncodingConfig   `mapstructure:",squash,omitempty"`
+	Multiline      MultilineConfig  `mapstructure:"multiline,omitempty"`
+	Flusher        FlusherConfig    `mapstructure:",squash,omitempty"`
+	Customization  CustomizedConfig `mapstructure:",squash,omitempty"`
 }
 
 // NewSplitterConfig returns default SplitterConfig
