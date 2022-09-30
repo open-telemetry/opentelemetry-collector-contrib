@@ -182,18 +182,19 @@ func (a *alertsReceiver) startPolling(ctx context.Context, host component.Host) 
 }
 
 func (a *alertsReceiver) retrieveAndProcessAlerts(ctx context.Context) error {
+	numAlertsProcessed := 0
 	for _, p := range a.projects {
 		project, err := a.client.GetProject(ctx, p.Name)
 		if err != nil {
 			a.logger.Error("error retrieving project "+p.Name+":", zap.Error(err))
 			continue
 		}
-		a.pollAndProcess(ctx, p, project)
+		a.pollAndProcess(ctx, p, project, int64(numAlertsProcessed))
 	}
 	return a.writeCheckpoint(ctx)
 }
 
-func (a *alertsReceiver) pollAndProcess(ctx context.Context, pc *ProjectConfig, project *mongodbatlas.Project) {
+func (a *alertsReceiver) pollAndProcess(ctx context.Context, pc *ProjectConfig, project *mongodbatlas.Project, numAlertsPolled int64) {
 	pageNum := 0
 	for {
 		projectAlerts, hasNext, err := a.client.GetAlerts(ctx, project.ID, internal.GetAlertOptions{PageNum: pageNum})
@@ -216,7 +217,8 @@ func (a *alertsReceiver) pollAndProcess(ctx context.Context, pc *ProjectConfig, 
 				break
 			}
 		}
-		if !hasNext {
+		numAlertsPolled += int64(len(projectAlerts))
+		if !hasNext || a.maxAlerts <= numAlertsPolled {
 			break
 		}
 	}
