@@ -19,31 +19,23 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
 )
 
 type Processor struct {
-	queries []ottl.Statement
-	logger  *zap.Logger
+	queries []ottl.Statement[ottllogs.TransformContext]
 }
 
 func NewProcessor(statements []string, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
-	ottlp := ottl.NewParser(
-		functions,
-		ottllogs.ParsePath,
-		ottllogs.ParseEnum,
-		settings,
-	)
+	ottlp := ottllogs.NewParser(functions, settings)
 	queries, err := ottlp.ParseStatements(statements)
 	if err != nil {
 		return nil, err
 	}
 	return &Processor{
 		queries: queries,
-		logger:  settings.Logger,
 	}, nil
 }
 

@@ -20,8 +20,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Int(target ottl.Getter) (ottl.ExprFunc, error) {
-	return func(ctx ottl.TransformContext) interface{} {
+func Int[K any](target ottl.Getter[K]) (ottl.ExprFunc[K], error) {
+	return func(ctx K) interface{} {
 		value := target.Get(ctx)
 		switch value := value.(type) {
 		case int64:

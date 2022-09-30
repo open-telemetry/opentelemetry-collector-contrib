@@ -247,7 +247,7 @@ func TestScopePathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := ScopePathGetSetter(tt.path)
+			accessor, err := ScopePathGetSetter[*instrumentationScopeContext](tt.path)
 			assert.NoError(t, err)
 
 			is := createInstrumentationScope()
@@ -303,18 +303,10 @@ type instrumentationScopeContext struct {
 	is pcommon.InstrumentationScope
 }
 
-func (r *instrumentationScopeContext) GetItem() interface{} {
-	return nil
-}
-
 func (r *instrumentationScopeContext) GetInstrumentationScope() pcommon.InstrumentationScope {
 	return r.is
 }
 
-func (r *instrumentationScopeContext) GetResource() pcommon.Resource {
-	return pcommon.Resource{}
-}
-
-func newInstrumentationScopeContext(is pcommon.InstrumentationScope) ottl.TransformContext {
+func newInstrumentationScopeContext(is pcommon.InstrumentationScope) *instrumentationScopeContext {
 	return &instrumentationScopeContext{is: is}
 }

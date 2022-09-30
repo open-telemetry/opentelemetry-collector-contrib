@@ -23,7 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 )
 
-func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc, error) {
+func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottldatapoints.TransformContext], error) {
 	var aggTemp pmetric.MetricAggregationTemporality
 	switch stringAggTemp {
 	case "delta":
@@ -33,18 +33,13 @@ func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (ottl.ExprF
 	default:
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
 	}
-	return func(ctx ottl.TransformContext) interface{} {
-		mtc, ok := ctx.(ottldatapoints.TransformContext)
-		if !ok {
-			return nil
-		}
-
-		metric := mtc.GetMetric()
+	return func(ctx ottldatapoints.TransformContext) interface{} {
+		metric := ctx.GetMetric()
 		if metric.Type() != pmetric.MetricTypeSummary {
 			return nil
 		}
 
-		sumMetric := mtc.GetMetrics().AppendEmpty()
+		sumMetric := ctx.GetMetrics().AppendEmpty()
 		sumMetric.SetDescription(metric.Description())
 		sumMetric.SetName(metric.Name() + "_sum")
 		sumMetric.SetUnit(metric.Unit())

@@ -16,10 +16,16 @@ package saphanareceiver
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver/internal/metadata"
 )
 
 func TestValidate(t *testing.T) {
@@ -72,4 +78,26 @@ func TestValidate(t *testing.T) {
 			require.Equal(t, tC.expected, actual)
 		})
 	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+
+	expected := factory.CreateDefaultConfig().(*Config)
+	expected.Metrics = metadata.DefaultMetricsSettings()
+	expected.Metrics.SaphanaCPUUsed.Enabled = false
+	expected.Endpoint = "example.com:30015"
+	expected.Username = "otel"
+	expected.Password = "password"
+	expected.CollectionInterval = 2 * time.Minute
+
+	require.Equal(t, expected, cfg)
 }

@@ -75,10 +75,14 @@ func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
 
 	// we need to set log attributes as AdditionalProperties
 	// AdditionalProperties are treated as Datadog Log Attributes
+	var status string
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch strings.ToLower(k) {
-		case "msg", "message":
+		// set of remapping are taken from Datadog Backend
+		case "msg", "message", "log":
 			l.Message = v.AsString()
+		case "status", "severity", "level", "syslog.severity":
+			status = v.AsString()
 		default:
 			l.AdditionalProperties[k] = v.AsString()
 		}
@@ -92,20 +96,22 @@ func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
 		l.AdditionalProperties[ddSpanID] = strconv.FormatUint(spanIDToUint64(lr.SpanID()), 10)
 		l.AdditionalProperties[otelSpanID] = lr.SpanID().HexString()
 	}
-	var status string
 
-	// we want to use the serverity that client has set on the log and let datadog backend
+	// we want to use the serverity that client has set on the log and let Datadog backend
 	// decide the appropriate level
 	if lr.SeverityText() != "" {
-		status = lr.SeverityText()
+		if status == "" {
+			status = lr.SeverityText()
+		}
 		l.AdditionalProperties[otelSeverityText] = lr.SeverityText()
-	} else if lr.SeverityNumber() != 0 {
-		status = statusFromSeverityNumber(lr.SeverityNumber())
 	}
-	l.AdditionalProperties[ddStatus] = status
 	if lr.SeverityNumber() != 0 {
+		if status == "" {
+			status = statusFromSeverityNumber(lr.SeverityNumber())
+		}
 		l.AdditionalProperties[otelSeverityNumber] = strconv.Itoa(int(lr.SeverityNumber()))
 	}
+	l.AdditionalProperties[ddStatus] = status
 	// for Datadog to use the same timestamp we need to set the additional property of "@timestamp"
 	if lr.Timestamp() != 0 {
 		// we are retaining the nano second precision in this property

@@ -399,7 +399,7 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMet
 			// JSON encoding event and writing to buffer.
 			b, err := jsoniter.Marshal(event)
 			if err != nil {
-				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped metric events: %v, error: %w", events, err)))
+				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped metric event: %v, error: %w", event, err)))
 				continue
 			}
 			state.buf.Write(b)

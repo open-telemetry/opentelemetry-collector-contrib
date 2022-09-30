@@ -18,22 +18,22 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_isMatch(t *testing.T) {
 	tests := []struct {
 		name     string
-		target   ottl.Getter
+		target   ottl.Getter[interface{}]
 		pattern  string
 		expected bool
 	}{
 		{
 			name: "replace match true",
-			target: &ottl.StandardGetSetter{
-				Getter: func(ctx ottl.TransformContext) interface{} {
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx interface{}) interface{} {
 					return "hello world"
 				},
 			},
@@ -42,8 +42,8 @@ func Test_isMatch(t *testing.T) {
 		},
 		{
 			name: "replace match false",
-			target: &ottl.StandardGetSetter{
-				Getter: func(ctx ottl.TransformContext) interface{} {
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx interface{}) interface{} {
 					return "goodbye world"
 				},
 			},
@@ -52,8 +52,8 @@ func Test_isMatch(t *testing.T) {
 		},
 		{
 			name: "replace match complex",
-			target: &ottl.StandardGetSetter{
-				Getter: func(ctx ottl.TransformContext) interface{} {
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx interface{}) interface{} {
 					return "-12.001"
 				},
 			},
@@ -62,8 +62,8 @@ func Test_isMatch(t *testing.T) {
 		},
 		{
 			name: "target not a string",
-			target: &ottl.StandardGetSetter{
-				Getter: func(ctx ottl.TransformContext) interface{} {
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx interface{}) interface{} {
 					return 1
 				},
 			},
@@ -72,8 +72,8 @@ func Test_isMatch(t *testing.T) {
 		},
 		{
 			name: "target nil",
-			target: &ottl.StandardGetSetter{
-				Getter: func(ctx ottl.TransformContext) interface{} {
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx interface{}) interface{} {
 					return nil
 				},
 			},
@@ -83,22 +83,19 @@ func Test_isMatch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := ottltest.TestTransformContext{}
-
-			exprFunc, _ := IsMatch(tt.target, tt.pattern)
-			actual := exprFunc(ctx)
-
-			assert.Equal(t, tt.expected, actual)
+			exprFunc, err := IsMatch(tt.target, tt.pattern)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, exprFunc(nil))
 		})
 	}
 }
 
 func Test_isMatch_validation(t *testing.T) {
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx interface{}) interface{} {
 			return "anything"
 		},
 	}
-	_, err := IsMatch(target, "\\K")
-	assert.Error(t, err)
+	_, err := IsMatch[interface{}](target, "\\K")
+	require.Error(t, err)
 }

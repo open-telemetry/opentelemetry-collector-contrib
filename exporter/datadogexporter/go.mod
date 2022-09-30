@@ -4,28 +4,28 @@ go 1.18
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.29
-	github.com/DataDog/datadog-agent/pkg/otlp/model v0.40.0-rc.2
-	github.com/DataDog/datadog-agent/pkg/quantile v0.40.0-rc.2
-	github.com/DataDog/datadog-agent/pkg/trace v0.40.0-rc.2
+	github.com/DataDog/datadog-agent/pkg/otlp/model v0.40.0-rc.2.0.20220930142800-72e24cd2e404
+	github.com/DataDog/datadog-agent/pkg/quantile v0.40.0-rc.2.0.20220930142800-72e24cd2e404
+	github.com/DataDog/datadog-agent/pkg/trace v0.40.0-rc.2.0.20220930142800-72e24cd2e404
 	github.com/DataDog/datadog-api-client-go/v2 v2.2.0
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.8
 	github.com/aws/aws-sdk-go v1.44.106
 	github.com/cenkalti/backoff/v4 v4.1.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.60.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.60.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.60.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.60.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.60.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.60.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.60.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.60.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.60.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.61.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.60.1-0.20220927015850-e98116922cf6
-	go.opentelemetry.io/collector/pdata v0.60.1-0.20220927015850-e98116922cf6
-	go.opentelemetry.io/collector/semconv v0.60.1-0.20220927015850-e98116922cf6
+	go.opentelemetry.io/collector v0.61.0
+	go.opentelemetry.io/collector/pdata v0.61.0
+	go.opentelemetry.io/collector/semconv v0.61.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -108,7 +108,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mostynb/go-grpc-compression v1.1.17 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.60.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.61.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417 // indirect
@@ -179,3 +179,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostm
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../../pkg/translator/opencensus
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor => ../../processor/metricstransformprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => ../../internal/scrapertest

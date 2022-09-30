@@ -24,9 +24,11 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -34,7 +36,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -68,6 +72,7 @@ func TestAlertsReceiver(t *testing.T) {
 				&Config{
 					Alerts: AlertConfig{
 						Enabled:  true,
+						Mode:     alertModeListen,
 						Secret:   testSecret,
 						Endpoint: testAddr,
 					},
@@ -136,6 +141,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 					Alerts: AlertConfig{
 						Enabled:  true,
 						Secret:   testSecret,
+						Mode:     alertModeListen,
 						Endpoint: testAddr,
 						TLS: &configtls.TLSServerSetting{
 							TLSSetting: configtls.TLSSetting{
@@ -193,6 +199,68 @@ func TestAlertsReceiverTLS(t *testing.T) {
 			require.NoError(t, compareLogs(expectedLogs, logs))
 		})
 	}
+}
+
+func TestAtlasPoll(t *testing.T) {
+	mockClient := mockAlertsClient{}
+
+	alerts := []mongodbatlas.Alert{}
+	for _, pl := range testPayloads {
+		payloadFile, err := ioutil.ReadFile(filepath.Join("testdata", "alerts", "sample-payloads", pl))
+		require.NoError(t, err)
+
+		alert := mongodbatlas.Alert{}
+		err = json.Unmarshal(payloadFile, &alert)
+		require.NoError(t, err)
+
+		alerts = append(alerts, alert)
+	}
+
+	mockClient.On("GetProject", mock.Anything, testProjectName).Return(&mongodbatlas.Project{
+		ID: testProjectID,
+	}, nil)
+	mockClient.On("GetAlerts", mock.Anything, testProjectID, mock.Anything).Return(alerts, nil)
+
+	sink := &consumertest.LogsSink{}
+	fact := NewFactory()
+
+	recv, err := fact.CreateLogsReceiver(
+		context.Background(),
+		componenttest.NewNopReceiverCreateSettings(),
+		&Config{
+			Alerts: AlertConfig{
+				Enabled: true,
+				Mode:    alertModePoll,
+				Projects: []*ProjectConfig{
+					{
+						Name: testProjectName,
+					},
+				},
+				PollInterval: 1 * time.Second,
+			},
+		},
+		sink,
+	)
+	require.NoError(t, err)
+
+	rcvr, ok := recv.(*combinedLogsReceiver)
+	require.True(t, ok)
+	rcvr.alerts.client = &mockClient
+
+	err = recv.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() > 0
+	}, 5*time.Second, 10*time.Millisecond)
+
+	err = recv.Shutdown(context.Background())
+	require.NoError(t, err)
+
+	logs := sink.AllLogs()[0]
+	expectedLogs, err := readLogs(filepath.Join("testdata", "alerts", "golden", "retrieved-logs.json"))
+	require.NoError(t, err)
+	require.NoError(t, compareLogs(expectedLogs, logs))
 }
 
 func calculateHMACb64(secret string, payload []byte) (string, error) {

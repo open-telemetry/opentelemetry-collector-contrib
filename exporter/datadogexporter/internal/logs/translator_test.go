@@ -218,6 +218,39 @@ func TestTransform(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "log-level",
+			args: args{
+				lr: func() plog.LogRecord {
+					l := plog.NewLogRecord()
+					l.Attributes().PutString("app", "test")
+					l.SetSpanID(spanID)
+					l.SetTraceID(traceID)
+					l.Attributes().PutString(conventions.AttributeServiceName, "otlp_col")
+					l.Attributes().PutString("level", "error")
+					l.Body().SetStr("This is log")
+					return l
+				}(),
+				res: func() pcommon.Resource {
+					r := pcommon.NewResource()
+					return r
+				}(),
+			},
+			want: datadogV2.HTTPLogItem{
+				Message: *datadog.PtrString(""),
+				Service: datadog.PtrString("otlp_col"),
+				AdditionalProperties: map[string]string{
+					"message":      "This is log",
+					"app":          "test",
+					"status":       "error",
+					otelSpanID:     fmt.Sprintf("%x", string(spanID[:])),
+					otelTraceID:    fmt.Sprintf("%x", string(traceID[:])),
+					ddSpanID:       fmt.Sprintf("%d", ddSp),
+					ddTraceID:      fmt.Sprintf("%d", ddTr),
+					"service.name": "otlp_col",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

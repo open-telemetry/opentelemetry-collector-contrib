@@ -53,11 +53,7 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
-	recv, err := newMongoDBAtlasReceiver(params, cfg)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create a MongoDB Atlas Receiver instance: %w", err)
-	}
-
+	recv := newMongoDBAtlasReceiver(params, cfg)
 	ms, err := newMongoDBAtlasScraper(recv)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create a MongoDB Atlas Scaper instance: %w", err)
@@ -67,7 +63,7 @@ func createMetricsReceiver(
 }
 
 func createCombinedLogReceiver(
-	_ context.Context,
+	ctx context.Context,
 	params component.ReceiverCreateSettings,
 	rConf config.Receiver,
 	consumer consumer.Logs,
@@ -79,20 +75,17 @@ func createCombinedLogReceiver(
 	}
 
 	var err error
-	recv := &combindedLogsReceiver{}
+	recv := &combinedLogsReceiver{}
 
 	if cfg.Alerts.Enabled {
-		recv.alerts, err = newAlertsReceiver(params.Logger, cfg.Alerts, consumer)
+		recv.alerts, err = newAlertsReceiver(params.Logger, cfg, consumer)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create a MongoDB Atlas Alerts Receiver instance: %w", err)
 		}
 	}
 
 	if cfg.Logs.Enabled {
-		recv.logs, err = newMongoDBAtlasLogsReceiver(params, cfg, consumer)
-		if err != nil {
-			return nil, fmt.Errorf("unable to create a MongoDB Atlas Logs Receiver instance: %w", err)
-		}
+		recv.logs = newMongoDBAtlasLogsReceiver(params, cfg, consumer)
 	}
 
 	return recv, nil
@@ -105,7 +98,10 @@ func createDefaultConfig() config.Receiver {
 		RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
 		Metrics:                   metadata.DefaultMetricsSettings(),
 		Alerts: AlertConfig{
-			Enabled: defaultAlertsEnabled,
+			Enabled:            defaultAlertsEnabled,
+			Mode:               alertModeListen,
+			PollInterval:       defaultAlertsPollInterval,
+			MaxAlertProcessing: defaultMaxAlerts,
 		},
 		Logs: LogConfig{
 			Enabled:  defaultLogsEnabled,

@@ -18,9 +18,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_spanID(t *testing.T) {
@@ -37,13 +36,9 @@ func Test_spanID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			ctx := ottltest.TestTransformContext{}
-
-			exprFunc, _ := SpanID(tt.bytes)
-			actual := exprFunc(ctx)
-
-			assert.Equal(t, tt.want, actual)
+			exprFunc, err := SpanID[interface{}](tt.bytes)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, exprFunc(nil))
 		})
 	}
 }
@@ -64,8 +59,9 @@ func Test_spanID_validation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := TraceID(tt.bytes)
-			assert.Error(t, err, "span ids must be 8 bytes")
+			_, err := SpanID[interface{}](tt.bytes)
+			require.Error(t, err)
+			assert.ErrorContains(t, err, "span ids must be 8 bytes")
 		})
 	}
 }

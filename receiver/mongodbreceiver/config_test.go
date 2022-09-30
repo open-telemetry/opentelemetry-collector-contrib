@@ -21,8 +21,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestValidate(t *testing.T) {
@@ -196,4 +198,28 @@ func TestOptionsTLS(t *testing.T) {
 	}
 	opts := cfg.ClientOptions()
 	require.NotNil(t, opts.TLSConfig)
+}
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+
+	expected := factory.CreateDefaultConfig().(*Config)
+	expected.Hosts = []confignet.NetAddr{
+		{
+			Endpoint: "localhost:27017",
+		},
+	}
+	expected.Username = "otel"
+	expected.Password = "$MONGO_PASSWORD"
+	expected.CollectionInterval = time.Minute
+
+	require.Equal(t, expected, cfg)
 }

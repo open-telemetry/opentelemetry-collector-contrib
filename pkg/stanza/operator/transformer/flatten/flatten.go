@@ -47,8 +47,8 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a flatten operator
 type Config struct {
-	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
-	Field                    entry.BodyField `mapstructure:"field" json:"field" yaml:"field"`
+	helper.TransformerConfig `mapstructure:",squash"`
+	Field                    entry.BodyField `mapstructure:"field"`
 }
 
 // Build will build a Flatten operator from the supplied configuration

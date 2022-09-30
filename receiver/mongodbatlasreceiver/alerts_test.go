@@ -16,6 +16,7 @@ package mongodbatlasreceiver
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -28,11 +29,17 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/atlas/mongodbatlas"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
@@ -403,9 +410,12 @@ func TestHandleRequest(t *testing.T) {
 				consumer = &consumertest.LogsSink{}
 			}
 
-			ar, err := newAlertsReceiver(zaptest.NewLogger(t), AlertConfig{
-				Secret: "some_secret",
-			}, consumer)
+			ar, err := newAlertsReceiver(zaptest.NewLogger(t),
+				&Config{
+					Alerts: AlertConfig{
+						Secret: "some_secret",
+					},
+				}, consumer)
 
 			require.NoError(t, err, "Failed to create alerts receiver")
 
@@ -568,4 +578,196 @@ func compareLogRecord(expected, actual plog.LogRecord) error {
 	}
 
 	return nil
+}
+
+const (
+	testAlertID         = "633335c99998645b1803c60b"
+	testGroupID         = "5bc762b579358e3332046e6a"
+	testProjectID       = "test-project-id"
+	testProjectName     = "test-project"
+	testMetricName      = "metric-name"
+	testTypeName        = "OUTSIDE_METRIC_THRESHOLD"
+	testHostNameAndPort = "127.0.0.1:27017"
+	testClusterName     = "Cluster1"
+)
+
+func TestAlertsRetrieval(t *testing.T) {
+	cases := []struct {
+		name            string
+		config          func() *Config
+		client          func() alertsClient
+		validateEntries func(*testing.T, plog.Logs)
+	}{
+		{
+			name: "default",
+			config: func() *Config {
+				return &Config{
+					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+					Granularity:               defaultGranularity,
+					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					Alerts: AlertConfig{
+						Mode: alertModePoll,
+						Projects: []*ProjectConfig{
+							{
+								Name: testProjectName,
+							},
+						},
+						PollInterval: 1 * time.Second,
+					},
+				}
+			},
+			client: func() alertsClient {
+				return testClient()
+			},
+			validateEntries: func(t *testing.T, logs plog.Logs) {
+				expectedStringAttributes := map[string]string{
+					"id":           testAlertID,
+					"status":       "TRACKING",
+					"event.domain": "mongodbatlas",
+					"metric.name":  testMetricName,
+					"type_name":    testTypeName,
+				}
+				validateAttributes(t, expectedStringAttributes, logs)
+			},
+		},
+		{
+			name: "project cluster inclusions",
+			config: func() *Config {
+				return &Config{
+					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+					Granularity:               defaultGranularity,
+					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					Alerts: AlertConfig{
+						Mode: alertModePoll,
+						Projects: []*ProjectConfig{
+							{
+								Name:            testProjectName,
+								IncludeClusters: []string{testClusterName},
+							},
+						},
+						PollInterval: 1 * time.Second,
+					},
+				}
+			},
+			client: func() alertsClient {
+				return testClient()
+			},
+			validateEntries: func(t *testing.T, logs plog.Logs) {
+				require.Equal(t, logs.LogRecordCount(), 1)
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			logSink := &consumertest.LogsSink{}
+			alertsRcvr, err := newAlertsReceiver(zap.NewNop(), tc.config(), logSink)
+			require.NoError(t, err)
+			alertsRcvr.client = tc.client()
+
+			err = alertsRcvr.Start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err)
+
+			require.Eventually(t, func() bool {
+				return logSink.LogRecordCount() > 0
+			}, 10*time.Second, 10*time.Millisecond)
+
+			require.NoError(t, alertsRcvr.Shutdown(context.Background()))
+			logs := logSink.AllLogs()[0]
+
+			tc.validateEntries(t, logs)
+		})
+	}
+}
+
+func TestAlertPollingExclusions(t *testing.T) {
+	logSink := &consumertest.LogsSink{}
+	alertsRcvr, err := newAlertsReceiver(zap.NewNop(), &Config{
+		Alerts: AlertConfig{
+			Enabled: true,
+			Projects: []*ProjectConfig{
+				{
+					Name:            testProjectName,
+					ExcludeClusters: []string{testClusterName},
+				},
+			},
+			PollInterval: 1 * time.Second,
+		},
+	}, logSink)
+	require.NoError(t, err)
+	alertsRcvr.client = testClient()
+
+	err = alertsRcvr.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	require.Never(t, func() bool {
+		return logSink.LogRecordCount() > 0
+	}, 3*time.Second, 10*time.Millisecond)
+}
+
+func testClient() *mockAlertsClient {
+	ac := &mockAlertsClient{}
+	ac.On("GetProject", mock.Anything, mock.Anything).Return(&mongodbatlas.Project{
+		ID:    testProjectID,
+		OrgID: "test-org-id",
+		Name:  testProjectName,
+		Links: []*mongodbatlas.Link{},
+	}, nil)
+	ac.On("GetAlerts", mock.Anything, testProjectID, mock.Anything).Return(
+		[]mongodbatlas.Alert{
+			{
+				ID:            testAlertID,
+				GroupID:       testGroupID,
+				AlertConfigID: "",
+				EventTypeName: testTypeName,
+				Created:       time.Now().Format(time.RFC3339),
+				Updated:       time.Now().Format(time.RFC3339),
+				Enabled:       new(bool),
+				Status:        "TRACKING",
+				MetricName:    testMetricName,
+				CurrentValue: &mongodbatlas.CurrentValue{
+					Number: new(float64),
+					Units:  "By",
+				},
+				ReplicaSetName:  "",
+				ClusterName:     testClusterName,
+				HostnameAndPort: testHostNameAndPort,
+				Matchers:        []mongodbatlas.Matcher{},
+				MetricThreshold: &mongodbatlas.MetricThreshold{},
+				Notifications:   []mongodbatlas.Notification{},
+			},
+		},
+		nil)
+	return ac
+}
+
+func validateAttributes(t *testing.T, expectedStringAttributes map[string]string, logs plog.Logs) {
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		rl := logs.ResourceLogs().At(0)
+		for j := 0; j < rl.ScopeLogs().Len(); j++ {
+			sl := rl.ScopeLogs().At(j)
+			for k := 0; k < sl.LogRecords().Len(); k++ {
+				lr := sl.LogRecords().At(k)
+				for k, v := range expectedStringAttributes {
+					val, ok := lr.Attributes().Get(k)
+					require.True(t, ok)
+					require.Equal(t, val.AsString(), v)
+				}
+			}
+		}
+	}
+}
+
+type mockAlertsClient struct {
+	mock.Mock
+}
+
+func (mac *mockAlertsClient) GetProject(ctx context.Context, pID string) (*mongodbatlas.Project, error) {
+	args := mac.Called(ctx, pID)
+	return args.Get(0).(*mongodbatlas.Project), args.Error(1)
+}
+
+func (mac *mockAlertsClient) GetAlerts(ctx context.Context, pID string, maxAlerts int64) ([]mongodbatlas.Alert, error) {
+	args := mac.Called(ctx, pID, maxAlerts)
+	return args.Get(0).([]mongodbatlas.Alert), args.Error(1)
 }

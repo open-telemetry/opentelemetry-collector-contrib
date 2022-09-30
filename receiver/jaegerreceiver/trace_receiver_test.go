@@ -176,7 +176,7 @@ func TestGRPCReception(t *testing.T) {
 	nowPlus10min2sec := now.Add(d10min).Add(d2sec)
 
 	// test
-	req := grpcFixture(t, now, d10min, d2sec)
+	req := grpcFixture(now, d10min, d2sec)
 	resp, err := cl.PostSpans(context.Background(), req, grpc.WaitForReady(true))
 
 	// verify
@@ -235,7 +235,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	nowPlus10min2sec := now.Add(d10min).Add(d2sec)
 
 	// test
-	req := grpcFixture(t, now, d10min, d2sec)
+	req := grpcFixture(now, d10min, d2sec)
 	resp, err := cl.PostSpans(context.Background(), req, grpc.WaitForReady(true))
 
 	// verify
@@ -286,10 +286,9 @@ func expectedTraceData(t1, t2, t3 time.Time) ptrace.Traces {
 	return traces
 }
 
-func grpcFixture(t *testing.T, t1 time.Time, d1, d2 time.Duration) *api_v2.PostSpansRequest {
+func grpcFixture(t1 time.Time, d1, d2 time.Duration) *api_v2.PostSpansRequest {
 	traceID := model.TraceID{}
-	require.NoError(t, traceID.Unmarshal([]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}))
-
+	traceID.Unmarshal([]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}) // nolint:errcheck
 	parentSpanID := model.NewSpanID(binary.BigEndian.Uint64([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
 	childSpanID := model.NewSpanID(binary.BigEndian.Uint64([]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
 

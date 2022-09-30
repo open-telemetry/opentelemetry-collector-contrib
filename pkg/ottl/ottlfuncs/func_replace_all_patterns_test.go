@@ -18,10 +18,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_replaceAllPatterns(t *testing.T) {
@@ -30,19 +30,19 @@ func Test_replaceAllPatterns(t *testing.T) {
 	input.PutString("test2", "hello")
 	input.PutString("test3", "goodbye world1 and world2")
 
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem()
+	target := &ottl.StandardGetSetter[pcommon.Map]{
+		Getter: func(ctx pcommon.Map) interface{} {
+			return ctx
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
-			ctx.GetItem().(pcommon.Map).Clear()
-			val.(pcommon.Map).CopyTo(ctx.GetItem().(pcommon.Map))
+		Setter: func(ctx pcommon.Map, val interface{}) {
+			ctx.Clear()
+			val.(pcommon.Map).CopyTo(ctx)
 		},
 	}
 
 	tests := []struct {
 		name        string
-		target      ottl.GetSetter
+		target      ottl.GetSetter[pcommon.Map]
 		pattern     string
 		replacement string
 		want        func(pcommon.Map)
@@ -89,12 +89,9 @@ func Test_replaceAllPatterns(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			ctx := ottltest.TestTransformContext{
-				Item: scenarioMap,
-			}
-
-			exprFunc, _ := ReplaceAllPatterns(tt.target, tt.pattern, tt.replacement)
-			exprFunc(ctx)
+			exprFunc, err := ReplaceAllPatterns[pcommon.Map](tt.target, tt.pattern, tt.replacement)
+			require.NoError(t, err)
+			exprFunc(scenarioMap)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
@@ -106,59 +103,53 @@ func Test_replaceAllPatterns(t *testing.T) {
 
 func Test_replaceAllPatterns_bad_input(t *testing.T) {
 	input := pcommon.NewValueString("not a map")
-	ctx := ottltest.TestTransformContext{
-		Item: input,
-	}
 
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem()
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx interface{}) interface{} {
+			return ctx
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) {
 			t.Errorf("nothing should be set in this scenario")
 		},
 	}
 
-	exprFunc, err := ReplaceAllPatterns(target, "regexpattern", "{replacement}")
+	exprFunc, err := ReplaceAllPatterns[interface{}](target, "regexpattern", "{replacement}")
 	assert.Nil(t, err)
 
-	exprFunc(ctx)
+	exprFunc(input)
 
 	assert.Equal(t, pcommon.NewValueString("not a map"), input)
 }
 
 func Test_replaceAllPatterns_get_nil(t *testing.T) {
-	ctx := ottltest.TestTransformContext{
-		Item: nil,
-	}
-
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem()
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx interface{}) interface{} {
+			return ctx
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) {
 			t.Errorf("nothing should be set in this scenario")
 		},
 	}
 
-	exprFunc, err := ReplaceAllPatterns(target, "regexp", "{anything}")
-	assert.Nil(t, err)
-	exprFunc(ctx)
+	exprFunc, err := ReplaceAllPatterns[interface{}](target, "regexp", "{anything}")
+	require.NoError(t, err)
+	exprFunc(nil)
 }
 
 func Test_replaceAllPatterns_invalid_pattern(t *testing.T) {
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx interface{}) interface{} {
 			t.Errorf("nothing should be received in this scenario")
 			return nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) {
 			t.Errorf("nothing should be set in this scenario")
 		},
 	}
 
 	invalidRegexPattern := "*"
-	exprFunc, err := ReplaceAllPatterns(target, invalidRegexPattern, "{anything}")
+	exprFunc, err := ReplaceAllPatterns[interface{}](target, invalidRegexPattern, "{anything}")
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "error parsing regexp:")
 	assert.Nil(t, exprFunc)
-	assert.Contains(t, err.Error(), "error parsing regexp:")
 }

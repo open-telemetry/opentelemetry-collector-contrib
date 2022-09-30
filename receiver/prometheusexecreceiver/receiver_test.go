@@ -28,9 +28,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
@@ -38,17 +38,16 @@ import (
 
 // loadConfigAssertNoError loads the test config and asserts there are no errors, and returns the receiver wanted
 func loadConfigAssertNoError(t *testing.T, receiverConfigID config.ComponentID) config.Receiver {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Receivers[factory.Type()] = factory
+	cfg := factory.CreateDefaultConfig()
 
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-	assert.NoError(t, err)
-	assert.NotNil(t, cfg)
+	sub, err := cm.Sub(receiverConfigID.String())
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
 
-	return cfg.Receivers[receiverConfigID]
+	return cfg
 }
 
 // TestExecKeyMissing loads config and asserts there is an error with that config

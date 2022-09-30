@@ -22,14 +22,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func SpanID(bytes []byte) (ottl.ExprFunc, error) {
+func SpanID[K any](bytes []byte) (ottl.ExprFunc[K], error) {
 	if len(bytes) != 8 {
 		return nil, errors.New("span ids must be 8 bytes")
 	}
 	var idArr [8]byte
 	copy(idArr[:8], bytes)
 	id := pcommon.SpanID(idArr)
-	return func(ctx ottl.TransformContext) interface{} {
+	return func(K) interface{} {
 		return id
 	}, nil
 }
