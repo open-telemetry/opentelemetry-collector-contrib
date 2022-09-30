@@ -43,6 +43,21 @@ use `force_flush_period` option.
 
 Also refer to [recombine](../operators/recombine.md) operator for merging events with greater control.
 
+#### Customised Splitter
+
+In some cases, the log cannot be splitted by line or regular pattern. At this time, the user can customize the method of splitting log entities.
+
+```go
+cfg := fileconsumer.NewConfig(fileconsumer.WithCustomizedSplitter(
+      func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+         // split log
+      ...
+         return
+      }))
+```
+
+We cannot customised split function while setting `multiline` configuration.
+
 ### File rotation
 
 When files are rotated and its new names are no longer captured in `include` pattern (i.e. tailing symlink files), it could result in data loss.

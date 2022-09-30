@@ -15,6 +15,7 @@
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
+	"bufio"
 	"fmt"
 	"time"
 
@@ -29,9 +30,18 @@ const (
 	defaultMaxConcurrentFiles = 1024
 )
 
+type Option func(cfg *Config)
+
+func WithCustomizedSplitter(splitter bufio.SplitFunc) Option {
+	return func(cfg *Config) {
+		cfg.Splitter.Customization.Enabled = true
+		cfg.Splitter.Customization.Splitter = splitter
+	}
+}
+
 // NewConfig creates a new input config with default values
-func NewConfig() *Config {
-	return &Config{
+func NewConfig(opts ...Option) *Config {
+	cfg := &Config{
 		IncludeFileName:         true,
 		IncludeFilePath:         false,
 		IncludeFileNameResolved: false,
@@ -43,6 +53,10 @@ func NewConfig() *Config {
 		MaxLogSize:              defaultMaxLogSize,
 		MaxConcurrentFiles:      defaultMaxConcurrentFiles,
 	}
+	for _, op := range opts {
+		op(cfg)
+	}
+	return cfg
 }
 
 // Config is the configuration of a file input operator

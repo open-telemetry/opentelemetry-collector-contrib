@@ -15,11 +15,13 @@
 package fileconsumer
 
 import (
+	"bufio"
 	"context"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -501,6 +503,35 @@ func TestBuild(t *testing.T) {
 			}
 
 			tc.validate(t, input)
+		})
+	}
+}
+
+func TestNewConfigWithOptions(t *testing.T) {
+	type args struct {
+		opts []Option
+	}
+	tests := []struct {
+		name     string
+		args     args
+		splitter bufio.SplitFunc
+	}{
+		{
+			name: "customized splitter",
+			args: args{
+				opts: []Option{
+					WithCustomizedSplitter(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+						return 0, nil, err
+					}),
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NewConfig(tt.args.opts...)
+			assert.NotNil(t, got)
+			assert.NotNil(t, got.Splitter.Customization.Splitter)
 		})
 	}
 }
