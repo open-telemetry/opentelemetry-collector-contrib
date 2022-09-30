@@ -16,6 +16,8 @@ package metadata // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"fmt"
+	"hash/fnv"
+	"strings"
 	"time"
 
 	"github.com/mitchellh/hashstructure"
@@ -111,6 +113,44 @@ func (mdp *MetricsDataPoint) toDataForHashing() dataForHashing {
 	return dataForHashing{
 		MetricName: mdp.metricName,
 		Labels:     labels,
+	}
+}
+
+// Convert row_range_start_key label of top-lock-stats metric from format "sample(key1, key2)" to "sample(hash1, hash2)"
+func parseAndHashRowrangestartkey(key string) string {
+	startIndexKeys := strings.Index(key, "(")
+	substring := key[startIndexKeys+1 : len(key)-1]
+	hashedKey := key[:startIndexKeys+1]
+	plusPresent := false
+	if substring[len(substring)-1] == '+' {
+		substring = substring[:len(substring)-1]
+		plusPresent = true
+	}
+	keySlice := strings.Split(substring, ",")
+	hashFunction := fnv.New32a()
+	for _, subKey := range keySlice {
+		hashFunction.Reset()
+		hashFunction.Write([]byte(subKey))
+		hashedKey += fmt.Sprint(hashFunction.Sum32()) + ","
+	}
+	hashedKey = hashedKey[:len(hashedKey)-1]
+	if plusPresent {
+		hashedKey += "+"
+	}
+	hashedKey += ")"
+	return hashedKey
+}
+
+func (mdp *MetricsDataPoint) HideLockStatsRowrangestartkeyPII() {
+	for index, labelValue := range mdp.labelValues {
+		if labelValue.Metadata().Name() == "row_range_start_key" {
+			key := labelValue.Value().(string)
+			hashedKey := parseAndHashRowrangestartkey(key)
+			v := mdp.labelValues[index].(byteSliceLabelValue)
+			p := &v
+			p.ModifyValue(hashedKey)
+			mdp.labelValues[index] = v
+		}
 	}
 }
 

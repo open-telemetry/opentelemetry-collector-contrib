@@ -188,6 +188,10 @@ func (v byteSliceLabelValue) SetValueTo(attributes pcommon.Map) {
 	attributes.PutString(v.metadata.Name(), v.value)
 }
 
+func (v *byteSliceLabelValue) ModifyValue(s string) {
+	v.value = s
+}
+
 func newByteSliceLabelValue(metadata LabelValueMetadata, valueHolder interface{}) LabelValue {
 	return byteSliceLabelValue{
 		metadata: metadata,

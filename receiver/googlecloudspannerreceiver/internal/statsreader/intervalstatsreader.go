@@ -34,8 +34,9 @@ const (
 
 type intervalStatsReader struct {
 	currentStatsReader
-	timestampsGenerator *timestampsGenerator
-	lastPullTimestamp   time.Time
+	timestampsGenerator               *timestampsGenerator
+	lastPullTimestamp                 time.Time
+	hideTopnLockstatsRowrangestartkey bool
 }
 
 func newIntervalStatsReader(
@@ -57,8 +58,9 @@ func newIntervalStatsReader(
 	}
 
 	return &intervalStatsReader{
-		currentStatsReader:  reader,
-		timestampsGenerator: tsGenerator,
+		currentStatsReader:                reader,
+		timestampsGenerator:               tsGenerator,
+		hideTopnLockstatsRowrangestartkey: config.HideTopnLockstatsRowrangestartkey,
 	}
 }
 
@@ -81,6 +83,11 @@ func (reader *intervalStatsReader) Read(ctx context.Context) ([]*metadata.Metric
 		dataPoints, err := reader.pull(ctx, stmt)
 		if err != nil {
 			return nil, err
+		}
+		if reader.hideTopnLockstatsRowrangestartkey && stmt.statement.SQL == "SELECT * FROM SPANNER_SYS.LOCK_STATS_TOP_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, LOCK_WAIT_SECONDS DESC LIMIT @topMetricsQueryMaxRows" {
+			for _, dataPoint := range dataPoints {
+				dataPoint.HideLockStatsRowrangestartkeyPII()
+			}
 		}
 
 		collectedDataPoints = append(collectedDataPoints, dataPoints...)
