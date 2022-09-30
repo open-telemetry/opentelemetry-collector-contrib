@@ -77,6 +77,8 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
 	attrs := lr.Attributes()
 	attrs.EnsureCapacity(totalLogAttributes)
 
+	attrs.PutString("event.name", ev.Name)
+	attrs.PutString("event.domain", "k8s")
 	attrs.PutString("k8s.event.reason", ev.Reason)
 	attrs.PutString("k8s.event.action", ev.Action)
 	attrs.PutString("k8s.event.start_time", ev.ObjectMeta.CreationTimestamp.String())
