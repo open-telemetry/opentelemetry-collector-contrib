@@ -52,9 +52,10 @@ type AlertConfig struct {
 	Mode     string                      `mapstructure:"mode"`
 
 	// these parameters are only relevant in retrieval mode
-	Projects           []*ProjectConfig `mapstructure:"projects"`
-	PollInterval       time.Duration    `mapstructure:"poll_interval"`
-	MaxAlertProcessing int64            `mapstructure:"max_alerts"`
+	Projects     []*ProjectConfig `mapstructure:"projects"`
+	PollInterval time.Duration    `mapstructure:"poll_interval"`
+	PageSize     int64            `mapstructure:"page_size"`
+	MaxPages     int64            `mapstructure:"max_pages"`
 }
 
 type LogConfig struct {

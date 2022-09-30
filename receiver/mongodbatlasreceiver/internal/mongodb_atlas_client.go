@@ -626,9 +626,17 @@ func (s *MongoDBAtlasClient) GetClusters(ctx context.Context, groupID string) ([
 	return clusters, nil
 }
 
+type AlertPollOptions struct {
+	PageNum  int
+	PageSize int
+}
+
 // GetAlerts returns the alerts specified for the set projects
-func (s *MongoDBAtlasClient) GetAlerts(ctx context.Context, groupID string, pageNum int) (ret []mongodbatlas.Alert, nextPage bool, err error) {
-	lo := mongodbatlas.ListOptions{PageNum: pageNum}
+func (s *MongoDBAtlasClient) GetAlerts(ctx context.Context, groupID string, opts *AlertPollOptions) (ret []mongodbatlas.Alert, nextPage bool, err error) {
+	lo := mongodbatlas.ListOptions{
+		PageNum:      opts.PageNum,
+		ItemsPerPage: opts.PageSize,
+	}
 	options := mongodbatlas.AlertsListOptions{ListOptions: lo}
 	alerts, response, err := s.client.Alerts.List(ctx, groupID, &options)
 	err = checkMongoDBClientErr(err, response)

@@ -42,6 +42,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 )
 
@@ -612,8 +613,9 @@ func TestAlertsRetrieval(t *testing.T) {
 								Name: testProjectName,
 							},
 						},
-						MaxAlertProcessing: defaultMaxAlerts,
-						PollInterval:       1 * time.Second,
+						PageSize:     defaultAlertsPageSize,
+						MaxPages:     defaultAlertsMaxPages,
+						PollInterval: 1 * time.Second,
 					},
 				}
 			},
@@ -646,8 +648,9 @@ func TestAlertsRetrieval(t *testing.T) {
 								IncludeClusters: []string{testClusterName},
 							},
 						},
-						MaxAlertProcessing: defaultMaxAlerts,
-						PollInterval:       1 * time.Second,
+						PageSize:     defaultAlertsPageSize,
+						MaxPages:     defaultAlertsMaxPages,
+						PollInterval: 1 * time.Second,
 					},
 				}
 			},
@@ -694,8 +697,9 @@ func TestAlertPollingExclusions(t *testing.T) {
 					ExcludeClusters: []string{testClusterName},
 				},
 			},
-			MaxAlertProcessing: defaultMaxAlerts,
-			PollInterval:       1 * time.Second,
+			PageSize:     defaultAlertsPageSize,
+			MaxPages:     defaultAlertsMaxPages,
+			PollInterval: 1 * time.Second,
 		},
 	}, logSink)
 	require.NoError(t, err)
@@ -707,6 +711,8 @@ func TestAlertPollingExclusions(t *testing.T) {
 	require.Never(t, func() bool {
 		return logSink.LogRecordCount() > 0
 	}, 3*time.Second, 10*time.Millisecond)
+
+	require.NoError(t, alertsRcvr.Shutdown(context.Background()))
 }
 
 func testClient() *mockAlertsClient {
@@ -719,30 +725,34 @@ func testClient() *mockAlertsClient {
 	}, nil)
 	ac.On("GetAlerts", mock.Anything, testProjectID, mock.Anything).Return(
 		[]mongodbatlas.Alert{
-			{
-				ID:            testAlertID,
-				GroupID:       testGroupID,
-				AlertConfigID: "",
-				EventTypeName: testTypeName,
-				Created:       time.Now().Format(time.RFC3339),
-				Updated:       time.Now().Format(time.RFC3339),
-				Enabled:       new(bool),
-				Status:        "TRACKING",
-				MetricName:    testMetricName,
-				CurrentValue: &mongodbatlas.CurrentValue{
-					Number: new(float64),
-					Units:  "By",
-				},
-				ReplicaSetName:  "",
-				ClusterName:     testClusterName,
-				HostnameAndPort: testHostNameAndPort,
-				Matchers:        []mongodbatlas.Matcher{},
-				MetricThreshold: &mongodbatlas.MetricThreshold{},
-				Notifications:   []mongodbatlas.Notification{},
-			},
+			testAlert(),
 		},
-		nil)
+		false, nil)
 	return ac
+}
+
+func testAlert() mongodbatlas.Alert {
+	return mongodbatlas.Alert{
+		ID:            testAlertID,
+		GroupID:       testGroupID,
+		AlertConfigID: "",
+		EventTypeName: testTypeName,
+		Created:       time.Now().Format(time.RFC3339),
+		Updated:       time.Now().Format(time.RFC3339),
+		Enabled:       new(bool),
+		Status:        "TRACKING",
+		MetricName:    testMetricName,
+		CurrentValue: &mongodbatlas.CurrentValue{
+			Number: new(float64),
+			Units:  "By",
+		},
+		ReplicaSetName:  "",
+		ClusterName:     testClusterName,
+		HostnameAndPort: testHostNameAndPort,
+		Matchers:        []mongodbatlas.Matcher{},
+		MetricThreshold: &mongodbatlas.MetricThreshold{},
+		Notifications:   []mongodbatlas.Notification{},
+	}
 }
 
 func validateAttributes(t *testing.T, expectedStringAttributes map[string]string, logs plog.Logs) {
@@ -771,7 +781,7 @@ func (mac *mockAlertsClient) GetProject(ctx context.Context, pID string) (*mongo
 	return args.Get(0).(*mongodbatlas.Project), args.Error(1)
 }
 
-func (mac *mockAlertsClient) GetAlerts(ctx context.Context, pID string, pageNum int) ([]mongodbatlas.Alert, bool, error) {
-	args := mac.Called(ctx, pID, pageNum)
-	return args.Get(0).([]mongodbatlas.Alert), false, args.Error(1)
+func (mac *mockAlertsClient) GetAlerts(ctx context.Context, pID string, opts *internal.AlertPollOptions) ([]mongodbatlas.Alert, bool, error) {
+	args := mac.Called(ctx, pID, opts)
+	return args.Get(0).([]mongodbatlas.Alert), args.Bool(1), args.Error(2)
 }
