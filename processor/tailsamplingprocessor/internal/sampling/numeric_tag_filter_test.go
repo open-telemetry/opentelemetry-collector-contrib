@@ -76,7 +76,6 @@ func TestNumericTagFilter(t *testing.T) {
 }
 
 func newTraceIntAttrs(nodeAttrs map[string]interface{}, spanAttrKey string, spanAttrValue int64) *TraceData {
-	var traceBatches []ptrace.Traces
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().FromRaw(nodeAttrs)
@@ -85,8 +84,7 @@ func newTraceIntAttrs(nodeAttrs map[string]interface{}, spanAttrKey string, span
 	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 	span.Attributes().PutInt(spanAttrKey, spanAttrValue)
-	traceBatches = append(traceBatches, traces)
 	return &TraceData{
-		ReceivedBatches: traceBatches,
+		ReceivedBatches: traces,
 	}
 }
