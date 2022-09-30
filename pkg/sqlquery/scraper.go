@@ -58,7 +58,7 @@ func NewScraper(id config.ComponentID, query Query, scrapeCfg scraperhelper.Scra
 
 var _ scraperhelper.Scraper = (*Scraper)(nil)
 
-func (s Scraper) ID() config.ComponentID {
+func (s *Scraper) ID() config.ComponentID {
 	return s.id
 }
 
@@ -74,7 +74,7 @@ func (s *Scraper) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s Scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *Scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	out := pmetric.NewMetrics()
 	rows, err := s.client.MetricRows(ctx)
 	if err != nil {
@@ -101,6 +101,6 @@ func (s Scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	return out, errs
 }
 
-func (s Scraper) Shutdown(ctx context.Context) error {
+func (s *Scraper) Shutdown(ctx context.Context) error {
 	return s.db.Close()
 }
