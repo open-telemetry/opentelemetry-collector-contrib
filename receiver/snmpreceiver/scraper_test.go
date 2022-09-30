@@ -92,21 +92,6 @@ func (_m *MockClient) GetScalarData(oids []string, processFn processFunc) error 
 	return r0
 }
 
-type mockNewClientT interface {
-	mock.TestingT
-	Cleanup(func())
-}
-
-// newMockClient creates a new instance of client. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func newMockClient(t mockNewClientT) *MockClient {
-	mock := &MockClient{}
-	mock.Mock.Test(t)
-
-	t.Cleanup(func() { mock.AssertExpectations(t) })
-
-	return mock
-}
-
 func TestStart(t *testing.T) {
 	testCases := []struct {
 		desc     string
@@ -215,7 +200,7 @@ func TestScrape(t *testing.T) {
 
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								ScalarOIDs: []ScalarOID{
 									{
@@ -238,19 +223,19 @@ func TestScrape(t *testing.T) {
 			desc: "Scalar scrape returns string data does not create metric",
 			testFunc: func(t *testing.T) {
 				mockClient := new(MockClient)
-				snmpData := snmpData{
+				clientSNMPData := snmpData{
 					oid:       "1",
 					value:     "test",
-					valueType: String,
+					valueType: stringVal,
 				}
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
-					returnErr := processFn(snmpData)
+					returnErr := processFn(clientSNMPData)
 					require.EqualError(t, returnErr, fmt.Sprintf(errMsgBadValueType, "1"))
 				}).Return(errNoProcessGetOIDs)
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								ScalarOIDs: []ScalarOID{
 									{
@@ -273,19 +258,19 @@ func TestScrape(t *testing.T) {
 			desc: "Simple scalar scrape creates int gauge metric (1)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(MockClient)
-				snmpData := snmpData{
+				clientSNMPData := snmpData{
 					oid:       ".1",
 					value:     int64(1),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
-					returnErr := processFn(snmpData)
+					returnErr := processFn(clientSNMPData)
 					require.NoError(t, returnErr)
 				}).Return(nil)
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -322,19 +307,19 @@ func TestScrape(t *testing.T) {
 			desc: "Simple scalar scrape with non '.' prefixed OID still creates metric (1)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(MockClient)
-				snmpData := snmpData{
+				clientSNMPData := snmpData{
 					oid:       ".1",
 					value:     int64(1),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
-					returnErr := processFn(snmpData)
+					returnErr := processFn(clientSNMPData)
 					require.NoError(t, returnErr)
 				}).Return(nil)
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -371,19 +356,19 @@ func TestScrape(t *testing.T) {
 			desc: "Simple scalar scrape creates float cumulative monotonic sum metric (2)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(MockClient)
-				snmpData := snmpData{
+				clientSNMPData := snmpData{
 					oid:       ".1",
 					value:     float64(1.0),
-					valueType: Float,
+					valueType: floatVal,
 				}
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
-					returnErr := processFn(snmpData)
+					returnErr := processFn(clientSNMPData)
 					require.NoError(t, returnErr)
 				}).Return(nil)
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -422,19 +407,19 @@ func TestScrape(t *testing.T) {
 			desc: "Simple scalar scrape creates int delta non-monotonic sum metric (3)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(MockClient)
-				snmpData := snmpData{
+				clientSNMPData := snmpData{
 					oid:       ".1",
 					value:     int64(1),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
-					returnErr := processFn(snmpData)
+					returnErr := processFn(clientSNMPData)
 					require.NoError(t, returnErr)
 				}).Return(nil)
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -476,12 +461,12 @@ func TestScrape(t *testing.T) {
 				snmpData1 := snmpData{
 					oid:       ".1",
 					value:     int64(1),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData2 := snmpData{
 					oid:       ".2",
 					value:     int64(2),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
@@ -492,7 +477,7 @@ func TestScrape(t *testing.T) {
 				}).Return(nil)
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -541,19 +526,19 @@ func TestScrape(t *testing.T) {
 			desc: "Scalar scrape creates metric with attributes (5)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(MockClient)
-				snmpData := snmpData{
+				clientSNMPData := snmpData{
 					oid:       ".1",
 					value:     int64(1),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
-					returnErr := processFn(snmpData)
+					returnErr := processFn(clientSNMPData)
 					require.NoError(t, returnErr)
 				}).Return(nil)
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]AttributeConfig{
+						Attributes: map[string]*AttributeConfig{
 							"attr1": {
 								Enum: []string{"val1", "val2"},
 							},
@@ -562,7 +547,7 @@ func TestScrape(t *testing.T) {
 								Enum:  []string{"val1", "val2"},
 							},
 						},
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -612,12 +597,12 @@ func TestScrape(t *testing.T) {
 				snmpData1 := snmpData{
 					oid:       ".1",
 					value:     int64(1),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData2 := snmpData{
 					oid:       ".2",
 					value:     int64(2),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
@@ -628,12 +613,12 @@ func TestScrape(t *testing.T) {
 				}).Return(nil)
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]AttributeConfig{
+						Attributes: map[string]*AttributeConfig{
 							"attr1": {
 								Enum: []string{"val1", "val2"},
 							},
 						},
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -690,7 +675,7 @@ func TestScrape(t *testing.T) {
 
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								ColumnOIDs: []ColumnOID{
 									{
@@ -717,13 +702,13 @@ func TestScrape(t *testing.T) {
 					parentOID: ".1",
 					oid:       ".1.1",
 					value:     "test1",
-					valueType: String,
+					valueType: stringVal,
 				}
 				snmpData2 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.2",
 					value:     "test2",
-					valueType: String,
+					valueType: stringVal,
 				}
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
@@ -734,7 +719,7 @@ func TestScrape(t *testing.T) {
 				}).Return(errNoProcessGetOIDs)
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								ColumnOIDs: []ColumnOID{
 									{
@@ -761,13 +746,13 @@ func TestScrape(t *testing.T) {
 					parentOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData2 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
@@ -778,12 +763,12 @@ func TestScrape(t *testing.T) {
 				}).Return(nil)
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]AttributeConfig{
+						Attributes: map[string]*AttributeConfig{
 							"attr1": {
 								IndexedValuePrefix: "attrPrefix",
 							},
 						},
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -829,13 +814,13 @@ func TestScrape(t *testing.T) {
 					parentOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData2 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
@@ -846,12 +831,12 @@ func TestScrape(t *testing.T) {
 				}).Return(nil)
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]AttributeConfig{
+						Attributes: map[string]*AttributeConfig{
 							"attr1": {
 								IndexedValuePrefix: "attrPrefix",
 							},
 						},
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -897,13 +882,13 @@ func TestScrape(t *testing.T) {
 					parentOID: ".1",
 					oid:       ".1.1",
 					value:     float64(1.0),
-					valueType: Float,
+					valueType: floatVal,
 				}
 				snmpData2 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.2",
 					value:     float64(2.0),
-					valueType: Float,
+					valueType: floatVal,
 				}
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
@@ -914,12 +899,12 @@ func TestScrape(t *testing.T) {
 				}).Return(nil)
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]AttributeConfig{
+						Attributes: map[string]*AttributeConfig{
 							"attr1": {
 								IndexedValuePrefix: "attrPrefix",
 							},
 						},
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -967,13 +952,13 @@ func TestScrape(t *testing.T) {
 					parentOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData2 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
@@ -984,12 +969,12 @@ func TestScrape(t *testing.T) {
 				}).Return(nil)
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]AttributeConfig{
+						Attributes: map[string]*AttributeConfig{
 							"attr1": {
 								IndexedValuePrefix: "attrPrefix",
 							},
 						},
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -1036,19 +1021,19 @@ func TestScrape(t *testing.T) {
 				snmpData0 := snmpData{
 					oid:       ".0",
 					value:     int64(0),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData1 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData2 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
@@ -1064,12 +1049,12 @@ func TestScrape(t *testing.T) {
 				}).Return(nil)
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]AttributeConfig{
+						Attributes: map[string]*AttributeConfig{
 							"attr1": {
 								IndexedValuePrefix: "attrPrefix",
 							},
 						},
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric0": {
 								Description: "test description0",
 								Unit:        "By",
@@ -1127,25 +1112,25 @@ func TestScrape(t *testing.T) {
 					parentOID: ".0",
 					oid:       ".0.1",
 					value:     int64(0),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData1 := snmpData{
 					parentOID: ".0",
 					oid:       ".0.2",
 					value:     int64(1),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData2 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.1",
 					value:     int64(2),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData3 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.2",
 					value:     int64(3),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
@@ -1160,12 +1145,12 @@ func TestScrape(t *testing.T) {
 				}).Return(nil)
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]AttributeConfig{
+						Attributes: map[string]*AttributeConfig{
 							"attr1": {
 								IndexedValuePrefix: "attrPrefix",
 							},
 						},
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric0": {
 								Description: "test description0",
 								Unit:        "By",
@@ -1228,25 +1213,25 @@ func TestScrape(t *testing.T) {
 					parentOID: ".0",
 					oid:       ".0.1",
 					value:     "thing1",
-					valueType: String,
+					valueType: stringVal,
 				}
 				snmpData1 := snmpData{
 					parentOID: ".0",
 					oid:       ".0.2",
 					value:     "thing2",
-					valueType: String,
+					valueType: stringVal,
 				}
 				snmpData2 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData3 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
@@ -1264,7 +1249,7 @@ func TestScrape(t *testing.T) {
 				}).Return(nil).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]AttributeConfig{
+						Attributes: map[string]*AttributeConfig{
 							"attr1": {
 								IndexedValuePrefix: "attrPrefix",
 							},
@@ -1276,7 +1261,7 @@ func TestScrape(t *testing.T) {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -1329,12 +1314,12 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return(clientErr)
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]AttributeConfig{
+						Attributes: map[string]*AttributeConfig{
 							"attr1": {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -1372,13 +1357,13 @@ func TestScrape(t *testing.T) {
 					parentOID: ".0",
 					oid:       ".0.1",
 					value:     true,
-					valueType: NotSupported,
+					valueType: notSupportedVal,
 				}
 				snmpData1 := snmpData{
 					parentOID: ".0",
 					oid:       ".0.2",
 					value:     false,
-					valueType: NotSupported,
+					valueType: notSupportedVal,
 				}
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
@@ -1389,12 +1374,12 @@ func TestScrape(t *testing.T) {
 				}).Return(errNoWalkOIDs)
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]AttributeConfig{
+						Attributes: map[string]*AttributeConfig{
 							"attr1": {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -1432,25 +1417,25 @@ func TestScrape(t *testing.T) {
 					parentOID: ".0",
 					oid:       ".0.1",
 					value:     "thing1",
-					valueType: String,
+					valueType: stringVal,
 				}
 				snmpData1 := snmpData{
 					parentOID: ".0",
 					oid:       ".0.2",
 					value:     "thing2",
-					valueType: String,
+					valueType: stringVal,
 				}
 				snmpData2 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData3 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
@@ -1468,12 +1453,12 @@ func TestScrape(t *testing.T) {
 				}).Return(nil).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]AttributeConfig{
+						Attributes: map[string]*AttributeConfig{
 							"attr1": {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -1519,25 +1504,25 @@ func TestScrape(t *testing.T) {
 					parentOID: ".0",
 					oid:       ".0.1",
 					value:     "thing1",
-					valueType: String,
+					valueType: stringVal,
 				}
 				snmpData1 := snmpData{
 					parentOID: ".0",
 					oid:       ".0.2",
 					value:     "thing2",
-					valueType: String,
+					valueType: stringVal,
 				}
 				snmpData2 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData3 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
@@ -1555,12 +1540,12 @@ func TestScrape(t *testing.T) {
 				}).Return(nil).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]AttributeConfig{
+						Attributes: map[string]*AttributeConfig{
 							"attr1": {
 								OID: "0",
 							},
 						},
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -1606,25 +1591,25 @@ func TestScrape(t *testing.T) {
 					parentOID: ".0",
 					oid:       ".0.1",
 					value:     1.11111111,
-					valueType: Float,
+					valueType: floatVal,
 				}
 				snmpData1 := snmpData{
 					parentOID: ".0",
 					oid:       ".0.2",
 					value:     2.22222222,
-					valueType: Float,
+					valueType: floatVal,
 				}
 				snmpData2 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData3 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
@@ -1642,12 +1627,12 @@ func TestScrape(t *testing.T) {
 				}).Return(nil).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]AttributeConfig{
+						Attributes: map[string]*AttributeConfig{
 							"attr1": {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -1693,25 +1678,25 @@ func TestScrape(t *testing.T) {
 					parentOID: ".0",
 					oid:       ".0.1",
 					value:     int64(1),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData1 := snmpData{
 					parentOID: ".0",
 					oid:       ".0.2",
 					value:     int64(2),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData2 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData3 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
@@ -1729,12 +1714,12 @@ func TestScrape(t *testing.T) {
 				}).Return(nil).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]AttributeConfig{
+						Attributes: map[string]*AttributeConfig{
 							"attr1": {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -1780,25 +1765,25 @@ func TestScrape(t *testing.T) {
 					parentOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData1 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData2 := snmpData{
 					parentOID: ".2",
 					oid:       ".2.1",
 					value:     float64(1.0),
-					valueType: Float,
+					valueType: floatVal,
 				}
 				snmpData3 := snmpData{
 					parentOID: ".2",
 					oid:       ".2.2",
 					value:     float64(2.0),
-					valueType: Float,
+					valueType: floatVal,
 				}
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
@@ -1813,12 +1798,12 @@ func TestScrape(t *testing.T) {
 				}).Return(nil)
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]ResourceAttributeConfig{
+						ResourceAttributes: map[string]*ResourceAttributeConfig{
 							"rattr1": {
 								IndexedValuePrefix: "thing",
 							},
 						},
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -1873,12 +1858,12 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return(clientErr)
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]ResourceAttributeConfig{
+						ResourceAttributes: map[string]*ResourceAttributeConfig{
 							"rattr1": {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -1912,13 +1897,13 @@ func TestScrape(t *testing.T) {
 					parentOID: ".0",
 					oid:       ".0.1",
 					value:     true,
-					valueType: NotSupported,
+					valueType: notSupportedVal,
 				}
 				snmpData1 := snmpData{
 					parentOID: ".0",
 					oid:       ".0.2",
 					value:     false,
-					valueType: NotSupported,
+					valueType: notSupportedVal,
 				}
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
@@ -1929,12 +1914,12 @@ func TestScrape(t *testing.T) {
 				}).Return(errNoWalkOIDs)
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]ResourceAttributeConfig{
+						ResourceAttributes: map[string]*ResourceAttributeConfig{
 							"rattr1": {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -1972,37 +1957,37 @@ func TestScrape(t *testing.T) {
 					parentOID: ".0",
 					oid:       ".0.1",
 					value:     "thing1",
-					valueType: String,
+					valueType: stringVal,
 				}
 				snmpData1 := snmpData{
 					parentOID: ".0",
 					oid:       ".0.2",
 					value:     "thing2",
-					valueType: String,
+					valueType: stringVal,
 				}
 				snmpData2 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData3 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData4 := snmpData{
 					parentOID: ".2",
 					oid:       ".2.1",
 					value:     float64(1.0),
-					valueType: Float,
+					valueType: floatVal,
 				}
 				snmpData5 := snmpData{
 					parentOID: ".2",
 					oid:       ".2.2",
 					value:     float64(2.0),
-					valueType: Float,
+					valueType: floatVal,
 				}
 				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
@@ -2024,12 +2009,12 @@ func TestScrape(t *testing.T) {
 				}).Return(nil).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]ResourceAttributeConfig{
+						ResourceAttributes: map[string]*ResourceAttributeConfig{
 							"rattr1": {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -2084,37 +2069,37 @@ func TestScrape(t *testing.T) {
 					parentOID: ".0",
 					oid:       ".0.1",
 					value:     "thing1",
-					valueType: String,
+					valueType: stringVal,
 				}
 				snmpData1 := snmpData{
 					parentOID: ".0",
 					oid:       ".0.2",
 					value:     "thing2",
-					valueType: String,
+					valueType: stringVal,
 				}
 				snmpData2 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData3 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData4 := snmpData{
 					parentOID: ".2",
 					oid:       ".2.1",
 					value:     float64(1.0),
-					valueType: Float,
+					valueType: floatVal,
 				}
 				snmpData5 := snmpData{
 					parentOID: ".2",
 					oid:       ".2.2",
 					value:     float64(2.0),
-					valueType: Float,
+					valueType: floatVal,
 				}
 				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
@@ -2136,12 +2121,12 @@ func TestScrape(t *testing.T) {
 				}).Return(nil).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]ResourceAttributeConfig{
+						ResourceAttributes: map[string]*ResourceAttributeConfig{
 							"rattr1": {
 								OID: "0",
 							},
 						},
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -2196,25 +2181,25 @@ func TestScrape(t *testing.T) {
 					parentOID: ".0",
 					oid:       ".0.1",
 					value:     "thing1",
-					valueType: String,
+					valueType: stringVal,
 				}
 				snmpData1 := snmpData{
 					parentOID: ".0",
 					oid:       ".0.2",
 					value:     "thing2",
-					valueType: String,
+					valueType: stringVal,
 				}
 				snmpData2 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				snmpData3 := snmpData{
 					parentOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
-					valueType: Integer,
+					valueType: integerVal,
 				}
 				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
@@ -2232,7 +2217,7 @@ func TestScrape(t *testing.T) {
 				}).Return(nil).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]ResourceAttributeConfig{
+						ResourceAttributes: map[string]*ResourceAttributeConfig{
 							"rattr1": {
 								OID: ".0",
 							},
@@ -2240,7 +2225,7 @@ func TestScrape(t *testing.T) {
 								IndexedValuePrefix: "object",
 							},
 						},
-						Metrics: map[string]MetricConfig{
+						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",

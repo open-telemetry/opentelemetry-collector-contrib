@@ -22,12 +22,13 @@ import (
 	"testing"
 
 	"github.com/gosnmp/gosnmp"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver/internal/mocks"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver/internal/mocks"
 )
 
 func TestNewClient(t *testing.T) {
@@ -40,38 +41,6 @@ func TestNewClient(t *testing.T) {
 		expectError error
 	}{
 		{
-			desc: "Invalid SNMP version",
-			cfg: &Config{
-				Version: "9999",
-			},
-			host:        componenttest.NewNopHost(),
-			settings:    componenttest.NewNopTelemetrySettings(),
-			logger:      zap.NewNop(),
-			expectError: errors.New("failed to create goSNMP client: invalid version"),
-		},
-		{
-			desc: "Invalid endpoint",
-			cfg: &Config{
-				Version:  "v1",
-				Endpoint: "a:b:c:d",
-			},
-			host:        componenttest.NewNopHost(),
-			settings:    componenttest.NewNopTelemetrySettings(),
-			logger:      zap.NewNop(),
-			expectError: errors.New("failed to create goSNMP client: invalid endpoint. parse \"udp://a:b:c:d\": invalid port \":d\" after host"),
-		},
-		{
-			desc: "Endpoint with unsupported scheme",
-			cfg: &Config{
-				Version:  "v2c",
-				Endpoint: "http://localhost:161",
-			},
-			host:        componenttest.NewNopHost(),
-			settings:    componenttest.NewNopTelemetrySettings(),
-			logger:      zap.NewNop(),
-			expectError: errors.New("failed to create goSNMP client: unsupported scheme 'http'"),
-		},
-		{
 			desc: "Valid v2c configuration",
 			cfg: &Config{
 				Version:   "v2c",
@@ -82,57 +51,6 @@ func TestNewClient(t *testing.T) {
 			settings:    componenttest.NewNopTelemetrySettings(),
 			logger:      zap.NewNop(),
 			expectError: nil,
-		},
-		{
-			desc: "Invalid SecurityLevel",
-			cfg: &Config{
-				Version:         "v3",
-				Endpoint:        "tcp://localhost:161",
-				User:            "user",
-				SecurityLevel:   "bad",
-				AuthType:        "MD5",
-				AuthPassword:    "authpass",
-				PrivacyType:     "DES",
-				PrivacyPassword: "privacypass",
-			},
-			host:        componenttest.NewNopHost(),
-			settings:    componenttest.NewNopTelemetrySettings(),
-			logger:      zap.NewNop(),
-			expectError: errors.New("failed to create goSNMP client: invalid security protocol 'bad'"),
-		},
-		{
-			desc: "Invalid AuthType",
-			cfg: &Config{
-				Version:         "v3",
-				Endpoint:        "tcp://localhost:161",
-				User:            "user",
-				SecurityLevel:   "auth_priv",
-				AuthType:        "bad",
-				AuthPassword:    "authpass",
-				PrivacyType:     "DES",
-				PrivacyPassword: "privacypass",
-			},
-			host:        componenttest.NewNopHost(),
-			settings:    componenttest.NewNopTelemetrySettings(),
-			logger:      zap.NewNop(),
-			expectError: errors.New("failed to create goSNMP client: invalid auth protocol 'bad'"),
-		},
-		{
-			desc: "Invalid PrivType",
-			cfg: &Config{
-				Version:         "v3",
-				Endpoint:        "tcp://localhost:161",
-				User:            "user",
-				SecurityLevel:   "auth_priv",
-				AuthType:        "MD5",
-				AuthPassword:    "authpass",
-				PrivacyType:     "bad",
-				PrivacyPassword: "privacypass",
-			},
-			host:        componenttest.NewNopHost(),
-			settings:    componenttest.NewNopTelemetrySettings(),
-			logger:      zap.NewNop(),
-			expectError: errors.New("failed to create goSNMP client: invalid privacy protocol 'bad'"),
 		},
 		{
 			desc: "Valid v3 configuration",
@@ -354,6 +272,29 @@ func TestGetScalarData(t *testing.T) {
 			},
 		},
 		{
+			desc: "GoSNMP Client reset connection fails on connect returns error",
+			testFunc: func(t *testing.T) {
+				processFn := func(snmpData snmpData) error {
+					// We don't want this to be tested
+					require.True(t, false)
+					return nil
+				}
+				getError := errors.New("request timeout (after 0 retries)")
+				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
+				mockGoSNMP.On("Get", []string{"1"}).Return(nil, getError)
+				mockGoSNMP.On("GetMaxOids", mock.Anything).Return(2)
+				mockGoSNMP.On("Close", mock.Anything).Return(nil)
+				connectErr := errors.New("can't connect")
+				mockGoSNMP.On("Connect", mock.Anything).Return(connectErr)
+				client := &snmpClient{
+					logger: zap.NewNop(),
+					client: mockGoSNMP,
+				}
+				err := client.GetScalarData([]string{"1"}, processFn)
+				require.ErrorIs(t, err, connectErr)
+			},
+		},
+		{
 			desc: "GoSNMP Client partial failures still processes",
 			testFunc: func(t *testing.T) {
 				processFn := func(snmpData snmpData) error {
@@ -459,12 +400,12 @@ func TestGetScalarData(t *testing.T) {
 				processFn := func(snmpData snmpData) error {
 					if snmpData.oid == "1" {
 						return errors.New("Process Problem")
-					} else {
-						require.Equal(t, snmpData.oid, "2")
-						require.Equal(t, snmpData.valueType, Integer)
-						require.Equal(t, snmpData.value, int64(2))
-						return nil
 					}
+
+					require.Equal(t, snmpData.oid, "2")
+					require.Equal(t, snmpData.valueType, integerVal)
+					require.Equal(t, snmpData.value, int64(2))
+					return nil
 				}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				pdu1 := gosnmp.SnmpPDU{
@@ -494,12 +435,12 @@ func TestGetScalarData(t *testing.T) {
 				processCnt := 0
 				processFn := func(snmpData snmpData) error {
 					if snmpData.oid == "1" {
-						require.Equal(t, snmpData.valueType, Integer)
+						require.Equal(t, snmpData.valueType, integerVal)
 						require.Equal(t, snmpData.value, int64(1))
 						processCnt++
 					}
 					if snmpData.oid == "2" {
-						require.Equal(t, snmpData.valueType, Integer)
+						require.Equal(t, snmpData.valueType, integerVal)
 						require.Equal(t, snmpData.value, int64(2))
 						processCnt++
 					}
@@ -571,7 +512,7 @@ func TestGetScalarData(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				processFn := func(snmpData snmpData) error {
 					require.Equal(t, snmpData.oid, "1")
-					require.Equal(t, snmpData.valueType, Float)
+					require.Equal(t, snmpData.valueType, floatVal)
 					require.Equal(t, snmpData.value, 1.0)
 					return nil
 				}
@@ -596,7 +537,7 @@ func TestGetScalarData(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				processFn := func(snmpData snmpData) error {
 					require.Equal(t, snmpData.oid, "1")
-					require.Equal(t, snmpData.valueType, String)
+					require.Equal(t, snmpData.valueType, stringVal)
 					require.Equal(t, snmpData.value, "test")
 					return nil
 				}
@@ -692,6 +633,30 @@ func TestGetIndexedData(t *testing.T) {
 			},
 		},
 		{
+			desc: "GoSNMP Client reset connection fails on connect returns error",
+			testFunc: func(t *testing.T) {
+				processFn := func(snmpData snmpData) error {
+					// We don't want this to be tested
+					require.True(t, false)
+					return nil
+				}
+				walkError := errors.New("request timeout (after 0 retries)")
+				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
+				mockGoSNMP.On("GetVersion", mock.Anything).Return(gosnmp.Version2c)
+				mockGoSNMP.On("BulkWalk", "1", mock.AnythingOfType("gosnmp.WalkFunc")).Return(walkError)
+				mockGoSNMP.On("GetMaxOids", mock.Anything).Return(2)
+				mockGoSNMP.On("Close", mock.Anything).Return(nil)
+				connectErr := errors.New("can't connect")
+				mockGoSNMP.On("Connect", mock.Anything).Return(connectErr)
+				client := &snmpClient{
+					logger: zap.NewNop(),
+					client: mockGoSNMP,
+				}
+				err := client.GetIndexedData([]string{"1"}, processFn)
+				require.ErrorIs(t, err, connectErr)
+			},
+		},
+		{
 			desc: "GoSNMP Client partial failures still processes",
 			testFunc: func(t *testing.T) {
 				processFn := func(snmpData snmpData) error {
@@ -732,7 +697,7 @@ func TestGetIndexedData(t *testing.T) {
 				mockGoSNMP.On("BulkWalk", "1", mock.AnythingOfType("gosnmp.WalkFunc")).Run(func(args mock.Arguments) {
 					walkFn := args.Get(1).(gosnmp.WalkFunc)
 					returnErr := walkFn(pdu)
-					require.EqualError(t, returnErr, fmt.Sprintf("Data for OID: %s not found", pdu.Name))
+					require.EqualError(t, returnErr, fmt.Sprintf("data for OID: %s not found", pdu.Name))
 				}).Return(walkError)
 				mockGoSNMP.On("GetMaxOids", mock.Anything).Return(2)
 				client := &snmpClient{
@@ -763,7 +728,7 @@ func TestGetIndexedData(t *testing.T) {
 				mockGoSNMP.On("BulkWalk", "1", mock.AnythingOfType("gosnmp.WalkFunc")).Run(func(args mock.Arguments) {
 					walkFn := args.Get(1).(gosnmp.WalkFunc)
 					returnErr := walkFn(pdu)
-					require.EqualError(t, returnErr, fmt.Sprintf("Data for OID: %s not a supported type", pdu.Name))
+					require.EqualError(t, returnErr, fmt.Sprintf("data for OID: %s not a supported type", pdu.Name))
 				}).Return(walkError)
 				mockGoSNMP.On("GetMaxOids", mock.Anything).Return(2)
 				client := &snmpClient{
@@ -781,12 +746,12 @@ func TestGetIndexedData(t *testing.T) {
 				processCnt := 0
 				processFn := func(snmpData snmpData) error {
 					if snmpData.oid == "1" {
-						require.Equal(t, snmpData.valueType, Integer)
+						require.Equal(t, snmpData.valueType, integerVal)
 						require.Equal(t, snmpData.value, int64(1))
 						processCnt++
 					}
 					if snmpData.oid == "2" {
-						require.Equal(t, snmpData.valueType, Integer)
+						require.Equal(t, snmpData.valueType, integerVal)
 						require.Equal(t, snmpData.value, int64(2))
 						processCnt++
 					}
@@ -832,7 +797,7 @@ func TestGetIndexedData(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				processFn := func(snmpData snmpData) error {
 					require.Equal(t, snmpData.oid, "1")
-					require.Equal(t, snmpData.valueType, Float)
+					require.Equal(t, snmpData.valueType, floatVal)
 					require.Equal(t, snmpData.value, 1.0)
 					return nil
 				}
@@ -862,7 +827,7 @@ func TestGetIndexedData(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				processFn := func(snmpData snmpData) error {
 					require.Equal(t, snmpData.oid, "1")
-					require.Equal(t, snmpData.valueType, String)
+					require.Equal(t, snmpData.valueType, stringVal)
 					require.Equal(t, snmpData.value, "test")
 					return nil
 				}
@@ -892,7 +857,7 @@ func TestGetIndexedData(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				processFn := func(snmpData snmpData) error {
 					require.Equal(t, snmpData.oid, "1")
-					require.Equal(t, snmpData.valueType, Integer)
+					require.Equal(t, snmpData.valueType, integerVal)
 					require.Equal(t, snmpData.value, int64(1))
 					return nil
 				}

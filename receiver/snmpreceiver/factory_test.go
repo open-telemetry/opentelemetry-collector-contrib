@@ -17,7 +17,6 @@ package snmpreceiver // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -46,7 +45,7 @@ func TestNewFactory(t *testing.T) {
 				var expectedCfg config.Receiver = &Config{
 					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 						ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
-						CollectionInterval: defaultCollectionInterval * time.Second,
+						CollectionInterval: defaultCollectionInterval,
 					},
 					Endpoint:      defaultEndpoint,
 					Version:       defaultVersion,
@@ -84,6 +83,139 @@ func TestNewFactory(t *testing.T) {
 					consumertest.NewNop(),
 				)
 				require.ErrorIs(t, err, errConfigNotSNMP)
+			},
+		},
+		{
+			desc: "CreateMetricsReceiver adds missing scheme to endpoint",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig()
+				snmpCfg := cfg.(*Config)
+				snmpCfg.Endpoint = "localhost:161"
+				_, err := factory.CreateMetricsReceiver(
+					context.Background(),
+					componenttest.NewNopReceiverCreateSettings(),
+					cfg,
+					consumertest.NewNop(),
+				)
+				require.NoError(t, err)
+				require.Equal(t, "udp://localhost:161", snmpCfg.Endpoint)
+			},
+		},
+		{
+			desc: "CreateMetricsReceiver adds missing port to endpoint",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig()
+				snmpCfg := cfg.(*Config)
+				snmpCfg.Endpoint = "udp://localhost"
+				_, err := factory.CreateMetricsReceiver(
+					context.Background(),
+					componenttest.NewNopReceiverCreateSettings(),
+					cfg,
+					consumertest.NewNop(),
+				)
+				require.NoError(t, err)
+				require.Equal(t, "udp://localhost:161", snmpCfg.Endpoint)
+			},
+		},
+		{
+			desc: "CreateMetricsReceiver adds missing port to endpoint with trailing colon",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig()
+				snmpCfg := cfg.(*Config)
+				snmpCfg.Endpoint = "udp://localhost:"
+				_, err := factory.CreateMetricsReceiver(
+					context.Background(),
+					componenttest.NewNopReceiverCreateSettings(),
+					cfg,
+					consumertest.NewNop(),
+				)
+				require.NoError(t, err)
+				require.Equal(t, "udp://localhost:161", snmpCfg.Endpoint)
+			},
+		},
+		{
+			desc: "CreateMetricsReceiver adds missing metric gauge value type as float",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig()
+				snmpCfg := cfg.(*Config)
+				snmpCfg.Metrics = map[string]*MetricConfig{
+					"m1": {
+						Gauge: &GaugeMetric{},
+					},
+				}
+				_, err := factory.CreateMetricsReceiver(
+					context.Background(),
+					componenttest.NewNopReceiverCreateSettings(),
+					cfg,
+					consumertest.NewNop(),
+				)
+				require.NoError(t, err)
+				require.Equal(t, "float", snmpCfg.Metrics["m1"].Gauge.ValueType)
+			},
+		},
+		{
+			desc: "CreateMetricsReceiver adds missing metric sum value type as float",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig()
+				snmpCfg := cfg.(*Config)
+				snmpCfg.Metrics = map[string]*MetricConfig{
+					"m1": {
+						Sum: &SumMetric{},
+					},
+				}
+				_, err := factory.CreateMetricsReceiver(
+					context.Background(),
+					componenttest.NewNopReceiverCreateSettings(),
+					cfg,
+					consumertest.NewNop(),
+				)
+				require.NoError(t, err)
+				require.Equal(t, "float", snmpCfg.Metrics["m1"].Sum.ValueType)
+			},
+		},
+		{
+			desc: "CreateMetricsReceiver adds missing metric sum aggregation as cumulative",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig()
+				snmpCfg := cfg.(*Config)
+				snmpCfg.Metrics = map[string]*MetricConfig{
+					"m1": {
+						Sum: &SumMetric{},
+					},
+				}
+				_, err := factory.CreateMetricsReceiver(
+					context.Background(),
+					componenttest.NewNopReceiverCreateSettings(),
+					cfg,
+					consumertest.NewNop(),
+				)
+				require.NoError(t, err)
+				require.Equal(t, "cumulative", snmpCfg.Metrics["m1"].Sum.Aggregation)
+			},
+		},
+		{
+			desc: "CreateMetricsReceiver adds missing metric unit as 1",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig()
+				snmpCfg := cfg.(*Config)
+				snmpCfg.Metrics = map[string]*MetricConfig{
+					"m1": {},
+				}
+				_, err := factory.CreateMetricsReceiver(
+					context.Background(),
+					componenttest.NewNopReceiverCreateSettings(),
+					cfg,
+					consumertest.NewNop(),
+				)
+				require.NoError(t, err)
+				require.Equal(t, "1", snmpCfg.Metrics["m1"].Unit)
 			},
 		},
 	}

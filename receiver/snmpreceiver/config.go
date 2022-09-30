@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -25,7 +26,7 @@ import (
 
 // Config Defaults
 const (
-	defaultCollectionInterval = 10 // In seconds
+	defaultCollectionInterval = 10 * time.Second // In seconds
 	defaultEndpoint           = "udp://localhost:161"
 	defaultVersion            = "v2c"
 	defaultCommunity          = "public"
@@ -34,14 +35,14 @@ const (
 	defaultPrivacyType        = "DES"
 )
 
-// Config error messages
 var (
-	errMsgInvalidEndpoint                  = `invalid endpoint '%s': %w`
-	errMsgNoHostInvalidEndpoint            = `invalid endpoint '%s': must be in '[scheme]://[host]:[port]' format`
+	// Config error messages
+	errMsgInvalidEndpointWError            = `invalid endpoint '%s': must be in '[scheme]://[host]:[port]' format: %w`
+	errMsgInvalidEndpoint                  = `invalid endpoint '%s': must be in '[scheme]://[host]:[port]' format`
 	errMsgAttributeConfigNoEnumOIDOrPrefix = `attribute '%s' must contain one of either an enum, oid, or indexed_value_prefix`
 	errMsgResourceAttributeNoOIDOrPrefix   = `resource_attribute '%s' must contain one of either an oid or indexed_value_prefix`
 	errMsgMetricNoUnit                     = `metric '%s' must have a unit`
-	errMsgMetricNoGaugeOrSum               = `metric '%s' must have one of either a guage or sum`
+	errMsgMetricNoGaugeOrSum               = `metric '%s' must have one of either a gauge or sum`
 	errMsgMetricNoOIDs                     = `metric '%s' must have one of either scalar_oids or indexed_oids`
 	errMsgGaugeBadValueType                = `metric '%s' gauge value_type must be either int, float, or bool`
 	errMsgSumBadValueType                  = `metric '%s' sum value_type must be either int, float, or bool`
@@ -57,9 +58,8 @@ var (
 	errMsgColumnAttributeBadValue          = `metric '%s' column_oid attribute '%s' value '%s' must match one of the possible enum values for the attribute config`
 	errMsgColumnResourceAttributeBadName   = `metric '%s' column_oid resource_attribute '%s' must match a resource_attribute config`
 	errMsgColumnIndexedAttributeRequired   = `metric '%s' column_oid must either have a resource_attribute or an indexed_value_prefix/oid attribute`
-)
 
-var (
+	// Config errors
 	errEmptyEndpoint        = errors.New("endpoint must be specified")
 	errEndpointBadScheme    = errors.New("endpoint scheme must be either tcp, tcp4, tcp6, udp, udp4, or udp6")
 	errEmptyVersion         = errors.New("version must specified")
@@ -76,86 +76,95 @@ var (
 	errMetricRequired       = errors.New("must have at least one config under metrics")
 )
 
-// Config defines the configuration for the various elements of the receiver agent.
+// Config defines the configuration for the various elements of the receiver.
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 
-	// The SNMP target to send data to. Must be formatted as udp/tcp[4/6]://{host}:{port}. Default: udp://localhost:161
+	// Endpoint is the SNMP target to request data from. Must be formatted as [udp|tcp|][4|6|]://{host}:{port}.
+	// Default: udp://localhost:161
+	// If no scheme is given, udp4 is assumed.
+	// If no port is given, 161 is assumed.
 	Endpoint string `mapstructure:"endpoint"`
 
-	// The version of SNMP. Valid options: v1, v2c, v3. Default: v2c
+	// Version is the version of SNMP to use for this connection.
+	// Valid options: v1, v2c, v3.
+	// Default: v2c
 	Version string `mapstructure:"version"`
 
-	// The SNMP community string to use. Default: public
+	// Community is the SNMP community string to use.
+	// Only valid for versions "v1" and "v2c"
+	// Default: public
 	Community string `mapstructure:"community"`
 
+	// User is the SNMP User for this connection.
 	// Only valid for version “v3”
 	User string `mapstructure:"user"`
 
+	// SecurityLevel is the security level to use for this SNMP connection.
 	// Only valid for version “v3”
 	// Valid options: “no_auth_no_priv”, “auth_no_priv”, “auth_priv”
 	// Default: "no_auth_no_priv"
 	SecurityLevel string `mapstructure:"security_level"`
 
-	// Only valid for version “v3” and if “no_auth_no_priv” is not selected for security_level
+	// AuthType is the type of authentication protocol to use for this SNMP connection.
+	// Only valid for version “v3” and if “no_auth_no_priv” is not selected for SecurityLevel
 	// Valid options: “md5”, “sha”, “sha224”, “sha256”, “sha384”, “sha512”
+	// Default: "md5"
 	AuthType string `mapstructure:"auth_type"`
 
-	// Only valid if authentication_type specified
+	// AuthPassword is the authentication password used for this SNMP connection.
+	// Only valid for version "v3" and if "no_auth_no_priv" is not selected for SecurityLevel
 	AuthPassword string `mapstructure:"auth_password"`
 
-	// Only valid for version “v3” and if “auth_priv” selected for security_level
+	// PrivacyType is the type of privacy protocol to use for this SNMP connection.
+	// Only valid for version “v3” and if "auth_priv" is selected for SecurityLevel
 	// Valid options: “des”, “aes”, “aes192”, “aes256”, “aes192c”, “aes256c”
+	// Default: "des"
 	PrivacyType string `mapstructure:"privacy_type"`
 
-	// Only valid if privacy_type specified
+	// PrivacyPassword is the authentication password used for this SNMP connection.
+	// Only valid for version “v3” and if "auth_priv" is selected for SecurityLevel
 	PrivacyPassword string `mapstructure:"privacy_password"`
 
-	// Resource attributes. The attribute names are used for the keys
-	ResourceAttributes map[string]ResourceAttributeConfig `mapstructure:"resource_attributes"`
+	// ResourceAttributes defines what resource attributes will be used for this receiver
+	ResourceAttributes map[string]*ResourceAttributeConfig `mapstructure:"resource_attributes"`
 
-	// Attributes. The attribute names are used for the keys
-	Attributes map[string]AttributeConfig `mapstructure:"attributes"`
+	// Attributes defines what attributes will be used on metrics for this receiver
+	Attributes map[string]*AttributeConfig `mapstructure:"attributes"`
 
-	// Metrics. The metric names are used for the keys
-	Metrics map[string]MetricConfig `mapstructure:"metrics"`
+	// Metrics defines what SNMP metrics will be collected for this receiver
+	Metrics map[string]*MetricConfig `mapstructure:"metrics"`
 }
 
-// ResourceAttributeConfig defines
+// ResourceAttributeConfig contains config info about all of the resource attributes that will be used by this receiver.
 type ResourceAttributeConfig struct {
+	// Description is optional and describes what the resource attribute represents
 	Description string `mapstructure:"description"`
-	// An optional value used to map returned values from a table column OID to a resource attribute values
-	// This OID must be related to the same table that is used to match a different column OID a defined metric
-	// In addition, the resource attribute that this OID belongs to must be assigned to the same metric
-	// If OID is not used, then IndexedValuePrefix must be used instead
-	OID string `mapstructure:"oid"` // Used to assign return values from one or more indexed OIDs to a resource attribute using
-	// a new indexed OID within the same table as one or more metric indexed OIDs
-
-	//# used to assign return values from one or more indexed OIDs to a simple resource attribute
-	//#   when no alternate indexed OID attributes are used for resource attributes
-	//#   Example:
-	//#   tech.name:
-	//#     indexed_value_prefix: probe
-	//#
-	//#   might result in a resource attributes of “tech.name: probe1”, “tech.name: probe2”, and
-	//#  “tech.name: probe3” being assigned to one each of a metric’s values
+	// OID is required only if IndexedValuePrefix is not defined.
+	// This is the column OID which will provide indexed values to be used for this resource attribute (alongside a metric with ColumnOIDs)
+	// in order to create multiple "resources" for each indexed metric value
+	OID string `mapstructure:"oid"`
+	// IndexedValuePrefix is required only if OID is not defined.
+	// This is used alongside metrics with ColumnOIDs to assign resource attribute values using this prefix + the OID index of the metric value.
+	// This will result in multiple "resources" being created for each indexed metric value
 	IndexedValuePrefix string `mapstructure:"indexed_value_prefix"` // required and valid if no oid field
 }
 
+// AttributeConfig contains config info about all of the metric attributes that will be used by this receiver.
 type AttributeConfig struct {
-	// optional, will match <attribute_name> if not included
+	// Value is optional, and will allow for a different attribute key value other than the attribute name
 	Value string `mapstructure:"value"`
-
-	// used to uniquely label overlapping multiple scalar or indexed oid return values belonging to
-	// a single metric
-	//Enum Enum `mapstructure:"value"` // required and valid if no oid or indexed_value_prefix field
-
-	Description string   `mapstructure:"description"`
-	Enum        []string `mapstructure:"enum"`
-	// used to uniquely label indexed oid return values belonging to a single metric using a new
-	//  indexed OID within the same table
-	OID                string `mapstructure:"oid"`                  // required and valid if no enum or indexed_value_prefix fields
-	IndexedValuePrefix string `mapstructure:"indexed_value_prefix"` // required and valid if no oid field
+	// Description is optional and describes what the attribute represents
+	Description string `mapstructure:"description"`
+	// Enum is required only if OID and IndexedValuePrefix are not defined.
+	// This contains a list of possible values that can be associated with this attribute
+	Enum []string `mapstructure:"enum"`
+	// OID is required only if Enum and IndexedValuePrefix are not defined.
+	// This is the column OID which will provide indexed values to be uased for this attribute (alongside a metric with ColumnOIDs)
+	OID string `mapstructure:"oid"`
+	// IndexedValuePrefix is required only if Enum and OID are not defined.
+	// This is used alongside metrics with ColumnOIDs to assign attribute values using this prefix + the OID index of the metric value
+	IndexedValuePrefix string `mapstructure:"indexed_value_prefix"`
 }
 
 // MetricConfig contains config info about a given metric
@@ -164,18 +173,20 @@ type MetricConfig struct {
 	Description string `mapstructure:"description"`
 	// Unit is required
 	Unit string `mapstructure:"unit"`
-	// Either Guage or Sum config is required
+	// Either Gauge or Sum config is required
 	Gauge *GaugeMetric `mapstructure:"gauge"`
 	Sum   *SumMetric   `mapstructure:"sum"`
-	// this would allow for a single metric which can handle multiple OID values, each with a
-	// different set of assigned attribute key/values
+	// Either ScalarOIDs or ColumnOIDs is required.
+	// ScalarOIDs is used if one or more scalar OID values is used for this metric.
+	// ColumnOIDs is used if one or more column OID indexed set of values is used
+	// for this metric.
 	ScalarOIDs []ScalarOID `mapstructure:"scalar_oids"`
 	ColumnOIDs []ColumnOID `mapstructure:"column_oids"`
 }
 
 // GaugeMetric contains info about the value of the gauge metric
 type GaugeMetric struct {
-	// ValueType is required can can be either int, bool, or float
+	// ValueType is required can can be either int or float
 	ValueType string `mapstructure:"value_type"`
 }
 
@@ -185,7 +196,7 @@ type SumMetric struct {
 	Aggregation string `mapstructure:"aggregation"`
 	// Monotonic is required and can be true or false
 	Monotonic bool `mapstructure:"monotonic"`
-	// ValueType is required can can be either int, bool, or float
+	// ValueType is required can can be either int or float
 	ValueType string `mapstructure:"value_type"`
 }
 
@@ -194,8 +205,8 @@ type SumMetric struct {
 type ScalarOID struct {
 	// OID is required and is the scalar OID that is associated with a metric
 	OID string `mapstructure:"oid"`
-	// Attributes is optional and may contain the enum attribute names
-	// associated with the value of the scalar OID
+	// Attributes is optional and may contain names and values associated with enum
+	// AttributeConfigs to associate with the value of the scalar OID
 	Attributes []Attribute `mapstructure:"attributes"`
 }
 
@@ -204,11 +215,13 @@ type ScalarOID struct {
 type ColumnOID struct {
 	// OID is required and is the column OID that is associated with a metric
 	OID string `mapstructure:"oid"`
-	// ResourceAttributes is optional and may contain the index based resource attribute names
-	// associated with the indexed values of the column OID
+	// ResourceAttributes is required only if there are no Attributes associated with non enum
+	// AttributeConfigs defined here. Valid values are ResourceAttributeConfig names that will
+	// be used to differentiate the indexed values for the column OID
 	ResourceAttributes []string `mapstructure:"resource_attributes"`
-	// Attributes is optional and may contain the index based attribute names
-	// associated with the indexed values of the column OID
+	// Attributes is required only if there are no ResourceAttributes associated defined here.
+	// Valid values are non enum AttributeConfig names that will be used to differentiate the
+	// indexed values for the column OID
 	Attributes []Attribute `mapstructure:"attributes"`
 }
 
@@ -216,7 +229,8 @@ type ColumnOID struct {
 type Attribute struct {
 	// Name is required and should match the key for an AttributeConfig
 	Name string `mapstructure:"name"`
-	// Value is optional and should contain a valid value for the matched AttributeConfig's enun values
+	// Value is optional and is only needed for a matched AttributeConfig's with enum value.
+	// Value should match one of the AttributeConfig's enum values in this case
 	Value string `mapstructure:"value"`
 }
 
@@ -226,9 +240,7 @@ func (cfg *Config) Validate() error {
 
 	combinedErr = multierr.Append(combinedErr, validateEndpoint(cfg))
 	combinedErr = multierr.Append(combinedErr, validateVersion(cfg))
-	version := strings.ToUpper(cfg.Version)
-	switch version {
-	case "V3":
+	if strings.ToUpper(cfg.Version) == "V3" {
 		combinedErr = multierr.Append(combinedErr, validateSecurity(cfg))
 	}
 	combinedErr = multierr.Append(combinedErr, validateMetricConfigs(cfg))
@@ -245,22 +257,13 @@ func validateEndpoint(cfg *Config) error {
 	// Ensure valid endpoint
 	u, err := url.Parse(cfg.Endpoint)
 	if err != nil {
-		return fmt.Errorf(errMsgInvalidEndpoint, cfg.Endpoint, err)
+		return fmt.Errorf(errMsgInvalidEndpointWError, cfg.Endpoint, err)
 	}
-	if u.Host == "" {
-		return fmt.Errorf(errMsgNoHostInvalidEndpoint, cfg.Endpoint)
-	}
-
-	// Use default port if needed
-	if u.Port() == "" {
-		portSuffix := "161"
-		if cfg.Endpoint[len(cfg.Endpoint)-1:] != ":" {
-			portSuffix = ":" + portSuffix
-		}
-		cfg.Endpoint = cfg.Endpoint + portSuffix
+	if u.Host == "" || u.Port() == "" {
+		return fmt.Errorf(errMsgInvalidEndpoint, cfg.Endpoint)
 	}
 
-	// Ensure valide scheme
+	// Ensure valid scheme
 	switch strings.ToUpper(u.Scheme) {
 	case "TCP", "TCP4", "TCP6", "UDP", "UDP4", "UDP6": // ok
 	default:
@@ -326,13 +329,13 @@ func validateAuth(cfg *Config) error {
 
 	// Ensure valid auth type
 	if cfg.AuthType == "" {
-		combinedErr = multierr.Append(combinedErr, errEmptyAuthType)
-	} else {
-		switch strings.ToUpper(cfg.AuthType) {
-		case "MD5", "SHA", "SHA224", "SHA256", "SHA384", "SHA512": // ok
-		default:
-			combinedErr = multierr.Append(combinedErr, errBadAuthType)
-		}
+		return multierr.Append(combinedErr, errEmptyAuthType)
+	}
+
+	switch strings.ToUpper(cfg.AuthType) {
+	case "MD5", "SHA", "SHA224", "SHA256", "SHA384", "SHA512": // ok
+	default:
+		combinedErr = multierr.Append(combinedErr, errBadAuthType)
 	}
 
 	return combinedErr
@@ -349,13 +352,13 @@ func validatePrivacy(cfg *Config) error {
 
 	// Ensure valid privacy type
 	if cfg.PrivacyType == "" {
-		combinedErr = multierr.Append(combinedErr, errEmptyPrivacyType)
-	} else {
-		switch strings.ToUpper(cfg.PrivacyType) {
-		case "DES", "AES", "AES192", "AES192C", "AES256", "AES256C": // ok
-		default:
-			combinedErr = multierr.Append(combinedErr, errBadPrivacyType)
-		}
+		return multierr.Append(combinedErr, errEmptyPrivacyType)
+	}
+
+	switch strings.ToUpper(cfg.PrivacyType) {
+	case "DES", "AES", "AES192", "AES192C", "AES256", "AES256C": // ok
+	default:
+		combinedErr = multierr.Append(combinedErr, errBadPrivacyType)
 	}
 
 	return combinedErr
@@ -431,23 +434,23 @@ func validateColumnOID(metricName string, columnOID ColumnOID, cfg *Config) erro
 		for _, attribute := range columnOID.Attributes {
 			if attribute.Name == "" {
 				combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnAttributeNoName, metricName))
-			} else {
-				attrCfg, ok := cfg.Attributes[attribute.Name]
-				if !ok {
-					combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnAttributeBadName, metricName, attribute.Name))
-				} else {
-					if len(attrCfg.Enum) > 0 {
-						if !contains(attrCfg.Enum, attribute.Value) {
-							combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnAttributeBadValue, metricName, attribute.Name, attribute.Value))
-						}
-					} else {
-						hasIndexedIdentifier = true
-					}
-					if len(attrCfg.Enum) != 0 && !contains(attrCfg.Enum, attribute.Value) {
-						combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnAttributeBadValue, metricName, attribute.Name, attribute.Value))
-					}
-				}
+				continue
 			}
+
+			attrCfg, ok := cfg.Attributes[attribute.Name]
+			if !ok {
+				combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnAttributeBadName, metricName, attribute.Name))
+				continue
+			}
+
+			if len(attrCfg.Enum) > 0 {
+				if !contains(attrCfg.Enum, attribute.Value) {
+					combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnAttributeBadValue, metricName, attribute.Name, attribute.Value))
+				}
+				continue
+			}
+
+			hasIndexedIdentifier = true
 		}
 	}
 
@@ -462,8 +465,8 @@ func validateColumnOID(metricName string, columnOID ColumnOID, cfg *Config) erro
 		}
 	}
 
+	// Check that there is either a column based attribute or resource attribute associated with it
 	if !hasIndexedIdentifier {
-		// TODO: correct error and write test
 		combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnIndexedAttributeRequired, metricName))
 	}
 
@@ -483,21 +486,26 @@ func validateScalarOID(metricName string, scalarOID ScalarOID, cfg *Config) erro
 		return combinedErr
 	}
 
-	// Check that any Attributes have a valid Name and a valid Value (if applicable)
+	// Check that any Attributes have a valid Name and a valid Value
 	for _, attribute := range scalarOID.Attributes {
 		if attribute.Name == "" {
 			combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgScalarAttributeNoName, metricName))
-		} else {
-			attrCfg, ok := cfg.Attributes[attribute.Name]
-			if !ok {
-				combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgScalarAttributeBadName, metricName, attribute.Name))
-			} else {
-				if len(attrCfg.Enum) == 0 {
-					combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgScalarOIDBadAttribute, metricName, attribute.Name))
-				} else if !contains(attrCfg.Enum, attribute.Value) {
-					combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgScalarAttributeBadValue, metricName, attribute.Name, attribute.Value))
-				}
-			}
+			continue
+		}
+
+		attrCfg, ok := cfg.Attributes[attribute.Name]
+		if !ok {
+			combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgScalarAttributeBadName, metricName, attribute.Name))
+			continue
+		}
+
+		if len(attrCfg.Enum) == 0 {
+			combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgScalarOIDBadAttribute, metricName, attribute.Name))
+			continue
+		}
+
+		if !contains(attrCfg.Enum, attribute.Value) {
+			combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgScalarAttributeBadValue, metricName, attribute.Name, attribute.Value))
 		}
 	}
 
@@ -506,37 +514,28 @@ func validateScalarOID(metricName string, scalarOID ScalarOID, cfg *Config) erro
 
 // validateGauge validates a GaugeMetric
 func validateGauge(metricName string, gauge *GaugeMetric) error {
-	// Ensure valid values for ValueType or use default if empty
-	switch strings.ToUpper(gauge.ValueType) {
-	case "":
-		gauge.ValueType = "float"
-		return nil
-	case "INT", "FLOAT", "BOOL": //ok
-		return nil
-	default:
+	// Ensure valid values for ValueType
+	upperValType := strings.ToUpper(gauge.ValueType)
+	if upperValType != "INT" && upperValType != "FLOAT" {
 		return fmt.Errorf(errMsgGaugeBadValueType, metricName)
 	}
+
+	return nil
 }
 
 // validateSum validates a SumMetric
 func validateSum(metricName string, sum *SumMetric) error {
 	var combinedErr error
 
-	// Ensure valid values for ValueType or use default if empty
-	switch strings.ToUpper(sum.ValueType) {
-	case "":
-		sum.ValueType = "float"
-	case "INT", "FLOAT", "BOOL": //ok
-	default:
+	// Ensure valid values for ValueType
+	upperValType := strings.ToUpper(sum.ValueType)
+	if upperValType != "INT" && upperValType != "FLOAT" {
 		combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgSumBadValueType, metricName))
 	}
 
-	// Ensure valid values for Aggregation or use default if empty
-	switch strings.ToUpper(sum.Aggregation) {
-	case "":
-		sum.Aggregation = "cumulative"
-	case "CUMULATIVE", "DELTA": //ok
-	default:
+	// Ensure valid values for Aggregation
+	upperAggregation := strings.ToUpper(sum.Aggregation)
+	if upperAggregation != "CUMULATIVE" && upperAggregation != "DELTA" {
 		combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgSumBadAggregation, metricName))
 	}
 
