@@ -2,7 +2,7 @@
 change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: telemetryquerylanguage 
+component: pkg/ottl 
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: "Enhance replace_all_patterns functions to take a new parameter that specifies whether the function applies to keys or values."
