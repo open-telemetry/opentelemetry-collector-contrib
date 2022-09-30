@@ -85,13 +85,13 @@ func convertToValue(logger *zap.Logger, src interface{}, dest pcommon.Value) err
 	switch value := src.(type) {
 	case nil:
 	case string:
-		dest.SetStringVal(value)
+		dest.SetStr(value)
 	case int64:
-		dest.SetIntVal(value)
+		dest.SetInt(value)
 	case float64:
-		dest.SetDoubleVal(value)
+		dest.SetDouble(value)
 	case bool:
-		dest.SetBoolVal(value)
+		dest.SetBool(value)
 	case map[string]interface{}:
 		return convertToAttributeMap(logger, value, dest)
 	case []interface{}:
@@ -105,7 +105,7 @@ func convertToValue(logger *zap.Logger, src interface{}, dest pcommon.Value) err
 }
 
 func convertToSliceVal(logger *zap.Logger, value []interface{}, dest pcommon.Value) error {
-	arr := dest.SetEmptySliceVal()
+	arr := dest.SetEmptySlice()
 	for _, elt := range value {
 		err := convertToValue(logger, elt, arr.AppendEmpty())
 		if err != nil {
@@ -116,7 +116,7 @@ func convertToSliceVal(logger *zap.Logger, value []interface{}, dest pcommon.Val
 }
 
 func convertToAttributeMap(logger *zap.Logger, value map[string]interface{}, dest pcommon.Value) error {
-	attrMap := dest.SetEmptyMapVal()
+	attrMap := dest.SetEmptyMap()
 	keys := make([]string, 0, len(value))
 	for k := range value {
 		keys = append(keys, k)

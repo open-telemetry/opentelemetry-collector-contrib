@@ -122,7 +122,7 @@ func spanToZipkinSpan(
 	}
 	zs.ID = convertSpanID(span.SpanID())
 
-	traceState := span.TraceStateStruct().AsRaw()
+	traceState := span.TraceState().AsRaw()
 	if traceState != "" {
 		tags[tracetranslator.TagW3CTraceState] = traceState
 	}
@@ -244,7 +244,7 @@ func spanLinksToZipkinTags(links ptrace.SpanLinkSlice, zTags map[string]string) 
 			return err
 		}
 		zTags[key] = fmt.Sprintf(spanLinkDataFormat, link.TraceID().HexString(),
-			link.SpanID().HexString(), link.TraceStateStruct().AsRaw(), jsonStr, link.DroppedAttributesCount())
+			link.SpanID().HexString(), link.TraceState().AsRaw(), jsonStr, link.DroppedAttributesCount())
 	}
 	return nil
 }

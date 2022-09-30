@@ -235,22 +235,22 @@ func valueToInterface(value pcommon.Value) interface{} {
 	switch value.Type() {
 	case pcommon.ValueTypeEmpty:
 		return nil
-	case pcommon.ValueTypeString:
-		return value.StringVal()
+	case pcommon.ValueTypeStr:
+		return value.Str()
 	case pcommon.ValueTypeBool:
-		return value.BoolVal()
+		return value.Bool()
 	case pcommon.ValueTypeDouble:
-		return value.DoubleVal()
+		return value.Double()
 	case pcommon.ValueTypeInt:
-		return value.IntVal()
+		return value.Int()
 	case pcommon.ValueTypeBytes:
-		return value.BytesVal().AsRaw()
+		return value.Bytes().AsRaw()
 	case pcommon.ValueTypeMap:
-		return value.MapVal().AsRaw()
+		return value.Map().AsRaw()
 	case pcommon.ValueTypeSlice:
-		arr := make([]interface{}, 0, value.SliceVal().Len())
-		for i := 0; i < value.SliceVal().Len(); i++ {
-			arr = append(arr, valueToInterface(value.SliceVal().At(i)))
+		arr := make([]interface{}, 0, value.Slice().Len())
+		for i := 0; i < value.Slice().Len(); i++ {
+			arr = append(arr, valueToInterface(value.Slice().At(i)))
 		}
 		return arr
 	default:

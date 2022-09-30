@@ -91,7 +91,7 @@ func (m *metricSystemFilesystemInodesUsage) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("device", deviceAttributeValue)
 	dp.Attributes().PutString("mode", modeAttributeValue)
 	dp.Attributes().PutString("mountpoint", mountpointAttributeValue)
@@ -148,7 +148,7 @@ func (m *metricSystemFilesystemUsage) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("device", deviceAttributeValue)
 	dp.Attributes().PutString("mode", modeAttributeValue)
 	dp.Attributes().PutString("mountpoint", mountpointAttributeValue)
@@ -203,7 +203,7 @@ func (m *metricSystemFilesystemUtilization) recordDataPoint(start pcommon.Timest
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("device", deviceAttributeValue)
 	dp.Attributes().PutString("mode", modeAttributeValue)
 	dp.Attributes().PutString("mountpoint", mountpointAttributeValue)
@@ -293,10 +293,10 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {

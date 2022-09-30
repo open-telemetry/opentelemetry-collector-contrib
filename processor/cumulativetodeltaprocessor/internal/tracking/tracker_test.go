@@ -30,7 +30,7 @@ func TestMetricTracker_Convert(t *testing.T) {
 	miSum := MetricIdentity{
 		Resource:               pcommon.NewResource(),
 		InstrumentationLibrary: pcommon.NewInstrumentationScope(),
-		MetricDataType:         pmetric.MetricDataTypeSum,
+		MetricType:             pmetric.MetricTypeSum,
 		MetricIsMonotonic:      true,
 		MetricName:             "",
 		MetricUnit:             "",
@@ -125,18 +125,18 @@ func TestMetricTracker_Convert(t *testing.T) {
 			}
 
 			if gotOut, valid := m.Convert(floatPoint); !valid || !reflect.DeepEqual(gotOut.StartTimestamp, tt.wantOut.StartTimestamp) || !reflect.DeepEqual(gotOut.FloatValue, tt.wantOut.FloatValue) {
-				t.Errorf("MetricTracker.Convert(MetricDataTypeSum) = %v, want %v", gotOut, tt.wantOut)
+				t.Errorf("MetricTracker.Convert(MetricTypeSum) = %v, want %v", gotOut, tt.wantOut)
 			}
 
 			if gotOut, valid := m.Convert(intPoint); !valid || !reflect.DeepEqual(gotOut.StartTimestamp, tt.wantOut.StartTimestamp) || !reflect.DeepEqual(gotOut.IntValue, tt.wantOut.IntValue) {
-				t.Errorf("MetricTracker.Convert(MetricDataTypeIntSum) = %v, want %v", gotOut, tt.wantOut)
+				t.Errorf("MetricTracker.Convert(MetricTypeIntSum) = %v, want %v", gotOut, tt.wantOut)
 			}
 		})
 	}
 
 	t.Run("Invalid metric identity", func(t *testing.T) {
 		invalidID := miIntSum
-		invalidID.MetricDataType = pmetric.MetricDataTypeGauge
+		invalidID.MetricType = pmetric.MetricTypeGauge
 		_, valid := m.Convert(MetricPoint{
 			Identity: invalidID,
 			Value: ValuePoint{

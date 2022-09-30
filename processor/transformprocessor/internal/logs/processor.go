@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,31 +19,23 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottllogs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
 )
 
 type Processor struct {
-	queries []ottl.Query
-	logger  *zap.Logger
+	queries []ottl.Statement[ottllogs.TransformContext]
 }
 
 func NewProcessor(statements []string, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
-	ottlp := ottl.NewParser(
-		functions,
-		ottllogs.ParsePath,
-		ottllogs.ParseEnum,
-		settings,
-	)
-	queries, err := ottlp.ParseQueries(statements)
+	ottlp := ottllogs.NewParser(functions, settings)
+	queries, err := ottlp.ParseStatements(statements)
 	if err != nil {
 		return nil, err
 	}
 	return &Processor{
 		queries: queries,
-		logger:  settings.Logger,
 	}, nil
 }
 

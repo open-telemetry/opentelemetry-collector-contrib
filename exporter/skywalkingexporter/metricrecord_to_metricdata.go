@@ -77,9 +77,9 @@ func numberMetricsToData(name string, data pmetric.NumberDataPointSlice, default
 		sv.SingleValue.Name = name
 		switch dataPoint.ValueType() {
 		case pmetric.NumberDataPointValueTypeInt:
-			sv.SingleValue.Value = float64(dataPoint.IntVal())
+			sv.SingleValue.Value = float64(dataPoint.IntValue())
 		case pmetric.NumberDataPointValueTypeDouble:
-			sv.SingleValue.Value = dataPoint.DoubleVal()
+			sv.SingleValue.Value = dataPoint.DoubleValue()
 		}
 		meterData.Metric = sv
 		metrics = append(metrics, meterData)
@@ -196,16 +196,16 @@ func doubleSummaryMetricsToData(name string, data pmetric.SummaryDataPointSlice,
 }
 
 func metricDataToSwMetricData(md pmetric.Metric, defaultLabels []*metricpb.Label) (metrics []*metricpb.MeterData) {
-	switch md.DataType() {
-	case pmetric.MetricDataTypeNone:
+	switch md.Type() {
+	case pmetric.MetricTypeNone:
 		break
-	case pmetric.MetricDataTypeGauge:
+	case pmetric.MetricTypeGauge:
 		return numberMetricsToData(md.Name(), md.Gauge().DataPoints(), defaultLabels)
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		return numberMetricsToData(md.Name(), md.Sum().DataPoints(), defaultLabels)
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		return doubleHistogramMetricsToData(md.Name(), md.Histogram().DataPoints(), defaultLabels)
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		return doubleSummaryMetricsToData(md.Name(), md.Summary().DataPoints(), defaultLabels)
 	}
 	return nil

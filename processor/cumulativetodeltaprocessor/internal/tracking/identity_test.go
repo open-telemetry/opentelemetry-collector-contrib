@@ -36,7 +36,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 	type fields struct {
 		Resource               pcommon.Resource
 		InstrumentationLibrary pcommon.InstrumentationScope
-		MetricDataType         pmetric.MetricDataType
+		MetricType             pmetric.MetricType
 		MetricIsMonotonic      bool
 		MetricName             string
 		MetricUnit             string
@@ -66,7 +66,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 				Resource:               resource,
 				InstrumentationLibrary: il,
 				Attributes:             attributes,
-				MetricDataType:         pmetric.MetricDataTypeSum,
+				MetricType:             pmetric.MetricTypeSum,
 				MetricValueType:        pmetric.NumberDataPointValueTypeInt,
 				MetricIsMonotonic:      true,
 			},
@@ -78,7 +78,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 				Resource:               resource,
 				InstrumentationLibrary: il,
 				Attributes:             attributes,
-				MetricDataType:         pmetric.MetricDataTypeHistogram,
+				MetricType:             pmetric.MetricTypeHistogram,
 				MetricValueType:        pmetric.NumberDataPointValueTypeInt,
 			},
 			want: []string{"D" + SEPSTR + "B"},
@@ -89,7 +89,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 			mi := &MetricIdentity{
 				Resource:               tt.fields.Resource,
 				InstrumentationLibrary: tt.fields.InstrumentationLibrary,
-				MetricDataType:         tt.fields.MetricDataType,
+				MetricType:             tt.fields.MetricType,
 				MetricIsMonotonic:      tt.fields.MetricIsMonotonic,
 				MetricName:             tt.fields.MetricName,
 				MetricUnit:             tt.fields.MetricUnit,
@@ -139,7 +139,7 @@ func TestMetricIdentity_IsFloatVal(t *testing.T) {
 				Resource:               pcommon.NewResource(),
 				InstrumentationLibrary: pcommon.NewInstrumentationScope(),
 				Attributes:             pcommon.NewMap(),
-				MetricDataType:         pmetric.MetricDataTypeSum,
+				MetricType:             pmetric.MetricTypeSum,
 				MetricValueType:        tt.fields.MetricValueType,
 			}
 			if got := mi.IsFloatVal(); got != tt.want {
@@ -151,7 +151,7 @@ func TestMetricIdentity_IsFloatVal(t *testing.T) {
 
 func TestMetricIdentity_IsSupportedMetricType(t *testing.T) {
 	type fields struct {
-		MetricDataType pmetric.MetricDataType
+		MetricType pmetric.MetricType
 	}
 	tests := []struct {
 		name   string
@@ -161,42 +161,42 @@ func TestMetricIdentity_IsSupportedMetricType(t *testing.T) {
 		{
 			name: "sum",
 			fields: fields{
-				MetricDataType: pmetric.MetricDataTypeSum,
+				MetricType: pmetric.MetricTypeSum,
 			},
 			want: true,
 		},
 		{
 			name: "histogram",
 			fields: fields{
-				MetricDataType: pmetric.MetricDataTypeHistogram,
+				MetricType: pmetric.MetricTypeHistogram,
 			},
 			want: true,
 		},
 		{
 			name: "none",
 			fields: fields{
-				MetricDataType: pmetric.MetricDataTypeNone,
+				MetricType: pmetric.MetricTypeNone,
 			},
 			want: false,
 		},
 		{
 			name: "gauge",
 			fields: fields{
-				MetricDataType: pmetric.MetricDataTypeGauge,
+				MetricType: pmetric.MetricTypeGauge,
 			},
 			want: false,
 		},
 		{
 			name: "exponential_histogram",
 			fields: fields{
-				MetricDataType: pmetric.MetricDataTypeExponentialHistogram,
+				MetricType: pmetric.MetricTypeExponentialHistogram,
 			},
 			want: false,
 		},
 		{
 			name: "summary",
 			fields: fields{
-				MetricDataType: pmetric.MetricDataTypeSummary,
+				MetricType: pmetric.MetricTypeSummary,
 			},
 			want: false,
 		},
@@ -207,7 +207,7 @@ func TestMetricIdentity_IsSupportedMetricType(t *testing.T) {
 				Resource:               pcommon.NewResource(),
 				InstrumentationLibrary: pcommon.NewInstrumentationScope(),
 				Attributes:             pcommon.NewMap(),
-				MetricDataType:         tt.fields.MetricDataType,
+				MetricType:             tt.fields.MetricType,
 			}
 			if got := mi.IsSupportedMetricType(); got != tt.want {
 				t.Errorf("MetricIdentity.IsSupportedMetricType() = %v, want %v", got, tt.want)

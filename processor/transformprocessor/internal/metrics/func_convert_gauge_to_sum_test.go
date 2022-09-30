@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,17 +21,17 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottlmetrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 )
 
 func Test_convertGaugeToSum(t *testing.T) {
 	gaugeInput := pmetric.NewMetric()
 
 	dp1 := gaugeInput.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp1.SetIntVal(10)
+	dp1.SetIntValue(10)
 
 	dp2 := gaugeInput.Gauge().DataPoints().AppendEmpty()
-	dp2.SetDoubleVal(14.5)
+	dp2.SetDoubleValue(14.5)
 
 	sumInput := pmetric.NewMetric()
 	sumInput.SetEmptySum()
@@ -126,7 +126,7 @@ func Test_convertGaugeToSum(t *testing.T) {
 			metric := pmetric.NewMetric()
 			tt.input.CopyTo(metric)
 
-			ctx := ottlmetrics.NewTransformContext(pmetric.NewNumberDataPoint(), metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
+			ctx := ottldatapoints.NewTransformContext(pmetric.NewNumberDataPoint(), metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
 			exprFunc, _ := convertGaugeToSum(tt.stringAggTemp, tt.monotonic)
 			exprFunc(ctx)

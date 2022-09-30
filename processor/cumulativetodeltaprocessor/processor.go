@@ -18,8 +18,8 @@ import (
 	"context"
 	"math"
 
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -75,8 +75,8 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 				if !ctdp.shouldConvertMetric(m.Name()) {
 					return false
 				}
-				switch m.DataType() {
-				case pmetric.MetricDataTypeSum:
+				switch m.Type() {
+				case pmetric.MetricTypeSum:
 					ms := m.Sum()
 					if ms.AggregationTemporality() != pmetric.MetricAggregationTemporalityCumulative {
 						return false
@@ -90,7 +90,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 					baseIdentity := tracking.MetricIdentity{
 						Resource:               rm.Resource(),
 						InstrumentationLibrary: ilm.Scope(),
-						MetricDataType:         m.DataType(),
+						MetricType:             m.Type(),
 						MetricName:             m.Name(),
 						MetricUnit:             m.Unit(),
 						MetricIsMonotonic:      ms.IsMonotonic(),
@@ -98,7 +98,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 					ctdp.convertDataPoints(ms.DataPoints(), baseIdentity)
 					ms.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 					return ms.DataPoints().Len() == 0
-				case pmetric.MetricDataTypeHistogram:
+				case pmetric.MetricTypeHistogram:
 					if !ctdp.histogramSupportEnabled {
 						return false
 					}
@@ -115,7 +115,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 					baseIdentity := tracking.MetricIdentity{
 						Resource:               rm.Resource(),
 						InstrumentationLibrary: ilm.Scope(),
-						MetricDataType:         m.DataType(),
+						MetricType:             m.Type(),
 						MetricName:             m.Name(),
 						MetricUnit:             m.Unit(),
 						MetricIsMonotonic:      true,
@@ -160,12 +160,12 @@ func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseId
 			}
 			if id.IsFloatVal() {
 				// Do not attempt to transform NaN values
-				if math.IsNaN(dp.DoubleVal()) {
+				if math.IsNaN(dp.DoubleValue()) {
 					return false
 				}
-				point.FloatValue = dp.DoubleVal()
+				point.FloatValue = dp.DoubleValue()
 			} else {
-				point.IntValue = dp.IntVal()
+				point.IntValue = dp.IntValue()
 			}
 			trackingPoint := tracking.MetricPoint{
 				Identity: id,
@@ -181,9 +181,9 @@ func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseId
 			}
 			dp.SetStartTimestamp(delta.StartTimestamp)
 			if id.IsFloatVal() {
-				dp.SetDoubleVal(delta.FloatValue)
+				dp.SetDoubleValue(delta.FloatValue)
 			} else {
-				dp.SetIntVal(delta.IntValue)
+				dp.SetIntValue(delta.IntValue)
 			}
 			return false
 		})

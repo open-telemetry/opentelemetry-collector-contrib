@@ -222,18 +222,18 @@ func appendNetworkMetrics(dest pmetric.MetricSlice, networks *map[string]dtypes.
 }
 
 func populateCumulative(dest pmetric.Metric, name string, unit string, val int64, ts pcommon.Timestamp, labelKeys []string, labelValues []string) {
-	populateMetricMetadata(dest, name, unit, pmetric.MetricDataTypeSum)
+	populateMetricMetadata(dest, name, unit, pmetric.MetricTypeSum)
 	sum := dest.Sum()
 	sum.SetIsMonotonic(true)
 	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	dp := sum.DataPoints().AppendEmpty()
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.SetTimestamp(ts)
 	populateAttributes(dp.Attributes(), labelKeys, labelValues)
 }
 
 func populateCumulativeMultiPoints(dest pmetric.Metric, name string, unit string, vals []int64, ts pcommon.Timestamp, labelKeys []string, labelValues [][]string) {
-	populateMetricMetadata(dest, name, unit, pmetric.MetricDataTypeSum)
+	populateMetricMetadata(dest, name, unit, pmetric.MetricTypeSum)
 	sum := dest.Sum()
 	sum.SetIsMonotonic(true)
 	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -241,7 +241,7 @@ func populateCumulativeMultiPoints(dest pmetric.Metric, name string, unit string
 	dps.EnsureCapacity(len(vals))
 	for i := range vals {
 		dp := dps.AppendEmpty()
-		dp.SetIntVal(vals[i])
+		dp.SetIntValue(vals[i])
 		dp.SetTimestamp(ts)
 		populateAttributes(dp.Attributes(), labelKeys, labelValues[i])
 	}
@@ -249,36 +249,36 @@ func populateCumulativeMultiPoints(dest pmetric.Metric, name string, unit string
 
 func populateGauge(dest pmetric.Metric, name string, val int64, ts pcommon.Timestamp) {
 	// Unit, labelKeys, labelValues always constants, when that changes add them as argument to the func.
-	populateMetricMetadata(dest, name, "By", pmetric.MetricDataTypeGauge)
+	populateMetricMetadata(dest, name, "By", pmetric.MetricTypeGauge)
 	sum := dest.Gauge()
 	dp := sum.DataPoints().AppendEmpty()
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.SetTimestamp(ts)
 	populateAttributes(dp.Attributes(), nil, nil)
 }
 
 func populateGaugeF(dest pmetric.Metric, name string, unit string, val float64, ts pcommon.Timestamp, labelKeys []string, labelValues []string) {
-	populateMetricMetadata(dest, name, unit, pmetric.MetricDataTypeGauge)
+	populateMetricMetadata(dest, name, unit, pmetric.MetricTypeGauge)
 	sum := dest.Gauge()
 	dp := sum.DataPoints().AppendEmpty()
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.SetTimestamp(ts)
 	populateAttributes(dp.Attributes(), labelKeys, labelValues)
 }
 
-func populateMetricMetadata(dest pmetric.Metric, name string, unit string, ty pmetric.MetricDataType) {
+func populateMetricMetadata(dest pmetric.Metric, name string, unit string, ty pmetric.MetricType) {
 	dest.SetName(metricPrefix + name)
 	dest.SetUnit(unit)
 	switch ty {
-	case pmetric.MetricDataTypeGauge:
+	case pmetric.MetricTypeGauge:
 		dest.SetEmptyGauge()
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		dest.SetEmptySum()
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		dest.SetEmptyHistogram()
-	case pmetric.MetricDataTypeExponentialHistogram:
+	case pmetric.MetricTypeExponentialHistogram:
 		dest.SetEmptyExponentialHistogram()
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		dest.SetEmptySummary()
 	}
 }

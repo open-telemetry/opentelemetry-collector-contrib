@@ -21,7 +21,6 @@ body:
 
         ## Actual Result
 
-      render: Markdown
     validations:
       required: true
   - type: input
@@ -38,7 +37,7 @@ body:
         ## Environment
         OS: (e.g., "Ubuntu 20.04")
         Compiler(if manually compiled): (e.g., "go 14.2")
-      render: Markdown
+
   - type: textarea
     attributes:
       label: OpenTelemetry Collector configuration
@@ -73,5 +72,3 @@ body:
     attributes:
       label: Additional context
       description: Any additional information you think may be relevant to this issue.
-      render: Markdown
-

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,14 +21,14 @@ import (
 	"go.uber.org/multierr"
 )
 
-// combindedLogsReceiver wraps alerts and log receivers in a single log receiver to be consumed by the factory
-type combindedLogsReceiver struct {
+// combinedLogsReceiver wraps alerts and log receivers in a single log receiver to be consumed by the factory
+type combinedLogsReceiver struct {
 	alerts *alertsReceiver
 	logs   *logsReceiver
 }
 
 // Starts up the combined MongoDB Atlas Logs and Alert Receiver
-func (c *combindedLogsReceiver) Start(ctx context.Context, host component.Host) error {
+func (c *combinedLogsReceiver) Start(ctx context.Context, host component.Host) error {
 	var errs error
 
 	if c.alerts != nil {
@@ -47,7 +47,7 @@ func (c *combindedLogsReceiver) Start(ctx context.Context, host component.Host) 
 }
 
 // Shutsdown the combined MongoDB Atlas Logs and Alert Receiver
-func (c *combindedLogsReceiver) Shutdown(ctx context.Context) error {
+func (c *combinedLogsReceiver) Shutdown(ctx context.Context) error {
 	var errs error
 
 	if c.alerts != nil {

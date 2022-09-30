@@ -158,7 +158,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 			reqsRS := reqs.ResourceSpans().At(j)
 			rSvcName, ok := reqsRS.Resource().Attributes().Get(conventions.AttributeServiceName)
 			assert.True(t, ok)
-			if rSvcName.StringVal() == wSvcName.StringVal() {
+			if rSvcName.Str() == wSvcName.Str() {
 				compareResourceSpans(t, wantRS, reqsRS)
 			}
 		}

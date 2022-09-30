@@ -25,7 +25,8 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottlmetrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
 
 var _ component.MetricsProcessor = (*metricsProcessor)(nil)
@@ -35,7 +36,7 @@ type metricsProcessor struct {
 	config *Config
 
 	extractor extractor
-	router    router[component.MetricsExporter]
+	router    router[component.MetricsExporter, ottldatapoints.TransformContext]
 }
 
 func newMetricProcessor(settings component.TelemetrySettings, config config.Processor) *metricsProcessor {
@@ -48,6 +49,7 @@ func newMetricProcessor(settings component.TelemetrySettings, config config.Proc
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
+			ottldatapoints.NewParser(common.Functions[ottldatapoints.TransformContext](), settings),
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
@@ -77,8 +79,8 @@ func (p *metricsProcessor) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 }
 
 type metricsGroup struct {
-	exporters  []component.MetricsExporter
-	resMetrics pmetric.ResourceMetricsSlice
+	exporters []component.MetricsExporter
+	metrics   pmetric.Metrics
 }
 
 func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error {
@@ -91,7 +93,7 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 
 	for i := 0; i < tm.ResourceMetrics().Len(); i++ {
 		rmetrics := tm.ResourceMetrics().At(i)
-		mtx := ottlmetrics.NewTransformContext(
+		mtx := ottldatapoints.NewTransformContext(
 			nil,
 			pmetric.Metric{},
 			pmetric.MetricSlice{},
@@ -116,12 +118,8 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 	}
 
 	for _, g := range groups {
-		m := pmetric.NewMetrics()
-		m.ResourceMetrics().EnsureCapacity(g.resMetrics.Len())
-		g.resMetrics.MoveAndAppendTo(m.ResourceMetrics())
-
 		for _, e := range g.exporters {
-			errs = multierr.Append(errs, e.ConsumeMetrics(ctx, m))
+			errs = multierr.Append(errs, e.ConsumeMetrics(ctx, g.metrics))
 		}
 	}
 	return errs
@@ -135,10 +133,10 @@ func (p *metricsProcessor) group(
 ) {
 	group, ok := groups[key]
 	if !ok {
-		group.resMetrics = pmetric.NewResourceMetricsSlice()
+		group.metrics = pmetric.NewMetrics()
 		group.exporters = exporters
 	}
-	metrics.CopyTo(group.resMetrics.AppendEmpty())
+	metrics.CopyTo(group.metrics.ResourceMetrics().AppendEmpty())
 	groups[key] = group
 }
 

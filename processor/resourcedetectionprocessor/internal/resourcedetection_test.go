@@ -349,8 +349,8 @@ func TestAttributesToMap(t *testing.T) {
 
 	arrayAttr := attr.PutEmptySlice("array")
 	arrayAttr.EnsureCapacity(2)
-	arrayAttr.AppendEmpty().SetStringVal("inner")
-	arrayAttr.AppendEmpty().SetIntVal(42)
+	arrayAttr.AppendEmpty().SetStr("inner")
+	arrayAttr.AppendEmpty().SetInt(42)
 
 	assert.Equal(t, m, AttributesToMap(attr))
 }

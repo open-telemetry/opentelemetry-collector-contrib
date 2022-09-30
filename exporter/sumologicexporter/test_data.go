@@ -32,7 +32,7 @@ func buildExampleIntMetric(fillData bool) metricPair {
 	if fillData {
 		dp := metric.Sum().DataPoints().AppendEmpty()
 		dp.SetTimestamp(1605534165 * 1e9)
-		dp.SetIntVal(14500)
+		dp.SetIntValue(14500)
 	}
 
 	attributes := pcommon.NewMap()
@@ -64,13 +64,13 @@ func buildExampleIntGaugeMetric(fillData bool) metricPair {
 		dp := metric.metric.Gauge().DataPoints().AppendEmpty()
 		dp.Attributes().PutString("remote_name", "156920")
 		dp.Attributes().PutString("url", "http://example_url")
-		dp.SetIntVal(124)
+		dp.SetIntValue(124)
 		dp.SetTimestamp(1608124661.166 * 1e9)
 
 		dp = metric.metric.Gauge().DataPoints().AppendEmpty()
 		dp.Attributes().PutString("remote_name", "156955")
 		dp.Attributes().PutString("url", "http://another_url")
-		dp.SetIntVal(245)
+		dp.SetIntValue(245)
 		dp.SetTimestamp(1608124662.166 * 1e9)
 	}
 
@@ -96,13 +96,13 @@ func buildExampleDoubleGaugeMetric(fillData bool) metricPair {
 		dp := metric.metric.Gauge().DataPoints().AppendEmpty()
 		dp.Attributes().PutString("local_name", "156720")
 		dp.Attributes().PutString("endpoint", "http://example_url")
-		dp.SetDoubleVal(33.4)
+		dp.SetDoubleValue(33.4)
 		dp.SetTimestamp(1608124661.169 * 1e9)
 
 		dp = metric.metric.Gauge().DataPoints().AppendEmpty()
 		dp.Attributes().PutString("local_name", "156155")
 		dp.Attributes().PutString("endpoint", "http://another_url")
-		dp.SetDoubleVal(56.8)
+		dp.SetDoubleValue(56.8)
 		dp.SetTimestamp(1608124662.186 * 1e9)
 	}
 
@@ -128,13 +128,13 @@ func buildExampleIntSumMetric(fillData bool) metricPair {
 		dp := metric.metric.Sum().DataPoints().AppendEmpty()
 		dp.Attributes().PutString("name", "156720")
 		dp.Attributes().PutString("address", "http://example_url")
-		dp.SetIntVal(45)
+		dp.SetIntValue(45)
 		dp.SetTimestamp(1608124444.169 * 1e9)
 
 		dp = metric.metric.Sum().DataPoints().AppendEmpty()
 		dp.Attributes().PutString("name", "156155")
 		dp.Attributes().PutString("address", "http://another_url")
-		dp.SetIntVal(1238)
+		dp.SetIntValue(1238)
 		dp.SetTimestamp(1608124699.186 * 1e9)
 	}
 
@@ -160,13 +160,13 @@ func buildExampleDoubleSumMetric(fillData bool) metricPair {
 		dp := metric.metric.Sum().DataPoints().AppendEmpty()
 		dp.Attributes().PutString("pod_name", "lorem")
 		dp.Attributes().PutString("namespace", "default")
-		dp.SetDoubleVal(45.6)
+		dp.SetDoubleValue(45.6)
 		dp.SetTimestamp(1618124444.169 * 1e9)
 
 		dp = metric.metric.Sum().DataPoints().AppendEmpty()
 		dp.Attributes().PutString("pod_name", "opsum")
 		dp.Attributes().PutString("namespace", "kube-config")
-		dp.SetDoubleVal(1238.1)
+		dp.SetDoubleValue(1238.1)
 		dp.SetTimestamp(1608424699.186 * 1e9)
 	}
 

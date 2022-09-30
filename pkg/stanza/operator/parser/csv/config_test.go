@@ -90,6 +90,30 @@ func TestConfig(t *testing.T) {
 					return p
 				}(),
 			},
+			{
+				Name: "parse_to_attributes",
+				Expect: func() *Config {
+					p := NewConfig()
+					p.ParseTo = entry.RootableField{Field: entry.NewAttributeField()}
+					return p
+				}(),
+			},
+			{
+				Name: "parse_to_body",
+				Expect: func() *Config {
+					p := NewConfig()
+					p.ParseTo = entry.RootableField{Field: entry.NewBodyField()}
+					return p
+				}(),
+			},
+			{
+				Name: "parse_to_resource",
+				Expect: func() *Config {
+					p := NewConfig()
+					p.ParseTo = entry.RootableField{Field: entry.NewResourceField()}
+					return p
+				}(),
+			},
 		},
 	}.Run(t)
 }

@@ -110,7 +110,7 @@ func TestAllowAllKeys(t *testing.T) {
 		assert.True(t, v.Equal(val))
 	}
 	value, _ := attr.Get("name")
-	assert.Equal(t, "placeholder", value.StringVal())
+	assert.Equal(t, "placeholder", value.Str())
 }
 
 // TestAllowAllKeysMaskValues validates that the processor still redacts
@@ -142,7 +142,7 @@ func TestAllowAllKeysMaskValues(t *testing.T) {
 		assert.True(t, v.Equal(val))
 	}
 	value, _ := attr.Get("credit_card")
-	assert.Equal(t, "placeholder ****", value.StringVal())
+	assert.Equal(t, "placeholder ****", value.Str())
 }
 
 // TODO: Test redaction with metric tags in a metrics PR
@@ -181,20 +181,20 @@ func TestRedactSummaryDebug(t *testing.T) {
 	maskedKeys, ok := attr.Get(redactedKeys)
 	assert.True(t, ok)
 	sort.Strings(deleted)
-	assert.Equal(t, strings.Join(deleted, ","), maskedKeys.StringVal())
+	assert.Equal(t, strings.Join(deleted, ","), maskedKeys.Str())
 	maskedKeyCount, ok := attr.Get(redactedKeyCount)
 	assert.True(t, ok)
-	assert.Equal(t, int64(len(deleted)), maskedKeyCount.IntVal())
+	assert.Equal(t, int64(len(deleted)), maskedKeyCount.Int())
 
 	blockedKeys := []string{"name"}
 	maskedValues, ok := attr.Get(maskedValues)
 	assert.True(t, ok)
-	assert.Equal(t, strings.Join(blockedKeys, ","), maskedValues.StringVal())
+	assert.Equal(t, strings.Join(blockedKeys, ","), maskedValues.Str())
 	maskedValueCount, ok := attr.Get(maskedValueCount)
 	assert.True(t, ok)
-	assert.Equal(t, int64(1), maskedValueCount.IntVal())
+	assert.Equal(t, int64(1), maskedValueCount.Int())
 	value, _ := attr.Get("name")
-	assert.Equal(t, "placeholder ****", value.StringVal())
+	assert.Equal(t, "placeholder ****", value.Str())
 }
 
 // TestRedactSummaryInfo validates that the processor writes a verbose summary
@@ -230,15 +230,15 @@ func TestRedactSummaryInfo(t *testing.T) {
 	assert.False(t, ok)
 	maskedKeyCount, ok := attr.Get(redactedKeyCount)
 	assert.True(t, ok)
-	assert.Equal(t, int64(len(deleted)), maskedKeyCount.IntVal())
+	assert.Equal(t, int64(len(deleted)), maskedKeyCount.Int())
 	_, ok = attr.Get(maskedValues)
 	assert.False(t, ok)
 
 	maskedValueCount, ok := attr.Get(maskedValueCount)
 	assert.True(t, ok)
-	assert.Equal(t, int64(1), maskedValueCount.IntVal())
+	assert.Equal(t, int64(1), maskedValueCount.Int())
 	value, _ := attr.Get("name")
-	assert.Equal(t, "placeholder ****", value.StringVal())
+	assert.Equal(t, "placeholder ****", value.Str())
 }
 
 // TestRedactSummarySilent validates that the processor does not create the
@@ -274,7 +274,7 @@ func TestRedactSummarySilent(t *testing.T) {
 	_, ok = attr.Get(maskedValueCount)
 	assert.False(t, ok)
 	value, _ := attr.Get("name")
-	assert.Equal(t, "placeholder ****", value.StringVal())
+	assert.Equal(t, "placeholder ****", value.Str())
 }
 
 // TestRedactSummaryDefault validates that the processor does not create the
@@ -331,24 +331,24 @@ func TestMultipleBlockValues(t *testing.T) {
 	}
 	maskedKeys, ok := attr.Get(redactedKeys)
 	assert.True(t, ok)
-	assert.Equal(t, strings.Join(deleted, ","), maskedKeys.StringVal())
+	assert.Equal(t, strings.Join(deleted, ","), maskedKeys.Str())
 	maskedKeyCount, ok := attr.Get(redactedKeyCount)
 	assert.True(t, ok)
-	assert.Equal(t, int64(len(deleted)), maskedKeyCount.IntVal())
+	assert.Equal(t, int64(len(deleted)), maskedKeyCount.Int())
 
 	blockedKeys := []string{"name", "mystery"}
 	maskedValues, ok := attr.Get(maskedValues)
 	assert.True(t, ok)
 	sort.Strings(blockedKeys)
-	assert.Equal(t, strings.Join(blockedKeys, ","), maskedValues.StringVal())
+	assert.Equal(t, strings.Join(blockedKeys, ","), maskedValues.Str())
 	maskedValues.Equal(pcommon.NewValueString(strings.Join(blockedKeys, ",")))
 	maskedValueCount, ok := attr.Get(maskedValueCount)
 	assert.True(t, ok)
-	assert.Equal(t, int64(len(blockedKeys)), maskedValueCount.IntVal())
+	assert.Equal(t, int64(len(blockedKeys)), maskedValueCount.Int())
 	nameValue, _ := attr.Get("name")
 	mysteryValue, _ := attr.Get("mystery")
-	assert.Equal(t, "placeholder ****", nameValue.StringVal())
-	assert.Equal(t, "mystery ****", mysteryValue.StringVal())
+	assert.Equal(t, "placeholder ****", nameValue.Str())
+	assert.Equal(t, "mystery ****", mysteryValue.Str())
 }
 
 // TestProcessAttrsAppliedTwice validates a use case when data is coming through redaction processor more than once.
@@ -378,16 +378,16 @@ func TestProcessAttrsAppliedTwice(t *testing.T) {
 	assert.Equal(t, 7, attrs.Len())
 	val, found := attrs.Get(redactedKeys)
 	assert.True(t, found)
-	assert.Equal(t, "dropped_attr1,dropped_attr2,redundant", val.StringVal())
+	assert.Equal(t, "dropped_attr1,dropped_attr2,redundant", val.Str())
 	val, found = attrs.Get(redactedKeyCount)
 	assert.True(t, found)
-	assert.Equal(t, int64(3), val.IntVal())
+	assert.Equal(t, int64(3), val.Int())
 	val, found = attrs.Get(maskedValues)
 	assert.True(t, found)
-	assert.Equal(t, "credit_card,mystery", val.StringVal())
+	assert.Equal(t, "credit_card,mystery", val.Str())
 	val, found = attrs.Get(maskedValueCount)
 	assert.True(t, found)
-	assert.Equal(t, int64(2), val.IntVal())
+	assert.Equal(t, int64(2), val.Int())
 }
 
 // runTest transforms the test input data and passes it through the processor

@@ -16,13 +16,11 @@ package helper
 
 import (
 	"fmt"
-	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
@@ -482,111 +480,44 @@ func (tc severityTestCase) run(parseFrom entry.Field) func(*testing.T) {
 	}
 }
 
-type severityConfigTestCase struct {
-	name      string
-	expectErr bool
-	expect    *SeverityConfig
-}
-
-func TestGoldenSeverityParserConfig(t *testing.T) {
-	cases := []severityConfigTestCase{
-		{
-			"default",
-			false,
-			defaultSeverityCfg(),
+func TestUnmarshalSeverityConfig(t *testing.T) {
+	operatortest.ConfigUnmarshalTests{
+		DefaultConfig: newHelpersConfig(),
+		TestsFile:     filepath.Join(".", "testdata", "severity.yaml"),
+		Tests: []operatortest.ConfigUnmarshalTest{
+			{
+				Name: "mapping",
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Severity = NewSeverityConfig()
+					c.Severity.Mapping = map[interface{}]interface{}{
+						"critical": "5xx",
+						"error":    "4xx",
+						"info":     "3xx",
+						"debug":    "2xx",
+					}
+					return c
+				}(),
+			},
+			{
+				Name: "parse_from",
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Severity = NewSeverityConfig()
+					from := entry.NewBodyField("from")
+					c.Severity.ParseFrom = &from
+					return c
+				}(),
+			},
+			{
+				Name: "preset",
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Severity = NewSeverityConfig()
+					c.Severity.Preset = "http"
+					return c
+				}(),
+			},
 		},
-		{
-			"parse_from_simple",
-			false,
-			func() *SeverityConfig {
-				cfg := defaultSeverityCfg()
-				newParse := entry.NewBodyField("from")
-				cfg.ParseFrom = &newParse
-				return cfg
-			}(),
-		},
-		{
-			"mapping",
-			false,
-			func() *SeverityConfig {
-				cfg := defaultSeverityCfg()
-				cfg.Mapping = map[interface{}]interface{}{
-					"critical": "5xx",
-					"error":    "4xx",
-					"info":     "3xx",
-					"debug":    "2xx",
-				}
-				return cfg
-			}(),
-		},
-		{
-			"preset",
-			false,
-			func() *SeverityConfig {
-				cfg := defaultSeverityCfg()
-				cfg.Preset = "default"
-				return cfg
-			}(),
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run("yaml/"+tc.name, func(t *testing.T) {
-			cfgFromYaml, yamlErr := severityConfigFromFileViaYaml(path.Join(".", "testdata", "severity", fmt.Sprintf("%s.yaml", tc.name)))
-			if tc.expectErr {
-				require.Error(t, yamlErr)
-			} else {
-				require.NoError(t, yamlErr)
-				require.Equal(t, tc.expect, cfgFromYaml)
-			}
-		})
-		t.Run("mapstructure/"+tc.name, func(t *testing.T) {
-			cfgFromMapstructure := defaultSeverityCfg()
-			mapErr := severityConfigFromFileViaMapstructure(
-				path.Join(".", "testdata", "severity", fmt.Sprintf("%s.yaml", tc.name)),
-				cfgFromMapstructure,
-			)
-			if tc.expectErr {
-				require.Error(t, mapErr)
-			} else {
-				require.NoError(t, mapErr)
-				require.Equal(t, tc.expect, cfgFromMapstructure)
-			}
-		})
-	}
-}
-
-func severityConfigFromFileViaYaml(file string) (*SeverityConfig, error) {
-	bytes, err := os.ReadFile(file)
-	if err != nil {
-		return nil, fmt.Errorf("could not find config file: %w", err)
-	}
-
-	config := defaultSeverityCfg()
-	if err := yaml.Unmarshal(bytes, config); err != nil {
-		return nil, fmt.Errorf("failed to read config file as yaml: %w", err)
-	}
-
-	return config, nil
-}
-
-func severityConfigFromFileViaMapstructure(file string, result *SeverityConfig) error {
-	bytes, err := os.ReadFile(file)
-	if err != nil {
-		return fmt.Errorf("could not find config file: %w", err)
-	}
-
-	raw := map[string]interface{}{}
-
-	if err = yaml.Unmarshal(bytes, raw); err != nil {
-		return fmt.Errorf("failed to read data from yaml: %w", err)
-	}
-
-	err = operatortest.UnmarshalMapstructure(raw, result)
-	return err
-}
-
-func defaultSeverityCfg() *SeverityConfig {
-	newCfg := NewSeverityConfig()
-	return &newCfg
+	}.Run(t)
 }

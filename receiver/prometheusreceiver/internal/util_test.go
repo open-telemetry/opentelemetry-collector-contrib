@@ -65,55 +65,55 @@ func TestConvToMetricType(t *testing.T) {
 	tests := []struct {
 		name          string
 		mtype         textparse.MetricType
-		want          pmetric.MetricDataType
+		want          pmetric.MetricType
 		wantMonotonic bool
 	}{
 		{
 			name:          "textparse.counter",
 			mtype:         textparse.MetricTypeCounter,
-			want:          pmetric.MetricDataTypeSum,
+			want:          pmetric.MetricTypeSum,
 			wantMonotonic: true,
 		},
 		{
 			name:          "textparse.gauge",
 			mtype:         textparse.MetricTypeGauge,
-			want:          pmetric.MetricDataTypeGauge,
+			want:          pmetric.MetricTypeGauge,
 			wantMonotonic: false,
 		},
 		{
 			name:          "textparse.unknown",
 			mtype:         textparse.MetricTypeUnknown,
-			want:          pmetric.MetricDataTypeGauge,
+			want:          pmetric.MetricTypeGauge,
 			wantMonotonic: false,
 		},
 		{
 			name:          "textparse.histogram",
 			mtype:         textparse.MetricTypeHistogram,
-			want:          pmetric.MetricDataTypeHistogram,
+			want:          pmetric.MetricTypeHistogram,
 			wantMonotonic: true,
 		},
 		{
 			name:          "textparse.summary",
 			mtype:         textparse.MetricTypeSummary,
-			want:          pmetric.MetricDataTypeSummary,
+			want:          pmetric.MetricTypeSummary,
 			wantMonotonic: true,
 		},
 		{
 			name:          "textparse.metric_type_info",
 			mtype:         textparse.MetricTypeInfo,
-			want:          pmetric.MetricDataTypeSum,
+			want:          pmetric.MetricTypeSum,
 			wantMonotonic: false,
 		},
 		{
 			name:          "textparse.metric_state_set",
 			mtype:         textparse.MetricTypeStateset,
-			want:          pmetric.MetricDataTypeSum,
+			want:          pmetric.MetricTypeSum,
 			wantMonotonic: false,
 		},
 		{
 			name:          "textparse.metric_gauge_hostogram",
 			mtype:         textparse.MetricTypeGaugeHistogram,
-			want:          pmetric.MetricDataTypeNone,
+			want:          pmetric.MetricTypeNone,
 			wantMonotonic: false,
 		},
 	}
@@ -131,44 +131,44 @@ func TestConvToMetricType(t *testing.T) {
 func TestGetBoundary(t *testing.T) {
 	tests := []struct {
 		name      string
-		mtype     pmetric.MetricDataType
+		mtype     pmetric.MetricType
 		labels    labels.Labels
 		wantValue float64
 		wantErr   error
 	}{
 		{
 			name:      "cumulative histogram with bucket label",
-			mtype:     pmetric.MetricDataTypeHistogram,
+			mtype:     pmetric.MetricTypeHistogram,
 			labels:    labels.FromStrings(model.BucketLabel, "0.256"),
 			wantValue: 0.256,
 		},
 		{
 			name:      "gauge histogram with bucket label",
-			mtype:     pmetric.MetricDataTypeHistogram,
+			mtype:     pmetric.MetricTypeHistogram,
 			labels:    labels.FromStrings(model.BucketLabel, "11.71"),
 			wantValue: 11.71,
 		},
 		{
 			name:    "summary with bucket label",
-			mtype:   pmetric.MetricDataTypeSummary,
+			mtype:   pmetric.MetricTypeSummary,
 			labels:  labels.FromStrings(model.BucketLabel, "11.71"),
 			wantErr: errEmptyQuantileLabel,
 		},
 		{
 			name:      "summary with quantile label",
-			mtype:     pmetric.MetricDataTypeSummary,
+			mtype:     pmetric.MetricTypeSummary,
 			labels:    labels.FromStrings(model.QuantileLabel, "92.88"),
 			wantValue: 92.88,
 		},
 		{
 			name:    "gauge histogram mismatched with bucket label",
-			mtype:   pmetric.MetricDataTypeSummary,
+			mtype:   pmetric.MetricTypeSummary,
 			labels:  labels.FromStrings(model.BucketLabel, "11.71"),
 			wantErr: errEmptyQuantileLabel,
 		},
 		{
 			name:    "other data types without matches",
-			mtype:   pmetric.MetricDataTypeGauge,
+			mtype:   pmetric.MetricTypeGauge,
 			labels:  labels.FromStrings(model.BucketLabel, "11.71"),
 			wantErr: errNoBoundaryLabel,
 		},

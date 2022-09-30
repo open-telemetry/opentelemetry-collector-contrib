@@ -21,10 +21,10 @@ import (
 // scaleValueOp scales a numeric metric value. Applicable to sum and gauge metrics only.
 func scaleValueOp(metric pmetric.Metric, op internalOperation, f internalFilter) {
 	var dps pmetric.NumberDataPointSlice
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		dps = metric.Gauge().DataPoints()
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		dps = metric.Sum().DataPoints()
 	default:
 		return
@@ -37,9 +37,9 @@ func scaleValueOp(metric pmetric.Metric, op internalOperation, f internalFilter)
 		}
 		switch dp.ValueType() {
 		case pmetric.NumberDataPointValueTypeInt:
-			dp.SetIntVal(int64(float64(dp.IntVal()) * op.configOperation.Scale))
+			dp.SetIntValue(int64(float64(dp.IntValue()) * op.configOperation.Scale))
 		case pmetric.NumberDataPointValueTypeDouble:
-			dp.SetDoubleVal(dp.DoubleVal() * op.configOperation.Scale)
+			dp.SetDoubleValue(dp.DoubleValue() * op.configOperation.Scale)
 		}
 	}
 }

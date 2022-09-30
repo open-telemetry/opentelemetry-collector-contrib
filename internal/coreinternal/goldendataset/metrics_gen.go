@@ -27,7 +27,7 @@ import (
 // metrics with the corresponding number/type of attributes and pass into MetricsFromCfg to generate metrics.
 type MetricsCfg struct {
 	// The type of metric to generate
-	MetricDescriptorType pmetric.MetricDataType
+	MetricDescriptorType pmetric.MetricType
 	// MetricValueType is the type of the numeric value: int or double.
 	MetricValueType pmetric.NumberDataPointValueType
 	// If MetricDescriptorType is one of the Sum, this describes if the sum is monotonic or not.
@@ -58,7 +58,7 @@ type MetricsCfg struct {
 // (but boring) metrics, and can be used as a starting point for making alterations.
 func DefaultCfg() MetricsCfg {
 	return MetricsCfg{
-		MetricDescriptorType: pmetric.MetricDataTypeGauge,
+		MetricDescriptorType: pmetric.MetricTypeGauge,
 		MetricValueType:      pmetric.NumberDataPointValueTypeInt,
 		MetricNamePrefix:     "",
 		NumILMPerResource:    1,
@@ -121,18 +121,18 @@ func (g *metricGenerator) populateMetrics(cfg MetricsCfg, ilm pmetric.ScopeMetri
 		metric := metrics.AppendEmpty()
 		g.populateMetricDesc(cfg, metric)
 		switch cfg.MetricDescriptorType {
-		case pmetric.MetricDataTypeGauge:
+		case pmetric.MetricTypeGauge:
 			populateNumberPoints(cfg, metric.SetEmptyGauge().DataPoints())
-		case pmetric.MetricDataTypeSum:
+		case pmetric.MetricTypeSum:
 			sum := metric.SetEmptySum()
 			sum.SetIsMonotonic(cfg.IsMonotonicSum)
 			sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 			populateNumberPoints(cfg, sum.DataPoints())
-		case pmetric.MetricDataTypeHistogram:
+		case pmetric.MetricTypeHistogram:
 			histo := metric.SetEmptyHistogram()
 			histo.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 			populateDoubleHistogram(cfg, histo)
-		case pmetric.MetricDataTypeExponentialHistogram:
+		case pmetric.MetricTypeExponentialHistogram:
 			histo := metric.SetEmptyExponentialHistogram()
 			histo.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 			populateExpoHistogram(cfg, histo)
@@ -155,9 +155,9 @@ func populateNumberPoints(cfg MetricsCfg, pts pmetric.NumberDataPointSlice) {
 		pt.SetTimestamp(getTimestamp(cfg.StartTime, cfg.StepSize, i))
 		switch cfg.MetricValueType {
 		case pmetric.NumberDataPointValueTypeInt:
-			pt.SetIntVal(int64(cfg.PtVal + i))
+			pt.SetIntValue(int64(cfg.PtVal + i))
 		case pmetric.NumberDataPointValueTypeDouble:
-			pt.SetDoubleVal(float64(cfg.PtVal + i))
+			pt.SetDoubleValue(float64(cfg.PtVal + i))
 		default:
 			panic("Should not happen")
 		}

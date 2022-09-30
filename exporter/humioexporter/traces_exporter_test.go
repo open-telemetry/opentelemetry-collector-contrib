@@ -337,7 +337,7 @@ func TestToHumioLinks(t *testing.T) {
 	link1 := slice.AppendEmpty()
 	link1.SetTraceID(createTraceID("11"))
 	link1.SetSpanID(createSpanID("22"))
-	link1.TraceStateStruct().FromRaw("state1")
+	link1.TraceState().FromRaw("state1")
 
 	link2 := slice.AppendEmpty()
 	link2.SetTraceID(createTraceID("33"))
@@ -403,9 +403,9 @@ func TestToHumioAttributes(t *testing.T) {
 			attr: func() pcommon.Map {
 				attrMap := pcommon.NewMap()
 				arr := attrMap.PutEmptySlice("array")
-				arr.AppendEmpty().SetStringVal("a")
-				arr.AppendEmpty().SetStringVal("b")
-				arr.AppendEmpty().SetIntVal(4)
+				arr.AppendEmpty().SetStr("a")
+				arr.AppendEmpty().SetStr("b")
+				arr.AppendEmpty().SetInt(4)
 				return attrMap
 			},
 			expected: map[string]interface{}{

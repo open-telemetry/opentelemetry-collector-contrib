@@ -27,9 +27,9 @@ import (
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 

@@ -47,13 +47,13 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a regex parser operator.
 type Config struct {
-	helper.ParserConfig `mapstructure:",squash" yaml:",inline"`
+	helper.ParserConfig `mapstructure:",squash"`
 
-	Regex string `mapstructure:"regex" json:"regex" yaml:"regex"`
+	Regex string `mapstructure:"regex"`
 
 	Cache struct {
-		Size uint16 `json:"size" yaml:"size"`
-	} `mapstructure:"cache" json:"cache" yaml:"cache"`
+		Size uint16 `mapstructure:"size"`
+	} `mapstructure:"cache"`
 }
 
 // Build will build a regex parser operator.

@@ -226,22 +226,22 @@ func attrsValue(attrs pcommon.Map) map[string]interface{} {
 func attrValue(value pcommon.Value) interface{} {
 	switch value.Type() {
 	case pcommon.ValueTypeInt:
-		return value.IntVal()
+		return value.Int()
 	case pcommon.ValueTypeBool:
-		return value.BoolVal()
+		return value.Bool()
 	case pcommon.ValueTypeDouble:
-		return value.DoubleVal()
-	case pcommon.ValueTypeString:
-		return value.StringVal()
+		return value.Double()
+	case pcommon.ValueTypeStr:
+		return value.Str()
 	case pcommon.ValueTypeMap:
 		values := map[string]interface{}{}
-		value.MapVal().Range(func(k string, v pcommon.Value) bool {
+		value.Map().Range(func(k string, v pcommon.Value) bool {
 			values[k] = attrValue(v)
 			return true
 		})
 		return values
 	case pcommon.ValueTypeSlice:
-		arrayVal := value.SliceVal()
+		arrayVal := value.Slice()
 		values := make([]interface{}, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {
 			values[i] = attrValue(arrayVal.At(i))

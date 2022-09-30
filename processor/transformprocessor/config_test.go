@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottlconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlconfig"
 )
 
 func TestLoadConfig(t *testing.T) {

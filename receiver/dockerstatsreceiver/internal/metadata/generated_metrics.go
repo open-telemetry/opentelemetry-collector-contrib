@@ -301,7 +301,7 @@ func (m *metricContainerBlockioIoMergedRecursive) recordDataPoint(start pcommon.
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
 	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
 	dp.Attributes().PutString("operation", operationAttributeValue)
@@ -356,7 +356,7 @@ func (m *metricContainerBlockioIoQueuedRecursive) recordDataPoint(start pcommon.
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
 	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
 	dp.Attributes().PutString("operation", operationAttributeValue)
@@ -411,7 +411,7 @@ func (m *metricContainerBlockioIoServiceBytesRecursive) recordDataPoint(start pc
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
 	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
 	dp.Attributes().PutString("operation", operationAttributeValue)
@@ -466,7 +466,7 @@ func (m *metricContainerBlockioIoServiceTimeRecursive) recordDataPoint(start pco
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
 	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
 	dp.Attributes().PutString("operation", operationAttributeValue)
@@ -521,7 +521,7 @@ func (m *metricContainerBlockioIoServicedRecursive) recordDataPoint(start pcommo
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
 	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
 	dp.Attributes().PutString("operation", operationAttributeValue)
@@ -576,7 +576,7 @@ func (m *metricContainerBlockioIoTimeRecursive) recordDataPoint(start pcommon.Ti
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
 	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
 	dp.Attributes().PutString("operation", operationAttributeValue)
@@ -631,7 +631,7 @@ func (m *metricContainerBlockioIoWaitTimeRecursive) recordDataPoint(start pcommo
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
 	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
 	dp.Attributes().PutString("operation", operationAttributeValue)
@@ -686,7 +686,7 @@ func (m *metricContainerBlockioSectorsRecursive) recordDataPoint(start pcommon.T
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
 	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
 	dp.Attributes().PutString("operation", operationAttributeValue)
@@ -738,7 +738,7 @@ func (m *metricContainerCPUPercent) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -789,7 +789,7 @@ func (m *metricContainerCPUThrottlingDataPeriods) recordDataPoint(start pcommon.
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -840,7 +840,7 @@ func (m *metricContainerCPUThrottlingDataThrottledPeriods) recordDataPoint(start
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -891,7 +891,7 @@ func (m *metricContainerCPUThrottlingDataThrottledTime) recordDataPoint(start pc
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -942,7 +942,7 @@ func (m *metricContainerCPUUsageKernelmode) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -994,7 +994,7 @@ func (m *metricContainerCPUUsagePercpu) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("core", coreAttributeValue)
 }
 
@@ -1046,7 +1046,7 @@ func (m *metricContainerCPUUsageSystem) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1097,7 +1097,7 @@ func (m *metricContainerCPUUsageTotal) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1148,7 +1148,7 @@ func (m *metricContainerCPUUsageUsermode) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1199,7 +1199,7 @@ func (m *metricContainerMemoryActiveAnon) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1250,7 +1250,7 @@ func (m *metricContainerMemoryActiveFile) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1301,7 +1301,7 @@ func (m *metricContainerMemoryCache) recordDataPoint(start pcommon.Timestamp, ts
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1352,7 +1352,7 @@ func (m *metricContainerMemoryDirty) recordDataPoint(start pcommon.Timestamp, ts
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1403,7 +1403,7 @@ func (m *metricContainerMemoryHierarchicalMemoryLimit) recordDataPoint(start pco
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1454,7 +1454,7 @@ func (m *metricContainerMemoryHierarchicalMemswLimit) recordDataPoint(start pcom
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1505,7 +1505,7 @@ func (m *metricContainerMemoryInactiveAnon) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1556,7 +1556,7 @@ func (m *metricContainerMemoryInactiveFile) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1607,7 +1607,7 @@ func (m *metricContainerMemoryMappedFile) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1656,7 +1656,7 @@ func (m *metricContainerMemoryPercent) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1707,7 +1707,7 @@ func (m *metricContainerMemoryPgfault) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1758,7 +1758,7 @@ func (m *metricContainerMemoryPgmajfault) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1809,7 +1809,7 @@ func (m *metricContainerMemoryPgpgin) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1860,7 +1860,7 @@ func (m *metricContainerMemoryPgpgout) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1911,7 +1911,7 @@ func (m *metricContainerMemoryRss) recordDataPoint(start pcommon.Timestamp, ts p
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1962,7 +1962,7 @@ func (m *metricContainerMemoryRssHuge) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2013,7 +2013,7 @@ func (m *metricContainerMemorySwap) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2064,7 +2064,7 @@ func (m *metricContainerMemoryTotalActiveAnon) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2115,7 +2115,7 @@ func (m *metricContainerMemoryTotalActiveFile) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2166,7 +2166,7 @@ func (m *metricContainerMemoryTotalCache) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2217,7 +2217,7 @@ func (m *metricContainerMemoryTotalDirty) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2268,7 +2268,7 @@ func (m *metricContainerMemoryTotalInactiveAnon) recordDataPoint(start pcommon.T
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2319,7 +2319,7 @@ func (m *metricContainerMemoryTotalInactiveFile) recordDataPoint(start pcommon.T
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2370,7 +2370,7 @@ func (m *metricContainerMemoryTotalMappedFile) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2421,7 +2421,7 @@ func (m *metricContainerMemoryTotalPgfault) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2472,7 +2472,7 @@ func (m *metricContainerMemoryTotalPgmajfault) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2523,7 +2523,7 @@ func (m *metricContainerMemoryTotalPgpgin) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2574,7 +2574,7 @@ func (m *metricContainerMemoryTotalPgpgout) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2625,7 +2625,7 @@ func (m *metricContainerMemoryTotalRss) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2676,7 +2676,7 @@ func (m *metricContainerMemoryTotalRssHuge) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2727,7 +2727,7 @@ func (m *metricContainerMemoryTotalSwap) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2778,7 +2778,7 @@ func (m *metricContainerMemoryTotalUnevictable) recordDataPoint(start pcommon.Ti
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2829,7 +2829,7 @@ func (m *metricContainerMemoryTotalWriteback) recordDataPoint(start pcommon.Time
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2880,7 +2880,7 @@ func (m *metricContainerMemoryUnevictable) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2931,7 +2931,7 @@ func (m *metricContainerMemoryUsageLimit) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2982,7 +2982,7 @@ func (m *metricContainerMemoryUsageMax) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3033,7 +3033,7 @@ func (m *metricContainerMemoryUsageTotal) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3084,7 +3084,7 @@ func (m *metricContainerMemoryWriteback) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3136,7 +3136,7 @@ func (m *metricContainerNetworkIoUsageRxBytes) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("interface", interfaceAttributeValue)
 }
 
@@ -3189,7 +3189,7 @@ func (m *metricContainerNetworkIoUsageRxDropped) recordDataPoint(start pcommon.T
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("interface", interfaceAttributeValue)
 }
 
@@ -3242,7 +3242,7 @@ func (m *metricContainerNetworkIoUsageRxErrors) recordDataPoint(start pcommon.Ti
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("interface", interfaceAttributeValue)
 }
 
@@ -3295,7 +3295,7 @@ func (m *metricContainerNetworkIoUsageRxPackets) recordDataPoint(start pcommon.T
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("interface", interfaceAttributeValue)
 }
 
@@ -3348,7 +3348,7 @@ func (m *metricContainerNetworkIoUsageTxBytes) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("interface", interfaceAttributeValue)
 }
 
@@ -3401,7 +3401,7 @@ func (m *metricContainerNetworkIoUsageTxDropped) recordDataPoint(start pcommon.T
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("interface", interfaceAttributeValue)
 }
 
@@ -3454,7 +3454,7 @@ func (m *metricContainerNetworkIoUsageTxErrors) recordDataPoint(start pcommon.Ti
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("interface", interfaceAttributeValue)
 }
 
@@ -3507,7 +3507,7 @@ func (m *metricContainerNetworkIoUsageTxPackets) recordDataPoint(start pcommon.T
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("interface", interfaceAttributeValue)
 }
 
@@ -3749,10 +3749,10 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {

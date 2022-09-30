@@ -420,13 +420,13 @@ func extractAttributes(action attributeAction, attrs pcommon.Map) {
 	value, found := attrs.Get(action.Key)
 
 	// Extracting values only functions on strings.
-	if !found || value.Type() != pcommon.ValueTypeString {
+	if !found || value.Type() != pcommon.ValueTypeStr {
 		return
 	}
 
 	// Note: The number of matches will always be equal to number of
 	// subexpressions.
-	matches := action.Regex.FindStringSubmatch(value.StringVal())
+	matches := action.Regex.FindStringSubmatch(value.Str())
 	if matches == nil {
 		return
 	}

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,12 +18,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottllogs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottlmetrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottltraces"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottlconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
@@ -40,35 +40,20 @@ var _ config.Processor = (*Config)(nil)
 func (c *Config) Validate() error {
 	var errors error
 
-	ottlp := ottl.NewParser(
-		traces.Functions(),
-		ottltraces.ParsePath,
-		ottltraces.ParseEnum,
-		component.TelemetrySettings{},
-	)
-	_, err := ottlp.ParseQueries(c.Traces.Queries)
+	ottltracesp := ottltraces.NewParser(traces.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+	_, err := ottltracesp.ParseStatements(c.Traces.Queries)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
 
-	ottlp = ottl.NewParser(
-		metrics.Functions(),
-		ottlmetrics.ParsePath,
-		ottlmetrics.ParseEnum,
-		component.TelemetrySettings{},
-	)
-	_, err = ottlp.ParseQueries(c.Metrics.Queries)
+	ottlmetricsp := ottldatapoints.NewParser(metrics.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+	_, err = ottlmetricsp.ParseStatements(c.Metrics.Queries)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
 
-	ottlp = ottl.NewParser(
-		logs.Functions(),
-		ottllogs.ParsePath,
-		ottllogs.ParseEnum,
-		component.TelemetrySettings{},
-	)
-	_, err = ottlp.ParseQueries(c.Logs.Queries)
+	ottllogsp := ottllogs.NewParser(logs.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+	_, err = ottllogsp.ParseStatements(c.Logs.Queries)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
