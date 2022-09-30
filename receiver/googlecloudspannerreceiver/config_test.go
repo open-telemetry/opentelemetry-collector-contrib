@@ -41,48 +41,40 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	assert.Equal(t,
-		&Config{
-			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-				ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
-				CollectionInterval: 120 * time.Second,
-			},
-			TopMetricsQueryMaxRows: 10,
-			BackfillEnabled:        true,
-			CardinalityTotalLimit:  200000,
-			Projects: []Project{
-				{
-					ID:                "spanner project 1",
-					ServiceAccountKey: "path to spanner project 1 service account json key",
-					Instances: []Instance{
-						{
-							ID:        "id1",
-							Databases: []string{"db11", "db12"},
-						},
-						{
-							ID:        "id2",
-							Databases: []string{"db21", "db22"},
-						},
-					},
-				},
-				{
-					ID:                "spanner project 2",
-					ServiceAccountKey: "path to spanner project 2 service account json key",
-					Instances: []Instance{
-						{
-							ID:        "id3",
-							Databases: []string{"db31", "db32"},
-						},
-						{
-							ID:        "id4",
-							Databases: []string{"db41", "db42"},
-						},
-					},
-				},
-			},
-		},
-		cfg,
-	)
+	receiver := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
+
+	assert.Equal(t, 120*time.Second, receiver.CollectionInterval)
+	assert.Equal(t, 10, receiver.TopMetricsQueryMaxRows)
+	assert.True(t, receiver.BackfillEnabled)
+	assert.True(t, receiver.HideTopnLockstatsRowrangestartkey)
+
+	assert.Equal(t, 2, len(receiver.Projects))
+
+	assert.Equal(t, "spanner project 1", receiver.Projects[0].ID)
+	assert.Equal(t, "path to spanner project 1 service account json key", receiver.Projects[0].ServiceAccountKey)
+	assert.Equal(t, 2, len(receiver.Projects[0].Instances))
+
+	assert.Equal(t, "id1", receiver.Projects[0].Instances[0].ID)
+	assert.Equal(t, 2, len(receiver.Projects[0].Instances[0].Databases))
+	assert.Equal(t, "db11", receiver.Projects[0].Instances[0].Databases[0])
+	assert.Equal(t, "db12", receiver.Projects[0].Instances[0].Databases[1])
+	assert.Equal(t, "id2", receiver.Projects[0].Instances[1].ID)
+	assert.Equal(t, 2, len(receiver.Projects[0].Instances[1].Databases))
+	assert.Equal(t, "db21", receiver.Projects[0].Instances[1].Databases[0])
+	assert.Equal(t, "db22", receiver.Projects[0].Instances[1].Databases[1])
+
+	assert.Equal(t, "spanner project 2", receiver.Projects[1].ID)
+	assert.Equal(t, "path to spanner project 2 service account json key", receiver.Projects[1].ServiceAccountKey)
+	assert.Equal(t, len(receiver.Projects[1].Instances), 2)
+
+	assert.Equal(t, "id3", receiver.Projects[1].Instances[0].ID)
+	assert.Equal(t, 2, len(receiver.Projects[1].Instances[0].Databases))
+	assert.Equal(t, "db31", receiver.Projects[1].Instances[0].Databases[0])
+	assert.Equal(t, "db32", receiver.Projects[1].Instances[0].Databases[1])
+	assert.Equal(t, "id4", receiver.Projects[1].Instances[1].ID)
+	assert.Equal(t, 2, len(receiver.Projects[1].Instances[1].Databases))
+	assert.Equal(t, "db41", receiver.Projects[1].Instances[1].Databases[0])
+	assert.Equal(t, "db42", receiver.Projects[1].Instances[1].Databases[1])
 }
 
 func TestValidateInstance(t *testing.T) {
