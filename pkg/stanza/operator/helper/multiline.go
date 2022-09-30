@@ -371,10 +371,10 @@ func (c CustomizedConfig) Build(flusher *Flusher) (bufio.SplitFunc, error) {
 
 // SplitterConfig consolidates MultilineConfig and FlusherConfig
 type SplitterConfig struct {
-	EncodingConfig EncodingConfig   `mapstructure:",squash,omitempty"`
-	Multiline      MultilineConfig  `mapstructure:"multiline,omitempty"`
-	Flusher        FlusherConfig    `mapstructure:",squash,omitempty"`
-	Customization  CustomizedConfig `mapstructure:",squash,omitempty"`
+	EncodingConfig EncodingConfig  `mapstructure:",squash,omitempty"`
+	Multiline      MultilineConfig `mapstructure:"multiline,omitempty"`
+	Flusher        FlusherConfig   `mapstructure:",squash,omitempty"`
+	customization  CustomizedConfig
 }
 
 // NewSplitterConfig returns default SplitterConfig
@@ -383,7 +383,7 @@ func NewSplitterConfig() SplitterConfig {
 		EncodingConfig: NewEncodingConfig(),
 		Multiline:      NewMultilineConfig(),
 		Flusher:        NewFlusherConfig(),
-		Customization:  NewCustomizedConfig(),
+		customization:  NewCustomizedConfig(),
 	}
 }
 
@@ -393,14 +393,14 @@ func (c *SplitterConfig) Build(flushAtEOF bool, maxLogSize int) (*Splitter, erro
 	if err != nil {
 		return nil, err
 	}
-	if c.Customization.Enabled &&
+	if c.customization.Enabled &&
 		(c.Multiline.LineStartPattern != "" || c.Multiline.LineEndPattern != "") {
 		return nil, fmt.Errorf("multiline should not be set when using customized splitter")
 	}
 	flusher := c.Flusher.Build()
 	var splitFunc bufio.SplitFunc
-	if c.Customization.Enabled {
-		splitFunc, err = c.Customization.Build(flusher)
+	if c.customization.Enabled {
+		splitFunc, err = c.customization.Build(flusher)
 	} else {
 		splitFunc, err = c.Multiline.Build(enc.Encoding, flushAtEOF, flusher, maxLogSize)
 	}
@@ -412,6 +412,11 @@ func (c *SplitterConfig) Build(flushAtEOF bool, maxLogSize int) (*Splitter, erro
 		Flusher:   flusher,
 		SplitFunc: splitFunc,
 	}, nil
+}
+
+func (c *SplitterConfig) SetCustomizedSplitter(splitter bufio.SplitFunc) {
+	c.customization.Splitter = splitter
+	c.customization.Enabled = true
 }
 
 // Splitter consolidates Flusher and dependent splitFunc

@@ -531,7 +531,6 @@ func TestNewConfigWithOptions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := NewConfig(tt.args.opts...)
 			assert.NotNil(t, got)
-			assert.NotNil(t, got.Splitter.Customization.Splitter)
 		})
 	}
 }
