@@ -868,7 +868,7 @@ func TestSplitterConfig_Build(t *testing.T) {
 				EncodingConfig: tt.fields.EncodingConfig,
 				Multiline:      tt.fields.Multiline,
 				Flusher:        tt.fields.Flusher,
-				Customization:  tt.fields.Customization,
+				customization:  tt.fields.Customization,
 			}
 			got, err := c.Build(tt.args.flushAtEOF, tt.args.maxLogSize)
 			if tt.wantErr {
