@@ -4,6 +4,9 @@ attributes:
     type: string
   oracledb.query.id:
     description: Unique ID for the SQL statement.
+  oracledb.session.id:
+    description: Session id
+    type: string
   oracledb.session.status:
     description: Session status
     type: string
@@ -14,6 +17,8 @@ attributes:
     description: Resource name. Example values are 'processes', 'sessions', 'enqueue_locks', 'enqueue_resources'.
   oracledb.resource.type:
     description: Resource type, one of 'current_utilization', 'max', 'initial', 'current'.
+  oracledb.tablespace.name:
+    description: Tablespace name
 metrics:
   oracledb.query.cpu_time:
     attributes:
@@ -129,6 +134,8 @@ metrics:
   oracledb.session.cpu_usage:
     description: CPU usage (%)
     enabled: true
+    attributes:
+      - oracledb.session.id
     gauge:
       value_type: double
     unit: 1
@@ -136,6 +143,8 @@ metrics:
     description: Total number of deadlocks between table or row locks in different
       sessions.
     enabled: true
+    attributes:
+      - oracledb.session.id
     gauge:
       value_type: int
     unit: 1
@@ -144,12 +153,16 @@ metrics:
       exchanging two buffers and raised an internal, restartable error. Index scans
       are the only operations that perform exchanges.
     enabled: true
+    attributes:
+      - oracledb.session.id
     gauge:
       value_type: int
     unit: 1
   oracledb.session.execute_count:
     description: Total number of calls (user and recursive) that executed SQL statements
     enabled: true
+    attributes:
+      - oracledb.session.id
     sum:
       aggregation: cumulative
       monotonic: true
@@ -158,6 +171,8 @@ metrics:
   oracledb.session.hard_parses:
     description: Number of hard parses
     enabled: true
+    attributes:
+      - oracledb.session.id
     sum:
       aggregation: cumulative
       monotonic: true
@@ -166,6 +181,8 @@ metrics:
   oracledb.session.logical_reads:
     description: Number of logical reads
     enabled: true
+    attributes:
+      - oracledb.session.id
     sum:
       aggregation: cumulative
       monotonic: true
@@ -176,6 +193,8 @@ metrics:
       is a check on an object already in the shared pool, to verify that the permissions
       on the underlying object have not changed.
     enabled: true
+    attributes:
+      - oracledb.session.id
     sum:
       aggregation: cumulative
       monotonic: true
@@ -184,12 +203,16 @@ metrics:
   oracledb.session.pga_memory:
     description: PGA size at the end of the interval
     enabled: true
+    attributes:
+      - oracledb.session.id
     gauge:
       value_type: int
     unit: By
   oracledb.session.physical_reads:
     description: Number of physical reads
     enabled: true
+    attributes:
+      - oracledb.session.id
     sum:
       aggregation: cumulative
       monotonic: true
@@ -198,6 +221,8 @@ metrics:
   oracledb.session.soft_parses:
     description: Number of soft parses
     enabled: true
+    attributes:
+      - oracledb.session.id
     sum:
       aggregation: cumulative
       monotonic: true
@@ -208,6 +233,8 @@ metrics:
       generated that reflects the changes made to database blocks must be written
       to disk. Commits often represent the closest thing to a user transaction rate.
     enabled: true
+    attributes:
+      - oracledb.session.id
     sum:
       aggregation: cumulative
       monotonic: true
@@ -217,24 +244,8 @@ metrics:
     description: Number of times users manually issue the ROLLBACK statement or an
       error occurs during a user's transactions
     enabled: true
-    sum:
-      aggregation: cumulative
-      monotonic: true
-      value_type: int
-    unit: 1
-  oracledb.system.execute_count:
-    description: Total number of calls (user and recursive) that executed SQL statements
-    enabled: true
-    sum:
-      aggregation: cumulative
-      monotonic: true
-      value_type: int
-    unit: 1
-  oracledb.system.parse_count_total:
-    description: Total number of parse calls (hard, soft, and describe). A soft parse
-      is a check on an object already in the shared pool, to verify that the permissions
-      on the underlying object have not changed.
-    enabled: true
+    attributes:
+      - oracledb.session.id
     sum:
       aggregation: cumulative
       monotonic: true
@@ -249,16 +260,6 @@ metrics:
     gauge:
       value_type: int
     unit: 1
-  oracledb.system.user_commits:
-    description: Number of user commits. When a user commits a transaction, the redo
-      generated that reflects the changes made to database blocks must be written
-      to disk. Commits often represent the closest thing to a user transaction rate.
-    enabled: true
-    sum:
-      aggregation: cumulative
-      monotonic: true
-      value_type: int
-    unit: 1
   oracledb.system.resource_limits:
     attributes:
       - oracledb.resource.name
@@ -268,16 +269,22 @@ metrics:
     gauge:
       value_type: int
     unit: 1
-
-  oracledb.system.user_rollbacks:
-    description: Number of times users manually issue the ROLLBACK statement or an
-      error occurs during a user's transactions
+  oracledb.tablespace.max_size:
+    attributes:
+      - oracledb.tablespace.name
+    description: Maximum size of tablespace in bytes.
     enabled: true
-    sum:
-      aggregation: cumulative
-      monotonic: true
+    gauge:
       value_type: int
-    unit: 1
+    unit: By
+  oracledb.tablespace.size:
+    attributes:
+      - oracledb.tablespace.name
+    description: Size of tablespace in bytes.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: By
 name: oracledbreceiver
 resource_attributes:
   oracledb.instance.name:
