@@ -37,7 +37,7 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
   - `endpoint` (required if using `listen` mode)
   - `poll_interval` (default `5m`, only relevant using `poll` mode)
   - `page_size` (default `100`)
-    - When in `poll` mode, this is the number of alerts that will be processed per request to the MongoDB Atlas API per project.
+    - When in `poll` mode, this is the number of alerts that will be processed per request to the MongoDB Atlas API.
   - `max_pages` (default `10`)
     - When in `poll` mode, this will limit how many pages of alerts the receiver will request to process the alerts.
   - `projects` (required if using `poll` mode)
