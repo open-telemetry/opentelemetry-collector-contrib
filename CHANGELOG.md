@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+- `opentelemetry-instrumentation-asyncpg` Fix high cardinality in the span name
+  ([#1324](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1324))
+
 ### Added
 
 - `opentelemetry-instrumentation-grpc` add supports to filter requests to instrument. ([#1241](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1241))
@@ -42,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#1208](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1208))
 - `opentelemetry-instrumentation-aiohttp-client` Fix producing additional spans with each newly created ClientSession
 - ([#1246](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1246))
-- Add _is_openetlemetry_instrumented check in _InstrumentedFastAPI class
+- Add _is_opentelemetry_instrumented check in _InstrumentedFastAPI class
   ([#1313](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1313))
 - Fix uninstrumentation of existing app instances in FastAPI
   ([#1258](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1258))
