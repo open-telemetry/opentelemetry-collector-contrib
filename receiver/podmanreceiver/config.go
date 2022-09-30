@@ -37,8 +37,16 @@ type Config struct {
 	SSHKey        string `mapstructure:"ssh_key"`
 	SSHPassphrase string `mapstructure:"ssh_passphrase"`
 
-	// A list of filters whose matching images are to be excluded. Supports literals, globs, and regex.
-	ExcludedImages []string `mapstructure:"excluded_images"`
+	// A map structure to define container filters. Matching images are to be excluded. Supports literals, globs, and regex.
+	Exclude ExcludeConfig `mapstructure:"exclude"`
+}
+
+type ExcludeConfig struct {
+	Container ExcludeContainerConfig `mapstructure:"container"`
+}
+
+type ExcludeContainerConfig struct {
+	Images []string `mapstructure:"images"`
 }
 
 func (config Config) Validate() error {

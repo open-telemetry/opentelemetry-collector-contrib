@@ -49,7 +49,7 @@ type ContainerScraper struct {
 }
 
 func newContainerScraper(engineClient PodmanClient, logger *zap.Logger, config *Config) (*ContainerScraper, error) {
-	excludedImageMatcher, err := matcher.NewStringMatcher(config.ExcludedImages)
+	excludedImageMatcher, err := matcher.NewStringMatcher(config.Exclude.Container.Images)
 	if err != nil {
 		return nil, fmt.Errorf("could not determine podman client excluded images: %w", err)
 	}

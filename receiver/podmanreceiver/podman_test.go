@@ -223,7 +223,11 @@ func TestInspectAndPersistContainer(t *testing.T) {
 
 func TestInvalidExclude(t *testing.T) {
 	config := Config{
-		ExcludedImages: []string{"["},
+		Exclude: ExcludeConfig{
+			ExcludeContainerConfig{
+				Images: []string{"["},
+			},
+		},
 	}
 	cli, err := newContainerScraper(&baseClient, zap.NewNop(), &config)
 	assert.Nil(t, cli)
@@ -244,7 +248,11 @@ func TestLoadContainersWithExclude(t *testing.T) {
 	}
 
 	excludeImagesConfig := Config{
-		ExcludedImages: []string{"*httpd:latest"},
+		Exclude: ExcludeConfig{
+			ExcludeContainerConfig{
+				Images: []string{"*httpd:latest"},
+			},
+		},
 	}
 
 	cli, err := newContainerScraper(&inspectClient, zap.NewNop(), &excludeImagesConfig)
