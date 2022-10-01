@@ -14,7 +14,7 @@ type MockBlobClient struct {
 }
 
 // ReadBlob provides a mock function with given fields: ctx, containerName, blobName
-func (_m *MockBlobClient) ReadBlob(ctx context.Context, containerName string, blobName string) (*bytes.Buffer, error) {
+func (_m *MockBlobClient) readBlob(ctx context.Context, containerName string, blobName string) (*bytes.Buffer, error) {
 	ret := _m.Called(ctx, containerName, blobName)
 
 	var r0 *bytes.Buffer

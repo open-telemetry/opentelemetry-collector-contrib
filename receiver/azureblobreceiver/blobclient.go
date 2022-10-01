@@ -22,22 +22,24 @@ import (
 	"go.uber.org/zap"
 )
 
-type BlobClient interface {
-	ReadBlob(ctx context.Context, containerName string, blobName string) (*bytes.Buffer, error)
+type blobClient interface {
+	readBlob(ctx context.Context, containerName string, blobName string) (*bytes.Buffer, error)
 }
 
-type AzureBlobClient struct {
+type azureBlobClient struct {
 	serviceClient *azblob.ServiceClient
 	logger        *zap.Logger
 }
 
-func (bc *AzureBlobClient) getBlockBlob(containerName string, blobName string) azblob.BlockBlobClient {
+var _ blobClient = (*azureBlobClient)(nil)
+
+func (bc *azureBlobClient) getBlockBlob(containerName string, blobName string) azblob.BlockBlobClient {
 	containerClient := bc.serviceClient.NewContainerClient(containerName)
 
 	return containerClient.NewBlockBlobClient(blobName)
 }
 
-func (bc *AzureBlobClient) ReadBlob(ctx context.Context, containerName string, blobName string) (*bytes.Buffer, error) {
+func (bc *azureBlobClient) readBlob(ctx context.Context, containerName string, blobName string) (*bytes.Buffer, error) {
 	blockBlob := bc.getBlockBlob(containerName, blobName)
 	defer func() {
 		_, blobDeleteErr := blockBlob.Delete(ctx, nil)
@@ -60,13 +62,13 @@ func (bc *AzureBlobClient) ReadBlob(ctx context.Context, containerName string, b
 	return downloadedData, err
 }
 
-func newBlobClient(connectionString string, logger *zap.Logger) (*AzureBlobClient, error) {
+func newBlobClient(connectionString string, logger *zap.Logger) (*azureBlobClient, error) {
 	serviceClient, err := azblob.NewServiceClientFromConnectionString(connectionString, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	return &AzureBlobClient{
+	return &azureBlobClient{
 		&serviceClient,
 		logger,
 	}, nil

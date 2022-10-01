@@ -47,8 +47,8 @@ func TestNewMessageHangdler(t *testing.T) {
 
 	logsDataConsumer := newMockLogsDataConsumer()
 	tracesDataConsumer := newMockTracesDataConsumer()
-	blobEventHandler.SetLogsDataConsumer(logsDataConsumer)
-	blobEventHandler.SetTracesDataConsumer(tracesDataConsumer)
+	blobEventHandler.setLogsDataConsumer(logsDataConsumer)
+	blobEventHandler.setTracesDataConsumer(tracesDataConsumer)
 
 	logEvent := getEvent(logEventData)
 	err := blobEventHandler.newMessageHangdler(context.Background(), logEvent)
@@ -68,7 +68,7 @@ func getEvent(eventData []byte) *eventhub.Event {
 	return &eventhub.Event{Data: eventData}
 }
 
-func getBlobEventHandler(tb testing.TB, blobClient BlobClient) *AzureBlobEventHandler {
+func getBlobEventHandler(tb testing.TB, blobClient blobClient) *azureBlobEventHandler {
 	blobEventHandler := newBlobEventHandler(eventHubString, logsContainerName, tracesContainerName, blobClient, zaptest.NewLogger(tb))
 	return blobEventHandler
 }

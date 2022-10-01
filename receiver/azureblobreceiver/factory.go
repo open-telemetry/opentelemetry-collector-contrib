@@ -76,7 +76,7 @@ func (f *blobReceiverFactory) createLogsReceiver(
 		return nil, err
 	}
 
-	receiver.(LogsDataConsumer).SetNextLogsConsumer(nextConsumer)
+	receiver.(logsDataConsumer).setNextLogsConsumer(nextConsumer)
 
 	return receiver, nil
 }
@@ -95,7 +95,7 @@ func (f *blobReceiverFactory) createTracesReceiver(
 		return nil, err
 	}
 
-	receiver.(TracesDataConsumer).SetNextTracesConsumer(nextConsumer)
+	receiver.(tracesDataConsumer).setNextTracesConsumer(nextConsumer)
 	return receiver, nil
 }
 
@@ -112,14 +112,14 @@ func (f *blobReceiverFactory) getReceiver(
 			return nil
 		}
 
-		var blobEventHandler BlobEventHandler
-		blobEventHandler, err = f.getBlobEventHandler(receiverConfig, set.Logger)
+		var beh blobEventHandler
+		beh, err = f.getBlobEventHandler(receiverConfig, set.Logger)
 		if err != nil {
 			return nil
 		}
 
 		var receiver component.Receiver
-		receiver, err = newReceiver(*receiverConfig, set, blobEventHandler)
+		receiver, err = newReceiver(*receiverConfig, set, beh)
 		return receiver
 	})
 
@@ -130,7 +130,7 @@ func (f *blobReceiverFactory) getReceiver(
 	return r.Unwrap(), err
 }
 
-func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger) (BlobEventHandler, error) {
+func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger) (blobEventHandler, error) {
 	bc, err := newBlobClient(cfg.ConnectionString, logger)
 	if err != nil {
 		logger.Error(err.Error())

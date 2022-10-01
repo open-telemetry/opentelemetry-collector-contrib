@@ -14,7 +14,7 @@ type MockTracesDataConsumer struct {
 }
 
 // ConsumeTracesJSON provides a mock function with given fields: ctx, json
-func (_m *MockTracesDataConsumer) ConsumeTracesJSON(ctx context.Context, json []byte) error {
+func (_m *MockTracesDataConsumer) consumeTracesJSON(ctx context.Context, json []byte) error {
 	ret := _m.Called(ctx, json)
 
 	var r0 error
@@ -28,7 +28,7 @@ func (_m *MockTracesDataConsumer) ConsumeTracesJSON(ctx context.Context, json []
 }
 
 // SetNextTracesConsumer provides a mock function with given fields: nextracesConsumer
-func (_m *MockTracesDataConsumer) SetNextTracesConsumer(nextracesConsumer consumer.Traces) {
+func (_m *MockTracesDataConsumer) setNextTracesConsumer(nextracesConsumer consumer.Traces) {
 	_m.Called(nextracesConsumer)
 }
 

@@ -25,18 +25,18 @@ import (
 	"go.uber.org/zap"
 )
 
-type LogsDataConsumer interface {
-	ConsumeLogsJSON(ctx context.Context, json []byte) error
-	SetNextLogsConsumer(nextLogsConsumer consumer.Logs)
+type logsDataConsumer interface {
+	consumeLogsJSON(ctx context.Context, json []byte) error
+	setNextLogsConsumer(nextLogsConsumer consumer.Logs)
 }
 
-type TracesDataConsumer interface {
-	ConsumeTracesJSON(ctx context.Context, json []byte) error
-	SetNextTracesConsumer(nextracesConsumer consumer.Traces)
+type tracesDataConsumer interface {
+	consumeTracesJSON(ctx context.Context, json []byte) error
+	setNextTracesConsumer(nextracesConsumer consumer.Traces)
 }
 
 type blobReceiver struct {
-	blobEventHandler   BlobEventHandler
+	blobEventHandler   blobEventHandler
 	logger             *zap.Logger
 	logsUnmarshaler    plog.Unmarshaler
 	tracesUnmarshaler  ptrace.Unmarshaler
@@ -47,28 +47,28 @@ type blobReceiver struct {
 
 func (b *blobReceiver) Start(ctx context.Context, host component.Host) error {
 
-	b.blobEventHandler.SetLogsDataConsumer(b)
-	b.blobEventHandler.SetTracesDataConsumer(b)
+	b.blobEventHandler.setLogsDataConsumer(b)
+	b.blobEventHandler.setTracesDataConsumer(b)
 
-	err := b.blobEventHandler.Run(ctx)
+	err := b.blobEventHandler.run(ctx)
 
 	return err
 }
 
 func (b *blobReceiver) Shutdown(ctx context.Context) error {
-	b.blobEventHandler.Close(ctx)
+	b.blobEventHandler.close(ctx)
 
 	return nil
 }
-func (b *blobReceiver) SetNextLogsConsumer(nextLogsConsumer consumer.Logs) {
+func (b *blobReceiver) setNextLogsConsumer(nextLogsConsumer consumer.Logs) {
 	b.nextLogsConsumer = nextLogsConsumer
 }
 
-func (b *blobReceiver) SetNextTracesConsumer(nextTracesConsumer consumer.Traces) {
+func (b *blobReceiver) setNextTracesConsumer(nextTracesConsumer consumer.Traces) {
 	b.nextTracesConsumer = nextTracesConsumer
 }
 
-func (b *blobReceiver) ConsumeLogsJSON(ctx context.Context, json []byte) error {
+func (b *blobReceiver) consumeLogsJSON(ctx context.Context, json []byte) error {
 
 	if b.nextLogsConsumer == nil {
 		return nil
@@ -88,7 +88,7 @@ func (b *blobReceiver) ConsumeLogsJSON(ctx context.Context, json []byte) error {
 	return err
 }
 
-func (b *blobReceiver) ConsumeTracesJSON(ctx context.Context, json []byte) error {
+func (b *blobReceiver) consumeTracesJSON(ctx context.Context, json []byte) error {
 	if b.nextTracesConsumer == nil {
 		return nil
 	}
@@ -108,7 +108,7 @@ func (b *blobReceiver) ConsumeTracesJSON(ctx context.Context, json []byte) error
 }
 
 // Returns a new instance of the log receiver
-func newReceiver(config Config, set component.ReceiverCreateSettings, blobEventHandler BlobEventHandler) (component.Receiver, error) {
+func newReceiver(config Config, set component.ReceiverCreateSettings, blobEventHandler blobEventHandler) (component.Receiver, error) {
 	blobReceiver := &blobReceiver{
 		blobEventHandler:  blobEventHandler,
 		logger:            set.Logger,

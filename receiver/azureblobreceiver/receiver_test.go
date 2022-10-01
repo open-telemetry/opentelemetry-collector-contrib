@@ -42,12 +42,12 @@ func TestConsumeLogsJSON(t *testing.T) {
 	receiver, _ := getBlobReceiver()
 
 	logsSink := new(consumertest.LogsSink)
-	logsConsumer, ok := receiver.(LogsDataConsumer)
+	logsConsumer, ok := receiver.(logsDataConsumer)
 	require.True(t, ok)
 
-	logsConsumer.SetNextLogsConsumer(logsSink)
+	logsConsumer.setNextLogsConsumer(logsSink)
 
-	err := logsConsumer.ConsumeLogsJSON(context.Background(), logsJSON)
+	err := logsConsumer.consumeLogsJSON(context.Background(), logsJSON)
 	require.NoError(t, err)
 	assert.Equal(t, logsSink.LogRecordCount(), 1)
 }
@@ -56,12 +56,12 @@ func TestConsumeTracesJSON(t *testing.T) {
 	receiver, _ := getBlobReceiver()
 
 	tracesSink := new(consumertest.TracesSink)
-	tracesConsumer, ok := receiver.(TracesDataConsumer)
+	tracesConsumer, ok := receiver.(tracesDataConsumer)
 	require.True(t, ok)
 
-	tracesConsumer.SetNextTracesConsumer(tracesSink)
+	tracesConsumer.setNextTracesConsumer(tracesSink)
 
-	err := tracesConsumer.ConsumeTracesJSON(context.Background(), tracesJSON)
+	err := tracesConsumer.consumeTracesJSON(context.Background(), tracesJSON)
 	require.NoError(t, err)
 	assert.Equal(t, tracesSink.SpanCount(), 2)
 }

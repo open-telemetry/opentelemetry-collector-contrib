@@ -24,17 +24,17 @@ import (
 	"go.uber.org/zap"
 )
 
-type BlobEventHandler interface {
-	Run(ctx context.Context) error
-	Close(ctx context.Context) error
-	SetLogsDataConsumer(logsDataConsumer LogsDataConsumer)
-	SetTracesDataConsumer(tracesDataConsumer TracesDataConsumer)
+type blobEventHandler interface {
+	run(ctx context.Context) error
+	close(ctx context.Context) error
+	setLogsDataConsumer(logsDataConsumer logsDataConsumer)
+	setTracesDataConsumer(tracesDataConsumer tracesDataConsumer)
 }
 
-type AzureBlobEventHandler struct {
-	blobClient               BlobClient
-	logsDataConsumer         LogsDataConsumer
-	tracesDataConsumer       TracesDataConsumer
+type azureBlobEventHandler struct {
+	blobClient               blobClient
+	logsDataConsumer         logsDataConsumer
+	tracesDataConsumer       tracesDataConsumer
 	logsContainerName        string
 	tracesContainerName      string
 	eventHubSonnectionString string
@@ -42,11 +42,13 @@ type AzureBlobEventHandler struct {
 	logger                   *zap.Logger
 }
 
+var _ blobEventHandler = (*azureBlobEventHandler)(nil)
+
 const (
 	blobCreatedEventType = "Microsoft.Storage.BlobCreated"
 )
 
-func (p *AzureBlobEventHandler) Run(ctx context.Context) error {
+func (p *azureBlobEventHandler) run(ctx context.Context) error {
 
 	if p.hub != nil {
 		return nil
@@ -74,7 +76,7 @@ func (p *AzureBlobEventHandler) Run(ctx context.Context) error {
 	return nil
 }
 
-func (p *AzureBlobEventHandler) newMessageHangdler(ctx context.Context, event *eventhub.Event) error {
+func (p *azureBlobEventHandler) newMessageHangdler(ctx context.Context, event *eventhub.Event) error {
 	p.logger.Debug(fmt.Sprintf("New event: %s", string(event.Data)))
 
 	var eventDataSlice []map[string]interface{}
@@ -93,7 +95,7 @@ func (p *AzureBlobEventHandler) newMessageHangdler(ctx context.Context, event *e
 	p.logger.Debug(fmt.Sprintf("blobName: %s", blobName))
 
 	if eventType == blobCreatedEventType {
-		blobData, err := p.blobClient.ReadBlob(ctx, containerName, blobName)
+		blobData, err := p.blobClient.readBlob(ctx, containerName, blobName)
 
 		if err != nil {
 			p.logger.Error(err.Error())
@@ -101,13 +103,13 @@ func (p *AzureBlobEventHandler) newMessageHangdler(ctx context.Context, event *e
 		}
 		switch {
 		case containerName == p.logsContainerName:
-			err = p.logsDataConsumer.ConsumeLogsJSON(ctx, blobData.Bytes())
+			err = p.logsDataConsumer.consumeLogsJSON(ctx, blobData.Bytes())
 			if err != nil {
 				p.logger.Error(err.Error())
 				return err
 			}
 		case containerName == p.tracesContainerName:
-			err = p.tracesDataConsumer.ConsumeTracesJSON(ctx, blobData.Bytes())
+			err = p.tracesDataConsumer.consumeTracesJSON(ctx, blobData.Bytes())
 			if err != nil {
 				p.logger.Error(err.Error())
 				return err
@@ -120,7 +122,7 @@ func (p *AzureBlobEventHandler) newMessageHangdler(ctx context.Context, event *e
 	return nil
 }
 
-func (p *AzureBlobEventHandler) Close(ctx context.Context) error {
+func (p *azureBlobEventHandler) close(ctx context.Context) error {
 
 	if p.hub != nil {
 		err := p.hub.Close(ctx)
@@ -132,16 +134,16 @@ func (p *AzureBlobEventHandler) Close(ctx context.Context) error {
 	return nil
 }
 
-func (p *AzureBlobEventHandler) SetLogsDataConsumer(logsDataConsumer LogsDataConsumer) {
+func (p *azureBlobEventHandler) setLogsDataConsumer(logsDataConsumer logsDataConsumer) {
 	p.logsDataConsumer = logsDataConsumer
 }
 
-func (p *AzureBlobEventHandler) SetTracesDataConsumer(tracesDataConsumer TracesDataConsumer) {
+func (p *azureBlobEventHandler) setTracesDataConsumer(tracesDataConsumer tracesDataConsumer) {
 	p.tracesDataConsumer = tracesDataConsumer
 }
 
-func newBlobEventHandler(eventHubSonnectionString string, logsContainerName string, tracesContainerName string, blobClient BlobClient, logger *zap.Logger) *AzureBlobEventHandler {
-	return &AzureBlobEventHandler{
+func newBlobEventHandler(eventHubSonnectionString string, logsContainerName string, tracesContainerName string, blobClient blobClient, logger *zap.Logger) *azureBlobEventHandler {
+	return &azureBlobEventHandler{
 		blobClient:               blobClient,
 		logsContainerName:        logsContainerName,
 		tracesContainerName:      tracesContainerName,
