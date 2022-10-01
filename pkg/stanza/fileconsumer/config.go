@@ -15,7 +15,6 @@
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
-	"bufio"
 	"fmt"
 	"time"
 
@@ -30,30 +29,20 @@ const (
 	defaultMaxConcurrentFiles = 1024
 )
 
-type Option func(cfg *Config)
-
-func WithCustomizedSplitter(splitter bufio.SplitFunc) Option {
-	return func(cfg *Config) {
-		cfg.Splitter.SetCustomizedSplitter(splitter)
-	}
-}
-
 // NewConfig creates a new input config with default values
-func NewConfig(opts ...Option) *Config {
+func NewConfig() *Config {
 	cfg := &Config{
 		IncludeFileName:         true,
 		IncludeFilePath:         false,
 		IncludeFileNameResolved: false,
 		IncludeFilePathResolved: false,
 		PollInterval:            200 * time.Millisecond,
-		Splitter:                helper.NewSplitterConfig(),
 		StartAt:                 "end",
 		FingerprintSize:         DefaultFingerprintSize,
 		MaxLogSize:              defaultMaxLogSize,
 		MaxConcurrentFiles:      defaultMaxConcurrentFiles,
-	}
-	for _, op := range opts {
-		op(cfg)
+		EncodingConfig:          helper.NewEncodingConfig(),
+		Flusher:                 helper.NewFlusherConfig(),
 	}
 	return cfg
 }
@@ -70,11 +59,12 @@ type Config struct {
 	FingerprintSize         helper.ByteSize       `mapstructure:"fingerprint_size,omitempty"`
 	MaxLogSize              helper.ByteSize       `mapstructure:"max_log_size,omitempty"`
 	MaxConcurrentFiles      int                   `mapstructure:"max_concurrent_files,omitempty"`
-	Splitter                helper.SplitterConfig `mapstructure:",squash,omitempty"`
+	EncodingConfig          helper.EncodingConfig `mapstructure:",squash,omitempty"`
+	Flusher                 helper.FlusherConfig  `mapstructure:",squash,omitempty"`
 }
 
 // Build will build a file input operator from the supplied configuration
-func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error) {
+func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc, opts ...Option) (*Manager, error) {
 	if emit == nil {
 		return nil, fmt.Errorf("must provide emit function")
 	}
@@ -113,8 +103,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 		return nil, fmt.Errorf("`fingerprint_size` must be at least %d bytes", MinFingerprintSize)
 	}
 
-	// Ensure that splitter is buildable
-	_, err := c.Splitter.Build(false, int(c.MaxLogSize))
+	_, err := c.EncodingConfig.Build()
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +118,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 		return nil, fmt.Errorf("invalid start_at location '%s'", c.StartAt)
 	}
 
-	return &Manager{
+	m := &Manager{
 		SugaredLogger: logger.With("component", "fileconsumer"),
 		cancel:        func() {},
 		readerFactory: readerFactory{
@@ -139,8 +128,12 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 				maxLogSize:      int(c.MaxLogSize),
 				emit:            emit,
 			},
-			fromBeginning:  startAtBeginning,
-			splitterConfig: c.Splitter,
+			fromBeginning: startAtBeginning,
+			splitterFactory: splitterFactory{
+				EncodingConfig: c.EncodingConfig,
+				Flusher:        c.Flusher,
+				SplitFunc:      helper.SplitNone(int(c.MaxLogSize)),
+			},
 		},
 		finder:        c.Finder,
 		roller:        newRoller(),
@@ -148,5 +141,9 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 		maxBatchFiles: c.MaxConcurrentFiles / 2,
 		knownFiles:    make([]*Reader, 0, 10),
 		seenPaths:     make(map[string]struct{}, 100),
-	}, nil
+	}
+	for _, op := range opts {
+		op(m)
+	}
+	return m, nil
 }

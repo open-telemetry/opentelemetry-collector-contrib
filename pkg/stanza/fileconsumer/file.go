@@ -15,6 +15,7 @@
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -29,6 +30,17 @@ import (
 )
 
 type EmitFunc func(ctx context.Context, attrs *FileAttributes, token []byte)
+
+type Option func(m *Manager)
+
+func WithCustomizedSplitter(splitter bufio.SplitFunc) Option {
+	return func(m *Manager) {
+		if splitter == nil {
+			return
+		}
+		m.readerFactory.splitterFactory.SplitFunc = splitter
+	}
+}
 
 type Manager struct {
 	*zap.SugaredLogger

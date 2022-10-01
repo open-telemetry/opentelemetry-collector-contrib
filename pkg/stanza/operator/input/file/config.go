@@ -15,6 +15,8 @@
 package file // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
 
 import (
+	"bufio"
+
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
@@ -36,15 +38,17 @@ func NewConfig() *Config {
 // NewConfigWithID creates a new input config with default values
 func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, operatorType),
-		Config:      *fileconsumer.NewConfig(),
+		InputConfig:     helper.NewInputConfig(operatorID, operatorType),
+		Config:          *fileconsumer.NewConfig(),
+		MultilineConfig: helper.NewMultilineConfig(),
 	}
 }
 
 // Config is the configuration of a file input operator
 type Config struct {
-	helper.InputConfig  `mapstructure:",squash"`
-	fileconsumer.Config `mapstructure:",squash"`
+	helper.InputConfig     `mapstructure:",squash"`
+	fileconsumer.Config    `mapstructure:",squash"`
+	helper.MultilineConfig `mapstructure:"multiline,omitempty"`
 }
 
 // Build will build a file input operator from the supplied configuration
@@ -71,7 +75,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	var toBody toBodyFunc = func(token []byte) interface{} {
 		return string(token)
 	}
-	if helper.IsNop(c.Config.Splitter.EncodingConfig.Encoding) {
+	if helper.IsNop(c.Config.EncodingConfig.Encoding) {
 		toBody = func(token []byte) interface{} {
 			return token
 		}
@@ -82,11 +86,30 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		toBody:         toBody,
 		preEmitOptions: preEmitOptions,
 	}
-
-	input.fileConsumer, err = c.Config.Build(logger, input.emit)
+	var splitter bufio.SplitFunc
+	if c.LineStartPattern != "" || c.LineEndPattern != "" {
+		splitter, err = c.buildMultilineSplitter()
+		if err != nil {
+			return nil, err
+		}
+	}
+	input.fileConsumer, err = c.Config.Build(logger, input.emit, fileconsumer.WithCustomizedSplitter(splitter))
 	if err != nil {
 		return nil, err
 	}
 
 	return input, nil
+}
+
+func (c Config) buildMultilineSplitter() (bufio.SplitFunc, error) {
+	enc, err := c.EncodingConfig.Build()
+	if err != nil {
+		return nil, err
+	}
+	flusher := c.Flusher.Build()
+	splitter, err := c.MultilineConfig.Build(enc.Encoding, false, flusher, int(c.MaxLogSize))
+	if err != nil {
+		return nil, err
+	}
+	return splitter, nil
 }

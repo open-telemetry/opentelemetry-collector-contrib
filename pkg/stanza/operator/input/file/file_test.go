@@ -261,7 +261,7 @@ func TestReadUsingNopEncoding(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 				cfg.MaxLogSize = 8
-				cfg.Splitter.EncodingConfig.Encoding = "nop"
+				cfg.EncodingConfig.Encoding = "nop"
 			}, nil)
 			// Create a file, then start
 			temp := openTemp(t, tempDir)
@@ -341,7 +341,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 				cfg.MaxLogSize = tc.maxLogSize
-				cfg.Splitter.EncodingConfig.Encoding = "nop"
+				cfg.EncodingConfig.Encoding = "nop"
 			}, nil)
 			// Create a file, then start
 			temp := openTemp(t, tempDir)
@@ -461,8 +461,10 @@ func TestStartAtEndNewFile(t *testing.T) {
 func TestNoNewline(t *testing.T) {
 	t.Parallel()
 	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
-		cfg.Splitter = helper.NewSplitterConfig()
-		cfg.Splitter.Flusher.Period = time.Nanosecond
+		cfg.MultilineConfig = helper.NewMultilineConfig()
+		cfg.EncodingConfig = helper.NewEncodingConfig()
+		cfg.Flusher = helper.NewFlusherConfig()
+		cfg.Flusher.Period = time.Nanosecond
 	}, nil)
 
 	temp := openTemp(t, tempDir)

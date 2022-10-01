@@ -24,9 +24,9 @@ import (
 
 type readerFactory struct {
 	*zap.SugaredLogger
-	readerConfig   *readerConfig
-	fromBeginning  bool
-	splitterConfig helper.SplitterConfig
+	readerConfig    *readerConfig
+	fromBeginning   bool
+	splitterFactory splitterFactory
 }
 
 func (f *readerFactory) newReader(file *os.File, fp *Fingerprint) (*Reader, error) {
@@ -95,7 +95,7 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 	if b.splitter != nil {
 		r.splitter = b.splitter
 	} else {
-		r.splitter, err = b.splitterConfig.Build(false, b.readerConfig.maxLogSize)
+		r.splitter, err = b.splitterFactory.Build()
 		if err != nil {
 			return
 		}
