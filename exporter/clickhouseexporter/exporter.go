@@ -37,12 +37,13 @@ type clickhouseExporter struct {
 	cfg    *Config
 }
 
-func newExporter(logger *zap.Logger, cfg *Config) (*clickhouseExporter, error) {
+func newExporter(logger *zap.Logger, cfg *Config, createLogsTable, createTracesTable bool) (
+	*clickhouseExporter, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
 
-	client, err := newClickhouseClient(cfg)
+	client, err := newClickhouseClient(cfg, createLogsTable, createTracesTable)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +178,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 var driverName = "clickhouse" // for testing
 
 // newClickhouseClient create a clickhouse client.
-func newClickhouseClient(cfg *Config) (*sql.DB, error) {
+func newClickhouseClient(cfg *Config, createLogsTable, createTracesTable bool) (*sql.DB, error) {
 	// create database
 	if err := createDatabase(cfg); err != nil {
 		return nil, err
@@ -187,17 +188,21 @@ func newClickhouseClient(cfg *Config) (*sql.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("sql.Open:%w", err)
 	}
-	if _, err := db.Exec(renderCreateLogsTableSQL(cfg)); err != nil {
-		return nil, fmt.Errorf("exec create logs table sql: %w", err)
+	if createLogsTable {
+		if _, err := db.Exec(renderCreateLogsTableSQL(cfg)); err != nil {
+			return nil, fmt.Errorf("exec create logs table sql: %w", err)
+		}
 	}
-	if _, err := db.Exec(renderCreateTracesTableSQL(cfg)); err != nil {
-		return nil, fmt.Errorf("exec create traces table sql: %w", err)
-	}
-	if _, err := db.Exec(renderCreateTraceIDTsTableSQL(cfg)); err != nil {
-		return nil, fmt.Errorf("exec create traceIDTs table sql: %w", err)
-	}
-	if _, err := db.Exec(renderTraceIDTsMaterializedViewSQL(cfg)); err != nil {
-		return nil, fmt.Errorf("exec create traceIDTs view sql: %w", err)
+	if createTracesTable {
+		if _, err := db.Exec(renderCreateTracesTableSQL(cfg)); err != nil {
+			return nil, fmt.Errorf("exec create traces table sql: %w", err)
+		}
+		if _, err := db.Exec(renderCreateTraceIDTsTableSQL(cfg)); err != nil {
+			return nil, fmt.Errorf("exec create traceIDTs table sql: %w", err)
+		}
+		if _, err := db.Exec(renderTraceIDTsMaterializedViewSQL(cfg)); err != nil {
+			return nil, fmt.Errorf("exec create traceIDTs view sql: %w", err)
+		}
 	}
 	return db, nil
 }

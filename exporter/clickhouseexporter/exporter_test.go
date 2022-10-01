@@ -70,7 +70,7 @@ func TestExporter_New(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 
-			exporter, err := newExporter(zap.NewNop(), test.config)
+			exporter, err := newExporter(zap.NewNop(), test.config, true, true)
 			if exporter != nil {
 				defer func() {
 					require.NoError(t, exporter.Shutdown(context.TODO()))
@@ -102,7 +102,7 @@ func TestExporter_pushLogsData(t *testing.T) {
 }
 
 func newTestExporter(t *testing.T, dsn string, fns ...func(*Config)) *clickhouseExporter {
-	exporter, err := newExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
+	exporter, err := newExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn), true, true)
 	require.NoError(t, err)
 
 	t.Cleanup(func() { _ = exporter.Shutdown(context.TODO()) })
