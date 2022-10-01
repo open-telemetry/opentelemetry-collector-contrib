@@ -44,7 +44,7 @@ func (bc *azureBlobClient) readBlob(ctx context.Context, containerName string, b
 	defer func() {
 		_, blobDeleteErr := blockBlob.Delete(ctx, nil)
 		if blobDeleteErr != nil {
-			bc.logger.Error(blobDeleteErr.Error())
+			bc.logger.Error("failed to delete blob", zap.Error(blobDeleteErr))
 		}
 	}()
 
