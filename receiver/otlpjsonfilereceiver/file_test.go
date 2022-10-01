@@ -131,11 +131,12 @@ func testdataConfigYamlAsMap() *Config {
 			IncludeFileNameResolved: false,
 			IncludeFilePathResolved: false,
 			PollInterval:            200 * time.Millisecond,
-			Splitter:                helper.NewSplitterConfig(),
 			StartAt:                 "end",
 			FingerprintSize:         1000,
 			MaxLogSize:              1024 * 1024,
 			MaxConcurrentFiles:      1024,
+			EncodingConfig:          helper.NewEncodingConfig(),
+			Flusher:                 helper.NewFlusherConfig(),
 			Finder: fileconsumer.Finder{
 				Include: []string{"/var/log/*.log"},
 				Exclude: []string{"/var/log/example.log"},
