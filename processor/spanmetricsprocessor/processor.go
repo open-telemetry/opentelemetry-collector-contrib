@@ -356,7 +356,7 @@ func (p *processorImp) aggregateMetrics(traces ptrace.Traces) {
 		if !ok {
 			continue
 		}
-		serviceName := attr.StringVal()
+		serviceName := attr.Str()
 		p.aggregateMetricsForServiceSpans(rspans, serviceName)
 	}
 }

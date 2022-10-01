@@ -61,7 +61,7 @@ func TestMongoeventToLogData4_4(t *testing.T) {
 	assertInt(t, attrs, "connectionId", 9052)
 
 	assert.Equal(t, pcommon.Timestamp(1663006227215000000), lr.Timestamp())
-	assert.Equal(t, "RAW MESSAGE", lr.Body().StringVal())
+	assert.Equal(t, "RAW MESSAGE", lr.Body().Str())
 	assert.Equal(t, "I", lr.SeverityText())
 	assert.Equal(t, plog.SeverityNumberInfo, lr.SeverityNumber())
 }
@@ -97,7 +97,7 @@ func TestMongoeventToLogData4_2(t *testing.T) {
 	_, exists := attrs.Get("id")
 	assert.False(t, exists, "expected attribute id to not exist, but it did")
 
-	assert.Equal(t, "RAW MESSAGE", lr.Body().StringVal())
+	assert.Equal(t, "RAW MESSAGE", lr.Body().Str())
 	assert.Equal(t, "I", lr.SeverityText())
 	assert.Equal(t, plog.SeverityNumberInfo, lr.SeverityNumber())
 }
@@ -154,24 +154,24 @@ func TestMongoEventToAuditLogData5_0(t *testing.T) {
 
 	roles, ok := attrs.Get("roles")
 	require.True(t, ok, "roles key does not exist")
-	require.Equal(t, roles.SliceVal().Len(), 1)
-	assertString(t, roles.SliceVal().At(0).MapVal(), "role", "test_role")
-	assertString(t, roles.SliceVal().At(0).MapVal(), "db", "test_db")
+	require.Equal(t, roles.Slice().Len(), 1)
+	assertString(t, roles.Slice().At(0).Map(), "role", "test_role")
+	assertString(t, roles.Slice().At(0).Map(), "db", "test_db")
 
 	users, ok := attrs.Get("users")
 	require.True(t, ok, "users key does not exist")
-	require.Equal(t, users.SliceVal().Len(), 1)
-	assertString(t, users.SliceVal().At(0).MapVal(), "user", "mongo_user")
-	assertString(t, users.SliceVal().At(0).MapVal(), "db", "my_db")
+	require.Equal(t, users.Slice().Len(), 1)
+	assertString(t, users.Slice().At(0).Map(), "user", "mongo_user")
+	assertString(t, users.Slice().At(0).Map(), "db", "my_db")
 
 	param, ok := attrs.Get("param")
 	require.True(t, ok, "param key does not exist")
-	assert.Equal(t, mongoevent.Param, param.MapVal().AsRaw())
+	assert.Equal(t, mongoevent.Param, param.Map().AsRaw())
 
 	assert.Equal(t, pcommon.Timestamp(1663342012563000000), lr.Timestamp())
 	assert.Equal(t, plog.SeverityNumberInfo, lr.SeverityNumber())
 	assert.Equal(t, "INFO", lr.SeverityText())
-	assert.Equal(t, "RAW MESSAGE", lr.Body().StringVal())
+	assert.Equal(t, "RAW MESSAGE", lr.Body().Str())
 }
 
 func TestMongoEventToAuditLogData4_2(t *testing.T) {
@@ -207,24 +207,24 @@ func TestMongoEventToAuditLogData4_2(t *testing.T) {
 
 	roles, ok := attrs.Get("roles")
 	require.True(t, ok, "roles key does not exist")
-	require.Equal(t, roles.SliceVal().Len(), 1)
-	assertString(t, roles.SliceVal().At(0).MapVal(), "role", "test_role")
-	assertString(t, roles.SliceVal().At(0).MapVal(), "db", "test_db")
+	require.Equal(t, roles.Slice().Len(), 1)
+	assertString(t, roles.Slice().At(0).Map(), "role", "test_role")
+	assertString(t, roles.Slice().At(0).Map(), "db", "test_db")
 
 	users, ok := attrs.Get("users")
 	require.True(t, ok, "users key does not exist")
-	require.Equal(t, users.SliceVal().Len(), 1)
-	assertString(t, users.SliceVal().At(0).MapVal(), "user", "mongo_user")
-	assertString(t, users.SliceVal().At(0).MapVal(), "db", "my_db")
+	require.Equal(t, users.Slice().Len(), 1)
+	assertString(t, users.Slice().At(0).Map(), "user", "mongo_user")
+	assertString(t, users.Slice().At(0).Map(), "db", "my_db")
 
 	param, ok := attrs.Get("param")
 	require.True(t, ok, "param key does not exist")
-	assert.Equal(t, mongoevent.Param, param.MapVal().AsRaw())
+	assert.Equal(t, mongoevent.Param, param.Map().AsRaw())
 
 	assert.Equal(t, pcommon.Timestamp(1663342012563000000), lr.Timestamp())
 	assert.Equal(t, plog.SeverityNumberInfo, lr.SeverityNumber())
 	assert.Equal(t, "INFO", lr.SeverityText())
-	assert.Equal(t, "RAW MESSAGE", lr.Body().StringVal())
+	assert.Equal(t, "RAW MESSAGE", lr.Body().Str())
 }
 
 func GetTestEvent4_4() model.LogEntry {
@@ -342,11 +342,11 @@ func assertString(t *testing.T, m pcommon.Map, key, expected string) {
 		return
 	}
 
-	if v.Type() != pcommon.ValueTypeString {
+	if v.Type() != pcommon.ValueTypeStr {
 		assert.Fail(t, "Value for key %s was expected be STRING but was %s", key, v.Type().String())
 	}
 
-	assert.Equal(t, expected, v.StringVal())
+	assert.Equal(t, expected, v.Str())
 }
 
 func assertInt(t *testing.T, m pcommon.Map, key string, expected int64) {
@@ -362,7 +362,7 @@ func assertInt(t *testing.T, m pcommon.Map, key string, expected int64) {
 		assert.Fail(t, "Value for key %s was expected be INT but was %s", key, v.Type().String())
 	}
 
-	assert.Equal(t, expected, v.IntVal())
+	assert.Equal(t, expected, v.Int())
 }
 
 func assertBool(t *testing.T, m pcommon.Map, key string, expected bool) {
@@ -378,5 +378,5 @@ func assertBool(t *testing.T, m pcommon.Map, key string, expected bool) {
 		assert.Fail(t, "Value for key %s was expected be BOOL but was %s", key, v.Type().String())
 	}
 
-	assert.Equal(t, expected, v.BoolVal())
+	assert.Equal(t, expected, v.Bool())
 }

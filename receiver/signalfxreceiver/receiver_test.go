@@ -681,7 +681,7 @@ func Test_sfxReceiver_DatapointAccessTokenPassthrough(t *testing.T) {
 			resource := mds[0].ResourceMetrics().At(0).Resource()
 			tokenLabel := ""
 			if label, ok := resource.Attributes().Get("com.splunk.signalfx.access_token"); ok {
-				tokenLabel = label.StringVal()
+				tokenLabel = label.Str()
 			}
 
 			if tt.passthrough {
@@ -758,7 +758,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 
 			tokenLabel := ""
 			if accessTokenAttr, ok := got[0].ResourceLogs().At(0).Resource().Attributes().Get("com.splunk.signalfx.access_token"); ok {
-				tokenLabel = accessTokenAttr.StringVal()
+				tokenLabel = accessTokenAttr.Str()
 			}
 
 			if tt.passthrough {

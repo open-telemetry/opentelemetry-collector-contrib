@@ -61,22 +61,22 @@ func (r rawMarshaler) Marshal(logs plog.Logs, topic string) ([]*sarama.ProducerM
 
 func (r rawMarshaler) logBodyAsBytes(value pcommon.Value) ([]byte, error) {
 	switch value.Type() {
-	case pcommon.ValueTypeString:
-		return r.interfaceAsBytes(value.StringVal())
+	case pcommon.ValueTypeStr:
+		return r.interfaceAsBytes(value.Str())
 	case pcommon.ValueTypeBytes:
-		return value.BytesVal().AsRaw(), nil
+		return value.Bytes().AsRaw(), nil
 	case pcommon.ValueTypeBool:
-		return r.interfaceAsBytes(value.BoolVal())
+		return r.interfaceAsBytes(value.Bool())
 	case pcommon.ValueTypeDouble:
-		return r.interfaceAsBytes(value.DoubleVal())
+		return r.interfaceAsBytes(value.Double())
 	case pcommon.ValueTypeInt:
-		return r.interfaceAsBytes(value.IntVal())
+		return r.interfaceAsBytes(value.Int())
 	case pcommon.ValueTypeEmpty:
 		return []byte{}, nil
 	case pcommon.ValueTypeSlice:
-		return r.interfaceAsBytes(value.SliceVal().AsRaw())
+		return r.interfaceAsBytes(value.Slice().AsRaw())
 	case pcommon.ValueTypeMap:
-		return r.interfaceAsBytes(value.MapVal().AsRaw())
+		return r.interfaceAsBytes(value.Map().AsRaw())
 	default:
 		return nil, errUnsupported
 	}

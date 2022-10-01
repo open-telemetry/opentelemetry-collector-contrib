@@ -61,7 +61,7 @@ func (mvt *ValueType) UnmarshalText(text []byte) error {
 	case "":
 		mvt.ValueType = pcommon.ValueTypeEmpty
 	case "string":
-		mvt.ValueType = pcommon.ValueTypeString
+		mvt.ValueType = pcommon.ValueTypeStr
 	case "int":
 		mvt.ValueType = pcommon.ValueTypeInt
 	case "double":
@@ -84,7 +84,7 @@ func (mvt ValueType) String() string {
 // Primitive returns name of primitive type for the ValueType.
 func (mvt ValueType) Primitive() string {
 	switch mvt.ValueType {
-	case pcommon.ValueTypeString:
+	case pcommon.ValueTypeStr:
 		return "string"
 	case pcommon.ValueTypeInt:
 		return "int64"

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
-func Set(target ottl.Setter, value ottl.Getter) (ottl.ExprFunc, error) {
-	return func(ctx ottl.TransformContext) interface{} {
+func Set[K any](target ottl.Setter[K], value ottl.Getter[K]) (ottl.ExprFunc[K], error) {
+	return func(ctx K) interface{} {
 		val := value.Get(ctx)
 
 		// No fields currently support `null` as a valid type.

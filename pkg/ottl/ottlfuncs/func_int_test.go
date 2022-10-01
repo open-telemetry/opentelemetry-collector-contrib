@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_Int(t *testing.T) {
@@ -82,16 +82,13 @@ func Test_Int(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := ottltest.TestTransformContext{}
-
-			exprFunc, _ := Int(&ottl.StandardGetSetter{
-				Getter: func(_ ottl.TransformContext) interface{} {
+			exprFunc, err := Int[interface{}](&ottl.StandardGetSetter[interface{}]{
+				Getter: func(interface{}) interface{} {
 					return tt.value
 				},
 			})
-			actual := exprFunc(ctx)
-
-			assert.Equal(t, tt.expected, actual)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, exprFunc(nil))
 		})
 	}
 }

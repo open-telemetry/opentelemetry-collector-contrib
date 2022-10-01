@@ -213,7 +213,7 @@ func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T)
 	assert.False(t, ok, "routing attribute should have been dropped")
 	v, ok := attrs.Get("attr")
 	assert.True(t, ok, "non routing attributes shouldn't be dropped")
-	assert.Equal(t, "acme", v.StringVal())
+	assert.Equal(t, "acme", v.Str())
 }
 
 func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {

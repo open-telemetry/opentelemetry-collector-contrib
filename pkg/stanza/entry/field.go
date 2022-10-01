@@ -33,6 +33,11 @@ type Field struct {
 	FieldInterface
 }
 
+// RootableField is a Field that may refer directly to "attributes" or "resource"
+type RootableField struct {
+	Field
+}
+
 // FieldInterface is a field on an entry.
 type FieldInterface interface {
 	Get(*Entry) (interface{}, bool)
@@ -52,6 +57,18 @@ func (f *Field) UnmarshalJSON(raw []byte) error {
 	return err
 }
 
+// UnmarshalJSON will unmarshal a field from JSON
+func (r *RootableField) UnmarshalJSON(raw []byte) error {
+	var s string
+	err := json.Unmarshal(raw, &s)
+	if err != nil {
+		return err
+	}
+	field, err := newField(s, true)
+	*r = RootableField{Field: field}
+	return err
+}
+
 // UnmarshalYAML will unmarshal a field from YAML
 func (f *Field) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var s string
@@ -63,6 +80,18 @@ func (f *Field) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return err
 }
 
+// UnmarshalYAML will unmarshal a field from YAML
+func (r *RootableField) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var s string
+	err := unmarshal(&s)
+	if err != nil {
+		return err
+	}
+	field, err := newField(s, true)
+	*r = RootableField{Field: field}
+	return err
+}
+
 // UnmarshalText will unmarshal a field from text
 func (f *Field) UnmarshalText(text []byte) error {
 	field, err := NewField(string(text))
@@ -70,7 +99,18 @@ func (f *Field) UnmarshalText(text []byte) error {
 	return err
 }
 
+// UnmarshalText will unmarshal a field from text
+func (r *RootableField) UnmarshalText(text []byte) error {
+	field, err := newField(string(text), true)
+	*r = RootableField{Field: field}
+	return err
+}
+
 func NewField(s string) (Field, error) {
+	return newField(s, false)
+}
+
+func newField(s string, rootable bool) (Field, error) {
 	keys, err := fromJSONDot(s)
 	if err != nil {
 		return Field{}, fmt.Errorf("splitting field: %w", err)
@@ -78,12 +118,12 @@ func NewField(s string) (Field, error) {
 
 	switch keys[0] {
 	case AttributesPrefix:
-		if len(keys) == 1 {
+		if !rootable && len(keys) == 1 {
 			return Field{}, fmt.Errorf("attributes cannot be referenced without subfield")
 		}
 		return NewAttributeField(keys[1:]...), nil
 	case ResourcePrefix:
-		if len(keys) == 1 {
+		if !rootable && len(keys) == 1 {
 			return Field{}, fmt.Errorf("resource cannot be referenced without subfield")
 		}
 		return NewResourceField(keys[1:]...), nil

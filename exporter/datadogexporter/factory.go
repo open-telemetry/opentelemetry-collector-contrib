@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
@@ -38,8 +39,6 @@ import (
 const (
 	// typeStr is the type of the exporter
 	typeStr = "datadog"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
 )
 
 type factory struct {
@@ -64,8 +63,9 @@ func newFactoryWithRegistry(registry *featuregate.Registry) component.ExporterFa
 	return component.NewExporterFactory(
 		typeStr,
 		f.createDefaultConfig,
-		component.WithMetricsExporter(f.createMetricsExporter, stability),
-		component.WithTracesExporter(f.createTracesExporter, stability),
+		component.WithMetricsExporter(f.createMetricsExporter, component.StabilityLevelBeta),
+		component.WithTracesExporter(f.createTracesExporter, component.StabilityLevelBeta),
+		component.WithLogsExporter(f.createLogsExporter, component.StabilityLevelAlpha),
 	)
 }
 
@@ -123,6 +123,12 @@ func (f *factory) createDefaultConfig() config.Exporter {
 				Endpoint: "https://trace.agent.datadoghq.com",
 			},
 			IgnoreResources: []string{},
+		},
+
+		Logs: LogsConfig{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "https://http-intake.logs.datadoghq.com",
+			},
 		},
 
 		HostMetadata: HostMetadataConfig{
@@ -262,5 +268,53 @@ func (f *factory) createTracesExporter(
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(stop),
+	)
+}
+
+// createLogsExporter creates a logs exporter based on the config.
+func (f *factory) createLogsExporter(
+	ctx context.Context,
+	set component.ExporterCreateSettings,
+	c config.Exporter,
+) (component.LogsExporter, error) {
+	cfg := checkAndCastConfig(c)
+
+	var pusher consumer.ConsumeLogsFunc
+	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
+	}
+	ctx, cancel := context.WithCancel(ctx)
+	// cancel() runs on shutdown
+	if cfg.OnlyMetadata {
+		// only host metadata needs to be sent, once.
+		pusher = func(_ context.Context, td plog.Logs) error {
+			f.onceMetadata.Do(func() {
+				attrs := pcommon.NewMap()
+				go metadata.Pusher(ctx, set, newMetadataConfigfromConfig(cfg), hostProvider, attrs)
+			})
+			return nil
+		}
+	} else {
+		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider)
+		if err != nil {
+			cancel()
+			return nil, err
+		}
+		pusher = exp.consumeLogs
+	}
+	return exporterhelper.NewLogsExporter(
+		ctx,
+		set,
+		cfg,
+		pusher,
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithShutdown(func(context.Context) error {
+			cancel()
+			return nil
+		}),
 	)
 }

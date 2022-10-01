@@ -4,6 +4,85 @@
 
 <!-- next version -->
 
+## v0.61.0
+
+### 🛑 Breaking changes 🛑
+
+- `dockerstatsreceiver`: For V2 scraper implementation, change the defaults from emitting everything to a sensible set of defaults. (#9794, #14093)
+  This is only breaking if you have explicitly enabled the featuregate `receiver.dockerstats.useScraperV2`.
+- `dockerstatsreceiver`: Change 'stats' config key to 'metrics'. (#9794, #14184)
+  Note: this is only breaking for those who have explicitly enabled the featuregate `receiver.dockerstatsd.useScraperV2`.
+- `iisreceiver`: Emit metrics per-site and per-app-pool with new resource attributes. (#14448)
+- `pkg/telemetryquerylanguage`: Unexport `BoolExpressionEvaluator`, `Literal`, `NewGetter`, and `NewFunctionCall`. (#13737)
+- `mongodbatlasreceiver`: Retain actual raw log line as Body. The `raw` attribute is now removed. Use Body instead for the raw log line. (#14178)
+- `mysqlreceiver`: The metrics are now being emitted with a resource attribute marking the endpoint of the database. (#14138)
+- `pkg/ottl`: Rename `ParseQueries` to `ParseStatements` and rename `Query` to `Statement`. (#14444)
+- `jaegerreceiver`: Remove remote sampling endpoint from the Jaeger receiver (#6633)
+- `oteltransformationlanguage`: Renames ottldatapoints to ottldatapoints to better represent how the context is intended to be used. (#14384)
+- `pkg/ottl`: Renames Telemetry Query Language to OpenTelemetry Transformation Language to avoid confusion with an analysis language. (#14150)
+- `pkg/ottl`: Flattens ottlcommon and ottlotel into ottlfuncs. (#14386)
+- `pkg/ottl`: Replaced Logger with TelemetrySettings (#14389)
+
+### 🚩 Deprecations 🚩
+
+- `coralogixexporter`: deprecating jaeger based tracing configuration in favour of OpenTelemetry protocol based one. (#7931)
+  Please remove the `endpoint` field and use the new `traces.endpoint` field with your OpenTelemetry endpoint.
+- `elasticsearchreceiver, hostmetricsreceiver, kubelestatsreceiver, memcachedreceiver, vcenterreceiver, zookeeperreceiver`: Log message to announce `direction` attribute feature gate deprecation (#14129)
+  The change to remove the `direction` attribute has been reverted in the specification. As a result, the following feature gates will be removed in v0.62.0:
+  - `receiver.elasticsearchreceiver.emitMetricsWithDirectionAttribute`
+  - `receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute`
+  - `receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute`
+  - `receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute`
+  - `receiver.kubelestatsreceiver.emitMetricsWithDirectionAttribute`
+  - `receiver.kubelestatsreceiver.emitMetricsWithoutDirectionAttribute`
+  - `receiver.memcachedreceiver.emitMetricsWithDirectionAttribute`
+  - `receiver.memcachedreceiver.emitMetricsWithoutDirectionAttribute`
+  - `receiver.vcenterreceiver.emitMetricsWithDirectionAttribute`
+  - `receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute`
+  - `receiver.zookeeperreceiver.emitMetricsWithDirectionAttribute`
+  - `receiver.zookeeperreceiver.emitMetricsWithoutDirectionAttribute`
+- `extensions/headerssetter`: Deprecate the `extensions/headerssetter` module, use `extensions/headerssetterextenions` instead. (#13774)
+
+### 🚀 New components 🚀
+
+- `s3mapprovider`: A new implementation of ConfigMapProvider for Amazon S3 (s3mapprovider) allows OTEL Collector the ability to load configuration for itself by fetching and reading config files stored in Amazon S3. (#12939)
+
+### 💡 Enhancements 💡
+
+- `loki`: Split the conversion OTLP -> Loki into its own package (#13649)
+- `kafkareceiver`: Add direct unmarshaler, inserting Kafka payload bytes as the body of a log record (#13252)
+- `apachereceiver`: The receiver now supports 6 more metrics, more information in the linked issue. (#14095)
+- `datadogexporter`: Add logs support (#2651)
+- `datadogexporter`: The "hostmetrics" receiver metrics are now correctly mapped to Datadog system metrics. (#14005)
+- `fileexporter`: support for compressing the telemetry data before exporting. (#13626)
+- `fileexporter`: support for encoding telemetry data using proto marshaler (#13626)
+- `googlecloudspannerreceiver`: Fixed errors when transaction-stats columns are NULL (#14189)
+- `cumulativetodeltaprocessor`: Reduce memory consumption of histograms in cumulativetodeltaprocessor by allocating only a single identity per datapoint. (#13751)
+- `chronyreceiver`: Improved chronyreceiver's context and timeout handling (#14131)
+  Updated chronyreceiver to use `net.Dialer.DialContext` and respect timeouts more closely
+- `filterspan`: Add span kind filtering. (#13612)
+- `mysqlreceiver`: The receiver now scraper 16 new metrics related to io_waits. (#14138)
+- `filelog`, `journald`, `syslog`, `tcplog`, `udplog`, `windowseventlog`: Allow 'parse_to' fields to accept 'attributes' and 'resource' (#14089)
+- `sentryexporter`: Make sentry status more detailed - use HTTP and Grpc codes from tags (#13407)
+- `routingprocessor`: Add support for using OpenTelemetry Transformation Language (OTTL) expressions as routing conditions. (#13158)
+- `transformprocessor`: Add `Split` function, which separates a string by the delimiter and returns an array of substrings. (#11790)
+- `pkg/winperfcounters`: Add counter path to error if scraping fails (#14443)
+
+### 🧰 Bug fixes 🧰
+
+- `awsemfexporter`: Fix regression that causes null dimensions to be appended during dimension roll up. (#14532)
+- `k8sprocessor`: check every association for eventual update (#13119)
+- `sentryexporter`: Omit empty parent span id (#13415)
+- `pkg/ottl`: Replace invalid comparison print statement with a debug log entry (#14467)
+- `servicegraphprocessor`: Fixed metric names to match the specification. (#14187)
+- `hostmetricsreceiver`: On Windows systems, do not fail to start if a performance counter is missing or inaccessible. (#14032)
+- `loki`: Fix converting log resources to loki labels for more than one log record. (#14288)
+- `mongodbatlasreceiver`: Fix timestamp parsing for mongodb 4.2 audit logs (#14168)
+- `mongodbatlasreceiver`: Add missing fields for audit logs (#14177)
+- `mongodbatlasreceiver`: Fix potential infinite loop when scraping audit logs (#14169)
+- `otlpjsonfilereceiver`: logs receive operations should use StartLogsOp/EndLogsOp (#14535)
+- `pkg/translator/prometheus`: do not normalize metric name with colon (#14135)
+
 ## v0.60.0
 
 ### 🛑 Breaking changes 🛑

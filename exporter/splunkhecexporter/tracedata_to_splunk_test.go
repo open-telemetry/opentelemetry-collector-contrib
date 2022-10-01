@@ -116,8 +116,8 @@ func initSpan(name string, ts pcommon.Timestamp, span ptrace.Span) {
 	spanLink.Attributes().PutInt("foo", 1)
 	spanLink.Attributes().PutBool("bar", false)
 	foobarContents := spanLink.Attributes().PutEmptySlice("foobar")
-	foobarContents.AppendEmpty().SetStringVal("a")
-	foobarContents.AppendEmpty().SetStringVal("b")
+	foobarContents.AppendEmpty().SetStr("a")
+	foobarContents.AppendEmpty().SetStr("b")
 
 	spanEvent := span.Events().AppendEmpty()
 	spanEvent.Attributes().PutString("foo", "bar")

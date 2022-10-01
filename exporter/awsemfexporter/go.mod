@@ -3,19 +3,19 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemf
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.103
-	github.com/census-instrumentation/opencensus-proto v0.4.0
+	github.com/aws/aws-sdk-go v1.44.106
+	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.60.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.60.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.60.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.60.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.60.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.61.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.60.1-0.20220923151520-96e9af35c002
-	go.opentelemetry.io/collector/pdata v0.60.1-0.20220923151520-96e9af35c002
-	go.opentelemetry.io/collector/semconv v0.60.1-0.20220923151520-96e9af35c002
+	go.opentelemetry.io/collector v0.61.0
+	go.opentelemetry.io/collector/pdata v0.61.0
+	go.opentelemetry.io/collector/semconv v0.61.0
 	go.uber.org/zap v1.23.0
 	google.golang.org/protobuf v1.28.1
 )
@@ -34,7 +34,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.60.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.61.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	github.com/stretchr/objx v0.4.0 // indirect

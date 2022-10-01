@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Concat(delimiter string, vals []ottl.Getter) (ottl.ExprFunc, error) {
-	return func(ctx ottl.TransformContext) interface{} {
+func Concat[K any](delimiter string, vals []ottl.Getter[K]) (ottl.ExprFunc[K], error) {
+	return func(ctx K) interface{} {
 		builder := strings.Builder{}
 		for i, rv := range vals {
 			switch val := rv.Get(ctx).(type) {

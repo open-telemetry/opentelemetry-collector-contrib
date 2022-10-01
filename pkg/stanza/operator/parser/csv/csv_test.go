@@ -963,7 +963,7 @@ cc""",dddd,eeee`,
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := NewConfigWithID("test")
-			cfg.ParseTo = entry.NewBodyField()
+			cfg.ParseTo = entry.RootableField{Field: entry.NewBodyField()}
 			cfg.OutputIDs = []string{"fake"}
 			cfg.Header = "A,B,C,D,E"
 

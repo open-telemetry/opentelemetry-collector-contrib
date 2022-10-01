@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func DeleteKey(target ottl.Getter, key string) (ottl.ExprFunc, error) {
-	return func(ctx ottl.TransformContext) interface{} {
+func DeleteKey[K any](target ottl.Getter[K], key string) (ottl.ExprFunc[K], error) {
+	return func(ctx K) interface{} {
 		val := target.Get(ctx)
 		if val == nil {
 			return nil

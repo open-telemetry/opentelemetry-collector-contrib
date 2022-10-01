@@ -188,7 +188,7 @@ func (s *sfxDPClient) retrieveAccessToken(md pmetric.ResourceMetrics) string {
 
 	attrs := md.Resource().Attributes()
 	if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok {
-		return accessToken.StringVal()
+		return accessToken.Str()
 	}
 	return ""
 }

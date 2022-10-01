@@ -106,10 +106,10 @@ func (f *SyslogWriter) Send(lr plog.LogRecord) error {
 	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "span_id", lr.SpanID().HexString()))
 	sdid.WriteString(fmt.Sprintf("%s=\"%d\" ", "trace_flags", lr.Flags()))
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
-		sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", k, v.StringVal()))
+		sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", k, v.Str()))
 		return true
 	})
-	msg := fmt.Sprintf("<166> %s localhost - - - [%s] %s\n", ts, sdid.String(), lr.Body().StringVal())
+	msg := fmt.Sprintf("<166> %s localhost - - - [%s] %s\n", ts, sdid.String(), lr.Body().Str())
 
 	f.buf = append(f.buf, msg)
 	return f.SendCheck()

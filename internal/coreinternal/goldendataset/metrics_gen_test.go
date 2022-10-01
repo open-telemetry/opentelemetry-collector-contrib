@@ -32,7 +32,7 @@ func TestGenDefault(t *testing.T) {
 	rattrs.Len()
 	require.Equal(t, 1, rattrs.Len())
 	val, _ := rattrs.Get("resource-attr-name-0")
-	require.Equal(t, "resource-attr-val-0", val.StringVal())
+	require.Equal(t, "resource-attr-val-0", val.Str())
 	ilms := rm.ScopeMetrics()
 	require.Equal(t, 1, ilms.Len())
 	ms := ilms.At(0).Metrics()
@@ -49,7 +49,7 @@ func TestGenDefault(t *testing.T) {
 
 	require.Equal(t, 1, pt.Attributes().Len())
 	ptAttributes, _ := pt.Attributes().Get("pt-label-key-0")
-	require.Equal(t, "pt-label-val-0", ptAttributes.StringVal())
+	require.Equal(t, "pt-label-val-0", ptAttributes.Str())
 
 	require.EqualValues(t, 940000000000000000, pt.StartTimestamp())
 	require.EqualValues(t, 940000000000000042, pt.Timestamp())

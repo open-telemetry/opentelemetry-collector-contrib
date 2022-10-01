@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Split(target ottl.Getter, delimiter string) (ottl.ExprFunc, error) {
-	return func(ctx ottl.TransformContext) interface{} {
+func Split[K any](target ottl.Getter[K], delimiter string) (ottl.ExprFunc[K], error) {
+	return func(ctx K) interface{} {
 		if val := target.Get(ctx); val != nil {
 			if valStr, ok := val.(string); ok {
 				return strings.Split(valStr, delimiter)

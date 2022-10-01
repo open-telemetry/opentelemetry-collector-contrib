@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.60.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.60.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.60.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.61.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.60.1-0.20220923151520-96e9af35c002
+	go.opentelemetry.io/collector v0.61.0
 	go.uber.org/zap v1.23.0
 )
 
@@ -29,8 +29,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.8.2 // indirect
-	go.opentelemetry.io/collector/pdata v0.60.1-0.20220923151520-96e9af35c002 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.0 // indirect
+	go.opentelemetry.io/collector/pdata v0.61.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.1 // indirect
 	go.opentelemetry.io/otel v1.10.0 // indirect
 	go.opentelemetry.io/otel/metric v0.32.1 // indirect
 	go.opentelemetry.io/otel/trace v1.10.0 // indirect

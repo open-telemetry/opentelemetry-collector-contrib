@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,14 +21,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 )
 
-func convertSumToGauge() (ottl.ExprFunc, error) {
-	return func(ctx ottl.TransformContext) interface{} {
-		mtc, ok := ctx.(ottldatapoints.TransformContext)
-		if !ok {
-			return nil
-		}
-
-		metric := mtc.GetMetric()
+func convertSumToGauge() (ottl.ExprFunc[ottldatapoints.TransformContext], error) {
+	return func(ctx ottldatapoints.TransformContext) interface{} {
+		metric := ctx.GetMetric()
 		if metric.Type() != pmetric.MetricTypeSum {
 			return nil
 		}

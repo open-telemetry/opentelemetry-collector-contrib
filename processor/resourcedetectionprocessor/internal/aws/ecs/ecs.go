@@ -159,10 +159,10 @@ func addValidLogData(containers []ecsutil.ContainerMetadata, self *ecsutil.Conta
 				logStreamArns = dest.PutEmptySlice(conventions.AttributeAWSLogStreamARNs)
 				initialized = true
 			}
-			logGroupNames.AppendEmpty().SetStringVal(logData.LogGroup)
-			logGroupArns.AppendEmpty().SetStringVal(constructLogGroupArn(logData.Region, account, logData.LogGroup))
-			logStreamNames.AppendEmpty().SetStringVal(logData.Stream)
-			logStreamArns.AppendEmpty().SetStringVal(constructLogStreamArn(logData.Region, account, logData.LogGroup, logData.Stream))
+			logGroupNames.AppendEmpty().SetStr(logData.LogGroup)
+			logGroupArns.AppendEmpty().SetStr(constructLogGroupArn(logData.Region, account, logData.LogGroup))
+			logStreamNames.AppendEmpty().SetStr(logData.Stream)
+			logStreamArns.AppendEmpty().SetStr(constructLogStreamArn(logData.Region, account, logData.LogGroup, logData.Stream))
 		}
 	}
 }

@@ -72,13 +72,13 @@ func mapSpanToSplunkEvent(resource pcommon.Resource, span ptrace.Span, config *C
 	resource.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch k {
 		case hostKey:
-			host = v.StringVal()
+			host = v.Str()
 		case sourceKey:
-			source = v.StringVal()
+			source = v.Str()
 		case sourceTypeKey:
-			sourceType = v.StringVal()
+			sourceType = v.Str()
 		case indexKey:
-			index = v.StringVal()
+			index = v.Str()
 		case splunk.HecTokenLabel:
 			// ignore
 		default:

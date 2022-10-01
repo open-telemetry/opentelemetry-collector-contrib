@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -197,21 +197,21 @@ func TestProcess(t *testing.T) {
 			statement: `set(attributes["test"], Split(attributes["flags"], "|"))`,
 			want: func(td ptrace.Traces) {
 				v1 := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutEmptySlice("test")
-				v1.AppendEmpty().SetStringVal("A")
-				v1.AppendEmpty().SetStringVal("B")
-				v1.AppendEmpty().SetStringVal("C")
+				v1.AppendEmpty().SetStr("A")
+				v1.AppendEmpty().SetStr("B")
+				v1.AppendEmpty().SetStr("C")
 				v2 := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutEmptySlice("test")
-				v2.AppendEmpty().SetStringVal("C")
-				v2.AppendEmpty().SetStringVal("D")
+				v2.AppendEmpty().SetStr("C")
+				v2.AppendEmpty().SetStr("D")
 			},
 		},
 		{
 			statement: `set(attributes["test"], Split(attributes["flags"], "|")) where name == "operationA"`,
 			want: func(td ptrace.Traces) {
 				v1 := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutEmptySlice("test")
-				v1.AppendEmpty().SetStringVal("A")
-				v1.AppendEmpty().SetStringVal("B")
-				v1.AppendEmpty().SetStringVal("C")
+				v1.AppendEmpty().SetStr("A")
+				v1.AppendEmpty().SetStr("B")
+				v1.AppendEmpty().SetStr("C")
 			},
 		},
 		{
@@ -223,7 +223,7 @@ func TestProcess(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]string{tt.statement}, Functions(), component.TelemetrySettings{})
+			processor, err := NewProcessor([]string{tt.statement}, Functions(), componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessTraces(context.Background(), td)
@@ -273,7 +273,7 @@ func BenchmarkTwoSpans(b *testing.B) {
 
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			processor, err := NewProcessor(tt.queries, Functions(), component.TelemetrySettings{})
+			processor, err := NewProcessor(tt.queries, Functions(), componenttest.NewNopTelemetrySettings())
 			assert.NoError(b, err)
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
@@ -315,7 +315,7 @@ func BenchmarkHundredSpans(b *testing.B) {
 	}
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			processor, err := NewProcessor(tt.queries, Functions(), component.TelemetrySettings{})
+			processor, err := NewProcessor(tt.queries, Functions(), componenttest.NewNopTelemetrySettings())
 			assert.NoError(b, err)
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {

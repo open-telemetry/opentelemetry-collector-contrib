@@ -71,7 +71,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
@@ -185,7 +185,7 @@ func Components() (component.Factories, error) {
 		ecstaskobserver.NewFactory(),
 		filestorage.NewFactory(),
 		fluentbitextension.NewFactory(),
-		headerssetter.NewFactory(),
+		headerssetterextension.NewFactory(),
 		healthcheckextension.NewFactory(),
 		hostobserver.NewFactory(),
 		httpforwarder.NewFactory(),

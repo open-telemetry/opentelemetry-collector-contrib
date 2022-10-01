@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -126,8 +126,8 @@ func maskDataPointSliceAttributeValues(dataPoints pmetric.NumberDataPointSlice, 
 		attribute, ok := attributes.Get(attributeName)
 		if ok {
 			switch attribute.Type() {
-			case pcommon.ValueTypeString:
-				attribute.SetStringVal("")
+			case pcommon.ValueTypeStr:
+				attribute.SetStr("")
 			default:
 				panic(fmt.Sprintf("data type not supported: %s", attribute.Type()))
 			}

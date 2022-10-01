@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,13 +20,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func KeepKeys(target ottl.GetSetter, keys []string) (ottl.ExprFunc, error) {
+func KeepKeys[K any](target ottl.GetSetter[K], keys []string) (ottl.ExprFunc[K], error) {
 	keySet := make(map[string]struct{}, len(keys))
 	for _, key := range keys {
 		keySet[key] = struct{}{}
 	}
 
-	return func(ctx ottl.TransformContext) interface{} {
+	return func(ctx K) interface{} {
 		val := target.Get(ctx)
 		if val == nil {
 			return nil

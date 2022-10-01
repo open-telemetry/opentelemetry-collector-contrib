@@ -118,12 +118,12 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 
 	// peer.service should always be prioritized for segment names when set because it is what the user decided.
 	if peerService, ok := attributes.Get(conventions.AttributePeerService); ok {
-		name = peerService.StringVal()
+		name = peerService.Str()
 	}
 
 	if namespace == "" {
 		if rpcSystem, ok := attributes.Get(conventions.AttributeRPCSystem); ok {
-			if rpcSystem.StringVal() == "aws-api" {
+			if rpcSystem.Str() == "aws-api" {
 				namespace = conventions.AttributeCloudProviderAWS
 			}
 		}
@@ -133,7 +133,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		if awsService, ok := attributes.Get(awsxray.AWSServiceAttribute); ok {
 			// Generally spans are named something like "Method" or "Service.Method" but for AWS spans, X-Ray expects spans
 			// to be named "Service"
-			name = awsService.StringVal()
+			name = awsService.Str()
 
 			if namespace == "" {
 				namespace = conventions.AttributeCloudProviderAWS
@@ -144,9 +144,9 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	if name == "" {
 		if dbInstance, ok := attributes.Get(conventions.AttributeDBName); ok {
 			// For database queries, the segment name convention is <db name>@<db host>
-			name = dbInstance.StringVal()
+			name = dbInstance.Str()
 			if dbURL, ok := attributes.Get(conventions.AttributeDBConnectionString); ok {
-				if parsed, _ := url.Parse(dbURL.StringVal()); parsed != nil {
+				if parsed, _ := url.Parse(dbURL.Str()); parsed != nil {
 					if parsed.Hostname() != "" {
 						name += "@" + parsed.Hostname()
 					}
@@ -158,25 +158,25 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	if name == "" && span.Kind() == ptrace.SpanKindServer {
 		// Only for a server span, we can use the resource.
 		if service, ok := resource.Attributes().Get(conventions.AttributeServiceName); ok {
-			name = service.StringVal()
+			name = service.Str()
 		}
 	}
 
 	if name == "" {
 		if rpcservice, ok := attributes.Get(conventions.AttributeRPCService); ok {
-			name = rpcservice.StringVal()
+			name = rpcservice.Str()
 		}
 	}
 
 	if name == "" {
 		if host, ok := attributes.Get(conventions.AttributeHTTPHost); ok {
-			name = host.StringVal()
+			name = host.Str()
 		}
 	}
 
 	if name == "" {
 		if peer, ok := attributes.Get(conventions.AttributeNetPeerName); ok {
-			name = peer.StringVal()
+			name = peer.Str()
 		}
 	}
 
@@ -228,13 +228,13 @@ func determineAwsOrigin(resource pcommon.Resource) string {
 	}
 
 	if provider, ok := resource.Attributes().Get(conventions.AttributeCloudProvider); ok {
-		if provider.StringVal() != conventions.AttributeCloudProviderAWS {
+		if provider.Str() != conventions.AttributeCloudProviderAWS {
 			return ""
 		}
 	}
 
 	if is, present := resource.Attributes().Get(conventions.AttributeCloudPlatform); present {
-		switch is.StringVal() {
+		switch is.Str() {
 		case conventions.AttributeCloudPlatformAWSAppRunner:
 			return OriginAppRunner
 		case conventions.AttributeCloudPlatformAWSEKS:
@@ -246,7 +246,7 @@ func determineAwsOrigin(resource pcommon.Resource) string {
 			if !present {
 				return OriginECS
 			}
-			switch lt.StringVal() {
+			switch lt.Str() {
 			case conventions.AttributeAWSECSLaunchtypeEC2:
 				return OriginECSEC2
 			case conventions.AttributeAWSECSLaunchtypeFargate:
@@ -328,7 +328,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 	)
 	userid, ok := attributes[conventions.AttributeEnduserID]
 	if ok {
-		user = userid.StringVal()
+		user = userid.Str()
 		delete(attributes, conventions.AttributeEnduserID)
 	}
 
@@ -397,37 +397,37 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 
 func annotationValue(value pcommon.Value) interface{} {
 	switch value.Type() {
-	case pcommon.ValueTypeString:
-		return value.StringVal()
+	case pcommon.ValueTypeStr:
+		return value.Str()
 	case pcommon.ValueTypeInt:
-		return value.IntVal()
+		return value.Int()
 	case pcommon.ValueTypeDouble:
-		return value.DoubleVal()
+		return value.Double()
 	case pcommon.ValueTypeBool:
-		return value.BoolVal()
+		return value.Bool()
 	}
 	return nil
 }
 
 func metadataValue(value pcommon.Value) interface{} {
 	switch value.Type() {
-	case pcommon.ValueTypeString:
-		return value.StringVal()
+	case pcommon.ValueTypeStr:
+		return value.Str()
 	case pcommon.ValueTypeInt:
-		return value.IntVal()
+		return value.Int()
 	case pcommon.ValueTypeDouble:
-		return value.DoubleVal()
+		return value.Double()
 	case pcommon.ValueTypeBool:
-		return value.BoolVal()
+		return value.Bool()
 	case pcommon.ValueTypeMap:
 		converted := map[string]interface{}{}
-		value.MapVal().Range(func(key string, value pcommon.Value) bool {
+		value.Map().Range(func(key string, value pcommon.Value) bool {
 			converted[key] = metadataValue(value)
 			return true
 		})
 		return converted
 	case pcommon.ValueTypeSlice:
-		arrVal := value.SliceVal()
+		arrVal := value.Slice()
 		converted := make([]interface{}, arrVal.Len())
 		for i := 0; i < arrVal.Len(); i++ {
 			converted[i] = metadataValue(arrVal.At(i))

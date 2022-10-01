@@ -55,9 +55,9 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a filter operator
 type Config struct {
-	helper.TransformerConfig `yaml:",inline"`
-	Expression               string  `json:"expr"   yaml:"expr"`
-	DropRatio                float64 `json:"drop_ratio"   yaml:"drop_ratio"`
+	helper.TransformerConfig `mapstructure:",squash"`
+	Expression               string  `mapstructure:"expr"`
+	DropRatio                float64 `mapstructure:"drop_ratio"`
 }
 
 // Build will build a filter operator from the supplied configuration

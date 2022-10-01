@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -189,11 +189,11 @@ func assertLabelValue(t *testing.T, attributesMap pcommon.Map, labelValue LabelV
 	assert.True(t, exists)
 	switch labelValue.(type) {
 	case stringLabelValue, stringSliceLabelValue, byteSliceLabelValue, lockRequestSliceLabelValue:
-		assert.Equal(t, labelValue.Value(), value.StringVal())
+		assert.Equal(t, labelValue.Value(), value.Str())
 	case boolLabelValue:
-		assert.Equal(t, labelValue.Value(), value.BoolVal())
+		assert.Equal(t, labelValue.Value(), value.Bool())
 	case int64LabelValue:
-		assert.Equal(t, labelValue.Value(), value.IntVal())
+		assert.Equal(t, labelValue.Value(), value.Int())
 	default:
 		assert.Fail(t, "Unknown label value type received")
 	}
@@ -203,7 +203,7 @@ func assertStringLabelValue(t *testing.T, attributesMap pcommon.Map, labelName s
 	value, exists := attributesMap.Get(labelName)
 
 	assert.True(t, exists)
-	assert.Equal(t, expectedValue, value.StringVal())
+	assert.Equal(t, expectedValue, value.Str())
 }
 
 func assertMetricValue(t *testing.T, metricValue MetricValue, dataPoint pmetric.NumberDataPoint) {

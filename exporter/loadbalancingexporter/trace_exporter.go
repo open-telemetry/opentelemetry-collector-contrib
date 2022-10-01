@@ -159,7 +159,7 @@ func routingIdentifiersFromTraces(td ptrace.Traces, key routingKey) (map[string]
 			if !ok {
 				return nil, errors.New("unable to get service name")
 			}
-			ids[svc.StringVal()] = true
+			ids[svc.Str()] = true
 		}
 		return ids, nil
 	}

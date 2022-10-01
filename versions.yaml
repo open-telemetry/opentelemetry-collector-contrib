@@ -14,12 +14,13 @@
 
 module-sets:
   contrib-base:
-    version: v0.60.0
+    version: v0.61.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen
+      - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3mapprovider
       - github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/client
       - github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/server
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter
@@ -69,6 +70,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling

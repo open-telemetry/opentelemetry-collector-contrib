@@ -893,98 +893,98 @@ func TestUnmarshallerInsertUserProperty(t *testing.T) {
 			&model_v1.SpanData_UserPropertyValue_BoolValue{BoolValue: true},
 			pcommon.ValueTypeBool,
 			func(val pcommon.Value) {
-				assert.Equal(t, true, val.BoolVal())
+				assert.Equal(t, true, val.Bool())
 			},
 		},
 		{
 			&model_v1.SpanData_UserPropertyValue_DoubleValue{DoubleValue: 12.34},
 			pcommon.ValueTypeDouble,
 			func(val pcommon.Value) {
-				assert.Equal(t, float64(12.34), val.DoubleVal())
+				assert.Equal(t, float64(12.34), val.Double())
 			},
 		},
 		{
 			&model_v1.SpanData_UserPropertyValue_ByteArrayValue{ByteArrayValue: []byte{1, 2, 3, 4}},
 			pcommon.ValueTypeBytes,
 			func(val pcommon.Value) {
-				assert.Equal(t, []byte{1, 2, 3, 4}, val.BytesVal().AsRaw())
+				assert.Equal(t, []byte{1, 2, 3, 4}, val.Bytes().AsRaw())
 			},
 		},
 		{
 			&model_v1.SpanData_UserPropertyValue_FloatValue{FloatValue: 12.34},
 			pcommon.ValueTypeDouble,
 			func(val pcommon.Value) {
-				assert.Equal(t, float64(float32(12.34)), val.DoubleVal())
+				assert.Equal(t, float64(float32(12.34)), val.Double())
 			},
 		},
 		{
 			&model_v1.SpanData_UserPropertyValue_Int8Value{Int8Value: 8},
 			pcommon.ValueTypeInt,
 			func(val pcommon.Value) {
-				assert.Equal(t, int64(8), val.IntVal())
+				assert.Equal(t, int64(8), val.Int())
 			},
 		},
 		{
 			&model_v1.SpanData_UserPropertyValue_Int16Value{Int16Value: 16},
 			pcommon.ValueTypeInt,
 			func(val pcommon.Value) {
-				assert.Equal(t, int64(16), val.IntVal())
+				assert.Equal(t, int64(16), val.Int())
 			},
 		},
 		{
 			&model_v1.SpanData_UserPropertyValue_Int32Value{Int32Value: 32},
 			pcommon.ValueTypeInt,
 			func(val pcommon.Value) {
-				assert.Equal(t, int64(32), val.IntVal())
+				assert.Equal(t, int64(32), val.Int())
 			},
 		},
 		{
 			&model_v1.SpanData_UserPropertyValue_Int64Value{Int64Value: 64},
 			pcommon.ValueTypeInt,
 			func(val pcommon.Value) {
-				assert.Equal(t, int64(64), val.IntVal())
+				assert.Equal(t, int64(64), val.Int())
 			},
 		},
 		{
 			&model_v1.SpanData_UserPropertyValue_Uint8Value{Uint8Value: 8},
 			pcommon.ValueTypeInt,
 			func(val pcommon.Value) {
-				assert.Equal(t, int64(8), val.IntVal())
+				assert.Equal(t, int64(8), val.Int())
 			},
 		},
 		{
 			&model_v1.SpanData_UserPropertyValue_Uint16Value{Uint16Value: 16},
 			pcommon.ValueTypeInt,
 			func(val pcommon.Value) {
-				assert.Equal(t, int64(16), val.IntVal())
+				assert.Equal(t, int64(16), val.Int())
 			},
 		},
 		{
 			&model_v1.SpanData_UserPropertyValue_Uint32Value{Uint32Value: 32},
 			pcommon.ValueTypeInt,
 			func(val pcommon.Value) {
-				assert.Equal(t, int64(32), val.IntVal())
+				assert.Equal(t, int64(32), val.Int())
 			},
 		},
 		{
 			&model_v1.SpanData_UserPropertyValue_Uint64Value{Uint64Value: 64},
 			pcommon.ValueTypeInt,
 			func(val pcommon.Value) {
-				assert.Equal(t, int64(64), val.IntVal())
+				assert.Equal(t, int64(64), val.Int())
 			},
 		},
 		{
 			&model_v1.SpanData_UserPropertyValue_StringValue{StringValue: "hello world"},
-			pcommon.ValueTypeString,
+			pcommon.ValueTypeStr,
 			func(val pcommon.Value) {
-				assert.Equal(t, "hello world", val.StringVal())
+				assert.Equal(t, "hello world", val.Str())
 			},
 		},
 		{
 			&model_v1.SpanData_UserPropertyValue_DestinationValue{DestinationValue: "some_dest"},
-			pcommon.ValueTypeString,
+			pcommon.ValueTypeStr,
 			func(val pcommon.Value) {
-				assert.Equal(t, "some_dest", val.StringVal())
+				assert.Equal(t, "some_dest", val.Str())
 			},
 		},
 	}

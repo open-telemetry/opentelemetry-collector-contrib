@@ -403,9 +403,9 @@ func TestToHumioAttributes(t *testing.T) {
 			attr: func() pcommon.Map {
 				attrMap := pcommon.NewMap()
 				arr := attrMap.PutEmptySlice("array")
-				arr.AppendEmpty().SetStringVal("a")
-				arr.AppendEmpty().SetStringVal("b")
-				arr.AppendEmpty().SetIntVal(4)
+				arr.AppendEmpty().SetStr("a")
+				arr.AppendEmpty().SetStr("b")
+				arr.AppendEmpty().SetInt(4)
 				return attrMap
 			},
 			expected: map[string]interface{}{

@@ -46,7 +46,7 @@ func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pme
 	for k, v := range resourceAttrs {
 		attr, exists := rsm.Resource().Attributes().Get(k)
 		assert.True(t, exists)
-		assert.Equal(t, attr.StringVal(), v)
+		assert.Equal(t, attr.Str(), v)
 	}
 
 	assert.Equal(t, rsm.ScopeMetrics().Len(), 1)
@@ -113,7 +113,7 @@ func assertPoints(t *testing.T, dpts pmetric.NumberDataPointSlice, pts []point) 
 		for k, expectedV := range expected.attributes {
 			gotV, exists := got.Attributes().Get(k)
 			assert.True(t, exists)
-			assert.Equal(t, gotV.StringVal(), expectedV)
+			assert.Equal(t, gotV.Str(), expectedV)
 		}
 	}
 }

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,10 +14,6 @@
 
 package ottltest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 
-import (
-	"go.opentelemetry.io/collector/pdata/pcommon"
-)
-
 func Strp(s string) *string {
 	return &s
 }
@@ -32,20 +28,4 @@ func Intp(i int64) *int64 {
 
 func Boolp(b bool) *bool {
 	return &b
-}
-
-type TestTransformContext struct {
-	Item interface{}
-}
-
-func (ctx TestTransformContext) GetItem() interface{} {
-	return ctx.Item
-}
-
-func (ctx TestTransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return pcommon.InstrumentationScope{}
-}
-
-func (ctx TestTransformContext) GetResource() pcommon.Resource {
-	return pcommon.Resource{}
 }

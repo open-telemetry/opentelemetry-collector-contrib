@@ -69,7 +69,7 @@ func TestExprProcessor(t *testing.T) {
 
 func testFilter(t *testing.T, mdType pmetric.MetricType, mvType pmetric.NumberDataPointValueType) {
 	format := "MetricName == '%s' && Label('%s') == '%s'"
-	q := fmt.Sprintf(format, filteredMetric, filteredAttrKey, filteredAttrVal.StringVal())
+	q := fmt.Sprintf(format, filteredMetric, filteredAttrKey, filteredAttrVal.Str())
 
 	mds := testDataSlice(2, mdType, mvType)
 	totMetricCount := 0

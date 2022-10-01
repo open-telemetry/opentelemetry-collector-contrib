@@ -79,7 +79,7 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(t))
 		lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		// Insert Raw Log message into Body of LogRecord
-		lr.Body().SetStringVal(log.Raw)
+		lr.Body().SetStr(log.Raw)
 		// Since Audit Logs don't have a severity/level
 		// Set the "SeverityNumber" and "SeverityText" to INFO
 		lr.SetSeverityNumber(plog.SeverityNumberInfo)
@@ -133,13 +133,13 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 		usersSlice := attrs.PutEmptySlice("users")
 		usersSlice.EnsureCapacity(len(log.Users))
 		for _, user := range log.Users {
-			user.Pdata().CopyTo(usersSlice.AppendEmpty().SetEmptyMapVal())
+			user.Pdata().CopyTo(usersSlice.AppendEmpty().SetEmptyMap())
 		}
 
 		rolesSlice := attrs.PutEmptySlice("roles")
 		rolesSlice.EnsureCapacity(len(log.Roles))
 		for _, roles := range log.Roles {
-			roles.Pdata().CopyTo(rolesSlice.AppendEmpty().SetEmptyMapVal())
+			roles.Pdata().CopyTo(rolesSlice.AppendEmpty().SetEmptyMap())
 		}
 
 		attrs.PutString("log_name", logName)
@@ -176,7 +176,7 @@ func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc Project
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(t))
 		lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		// Insert Raw Log message into Body of LogRecord
-		lr.Body().SetStringVal(log.Raw)
+		lr.Body().SetStr(log.Raw)
 		// Set the "SeverityNumber" and "SeverityText" if a known type of
 		// severity is found.
 		if severityNumber, ok := severityMap[log.Severity]; ok {

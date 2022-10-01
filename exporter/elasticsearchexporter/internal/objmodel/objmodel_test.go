@@ -78,7 +78,7 @@ func TestObjectModel_CreateMap(t *testing.T) {
 		"add attribute flattens a map value": {
 			build: func() (doc Document) {
 				mapVal := pcommon.NewValueMap()
-				m := mapVal.MapVal()
+				m := mapVal.Map()
 				m.PutInt("i", 42)
 				m.PutString("str", "test")
 				doc.AddAttribute("prefix", mapVal)
@@ -250,7 +250,7 @@ func TestValue_FromAttribute(t *testing.T) {
 		"non-empty array": {
 			in: func() pcommon.Value {
 				v := pcommon.NewValueSlice()
-				tgt := v.SliceVal().AppendEmpty()
+				tgt := v.Slice().AppendEmpty()
 				pcommon.NewValueInt(1).CopyTo(tgt)
 				return v
 			}(),
@@ -263,7 +263,7 @@ func TestValue_FromAttribute(t *testing.T) {
 		"non-empty map": {
 			in: func() pcommon.Value {
 				v := pcommon.NewValueMap()
-				v.MapVal().PutInt("a", 1)
+				v.Map().PutInt("a", 1)
 				return v
 			}(),
 			want: Value{kind: KindObject, doc: Document{[]field{{"a", IntValue(1)}}}},

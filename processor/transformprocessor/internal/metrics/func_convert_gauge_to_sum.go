@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 )
 
-func convertGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc, error) {
+func convertGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottldatapoints.TransformContext], error) {
 	var aggTemp pmetric.MetricAggregationTemporality
 	switch stringAggTemp {
 	case "delta":
@@ -34,13 +34,8 @@ func convertGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc, err
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
 	}
 
-	return func(ctx ottl.TransformContext) interface{} {
-		mtc, ok := ctx.(ottldatapoints.TransformContext)
-		if !ok {
-			return nil
-		}
-
-		metric := mtc.GetMetric()
+	return func(ctx ottldatapoints.TransformContext) interface{} {
+		metric := ctx.GetMetric()
 		if metric.Type() != pmetric.MetricTypeGauge {
 			return nil
 		}
