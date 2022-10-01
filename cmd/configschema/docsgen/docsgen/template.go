@@ -15,15 +15,16 @@
 package docsgen // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/docsgen/docsgen"
 
 import (
+	"fmt"
 	"strings"
 	"text/template"
 )
 
 func tableTemplate() (*template.Template, error) {
-	return template.New("table").Funcs(
+	return template.New("table").Option("missingkey=zero").Funcs(
 		template.FuncMap{
 			"join":            join,
-			"cleanType":       cleanType,
+			"mkAnchor":        mkAnchor,
 			"isCompoundField": isCompoundField,
 			"isDuration":      isDuration,
 		},
@@ -38,32 +39,44 @@ func join(s string) string {
 	return strings.ReplaceAll(s, "\n", " ")
 }
 
-func cleanType(s string) string {
-	return strings.ReplaceAll(strings.ReplaceAll(s, "*", ""), ".", "-")
+// mkAnchor takes a name and a type (e.g. "configtls.TLSClientSetting") and
+// returns a string suitable for use as a markdown anchor.
+func mkAnchor(name, typ string) string {
+	if isDuration(typ) {
+		return "time-Duration"
+	}
+	idx := strings.IndexRune(typ, '.')
+	// strip "configtls." from e.g. "configtls.TLSClientSetting"
+	typeStripped := typ[idx+1:]
+	concat := fmt.Sprintf("%s-%s", name, typeStripped)
+	asterisksRemoved := strings.ReplaceAll(concat, "*", "")
+	dotsToDashes := strings.ReplaceAll(asterisksRemoved, ".", "-")
+	return strings.ReplaceAll(dotsToDashes, "_", "-")
 }
 
 func isDuration(s string) bool {
 	return s == "time.Duration"
 }
 
-const tableTemplateStr = `### {{ cleanType .Type }}
+const tableTemplateStr = `### {{ mkAnchor .Name .Type }}
 
-| Name | Type | Default | Docs |
-| ---- | ---- | ------- | ---- |
+| Name | Field Info | Default | Docs |
+| ---- | --------- | ------- | ---- |
 {{ range .Fields -}}
 | {{ .Name }} |
 {{- if .Type -}}
-    {{- if isCompoundField .Kind -}}
-        [{{ cleanType .Type }}](#{{ cleanType .Type }})
-    {{- else -}}
+	{{- $anchor := mkAnchor .Name .Type -}}
+	{{- if isCompoundField .Kind -}}
+			[{{ $anchor }}](#{{ $anchor }})
+	{{- else -}}
 		{{- if isDuration .Type -}}
-			[{{ cleanType .Type }}](#{{ cleanType .Type }})
-        {{- else -}}
-            {{ .Type }}
-        {{- end -}}
-    {{- end -}}
+			[{{ $anchor }}](#{{ $anchor }})
+		{{- else -}}
+			{{ .Type }}
+		{{- end -}}
+	{{- end -}}
 {{- else -}}
-    {{ .Kind }}
+	{{ .Kind }}
 {{- end -}}
 | {{ .Default }} | {{ join .Doc }} |
 {{ end }}

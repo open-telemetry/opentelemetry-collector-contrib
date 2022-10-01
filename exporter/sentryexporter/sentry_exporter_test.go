@@ -17,6 +17,7 @@ package sentryexporter
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -286,7 +287,7 @@ func TestSpanEventToSentryEvent(t *testing.T) {
 func TestSpanToSentrySpan(t *testing.T) {
 	t.Run("with root span and invalid parent span_id", func(t *testing.T) {
 		testSpan := ptrace.NewSpan()
-		testSpan.SetParentSpanID(pcommon.InvalidSpanID())
+		testSpan.SetParentSpanID(pcommon.NewSpanIDEmpty())
 
 		sentrySpan := convertToSentrySpan(testSpan, pcommon.NewInstrumentationScope(), map[string]string{})
 		assert.NotNil(t, sentrySpan)
@@ -296,16 +297,16 @@ func TestSpanToSentrySpan(t *testing.T) {
 	t.Run("with full span", func(t *testing.T) {
 		testSpan := ptrace.NewSpan()
 
-		traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-		spanID := pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
-		parentSpanID := pcommon.NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+		traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+		spanID := pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+		parentSpanID := pcommon.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 		name := "span_name"
 		var startTime pcommon.Timestamp = 123
 		var endTime pcommon.Timestamp = 1234567890
 		kind := ptrace.SpanKindClient
 		statusMessage := "message"
 
-		testSpan.Attributes().InsertString("key", "value")
+		testSpan.Attributes().PutString("key", "value")
 
 		testSpan.SetTraceID(traceID)
 		testSpan.SetSpanID(spanID)
@@ -363,7 +364,7 @@ type SpanDescriptorsCase struct {
 	testName string
 	// input
 	name     string
-	attrs    pcommon.Map
+	attrs    map[string]interface{}
 	spanKind ptrace.SpanKind
 	// output
 	op          string
@@ -375,9 +376,9 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "http-client",
 			name:     "/api/users/{user_id}",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				conventions.AttributeHTTPMethod: "GET",
-			}),
+			},
 			spanKind:    ptrace.SpanKindClient,
 			op:          "http.client",
 			description: "GET /api/users/{user_id}",
@@ -385,9 +386,9 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "http-server",
 			name:     "/api/users/{user_id}",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				conventions.AttributeHTTPMethod: "POST",
-			}),
+			},
 			spanKind:    ptrace.SpanKindServer,
 			op:          "http.server",
 			description: "POST /api/users/{user_id}",
@@ -395,9 +396,9 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "db-call-without-statement",
 			name:     "SET mykey 'Val'",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				conventions.AttributeDBSystem: "redis",
-			}),
+			},
 			spanKind:    ptrace.SpanKindClient,
 			op:          "db",
 			description: "SET mykey 'Val'",
@@ -405,10 +406,10 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "db-call-with-statement",
 			name:     "mysql call",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				conventions.AttributeDBSystem:    "sqlite",
 				conventions.AttributeDBStatement: "SELECT * FROM table",
-			}),
+			},
 			spanKind:    ptrace.SpanKindClient,
 			op:          "db",
 			description: "SELECT * FROM table",
@@ -416,9 +417,9 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "rpc",
 			name:     "grpc.test.EchoService/Echo",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				conventions.AttributeRPCService: "EchoService",
-			}),
+			},
 			spanKind:    ptrace.SpanKindClient,
 			op:          "rpc",
 			description: "grpc.test.EchoService/Echo",
@@ -426,9 +427,9 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "message-system",
 			name:     "message-destination",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				"messaging.system": "kafka",
-			}),
+			},
 			spanKind:    ptrace.SpanKindProducer,
 			op:          "message",
 			description: "message-destination",
@@ -436,9 +437,9 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "faas",
 			name:     "message-destination",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				"faas.trigger": "pubsub",
-			}),
+			},
 			spanKind:    ptrace.SpanKindServer,
 			op:          "pubsub",
 			description: "message-destination",
@@ -447,7 +448,9 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.testName, func(t *testing.T) {
-			op, description := generateSpanDescriptors(test.name, test.attrs, test.spanKind)
+			attrs := pcommon.NewMap()
+			attrs.FromRaw(test.attrs)
+			op, description := generateSpanDescriptors(test.name, attrs, test.spanKind)
 			assert.Equal(t, test.op, op)
 			assert.Equal(t, test.description, description)
 		})
@@ -457,10 +460,10 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 func TestGenerateTagsFromAttributes(t *testing.T) {
 	attrs := pcommon.NewMap()
 
-	attrs.InsertString("string-key", "string-value")
-	attrs.InsertBool("bool-key", true)
-	attrs.InsertDouble("double-key", 123.123)
-	attrs.InsertInt("int-key", 321)
+	attrs.PutString("string-key", "string-value")
+	attrs.PutBool("bool-key", true)
+	attrs.PutDouble("double-key", 123.123)
+	attrs.PutInt("int-key", 321)
 
 	tags := generateTagsFromAttributes(attrs)
 
@@ -481,6 +484,7 @@ type SpanStatusCase struct {
 	// output
 	status  sentry.SpanStatus
 	message string
+	tags    map[string]string
 }
 
 func TestStatusFromSpanStatus(t *testing.T) {
@@ -488,8 +492,9 @@ func TestStatusFromSpanStatus(t *testing.T) {
 		{
 			testName:   "with empty status",
 			spanStatus: ptrace.NewSpanStatus(),
-			status:     sentry.SpanStatusUndefined,
+			status:     sentry.SpanStatusOK,
 			message:    "",
+			tags:       map[string]string{},
 		},
 		{
 			testName: "with status code",
@@ -502,6 +507,7 @@ func TestStatusFromSpanStatus(t *testing.T) {
 			}(),
 			status:  sentry.SpanStatusUnknown,
 			message: "message",
+			tags:    map[string]string{},
 		},
 		{
 			testName: "with unimplemented status code",
@@ -514,12 +520,56 @@ func TestStatusFromSpanStatus(t *testing.T) {
 			}(),
 			status:  sentry.SpanStatusUnknown,
 			message: "error code 1337",
+			tags:    map[string]string{},
+		},
+		{
+			testName: "with ok status code",
+			spanStatus: func() ptrace.SpanStatus {
+				spanStatus := ptrace.NewSpanStatus()
+				spanStatus.SetMessage("message")
+				spanStatus.SetCode(ptrace.StatusCodeOk)
+
+				return spanStatus
+			}(),
+			status:  sentry.SpanStatusOK,
+			message: "message",
+			tags:    map[string]string{},
+		},
+		{
+			testName: "with 400 http status code",
+			spanStatus: func() ptrace.SpanStatus {
+				spanStatus := ptrace.NewSpanStatus()
+				spanStatus.SetMessage("message")
+				spanStatus.SetCode(ptrace.StatusCodeError)
+
+				return spanStatus
+			}(),
+			status:  sentry.SpanStatusUnauthenticated,
+			message: "message",
+			tags: map[string]string{
+				"http.status_code": "401",
+			},
+		},
+		{
+			testName: "with canceled grpc status code",
+			spanStatus: func() ptrace.SpanStatus {
+				spanStatus := ptrace.NewSpanStatus()
+				spanStatus.SetMessage("message")
+				spanStatus.SetCode(ptrace.StatusCodeError)
+
+				return spanStatus
+			}(),
+			status:  sentry.SpanStatusCanceled,
+			message: "message",
+			tags: map[string]string{
+				"rpc.grpc.status_code": "1",
+			},
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.testName, func(t *testing.T) {
-			status, message := statusFromSpanStatus(test.spanStatus)
+			status, message := statusFromSpanStatus(test.spanStatus, test.tags)
 			assert.Equal(t, test.status, status)
 			assert.Equal(t, test.message, message)
 		})
@@ -682,6 +732,47 @@ func TestPushTraceData(t *testing.T) {
 			err := s.pushTraceData(context.Background(), test.td)
 			assert.Nil(t, err)
 			assert.Equal(t, test.called, transport.called)
+		})
+	}
+}
+
+type TransactionFromSpanMarshalEventTestCase struct {
+	testName string
+	// input
+	span *sentry.Span
+	// output
+	wantContains string
+}
+
+func TestTransactionFromSpanMarshalEvent(t *testing.T) {
+	testCases := []TransactionFromSpanMarshalEventTestCase{
+		{
+			testName: "with parent span id",
+			span: &sentry.Span{
+				TraceID:      TraceIDFromHex("1915f8aa35ff8fbebbfeedb9d7e07216"),
+				SpanID:       SpanIDFromHex("ea4864700408805c"),
+				ParentSpanID: SpanIDFromHex("4c577fe4aec9523b"),
+			},
+			wantContains: `"contexts":{"trace":{"trace_id":"1915f8aa35ff8fbebbfeedb9d7e07216","span_id":"ea4864700408805c","parent_span_id":"4c577fe4aec9523b"}}`,
+		},
+		{
+			testName: "without parent span id",
+			span: &sentry.Span{
+				TraceID: TraceIDFromHex("11ab4adc8ac6ed96f245cd96b5b6d141"),
+				SpanID:  SpanIDFromHex("cc55ac735f0170ac"),
+			},
+			wantContains: `"contexts":{"trace":{"trace_id":"11ab4adc8ac6ed96f245cd96b5b6d141","span_id":"cc55ac735f0170ac"}}`,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.testName, func(t *testing.T) {
+			event := transactionFromSpan(test.span)
+			// mimic what sentry is doing internally
+			// see: https://github.com/getsentry/sentry-go/blob/v0.13.0/transport.go#L66-L70
+			d, err := json.Marshal(event)
+			assert.NoError(t, err)
+			assert.Contains(t, string(d), test.wantContains)
 		})
 	}
 }

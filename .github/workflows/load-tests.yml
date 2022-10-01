@@ -10,6 +10,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
 
+env:
+  # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
+  # Cache downloads for this workflow consistently run in under 2 minutes
+  SEGMENT_DOWNLOAD_TIMEOUT_MIN: 5
+
 jobs:
   setup-environment:
     timeout-minutes: 30

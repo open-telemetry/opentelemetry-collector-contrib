@@ -285,31 +285,31 @@ func generateLogs(resourceFunc ...generateResourceFunc) plog.Logs {
 
 func withPassthroughIP(passthroughIP string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().InsertString(k8sIPLabelName, passthroughIP)
+		res.Attributes().PutString(kube.K8sIPLabelName, passthroughIP)
 	}
 }
 
 func withHostname(hostname string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().InsertString(conventions.AttributeHostName, hostname)
+		res.Attributes().PutString(conventions.AttributeHostName, hostname)
 	}
 }
 
 func withPodUID(uid string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().InsertString("k8s.pod.uid", uid)
+		res.Attributes().PutString("k8s.pod.uid", uid)
 	}
 }
 
 func withContainerName(containerName string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().InsertString(conventions.AttributeK8SContainerName, containerName)
+		res.Attributes().PutString(conventions.AttributeK8SContainerName, containerName)
 	}
 }
 
 func withContainerRunID(containerRunID string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().InsertString(conventions.AttributeK8SContainerRestartCount, containerRunID)
+		res.Attributes().PutString(conventions.AttributeK8SContainerRestartCount, containerRunID)
 	}
 }
 
@@ -530,10 +530,10 @@ func TestIPSourceWithoutPodAssociation(t *testing.T) {
 
 			for _, res := range resources {
 				if tc.resourceK8SIP != "" {
-					res.Attributes().InsertString(k8sIPLabelName, tc.resourceK8SIP)
+					res.Attributes().PutString(kube.K8sIPLabelName, tc.resourceK8SIP)
 				}
 				if tc.resourceIP != "" {
-					res.Attributes().InsertString(clientIPLabelName, tc.resourceIP)
+					res.Attributes().PutString(clientIPLabelName, tc.resourceIP)
 				}
 			}
 
@@ -620,7 +620,7 @@ func TestIPSourceWithPodAssociation(t *testing.T) {
 			}
 
 			for _, res := range resources {
-				res.Attributes().InsertString(tc.labelName, tc.labelValue)
+				res.Attributes().PutString(tc.labelName, tc.labelValue)
 			}
 
 			m.testConsume(ctx, traces, metrics, logs, nil)
@@ -803,7 +803,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerRunID("1"),
 			},
 			wantAttrs: map[string]string{
-				k8sIPLabelName:                                "1.1.1.1",
+				kube.K8sIPLabelName:                           "1.1.1.1",
 				conventions.AttributeK8SContainerName:         "app",
 				conventions.AttributeK8SContainerRestartCount: "1",
 				conventions.AttributeContainerID:              "6a7f1a598b5dafec9c193f8f8d63f6e5839b8b0acd2fe780f94285e26c05580e",
@@ -830,7 +830,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerRunID("0"),
 			},
 			wantAttrs: map[string]string{
-				k8sIPLabelName:                                "1.1.1.1",
+				kube.K8sIPLabelName:                           "1.1.1.1",
 				conventions.AttributeK8SContainerName:         "new-app",
 				conventions.AttributeK8SContainerRestartCount: "0",
 			},
@@ -855,7 +855,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerRunID("1"),
 			},
 			wantAttrs: map[string]string{
-				k8sIPLabelName:                                "1.1.1.1",
+				kube.K8sIPLabelName:                           "1.1.1.1",
 				conventions.AttributeK8SContainerName:         "app",
 				conventions.AttributeK8SContainerRestartCount: "1",
 				conventions.AttributeContainerImageName:       "test/app",
@@ -929,7 +929,7 @@ func TestProcessorPicksUpPassthoughPodIp(t *testing.T) {
 	m.assertResourceAttributesLen(0, 3)
 
 	m.assertResource(0, func(res pcommon.Resource) {
-		assertResourceHasStringAttribute(t, res, k8sIPLabelName, "2.2.2.2")
+		assertResourceHasStringAttribute(t, res, kube.K8sIPLabelName, "2.2.2.2")
 		assertResourceHasStringAttribute(t, res, "k", "v")
 		assertResourceHasStringAttribute(t, res, "1", "2")
 	})
@@ -981,7 +981,7 @@ func TestMetricsProcessorHostname(t *testing.T) {
 			hostname: "3.3.3.3",
 			expectedAttrs: map[string]string{
 				conventions.AttributeHostName: "3.3.3.3",
-				k8sIPLabelName:                "3.3.3.3",
+				kube.K8sIPLabelName:           "3.3.3.3",
 				"kk":                          "vv",
 			},
 		},
@@ -1150,8 +1150,8 @@ func TestStartStop(t *testing.T) {
 func assertResourceHasStringAttribute(t *testing.T, r pcommon.Resource, k, v string) {
 	got, ok := r.Attributes().Get(k)
 	require.True(t, ok, fmt.Sprintf("resource does not contain attribute %s", k))
-	assert.EqualValues(t, pcommon.ValueTypeString, got.Type(), "attribute %s is not of type string", k)
-	assert.EqualValues(t, v, got.StringVal(), "attribute %s is not equal to %s", k, v)
+	assert.EqualValues(t, pcommon.ValueTypeStr, got.Type(), "attribute %s is not of type string", k)
+	assert.EqualValues(t, v, got.Str(), "attribute %s is not equal to %s", k, v)
 }
 
 func Test_intFromAttribute(t *testing.T) {

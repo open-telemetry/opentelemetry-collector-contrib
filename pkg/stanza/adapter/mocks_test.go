@@ -17,12 +17,10 @@ package adapter
 import (
 	"context"
 	"errors"
-	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
@@ -39,7 +37,7 @@ func init() {
 
 // UnstartableConfig is the configuration of an unstartable mock operator
 type UnstartableConfig struct {
-	helper.OutputConfig `yaml:",inline"`
+	helper.OutputConfig `mapstructure:",squash"`
 }
 
 // UnstartableOperator is an operator that will build but not start
@@ -49,15 +47,11 @@ type UnstartableOperator struct {
 	helper.OutputOperator
 }
 
-func newUnstartableParams() map[string]interface{} {
-	return map[string]interface{}{"type": "unstartable_operator"}
-}
-
-// NewUnstartableConfig creates new output config
-func NewUnstartableConfig() *UnstartableConfig {
-	return &UnstartableConfig{
+// newUnstartableConfig creates new output config
+func NewUnstartableConfig() operator.Config {
+	return operator.NewConfig(&UnstartableConfig{
 		OutputConfig: helper.NewOutputConfig("unstartable_operator", "unstartable_operator"),
-	}
+	})
 }
 
 // Build will build an unstartable operator
@@ -89,7 +83,7 @@ const testType = "test"
 
 type TestConfig struct {
 	BaseConfig `mapstructure:",squash"`
-	Input      InputConfig `mapstructure:",remain"`
+	Input      operator.Config `mapstructure:",squash"`
 }
 type TestReceiverType struct{}
 
@@ -101,13 +95,13 @@ func (f TestReceiverType) CreateDefaultConfig() config.Receiver {
 	return &TestConfig{
 		BaseConfig: BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(testType)),
-			Operators:        OperatorConfigs{},
+			Operators:        []operator.Config{},
 			Converter: ConverterConfig{
 				MaxFlushCount: 1,
 				FlushInterval: 100 * time.Millisecond,
 			},
 		},
-		Input: InputConfig{},
+		Input: operator.NewConfig(noop.NewConfig()),
 	}
 }
 
@@ -115,81 +109,6 @@ func (f TestReceiverType) BaseConfig(cfg config.Receiver) BaseConfig {
 	return cfg.(*TestConfig).BaseConfig
 }
 
-func (f TestReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
-	testConfig := cfg.(*TestConfig)
-
-	// Allow tests to run without implementing input config
-	if testConfig.Input["type"] == nil {
-		return &operator.Config{Builder: noop.NewConfig("nop")}, nil
-	}
-
-	// Allow tests to explicitly prompt a failure
-	if testConfig.Input["type"] == "unknown" {
-		return nil, errors.New("unknown input type")
-	}
-	return &operator.Config{Builder: NewUnstartableConfig()}, nil
-}
-
-func newMockPersister() *persister {
-	return &persister{
-		client: newMockClient(),
-	}
-}
-
-type mockClient struct {
-	cache    map[string][]byte
-	cacheMux sync.Mutex
-}
-
-func newMockClient() *mockClient {
-	return &mockClient{
-		cache: make(map[string][]byte),
-	}
-}
-
-func (p *mockClient) Get(_ context.Context, key string) ([]byte, error) {
-	p.cacheMux.Lock()
-	defer p.cacheMux.Unlock()
-	return p.cache[key], nil
-}
-
-func (p *mockClient) Set(_ context.Context, key string, value []byte) error {
-	p.cacheMux.Lock()
-	defer p.cacheMux.Unlock()
-	p.cache[key] = value
-	return nil
-}
-
-func (p *mockClient) Delete(_ context.Context, key string) error {
-	p.cacheMux.Lock()
-	defer p.cacheMux.Unlock()
-	delete(p.cache, key)
-	return nil
-}
-
-func (p *mockClient) Batch(_ context.Context, ops ...storage.Operation) error {
-	p.cacheMux.Lock()
-	defer p.cacheMux.Unlock()
-
-	for _, op := range ops {
-		switch op.Type {
-		case storage.Get:
-			op.Value = p.cache[op.Key]
-		case storage.Set:
-			p.cache[op.Key] = op.Value
-		case storage.Delete:
-			delete(p.cache, op.Key)
-		default:
-			return errors.New("wrong operation type")
-		}
-	}
-
-	return nil
-}
-
-func (p *mockClient) Close(_ context.Context) error {
-	p.cacheMux.Lock()
-	defer p.cacheMux.Unlock()
-	p.cache = nil
-	return nil
+func (f TestReceiverType) InputConfig(cfg config.Receiver) operator.Config {
+	return cfg.(*TestConfig).Input
 }

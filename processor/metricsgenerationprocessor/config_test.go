@@ -21,19 +21,21 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
-func TestLoadingFullConfig(t *testing.T) {
+func TestLoadConfig(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
-		configFile string
-		expCfg     *Config
+		id           config.ComponentID
+		expected     config.Processor
+		errorMessage string
 	}{
 		{
-			configFile: "config_full.yaml",
-			expCfg: &Config{
+			id: config.NewComponentIDWithName(typeStr, ""),
+			expected: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Rules: []Rule{
 					{
@@ -55,87 +57,53 @@ func TestLoadingFullConfig(t *testing.T) {
 				},
 			},
 		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.expCfg.ID().String(), func(t *testing.T) {
-			factories, err := componenttest.NopFactories()
-			assert.NoError(t, err)
-
-			factory := NewFactory()
-			factories.Processors[typeStr] = factory
-			config, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.configFile), factories)
-			assert.NoError(t, err)
-			require.NotNil(t, config)
-
-			cfg := config.Processors[test.expCfg.ID()]
-			assert.Equal(t, test.expCfg, cfg)
-		})
-	}
-}
-
-func TestValidateConfig(t *testing.T) {
-	tests := []struct {
-		configName   string
-		succeed      bool
-		errorMessage string
-	}{
 		{
-			configName: "config_full.yaml",
-			succeed:    true,
-		},
-		{
-			configName:   "config_missing_new_metric.yaml",
-			succeed:      false,
+			id:           config.NewComponentIDWithName(typeStr, "missing_new_metric"),
 			errorMessage: fmt.Sprintf("missing required field %q", nameFieldName),
 		},
 		{
-			configName:   "config_missing_type.yaml",
-			succeed:      false,
+			id:           config.NewComponentIDWithName(typeStr, "missing_type"),
 			errorMessage: fmt.Sprintf("missing required field %q", typeFieldName),
 		},
 		{
-			configName:   "config_invalid_generation_type.yaml",
-			succeed:      false,
+			id:           config.NewComponentIDWithName(typeStr, "invalid_generation_type"),
 			errorMessage: fmt.Sprintf("%q must be in %q", typeFieldName, generationTypeKeys()),
 		},
 		{
-			configName:   "config_missing_operand1.yaml",
-			succeed:      false,
+			id:           config.NewComponentIDWithName(typeStr, "missing_operand1"),
 			errorMessage: fmt.Sprintf("missing required field %q", metric1FieldName),
 		},
 		{
-			configName:   "config_missing_operand2.yaml",
-			succeed:      false,
+			id:           config.NewComponentIDWithName(typeStr, "missing_operand2"),
 			errorMessage: fmt.Sprintf("missing required field %q for generation type %q", metric2FieldName, calculate),
 		},
 		{
-			configName:   "config_missing_scale_by.yaml",
-			succeed:      false,
+			id:           config.NewComponentIDWithName(typeStr, "missing_scale_by"),
 			errorMessage: fmt.Sprintf("field %q required to be greater than 0 for generation type %q", scaleByFieldName, scale),
 		},
 		{
-			configName:   "config_invalid_operation.yaml",
-			succeed:      false,
+			id:           config.NewComponentIDWithName(typeStr, "invalid_operation"),
 			errorMessage: fmt.Sprintf("%q must be in %q", operationFieldName, operationTypeKeys()),
 		},
 	}
 
-	for _, test := range tests {
-		factories, err := componenttest.NopFactories()
-		assert.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+			require.NoError(t, err)
 
-		factory := NewFactory()
-		factories.Processors[typeStr] = factory
-		t.Run(test.configName, func(t *testing.T) {
-			config, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.configName), factories)
-			if test.succeed {
-				assert.NotNil(t, config)
-				assert.NoError(t, err)
-			} else {
-				assert.EqualError(t, err, fmt.Sprintf("processor %q has invalid configuration: %s", typeStr, test.errorMessage))
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+
+			if tt.expected == nil {
+				assert.EqualError(t, cfg.Validate(), tt.errorMessage)
+				return
 			}
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
-
 	}
 }

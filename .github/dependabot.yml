@@ -15,10 +15,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/cmd/chloggen"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/cmd/configschema"
     schedule:
       interval: "weekly"
@@ -116,6 +112,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/exporter/influxdbexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/instanaexporter"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -387,7 +387,7 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/pkg/telemetryquerylanguage"
+    directory: "/pkg/ottl"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -483,6 +483,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/processor/servicegraphprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/processor/spanmetricsprocessor"
     schedule:
       interval: "weekly"
@@ -524,6 +528,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/awsxrayreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/azureblobreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -680,6 +688,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/prometheusreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/pulsarreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

@@ -14,6 +14,7 @@ These are the metrics available for this scraper.
 | **process.disk.io.write** | Disk bytes written. | By | Sum(Int) | <ul> </ul> |
 | **process.memory.physical_usage** | The amount of physical memory in use. | By | Sum(Int) | <ul> </ul> |
 | **process.memory.virtual_usage** | Virtual memory size. | By | Sum(Int) | <ul> </ul> |
+| process.threads | Process threads count. | {threads} | Sum(Int) | <ul> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:

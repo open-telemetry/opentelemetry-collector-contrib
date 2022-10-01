@@ -21,25 +21,25 @@ type PICTMetricInputs struct {
 	// Specifies the number of points on each metric.
 	NumPtsPerMetric PICTNumPtsPerMetric
 	// Specifies the types of metrics that can be generated.
-	MetricType PICTMetricDataType
+	MetricType PICTMetricType
 	// Specifies the number of labels on each datapoint.
 	NumPtLabels PICTNumPtLabels
 	// Specifies the number of attributes on each resource.
 	NumResourceAttrs PICTNumResourceAttrs
 }
 
-// PICTMetricDataType enumerates the types of metrics that can be generated.
-type PICTMetricDataType string
+// PICTMetricType enumerates the types of metrics that can be generated.
+type PICTMetricType string
 
 const (
-	MetricTypeIntGauge                 PICTMetricDataType = "IntGauge"
-	MetricTypeMonotonicIntSum          PICTMetricDataType = "MonotonicIntSum"
-	MetricTypeNonMonotonicIntSum       PICTMetricDataType = "NonMonotonicIntSum"
-	MetricTypeDoubleGauge              PICTMetricDataType = "DoubleGauge"
-	MetricTypeMonotonicDoubleSum       PICTMetricDataType = "MonotonicDoubleSum"
-	MetricTypeNonMonotonicDoubleSum    PICTMetricDataType = "NonMonotonicDoubleSum"
-	MetricTypeDoubleExemplarsHistogram PICTMetricDataType = "DoubleExemplarsHistogram"
-	MetricTypeIntExemplarsHistogram    PICTMetricDataType = "IntExemplarsHistogram"
+	MetricTypeIntGauge                 PICTMetricType = "IntGauge"
+	MetricTypeMonotonicIntSum          PICTMetricType = "MonotonicIntSum"
+	MetricTypeNonMonotonicIntSum       PICTMetricType = "NonMonotonicIntSum"
+	MetricTypeDoubleGauge              PICTMetricType = "DoubleGauge"
+	MetricTypeMonotonicDoubleSum       PICTMetricType = "MonotonicDoubleSum"
+	MetricTypeNonMonotonicDoubleSum    PICTMetricType = "NonMonotonicDoubleSum"
+	MetricTypeDoubleExemplarsHistogram PICTMetricType = "DoubleExemplarsHistogram"
+	MetricTypeIntExemplarsHistogram    PICTMetricType = "IntExemplarsHistogram"
 )
 
 // PICTNumPtLabels enumerates the number of labels on each datapoint.

@@ -26,17 +26,27 @@ hostmetrics:
 
 The available scrapers are:
 
-| Scraper    | Supported OSs                | Description                                            |
-| ---------- | ---------------------------- | ------------------------------------------------------ |
-| cpu        | All except Mac<sup>[1]</sup> | CPU utilization metrics                                |
-| disk       | All except Mac<sup>[1]</sup> | Disk I/O metrics                                       |
-| load       | All                          | CPU load metrics                                       |
-| filesystem | All                          | File System utilization metrics                        |
-| memory     | All                          | Memory utilization metrics                             |
-| network    | All                          | Network interface I/O metrics & TCP connection metrics |
-| paging     | All                          | Paging/Swap space utilization and I/O metrics          |
-| processes  | Linux                        | Process count metrics                                  |
-| process    | Linux & Windows              | Per process CPU, Memory, and Disk I/O metrics          |
+| Scraper      | Supported OSs                | Description                                            |
+| ------------ | ---------------------------- | ------------------------------------------------------ |
+| [cpu]        | All except Mac<sup>[1]</sup> | CPU utilization metrics                                |
+| [disk]       | All except Mac<sup>[1]</sup> | Disk I/O metrics                                       |
+| [load]       | All                          | CPU load metrics                                       |
+| [filesystem] | All                          | File System utilization metrics                        |
+| [memory]     | All                          | Memory utilization metrics                             |
+| [network]    | All                          | Network interface I/O metrics & TCP connection metrics |
+| [paging]     | All                          | Paging/Swap space utilization and I/O metrics          |
+| [processes]  | Linux                        | Process count metrics                                  |
+| [process]    | Linux & Windows              | Per process CPU, Memory, and Disk I/O metrics          |
+
+[cpu]: ./internal/scraper/cpuscraper/documentation.md
+[disk]: ./internal/scraper/diskscraper/documentation.md
+[filesystem]: ./internal/scraper/filesystemscraper/documentation.md
+[load]: ./internal/scraper/loadscraper/documentation.md
+[memory]: ./internal/scraper/memoryscraper/documentation.md
+[network]: ./internal/scraper/networkscraper/documentation.md
+[paging]: ./internal/scraper/pagingscraper/documentation.md
+[processes]: ./internal/scraper/processesscraper/documentation.md
+[process]: ./internal/scraper/processscraper/documentation.md
 
 ### Notes
 
@@ -135,107 +145,13 @@ service:
 
 #### Transition from metrics with "direction" attribute
 
-Some host metrics reported are transitioning from being reported with a `direction` attribute to being reported with the
-direction included in the metric name to adhere to the OpenTelemetry specification
-(https://github.com/open-telemetry/opentelemetry-specification/pull/2617):
+The proposal to change metrics from being reported with a `direction` attribute has been reverted in the specification. As a result, the
+following feature gates will be removed in v0.62.0:
 
-- `disk` scraper metrics:
-  - `system.disk.io` will become:
-    - `system.disk.io.read`
-    - `system.disk.io.write`
-  - `system.disk.operations` will become:
-    - `system.disk.operations.read`
-    - `system.disk.operations.write`
-  - `system.disk.operation_time` will become:
-    - `system.disk.operation_time.read`
-    - `system.disk.operation_time.write`
-  - `system.disk.merged` will become:
-    - `system.disk.merged.read`
-    - `system.disk.merged.write`
-- `network` scraper metrics:
-  - `system.network.dropped` will become:
-    - `system.network.dropped.receive`
-    - `system.network.dropped.transmit`
-  - `system.network.errors` will become:
-    - `system.network.errors.receive`
-    - `system.network.errors.transmit`
-  - `system.network.io` will become:
-    - `system.network.io.receive`
-    - `system.network.io.transmit`
-  - `system.network.packets` will become:
-    - `system.network.packets.receive`
-    - `system.network.packets.transmit`
-- `paging` scraper metrics:
-  - `system.paging.operations` will become:
-    - `system.paging.operations.page_in`
-    - `system.paging.operations.page_out`
-- `process` scraper metrics:
-  - `process.disk.io` will become:
-    - `process.disk.io.read`
-    - `process.disk.io.write`
+- **receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute**
+- **receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute**
 
-The following feature gates control the transition process:
-
-- **receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute**: controls if the new metrics without
-  `direction` attribute are emitted by the receiver.
-- **receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute**: controls if the deprecated metrics with 
-  `direction`
-  attribute are emitted by the receiver.
-
-##### Transition schedule:
-
-1. v0.55.0, July 2022:
-
-- Most of the scrapers except for `disk` scraper can emit the new metrics without the `direction` attribute if 
-  feature gates enabled.
-- `receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute` is enabled by default.
-- `receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute` is disabled by default.
-
-2. v0.56.0, July 2022:
-
-- The new metrics are available for all scrapers, but disabled by default, they can be enabled with the feature gates.
-- The old metrics with `direction` attribute are deprecated with a warning.
-- `receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute` is enabled by default.
-- `receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute` is disabled by default.
-
-3. v0.58.0, August 2022:
-
-- The new metrics are enabled by default, deprecated metrics disabled, they can be enabled with the feature gates.
-- `receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute` is disabled by default.
-- `receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute` is enabled by default.
-
-4. v0.60.0, September 2022:
-
-- The feature gates are removed.
-- The new metrics without `direction` attribute are always emitted.
-- The deprecated metrics with `direction` attribute are no longer available.
-
-##### Usage:
-
-To enable the new metrics without `direction` attribute and disable the deprecated metrics, run OTel Collector with the 
-following arguments:
-
-```sh
-otelcol --feature-gates=-receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute,+receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute
-```
-
-It's also possible to emit both the deprecated and the new metrics:
-
-```sh
-otelcol --feature-gates=+receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute,+receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute
-```
-
-If both feature gates are enabled, each particular metric can be disabled with the user settings, for example:
-
-```yaml
-receivers:
-  hostmetrics:
-    scrapers:
-      paging:
-        metrics:
-          system.paging.operations:
-            enabled: false
-```
+For additional information, see https://github.com/open-telemetry/opentelemetry-specification/issues/2726.
 
 ##### More information:
 

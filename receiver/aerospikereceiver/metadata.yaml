@@ -32,6 +32,31 @@ attributes:
       - abort
       - complete
       - error
+  index_type:
+    value: index
+    description: Type of index the operation was performed on
+    enum:
+      - primary
+      - secondary
+  query_type:
+    value: type
+    description: Type of query operation performed on a namespace
+    enum:
+      - aggregation
+      - basic
+      - short
+      - long_basic
+      - short_basic
+      - ops_background
+      - udf_background
+  query_result:
+    value: result
+    description: Result of a query operation performed on a namespace
+    enum:
+      - abort
+      - complete
+      - error
+      - timeout # short_basic queries only
   transaction_type:
     value: type
     description: Type of transaction performed on a namespace
@@ -94,6 +119,15 @@ metrics:
       input_type: string
       monotonic: false
       aggregation: cumulative
+  aerospike.node.query.tracked:
+    enabled: true 
+    description: Number of queries tracked by the system.
+    extended_documentation: Number of queries which ran more than query untracked_time (default 1 sec), Aerospike metric query_tracked
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
   aerospike.namespace.memory.usage:
     enabled: true
     description: Memory currently used by each component of the namespace
@@ -126,6 +160,57 @@ metrics:
     unit: '{scans}'
     extended_documentation: Aggregate of Aerospike Metrics scan_aggr_abort, scan_aggr_complete, scan_aggr_error, scan_basic_abort, scan_basic_complete, scan_basic_error, scan_ops_bg_abort, scan_ops_bg_complete, scan_ops_bg_error, scan_udf_bg_abort, scan_udf_bg_complete, scan_udf_bg_error
     attributes: [scan_type, scan_result]
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+  aerospike.namespace.query.count:
+    enabled: true
+    description: Number of query operations performed on the namespace
+    unit: '{queries}'
+    extended_documentation: Aggregate of Aerospike Metrics query_aggr_abort, query_aggr_complete, query_aggr_error, query_basic_abort, query_basic_complete, query_basic_error, query_ops_bg_abort, query_ops_bg_complete, query_ops_bg_error, query_udf_bg_abort, query_udf_bg_complete, query_udf_bg_error, pi_query_aggr_abort, pi_query_aggr_complete, pi_query_aggr_error, pi_query_long_basic_abort, pi_query_long_basic_complete, pi_query_long_basic_error, pi_query_ops_bg_abort, pi_query_ops_bg_basic_complete, pi_query_ops_bg_basic_error, pi_query_short_basic_timeout, pi_query_short_basic_complete, pi_query_short_basic_error, pi_query_udf_bg_abort, pi_query_udf_bg_complete, pi_query_udf_bg_error, si_query_aggr_abort, si_query_aggr_complete, si_query_aggr_error, si_query_long_basic_abort, si_query_long_basic_complete, si_query_long_basic_error, si_query_ops_bg_abort, si_query_ops_bg_basic_complete, si_query_ops_bg_basic_error, si_query_short_basic_timeout, si_query_short_basic_complete, si_query_short_basic_error, si_query_udf_bg_abort, si_query_udf_bg_complete, si_query_udf_bg_error
+    attributes: [query_type, index_type, query_result]
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+  aerospike.namespace.geojson.region_query_cells:
+    enabled: true
+    description: Number of cell coverings for query region queried
+    unit: '{cells}'
+    extended_documentation: Number of cell coverings for query region queried. Aerospike metric geo_region_query_cells.
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+  aerospike.namespace.geojson.region_query_false_positive:
+    enabled: true
+    description: Number of points outside the region.
+    unit: '{points}'
+    extended_documentation: Total query result points is geo_region_query_points + geo_region_query_falsepos. Aerospike metric geo_regio_query_falspos.
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+  aerospike.namespace.geojson.region_query_points:
+    enabled: true
+    description: Number of points within the region.
+    unit: '{points}'
+    extended_documentation: Total query result points is geo_region_query_points + geo_region_query_falsepos. Aerospike metric geo_region_query_points.
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+  aerospike.namespace.geojson.region_query_requests:
+    enabled: true
+    description: Number of geojson queries on the system since the uptime of the node.
+    unit: '{queries}'
+    extended_documentation: Number of geojson queries on the system since the uptime of the node. Aerospike metric geo_region_query_reqs.
     sum:
       value_type: int
       input_type: string

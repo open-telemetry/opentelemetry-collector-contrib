@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
@@ -69,20 +68,19 @@ func (r *receiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error) {
 	var errs error
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-	md := pmetric.NewMetrics()
 	for res := range results {
 		if res.err != nil {
 			// Don't know the number of failed stats, but one container fetch is a partial error.
 			errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(res.err, 0))
 			continue
 		}
-		r.recordContainerStats(now, res.stats, res.container).ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
+		r.recordContainerStats(now, res.stats, res.container)
 	}
 
-	return md, errs
+	return r.mb.Emit(), errs
 }
 
-func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *dtypes.StatsJSON, container *docker.Container) pmetric.Metrics {
+func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *dtypes.StatsJSON, container *docker.Container) {
 	r.recordCPUMetrics(now, &containerStats.CPUStats, &containerStats.PreCPUStats)
 	r.recordMemoryMetrics(now, &containerStats.MemoryStats)
 	r.recordBlkioMetrics(now, &containerStats.BlkioStats)
@@ -101,19 +99,19 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 	for k, label := range r.config.EnvVarsToMetricLabels {
 		if v := container.EnvMap[k]; v != "" {
 			resourceMetricsOptions = append(resourceMetricsOptions, func(rm pmetric.ResourceMetrics) {
-				rm.Resource().Attributes().UpsertString(label, v)
+				rm.Resource().Attributes().PutString(label, v)
 			})
 		}
 	}
 	for k, label := range r.config.ContainerLabelsToMetricLabels {
 		if v := container.Config.Labels[k]; v != "" {
 			resourceMetricsOptions = append(resourceMetricsOptions, func(rm pmetric.ResourceMetrics) {
-				rm.Resource().Attributes().UpsertString(label, v)
+				rm.Resource().Attributes().PutString(label, v)
 			})
 		}
 	}
 
-	return r.mb.Emit(resourceMetricsOptions...)
+	r.mb.EmitForResource(resourceMetricsOptions...)
 }
 
 func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtypes.MemoryStats) {
@@ -168,90 +166,27 @@ func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtype
 	}
 }
 
-type blkioRecorder func(now pcommon.Timestamp, val int64, devMaj string, devMin string)
-
-type blkioMapper struct {
-	opToRecorderMap map[string]blkioRecorder
-	entries         []dtypes.BlkioStatEntry
-}
+type blkioRecorder func(now pcommon.Timestamp, val int64, devMaj string, devMin string, operation string)
 
 func (r *receiver) recordBlkioMetrics(now pcommon.Timestamp, blkioStats *dtypes.BlkioStats) {
-	// These maps can be avoided once the operation is changed to an attribute instead of being in the metric name
-	for _, blkioRecorder := range []blkioMapper{
-		{entries: blkioStats.IoMergedRecursive, opToRecorderMap: map[string]blkioRecorder{
-			"read":    r.mb.RecordContainerBlockioIoMergedRecursiveReadDataPoint,
-			"write":   r.mb.RecordContainerBlockioIoMergedRecursiveWriteDataPoint,
-			"sync":    r.mb.RecordContainerBlockioIoMergedRecursiveSyncDataPoint,
-			"async":   r.mb.RecordContainerBlockioIoMergedRecursiveAsyncDataPoint,
-			"discard": r.mb.RecordContainerBlockioIoMergedRecursiveDiscardDataPoint,
-			"total":   r.mb.RecordContainerBlockioIoMergedRecursiveTotalDataPoint,
-		}},
-		{entries: blkioStats.IoQueuedRecursive, opToRecorderMap: map[string]blkioRecorder{
-			"read":    r.mb.RecordContainerBlockioIoQueuedRecursiveReadDataPoint,
-			"write":   r.mb.RecordContainerBlockioIoQueuedRecursiveWriteDataPoint,
-			"sync":    r.mb.RecordContainerBlockioIoQueuedRecursiveSyncDataPoint,
-			"async":   r.mb.RecordContainerBlockioIoQueuedRecursiveAsyncDataPoint,
-			"discard": r.mb.RecordContainerBlockioIoQueuedRecursiveDiscardDataPoint,
-			"total":   r.mb.RecordContainerBlockioIoQueuedRecursiveTotalDataPoint,
-		}},
-		{entries: blkioStats.IoServiceBytesRecursive, opToRecorderMap: map[string]blkioRecorder{
-			"read":    r.mb.RecordContainerBlockioIoServiceBytesRecursiveReadDataPoint,
-			"write":   r.mb.RecordContainerBlockioIoServiceBytesRecursiveWriteDataPoint,
-			"sync":    r.mb.RecordContainerBlockioIoServiceBytesRecursiveSyncDataPoint,
-			"async":   r.mb.RecordContainerBlockioIoServiceBytesRecursiveAsyncDataPoint,
-			"discard": r.mb.RecordContainerBlockioIoServiceBytesRecursiveDiscardDataPoint,
-			"total":   r.mb.RecordContainerBlockioIoServiceBytesRecursiveTotalDataPoint,
-		}},
-		{entries: blkioStats.IoServiceTimeRecursive, opToRecorderMap: map[string]blkioRecorder{
-			"read":    r.mb.RecordContainerBlockioIoServiceTimeRecursiveReadDataPoint,
-			"write":   r.mb.RecordContainerBlockioIoServiceTimeRecursiveWriteDataPoint,
-			"sync":    r.mb.RecordContainerBlockioIoServiceTimeRecursiveSyncDataPoint,
-			"async":   r.mb.RecordContainerBlockioIoServiceTimeRecursiveAsyncDataPoint,
-			"discard": r.mb.RecordContainerBlockioIoServiceTimeRecursiveDiscardDataPoint,
-			"total":   r.mb.RecordContainerBlockioIoServiceTimeRecursiveTotalDataPoint,
-		}},
-		{entries: blkioStats.IoServicedRecursive, opToRecorderMap: map[string]blkioRecorder{
-			"read":    r.mb.RecordContainerBlockioIoServicedRecursiveReadDataPoint,
-			"write":   r.mb.RecordContainerBlockioIoServicedRecursiveWriteDataPoint,
-			"sync":    r.mb.RecordContainerBlockioIoServicedRecursiveSyncDataPoint,
-			"async":   r.mb.RecordContainerBlockioIoServicedRecursiveAsyncDataPoint,
-			"discard": r.mb.RecordContainerBlockioIoServicedRecursiveDiscardDataPoint,
-			"total":   r.mb.RecordContainerBlockioIoServicedRecursiveTotalDataPoint,
-		}},
-		{entries: blkioStats.IoTimeRecursive, opToRecorderMap: map[string]blkioRecorder{
-			"read":    r.mb.RecordContainerBlockioIoTimeRecursiveReadDataPoint,
-			"write":   r.mb.RecordContainerBlockioIoTimeRecursiveWriteDataPoint,
-			"sync":    r.mb.RecordContainerBlockioIoTimeRecursiveSyncDataPoint,
-			"async":   r.mb.RecordContainerBlockioIoTimeRecursiveAsyncDataPoint,
-			"discard": r.mb.RecordContainerBlockioIoTimeRecursiveDiscardDataPoint,
-			"total":   r.mb.RecordContainerBlockioIoTimeRecursiveTotalDataPoint,
-		}},
-		{entries: blkioStats.IoWaitTimeRecursive, opToRecorderMap: map[string]blkioRecorder{
-			"read":    r.mb.RecordContainerBlockioIoWaitTimeRecursiveReadDataPoint,
-			"write":   r.mb.RecordContainerBlockioIoWaitTimeRecursiveWriteDataPoint,
-			"sync":    r.mb.RecordContainerBlockioIoWaitTimeRecursiveSyncDataPoint,
-			"async":   r.mb.RecordContainerBlockioIoWaitTimeRecursiveAsyncDataPoint,
-			"discard": r.mb.RecordContainerBlockioIoWaitTimeRecursiveDiscardDataPoint,
-			"total":   r.mb.RecordContainerBlockioIoWaitTimeRecursiveTotalDataPoint,
-		}},
-		{entries: blkioStats.SectorsRecursive, opToRecorderMap: map[string]blkioRecorder{
-			"read":    r.mb.RecordContainerBlockioSectorsRecursiveReadDataPoint,
-			"write":   r.mb.RecordContainerBlockioSectorsRecursiveWriteDataPoint,
-			"sync":    r.mb.RecordContainerBlockioSectorsRecursiveSyncDataPoint,
-			"async":   r.mb.RecordContainerBlockioSectorsRecursiveAsyncDataPoint,
-			"discard": r.mb.RecordContainerBlockioSectorsRecursiveDiscardDataPoint,
-			"total":   r.mb.RecordContainerBlockioSectorsRecursiveTotalDataPoint,
-		}},
-	} {
-		for _, entry := range blkioRecorder.entries {
-			recorder, ok := blkioRecorder.opToRecorderMap[strings.ToLower(entry.Op)]
-			if !ok {
-				r.settings.Logger.Debug("Unknown operation in blockIO stats.", zap.String("operation", entry.Op))
-				continue
-			}
-			recorder(now, int64(entry.Value), strconv.FormatUint(entry.Major, 10), strconv.FormatUint(entry.Minor, 10))
-		}
+	recordSingleBlkioStat(now, blkioStats.IoMergedRecursive, r.mb.RecordContainerBlockioIoMergedRecursiveDataPoint)
+	recordSingleBlkioStat(now, blkioStats.IoQueuedRecursive, r.mb.RecordContainerBlockioIoQueuedRecursiveDataPoint)
+	recordSingleBlkioStat(now, blkioStats.IoServiceBytesRecursive, r.mb.RecordContainerBlockioIoServiceBytesRecursiveDataPoint)
+	recordSingleBlkioStat(now, blkioStats.IoServiceTimeRecursive, r.mb.RecordContainerBlockioIoServiceTimeRecursiveDataPoint)
+	recordSingleBlkioStat(now, blkioStats.IoServicedRecursive, r.mb.RecordContainerBlockioIoServicedRecursiveDataPoint)
+	recordSingleBlkioStat(now, blkioStats.IoTimeRecursive, r.mb.RecordContainerBlockioIoTimeRecursiveDataPoint)
+	recordSingleBlkioStat(now, blkioStats.IoWaitTimeRecursive, r.mb.RecordContainerBlockioIoWaitTimeRecursiveDataPoint)
+	recordSingleBlkioStat(now, blkioStats.SectorsRecursive, r.mb.RecordContainerBlockioSectorsRecursiveDataPoint)
+}
 
+func recordSingleBlkioStat(now pcommon.Timestamp, statEntries []dtypes.BlkioStatEntry, recorder blkioRecorder) {
+	for _, stat := range statEntries {
+		recorder(
+			now,
+			int64(stat.Value),
+			strconv.FormatUint(stat.Major, 10),
+			strconv.FormatUint(stat.Minor, 10),
+			strings.ToLower(stat.Op))
 	}
 }
 

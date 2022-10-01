@@ -287,8 +287,8 @@ func TestGetMEMReservedInTask(t *testing.T) {
 
 func TestGetCPUReservedAndMemReserved(t *testing.T) {
 	var ctx, cancel = context.WithCancel(context.Background())
-	tasks := []ECSTask{}
-	containers := []ECSContainer{}
+	var tasks []ECSTask
+	var containers []ECSContainer
 
 	task1 := ECSTask{
 		KnownStatus: "RUNNING",

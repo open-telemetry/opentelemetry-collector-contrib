@@ -34,7 +34,7 @@ const (
 	translationRulesConfigKey = "translation_rules"
 )
 
-var _ config.Unmarshallable = (*Config)(nil)
+var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config defines configuration for SignalFx exporter.
 type Config struct {

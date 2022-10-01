@@ -44,7 +44,7 @@ func NewConfig(operatorID string) *Config {
 
 // Config is the configuration of the Stdout operator
 type Config struct {
-	helper.OutputConfig `yaml:",inline"`
+	helper.OutputConfig `mapstructure:",squash"`
 }
 
 // Build will build a stdout operator.

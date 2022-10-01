@@ -298,7 +298,8 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	buf := new(bytes.Buffer)
 	var contentType string
 	cst := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		io.Copy(buf, r.Body) // nolint:errcheck
+		_, err := io.Copy(buf, r.Body)
+		assert.NoError(t, err)
 		contentType = r.Header.Get("Content-Type")
 		r.Body.Close()
 	}))

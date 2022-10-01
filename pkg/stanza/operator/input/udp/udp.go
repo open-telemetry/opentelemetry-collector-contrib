@@ -30,18 +30,25 @@ import (
 )
 
 const (
+	operatorType = "udp_input"
+
 	// Maximum UDP packet size
 	MaxUDPSize = 64 * 1024
 )
 
 func init() {
-	operator.Register("udp_input", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
 // NewConfig creates a new UDP input config with default values
-func NewConfig(operatorID string) *Config {
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new UDP input config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, "udp_input"),
+		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 		BaseConfig: BaseConfig{
 			Encoding: helper.NewEncodingConfig(),
 			Multiline: helper.MultilineConfig{
@@ -54,16 +61,16 @@ func NewConfig(operatorID string) *Config {
 
 // Config is the configuration of a udp input operator.
 type Config struct {
-	helper.InputConfig `yaml:",inline"`
-	BaseConfig         `yaml:",inline"`
+	helper.InputConfig `mapstructure:",squash"`
+	BaseConfig         `mapstructure:",squash"`
 }
 
 // BaseConfig is the details configuration of a udp input operator.
 type BaseConfig struct {
-	ListenAddress string                 `mapstructure:"listen_address,omitempty"        json:"listen_address,omitempty"       yaml:"listen_address,omitempty"`
-	AddAttributes bool                   `mapstructure:"add_attributes,omitempty"        json:"add_attributes,omitempty"       yaml:"add_attributes,omitempty"`
-	Encoding      helper.EncodingConfig  `mapstructure:",squash,omitempty"               json:",inline,omitempty"              yaml:",inline,omitempty"`
-	Multiline     helper.MultilineConfig `mapstructure:"multiline,omitempty"             json:"multiline,omitempty"            yaml:"multiline,omitempty"`
+	ListenAddress string                 `mapstructure:"listen_address,omitempty"`
+	AddAttributes bool                   `mapstructure:"add_attributes,omitempty"`
+	Encoding      helper.EncodingConfig  `mapstructure:",squash,omitempty"`
+	Multiline     helper.MultilineConfig `mapstructure:"multiline,omitempty"`
 }
 
 // Build will build a udp input operator.

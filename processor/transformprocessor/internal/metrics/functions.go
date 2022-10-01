@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
@@ -28,11 +29,11 @@ var registry = map[string]interface{}{
 
 func init() {
 	// Init metrics registry with default functions common to all signals
-	for k, v := range common.DefaultFunctions() {
+	for k, v := range common.Functions[ottldatapoints.TransformContext]() {
 		registry[k] = v
 	}
 }
 
-func DefaultFunctions() map[string]interface{} {
+func Functions() map[string]interface{} {
 	return registry
 }

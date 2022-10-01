@@ -430,6 +430,33 @@
           "full_states": 2,
           "incompatible_diffs": 0,
           "compatible_diffs": 1
+        },
+        "cluster_state_update": {
+          "unchanged": {
+            "count": 4,
+            "computation_time_millis": 7,
+            "notification_time_millis": 1
+          },
+          "success": {
+            "count": 7,
+            "computation_time_millis": 40,
+            "publication_time_millis": 627,
+            "context_construction_time_millis": 17,
+            "commit_time_millis": 113,
+            "completion_time_millis": 117,
+            "master_apply_time_millis": 484,
+            "notification_time_millis": 2
+          },
+          "failure": {
+            "count": 0,
+            "computation_time_millis": 0,
+            "publication_time_millis": 0,
+            "context_construction_time_millis": 0,
+            "commit_time_millis": 0,
+            "completion_time_millis": 0,
+            "master_apply_time_millis": 0,
+            "notification_time_millis": 0
+          }
         }
       },
       "ingest": {

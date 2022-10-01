@@ -17,11 +17,10 @@ package serialization // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"fmt"
 
-	"go.uber.org/zap"
-
 	dtMetric "github.com/dynatrace-oss/dynatrace-metric-utils-go/metric"
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 )
 
 func serializeGaugePoint(name, prefix string, dims dimensions.NormalizedDimensionList, dp pmetric.NumberDataPoint) (string, error) {
@@ -31,9 +30,9 @@ func serializeGaugePoint(name, prefix string, dims dimensions.NormalizedDimensio
 	case pmetric.NumberDataPointValueTypeNone:
 		return "", fmt.Errorf("unsupported value type none")
 	case pmetric.NumberDataPointValueTypeInt:
-		metricOption = dtMetric.WithIntGaugeValue(dp.IntVal())
+		metricOption = dtMetric.WithIntGaugeValue(dp.IntValue())
 	case pmetric.NumberDataPointValueTypeDouble:
-		metricOption = dtMetric.WithFloatGaugeValue(dp.DoubleVal())
+		metricOption = dtMetric.WithFloatGaugeValue(dp.DoubleValue())
 	default:
 		return "", fmt.Errorf("unknown data type")
 	}

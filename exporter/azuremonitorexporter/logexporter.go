@@ -56,5 +56,5 @@ func newLogsExporter(config *Config, transportChannel transportChannel, set comp
 		logger:           set.Logger,
 	}
 
-	return exporterhelper.NewLogsExporterWithContext(context.TODO(), set, config, exporter.onLogData)
+	return exporterhelper.NewLogsExporter(context.TODO(), set, config, exporter.onLogData)
 }

@@ -18,6 +18,8 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"io/fs"
+	"path/filepath"
 	"reflect"
 	"strings"
 )
@@ -28,34 +30,43 @@ func commentsForStruct(v reflect.Value, dr DirResolver) (map[string]string, erro
 	if v.Kind() == reflect.Ptr {
 		elem = v.Elem()
 	}
-	dir, err := dr.PackageDir(elem.Type())
+	packagePath, err := dr.TypeToPackagePath(elem.Type())
 	if err != nil {
 		return nil, err
 	}
-	name := trimPackage(elem)
-	return commentsForStructName(dir, name), nil
+	return searchDirsForComments(packagePath, elem.Type().String())
 }
 
-func trimPackage(v reflect.Value) string {
-	typeName := v.Type().String()
-	split := strings.Split(typeName, ".")
-	return split[1]
+func searchDirsForComments(packageDir, typeName string) (map[string]string, error) {
+	out := map[string]string{}
+	err := filepath.WalkDir(packageDir, func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() {
+			commentsForStructName(out, path, typeName)
+		}
+		return nil
+	})
+	return out, err
 }
 
-func commentsForStructName(packageDir, structName string) map[string]string {
+func commentsForStructName(comments map[string]string, dir, typeName string) {
 	fset := token.NewFileSet()
-	pkgs, err := parser.ParseDir(fset, packageDir, nil, parser.ParseComments)
+	pkgs, err := parser.ParseDir(fset, dir, nil, parser.ParseComments)
 	if err != nil {
 		panic(err)
 	}
-	comments := map[string]string{}
-	for _, pkg := range pkgs {
+	parts := strings.Split(typeName, ".")
+	targetPkg := parts[0]
+	targetType := parts[1]
+	for pkgName, pkg := range pkgs {
+		if pkgName != targetPkg {
+			continue
+		}
 		for _, file := range pkg.Files {
 			for _, decl := range file.Decls {
 				if gd, ok := decl.(*ast.GenDecl); ok {
 					for _, spec := range gd.Specs {
 						if ts, ok := spec.(*ast.TypeSpec); ok {
-							if ts.Name.Name == structName {
+							if ts.Name.Name == targetType {
 								if structComments := gd.Doc.Text(); structComments != "" {
 									comments["_struct"] = structComments
 								}
@@ -73,7 +84,6 @@ func commentsForStructName(packageDir, structName string) map[string]string {
 			}
 		}
 	}
-	return comments
 }
 
 func fieldName(field *ast.Field) string {

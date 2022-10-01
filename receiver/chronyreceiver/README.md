@@ -34,6 +34,8 @@ The following options can be customised:
   - The allowed formats are the following
     - udp://hostname:port
     - unix:///path/to/chrony.sock (Please note the triple slash)
+    - unixgram:///path/to/chrony/sock
+  - The network type `unix` will be converted to `unixgram` but both are permissible
 - timeout (optional) - The total amount of time allowed to read and process the data from chronyd
   - Recommendation: This value should be set above 1s to allow `chronyd` time to respond
 - collection_interval (optional) - how frequent this receiver should poll [chrony]

@@ -44,6 +44,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
@@ -70,7 +71,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
@@ -145,6 +146,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
@@ -183,7 +185,7 @@ func Components() (component.Factories, error) {
 		ecstaskobserver.NewFactory(),
 		filestorage.NewFactory(),
 		fluentbitextension.NewFactory(),
-		headerssetter.NewFactory(),
+		headerssetterextension.NewFactory(),
 		healthcheckextension.NewFactory(),
 		hostobserver.NewFactory(),
 		httpforwarder.NewFactory(),
@@ -247,6 +249,7 @@ func Components() (component.Factories, error) {
 		postgresqlreceiver.NewFactory(),
 		prometheusexecreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
+		pulsarreceiver.NewFactory(),
 		rabbitmqreceiver.NewFactory(),
 		receivercreator.NewFactory(),
 		redisreceiver.NewFactory(),
@@ -297,6 +300,7 @@ func Components() (component.Factories, error) {
 		googlecloudpubsubexporter.NewFactory(),
 		humioexporter.NewFactory(),
 		influxdbexporter.NewFactory(),
+		instanaexporter.NewFactory(),
 		jaegerexporter.NewFactory(),
 		jaegerthrifthttpexporter.NewFactory(),
 		kafkaexporter.NewFactory(),

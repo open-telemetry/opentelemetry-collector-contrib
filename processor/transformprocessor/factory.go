@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
@@ -48,20 +49,16 @@ func NewFactory() component.ProcessorFactory {
 func createDefaultConfig() config.Processor {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		Logs: SignalConfig{
-			Queries: []string{},
-
-			functions: logs.DefaultFunctions(),
-		},
-		Traces: SignalConfig{
-			Queries: []string{},
-
-			functions: traces.DefaultFunctions(),
-		},
-		Metrics: SignalConfig{
-			Queries: []string{},
-
-			functions: metrics.DefaultFunctions(),
+		Config: ottlconfig.Config{
+			Logs: ottlconfig.SignalConfig{
+				Queries: []string{},
+			},
+			Traces: ottlconfig.SignalConfig{
+				Queries: []string{},
+			},
+			Metrics: ottlconfig.SignalConfig{
+				Queries: []string{},
+			},
 		},
 	}
 }
@@ -74,11 +71,11 @@ func createLogsProcessor(
 ) (component.LogsProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	proc, err := logs.NewProcessor(oCfg.Logs.Queries, oCfg.Logs.functions, set)
+	proc, err := logs.NewProcessor(oCfg.Logs.Queries, logs.Functions(), set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
-	return processorhelper.NewLogsProcessorWithCreateSettings(
+	return processorhelper.NewLogsProcessor(
 		ctx,
 		set,
 		cfg,
@@ -95,11 +92,11 @@ func createTracesProcessor(
 ) (component.TracesProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	proc, err := traces.NewProcessor(oCfg.Traces.Queries, oCfg.Traces.functions, set)
+	proc, err := traces.NewProcessor(oCfg.Traces.Queries, traces.Functions(), set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
-	return processorhelper.NewTracesProcessorWithCreateSettings(
+	return processorhelper.NewTracesProcessor(
 		ctx,
 		set,
 		cfg,
@@ -116,11 +113,11 @@ func createMetricsProcessor(
 ) (component.MetricsProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	proc, err := metrics.NewProcessor(oCfg.Metrics.Queries, oCfg.Metrics.functions, set)
+	proc, err := metrics.NewProcessor(oCfg.Metrics.Queries, metrics.Functions(), set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
-	return processorhelper.NewMetricsProcessorWithCreateSettings(
+	return processorhelper.NewMetricsProcessor(
 		ctx,
 		set,
 		cfg,

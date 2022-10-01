@@ -26,7 +26,11 @@ import (
 
 var _ resolver = (*staticResolver)(nil)
 
-var errNoEndpoints = errors.New("no endpoints specified for the static resolver")
+var (
+	errNoEndpoints = errors.New("no endpoints specified for the static resolver")
+
+	staticResolverMutators = []tag.Mutator{tag.Upsert(tag.MustNewKey("resolver"), "static"), successTrueMutator}
+)
 
 type staticResolver struct {
 	endpoints         []string
@@ -61,15 +65,10 @@ func (r *staticResolver) shutdown(ctx context.Context) error {
 }
 
 func (r *staticResolver) resolve(ctx context.Context) ([]string, error) {
-	// the context to use for all metrics in this function
-	ctx, _ = tag.New(ctx,
-		tag.Upsert(tag.MustNewKey("resolver"), "static"),
-		tag.Upsert(tag.MustNewKey("success"), "true"),
-	)
-	stats.Record(ctx, mNumResolutions.M(1))
+	_ = stats.RecordWithTags(ctx, staticResolverMutators, mNumResolutions.M(1))
 
 	r.once.Do(func() {
-		stats.Record(ctx, mNumBackends.M(int64(len(r.endpoints))))
+		_ = stats.RecordWithTags(ctx, staticResolverMutators, mNumBackends.M(int64(len(r.endpoints))))
 
 		for _, callback := range r.onChangeCallbacks {
 			callback(r.endpoints)

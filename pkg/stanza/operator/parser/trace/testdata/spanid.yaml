@@ -1,3 +1,0 @@
-type: trace_parser
-span_id:
-  parse_from: body.app_span_id

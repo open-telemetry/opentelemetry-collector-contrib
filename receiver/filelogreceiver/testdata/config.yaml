@@ -1,28 +1,14 @@
-receivers:
-  filelog:
-    include: [ testdata/simple.log ]
-    start_at: beginning
-    operators:
-      - type: regex_parser
-        regex: '^(?P<time>\d{4}-\d{2}-\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$'
-        timestamp:
-          parse_from: attributes.time 
-          layout: '%Y-%m-%d'
-        severity:
-          parse_from: attributes.sev
-    converter:
-      max_flush_count: 100
-      flush_interval: 100ms
-
-processors:
-  nop:
-
-exporters:
-  nop:
-
-service:
-  pipelines:
-    logs:
-      receivers: [filelog]
-      processors: [nop]
-      exporters: [nop]
+filelog:
+  include: [ testdata/simple.log ]
+  start_at: beginning
+  operators:
+    - type: regex_parser
+      regex: '^(?P<time>\d{4}-\d{2}-\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$'
+      timestamp:
+        parse_from: attributes.time
+        layout: '%Y-%m-%d'
+      severity:
+        parse_from: attributes.sev
+  converter:
+    max_flush_count: 100
+    flush_interval: 100ms

@@ -1,23 +1,5 @@
-receivers:
-    nop:
-
-processors:
-    metricstransform:
-        transforms:
-            - include: old[\da
-              match_type: regexp
-              action: update
-
-exporters:
-    nop:
-
-service:
-    pipelines:
-        traces:
-            receivers: [nop]
-            processors: [metricstransform]
-            exporters: [nop]
-        metrics:
-            receivers: [nop]
-            processors: [metricstransform]
-            exporters: [nop]
+metricstransform:
+  transforms:
+    - include: old[\da
+      match_type: regexp
+      action: update

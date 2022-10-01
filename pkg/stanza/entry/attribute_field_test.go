@@ -396,48 +396,6 @@ func TestAttributeFieldMerge(t *testing.T) {
 	require.Equal(t, expected, entry.Attributes)
 }
 
-func TestAttributeFieldMarshal(t *testing.T) {
-	cases := []struct {
-		name    string
-		keys    []string
-		jsonDot string
-	}{
-		{
-			"root",
-			[]string{},
-			"attributes",
-		},
-		{
-			"standard",
-			[]string{"test"},
-			"attributes.test",
-		},
-		{
-			"bracketed",
-			[]string{"test.foo"},
-			"attributes['test.foo']",
-		},
-		{
-			"double_bracketed",
-			[]string{"test.foo", "bar"},
-			"attributes['test.foo']['bar']",
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			field := AttributeField{Keys: tc.keys}
-			yaml, err := field.MarshalYAML()
-			require.NoError(t, err)
-			require.Equal(t, tc.jsonDot, yaml)
-
-			json, err := field.MarshalJSON()
-			require.NoError(t, err)
-			require.Equal(t, []byte(fmt.Sprintf(`"%s"`, tc.jsonDot)), json)
-		})
-	}
-}
-
 func TestAttributeFieldUnmarshal(t *testing.T) {
 	cases := []struct {
 		name    string

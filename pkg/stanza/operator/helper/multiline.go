@@ -26,14 +26,14 @@ import (
 
 // FlusherConfig is a configuration of Flusher helper
 type FlusherConfig struct {
-	Period Duration `mapstructure:"force_flush_period"  json:"force_flush_period" yaml:"force_flush_period"`
+	Period time.Duration `mapstructure:"force_flush_period"`
 }
 
 // NewFlusherConfig creates a default Flusher config
 func NewFlusherConfig() FlusherConfig {
 	return FlusherConfig{
 		// Empty or `0s` means that we will never force flush
-		Period: Duration{Duration: time.Millisecond * 500},
+		Period: time.Millisecond * 500,
 	}
 }
 
@@ -41,7 +41,7 @@ func NewFlusherConfig() FlusherConfig {
 func (c *FlusherConfig) Build() *Flusher {
 	return &Flusher{
 		lastDataChange:     time.Now(),
-		forcePeriod:        c.Period.Raw(),
+		forcePeriod:        c.Period,
 		previousDataLength: 0,
 	}
 }
@@ -131,8 +131,8 @@ func NewMultilineConfig() MultilineConfig {
 
 // MultilineConfig is the configuration of a multiline helper
 type MultilineConfig struct {
-	LineStartPattern string `mapstructure:"line_start_pattern"  json:"line_start_pattern" yaml:"line_start_pattern"`
-	LineEndPattern   string `mapstructure:"line_end_pattern"    json:"line_end_pattern"   yaml:"line_end_pattern"`
+	LineStartPattern string `mapstructure:"line_start_pattern"`
+	LineEndPattern   string `mapstructure:"line_end_pattern"`
 }
 
 // Build will build a Multiline operator.
@@ -348,9 +348,9 @@ func trimWhitespaces(data []byte) []byte {
 
 // SplitterConfig consolidates MultilineConfig and FlusherConfig
 type SplitterConfig struct {
-	EncodingConfig EncodingConfig  `mapstructure:",squash,omitempty"                        json:",inline,omitempty"                       yaml:",inline,omitempty"`
-	Multiline      MultilineConfig `mapstructure:"multiline,omitempty"                      json:"multiline,omitempty"                     yaml:"multiline,omitempty"`
-	Flusher        FlusherConfig   `mapstructure:",squash,omitempty"                        json:",inline,omitempty"                       yaml:",inline,omitempty"`
+	EncodingConfig EncodingConfig  `mapstructure:",squash,omitempty"`
+	Multiline      MultilineConfig `mapstructure:"multiline,omitempty"`
+	Flusher        FlusherConfig   `mapstructure:",squash,omitempty"`
 }
 
 // NewSplitterConfig returns default SplitterConfig

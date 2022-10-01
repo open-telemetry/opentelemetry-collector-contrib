@@ -124,7 +124,7 @@ func (f *factory) createTracesProcessor(
 		return nil, err
 	}
 
-	return processorhelper.NewTracesProcessorWithCreateSettings(
+	return processorhelper.NewTracesProcessor(
 		ctx,
 		set,
 		cfg,
@@ -145,7 +145,7 @@ func (f *factory) createMetricsProcessor(
 		return nil, err
 	}
 
-	return processorhelper.NewMetricsProcessorWithCreateSettings(
+	return processorhelper.NewMetricsProcessor(
 		ctx,
 		set,
 		cfg,
@@ -166,7 +166,7 @@ func (f *factory) createLogsProcessor(
 		return nil, err
 	}
 
-	return processorhelper.NewLogsProcessorWithCreateSettings(
+	return processorhelper.NewLogsProcessor(
 		ctx,
 		set,
 		cfg,

@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -72,22 +71,22 @@ func buildTestTraces(setTokenLabel bool) (traces ptrace.Traces) {
 	for i := 0; i < 20; i++ {
 		rs := rss.AppendEmpty()
 		resource := rs.Resource()
-		resource.Attributes().InsertString("key1", "value1")
+		resource.Attributes().PutString("key1", "value1")
 		if setTokenLabel && i%2 == 1 {
 			tokenLabel := fmt.Sprintf("MyToken%d", i/5)
-			resource.Attributes().InsertString("com.splunk.signalfx.access_token", tokenLabel)
-			resource.Attributes().InsertString("com.splunk.signalfx.access_token", tokenLabel)
+			resource.Attributes().PutString("com.splunk.signalfx.access_token", tokenLabel)
+			resource.Attributes().PutString("com.splunk.signalfx.access_token", tokenLabel)
 		}
 		// Add one last element every 3rd resource, this way we have cases with token last or not.
 		if i%3 == 1 {
-			resource.Attributes().InsertString("key2", "value2")
+			resource.Attributes().PutString("key2", "value2")
 		}
 
 		span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		name := fmt.Sprintf("Span%d", i)
 		span.SetName(name)
-		span.SetTraceID(pcommon.NewTraceID([16]byte{1}))
-		span.SetSpanID(pcommon.NewSpanID([8]byte{1}))
+		span.SetTraceID([16]byte{1})
+		span.SetSpanID([8]byte{1})
 	}
 
 	return traces
@@ -140,7 +139,7 @@ func buildTestTrace() ptrace.Traces {
 	for i := 0; i < 2; i++ {
 		rs := trace.ResourceSpans().AppendEmpty()
 		resource := rs.Resource()
-		resource.Attributes().InsertString("com.splunk.signalfx.access_token", fmt.Sprintf("TraceAccessToken%v", i))
+		resource.Attributes().PutString("com.splunk.signalfx.access_token", fmt.Sprintf("TraceAccessToken%v", i))
 		span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("MySpan")
 
@@ -149,8 +148,8 @@ func buildTestTrace() ptrace.Traces {
 		var spanIDBytes [8]byte
 		rand.Read(traceIDBytes[:])
 		rand.Read(spanIDBytes[:])
-		span.SetTraceID(pcommon.NewTraceID(traceIDBytes))
-		span.SetSpanID(pcommon.NewSpanID(spanIDBytes))
+		span.SetTraceID(traceIDBytes)
+		span.SetSpanID(spanIDBytes)
 	}
 	return trace
 }

@@ -20,82 +20,88 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Receivers[awsxray.TypeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 3)
-
-	// ensure default configurations are generated when users provide
-	// nothing.
-	r0 := cfg.Receivers[config.NewComponentID(awsxray.TypeStr)]
-	assert.Equal(t, factory.CreateDefaultConfig(), r0)
-
-	// ensure the UDP endpoint can be properly overwritten
-	r1 := cfg.Receivers[config.NewComponentIDWithName(awsxray.TypeStr, "udp_endpoint")].(*Config)
-	assert.Equal(t,
-		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(awsxray.TypeStr, "udp_endpoint")),
-			NetAddr: confignet.NetAddr{
-				Endpoint:  "0.0.0.0:5678",
-				Transport: "udp",
-			},
-			ProxyServer: &proxy.Config{
-				TCPAddr: confignet.TCPAddr{
-					Endpoint: "0.0.0.0:2000",
+	tests := []struct {
+		id       config.ComponentID
+		expected config.Receiver
+	}{
+		{
+			id:       config.NewComponentIDWithName(awsxray.TypeStr, ""),
+			expected: createDefaultConfig(),
+		},
+		{
+			id: config.NewComponentIDWithName(awsxray.TypeStr, "udp_endpoint"),
+			expected: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(awsxray.TypeStr)),
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "0.0.0.0:5678",
+					Transport: "udp",
 				},
-				ProxyAddress: "",
-				TLSSetting: configtls.TLSClientSetting{
-					Insecure:   false,
-					ServerName: "",
+				ProxyServer: &proxy.Config{
+					TCPAddr: confignet.TCPAddr{
+						Endpoint: "0.0.0.0:2000",
+					},
+					ProxyAddress: "",
+					TLSSetting: configtls.TLSClientSetting{
+						Insecure:   false,
+						ServerName: "",
+					},
+					Region:      "",
+					RoleARN:     "",
+					AWSEndpoint: "",
 				},
-				Region:      "",
-				RoleARN:     "",
-				AWSEndpoint: "",
 			},
 		},
-		r1)
+		{
+			id: config.NewComponentIDWithName(awsxray.TypeStr, "proxy_server"),
+			expected: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(awsxray.TypeStr)),
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "0.0.0.0:2000",
+					Transport: "udp",
+				},
+				ProxyServer: &proxy.Config{
+					TCPAddr: confignet.TCPAddr{
+						Endpoint: "0.0.0.0:1234",
+					},
+					ProxyAddress: "https://proxy.proxy.com",
+					TLSSetting: configtls.TLSClientSetting{
+						Insecure:   true,
+						ServerName: "something",
+					},
+					Region:      "us-west-1",
+					RoleARN:     "arn:aws:iam::123456789012:role/awesome_role",
+					AWSEndpoint: "https://another.aws.endpoint.com",
+					LocalMode:   true,
+				},
+			}},
+	}
 
-	// ensure the fields under proxy_server are properly overwritten
-	r2 := cfg.Receivers[config.NewComponentIDWithName(awsxray.TypeStr, "proxy_server")].(*Config)
-	assert.Equal(t,
-		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(awsxray.TypeStr, "proxy_server")),
-			NetAddr: confignet.NetAddr{
-				Endpoint:  "0.0.0.0:2000",
-				Transport: "udp",
-			},
-			ProxyServer: &proxy.Config{
-				TCPAddr: confignet.TCPAddr{
-					Endpoint: "0.0.0.0:1234",
-				},
-				ProxyAddress: "https://proxy.proxy.com",
-				TLSSetting: configtls.TLSClientSetting{
-					Insecure:   true,
-					ServerName: "something",
-				},
-				Region:      "us-west-1",
-				RoleARN:     "arn:aws:iam::123456789012:role/awesome_role",
-				AWSEndpoint: "https://another.aws.endpoint.com",
-				LocalMode:   true,
-			},
-		},
-		r2)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }

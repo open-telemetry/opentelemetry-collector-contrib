@@ -29,30 +29,39 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-const RFC3164 = "rfc3164"
-const RFC5424 = "rfc5424"
+const (
+	operatorType = "syslog_parser"
+
+	RFC3164 = "rfc3164"
+	RFC5424 = "rfc5424"
+)
 
 func init() {
-	operator.Register("syslog_parser", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
 // NewConfig creates a new syslog parser config with default values
-func NewConfig(operatorID string) *Config {
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new syslog parser config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		ParserConfig: helper.NewParserConfig(operatorID, "syslog_parser"),
+		ParserConfig: helper.NewParserConfig(operatorID, operatorType),
 	}
 }
 
 // Config is the configuration of a syslog parser operator.
 type Config struct {
-	helper.ParserConfig `mapstructure:",squash" yaml:",inline"`
-	BaseConfig          `mapstructure:",squash" yaml:",inline"`
+	helper.ParserConfig `mapstructure:",squash"`
+	BaseConfig          `mapstructure:",squash"`
 }
 
 // BaseConfig is the detailed configuration of a syslog parser.
 type BaseConfig struct {
-	Protocol string `mapstructure:"protocol,omitempty" json:"protocol,omitempty" yaml:"protocol,omitempty"`
-	Location string `mapstructure:"location,omitempty" json:"location,omitempty" yaml:"location,omitempty"`
+	Protocol string `mapstructure:"protocol,omitempty"`
+	Location string `mapstructure:"location,omitempty"`
 }
 
 // Build will build a JSON parser operator.

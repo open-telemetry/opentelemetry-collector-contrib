@@ -430,7 +430,7 @@ func getSpanWithAttributes(key string, value pcommon.Value) ptrace.Span {
 func initSpanWithAttributes(key string, value pcommon.Value, dest ptrace.Span) {
 	dest.SetName("spanName")
 	dest.Attributes().Clear()
-	dest.Attributes().Insert(key, value)
+	value.CopyTo(dest.Attributes().PutEmpty(key))
 }
 
 // Test_hash ensures that the hash function supports different key lengths even if in
@@ -440,7 +440,7 @@ func Test_hash(t *testing.T) {
 	// collisions, but, of course it is possible that they happen, a different random source
 	// should avoid that.
 	r := rand.New(rand.NewSource(1))
-	fullKey := idutils.UInt64ToTraceID(r.Uint64(), r.Uint64()).Bytes()
+	fullKey := idutils.UInt64ToTraceID(r.Uint64(), r.Uint64())
 	seen := make(map[uint32]bool)
 	for i := 1; i <= len(fullKey); i++ {
 		key := fullKey[:i]
@@ -461,10 +461,10 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 		traces.ResourceSpans().EnsureCapacity(resourceSpanCount)
 		for j := 0; j < resourceSpanCount; j++ {
 			rs := traces.ResourceSpans().AppendEmpty()
-			rs.Resource().Attributes().InsertString("service.name", serviceName)
-			rs.Resource().Attributes().InsertBool("bool", true)
-			rs.Resource().Attributes().InsertString("string", "yes")
-			rs.Resource().Attributes().InsertInt("int64", 10000000)
+			rs.Resource().Attributes().PutString("service.name", serviceName)
+			rs.Resource().Attributes().PutBool("bool", true)
+			rs.Resource().Attributes().PutString("string", "yes")
+			rs.Resource().Attributes().PutInt("int64", 10000000)
 			ils := rs.ScopeSpans().AppendEmpty()
 			ils.Spans().EnsureCapacity(numTracesPerBatch)
 
@@ -472,8 +472,8 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 				span := ils.Spans().AppendEmpty()
 				span.SetTraceID(idutils.UInt64ToTraceID(r.Uint64(), r.Uint64()))
 				span.SetSpanID(idutils.UInt64ToSpanID(r.Uint64()))
-				span.Attributes().UpsertInt(conventions.AttributeHTTPStatusCode, 404)
-				span.Attributes().UpsertString("http.status_text", "Not Found")
+				span.Attributes().PutInt(conventions.AttributeHTTPStatusCode, 404)
+				span.Attributes().PutString("http.status_text", "Not Found")
 			}
 		}
 		traceBatches = append(traceBatches, traces)
@@ -493,13 +493,13 @@ func assertSampledData(t *testing.T, sampled []ptrace.Traces, serviceName string
 			ilss := rspan.ScopeSpans()
 			for j := 0; j < ilss.Len(); j++ {
 				ils := ilss.At(j)
-				if svcNameAttr, _ := rspan.Resource().Attributes().Get("service.name"); svcNameAttr.StringVal() != serviceName {
+				if svcNameAttr, _ := rspan.Resource().Attributes().Get("service.name"); svcNameAttr.Str() != serviceName {
 					continue
 				}
 				for k := 0; k < ils.Spans().Len(); k++ {
 					spanCount++
 					span := ils.Spans().At(k)
-					key := span.TraceID().Bytes()
+					key := span.TraceID()
 					if traceIDs[key] {
 						t.Errorf("same traceID used more than once %q", key)
 						return

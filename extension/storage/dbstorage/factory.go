@@ -26,7 +26,7 @@ const typeStr config.Type = "db_storage"
 
 // NewFactory creates a factory for DBStorage extension.
 func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactoryWithStabilityLevel(
+	return component.NewExtensionFactory(
 		typeStr,
 		createDefaultConfig,
 		createExtension,

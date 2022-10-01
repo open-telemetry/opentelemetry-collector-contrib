@@ -58,7 +58,8 @@ func WrapMetricsExporter(set Settings, exporter component.MetricsExporter) compo
 }
 
 func convertToMetricsAttributes(md pmetric.Metrics) pmetric.Metrics {
-	cloneMd := md.Clone()
+	cloneMd := pmetric.NewMetrics()
+	md.CopyTo(cloneMd)
 	rms := cloneMd.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		resource := rms.At(i).Resource()
@@ -68,8 +69,7 @@ func convertToMetricsAttributes(md pmetric.Metrics) pmetric.Metrics {
 			ilm := ilms.At(j)
 			metricSlice := ilm.Metrics()
 			for k := 0; k < metricSlice.Len(); k++ {
-				metric := metricSlice.At(k)
-				addAttributesToMetric(&metric, resource.Attributes())
+				addAttributesToMetric(metricSlice.At(k), resource.Attributes())
 			}
 		}
 	}
@@ -77,17 +77,17 @@ func convertToMetricsAttributes(md pmetric.Metrics) pmetric.Metrics {
 }
 
 // addAttributesToMetric adds additional labels to the given metric
-func addAttributesToMetric(metric *pmetric.Metric, labelMap pcommon.Map) {
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+func addAttributesToMetric(metric pmetric.Metric, labelMap pcommon.Map) {
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		addAttributesToNumberDataPoints(metric.Gauge().DataPoints(), labelMap)
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		addAttributesToNumberDataPoints(metric.Sum().DataPoints(), labelMap)
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		addAttributesToHistogramDataPoints(metric.Histogram().DataPoints(), labelMap)
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		addAttributesToSummaryDataPoints(metric.Summary().DataPoints(), labelMap)
-	case pmetric.MetricDataTypeExponentialHistogram:
+	case pmetric.MetricTypeExponentialHistogram:
 		addAttributesToExponentialHistogramDataPoints(metric.ExponentialHistogram().DataPoints(), labelMap)
 	}
 }
@@ -118,7 +118,7 @@ func addAttributesToExponentialHistogramDataPoints(ps pmetric.ExponentialHistogr
 
 func joinAttributeMaps(from, to pcommon.Map) {
 	from.Range(func(k string, v pcommon.Value) bool {
-		to.Upsert(k, v)
+		v.CopyTo(to.PutEmpty(k))
 		return true
 	})
 }

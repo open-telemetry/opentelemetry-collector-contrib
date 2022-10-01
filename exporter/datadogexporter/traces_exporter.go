@@ -21,18 +21,17 @@ import (
 	"sync"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
-
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
@@ -123,7 +122,7 @@ func (exp *traceExporter) consumeTraces(
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for i := 0; i < rspans.Len(); i++ {
 		rspan := rspans.At(i)
-		src := exp.agent.OTLPReceiver.ReceiveResourceSpans(rspan, http.Header{}, "otlp-exporter")
+		src := exp.agent.OTLPReceiver.ReceiveResourceSpans(ctx, rspan, http.Header{}, "otlp-exporter")
 		switch src.Kind {
 		case source.HostnameKind:
 			hosts[src.Identifier] = struct{}{}

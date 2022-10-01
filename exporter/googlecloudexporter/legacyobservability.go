@@ -54,7 +54,7 @@ func recordPointCount(ctx context.Context, success, dropped int, grpcErr error) 
 }
 
 func recordPointCountDataPoint(ctx context.Context, points int, status string) {
-	ctx, err := tag.New(ctx, tag.Insert(statusKey, status))
+	ctx, err := tag.New(ctx, tag.Upsert(statusKey, status))
 	if err != nil {
 		return
 	}

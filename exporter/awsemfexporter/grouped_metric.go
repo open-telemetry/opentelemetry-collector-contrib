@@ -38,11 +38,7 @@ type metricInfo struct {
 }
 
 // addToGroupedMetric processes OT metrics and adds them into GroupedMetric buckets
-func addToGroupedMetric(pmd *pmetric.Metric, groupedMetrics map[interface{}]*groupedMetric, metadata cWMetricMetadata, patternReplaceSucceeded bool, logger *zap.Logger, descriptor map[string]MetricDescriptor, config *Config) error {
-	if pmd == nil {
-		return nil
-	}
-
+func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[interface{}]*groupedMetric, metadata cWMetricMetadata, patternReplaceSucceeded bool, logger *zap.Logger, descriptor map[string]MetricDescriptor, config *Config) error {
 	metricName := pmd.Name()
 	dps := getDataPoints(pmd, metadata, logger)
 	if dps == nil || dps.Len() == 0 {
@@ -186,7 +182,7 @@ func groupedMetricKey(metadata groupedMetricMetadata, labels map[string]string) 
 	return aws.NewKey(metadata, labels)
 }
 
-func translateUnit(metric *pmetric.Metric, descriptor map[string]MetricDescriptor) string {
+func translateUnit(metric pmetric.Metric, descriptor map[string]MetricDescriptor) string {
 	unit := metric.Unit()
 	if descriptor, exists := descriptor[metric.Name()]; exists {
 		if unit == "" || descriptor.overwrite {

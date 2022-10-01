@@ -2,9 +2,9 @@
 
 | Status                   |                       |
 | ------------------------ |-----------------------|
-| Stability                | [in-development]      |
+| Stability                | [alpha]               |
 | Supported pipeline types | traces, logs, metrics |
-| Distributions            | none                  |
+| Distributions            | [contrib]             |
 
 Pulsar exporter exports logs, metrics, and traces to Pulsar. This exporter uses a synchronous producer
 that blocks and able to batch messages.
@@ -73,4 +73,6 @@ exporters:
     tls_trust_certs_file_path: ca.pem
 ```
 
-[in-development]:https://github.com/open-telemetry/opentelemetry-collector#in-development
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+

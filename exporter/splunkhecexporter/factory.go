@@ -104,7 +104,7 @@ func createTracesExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewTracesExporterWithContext(
+	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
 		cfg,
@@ -133,7 +133,7 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	exporter, err := exporterhelper.NewMetricsExporterWithContext(
+	exporter, err := exporterhelper.NewMetricsExporter(
 		ctx,
 		set,
 		cfg,
@@ -172,7 +172,7 @@ func createLogsExporter(
 		return nil, err
 	}
 
-	logsExporter, err := exporterhelper.NewLogsExporterWithContext(
+	logsExporter, err := exporterhelper.NewLogsExporter(
 		ctx,
 		set,
 		cfg,

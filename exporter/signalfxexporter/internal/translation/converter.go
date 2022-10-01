@@ -86,11 +86,15 @@ func (c *MetricsConverter) MetricsToSignalFxV2(md pmetric.Metrics) []*sfxpb.Data
 
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 			ilm := rm.ScopeMetrics().At(j)
+			var initialDps []*sfxpb.DataPoint
+
 			for k := 0; k < ilm.Metrics().Len(); k++ {
 				dps := c.translator.FromMetric(ilm.Metrics().At(k), extraDimensions)
-				dps = c.translateAndFilter(dps)
-				sfxDataPoints = append(sfxDataPoints, dps...)
+				initialDps = append(initialDps, dps...)
 			}
+
+			// Translate and filter all metrics within the current ScopeMetric
+			sfxDataPoints = append(sfxDataPoints, c.translateAndFilter(initialDps)...)
 		}
 	}
 

@@ -1,7 +1,9 @@
 receivers:
   receiver_creator:
   receiver_creator/1:
-    watch_observers: [mock_observer]
+    watch_observers:
+      - mock_observer
+      - mock_observer/with_name
     receivers:
       examplereceiver/1:
         rule: type == "port"

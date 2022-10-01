@@ -30,7 +30,25 @@ func addNetworkMetrics(mb *metadata.MetricsBuilder, networkMetrics metadata.Netw
 	recordNetworkDataPoint(mb, networkMetrics.Errors, s, currentTime)
 }
 
-func recordNetworkDataPoint(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordIntDataPointWithDirectionFunc, s *stats.NetworkStats, currentTime pcommon.Timestamp) {
+func recordNetworkDataPoint(mb *metadata.MetricsBuilder, r metadata.NetworkMetricsRecorder, s *stats.NetworkStats, currentTime pcommon.Timestamp) {
+	if s.RxBytes == nil && s.TxBytes == nil {
+		return
+	}
+
+	r.RecordReceiveDataPoint(mb, currentTime, int64(*s.RxBytes), s.Name)
+	r.RecordTransmitDataPoint(mb, currentTime, int64(*s.TxBytes), s.Name)
+}
+
+func addNetworkMetricsWithDirection(mb *metadata.MetricsBuilder, networkMetrics metadata.NetworkMetricsWithDirection, s *stats.NetworkStats, currentTime pcommon.Timestamp) {
+	if s == nil {
+		return
+	}
+
+	recordNetworkDataPointWithDirection(mb, networkMetrics.IO, s, currentTime)
+	recordNetworkDataPointWithDirection(mb, networkMetrics.Errors, s, currentTime)
+}
+
+func recordNetworkDataPointWithDirection(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordIntDataPointWithDirectionFunc, s *stats.NetworkStats, currentTime pcommon.Timestamp) {
 	if s.RxBytes == nil && s.TxBytes == nil {
 		return
 	}

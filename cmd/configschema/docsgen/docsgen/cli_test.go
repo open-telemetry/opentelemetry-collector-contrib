@@ -28,41 +28,32 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/loggingexporter"
-	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
-	"go.opentelemetry.io/collector/extension/ballastextension"
-	"go.opentelemetry.io/collector/extension/zpagesextension"
-	"go.opentelemetry.io/collector/processor/batchprocessor"
-	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 )
 
 func TestWriteConfigDoc(t *testing.T) {
-	cfg := otlpreceiver.NewFactory().CreateDefaultConfig()
-	root := filepath.Join("..", "..", "..", "..")
-	dr := configschema.NewDirResolver(root, configschema.DefaultModule)
+	cfg := redisreceiver.NewFactory().CreateDefaultConfig()
+	dr := configschema.NewDirResolver(filepath.Join("..", "..", "..", ".."), configschema.DefaultModule)
 	outputFilename := ""
 	tmpl := testTemplate(t)
-	writeConfigDoc(tmpl, dr, configschema.CfgInfo{
-		Type:        "otlp",
-		Group:       "receiver",
-		CfgInstance: cfg,
-	}, func(dir string, bytes []byte, perm os.FileMode) error {
-		outputFilename = dir
-		return nil
-	})
-	expectedPath := filepath.Join("receiver", "otlpreceiver", "config.md")
+	writeConfigDoc(
+		tmpl,
+		dr,
+		configschema.CfgInfo{
+			Group:       "receiver",
+			Type:        "redis",
+			CfgInstance: cfg,
+		},
+		func(dir string, bytes []byte, perm os.FileMode) error {
+			outputFilename = dir
+			return nil
+		},
+	)
+	expectedPath := filepath.Join("receiver", "redisreceiver", "config.md")
 	assert.True(t, strings.HasSuffix(outputFilename, expectedPath))
-}
-
-func testTemplate(t *testing.T) *template.Template {
-	tmpl, err := template.ParseFiles("testdata/test.tmpl")
-	require.NoError(t, err)
-	return tmpl
 }
 
 func TestHandleCLI_NoArgs(t *testing.T) {
@@ -78,7 +69,7 @@ func TestHandleCLI_NoArgs(t *testing.T) {
 }
 
 func TestHandleCLI_Single(t *testing.T) {
-	args := []string{"", "receiver", "otlp"}
+	args := []string{"", "receiver", "redis"}
 	cs := defaultComponents(t)
 	wr := &fakeFilesystemWriter{}
 
@@ -86,19 +77,23 @@ func TestHandleCLI_Single(t *testing.T) {
 
 	assert.Equal(t, 1, len(wr.configFiles))
 	assert.Equal(t, 1, len(wr.fileContents))
-	assert.True(t, strings.Contains(wr.fileContents[0], `"otlp" Receiver Reference`))
+	assert.True(t, strings.Contains(wr.fileContents[0], `Redis Receiver Reference`))
 }
 
 func TestHandleCLI_All(t *testing.T) {
+	t.Skip("this test takes > 5m when -race is used")
 	args := []string{"", "all"}
-	cs := defaultComponents(t)
-	wr := &fakeFilesystemWriter{}
+	c := defaultComponents(t)
+	writer := &fakeFilesystemWriter{}
+	testHandleCLI(t, c, writer, args)
+	assert.NotNil(t, writer.configFiles)
+	assert.NotNil(t, writer.fileContents)
+}
 
-	testHandleCLI(t, cs, wr, args)
-
-	expected := len(cs.Receivers) + len(cs.Processors) + len(cs.Exporters) + len(cs.Extensions)
-	assert.Equal(t, expected, len(wr.configFiles))
-	assert.Equal(t, expected, len(wr.fileContents))
+func defaultComponents(t *testing.T) component.Factories {
+	factories, err := components.Components()
+	require.NoError(t, err)
+	return factories
 }
 
 func testHandleCLI(t *testing.T, cs component.Factories, wr *fakeFilesystemWriter, args []string) {
@@ -108,41 +103,10 @@ func testHandleCLI(t *testing.T, cs component.Factories, wr *fakeFilesystemWrite
 	handleCLI(cs, dr, tmpl, wr.writeFile, stdoutWriter, args...)
 }
 
-func defaultComponents(t *testing.T) component.Factories {
-	var errs error
-
-	extensions, err := component.MakeExtensionFactoryMap(
-		zpagesextension.NewFactory(),
-		ballastextension.NewFactory(),
-	)
-	errs = multierr.Append(errs, err)
-
-	receivers, err := component.MakeReceiverFactoryMap(
-		otlpreceiver.NewFactory(),
-	)
-	errs = multierr.Append(errs, err)
-
-	exporters, err := component.MakeExporterFactoryMap(
-		loggingexporter.NewFactory(),
-		otlpexporter.NewFactory(),
-		otlphttpexporter.NewFactory(),
-	)
-	errs = multierr.Append(errs, err)
-
-	processors, err := component.MakeProcessorFactoryMap(
-		batchprocessor.NewFactory(),
-		memorylimiterprocessor.NewFactory(),
-	)
-	errs = multierr.Append(errs, err)
-
-	cmps := component.Factories{
-		Extensions: extensions,
-		Receivers:  receivers,
-		Processors: processors,
-		Exporters:  exporters,
-	}
-	require.NoError(t, errs)
-	return cmps
+func testTemplate(t *testing.T) *template.Template {
+	tmpl, err := template.ParseFiles("testdata/test.tmpl")
+	require.NoError(t, err)
+	return tmpl
 }
 
 type fakeFilesystemWriter struct {

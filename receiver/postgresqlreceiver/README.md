@@ -51,7 +51,7 @@ receivers:
     collection_interval: 10s
     tls:
       insecure: false
-      unsecure_skip_verify: false
+      insecure_skip_verify: false
       ca_file: /home/otel/authorities.crt
       cert_file: /home/otel/mypostgrescert.crt
       key_file: /home/otel/mypostgreskey.key

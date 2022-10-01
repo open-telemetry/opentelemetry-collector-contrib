@@ -90,7 +90,10 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, userConfigMap{
 		endpointConfigKey: "localhost:12345",
 	}, r1.receiverTemplates["nop/1"].config)
-	assert.Equal(t, []config.Type{"mock_observer"}, r1.WatchObservers)
+	assert.Equal(t, []config.ComponentID{
+		config.NewComponentID("mock_observer"),
+		config.NewComponentIDWithName("mock_observer", "with_name"),
+	}, r1.WatchObservers)
 }
 
 func TestInvalidResourceAttributeEndpointType(t *testing.T) {

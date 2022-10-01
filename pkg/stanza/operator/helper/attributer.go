@@ -27,7 +27,7 @@ func NewAttributerConfig() AttributerConfig {
 
 // AttributerConfig is the configuration of a attributer
 type AttributerConfig struct {
-	Attributes map[string]ExprStringConfig `mapstructure:"attributes" json:"attributes" yaml:"attributes"`
+	Attributes map[string]ExprStringConfig `mapstructure:"attributes"`
 }
 
 // Build will build a attributer from the supplied configuration

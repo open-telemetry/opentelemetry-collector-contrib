@@ -24,10 +24,10 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/gogo/protobuf/proto"
-	"github.com/hashicorp/go-multierror"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/tidwall/wal"
 	"go.uber.org/atomic"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -204,7 +204,7 @@ func (prwe *prweWAL) continuallyPopWALThenExport(ctx context.Context, signalStar
 		// Keeping it within a closure to ensure that the later
 		// updated value of reqL is always flushed to disk.
 		if errL := prwe.exportSink(ctx, reqL); errL != nil {
-			err = multierror.Append(err, errL)
+			err = multierr.Append(err, errL)
 		}
 	}()
 

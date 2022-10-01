@@ -31,55 +31,55 @@ type k8sResourceDefinition struct {
 	podName, podUID, container, node, rs, ds, ss, job, cronjob, ns string
 }
 
-func makeK8sResource(jobInstance *jobInstanceDefinition, def *k8sResourceDefinition) *pcommon.Resource {
+func makeK8sResource(jobInstance *jobInstanceDefinition, def *k8sResourceDefinition) pcommon.Resource {
 	resource := makeResourceWithJobInstanceScheme(jobInstance, true)
 	attrs := resource.Attributes()
 	if def.podName != "" {
-		attrs.UpsertString(conventions.AttributeK8SPodName, def.podName)
+		attrs.PutString(conventions.AttributeK8SPodName, def.podName)
 	}
 	if def.podUID != "" {
-		attrs.UpsertString(conventions.AttributeK8SPodUID, def.podUID)
+		attrs.PutString(conventions.AttributeK8SPodUID, def.podUID)
 	}
 	if def.container != "" {
-		attrs.UpsertString(conventions.AttributeK8SContainerName, def.container)
+		attrs.PutString(conventions.AttributeK8SContainerName, def.container)
 	}
 	if def.node != "" {
-		attrs.UpsertString(conventions.AttributeK8SNodeName, def.node)
+		attrs.PutString(conventions.AttributeK8SNodeName, def.node)
 	}
 	if def.rs != "" {
-		attrs.UpsertString(conventions.AttributeK8SReplicaSetName, def.rs)
+		attrs.PutString(conventions.AttributeK8SReplicaSetName, def.rs)
 	}
 	if def.ds != "" {
-		attrs.UpsertString(conventions.AttributeK8SDaemonSetName, def.ds)
+		attrs.PutString(conventions.AttributeK8SDaemonSetName, def.ds)
 	}
 	if def.ss != "" {
-		attrs.UpsertString(conventions.AttributeK8SStatefulSetName, def.ss)
+		attrs.PutString(conventions.AttributeK8SStatefulSetName, def.ss)
 	}
 	if def.job != "" {
-		attrs.UpsertString(conventions.AttributeK8SJobName, def.job)
+		attrs.PutString(conventions.AttributeK8SJobName, def.job)
 	}
 	if def.cronjob != "" {
-		attrs.UpsertString(conventions.AttributeK8SCronJobName, def.cronjob)
+		attrs.PutString(conventions.AttributeK8SCronJobName, def.cronjob)
 	}
 	if def.ns != "" {
-		attrs.UpsertString(conventions.AttributeK8SNamespaceName, def.ns)
+		attrs.PutString(conventions.AttributeK8SNamespaceName, def.ns)
 	}
 	return resource
 }
 
-func makeResourceWithJobInstanceScheme(def *jobInstanceDefinition, hasHost bool) *pcommon.Resource {
+func makeResourceWithJobInstanceScheme(def *jobInstanceDefinition, hasHost bool) pcommon.Resource {
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
 	// Using hardcoded values to assert on outward expectations so that
 	// when variables change, these tests will fail and we'll have reports.
-	attrs.UpsertString("service.name", def.job)
+	attrs.PutString("service.name", def.job)
 	if hasHost {
-		attrs.UpsertString("net.host.name", def.host)
+		attrs.PutString("net.host.name", def.host)
 	}
-	attrs.UpsertString("service.instance.id", def.instance)
-	attrs.UpsertString("net.host.port", def.port)
-	attrs.UpsertString("http.scheme", def.scheme)
-	return &resource
+	attrs.PutString("service.instance.id", def.instance)
+	attrs.PutString("net.host.port", def.port)
+	attrs.PutString("http.scheme", def.scheme)
+	return resource
 }
 
 func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
@@ -87,7 +87,7 @@ func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
 		name, job string
 		instance  string
 		sdLabels  labels.Labels
-		want      *pcommon.Resource
+		want      pcommon.Resource
 	}{
 		{
 			name: "all attributes proper",
@@ -282,10 +282,10 @@ func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			got := CreateNodeAndResource(tt.job, tt.instance, tt.sdLabels)
+			got := CreateResource(tt.job, tt.instance, tt.sdLabels)
 			got.Attributes().Sort()
 			tt.want.Attributes().Sort()
-			require.Equal(t, got, tt.want)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }

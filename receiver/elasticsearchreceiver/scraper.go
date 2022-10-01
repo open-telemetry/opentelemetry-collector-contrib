@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/go-version"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -28,13 +30,59 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
 )
 
+const (
+	emitMetricsWithDirectionAttributeFeatureGateID    = "receiver.elasticsearchreceiver.emitMetricsWithDirectionAttribute"
+	emitMetricsWithoutDirectionAttributeFeatureGateID = "receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute"
+)
+
+var (
+	emitMetricsWithDirectionAttributeFeatureGate = featuregate.Gate{
+		ID:      emitMetricsWithDirectionAttributeFeatureGateID,
+		Enabled: true,
+		Description: "Some elasticsearch metrics reported are transitioning from being reported with a direction " +
+			"attribute to being reported with the direction included in the metric name to adhere to the " +
+			"OpenTelemetry specification. This feature gate controls emitting the old metrics with the direction " +
+			"attribute. For more details, see: " +
+			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/elasticsearchreceiver/README.md#feature-gate-configurations",
+	}
+
+	emitMetricsWithoutDirectionAttributeFeatureGate = featuregate.Gate{
+		ID:      emitMetricsWithoutDirectionAttributeFeatureGateID,
+		Enabled: false,
+		Description: "Some elasticsearch metrics reported are transitioning from being reported with a direction " +
+			"attribute to being reported with the direction included in the metric name to adhere to the " +
+			"OpenTelemetry specification. This feature gate controls emitting the new metrics without the direction " +
+			"attribute. For more details, see: " +
+			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/elasticsearchreceiver/README.md#feature-gate-configurations",
+	}
+)
+
+var (
+	es7_10 = func() *version.Version {
+		v, _ := version.NewVersion("7.10")
+		return v
+	}()
+	es7_13 = func() *version.Version {
+		v, _ := version.NewVersion("7.13")
+		return v
+	}()
+)
+
+func init() {
+	featuregate.GetRegistry().MustRegister(emitMetricsWithDirectionAttributeFeatureGate)
+	featuregate.GetRegistry().MustRegister(emitMetricsWithoutDirectionAttributeFeatureGate)
+}
+
 var errUnknownClusterStatus = errors.New("unknown cluster status")
 
 type elasticsearchScraper struct {
-	client   elasticsearchClient
-	settings component.TelemetrySettings
-	cfg      *Config
-	mb       *metadata.MetricsBuilder
+	client                               elasticsearchClient
+	settings                             component.TelemetrySettings
+	cfg                                  *Config
+	mb                                   *metadata.MetricsBuilder
+	version                              *version.Version
+	emitMetricsWithDirectionAttribute    bool
+	emitMetricsWithoutDirectionAttribute bool
 }
 
 func newElasticSearchScraper(
@@ -42,9 +90,11 @@ func newElasticSearchScraper(
 	cfg *Config,
 ) *elasticsearchScraper {
 	return &elasticsearchScraper{
-		settings: settings.TelemetrySettings,
-		cfg:      cfg,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+		settings:                             settings.TelemetrySettings,
+		cfg:                                  cfg,
+		mb:                                   metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(emitMetricsWithDirectionAttributeFeatureGateID),
+		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(emitMetricsWithoutDirectionAttributeFeatureGateID),
 	}
 }
 
@@ -58,10 +108,28 @@ func (r *elasticsearchScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
+	r.getVersion(ctx, errs)
 	r.scrapeNodeMetrics(ctx, now, errs)
 	r.scrapeClusterMetrics(ctx, now, errs)
 
 	return r.mb.Emit(), errs.Combine()
+}
+
+// scrapeVersion gets and assigns the elasticsearch version number
+func (r *elasticsearchScraper) getVersion(ctx context.Context, errs *scrapererror.ScrapeErrors) {
+	versionResponse, err := r.client.Version(ctx)
+	if err != nil {
+		errs.AddPartial(2, err)
+		return
+	}
+
+	esVersion, err := version.NewVersion(versionResponse.Version.Number)
+	if err != nil {
+		errs.AddPartial(2, err)
+		return
+	}
+
+	r.version = esVersion
 }
 
 // scrapeNodeMetrics scrapes adds node-level metrics to the given MetricSlice from the NodeStats endpoint
@@ -83,13 +151,25 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchNodeCacheEvictionsDataPoint(now, info.Indices.FieldDataCache.Evictions, metadata.AttributeCacheNameFielddata)
 		r.mb.RecordElasticsearchNodeCacheEvictionsDataPoint(now, info.Indices.QueryCache.Evictions, metadata.AttributeCacheNameQuery)
 
+		r.mb.RecordElasticsearchNodeCacheCountDataPoint(now, info.Indices.QueryCache.HitCount, metadata.AttributeQueryCacheCountTypeHit)
+		r.mb.RecordElasticsearchNodeCacheCountDataPoint(now, info.Indices.QueryCache.MissCount, metadata.AttributeQueryCacheCountTypeMiss)
+
 		r.mb.RecordElasticsearchNodeFsDiskAvailableDataPoint(now, info.FS.Total.AvailableBytes)
+		r.mb.RecordElasticsearchNodeFsDiskFreeDataPoint(now, info.FS.Total.FreeBytes)
+		r.mb.RecordElasticsearchNodeFsDiskTotalDataPoint(now, info.FS.Total.TotalBytes)
 
 		r.mb.RecordElasticsearchNodeDiskIoReadDataPoint(now, info.FS.IOStats.Total.ReadBytes)
 		r.mb.RecordElasticsearchNodeDiskIoWriteDataPoint(now, info.FS.IOStats.Total.WriteBytes)
 
-		r.mb.RecordElasticsearchNodeClusterIoDataPoint(now, info.TransportStats.ReceivedBytes, metadata.AttributeDirectionReceived)
-		r.mb.RecordElasticsearchNodeClusterIoDataPoint(now, info.TransportStats.SentBytes, metadata.AttributeDirectionSent)
+		if r.emitMetricsWithDirectionAttribute {
+			r.mb.RecordElasticsearchNodeClusterIoDataPoint(now, info.TransportStats.ReceivedBytes, metadata.AttributeDirectionReceived)
+			r.mb.RecordElasticsearchNodeClusterIoDataPoint(now, info.TransportStats.SentBytes, metadata.AttributeDirectionSent)
+		}
+
+		if r.emitMetricsWithoutDirectionAttribute {
+			r.mb.RecordElasticsearchNodeClusterIoReceivedDataPoint(now, info.TransportStats.ReceivedBytes)
+			r.mb.RecordElasticsearchNodeClusterIoSentDataPoint(now, info.TransportStats.SentBytes)
+		}
 
 		r.mb.RecordElasticsearchNodeClusterConnectionsDataPoint(now, info.TransportStats.OpenConnections)
 
@@ -120,7 +200,13 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchNodeOperationsTimeDataPoint(now, info.Indices.WarmerOperations.TotalTimeInMs, metadata.AttributeOperationWarmer)
 
 		r.mb.RecordElasticsearchNodeShardsSizeDataPoint(now, info.Indices.StoreInfo.SizeInBy)
-		r.mb.RecordElasticsearchNodeShardsDataSetSizeDataPoint(now, info.Indices.StoreInfo.DataSetSizeInBy)
+
+		// Elasticsearch version 7.13+ is required to collect `elasticsearch.node.shards.data_set.size`.
+		// Reference: https://github.com/elastic/elasticsearch/pull/70625/files#diff-354b5b1f25978b5c638cb707622ae79b42b40aace6f27f3f9d5dd1e31e67b1caR7
+		if r.version != nil && r.version.GreaterThanOrEqual(es7_13) {
+			r.mb.RecordElasticsearchNodeShardsDataSetSizeDataPoint(now, info.Indices.StoreInfo.DataSetSizeInBy)
+		}
+
 		r.mb.RecordElasticsearchNodeShardsReservedSizeDataPoint(now, info.Indices.StoreInfo.ReservedInBy)
 
 		for tpName, tpInfo := range info.ThreadPoolInfo {
@@ -181,6 +267,55 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 
 		r.mb.RecordJvmThreadsCountDataPoint(now, info.JVMInfo.JVMThreadInfo.Count)
 
+		// Elasticsearch version 7.10+ is required to collect `elasticsearch.indexing_pressure.memory.limit`.
+		// Reference: https://github.com/elastic/elasticsearch/pull/60342/files#diff-13864344bab3afc267797d67b2746e2939a3fd8af7611ac9fbda376323e2f5eaR37
+		if r.version != nil && r.version.GreaterThanOrEqual(es7_10) {
+			r.mb.RecordElasticsearchIndexingPressureMemoryLimitDataPoint(now, info.IndexingPressure.Memory.LimitInBy)
+		}
+
+		r.mb.RecordElasticsearchMemoryIndexingPressureDataPoint(now, info.IndexingPressure.Memory.Current.PrimaryInBy, metadata.AttributeIndexingPressureStagePrimary)
+		r.mb.RecordElasticsearchMemoryIndexingPressureDataPoint(now, info.IndexingPressure.Memory.Current.CoordinatingInBy, metadata.AttributeIndexingPressureStageCoordinating)
+		r.mb.RecordElasticsearchMemoryIndexingPressureDataPoint(now, info.IndexingPressure.Memory.Current.ReplicaInBy, metadata.AttributeIndexingPressureStageReplica)
+		r.mb.RecordElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsDataPoint(now, info.IndexingPressure.Memory.Total.PrimaryRejections)
+		r.mb.RecordElasticsearchIndexingPressureMemoryTotalReplicaRejectionsDataPoint(now, info.IndexingPressure.Memory.Total.ReplicaRejections)
+
+		r.mb.RecordElasticsearchClusterStateQueueDataPoint(now, info.Discovery.ClusterStateQueue.Committed, metadata.AttributeClusterStateQueueStateCommitted)
+		r.mb.RecordElasticsearchClusterStateQueueDataPoint(now, info.Discovery.ClusterStateQueue.Committed, metadata.AttributeClusterStateQueueStatePending)
+
+		r.mb.RecordElasticsearchClusterPublishedStatesFullDataPoint(now, info.Discovery.PublishedClusterStates.FullStates)
+		r.mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(now, info.Discovery.PublishedClusterStates.CompatibleDiffs, metadata.AttributeClusterPublishedDifferenceStateCompatible)
+		r.mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(now, info.Discovery.PublishedClusterStates.IncompatibleDiffs, metadata.AttributeClusterPublishedDifferenceStateIncompatible)
+
+		for cusState, csuInfo := range info.Discovery.ClusterStateUpdate {
+			r.mb.RecordElasticsearchClusterStateUpdateCountDataPoint(now, csuInfo.Count, cusState)
+			r.mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(now, csuInfo.ComputationTimeMillis, cusState, metadata.AttributeClusterStateUpdateTypeComputation)
+			r.mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(now, csuInfo.NotificationTimeMillis, cusState, metadata.AttributeClusterStateUpdateTypeNotification)
+			if cusState == "unchanged" {
+				// the node_linux.json payload response for "elasticsearch.cluster.state_update.time" with attributes "unchanged" has 2 attributes "computation_time_millis" and "notification_time_millis".
+				// All other metrics for "unchanged" should be skipped to prevent 0 emitted metrics"
+				// https://github.com/elastic/elasticsearch/pull/76771/files#diff-8bbfc581d91f9440e53098ea7d7864aeaeac1fc83a714133e4aafe38eba8ed90R2098
+				continue
+			}
+			r.mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(now, csuInfo.ContextConstructionTimeMillis, cusState, metadata.AttributeClusterStateUpdateTypeContextConstruction)
+			r.mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(now, csuInfo.CommitTimeMillis, cusState, metadata.AttributeClusterStateUpdateTypeCommit)
+			r.mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(now, csuInfo.CompletionTimeMillis, cusState, metadata.AttributeClusterStateUpdateTypeCompletion)
+			r.mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(now, csuInfo.MasterApplyTimeMillis, cusState, metadata.AttributeClusterStateUpdateTypeMasterApply)
+		}
+
+		r.mb.RecordElasticsearchNodeIngestDocumentsDataPoint(now, info.Ingest.Total.Count)
+		r.mb.RecordElasticsearchNodeIngestDocumentsCurrentDataPoint(now, info.Ingest.Total.Current)
+		r.mb.RecordElasticsearchNodeIngestOperationsFailedDataPoint(now, info.Ingest.Total.Failed)
+
+		for ipName, ipInfo := range info.Ingest.Pipelines {
+			r.mb.RecordElasticsearchNodePipelineIngestDocumentsPreprocessedDataPoint(now, ipInfo.Count, ipName)
+			r.mb.RecordElasticsearchNodePipelineIngestOperationsFailedDataPoint(now, ipInfo.Failed, ipName)
+			r.mb.RecordElasticsearchNodePipelineIngestDocumentsCurrentDataPoint(now, ipInfo.Current, ipName)
+		}
+
+		r.mb.RecordElasticsearchNodeScriptCacheEvictionsDataPoint(now, info.Script.CacheEvictions)
+		r.mb.RecordElasticsearchNodeScriptCompilationsDataPoint(now, info.Script.Compilations)
+		r.mb.RecordElasticsearchNodeScriptCompilationLimitTriggeredDataPoint(now, info.Script.CompilationLimitTriggered)
+
 		r.mb.EmitForResource(metadata.WithElasticsearchClusterName(nodeStats.ClusterName),
 			metadata.WithElasticsearchNodeName(info.Name))
 	}
@@ -205,6 +340,9 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pco
 	r.mb.RecordElasticsearchClusterShardsDataPoint(now, clusterHealth.InitializingShards, metadata.AttributeShardStateInitializing)
 	r.mb.RecordElasticsearchClusterShardsDataPoint(now, clusterHealth.RelocatingShards, metadata.AttributeShardStateRelocating)
 	r.mb.RecordElasticsearchClusterShardsDataPoint(now, clusterHealth.UnassignedShards, metadata.AttributeShardStateUnassigned)
+
+	r.mb.RecordElasticsearchClusterPendingTasksDataPoint(now, clusterHealth.PendingTasksCount)
+	r.mb.RecordElasticsearchClusterInFlightFetchDataPoint(now, clusterHealth.InFlightFetchCount)
 
 	switch clusterHealth.Status {
 	case "green":

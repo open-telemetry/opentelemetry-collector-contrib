@@ -15,6 +15,11 @@ receivers:
       - undesired-container
       - another-*-container
     provide_per_core_cpu_metrics: true
+    metrics:
+      container.cpu.usage.system:
+        enabled: false
+      container.memory.total_rss:
+        enabled: true
 
 processors:
   nop:

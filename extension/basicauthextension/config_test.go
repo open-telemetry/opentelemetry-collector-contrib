@@ -20,59 +20,61 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "valid_config.yml"), factories)
-
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	ext0 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "server")]
-	assert.Equal(t, &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "server")),
-		Htpasswd: &HtpasswdSettings{
-			Inline: "username1:password1\nusername2:password2\n",
+	tests := []struct {
+		id          config.ComponentID
+		expected    config.Extension
+		expectedErr bool
+	}{
+		{
+			id:          config.NewComponentID(typeStr),
+			expectedErr: true,
 		},
-	}, ext0)
-
-	ext1 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "client")]
-	assert.Equal(t,
-		&Config{
-			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "client")),
-			ClientAuth: &ClientAuthSettings{
-				Username: "username",
-				Password: "password",
+		{
+			id: config.NewComponentIDWithName(typeStr, "server"),
+			expected: &Config{
+				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+				Htpasswd: &HtpasswdSettings{
+					Inline: "username1:password1\nusername2:password2\n",
+				},
 			},
 		},
-		ext1)
-
-	assert.Equal(t, 2, len(cfg.Service.Extensions))
-	assert.Equal(t, config.NewComponentIDWithName(typeStr, "client"), cfg.Service.Extensions[0])
-	assert.Equal(t, config.NewComponentIDWithName(typeStr, "server"), cfg.Service.Extensions[1])
-}
-
-func TestLoadConfigError(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Extensions[typeStr] = factory
-	t.Run("invalid config both present", func(t *testing.T) {
-		_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config_both.yml"), factories)
-		assert.Error(t, err)
-	})
-	t.Run("invalid config none present", func(t *testing.T) {
-		_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config_none.yml"), factories)
-		assert.Error(t, err)
-	})
-
+		{
+			id: config.NewComponentIDWithName(typeStr, "client"),
+			expected: &Config{
+				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+				ClientAuth: &ClientAuthSettings{
+					Username: "username",
+					Password: "password",
+				},
+			},
+		},
+		{
+			id:          config.NewComponentIDWithName(typeStr, "both"),
+			expectedErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+			require.NoError(t, err)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalExtension(sub, cfg))
+			if tt.expectedErr {
+				assert.Error(t, cfg.Validate())
+				return
+			}
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }

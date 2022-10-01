@@ -20,10 +20,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
@@ -31,68 +31,79 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
+	cfg := confighttp.NewDefaultHTTPClientSettings()
+	cfg.Timeout = 2 * time.Second
 
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-	assert.NoError(t, err)
-	assert.NotNil(t, cfg)
-
-	p1 := cfg.Processors[config.NewComponentID(typeStr)]
-	assert.Equal(t, p1, factory.CreateDefaultConfig())
-
-	p2 := cfg.Processors[config.NewComponentIDWithName(typeStr, "gce")].(*Config)
-	p2e := &Config{
-		ProcessorSettings:  config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "gce")),
-		Detectors:          []string{"env", "gce"},
-		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 2 * time.Second, MaxIdleConns: p2.MaxIdleConns, IdleConnTimeout: p2.IdleConnTimeout},
-		Override:           false,
-	}
-	assert.Equal(t, p2, p2e)
-
-	p3 := cfg.Processors[config.NewComponentIDWithName(typeStr, "ec2")]
-	p3e := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "ec2")),
-		Detectors:         []string{"env", "ec2"},
-		DetectorConfig: DetectorConfig{
-			EC2Config: ec2.Config{
-				Tags: []string{"^tag1$", "^tag2$"},
+	tests := []struct {
+		id           config.ComponentID
+		expected     config.Processor
+		errorMessage string
+	}{
+		{
+			id: config.NewComponentIDWithName(typeStr, "gce"),
+			expected: &Config{
+				ProcessorSettings:  config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				Detectors:          []string{"env", "gce"},
+				HTTPClientSettings: cfg,
+				Override:           false,
 			},
 		},
-		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 2 * time.Second, MaxIdleConns: p2.MaxIdleConns, IdleConnTimeout: p2.IdleConnTimeout},
-		Override:           false,
-	}
-	assert.Equal(t, p3, p3e)
-
-	p4 := cfg.Processors[config.NewComponentIDWithName(typeStr, "system")]
-	p4e := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "system")),
-		Detectors:         []string{"env", "system"},
-		DetectorConfig: DetectorConfig{
-			SystemConfig: system.Config{
-				HostnameSources: []string{"os"},
+		{
+			id: config.NewComponentIDWithName(typeStr, "ec2"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				Detectors:         []string{"env", "ec2"},
+				DetectorConfig: DetectorConfig{
+					EC2Config: ec2.Config{
+						Tags: []string{"^tag1$", "^tag2$"},
+					},
+				},
+				HTTPClientSettings: cfg,
+				Override:           false,
 			},
 		},
-		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 2 * time.Second, MaxIdleConns: p2.MaxIdleConns, IdleConnTimeout: p2.IdleConnTimeout},
-		Override:           false,
-		Attributes:         []string{"a", "b"},
+		{
+			id: config.NewComponentIDWithName(typeStr, "system"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				Detectors:         []string{"env", "system"},
+				DetectorConfig: DetectorConfig{
+					SystemConfig: system.Config{
+						HostnameSources: []string{"os"},
+					},
+				},
+				HTTPClientSettings: cfg,
+				Override:           false,
+				Attributes:         []string{"a", "b"},
+			},
+		},
+		{
+			id:           config.NewComponentIDWithName(typeStr, "invalid"),
+			errorMessage: "hostname_sources contains invalid value: \"invalid_source\"",
+		},
 	}
-	assert.Equal(t, p4, p4e)
-}
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+			require.NoError(t, err)
 
-func TestLoadInvalidConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
 
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
 
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config.yaml"), factories)
-	assert.Error(t, err)
-	assert.NotNil(t, cfg)
+			if tt.expected == nil {
+				assert.EqualError(t, cfg.Validate(), tt.errorMessage)
+				return
+			}
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
 
 func TestGetConfigFromType(t *testing.T) {

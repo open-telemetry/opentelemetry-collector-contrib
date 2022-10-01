@@ -21,75 +21,86 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 3)
-
-	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
-	assert.Equal(t, factory.CreateDefaultConfig(), r0)
-
-	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "receiver_settings")].(*Config)
-	assert.Equal(t,
-		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "receiver_settings")),
-			NetAddr: confignet.NetAddr{
-				Endpoint:  "localhost:8080",
-				Transport: "udp",
-			},
-			TCPIdleTimeout: 5 * time.Second,
-			Parser: &protocol.Config{
-				Type:   "plaintext",
-				Config: &protocol.PlaintextConfig{},
-			},
+	tests := []struct {
+		id       config.ComponentID
+		expected config.Receiver
+	}{
+		{
+			id:       config.NewComponentIDWithName(typeStr, ""),
+			expected: createDefaultConfig(),
 		},
-		r1)
-
-	r2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "regex")].(*Config)
-	assert.Equal(t,
-		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "regex")),
-			NetAddr: confignet.NetAddr{
-				Endpoint:  "localhost:2003",
-				Transport: "tcp",
-			},
-			TCPIdleTimeout: 30 * time.Second,
-			Parser: &protocol.Config{
-				Type: "regex",
-				Config: &protocol.RegexParserConfig{
-					Rules: []*protocol.RegexRule{
-						{
-							Regexp:     `(?P<key_base>test)\.env(?P<key_env>[^.]*)\.(?P<key_host>[^.]*)`,
-							NamePrefix: "name-prefix",
-							Labels: map[string]string{
-								"dot.key": "dot.value",
-								"key":     "value",
-							},
-							MetricType: "cumulative",
-						},
-						{
-							Regexp: `(?P<key_just>test)\.(?P<key_match>.*)`,
-						},
-					},
-					MetricNameSeparator: "_",
+		{
+			id: config.NewComponentIDWithName(typeStr, "receiver_settings"),
+			expected: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "localhost:8080",
+					Transport: "udp",
+				},
+				TCPIdleTimeout: 5 * time.Second,
+				Parser: &protocol.Config{
+					Type:   "plaintext",
+					Config: &protocol.PlaintextConfig{},
 				},
 			},
 		},
-		r2)
+		{
+			id: config.NewComponentIDWithName(typeStr, "regex"),
+			expected: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "localhost:2003",
+					Transport: "tcp",
+				},
+				TCPIdleTimeout: 30 * time.Second,
+				Parser: &protocol.Config{
+					Type: "regex",
+					Config: &protocol.RegexParserConfig{
+						Rules: []*protocol.RegexRule{
+							{
+								Regexp:     `(?P<key_base>test)\.env(?P<key_env>[^.]*)\.(?P<key_host>[^.]*)`,
+								NamePrefix: "name-prefix",
+								Labels: map[string]string{
+									"dot.key": "dot.value",
+									"key":     "value",
+								},
+								MetricType: "cumulative",
+							},
+							{
+								Regexp: `(?P<key_just>test)\.(?P<key_match>.*)`,
+							},
+						},
+						MetricNameSeparator: "_",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }

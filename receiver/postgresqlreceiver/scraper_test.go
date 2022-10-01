@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,6 +35,9 @@ func TestUnsuccessfulScrape(t *testing.T) {
 	cfg.Endpoint = "fake:11111"
 
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &defaultClientFactory{})
+	scraper.emitMetricsWithResourceAttributes = false
+	scraper.emitMetricsWithoutResourceAttributes = true
+
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.Error(t, err)
 
@@ -48,6 +51,8 @@ func TestScraper(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{"otel"}
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, factory)
+	scraper.emitMetricsWithResourceAttributes = false
+	scraper.emitMetricsWithoutResourceAttributes = true
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -65,6 +70,8 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, factory)
+	scraper.emitMetricsWithResourceAttributes = false
+	scraper.emitMetricsWithoutResourceAttributes = true
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -82,6 +89,8 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
+	scraper.emitMetricsWithResourceAttributes = false
+	scraper.emitMetricsWithoutResourceAttributes = true
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -99,8 +108,6 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
-	scraper.emitMetricsWithResourceAttributes = true
-	scraper.emitMetricsWithoutResourceAttributes = false
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -118,8 +125,6 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
-	scraper.emitMetricsWithResourceAttributes = true
-	scraper.emitMetricsWithoutResourceAttributes = false
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -171,6 +176,26 @@ func (m *mockClient) getIndexStats(ctx context.Context, database string) (map[in
 	return args.Get(0).(map[indexIdentifer]indexStat), args.Error(1)
 }
 
+func (m *mockClient) getBGWriterStats(ctx context.Context) (*bgStat, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(*bgStat), args.Error(1)
+}
+
+func (m *mockClient) getMaxConnections(ctx context.Context) (int64, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *mockClient) getLatestWalAgeSeconds(ctx context.Context) (int64, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *mockClient) getReplicationStats(ctx context.Context) ([]replicationStats, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]replicationStats), args.Error(1)
+}
+
 func (m *mockClient) listDatabases(_ context.Context) ([]string, error) {
 	args := m.Called()
 	return args.Get(0).([]string), args.Error(1)
@@ -215,29 +240,57 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 		m.On("getDatabaseStats", databases).Return(commitsAndRollbacks, nil)
 		m.On("getDatabaseSize", databases).Return(dbSize, nil)
 		m.On("getBackends", databases).Return(backends, nil)
+		m.On("getBGWriterStats", mock.Anything).Return(&bgStat{
+			checkpointsReq:       1,
+			checkpointsScheduled: 2,
+			checkpointWriteTime:  3,
+			checkpointSyncTime:   4,
+			bgWrites:             5,
+			backendWrites:        6,
+			bufferBackendWrites:  7,
+			bufferFsyncWrites:    8,
+			bufferCheckpoints:    9,
+			buffersAllocated:     10,
+			maxWritten:           11,
+		}, nil)
+		m.On("getMaxConnections", mock.Anything).Return(int64(100), nil)
+		m.On("getLatestWalAgeSeconds", mock.Anything).Return(int64(3600), nil)
+		m.On("getReplicationStats", mock.Anything).Return([]replicationStats{
+			{
+				clientAddr:   "unix",
+				pendingBytes: 1024,
+				flushLag:     600,
+				replayLag:    700,
+				writeLag:     800,
+			},
+		}, nil)
 	} else {
 		table1 := "public.table1"
 		table2 := "public.table2"
 		tableMetrics := map[tableIdentifier]tableStats{
 			tableKey(database, table1): {
-				database: database,
-				table:    table1,
-				live:     int64(index + 7),
-				dead:     int64(index + 8),
-				inserts:  int64(index + 39),
-				upd:      int64(index + 40),
-				del:      int64(index + 41),
-				hotUpd:   int64(index + 42),
+				database:    database,
+				table:       table1,
+				live:        int64(index + 7),
+				dead:        int64(index + 8),
+				inserts:     int64(index + 39),
+				upd:         int64(index + 40),
+				del:         int64(index + 41),
+				hotUpd:      int64(index + 42),
+				size:        int64(index + 43),
+				vacuumCount: int64(index + 44),
 			},
 			tableKey(database, table2): {
-				database: database,
-				table:    table2,
-				live:     int64(index + 9),
-				dead:     int64(index + 10),
-				inserts:  int64(index + 43),
-				upd:      int64(index + 44),
-				del:      int64(index + 45),
-				hotUpd:   int64(index + 46),
+				database:    database,
+				table:       table2,
+				live:        int64(index + 9),
+				dead:        int64(index + 10),
+				inserts:     int64(index + 43),
+				upd:         int64(index + 44),
+				del:         int64(index + 45),
+				hotUpd:      int64(index + 46),
+				size:        int64(index + 47),
+				vacuumCount: int64(index + 48),
 			},
 		}
 

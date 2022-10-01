@@ -18,10 +18,13 @@
 package windowseventlogreceiver
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
 func TestDefaultConfigFailure(t *testing.T) {
@@ -30,8 +33,12 @@ func TestDefaultConfigFailure(t *testing.T) {
 	require.NotNil(t, cfg, "failed to create default config")
 	require.NoError(t, configtest.CheckConfigStruct(cfg))
 
-	r := ReceiverType{}
-	ops, err := r.DecodeInputConfig(cfg)
-	require.Nil(t, ops, "failed to create default config")
-	require.ErrorContains(t, err, "the windows eventlog receiver is only supported on Windows")
+	receiver, err := factory.CreateLogsReceiver(
+		context.Background(),
+		componenttest.NewNopReceiverCreateSettings(),
+		cfg,
+		new(consumertest.LogsSink),
+	)
+	require.Nil(t, receiver, "failed to create default config")
+	require.ErrorContains(t, err, "windows eventlog receiver is only supported on Windows")
 }

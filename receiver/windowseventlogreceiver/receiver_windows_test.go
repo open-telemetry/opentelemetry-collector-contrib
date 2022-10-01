@@ -33,6 +33,8 @@ import (
 	"golang.org/x/sys/windows/svc/eventlog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -62,11 +64,12 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 
 	cfg := &WindowsLogConfig{
 		BaseConfig: adapter.BaseConfig{},
-		Input: adapter.InputConfig{
-			"start_at": "end",
-		},
+		InputConfig: func() windows.Config {
+			c := windows.NewConfig()
+			c.StartAt = "middle"
+			return *c
+		}(),
 	}
-	cfg.Input["include"] = "not an array"
 
 	_, err := NewFactory().CreateLogsReceiver(
 		context.Background(),
@@ -116,7 +119,7 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	require.Equal(t, 1, records.Len())
 
 	record := records.At(0)
-	body := record.Body().MapVal().AsRaw()
+	body := record.Body().Map().AsRaw()
 
 	strs := []string{"Test log"}
 	test := make([]interface{}, len(strs))
@@ -137,11 +140,13 @@ func createTestConfig() *WindowsLogConfig {
 	return &WindowsLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
+			Operators:        []operator.Config{},
 		},
-		Input: adapter.InputConfig{
-			"channel":  "application",
-			"start_at": "end",
-		},
+		InputConfig: func() windows.Config {
+			c := windows.NewConfig()
+			c.Channel = "application"
+			c.StartAt = "end"
+			return *c
+		}(),
 	}
 }

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,10 +15,11 @@
 package traces // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
-func DefaultFunctions() map[string]interface{} {
+func Functions() map[string]interface{} {
 	// No trace-only functions yet.
-	return common.DefaultFunctions()
+	return common.Functions[ottltraces.TransformContext]()
 }

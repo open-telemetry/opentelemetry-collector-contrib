@@ -17,12 +17,13 @@ package syslogreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"gopkg.in/yaml.v2"
+	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/syslog"
-	syslogparser "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
 )
 
 const (
@@ -49,9 +50,9 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 	return &SysLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
+			Operators:        []operator.Config{},
 		},
-		Input: adapter.InputConfig{},
+		InputConfig: *syslog.NewConfig(),
 	}
 }
 
@@ -62,19 +63,26 @@ func (f ReceiverType) BaseConfig(cfg config.Receiver) adapter.BaseConfig {
 
 // SysLogConfig defines configuration for the syslog receiver
 type SysLogConfig struct {
+	InputConfig        syslog.Config `mapstructure:",squash"`
 	adapter.BaseConfig `mapstructure:",squash"`
-	Input              adapter.InputConfig `mapstructure:",remain"`
 }
 
-// DecodeInputConfig unmarshals the input operator
-func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
-	logConfig := cfg.(*SysLogConfig)
-	yamlBytes, _ := yaml.Marshal(logConfig.Input)
-	inputCfg := syslog.NewConfig("syslog_input")
-	inputCfg.BaseConfig = syslogparser.NewConfig("syslog_parser").BaseConfig
+// InputConfig unmarshals the input operator
+func (f ReceiverType) InputConfig(cfg config.Receiver) operator.Config {
+	return operator.NewConfig(&cfg.(*SysLogConfig).InputConfig)
+}
 
-	if err := yaml.Unmarshal(yamlBytes, &inputCfg); err != nil {
-		return nil, err
+func (cfg *SysLogConfig) Unmarshal(componentParser *confmap.Conf) error {
+	if componentParser == nil {
+		// Nothing to do if there is no config given.
+		return nil
 	}
-	return &operator.Config{Builder: inputCfg}, nil
+
+	if componentParser.IsSet("tcp") {
+		cfg.InputConfig.TCP = &tcp.NewConfig().BaseConfig
+	} else if componentParser.IsSet("udp") {
+		cfg.InputConfig.UDP = &udp.NewConfig().BaseConfig
+	}
+
+	return componentParser.UnmarshalExact(cfg)
 }

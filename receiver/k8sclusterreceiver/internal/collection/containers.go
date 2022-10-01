@@ -89,7 +89,7 @@ func boolToInt64(b bool) int64 {
 // getSpecMetricsForContainer metricizes values from the container spec.
 // This includes values like resource requests and limits.
 func getSpecMetricsForContainer(c corev1.Container) []*metricspb.Metric {
-	metrics := make([]*metricspb.Metric, 0)
+	var metrics []*metricspb.Metric
 
 	for _, t := range []struct {
 		typ         string

@@ -26,20 +26,27 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "json_parser"
+
 func init() {
-	operator.Register("json_parser", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
 // NewConfig creates a new JSON parser config with default values
-func NewConfig(operatorID string) *Config {
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new JSON parser config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		ParserConfig: helper.NewParserConfig(operatorID, "json_parser"),
+		ParserConfig: helper.NewParserConfig(operatorID, operatorType),
 	}
 }
 
 // Config is the configuration of a JSON parser operator.
 type Config struct {
-	helper.ParserConfig `mapstructure:",squash" yaml:",inline"`
+	helper.ParserConfig `mapstructure:",squash"`
 }
 
 // Build will build a JSON parser operator.

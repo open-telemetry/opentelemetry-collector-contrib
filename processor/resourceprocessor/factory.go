@@ -62,7 +62,7 @@ func createTracesProcessor(
 		return nil, err
 	}
 	proc := &resourceProcessor{logger: set.Logger, attrProc: attrProc}
-	return processorhelper.NewTracesProcessorWithCreateSettings(
+	return processorhelper.NewTracesProcessor(
 		ctx,
 		set,
 		cfg,
@@ -81,7 +81,7 @@ func createMetricsProcessor(
 		return nil, err
 	}
 	proc := &resourceProcessor{logger: set.Logger, attrProc: attrProc}
-	return processorhelper.NewMetricsProcessorWithCreateSettings(
+	return processorhelper.NewMetricsProcessor(
 		ctx,
 		set,
 		cfg,
@@ -100,7 +100,7 @@ func createLogsProcessor(
 		return nil, err
 	}
 	proc := &resourceProcessor{logger: set.Logger, attrProc: attrProc}
-	return processorhelper.NewLogsProcessorWithCreateSettings(
+	return processorhelper.NewLogsProcessor(
 		ctx,
 		set,
 		cfg,

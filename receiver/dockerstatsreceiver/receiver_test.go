@@ -36,9 +36,79 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
 var mockFolder = filepath.Join("testdata", "mock")
+
+var (
+	metricEnabled     = metadata.MetricSettings{Enabled: true}
+	allMetricsEnabled = metadata.MetricsSettings{
+		ContainerBlockioIoMergedRecursive:          metricEnabled,
+		ContainerBlockioIoQueuedRecursive:          metricEnabled,
+		ContainerBlockioIoServiceBytesRecursive:    metricEnabled,
+		ContainerBlockioIoServiceTimeRecursive:     metricEnabled,
+		ContainerBlockioIoServicedRecursive:        metricEnabled,
+		ContainerBlockioIoTimeRecursive:            metricEnabled,
+		ContainerBlockioIoWaitTimeRecursive:        metricEnabled,
+		ContainerBlockioSectorsRecursive:           metricEnabled,
+		ContainerCPUPercent:                        metricEnabled,
+		ContainerCPUThrottlingDataPeriods:          metricEnabled,
+		ContainerCPUThrottlingDataThrottledPeriods: metricEnabled,
+		ContainerCPUThrottlingDataThrottledTime:    metricEnabled,
+		ContainerCPUUsageKernelmode:                metricEnabled,
+		ContainerCPUUsagePercpu:                    metricEnabled,
+		ContainerCPUUsageSystem:                    metricEnabled,
+		ContainerCPUUsageTotal:                     metricEnabled,
+		ContainerCPUUsageUsermode:                  metricEnabled,
+		ContainerMemoryActiveAnon:                  metricEnabled,
+		ContainerMemoryActiveFile:                  metricEnabled,
+		ContainerMemoryCache:                       metricEnabled,
+		ContainerMemoryDirty:                       metricEnabled,
+		ContainerMemoryHierarchicalMemoryLimit:     metricEnabled,
+		ContainerMemoryHierarchicalMemswLimit:      metricEnabled,
+		ContainerMemoryInactiveAnon:                metricEnabled,
+		ContainerMemoryInactiveFile:                metricEnabled,
+		ContainerMemoryMappedFile:                  metricEnabled,
+		ContainerMemoryPercent:                     metricEnabled,
+		ContainerMemoryPgfault:                     metricEnabled,
+		ContainerMemoryPgmajfault:                  metricEnabled,
+		ContainerMemoryPgpgin:                      metricEnabled,
+		ContainerMemoryPgpgout:                     metricEnabled,
+		ContainerMemoryRss:                         metricEnabled,
+		ContainerMemoryRssHuge:                     metricEnabled,
+		ContainerMemorySwap:                        metricEnabled,
+		ContainerMemoryTotalActiveAnon:             metricEnabled,
+		ContainerMemoryTotalActiveFile:             metricEnabled,
+		ContainerMemoryTotalCache:                  metricEnabled,
+		ContainerMemoryTotalDirty:                  metricEnabled,
+		ContainerMemoryTotalInactiveAnon:           metricEnabled,
+		ContainerMemoryTotalInactiveFile:           metricEnabled,
+		ContainerMemoryTotalMappedFile:             metricEnabled,
+		ContainerMemoryTotalPgfault:                metricEnabled,
+		ContainerMemoryTotalPgmajfault:             metricEnabled,
+		ContainerMemoryTotalPgpgin:                 metricEnabled,
+		ContainerMemoryTotalPgpgout:                metricEnabled,
+		ContainerMemoryTotalRss:                    metricEnabled,
+		ContainerMemoryTotalRssHuge:                metricEnabled,
+		ContainerMemoryTotalSwap:                   metricEnabled,
+		ContainerMemoryTotalUnevictable:            metricEnabled,
+		ContainerMemoryTotalWriteback:              metricEnabled,
+		ContainerMemoryUnevictable:                 metricEnabled,
+		ContainerMemoryUsageLimit:                  metricEnabled,
+		ContainerMemoryUsageMax:                    metricEnabled,
+		ContainerMemoryUsageTotal:                  metricEnabled,
+		ContainerMemoryWriteback:                   metricEnabled,
+		ContainerNetworkIoUsageRxBytes:             metricEnabled,
+		ContainerNetworkIoUsageRxDropped:           metricEnabled,
+		ContainerNetworkIoUsageRxErrors:            metricEnabled,
+		ContainerNetworkIoUsageRxPackets:           metricEnabled,
+		ContainerNetworkIoUsageTxBytes:             metricEnabled,
+		ContainerNetworkIoUsageTxDropped:           metricEnabled,
+		ContainerNetworkIoUsageTxErrors:            metricEnabled,
+		ContainerNetworkIoUsageTxPackets:           metricEnabled,
+	}
+)
 
 func TestNewReceiver(t *testing.T) {
 	cfg := &Config{
@@ -123,6 +193,7 @@ func TestScrapeV2(t *testing.T) {
 			cfg.EnvVarsToMetricLabels = map[string]string{"ENV_VAR": "env-var-metric-label"}
 			cfg.ContainerLabelsToMetricLabels = map[string]string{"container.label": "container-metric-label"}
 			cfg.ProvidePerCoreCPUMetrics = true
+			cfg.MetricsConfig = allMetricsEnabled
 
 			receiver := newReceiver(componenttest.NewNopReceiverCreateSettings(), cfg)
 			err := receiver.start(context.Background(), componenttest.NewNopHost())

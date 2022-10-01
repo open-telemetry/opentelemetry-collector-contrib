@@ -19,9 +19,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
-
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func TestTokenization(t *testing.T) {

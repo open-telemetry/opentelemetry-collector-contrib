@@ -165,17 +165,6 @@ func TestMessageEventConversionWithErrors(t *testing.T) {
 			require.NotNil(t, err)
 		})
 	}
-
-	t.Run("Invalid timestamp type uint", func(t *testing.T) {
-		in := make([]byte, len(b))
-		copy(in, b)
-		in[8] = 0xcd
-		reader := msgp.NewReader(bytes.NewReader(in))
-
-		var event MessageEventLogRecord
-		err := event.DecodeMsg(reader)
-		require.NotNil(t, err)
-	})
 }
 
 func TestForwardEventConversionWithErrors(t *testing.T) {
@@ -253,21 +242,18 @@ func TestBodyConversion(t *testing.T) {
 	le.Attributes().Sort()
 
 	body := pcommon.NewValueMap()
-	body.MapVal().InsertString("a", "value")
+	body.Map().PutString("a", "value")
 
-	bv := pcommon.NewValueSlice()
-	bv.SliceVal().EnsureCapacity(2)
-	bv.SliceVal().AppendEmpty().SetStringVal("first")
-	bv.SliceVal().AppendEmpty().SetStringVal("second")
-	body.MapVal().Insert("b", bv)
+	bv := body.Map().PutEmptySlice("b")
+	bv.AppendEmpty().SetStr("first")
+	bv.AppendEmpty().SetStr("second")
 
-	cv := pcommon.NewValueMap()
-	cv.MapVal().InsertInt("d", 24)
-	body.MapVal().Insert("c", cv)
+	cv := body.Map().PutEmptyMap("c")
+	cv.PutInt("d", 24)
 
 	// Sort the map, sometimes may get in a different order.
 	require.Equal(t, pcommon.ValueTypeMap, le.Body().Type())
-	le.Body().MapVal().Sort()
+	le.Body().Map().Sort()
 	assert.EqualValues(t, Logs(
 		Log{
 			Timestamp: 5000000000000,

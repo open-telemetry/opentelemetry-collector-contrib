@@ -20,25 +20,21 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cfg := factory.CreateDefaultConfig()
 
+	sub, err := cm.Sub(config.NewComponentID("fluentforward").String())
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
 
-	assert.Equal(t, len(cfg.Receivers), 1)
-
-	r0 := cfg.Receivers[config.NewComponentID("fluentforward")]
-	assert.Equal(t, r0, factory.CreateDefaultConfig())
-
+	assert.NoError(t, cfg.Validate())
+	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }

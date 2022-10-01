@@ -60,13 +60,10 @@ func TestLoadConfig(t *testing.T) {
 				Region:                "us-west-2",
 				RoleARN:               "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole",
 			},
-			LogGroupName:                    "",
-			LogStreamName:                   "",
-			DimensionRollupOption:           "ZeroAndSingleDimensionRollup",
-			OutputDestination:               "cloudwatch",
-			ParseJSONEncodedAttributeValues: make([]string, 0),
-			MetricDeclarations:              []*MetricDeclaration{},
-			MetricDescriptors:               []MetricDescriptor{},
+			LogGroupName:          "",
+			LogStreamName:         "",
+			DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+			OutputDestination:     "cloudwatch",
 		}, r1)
 
 	r2 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "resource_attr_to_label")].(*Config)
@@ -84,14 +81,11 @@ func TestLoadConfig(t *testing.T) {
 				Region:                "",
 				RoleARN:               "",
 			},
-			LogGroupName:                    "",
-			LogStreamName:                   "",
-			DimensionRollupOption:           "ZeroAndSingleDimensionRollup",
-			OutputDestination:               "cloudwatch",
-			ResourceToTelemetrySettings:     resourcetotelemetry.Settings{Enabled: true},
-			ParseJSONEncodedAttributeValues: make([]string, 0),
-			MetricDeclarations:              []*MetricDeclaration{},
-			MetricDescriptors:               []MetricDescriptor{},
+			LogGroupName:                "",
+			LogStreamName:               "",
+			DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+			OutputDestination:           "cloudwatch",
+			ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 		})
 }
 

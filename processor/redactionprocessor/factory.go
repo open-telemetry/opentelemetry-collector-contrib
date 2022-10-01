@@ -61,7 +61,7 @@ func createTracesProcessor(
 		return nil, fmt.Errorf("error creating a redaction processor: %w", err)
 	}
 
-	return processorhelper.NewTracesProcessorWithCreateSettings(
+	return processorhelper.NewTracesProcessor(
 		ctx,
 		set,
 		cfg,

@@ -368,7 +368,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 						continue
 					}
 
-					ev := test.expectedVolumes[claimName.StringVal()]
+					ev := test.expectedVolumes[claimName.Str()]
 					requireExpectedVolume(t, ev, resource)
 
 					// Assert metrics from certain volume claims expected to be missed
@@ -376,7 +376,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 					if test.volumeClaimsToMiss != nil {
 						for c := range test.volumeClaimsToMiss {
 							val, ok := resource.Attributes().Get("k8s.persistentvolumeclaim.name")
-							require.True(t, !ok || val.StringVal() != c)
+							require.True(t, !ok || val.Str() != c)
 						}
 					}
 				}
@@ -398,7 +398,7 @@ func requireExpectedVolume(t *testing.T, ev expectedVolume, resource pcommon.Res
 func requireAttribute(t *testing.T, attr pcommon.Map, key string, value string) {
 	val, ok := attr.Get(key)
 	require.True(t, ok)
-	require.Equal(t, value, val.StringVal())
+	require.Equal(t, value, val.Str())
 
 }
 

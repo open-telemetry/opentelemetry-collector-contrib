@@ -20,6 +20,8 @@ import (
 	"testing"
 	"time"
 
+	promConfig "github.com/prometheus/common/config"
+	promModel "github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -48,6 +50,47 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval), 5*time.Second)
 	assert.Equal(t, r1.UseStartTimeMetric, true)
 	assert.Equal(t, r1.StartTimeMetricRegex, "^(.+_)*process_start_time_seconds$")
+
+	assert.Equal(t, "http://my-targetallocator-service", r1.TargetAllocator.Endpoint)
+	assert.Equal(t, 30*time.Second, r1.TargetAllocator.Interval)
+	assert.Equal(t, "collector-1", r1.TargetAllocator.CollectorID)
+	assert.Equal(t, promModel.Duration(60*time.Second), r1.TargetAllocator.HTTPSDConfig.RefreshInterval)
+	assert.Equal(t, "prometheus", r1.TargetAllocator.HTTPSDConfig.HTTPClientConfig.BasicAuth.Username)
+	assert.Equal(t, promConfig.Secret("changeme"), r1.TargetAllocator.HTTPSDConfig.HTTPClientConfig.BasicAuth.Password)
+}
+
+func TestLoadTargetAllocatorConfig(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_target_allocator.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	assert.Equal(t, len(cfg.Receivers), 3)
+
+	r0 := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
+	assert.Nil(t, r0.PrometheusConfig)
+	assert.Equal(t, "http://localhost:8080", r0.TargetAllocator.Endpoint)
+	assert.Equal(t, 30*time.Second, r0.TargetAllocator.Interval)
+	assert.Equal(t, "collector-1", r0.TargetAllocator.CollectorID)
+
+	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "withScrape")].(*Config)
+	assert.Nil(t, r0.PrometheusConfig)
+	assert.Equal(t, "http://localhost:8080", r0.TargetAllocator.Endpoint)
+	assert.Equal(t, 30*time.Second, r0.TargetAllocator.Interval)
+	assert.Equal(t, "collector-1", r0.TargetAllocator.CollectorID)
+
+	assert.Equal(t, 1, len(r1.PrometheusConfig.ScrapeConfigs))
+	assert.Equal(t, "demo", r1.PrometheusConfig.ScrapeConfigs[0].JobName)
+	assert.Equal(t, promModel.Duration(5*time.Second), r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval)
+
+	r2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "withOnlyScrape")].(*Config)
+	assert.Equal(t, 1, len(r2.PrometheusConfig.ScrapeConfigs))
+	assert.Equal(t, "demo", r2.PrometheusConfig.ScrapeConfigs[0].JobName)
+	assert.Equal(t, promModel.Duration(5*time.Second), r2.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval)
 }
 
 func TestLoadConfigFailsOnUnknownSection(t *testing.T) {

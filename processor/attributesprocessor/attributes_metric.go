@@ -70,28 +70,28 @@ func (a *metricAttributesProcessor) processMetricAttributes(ctx context.Context,
 
 	// This is a lot of repeated code, but since there is no single parent superclass
 	// between metric data types, we can't use polymorphism.
-	switch m.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch m.Type() {
+	case pmetric.MetricTypeGauge:
 		dps := m.Gauge().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
 		}
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		dps := m.Sum().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
 		}
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		dps := m.Histogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
 		}
-	case pmetric.MetricDataTypeExponentialHistogram:
+	case pmetric.MetricTypeExponentialHistogram:
 		dps := m.ExponentialHistogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
 		}
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		dps := m.Summary().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())

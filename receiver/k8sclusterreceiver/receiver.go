@@ -20,12 +20,10 @@ import (
 	"fmt"
 	"time"
 
-	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
-	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -48,6 +46,10 @@ type kubernetesReceiver struct {
 
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, kr.cancel = context.WithCancel(ctx)
+
+	if err := kr.resourceWatcher.initialize(); err != nil {
+		return err
+	}
 
 	exporters := host.GetExporters()
 	if err := kr.resourceWatcher.setupMetadataExporters(
@@ -113,23 +115,15 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 }
 
 // newReceiver creates the Kubernetes cluster receiver with the given configuration.
-func newReceiver(
-	set component.ReceiverCreateSettings, config *Config, consumer consumer.Metrics,
-	client kubernetes.Interface, osQuotaClient quotaclientset.Interface,
-) (component.MetricsReceiver, error) {
-	resourceWatcher, err := newResourceWatcher(set.Logger, client, osQuotaClient, config.NodeConditionTypesToReport,
-		config.AllocatableTypesToReport, defaultInitialSyncTimeout)
-	if err != nil {
-		return nil, fmt.Errorf("failed to setup the receiver: %w", err)
-	}
-
+func newReceiver(_ context.Context, set component.ReceiverCreateSettings, cfg config.Receiver, consumer consumer.Metrics) (component.MetricsReceiver, error) {
+	rCfg := cfg.(*Config)
 	return &kubernetesReceiver{
-		resourceWatcher: resourceWatcher,
+		resourceWatcher: newResourceWatcher(set.Logger, rCfg),
 		settings:        set,
-		config:          config,
+		config:          rCfg,
 		consumer:        consumer,
 		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
+			ReceiverID:             cfg.ID(),
 			Transport:              transport,
 			ReceiverCreateSettings: set,
 		}),

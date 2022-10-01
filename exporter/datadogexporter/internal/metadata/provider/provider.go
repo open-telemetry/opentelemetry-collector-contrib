@@ -20,7 +20,6 @@ import (
 	"sync"
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
-
 	"go.uber.org/zap"
 )
 

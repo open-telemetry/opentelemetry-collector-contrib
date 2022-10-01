@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ func TestLoadAllSettingsConfig(t *testing.T) {
 			NumConsumers: 7,
 			QueueSize:    17,
 		},
-		IngestURL: "https://alternate.logdna.com/log/ingest",
+		IngestURL: "https://alternate.mezmo.com/otel/ingest/rest",
 		IngestKey: "1234509876",
 	}
 	assert.Equal(t, &expectedCfg, e)

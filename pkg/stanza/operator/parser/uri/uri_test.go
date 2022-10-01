@@ -20,16 +20,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func newTestParser(t *testing.T) *Parser {
-	cfg := NewConfig("test")
+	cfg := NewConfigWithID("test")
 	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
 	return op.(*Parser)
@@ -42,7 +40,7 @@ func TestInit(t *testing.T) {
 }
 
 func TestParserBuildFailure(t *testing.T) {
-	cfg := NewConfig("test")
+	cfg := NewConfigWithID("test")
 	cfg.OnError = "invalid_on_error"
 	_, err := cfg.Build(testutil.Logger(t))
 	require.Error(t, err)
@@ -80,7 +78,7 @@ func TestProcess(t *testing.T) {
 		{
 			"default",
 			func() (operator.Operator, error) {
-				cfg := NewConfig("test_id")
+				cfg := NewConfigWithID("test_id")
 				return cfg.Build(testutil.Logger(t))
 			},
 			&entry.Entry{
@@ -104,9 +102,9 @@ func TestProcess(t *testing.T) {
 		{
 			"parse-to",
 			func() (operator.Operator, error) {
-				cfg := NewConfig("test_id")
+				cfg := NewConfigWithID("test_id")
 				cfg.ParseFrom = entry.NewBodyField("url")
-				cfg.ParseTo = entry.NewBodyField("url2")
+				cfg.ParseTo = entry.RootableField{Field: entry.NewBodyField("url2")}
 				return cfg.Build(testutil.Logger(t))
 			},
 			&entry.Entry{
@@ -134,7 +132,7 @@ func TestProcess(t *testing.T) {
 		{
 			"parse-from",
 			func() (operator.Operator, error) {
-				cfg := NewConfig("test_id")
+				cfg := NewConfigWithID("test_id")
 				cfg.ParseFrom = entry.NewBodyField("url")
 				return cfg.Build(testutil.Logger(t))
 			},
@@ -496,7 +494,7 @@ func TestParseURI(t *testing.T) {
 
 func TestBuildParserURL(t *testing.T) {
 	newBasicParser := func() *Config {
-		cfg := NewConfig("test")
+		cfg := NewConfigWithID("test")
 		cfg.OutputIDs = []string{"test"}
 		return cfg
 	}
@@ -706,37 +704,4 @@ func BenchmarkQueryParamValuesToMap(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		queryParamValuesToMap(v)
 	}
-}
-
-func TestConfig(t *testing.T) {
-	expect := NewConfig("test")
-	expect.ParseFrom = entry.NewBodyField("from")
-	expect.ParseTo = entry.NewBodyField("to")
-
-	t.Run("mapstructure", func(t *testing.T) {
-		input := map[string]interface{}{
-			"id":         "test",
-			"type":       "uri_parser",
-			"parse_from": "body.from",
-			"parse_to":   "body.to",
-			"on_error":   "send",
-		}
-		var actual Config
-		err := helper.UnmarshalMapstructure(input, &actual)
-		require.NoError(t, err)
-		require.Equal(t, expect, &actual)
-	})
-
-	t.Run("yaml", func(t *testing.T) {
-		input := `
-type: uri_parser
-id: test
-on_error: "send"
-parse_from: body.from
-parse_to: body.to`
-		var actual Config
-		err := yaml.Unmarshal([]byte(input), &actual)
-		require.NoError(t, err)
-		require.Equal(t, expect, &actual)
-	})
 }

@@ -36,7 +36,7 @@ func newLogsExporter(set component.ExporterCreateSettings, cfg config.Exporter) 
 		return nil, err
 	}
 
-	return exporterhelper.NewLogsExporterWithContext(
+	return exporterhelper.NewLogsExporter(
 		context.TODO(),
 		set,
 		cfg,

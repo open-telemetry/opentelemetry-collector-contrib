@@ -164,11 +164,11 @@ func TestJTagsToInternalAttributes(t *testing.T) {
 	}
 
 	expected := pcommon.NewMap()
-	expected.InsertBool("bool-val", true)
-	expected.InsertInt("int-val", 123)
-	expected.InsertString("string-val", "abc")
-	expected.InsertDouble("double-val", 1.23)
-	expected.InsertString("binary-val", "AAAAAABkfZg=")
+	expected.PutBool("bool-val", true)
+	expected.PutInt("int-val", 123)
+	expected.PutString("string-val", "abc")
+	expected.PutDouble("double-val", 1.23)
+	expected.PutString("binary-val", "AAAAAABkfZg=")
 
 	got := pcommon.NewMap()
 	jTagsToInternalAttributes(tags, got)
@@ -344,76 +344,75 @@ func TestSetInternalSpanStatus(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		attrs            pcommon.Map
+		attrs            map[string]interface{}
 		status           ptrace.SpanStatus
 		attrsModifiedLen int // Length of attributes map after dropping converted fields
 	}{
 		{
 			name:             "No tags set -> OK status",
-			attrs:            pcommon.NewMap(),
 			status:           emptyStatus,
 			attrsModifiedLen: 0,
 		},
 		{
 			name: "error tag set -> Error status",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				tracetranslator.TagError: true,
-			}),
+			},
 			status:           errorStatus,
 			attrsModifiedLen: 0,
 		},
 		{
 			name: "status.code is set as string",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				conventions.OtelStatusCode: statusOk,
-			}),
+			},
 			status:           okStatus,
 			attrsModifiedLen: 0,
 		},
 		{
 			name: "status.code, status.message and error tags are set",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				tracetranslator.TagError:          true,
 				conventions.OtelStatusCode:        statusError,
 				conventions.OtelStatusDescription: "Error: Invalid argument",
-			}),
+			},
 			status:           errorStatusWithMessage,
 			attrsModifiedLen: 0,
 		},
 		{
 			name: "http.status_code tag is set as string",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				conventions.AttributeHTTPStatusCode: "404",
-			}),
+			},
 			status:           errorStatus,
 			attrsModifiedLen: 1,
 		},
 		{
 			name: "http.status_code, http.status_message and error tags are set",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				tracetranslator.TagError:            true,
 				conventions.AttributeHTTPStatusCode: 404,
 				tracetranslator.TagHTTPStatusMsg:    "HTTP 404: Not Found",
-			}),
+			},
 			status:           errorStatusWith404Message,
 			attrsModifiedLen: 2,
 		},
 		{
 			name: "status.code has precedence over http.status_code.",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				conventions.OtelStatusCode:          statusOk,
 				conventions.AttributeHTTPStatusCode: 500,
 				tracetranslator.TagHTTPStatusMsg:    "Server Error",
-			}),
+			},
 			status:           okStatus,
 			attrsModifiedLen: 2,
 		},
 		{
 			name: "Ignore http.status_code == 200 if error set to true.",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				tracetranslator.TagError:            true,
 				conventions.AttributeHTTPStatusCode: 200,
-			}),
+			},
 			status:           errorStatus,
 			attrsModifiedLen: 1,
 		},
@@ -422,15 +421,16 @@ func TestSetInternalSpanStatus(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			status := ptrace.NewSpanStatus()
-			setInternalSpanStatus(test.attrs, status)
+			attrs := pcommon.NewMap()
+			attrs.FromRaw(test.attrs)
+			setInternalSpanStatus(attrs, status)
 			assert.EqualValues(t, test.status, status)
-			assert.Equal(t, test.attrsModifiedLen, test.attrs.Len())
+			assert.Equal(t, test.attrsModifiedLen, attrs.Len())
 		})
 	}
 }
 
 func TestProtoBatchesToInternalTraces(t *testing.T) {
-	t.Skip("skipping flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/12591")
 	batches := []*model.Batch{
 		{
 			Process: generateProtoProcess(),
@@ -458,8 +458,29 @@ func TestProtoBatchesToInternalTraces(t *testing.T) {
 	twoSpans.CopyTo(tgt)
 
 	got, err := ProtoToTraces(batches)
+
 	assert.NoError(t, err)
-	assert.EqualValues(t, expected, got)
+
+	assert.Equal(t, expected.ResourceSpans().Len(), got.ResourceSpans().Len())
+	assert.Equal(t, expected.SpanCount(), got.SpanCount())
+
+	lenbatches := expected.ResourceSpans().Len()
+	found := 0
+
+	for i := 0; i < lenbatches; i++ {
+		rsExpected := expected.ResourceSpans().At(i)
+		for j := 0; j < lenbatches; j++ {
+			got.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
+				nameExpected := rsExpected.ScopeSpans().At(0).Spans().At(0).Name()
+				nameGot := got.ResourceSpans().At(j).ScopeSpans().At(0).Scope().Name()
+				if nameExpected == nameGot {
+					assert.Equal(t, nameGot, found)
+					assert.Equal(t, got.SpanCount(), found)
+				}
+				return nameExpected == nameGot
+			})
+		}
+	}
 }
 
 func TestJSpanKindToInternal(t *testing.T) {
@@ -569,8 +590,8 @@ func TestChecksum(t *testing.T) {
 func generateTracesResourceOnly() ptrace.Traces {
 	td := testdata.GenerateTracesOneEmptyResourceSpans()
 	rs := td.ResourceSpans().At(0).Resource()
-	rs.Attributes().InsertString(conventions.AttributeServiceName, "service-1")
-	rs.Attributes().InsertInt("int-attr-1", 123)
+	rs.Attributes().PutString(conventions.AttributeServiceName, "service-1")
+	rs.Attributes().PutInt("int-attr-1", 123)
 	return td
 }
 
@@ -594,9 +615,9 @@ func generateProtoProcess() *model.Process {
 func generateTracesOneSpanNoResource() ptrace.Traces {
 	td := testdata.GenerateTracesOneSpanNoResource()
 	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
-	span.SetTraceID(pcommon.NewTraceID(
-		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}))
+	span.SetSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
+	span.SetTraceID(
+		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
 	span.SetDroppedAttributesCount(0)
 	span.SetDroppedEventsCount(0)
 	span.SetStartTimestamp(testSpanStartTimestamp)
@@ -608,7 +629,7 @@ func generateTracesOneSpanNoResource() ptrace.Traces {
 	span.Events().At(1).SetTimestamp(testSpanEventTimestamp)
 	span.Events().At(1).SetDroppedAttributesCount(0)
 	span.Events().At(1).SetName("")
-	span.Events().At(1).Attributes().InsertInt("attr-int", 123)
+	span.Events().At(1).Attributes().PutInt("attr-int", 123)
 	return td
 }
 
@@ -624,7 +645,7 @@ func generateTracesWithLibraryInfo() ptrace.Traces {
 func generateTracesOneSpanNoResourceWithTraceState() ptrace.Traces {
 	td := generateTracesOneSpanNoResource()
 	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-	span.SetTraceState("lasterror=f39cd56cc44274fd5abd07ef1164246d10ce2955")
+	span.TraceState().FromRaw("lasterror=f39cd56cc44274fd5abd07ef1164246d10ce2955")
 	return td
 }
 
@@ -779,14 +800,14 @@ func generateTracesTwoSpansChildParent() ptrace.Traces {
 
 	span := spans.AppendEmpty()
 	span.SetName("operationB")
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
+	span.SetSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
 	span.SetParentSpanID(spans.At(0).SpanID())
 	span.SetKind(ptrace.SpanKindServer)
 	span.SetTraceID(spans.At(0).TraceID())
 	span.SetStartTimestamp(spans.At(0).StartTimestamp())
 	span.SetEndTimestamp(spans.At(0).EndTimestamp())
 	span.Status().SetCode(ptrace.StatusCodeError)
-	span.Attributes().InsertInt(conventions.AttributeHTTPStatusCode, 404)
+	span.Attributes().PutInt(conventions.AttributeHTTPStatusCode, 404)
 	return td
 }
 
@@ -829,7 +850,7 @@ func generateTracesTwoSpansWithFollower() ptrace.Traces {
 
 	span := spans.AppendEmpty()
 	span.SetName("operationC")
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
+	span.SetSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
 	span.SetTraceID(spans.At(0).TraceID())
 	span.SetStartTimestamp(spans.At(0).EndTimestamp())
 	span.SetEndTimestamp(spans.At(0).EndTimestamp() + 1000000)

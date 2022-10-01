@@ -61,7 +61,7 @@ func TestLoadConfig(t *testing.T) {
 			Endpoint: "https://",
 			Headers:  map[string]string{},
 		},
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		Traces: configgrpc.GRPCClientSettings{
 			Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 			Compression: "",
 			TLSSetting: configtls.TLSClientSetting{
@@ -73,8 +73,26 @@ func TestLoadConfig(t *testing.T) {
 			ReadBufferSize:  0,
 			WriteBufferSize: 0,
 			WaitForReady:    false,
-			Headers:         map[string]string{"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "appName": "APP_NAME"},
+			Headers:         map[string]string{},
 			BalancerName:    "",
+		},
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
+			Endpoint:    "",
+			Compression: "",
+			TLSSetting: configtls.TLSClientSetting{
+				TLSSetting:         configtls.TLSSetting{},
+				Insecure:           false,
+				InsecureSkipVerify: false,
+				ServerName:         "",
+			},
+			ReadBufferSize:  0,
+			WriteBufferSize: 0,
+			WaitForReady:    false,
+			Headers: map[string]string{
+				"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				"appName":      "APP_NAME",
+			},
+			BalancerName: "",
 		},
 	})
 }
@@ -110,7 +128,7 @@ func TestLoadConfigAll(t *testing.T) {
 			Endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 			Headers:  map[string]string{},
 		},
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		Traces: configgrpc.GRPCClientSettings{
 			Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 			Compression: "",
 			TLSSetting: configtls.TLSClientSetting{
@@ -122,8 +140,26 @@ func TestLoadConfigAll(t *testing.T) {
 			ReadBufferSize:  0,
 			WriteBufferSize: 0,
 			WaitForReady:    false,
-			Headers:         map[string]string{"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "appName": "APP_NAME"},
+			Headers:         map[string]string{},
 			BalancerName:    "",
+		},
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
+			Endpoint:    "",
+			Compression: "",
+			TLSSetting: configtls.TLSClientSetting{
+				TLSSetting:         configtls.TLSSetting{},
+				Insecure:           false,
+				InsecureSkipVerify: false,
+				ServerName:         "",
+			},
+			ReadBufferSize:  0,
+			WriteBufferSize: 0,
+			WaitForReady:    false,
+			Headers: map[string]string{
+				"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				"appName":      "APP_NAME",
+			},
+			BalancerName: "",
 		},
 	})
 }
@@ -133,6 +169,19 @@ func TestTraceExporter(t *testing.T) {
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
 	cfg, _ := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	apiConfig := cfg.Exporters[config.NewComponentID(typeStr)].(*Config)
+	params := componenttest.NewNopExporterCreateSettings()
+	te, err := newTracesExporter(apiConfig, params)
+	assert.NoError(t, err)
+	assert.NotNil(t, te, "failed to create trace exporter")
+	assert.NoError(t, te.start(context.Background(), componenttest.NewNopHost()))
+}
+
+func TestJaegerBasedTraceExporter(t *testing.T) {
+	factories, _ := componenttest.NopFactories()
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, _ := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-trace.yaml"), factories)
 	apiConfig := cfg.Exporters[config.NewComponentID(typeStr)].(*Config)
 	params := componenttest.NewNopExporterCreateSettings()
 	te, err := newCoralogixExporter(apiConfig, params)

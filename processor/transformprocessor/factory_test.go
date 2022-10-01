@@ -27,10 +27,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlconfig"
 )
 
 func TestFactory_Type(t *testing.T) {
@@ -43,20 +40,16 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		Traces: SignalConfig{
-			Queries: []string{},
-
-			functions: traces.DefaultFunctions(),
-		},
-		Metrics: SignalConfig{
-			Queries: []string{},
-
-			functions: metrics.DefaultFunctions(),
-		},
-		Logs: SignalConfig{
-			Queries: []string{},
-
-			functions: logs.DefaultFunctions(),
+		Config: ottlconfig.Config{
+			Traces: ottlconfig.SignalConfig{
+				Queries: []string{},
+			},
+			Metrics: ottlconfig.SignalConfig{
+				Queries: []string{},
+			},
+			Logs: ottlconfig.SignalConfig{
+				Queries: []string{},
+			},
 		},
 	})
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))
@@ -101,7 +94,7 @@ func TestFactoryCreateTracesProcessor(t *testing.T) {
 
 	val, ok := span.Attributes().Get("test")
 	assert.True(t, ok)
-	assert.Equal(t, "pass", val.StringVal())
+	assert.Equal(t, "pass", val.Str())
 }
 
 func TestFactoryCreateMetricsProcessor_InvalidActions(t *testing.T) {
@@ -127,9 +120,8 @@ func TestFactoryCreateMetricsProcessor(t *testing.T) {
 	metrics := pmetric.NewMetrics()
 	metric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetName("operationA")
-	metric.SetDataType(pmetric.MetricDataTypeSum)
 
-	_, ok := metric.Sum().DataPoints().AppendEmpty().Attributes().Get("test")
+	_, ok := metric.SetEmptySum().DataPoints().AppendEmpty().Attributes().Get("test")
 	assert.False(t, ok)
 
 	err = metricsProcessor.ConsumeMetrics(context.Background(), metrics)
@@ -137,7 +129,7 @@ func TestFactoryCreateMetricsProcessor(t *testing.T) {
 
 	val, ok := metric.Sum().DataPoints().At(0).Attributes().Get("test")
 	assert.True(t, ok)
-	assert.Equal(t, "pass", val.StringVal())
+	assert.Equal(t, "pass", val.Str())
 }
 
 func TestFactoryCreateLogsProcessor(t *testing.T) {
@@ -152,7 +144,7 @@ func TestFactoryCreateLogsProcessor(t *testing.T) {
 
 	ld := plog.NewLogs()
 	log := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	log.Body().SetStringVal("operationA")
+	log.Body().SetStr("operationA")
 
 	_, ok := log.Attributes().Get("test")
 	assert.False(t, ok)
@@ -162,7 +154,7 @@ func TestFactoryCreateLogsProcessor(t *testing.T) {
 
 	val, ok := log.Attributes().Get("test")
 	assert.True(t, ok)
-	assert.Equal(t, "pass", val.StringVal())
+	assert.Equal(t, "pass", val.Str())
 }
 
 func TestFactoryCreateLogsProcessor_InvalidActions(t *testing.T) {

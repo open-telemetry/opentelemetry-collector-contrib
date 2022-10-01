@@ -39,7 +39,8 @@ type receiverConfig struct {
 	id config.ComponentID
 	// config is the map configured by the user in the config file. It is the contents of the map from
 	// the "config" section. The keys and values are arbitrarily configured by the user.
-	config userConfigMap
+	config     userConfigMap
+	endpointID observer.EndpointID
 }
 
 // userConfigMap is an arbitrary map of string keys to arbitrary values as specified by the user
@@ -71,20 +72,21 @@ func newReceiverTemplate(name string, cfg userConfigMap) (receiverTemplate, erro
 
 	return receiverTemplate{
 		receiverConfig: receiverConfig{
-			id:     id,
-			config: cfg,
+			id:         id,
+			config:     cfg,
+			endpointID: observer.EndpointID("endpoint.id"),
 		},
 	}, nil
 }
 
-var _ config.Unmarshallable = (*Config)(nil)
+var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config defines configuration for receiver_creator.
 type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"`
 	receiverTemplates       map[string]receiverTemplate
 	// WatchObservers are the extensions to listen to endpoints from.
-	WatchObservers []config.Type `mapstructure:"watch_observers"`
+	WatchObservers []config.ComponentID `mapstructure:"watch_observers"`
 	// ResourceAttributes is a map of default resource attributes to add to each resource
 	// object received by this receiver from dynamically created receivers.
 	ResourceAttributes resourceAttributes `mapstructure:"resource_attributes"`

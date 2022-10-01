@@ -129,7 +129,7 @@ func (f *kafkaExporterFactory) createTracesExporter(
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewTracesExporterWithContext(
+	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
 		&oCfg,
@@ -159,7 +159,7 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewMetricsExporterWithContext(
+	return exporterhelper.NewMetricsExporter(
 		ctx,
 		set,
 		&oCfg,
@@ -189,7 +189,7 @@ func (f *kafkaExporterFactory) createLogsExporter(
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewLogsExporterWithContext(
+	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
 		&oCfg,

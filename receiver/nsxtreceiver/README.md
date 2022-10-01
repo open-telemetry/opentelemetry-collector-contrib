@@ -38,7 +38,7 @@ This receiver supports NSX-T Datacenter versions:
 
 - `timeout`: (default = `1m`) The timeout of running commands against the NSX REST API.
 
-- `metrics` (default: see DefaultMetricsSettings [here])(./internal/metadata/generated_metrics_v2.go): Allows enabling and disabling specific metrics from being collected in this receiver.
+- `metrics` (default: see DefaultMetricsSettings [here])(./internal/metadata/generated_metrics.go): Allows enabling and disabling specific metrics from being collected in this receiver.
 
 ### Example Configuration
 
