@@ -16,6 +16,7 @@ package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -75,7 +76,7 @@ func (b *blobReceiver) consumeLogsJSON(ctx context.Context, json []byte) error {
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal logs: %w", err)
 	}
-	
+
 	err = b.nextLogsConsumer.ConsumeLogs(logsContext, logs)
 
 	b.obsrecv.EndLogsOp(logsContext, typeStr, 1, err)
@@ -93,7 +94,7 @@ func (b *blobReceiver) consumeTracesJSON(ctx context.Context, json []byte) error
 	traces, err := b.tracesUnmarshaler.UnmarshalTraces(json)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal traces: %w", err)
-	} 
+	}
 
 	err = b.nextTracesConsumer.ConsumeTraces(tracesContext, traces)
 
