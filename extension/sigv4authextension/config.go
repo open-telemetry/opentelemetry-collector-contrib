@@ -47,7 +47,7 @@ func (cfg *Config) Validate() error {
 	if cfg.AssumeRole.STSRegion == "" && cfg.Region != "" {
 		cfg.AssumeRole.STSRegion = cfg.Region
 	}
-	
+
 	credsProvider, err := getCredsProviderFromConfig(cfg)
 	if err != nil {
 		return fmt.Errorf("could not retrieve credential provider: %w", err)
