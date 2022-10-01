@@ -96,11 +96,11 @@ func (b *blobReceiver) consumeTracesJSON(ctx context.Context, json []byte) error
 	tracesContext := b.obsrecv.StartTracesOp(ctx)
 
 	traces, err := b.tracesUnmarshaler.UnmarshalTraces(json)
-	if err == nil {
-		err = b.nextTracesConsumer.ConsumeTraces(tracesContext, traces)
-	} else {
-		b.logger.Error(err.Error())
-	}
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal traces: %w", err)
+	} 
+
+	err = b.nextTracesConsumer.ConsumeTraces(tracesContext, traces)
 
 	b.obsrecv.EndTracesOp(tracesContext, typeStr, 1, err)
 
