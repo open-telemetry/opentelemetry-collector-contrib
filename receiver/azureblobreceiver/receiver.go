@@ -77,11 +77,11 @@ func (b *blobReceiver) consumeLogsJSON(ctx context.Context, json []byte) error {
 	logsContext := b.obsrecv.StartLogsOp(ctx)
 
 	logs, err := b.logsUnmarshaler.UnmarshalLogs(json)
-	if err == nil {
-		err = b.nextLogsConsumer.ConsumeLogs(logsContext, logs)
-	} else {
-		b.logger.Error(err.Error())
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal logs: %w", err)
 	}
+	
+	err = b.nextLogsConsumer.ConsumeLogs(logsContext, logs)
 
 	b.obsrecv.EndLogsOp(logsContext, typeStr, 1, err)
 
