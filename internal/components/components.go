@@ -141,6 +141,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
@@ -243,6 +244,7 @@ func Components() (component.Factories, error) {
 		nsxtreceiver.NewFactory(),
 		nginxreceiver.NewFactory(),
 		opencensusreceiver.NewFactory(),
+		oracledbreceiver.NewFactory(),
 		otlpjsonfilereceiver.NewFactory(),
 		otlpreceiver.NewFactory(),
 		podmanreceiver.NewFactory(),
