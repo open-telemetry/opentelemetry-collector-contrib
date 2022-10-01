@@ -42,7 +42,7 @@ func TestAndEvaluatorNotSampled(t *testing.T) {
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
 	trace := &TraceData{
-		ReceivedBatches: []ptrace.Traces{traces},
+		ReceivedBatches: traces,
 	}
 	decision, err := and.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
@@ -70,7 +70,7 @@ func TestAndEvaluatorSampled(t *testing.T) {
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
 	trace := &TraceData{
-		ReceivedBatches: []ptrace.Traces{traces},
+		ReceivedBatches: traces,
 	}
 	decision, err := and.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
@@ -98,7 +98,7 @@ func TestAndEvaluatorStringInvertSampled(t *testing.T) {
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
 	trace := &TraceData{
-		ReceivedBatches: []ptrace.Traces{traces},
+		ReceivedBatches: traces,
 	}
 	decision, err := and.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
@@ -126,7 +126,7 @@ func TestAndEvaluatorStringInvertNotSampled(t *testing.T) {
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
 	trace := &TraceData{
-		ReceivedBatches: []ptrace.Traces{traces},
+		ReceivedBatches: traces,
 	}
 	decision, err := and.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
