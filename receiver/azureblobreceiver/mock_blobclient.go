@@ -38,6 +38,6 @@ func (_m *MockBlobClient) readBlob(ctx context.Context, containerName string, bl
 
 func newMockBlobClient() *MockBlobClient {
 	blobClient := &MockBlobClient{}
-	blobClient.On("ReadBlob", mock.Anything, mock.Anything, mock.Anything).Return(&bytes.Buffer{}, nil)
+	blobClient.On("readBlob", mock.Anything, mock.Anything, mock.Anything).Return(&bytes.Buffer{}, nil)
 	return blobClient
 }

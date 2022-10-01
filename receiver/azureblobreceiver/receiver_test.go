@@ -31,7 +31,7 @@ var (
 )
 
 func TestNewReceiver(t *testing.T) {
-	receiver, err := getBlobReceiver()
+	receiver, err := getBlobReceiver(t)
 
 	require.NoError(t, err)
 
@@ -39,7 +39,7 @@ func TestNewReceiver(t *testing.T) {
 }
 
 func TestConsumeLogsJSON(t *testing.T) {
-	receiver, _ := getBlobReceiver()
+	receiver, _ := getBlobReceiver(t)
 
 	logsSink := new(consumertest.LogsSink)
 	logsConsumer, ok := receiver.(logsDataConsumer)
@@ -53,7 +53,7 @@ func TestConsumeLogsJSON(t *testing.T) {
 }
 
 func TestConsumeTracesJSON(t *testing.T) {
-	receiver, _ := getBlobReceiver()
+	receiver, _ := getBlobReceiver(t)
 
 	tracesSink := new(consumertest.TracesSink)
 	tracesConsumer, ok := receiver.(tracesDataConsumer)
@@ -66,8 +66,13 @@ func TestConsumeTracesJSON(t *testing.T) {
 	assert.Equal(t, tracesSink.SpanCount(), 2)
 }
 
-func getBlobReceiver() (component.Receiver, error) {
+func getBlobReceiver(t *testing.T) (component.Receiver, error) {
 	set := componenttest.NewNopReceiverCreateSettings()
 	cfg := getConfig().(*Config)
-	return newReceiver(*cfg, set, nil)
+
+	blobClient := newMockBlobClient()
+	blobEventHandler := getBlobEventHandler(t, blobClient)
+
+	getBlobEventHandler(t, blobClient)
+	return newReceiver(*cfg, set, blobEventHandler)
 }

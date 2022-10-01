@@ -34,6 +34,6 @@ func (_m *MockTracesDataConsumer) setNextTracesConsumer(nextracesConsumer consum
 
 func newMockTracesDataConsumer() *MockTracesDataConsumer {
 	tracesDataConsumer := &MockTracesDataConsumer{}
-	tracesDataConsumer.On("ConsumeTracesJSON", mock.Anything, mock.Anything).Return(nil)
+	tracesDataConsumer.On("consumeTracesJSON", mock.Anything, mock.Anything).Return(nil)
 	return tracesDataConsumer
 }
