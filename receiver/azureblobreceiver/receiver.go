@@ -46,20 +46,15 @@ type blobReceiver struct {
 }
 
 func (b *blobReceiver) Start(ctx context.Context, host component.Host) error {
-
-	b.blobEventHandler.setLogsDataConsumer(b)
-	b.blobEventHandler.setTracesDataConsumer(b)
-
 	err := b.blobEventHandler.run(ctx)
 
 	return err
 }
 
 func (b *blobReceiver) Shutdown(ctx context.Context) error {
-	b.blobEventHandler.close(ctx)
-
-	return nil
+	return b.blobEventHandler.close(ctx)
 }
+
 func (b *blobReceiver) setNextLogsConsumer(nextLogsConsumer consumer.Logs) {
 	b.nextLogsConsumer = nextLogsConsumer
 }
@@ -120,6 +115,9 @@ func newReceiver(config Config, set component.ReceiverCreateSettings, blobEventH
 			ReceiverCreateSettings: set,
 		}),
 	}
+
+	blobEventHandler.setLogsDataConsumer(blobReceiver)
+	blobEventHandler.setTracesDataConsumer(blobReceiver)
 
 	return blobReceiver, nil
 }
