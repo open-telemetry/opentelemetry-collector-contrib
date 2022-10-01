@@ -28,47 +28,49 @@ import (
 	"go.uber.org/zap"
 )
 
-type clickhouseExporter struct {
-	client          *sql.DB
-	insertLogsSQL   string
-	insertTracesSQL string
+type logsExporter struct {
+	client    *sql.DB
+	insertSQL string
 
 	logger *zap.Logger
 	cfg    *Config
 }
 
-func newExporter(logger *zap.Logger, cfg *Config, createLogsTable, createTracesTable bool) (
-	*clickhouseExporter, error) {
-	if err := cfg.Validate(); err != nil {
+func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
+
+	if err := createDatabase(cfg); err != nil {
 		return nil, err
 	}
 
-	client, err := newClickhouseClient(cfg, createLogsTable, createTracesTable)
+	client, err := newClickhouseClient(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return &clickhouseExporter{
-		client:          client,
-		insertLogsSQL:   renderInsertLogsSQL(cfg),
-		insertTracesSQL: renderInsertTracesSQL(cfg),
-		logger:          logger,
-		cfg:             cfg,
+	if err = createLogsTable(cfg, client); err != nil {
+		return nil, err
+	}
+
+	return &logsExporter{
+		client:    client,
+		insertSQL: renderInsertLogsSQL(cfg),
+		logger:    logger,
+		cfg:       cfg,
 	}, nil
 }
 
 // Shutdown will shutdown the exporter.
-func (e *clickhouseExporter) Shutdown(_ context.Context) error {
+func (e *logsExporter) Shutdown(_ context.Context) error {
 	if e.client != nil {
 		return e.client.Close()
 	}
 	return nil
 }
 
-func (e *clickhouseExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
+func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	start := time.Now()
 	err := doWithTx(ctx, e.client, func(tx *sql.Tx) error {
-		statement, err := tx.PrepareContext(ctx, e.insertLogsSQL)
+		statement, err := tx.PrepareContext(ctx, e.insertSQL)
 		if err != nil {
 			return fmt.Errorf("PrepareContext:%w", err)
 		}
@@ -178,33 +180,8 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 var driverName = "clickhouse" // for testing
 
 // newClickhouseClient create a clickhouse client.
-func newClickhouseClient(cfg *Config, createLogsTable, createTracesTable bool) (*sql.DB, error) {
-	// create database
-	if err := createDatabase(cfg); err != nil {
-		return nil, err
-	}
-	// create table
-	db, err := sql.Open(driverName, cfg.DSN)
-	if err != nil {
-		return nil, fmt.Errorf("sql.Open:%w", err)
-	}
-	if createLogsTable {
-		if _, err := db.Exec(renderCreateLogsTableSQL(cfg)); err != nil {
-			return nil, fmt.Errorf("exec create logs table sql: %w", err)
-		}
-	}
-	if createTracesTable {
-		if _, err := db.Exec(renderCreateTracesTableSQL(cfg)); err != nil {
-			return nil, fmt.Errorf("exec create traces table sql: %w", err)
-		}
-		if _, err := db.Exec(renderCreateTraceIDTsTableSQL(cfg)); err != nil {
-			return nil, fmt.Errorf("exec create traceIDTs table sql: %w", err)
-		}
-		if _, err := db.Exec(renderTraceIDTsMaterializedViewSQL(cfg)); err != nil {
-			return nil, fmt.Errorf("exec create traceIDTs view sql: %w", err)
-		}
-	}
-	return db, nil
+func newClickhouseClient(cfg *Config) (*sql.DB, error) {
+	return sql.Open(driverName, cfg.DSN)
 }
 
 func createDatabase(cfg *Config) error {
@@ -218,10 +195,20 @@ func createDatabase(cfg *Config) error {
 	if err != nil {
 		return fmt.Errorf("sql.Open:%w", err)
 	}
+	defer func() {
+		_ = db.Close()
+	}()
 	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", database)
 	_, err = db.Exec(query)
 	if err != nil {
 		return fmt.Errorf("create database:%w", err)
+	}
+	return nil
+}
+
+func createLogsTable(cfg *Config, db *sql.DB) error {
+	if _, err := db.Exec(renderCreateLogsTableSQL(cfg)); err != nil {
+		return fmt.Errorf("exec create logs table sql: %w", err)
 	}
 	return nil
 }

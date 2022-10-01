@@ -31,16 +31,16 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-func TestExporter_New(t *testing.T) {
-	type validate func(*testing.T, *clickhouseExporter, error)
+func TestLogsExporter_New(t *testing.T) {
+	type validate func(*testing.T, *logsExporter, error)
 
-	_ = func(t *testing.T, exporter *clickhouseExporter, err error) {
+	_ = func(t *testing.T, exporter *logsExporter, err error) {
 		require.Nil(t, err)
 		require.NotNil(t, exporter)
 	}
 
-	failWith := func(want error) validate {
-		return func(t *testing.T, exporter *clickhouseExporter, err error) {
+	_ = func(want error) validate {
+		return func(t *testing.T, exporter *logsExporter, err error) {
 			require.Nil(t, exporter)
 			require.NotNil(t, err)
 			if !errors.Is(err, want) {
@@ -49,8 +49,8 @@ func TestExporter_New(t *testing.T) {
 		}
 	}
 
-	_ = func(msg string) validate {
-		return func(t *testing.T, exporter *clickhouseExporter, err error) {
+	failWithMsg := func(msg string) validate {
+		return func(t *testing.T, exporter *logsExporter, err error) {
 			require.Nil(t, exporter)
 			require.NotNil(t, err)
 			require.Contains(t, err.Error(), msg)
@@ -63,14 +63,14 @@ func TestExporter_New(t *testing.T) {
 	}{
 		"no dsn": {
 			config: withDefaultConfig(),
-			want:   failWith(errConfigNoDSN),
+			want:   failWithMsg("dial tcp: missing address"),
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 
-			exporter, err := newExporter(zap.NewNop(), test.config, true, true)
+			exporter, err := newLogsExporter(zap.NewNop(), test.config)
 			if exporter != nil {
 				defer func() {
 					require.NoError(t, exporter.Shutdown(context.TODO()))
@@ -93,7 +93,7 @@ func TestExporter_pushLogsData(t *testing.T) {
 			return nil
 		})
 
-		exporter := newTestExporter(t, defaultDSN)
+		exporter := newTestLogsExporter(t, defaultDSN)
 		mustPushLogsData(t, exporter, simpleLogs(1))
 		mustPushLogsData(t, exporter, simpleLogs(2))
 
@@ -101,8 +101,8 @@ func TestExporter_pushLogsData(t *testing.T) {
 	})
 }
 
-func newTestExporter(t *testing.T, dsn string, fns ...func(*Config)) *clickhouseExporter {
-	exporter, err := newExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn), true, true)
+func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {
+	exporter, err := newLogsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 	require.NoError(t, err)
 
 	t.Cleanup(func() { _ = exporter.Shutdown(context.TODO()) })
@@ -132,7 +132,7 @@ func simpleLogs(count int) plog.Logs {
 	return logs
 }
 
-func mustPushLogsData(t *testing.T, exporter *clickhouseExporter, ld plog.Logs) {
+func mustPushLogsData(t *testing.T, exporter *logsExporter, ld plog.Logs) {
 	err := exporter.pushLogsData(context.TODO(), ld)
 	require.NoError(t, err)
 }

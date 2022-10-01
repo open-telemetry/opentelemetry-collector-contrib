@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.uber.org/zap/zaptest"
 )
 
 func TestExporter_pushTracesData(t *testing.T) {
@@ -38,12 +39,20 @@ func TestExporter_pushTracesData(t *testing.T) {
 			return nil
 		})
 
-		exporter := newTestExporter(t, defaultDSN)
+		exporter := newTestTracesExporter(t, defaultDSN)
 		mustPushTracesData(t, exporter, simpleTraces(1))
 		mustPushTracesData(t, exporter, simpleTraces(2))
 
 		require.Equal(t, 3, items)
 	})
+}
+
+func newTestTracesExporter(t *testing.T, dsn string, fns ...func(*Config)) *tracesExporter {
+	exporter, err := newTracesExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
+	require.NoError(t, err)
+
+	t.Cleanup(func() { _ = exporter.Shutdown(context.TODO()) })
+	return exporter
 }
 
 func simpleTraces(count int) ptrace.Traces {
@@ -64,7 +73,7 @@ func simpleTraces(count int) ptrace.Traces {
 	return traces
 }
 
-func mustPushTracesData(t *testing.T, exporter *clickhouseExporter, td ptrace.Traces) {
+func mustPushTracesData(t *testing.T, exporter *tracesExporter, td ptrace.Traces) {
 	err := exporter.pushTraceData(context.TODO(), td)
 	require.NoError(t, err)
 }

@@ -27,10 +27,49 @@ import (
 	"go.uber.org/zap"
 )
 
-func (e *clickhouseExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
+type tracesExporter struct {
+	client    *sql.DB
+	insertSQL string
+
+	logger *zap.Logger
+	cfg    *Config
+}
+
+func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error) {
+
+	if err := createDatabase(cfg); err != nil {
+		return nil, err
+	}
+
+	client, err := newClickhouseClient(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = createTracesTable(cfg, client); err != nil {
+		return nil, err
+	}
+
+	return &tracesExporter{
+		client:    client,
+		insertSQL: renderInsertTracesSQL(cfg),
+		logger:    logger,
+		cfg:       cfg,
+	}, nil
+}
+
+// Shutdown will shutdown the exporter.
+func (e *tracesExporter) Shutdown(_ context.Context) error {
+	if e.client != nil {
+		return e.client.Close()
+	}
+	return nil
+}
+
+func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
 	start := time.Now()
 	err := doWithTx(ctx, e.client, func(tx *sql.Tx) error {
-		statement, err := tx.PrepareContext(ctx, e.insertTracesSQL)
+		statement, err := tx.PrepareContext(ctx, e.insertSQL)
 		if err != nil {
 			return fmt.Errorf("PrepareContext:%w", err)
 		}
@@ -232,6 +271,19 @@ WHERE TraceId!=''
 GROUP BY TraceId;
 `
 )
+
+func createTracesTable(cfg *Config, db *sql.DB) error {
+	if _, err := db.Exec(renderCreateTracesTableSQL(cfg)); err != nil {
+		return fmt.Errorf("exec create traces table sql: %w", err)
+	}
+	if _, err := db.Exec(renderCreateTraceIDTsTableSQL(cfg)); err != nil {
+		return fmt.Errorf("exec create traceIDTs table sql: %w", err)
+	}
+	if _, err := db.Exec(renderTraceIDTsMaterializedViewSQL(cfg)); err != nil {
+		return fmt.Errorf("exec create traceIDTs view sql: %w", err)
+	}
+	return nil
+}
 
 func renderInsertTracesSQL(cfg *Config) string {
 	return fmt.Sprintf(strings.ReplaceAll(insertTracesSQLTemplate, "'", "`"), cfg.TracesTableName)
