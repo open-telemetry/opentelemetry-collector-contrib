@@ -50,15 +50,18 @@ type emitParams struct {
 	token []byte
 }
 
-func buildTestManager(t *testing.T, cfg *Config) (*Manager, chan *emitParams) {
+func buildTestManager(t *testing.T, cfg *Config, multiline helper.MultilineConfig) (*Manager, chan *emitParams) {
 	emitChan := make(chan *emitParams, 100)
-	return buildTestManagerWithEmit(t, cfg, emitChan), emitChan
+	return buildTestManagerWithEmit(t, cfg, multiline, emitChan), emitChan
 }
 
-func buildTestManagerWithEmit(t *testing.T, cfg *Config, emitChan chan *emitParams) *Manager {
+func buildTestManagerWithEmit(t *testing.T, cfg *Config, multiline helper.MultilineConfig, emitChan chan *emitParams) *Manager {
+	enc, _ := cfg.EncodingConfig.Build()
+	flusher := cfg.Flusher.Build()
+	splitter, _ := multiline.Build(enc.Encoding, false, flusher, int(cfg.MaxLogSize))
 	input, err := cfg.Build(testutil.Logger(t), func(_ context.Context, attrs *FileAttributes, token []byte) {
 		emitChan <- &emitParams{attrs, token}
-	})
+	}, WithCustomizedSplitter(splitter))
 	require.NoError(t, err)
 	return input
 }
@@ -184,14 +187,23 @@ func init() {
 }
 
 type mockOperatorConfig struct {
-	helper.BasicConfig `mapstructure:",squash"`
-	*Config            `mapstructure:",squash"`
+	helper.BasicConfig     `mapstructure:",squash"`
+	*Config                `mapstructure:",squash"`
+	helper.MultilineConfig `mapstructure:"multiline,omitempty"`
 }
 
 func newMockOperatorConfig(cfg *Config) *mockOperatorConfig {
 	return &mockOperatorConfig{
 		BasicConfig: helper.NewBasicConfig(mockOperatorType, mockOperatorType),
 		Config:      cfg,
+	}
+}
+
+func newMockOperatorConfigWithMultiline(cfg *Config, multiline helper.MultilineConfig) *mockOperatorConfig {
+	return &mockOperatorConfig{
+		BasicConfig:     helper.NewBasicConfig(mockOperatorType, mockOperatorType),
+		Config:          cfg,
+		MultilineConfig: multiline,
 	}
 }
 

@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -99,6 +100,9 @@ func TestTokenization(t *testing.T) {
 
 func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 	emitChan := make(chan *emitParams, 100)
+	encodingConfig := helper.NewEncodingConfig()
+	enc, _ := encodingConfig.Build()
+	splitter, _ := helper.NewNewlineSplitFunc(enc.Encoding, false)
 	return &readerFactory{
 		SugaredLogger: testutil.Logger(t),
 		readerConfig: &readerConfig{
@@ -109,6 +113,11 @@ func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 			},
 		},
 		fromBeginning: true,
+		splitterFactory: splitterFactory{
+			EncodingConfig: encodingConfig,
+			Flusher:        helper.NewFlusherConfig(),
+			SplitFunc:      splitter,
+		},
 	}, emitChan
 }
 

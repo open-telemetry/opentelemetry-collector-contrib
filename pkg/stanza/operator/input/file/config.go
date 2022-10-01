@@ -86,12 +86,9 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		toBody:         toBody,
 		preEmitOptions: preEmitOptions,
 	}
-	var splitter bufio.SplitFunc
-	if c.LineStartPattern != "" || c.LineEndPattern != "" {
-		splitter, err = c.buildMultilineSplitter()
-		if err != nil {
-			return nil, err
-		}
+	splitter, err := c.buildMultilineSplitter()
+	if err != nil {
+		return nil, err
 	}
 	input.fileConsumer, err = c.Config.Build(logger, input.emit, fileconsumer.WithCustomizedSplitter(splitter))
 	if err != nil {

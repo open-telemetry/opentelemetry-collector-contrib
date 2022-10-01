@@ -16,6 +16,7 @@ package fileconsumer
 
 import (
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"math/rand"
 	"os"
 	"strings"
@@ -34,7 +35,7 @@ func TestNewFingerprintDoesNotModifyOffset(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, _ := buildTestManager(t, cfg)
+	operator, _ := buildTestManager(t, cfg, helper.NewMultilineConfig())
 
 	operator.readerFactory.readerConfig.fingerprintSize = len(fingerprint)
 
@@ -130,7 +131,7 @@ func TestNewFingerprint(t *testing.T) {
 			tempDir := t.TempDir()
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
-			operator, _ := buildTestManager(t, cfg)
+			operator, _ := buildTestManager(t, cfg, helper.NewMultilineConfig())
 
 			operator.readerFactory.readerConfig.fingerprintSize = tc.fingerprintSize
 
@@ -237,7 +238,7 @@ func TestFingerprintStartsWith_FromFile(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, _ := buildTestManager(t, cfg)
+	operator, _ := buildTestManager(t, cfg, helper.NewMultilineConfig())
 
 	operator.readerFactory.readerConfig.fingerprintSize *= 10
 

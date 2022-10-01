@@ -15,13 +15,11 @@
 package fileconsumer
 
 import (
-	"bufio"
 	"context"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -254,40 +252,36 @@ func TestUnmarshal(t *testing.T) {
 				Name: "multiline_line_start_string",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					newSplit := helper.NewSplitterConfig()
-					newSplit.Multiline.LineStartPattern = "Start"
-					cfg.Splitter = newSplit
-					return newMockOperatorConfig(cfg)
+					newMultiline := helper.NewMultilineConfig()
+					newMultiline.LineStartPattern = "Start"
+					return newMockOperatorConfigWithMultiline(cfg, newMultiline)
 				}(),
 			},
 			{
 				Name: "multiline_line_start_special",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					newSplit := helper.NewSplitterConfig()
-					newSplit.Multiline.LineStartPattern = "%"
-					cfg.Splitter = newSplit
-					return newMockOperatorConfig(cfg)
+					newMultiline := helper.NewMultilineConfig()
+					newMultiline.LineStartPattern = "%"
+					return newMockOperatorConfigWithMultiline(cfg, newMultiline)
 				}(),
 			},
 			{
 				Name: "multiline_line_end_string",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					newSplit := helper.NewSplitterConfig()
-					newSplit.Multiline.LineEndPattern = "Start"
-					cfg.Splitter = newSplit
-					return newMockOperatorConfig(cfg)
+					newMultiline := helper.NewMultilineConfig()
+					newMultiline.LineEndPattern = "Start"
+					return newMockOperatorConfigWithMultiline(cfg, newMultiline)
 				}(),
 			},
 			{
 				Name: "multiline_line_end_special",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					newSplit := helper.NewSplitterConfig()
-					newSplit.Multiline.LineEndPattern = "%"
-					cfg.Splitter = newSplit
-					return newMockOperatorConfig(cfg)
+					newMultiline := helper.NewMultilineConfig()
+					newMultiline.LineEndPattern = "%"
+					return newMockOperatorConfigWithMultiline(cfg, newMultiline)
 				}(),
 			},
 			{
@@ -342,7 +336,7 @@ func TestUnmarshal(t *testing.T) {
 				Name: "encoding_lower",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "utf-16le"}
+					cfg.EncodingConfig = helper.EncodingConfig{Encoding: "utf-16le"}
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
@@ -350,7 +344,7 @@ func TestUnmarshal(t *testing.T) {
 				Name: "encoding_upper",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-16lE"}
+					cfg.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-16lE"}
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
@@ -372,12 +366,14 @@ func TestBuild(t *testing.T) {
 	cases := []struct {
 		name             string
 		modifyBaseConfig func(*Config)
+		MultilineConfig  helper.MultilineConfig
 		errorRequirement require.ErrorAssertionFunc
 		validate         func(*testing.T, *Manager)
 	}{
 		{
 			"Basic",
 			func(f *Config) {},
+			helper.NewMultilineConfig(),
 			require.NoError,
 			func(t *testing.T, f *Manager) {
 				require.Equal(t, f.finder.Include, []string{"/var/log/testpath.*"})
@@ -389,6 +385,7 @@ func TestBuild(t *testing.T) {
 			func(f *Config) {
 				f.Include = []string{"["}
 			},
+			helper.NewMultilineConfig(),
 			require.Error,
 			nil,
 		},
@@ -397,17 +394,19 @@ func TestBuild(t *testing.T) {
 			func(f *Config) {
 				f.Include = []string{"["}
 			},
+			helper.NewMultilineConfig(),
 			require.Error,
 			nil,
 		},
 		{
 			"MultilineConfiguredStartAndEndPatterns",
-			func(f *Config) {
-				f.Splitter = helper.NewSplitterConfig()
-				f.Splitter.Multiline = helper.MultilineConfig{
-					LineEndPattern:   "Exists",
-					LineStartPattern: "Exists",
-				}
+			func(cfg *Config) {
+				cfg.EncodingConfig = helper.NewEncodingConfig()
+				cfg.Flusher = helper.NewFlusherConfig()
+			},
+			helper.MultilineConfig{
+				LineEndPattern:   "Exists",
+				LineStartPattern: "Exists",
 			},
 			require.Error,
 			nil,
@@ -415,10 +414,11 @@ func TestBuild(t *testing.T) {
 		{
 			"MultilineConfiguredStartPattern",
 			func(f *Config) {
-				f.Splitter = helper.NewSplitterConfig()
-				f.Splitter.Multiline = helper.MultilineConfig{
-					LineStartPattern: "START.*",
-				}
+				f.EncodingConfig = helper.NewEncodingConfig()
+				f.Flusher = helper.NewFlusherConfig()
+			},
+			helper.MultilineConfig{
+				LineStartPattern: "START.*",
 			},
 			require.NoError,
 			func(t *testing.T, f *Manager) {},
@@ -426,10 +426,11 @@ func TestBuild(t *testing.T) {
 		{
 			"MultilineConfiguredEndPattern",
 			func(f *Config) {
-				f.Splitter = helper.NewSplitterConfig()
-				f.Splitter.Multiline = helper.MultilineConfig{
-					LineEndPattern: "END.*",
-				}
+				f.EncodingConfig = helper.NewEncodingConfig()
+				f.Flusher = helper.NewFlusherConfig()
+			},
+			helper.MultilineConfig{
+				LineEndPattern: "END.*",
 			},
 			require.NoError,
 			func(t *testing.T, f *Manager) {},
@@ -437,19 +438,21 @@ func TestBuild(t *testing.T) {
 		{
 			"InvalidEncoding",
 			func(f *Config) {
-				f.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-3233"}
+				f.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-3233"}
 			},
+			helper.NewMultilineConfig(),
 			require.Error,
 			nil,
 		},
 		{
 			"LineStartAndEnd",
 			func(f *Config) {
-				f.Splitter = helper.NewSplitterConfig()
-				f.Splitter.Multiline = helper.MultilineConfig{
-					LineStartPattern: ".*",
-					LineEndPattern:   ".*",
-				}
+				f.EncodingConfig = helper.NewEncodingConfig()
+				f.Flusher = helper.NewFlusherConfig()
+			},
+			helper.MultilineConfig{
+				LineStartPattern: ".*",
+				LineEndPattern:   ".*",
 			},
 			require.Error,
 			nil,
@@ -457,19 +460,21 @@ func TestBuild(t *testing.T) {
 		{
 			"NoLineStartOrEnd",
 			func(f *Config) {
-				f.Splitter = helper.NewSplitterConfig()
-				f.Splitter.Multiline = helper.MultilineConfig{}
+				f.EncodingConfig = helper.NewEncodingConfig()
+				f.Flusher = helper.NewFlusherConfig()
 			},
+			helper.NewMultilineConfig(),
 			require.NoError,
 			func(t *testing.T, f *Manager) {},
 		},
 		{
 			"InvalidLineStartRegex",
 			func(f *Config) {
-				f.Splitter = helper.NewSplitterConfig()
-				f.Splitter.Multiline = helper.MultilineConfig{
-					LineStartPattern: "(",
-				}
+				f.EncodingConfig = helper.NewEncodingConfig()
+				f.Flusher = helper.NewFlusherConfig()
+			},
+			helper.MultilineConfig{
+				LineStartPattern: "(",
 			},
 			require.Error,
 			nil,
@@ -477,10 +482,11 @@ func TestBuild(t *testing.T) {
 		{
 			"InvalidLineEndRegex",
 			func(f *Config) {
-				f.Splitter = helper.NewSplitterConfig()
-				f.Splitter.Multiline = helper.MultilineConfig{
-					LineEndPattern: "(",
-				}
+				f.EncodingConfig = helper.NewEncodingConfig()
+				f.Flusher = helper.NewFlusherConfig()
+			},
+			helper.MultilineConfig{
+				LineEndPattern: "(",
 			},
 			require.Error,
 			nil,
@@ -496,41 +502,24 @@ func TestBuild(t *testing.T) {
 
 			nopEmit := func(_ context.Context, _ *FileAttributes, _ []byte) {}
 
-			input, err := cfg.Build(testutil.Logger(t), nopEmit)
+			enc, err := cfg.EncodingConfig.Build()
+			if err != nil {
+				tc.errorRequirement(t, err)
+				return
+			}
+			flusher := cfg.Flusher.Build()
+			splitter, err := tc.MultilineConfig.Build(enc.Encoding, false, flusher, int(cfg.MaxLogSize))
+			if err != nil {
+				tc.errorRequirement(t, err)
+				return
+			}
+			input, err := cfg.Build(testutil.Logger(t), nopEmit, WithCustomizedSplitter(splitter))
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
 			}
 
 			tc.validate(t, input)
-		})
-	}
-}
-
-func TestNewConfigWithOptions(t *testing.T) {
-	type args struct {
-		opts []Option
-	}
-	tests := []struct {
-		name     string
-		args     args
-		splitter bufio.SplitFunc
-	}{
-		{
-			name: "customized splitter",
-			args: args{
-				opts: []Option{
-					WithCustomizedSplitter(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-						return 0, nil, err
-					}),
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := NewConfig(tt.args.opts...)
-			assert.NotNil(t, got)
 		})
 	}
 }
