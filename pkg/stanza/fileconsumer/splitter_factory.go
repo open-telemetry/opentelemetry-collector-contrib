@@ -20,13 +20,65 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-type splitterFactory struct {
+type splitterFactory interface {
+	Build(maxLogSize int) (*helper.Splitter, error)
+}
+
+type defaultSplitterFactory struct {
+	EncodingConfig helper.EncodingConfig
+	Flusher        helper.FlusherConfig
+}
+
+func (factory *defaultSplitterFactory) Build(maxLogSize int) (*helper.Splitter, error) {
+	enc, err := factory.EncodingConfig.Build()
+	if err != nil {
+		return nil, err
+	}
+	flusher := factory.Flusher.Build()
+	splitFunc := helper.SplitNone(maxLogSize)
+	if flusher != nil {
+		splitFunc = flusher.SplitFunc(splitFunc)
+	}
+	return &helper.Splitter{
+		Encoding:  enc,
+		Flusher:   flusher,
+		SplitFunc: splitFunc,
+	}, nil
+}
+
+type multilineSplitterFactory struct {
+	EncodingConfig helper.EncodingConfig
+	Flusher        helper.FlusherConfig
+	Multiline      helper.MultilineConfig
+}
+
+func (factory *multilineSplitterFactory) Build(maxLogSize int) (*helper.Splitter, error) {
+	enc, err := factory.EncodingConfig.Build()
+	if err != nil {
+		return nil, err
+	}
+	flusher := factory.Flusher.Build()
+	splitter, err := factory.Multiline.Build(enc.Encoding, false, flusher, maxLogSize)
+	if err != nil {
+		return nil, err
+	}
+	if flusher != nil {
+		splitter = flusher.SplitFunc(splitter)
+	}
+	return &helper.Splitter{
+		Encoding:  enc,
+		Flusher:   flusher,
+		SplitFunc: splitter,
+	}, nil
+}
+
+type customizeSplitterFactory struct {
 	EncodingConfig helper.EncodingConfig
 	Flusher        helper.FlusherConfig
 	SplitFunc      bufio.SplitFunc
 }
 
-func (factory *splitterFactory) Build() (*helper.Splitter, error) {
+func (factory *customizeSplitterFactory) Build(maxLogSize int) (*helper.Splitter, error) {
 	enc, err := factory.EncodingConfig.Build()
 	if err != nil {
 		return nil, err

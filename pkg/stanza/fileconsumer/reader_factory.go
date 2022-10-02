@@ -95,7 +95,7 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 	if b.splitter != nil {
 		r.splitter = b.splitter
 	} else {
-		r.splitter, err = b.splitterFactory.Build()
+		r.splitter, err = b.splitterFactory.Build(r.maxLogSize)
 		if err != nil {
 			return
 		}

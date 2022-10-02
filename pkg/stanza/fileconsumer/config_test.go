@@ -501,19 +501,8 @@ func TestBuild(t *testing.T) {
 			tc.modifyBaseConfig(cfg)
 
 			nopEmit := func(_ context.Context, _ *FileAttributes, _ []byte) {}
-
-			enc, err := cfg.EncodingConfig.Build()
-			if err != nil {
-				tc.errorRequirement(t, err)
-				return
-			}
-			flusher := cfg.Flusher.Build()
-			splitter, err := tc.MultilineConfig.Build(enc.Encoding, false, flusher, int(cfg.MaxLogSize))
-			if err != nil {
-				tc.errorRequirement(t, err)
-				return
-			}
-			input, err := cfg.Build(testutil.Logger(t), nopEmit, WithCustomizedSplitter(splitter))
+			input, err := cfg.Build(testutil.Logger(t), nopEmit,
+				WithMultilineSplitter(cfg.EncodingConfig, cfg.Flusher, tc.MultilineConfig))
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return

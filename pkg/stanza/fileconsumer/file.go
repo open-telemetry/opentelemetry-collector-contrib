@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"os"
 	"sync"
 	"time"
@@ -33,12 +34,28 @@ type EmitFunc func(ctx context.Context, attrs *FileAttributes, token []byte)
 
 type Option func(m *Manager)
 
-func WithCustomizedSplitter(splitter bufio.SplitFunc) Option {
+func WithCustomizedSplitter(
+	encodingConfig helper.EncodingConfig, flusher helper.FlusherConfig, splitter bufio.SplitFunc) Option {
 	return func(m *Manager) {
 		if splitter == nil {
 			return
 		}
-		m.readerFactory.splitterFactory.SplitFunc = splitter
+		m.readerFactory.splitterFactory = &customizeSplitterFactory{
+			EncodingConfig: encodingConfig,
+			Flusher:        flusher,
+			SplitFunc:      splitter,
+		}
+	}
+}
+
+func WithMultilineSplitter(
+	encodingConfig helper.EncodingConfig, flusher helper.FlusherConfig, multiline helper.MultilineConfig) Option {
+	return func(m *Manager) {
+		m.readerFactory.splitterFactory = &multilineSplitterFactory{
+			EncodingConfig: encodingConfig,
+			Flusher:        flusher,
+			Multiline:      multiline,
+		}
 	}
 }
 

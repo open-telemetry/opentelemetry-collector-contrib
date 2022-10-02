@@ -56,12 +56,9 @@ func buildTestManager(t *testing.T, cfg *Config, multiline helper.MultilineConfi
 }
 
 func buildTestManagerWithEmit(t *testing.T, cfg *Config, multiline helper.MultilineConfig, emitChan chan *emitParams) *Manager {
-	enc, _ := cfg.EncodingConfig.Build()
-	flusher := cfg.Flusher.Build()
-	splitter, _ := multiline.Build(enc.Encoding, false, flusher, int(cfg.MaxLogSize))
 	input, err := cfg.Build(testutil.Logger(t), func(_ context.Context, attrs *FileAttributes, token []byte) {
 		emitChan <- &emitParams{attrs, token}
-	}, WithCustomizedSplitter(splitter))
+	}, WithMultilineSplitter(cfg.EncodingConfig, cfg.Flusher, multiline))
 	require.NoError(t, err)
 	return input
 }

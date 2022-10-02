@@ -15,8 +15,6 @@
 package file // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
 
 import (
-	"bufio"
-
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
@@ -86,27 +84,11 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		toBody:         toBody,
 		preEmitOptions: preEmitOptions,
 	}
-	splitter, err := c.buildMultilineSplitter()
-	if err != nil {
-		return nil, err
-	}
-	input.fileConsumer, err = c.Config.Build(logger, input.emit, fileconsumer.WithCustomizedSplitter(splitter))
+	input.fileConsumer, err = c.Config.Build(logger, input.emit,
+		fileconsumer.WithMultilineSplitter(c.EncodingConfig, c.Flusher, c.MultilineConfig))
 	if err != nil {
 		return nil, err
 	}
 
 	return input, nil
-}
-
-func (c Config) buildMultilineSplitter() (bufio.SplitFunc, error) {
-	enc, err := c.EncodingConfig.Build()
-	if err != nil {
-		return nil, err
-	}
-	flusher := c.Flusher.Build()
-	splitter, err := c.MultilineConfig.Build(enc.Encoding, false, flusher, int(c.MaxLogSize))
-	if err != nil {
-		return nil, err
-	}
-	return splitter, nil
 }

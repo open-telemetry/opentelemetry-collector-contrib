@@ -129,10 +129,9 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc, opts ...Option) 
 				emit:            emit,
 			},
 			fromBeginning: startAtBeginning,
-			splitterFactory: splitterFactory{
+			splitterFactory: &defaultSplitterFactory{
 				EncodingConfig: c.EncodingConfig,
 				Flusher:        c.Flusher,
-				SplitFunc:      helper.SplitNone(int(c.MaxLogSize)),
 			},
 		},
 		finder:        c.Finder,
@@ -144,6 +143,11 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc, opts ...Option) 
 	}
 	for _, op := range opts {
 		op(m)
+	}
+
+	_, err = m.readerFactory.splitterFactory.Build(int(c.MaxLogSize))
+	if err != nil {
+		return nil, err
 	}
 	return m, nil
 }

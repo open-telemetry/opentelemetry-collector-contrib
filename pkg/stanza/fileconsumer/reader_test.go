@@ -100,9 +100,6 @@ func TestTokenization(t *testing.T) {
 
 func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 	emitChan := make(chan *emitParams, 100)
-	encodingConfig := helper.NewEncodingConfig()
-	enc, _ := encodingConfig.Build()
-	splitter, _ := helper.NewNewlineSplitFunc(enc.Encoding, false)
 	return &readerFactory{
 		SugaredLogger: testutil.Logger(t),
 		readerConfig: &readerConfig{
@@ -113,10 +110,10 @@ func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 			},
 		},
 		fromBeginning: true,
-		splitterFactory: splitterFactory{
-			EncodingConfig: encodingConfig,
+		splitterFactory: &multilineSplitterFactory{
+			EncodingConfig: helper.NewEncodingConfig(),
 			Flusher:        helper.NewFlusherConfig(),
-			SplitFunc:      splitter,
+			Multiline:      helper.NewMultilineConfig(),
 		},
 	}, emitChan
 }
