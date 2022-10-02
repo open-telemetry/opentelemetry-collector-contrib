@@ -16,13 +16,14 @@ package fileconsumer
 
 import (
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"math/rand"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
 func TestNewFingerprintDoesNotModifyOffset(t *testing.T) {
