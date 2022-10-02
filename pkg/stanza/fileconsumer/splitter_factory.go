@@ -29,6 +29,7 @@ type defaultSplitterFactory struct {
 	Flusher        helper.FlusherConfig
 }
 
+// Build return default Splitter
 func (factory *defaultSplitterFactory) Build(maxLogSize int) (*helper.Splitter, error) {
 	enc, err := factory.EncodingConfig.Build()
 	if err != nil {
@@ -52,6 +53,7 @@ type multilineSplitterFactory struct {
 	Multiline      helper.MultilineConfig
 }
 
+// Build builds Multiline Splitter struct
 func (factory *multilineSplitterFactory) Build(maxLogSize int) (*helper.Splitter, error) {
 	enc, err := factory.EncodingConfig.Build()
 	if err != nil {
@@ -78,6 +80,7 @@ type customizeSplitterFactory struct {
 	SplitFunc      bufio.SplitFunc
 }
 
+// Build builds custom Splitter struct
 func (factory *customizeSplitterFactory) Build(maxLogSize int) (*helper.Splitter, error) {
 	enc, err := factory.EncodingConfig.Build()
 	if err != nil {

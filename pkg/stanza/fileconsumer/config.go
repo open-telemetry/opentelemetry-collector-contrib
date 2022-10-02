@@ -144,7 +144,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc, opts ...Option) 
 	for _, op := range opts {
 		op(m)
 	}
-
+	// Ensure that splitter is buildable
 	_, err = m.readerFactory.splitterFactory.Build(int(c.MaxLogSize))
 	if err != nil {
 		return nil, err
