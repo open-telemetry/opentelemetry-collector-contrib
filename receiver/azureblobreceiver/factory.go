@@ -133,7 +133,6 @@ func (f *blobReceiverFactory) getReceiver(
 func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger) (blobEventHandler, error) {
 	bc, err := newBlobClient(cfg.ConnectionString, logger)
 	if err != nil {
-		logger.Error(err.Error())
 		return nil, err
 	}
 
