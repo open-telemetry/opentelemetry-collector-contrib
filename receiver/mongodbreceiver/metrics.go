@@ -336,8 +336,8 @@ func (s *mongodbScraper) recordNetworkCount(now pcommon.Timestamp, doc bson.M, e
 
 // Lock Metrics are only supported by MongoDB v3.2+
 func (s *mongodbScraper) recordLockAcquireCounts(now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
-	mongo30, _ := version.NewVersion("3.2")
-	if s.mongoVersion.LessThan(mongo30) {
+	mongo32, _ := version.NewVersion("3.2")
+	if s.mongoVersion.LessThan(mongo32) {
 		return
 	}
 	mongo42, _ := version.NewVersion("4.2")

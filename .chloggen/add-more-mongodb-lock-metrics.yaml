@@ -14,4 +14,8 @@ issues: [13661]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
+<<<<<<< HEAD
   Add additional metrics for locks.acquire_count, locks.acquire_wait_count, locks.deadlock_count, locks.time_acquiring_micros
+=======
+  Add additional metrics for locks.acquire_count, locks.acquire_wait_count, locks.deadlock_count, locks.time_acquiring_micros
+>>>>>>> 51ba33821c (move changelog entry to .chloggen)
