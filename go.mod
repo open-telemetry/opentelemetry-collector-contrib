@@ -8,6 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.61.0
@@ -176,13 +177,20 @@ require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.14 // indirect
 	github.com/99designs/keyring v1.1.6 // indirect
 	github.com/AthenZ/athenz v1.10.39 // indirect
+	github.com/Azure/azure-kusto-go v0.8.1 // indirect
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
 	github.com/Azure/azure-sdk-for-go v65.0.0+incompatible // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v0.21.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v0.8.3 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.3.0 // indirect
 	github.com/Azure/azure-storage-blob-go v0.14.0 // indirect
+	github.com/Azure/azure-storage-queue-go v0.0.0-20191125232315-636801874cdd // indirect
 	github.com/Azure/go-amqp v0.17.5 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.28 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.21 // indirect
+	github.com/Azure/go-autorest/autorest/azure/auth v0.5.11 // indirect
+	github.com/Azure/go-autorest/autorest/azure/cli v0.4.5 // indirect
 	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
 	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
@@ -279,6 +287,7 @@ require (
 	github.com/dennwc/varint v1.0.0 // indirect
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
 	github.com/digitalocean/godo v1.82.0 // indirect
+	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.18+incompatible // indirect
 	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 // indirect
@@ -406,6 +415,7 @@ require (
 	github.com/klauspost/compress v1.15.10 // indirect
 	github.com/knadh/koanf v1.4.3 // indirect
 	github.com/kolo/xmlrpc v0.0.0-20201022064351-38db28db192b // indirect
+	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/leoluk/perflib_exporter v0.1.0 // indirect
 	github.com/lib/pq v1.10.7 // indirect
 	github.com/linkedin/goavro/v2 v2.9.8 // indirect
@@ -666,6 +676,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsem
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter => ./exporter/awskinesisexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter => ./exporter/awsxrayexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter => ./exporter/azuredataexplorerexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter => ./exporter/azuremonitorexporter
 

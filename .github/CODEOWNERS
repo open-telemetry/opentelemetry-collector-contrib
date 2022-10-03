@@ -33,6 +33,7 @@ exporter/awsemfexporter/                             @open-telemetry/collector-c
 exporter/awskinesisexporter/                         @open-telemetry/collector-contrib-approvers @Aneurysm9 @MovieStoreGuy
 exporter/awsxrayexporter/                            @open-telemetry/collector-contrib-approvers @willarmiros
 exporter/azuremonitorexporter/                       @open-telemetry/collector-contrib-approvers @pcwiese
+exporter/azuredataexplorerexporter/                  @open-telemetry/collector-contrib-approvers @asaharan @ag-ramachandran
 exporter/carbonexporter/                             @open-telemetry/collector-contrib-approvers @pjanotti
 exporter/clickhouseexporter/                         @open-telemetry/collector-contrib-approvers @hanjm @dmitryax
 exporter/coralogixexporter/                          @open-telemetry/collector-contrib-approvers @oded-dd @ofirshmuel
