@@ -77,7 +77,6 @@ func (p *azureBlobEventHandler) run(ctx context.Context) error {
 }
 
 func (p *azureBlobEventHandler) newMessageHangdler(ctx context.Context, event *eventhub.Event) error {
-	p.logger.Debug(fmt.Sprintf("New event: %s", string(event.Data)))
 
 	var eventDataSlice []map[string]interface{}
 	marshalErr := json.Unmarshal(event.Data, &eventDataSlice)
