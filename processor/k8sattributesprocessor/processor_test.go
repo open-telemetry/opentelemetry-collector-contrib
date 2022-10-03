@@ -198,15 +198,15 @@ func (m *multiTest) assertBatchesLen(batchesLen int) {
 }
 
 func (m *multiTest) assertResourceObjectLen(batchNo int) {
-	assert.Equal(m.t, m.nextTrace.AllTraces()[batchNo].ResourceSpans().Len(), 1)
-	assert.Equal(m.t, m.nextMetrics.AllMetrics()[batchNo].ResourceMetrics().Len(), 1)
-	assert.Equal(m.t, m.nextLogs.AllLogs()[batchNo].ResourceLogs().Len(), 1)
+	assert.Equal(m.t, 1, m.nextTrace.AllTraces()[batchNo].ResourceSpans().Len())
+	assert.Equal(m.t, 1, m.nextMetrics.AllMetrics()[batchNo].ResourceMetrics().Len())
+	assert.Equal(m.t, 1, m.nextLogs.AllLogs()[batchNo].ResourceLogs().Len())
 }
 
 func (m *multiTest) assertResourceAttributesLen(batchNo int, attrsLen int) {
-	assert.Equal(m.t, m.nextTrace.AllTraces()[batchNo].ResourceSpans().At(0).Resource().Attributes().Len(), attrsLen)
-	assert.Equal(m.t, m.nextMetrics.AllMetrics()[batchNo].ResourceMetrics().At(0).Resource().Attributes().Len(), attrsLen)
-	assert.Equal(m.t, m.nextLogs.AllLogs()[batchNo].ResourceLogs().At(0).Resource().Attributes().Len(), attrsLen)
+	assert.Equal(m.t, attrsLen, m.nextTrace.AllTraces()[batchNo].ResourceSpans().At(0).Resource().Attributes().Len())
+	assert.Equal(m.t, attrsLen, m.nextMetrics.AllMetrics()[batchNo].ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(m.t, attrsLen, m.nextLogs.AllLogs()[batchNo].ResourceLogs().At(0).Resource().Attributes().Len())
 }
 
 func (m *multiTest) assertResource(batchNum int, resourceFunc func(res pcommon.Resource)) {
@@ -231,7 +231,7 @@ func TestProcessorBadConfig(t *testing.T) {
 
 	newMultiTest(t, cfg, func(err error) {
 		assert.Error(t, err)
-		assert.Equal(t, err.Error(), "\"bad-attribute\" is not a supported metadata field")
+		assert.Equal(t, "\"bad-attribute\" is not a supported metadata field", err.Error())
 	})
 }
 
@@ -242,7 +242,7 @@ func TestProcessorBadClientProvider(t *testing.T) {
 
 	newMultiTest(t, NewFactory().CreateDefaultConfig(), func(err error) {
 		assert.Error(t, err)
-		assert.Equal(t, err.Error(), "bad client error")
+		assert.Equal(t, "bad client error", err.Error())
 	}, withKubeClientProvider(clientProvider))
 }
 
@@ -1108,7 +1108,7 @@ func TestRealClient(t *testing.T) {
 		NewFactory().CreateDefaultConfig(),
 		func(err error) {
 			assert.Error(t, err)
-			assert.Equal(t, err.Error(), "unable to load k8s config, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined")
+			assert.Equal(t, "unable to load k8s config, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined", err.Error())
 		},
 		withKubeClientProvider(kubeClientProvider),
 		withAPIConfig(k8sconfig.APIConfig{AuthType: "none"}),
