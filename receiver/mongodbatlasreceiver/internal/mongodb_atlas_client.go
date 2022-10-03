@@ -165,10 +165,7 @@ func checkMongoDBClientErr(err error, response *mongodbatlas.Response) error {
 		return err
 	}
 	if response != nil {
-		err = response.CheckResponse(response.Body)
-		if err != nil {
-			return err
-		}
+		return response.CheckResponse(response.Body)
 	}
 	return nil
 }
