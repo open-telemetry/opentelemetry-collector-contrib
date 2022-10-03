@@ -174,6 +174,7 @@ const (
 	maxMetricNameLength     = 256
 	maxDimensionNameLength  = 128
 	maxDimensionValueLength = 256
+	maxNumberOfDimensions   = 36
 )
 
 var (
@@ -183,6 +184,8 @@ var (
 		"dimension name longer than %d characters", maxDimensionNameLength)
 	invalidDimensionValueReason = fmt.Sprintf(
 		"dimension value longer than %d characters", maxDimensionValueLength)
+	invalidNumberOfDimensions = fmt.Sprintf(
+		"number of dimensions is larger than %d", maxNumberOfDimensions)
 )
 
 type datapointValidator struct {
@@ -196,11 +199,11 @@ func newDatapointValidator(logger *zap.Logger, nonAlphanumericDimChars string) *
 
 // sanitizeDataPoints sanitizes datapoints prior to dispatching them to the backend.
 // Datapoints that do not conform to the requirements are removed. This method drops
-// datapoints with metric name greater than 256 characters.
+// datapoints with metric name greater than 256 characters and number of dimensions greater than 36.
 func (dpv *datapointValidator) sanitizeDataPoints(dps []*sfxpb.DataPoint) []*sfxpb.DataPoint {
 	resultDatapointsLen := 0
 	for dpIndex, dp := range dps {
-		if dpv.isValidMetricName(dp.Metric) {
+		if dpv.isValidMetricName(dp.Metric) && dpv.isValidNumberOfDimension(dp) {
 			dp.Dimensions = dpv.sanitizeDimensions(dp.Dimensions)
 			if resultDatapointsLen < dpIndex {
 				dps[resultDatapointsLen] = dp
@@ -234,10 +237,22 @@ func (dpv *datapointValidator) sanitizeDimensions(dimensions []*sfxpb.Dimension)
 
 func (dpv *datapointValidator) isValidMetricName(name string) bool {
 	if len(name) > maxMetricNameLength {
-		dpv.logger.Warn("dropping datapoint",
+		dpv.logger.Debug("dropping datapoint",
 			zap.String("reason", invalidMetricNameReason),
 			zap.String("metric_name", name),
 			zap.Int("metric_name_length", len(name)),
+		)
+		return false
+	}
+	return true
+}
+
+func (dpv *datapointValidator) isValidNumberOfDimension(dp *sfxpb.DataPoint) bool {
+	if len(dp.Dimensions) > maxNumberOfDimensions {
+		dpv.logger.Debug("dropping datapoint",
+			zap.String("reason", invalidNumberOfDimensions),
+			zap.String("datapoint", DatapointToString(dp)),
+			zap.Int("number_of_dimensions", len(dp.Dimensions)),
 		)
 		return false
 	}
@@ -250,7 +265,7 @@ func (dpv *datapointValidator) isValidDimension(dimension *sfxpb.Dimension) bool
 
 func (dpv *datapointValidator) isValidDimensionName(name string) bool {
 	if len(name) > maxDimensionNameLength {
-		dpv.logger.Warn("dropping dimension",
+		dpv.logger.Debug("dropping dimension",
 			zap.String("reason", invalidDimensionNameReason),
 			zap.String("dimension_name", name),
 			zap.Int("dimension_name_length", len(name)),
@@ -262,7 +277,7 @@ func (dpv *datapointValidator) isValidDimensionName(name string) bool {
 
 func (dpv *datapointValidator) isValidDimensionValue(value, name string) bool {
 	if len(value) > maxDimensionValueLength {
-		dpv.logger.Warn("dropping dimension",
+		dpv.logger.Debug("dropping dimension",
 			zap.String("dimension_name", name),
 			zap.String("reason", invalidDimensionValueReason),
 			zap.String("dimension_value", value),
