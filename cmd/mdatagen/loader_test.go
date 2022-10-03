@@ -77,6 +77,15 @@ func Test_loadMetadata(t *testing.T) {
 						},
 						Attributes: []attributeName{"enumAttribute", "booleanValueType"},
 					},
+					"http.duration": {
+						Enabled:     (func() *bool { f := false; return &f })(),
+						Description: "Duration of HTTP requests.",
+						Unit:        "ms",
+						Histogram: &histogram{
+							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
+						},
+						Attributes: []attributeName{"enumAttribute", "booleanValueType"},
+					},
 				},
 			},
 		},
@@ -92,7 +101,7 @@ func Test_loadMetadata(t *testing.T) {
 			yml:  "no_metric_type.yaml",
 			want: metadata{},
 			wantErr: "metric system.cpu.time doesn't have a metric type key, " +
-				"one of the following has to be specified: sum, gauge",
+				"one of the following has to be specified: sum, gauge, histogram",
 		},
 		{
 			name:    "no enabled",
@@ -105,7 +114,7 @@ func Test_loadMetadata(t *testing.T) {
 			yml:  "two_metric_types.yaml",
 			want: metadata{},
 			wantErr: "metric system.cpu.time has more than one metric type keys, " +
-				"only one of the following has to be specified: sum, gauge",
+				"only one of the following has to be specified: sum, gauge, histogram",
 		},
 		{
 			name: "no number types",

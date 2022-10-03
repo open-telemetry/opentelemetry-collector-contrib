@@ -23,6 +23,7 @@ import (
 var (
 	_ MetricData = &gauge{}
 	_ MetricData = &sum{}
+	_ MetricData = &histogram{}
 )
 
 // MetricData is generic interface for all metric datatypes.
@@ -146,5 +147,26 @@ func (d sum) HasAggregated() bool {
 }
 
 func (d sum) HasMetricInputType() bool {
+	return d.InputType != ""
+}
+
+type histogram struct {
+	MetricValueType `mapstructure:"value_type"`
+	MetricInputType `mapstructure:",squash"`
+}
+
+func (d histogram) Type() string {
+	return "Histogram"
+}
+
+func (d histogram) HasMonotonic() bool {
+	return false
+}
+
+func (d histogram) HasAggregated() bool {
+	return false
+}
+
+func (d histogram) HasMetricInputType() bool {
 	return d.InputType != ""
 }

@@ -38,3 +38,12 @@ metrics:
     gauge:
       value_type: double
     attributes: [enumAttribute, booleanValueType]
+
+  # An optional histogram metric.
+  http.duration:
+    enabled: false
+    description: Duration of HTTP requests.
+    unit: ms
+    histogram:
+      value_type: double
+    attributes: [enumAttribute, booleanValueType]

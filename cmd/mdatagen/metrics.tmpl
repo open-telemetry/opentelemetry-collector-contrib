@@ -219,6 +219,8 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 				dps = metrics.At(i).Gauge().DataPoints()
 			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
+			case pmetric.MetricTypeHistogram:
+				dps = metrics.At(i).Histogram().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {
 				dps.At(j).SetStartTimestamp(start)
