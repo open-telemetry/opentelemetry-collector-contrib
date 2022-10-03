@@ -5,7 +5,7 @@ change_type: bug_fix
 component: exporter/datadogexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix an issue where the Datadog memory usage system metric would be incorrect in Kubernetes.
+note: Fix an issue where the Datadog system metrics system.memory.{usage,total} would be incorrect in Kubernetes.
 
 # One or more tracking issues related to the change
 issues: [14618]
