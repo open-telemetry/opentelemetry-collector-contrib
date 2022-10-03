@@ -17,7 +17,6 @@ package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
@@ -77,7 +76,6 @@ func (p *azureBlobEventHandler) run(ctx context.Context) error {
 }
 
 func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *eventhub.Event) error {
-	p.logger.Debug(fmt.Sprintf("New event: %s", string(event.Data)))
 
 	var eventDataSlice []map[string]interface{}
 	marshalErr := json.Unmarshal(event.Data, &eventDataSlice)
@@ -94,20 +92,17 @@ func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *ev
 		blobData, err := p.blobClient.readBlob(ctx, containerName, blobName)
 
 		if err != nil {
-			p.logger.Error(zap.Error(err))
 			return err
 		}
 		switch {
 		case containerName == p.logsContainerName:
 			err = p.logsDataConsumer.consumeLogsJSON(ctx, blobData.Bytes())
 			if err != nil {
-				p.logger.Error(zap.Error(err))
 				return err
 			}
 		case containerName == p.tracesContainerName:
 			err = p.tracesDataConsumer.consumeTracesJSON(ctx, blobData.Bytes())
 			if err != nil {
-				p.logger.Error(zap.Error(err))
 				return err
 			}
 		default:

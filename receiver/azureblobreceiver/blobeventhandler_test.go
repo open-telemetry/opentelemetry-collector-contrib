@@ -51,11 +51,11 @@ func TestNewMessageHangdler(t *testing.T) {
 	blobEventHandler.setTracesDataConsumer(tracesDataConsumer)
 
 	logEvent := getEvent(logEventData)
-	err := blobEventHandler.newMessageHangdler(context.Background(), logEvent)
+	err := blobEventHandler.newMessageHandler(context.Background(), logEvent)
 	require.NoError(t, err)
 
 	traceEvent := getEvent(traceEventData)
-	err = blobEventHandler.newMessageHangdler(context.Background(), traceEvent)
+	err = blobEventHandler.newMessageHandler(context.Background(), traceEvent)
 	require.NoError(t, err)
 
 	logsDataConsumer.AssertNumberOfCalls(t, "consumeLogsJSON", 1)
