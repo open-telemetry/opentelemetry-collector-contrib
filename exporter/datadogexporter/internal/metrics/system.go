@@ -57,7 +57,7 @@ const (
 
 // extractSystemMetrics takes an OpenTelemetry metric m and extracts Datadog system metrics from it,
 // if m is a valid system metric. The boolean argument reports whether any system metrics were extractd.
-func extractSystemMetrics(m datadog.Metric) (ms []datadog.Metric, ok bool) {
+func extractSystemMetrics(m datadog.Metric) []datadog.Metric {
 	var series []datadog.Metric
 	switch *m.Metric {
 	case "system.cpu.load_average.1m":
@@ -110,7 +110,7 @@ func extractSystemMetrics(m datadog.Metric) (ms []datadog.Metric, ok bool) {
 	case "system.filesystem.utilization":
 		series = append(series, copyMetric(m, "system.disk.in_use", 1, 0))
 	}
-	return series, len(series) > 0
+	return series
 }
 
 // otelNamespacePrefix specifies the namespace used for OpenTelemetry host metrics.
@@ -127,9 +127,7 @@ func PrepareSystemMetrics(ms []datadog.Metric) []datadog.Metric {
 			// not a system metric
 			continue
 		}
-		if newms, ok := extractSystemMetrics(m); ok {
-			series = append(series, newms...)
-		}
+		series = append(series, extractSystemMetrics(m)...)
 		// all existing system metrics need to be prepended
 		newname := otelNamespacePrefix + *m.Metric
 		series[i].Metric = &newname

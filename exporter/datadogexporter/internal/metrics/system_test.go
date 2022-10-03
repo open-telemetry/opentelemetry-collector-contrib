@@ -407,9 +407,8 @@ func TestExtractSystemMetrics(t *testing.T) {
 		},
 	} {
 		t.Run("", func(t *testing.T) {
-			out, ok := extractSystemMetrics(tt.in)
+			out := extractSystemMetrics(tt.in)
 			require.EqualValues(t, tt.out, out, fmt.Sprintf("%s[%#v]", *tt.in.Metric, tt.in.Tags))
-			require.Equal(t, ok, len(tt.out) > 0, *tt.in.Metric)
 		})
 	}
 }
