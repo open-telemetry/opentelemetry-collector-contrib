@@ -40,19 +40,19 @@ func TestLoadConfig(t *testing.T) {
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Config: ottlconfig.Config{
 					Traces: ottlconfig.SignalConfig{
-						Queries: []string{
+						Statements: []string{
 							`set(name, "bear") where attributes["http.path"] == "/animal"`,
 							`keep_keys(attributes, "http.method", "http.path")`,
 						},
 					},
 					Metrics: ottlconfig.SignalConfig{
-						Queries: []string{
+						Statements: []string{
 							`set(metric.name, "bear") where attributes["http.path"] == "/animal"`,
 							`keep_keys(attributes, "http.method", "http.path")`,
 						},
 					},
 					Logs: ottlconfig.SignalConfig{
-						Queries: []string{
+						Statements: []string{
 							`set(body, "bear") where attributes["http.path"] == "/animal"`,
 							`keep_keys(attributes, "http.method", "http.path")`,
 						},

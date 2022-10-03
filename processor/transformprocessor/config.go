@@ -41,19 +41,19 @@ func (c *Config) Validate() error {
 	var errors error
 
 	ottltracesp := ottltraces.NewParser(traces.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
-	_, err := ottltracesp.ParseStatements(c.Traces.Queries)
+	_, err := ottltracesp.ParseStatements(c.Traces.Statements)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
 
 	ottlmetricsp := ottldatapoints.NewParser(metrics.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
-	_, err = ottlmetricsp.ParseStatements(c.Metrics.Queries)
+	_, err = ottlmetricsp.ParseStatements(c.Metrics.Statements)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
 
 	ottllogsp := ottllogs.NewParser(logs.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
-	_, err = ottllogsp.ParseStatements(c.Logs.Queries)
+	_, err = ottllogsp.ParseStatements(c.Logs.Statements)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}

@@ -14,14 +14,14 @@
 
 package ottlconfig // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlconfig"
 
-// Config configures the OTTL queries to execute against traces, metrics, and logs.
+// Config configures the OTTL statements to execute against traces, metrics, and logs.
 type Config struct {
 	Traces  SignalConfig `mapstructure:"traces"`
 	Metrics SignalConfig `mapstructure:"metrics"`
 	Logs    SignalConfig `mapstructure:"logs"`
 }
 
-// SignalConfig configures OTTL queries to execute.
+// SignalConfig configures OTTL statements to execute.
 type SignalConfig struct {
-	Queries []string `mapstructure:"queries"`
+	Statements []string `mapstructure:"statements"`
 }

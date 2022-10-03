@@ -26,17 +26,17 @@ import (
 )
 
 type Processor struct {
-	queries []ottl.Statement[ottldatapoints.TransformContext]
+	statements []ottl.Statement[ottldatapoints.TransformContext]
 }
 
 func NewProcessor(statements []string, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
 	ottlp := ottldatapoints.NewParser(functions, settings)
-	queries, err := ottlp.ParseStatements(statements)
+	parsedStatements, err := ottlp.ParseStatements(statements)
 	if err != nil {
 		return nil, err
 	}
 	return &Processor{
-		queries: queries,
+		statements: parsedStatements,
 	}, nil
 }
 
@@ -95,7 +95,7 @@ func (p *Processor) handleSummaryDataPoints(dps pmetric.SummaryDataPointSlice, m
 }
 
 func (p *Processor) callFunctions(ctx ottldatapoints.TransformContext) {
-	for _, statement := range p.queries {
+	for _, statement := range p.statements {
 		if statement.Condition(ctx) {
 			statement.Function(ctx)
 		}
