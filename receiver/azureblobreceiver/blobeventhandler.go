@@ -77,15 +77,24 @@ func (p *azureBlobEventHandler) run(ctx context.Context) error {
 
 func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *eventhub.Event) error {
 
-	var eventDataSlice []map[string]interface{}
+	type eventData struct {
+		Topic           string
+		Subject         string
+		EventType       string
+		ID              string
+		Data            map[string]interface{}
+		DataVersion     string
+		MetadataVersion string
+		EsventTime      string
+	}
+	var eventDataSlice []eventData
 	marshalErr := json.Unmarshal(event.Data, &eventDataSlice)
 	if marshalErr != nil {
 		return marshalErr
 	}
-
-	subject := eventDataSlice[0]["subject"].(string)
+	subject := eventDataSlice[0].Subject
 	containerName := strings.Split(strings.Split(subject, "containers/")[1], "/")[0]
-	eventType := eventDataSlice[0]["eventType"].(string)
+	eventType := eventDataSlice[0].EventType
 	blobName := strings.Split(subject, "blobs/")[1]
 
 	if eventType == blobCreatedEventType {
