@@ -57,15 +57,22 @@ func (p *Parser[K]) buildArgs(inv invocation, fType reflect.Type) ([]reflect.Val
 	DSLArgumentIndex := 0
 	for i := 0; i < fType.NumIn(); i++ {
 		argType := fType.In(i)
+		argIsVariadic := fType.IsVariadic() && i == fType.NumIn()-1
 
-		switch argType.Kind() {
-		case reflect.Slice:
+		switch {
+		case argIsVariadic:
+			err := p.buildVariadicArg(inv, argType, i, &args)
+			if err != nil {
+				return nil, err
+			}
+			// Variadic arguments must be the final argument in an invocation.
+			return args, nil
+		case argType.Kind() == reflect.Slice:
 			err := p.buildSliceArg(inv, argType, i, &args)
 			if err != nil {
 				return nil, err
 			}
-			// Slice arguments must be the final argument in an invocation.
-			return args, nil
+			DSLArgumentIndex++
 		default:
 			isInternalArg := p.buildInternalArg(argType, &args)
 
@@ -93,45 +100,65 @@ func (p *Parser[K]) buildArgs(inv invocation, fType reflect.Type) ([]reflect.Val
 	return args, nil
 }
 
-func (p *Parser[K]) buildSliceArg(inv invocation, argType reflect.Type, startingIndex int, args *[]reflect.Value) error {
+func (p *Parser[K]) buildSliceArg(inv invocation, argType reflect.Type, index int, args *[]reflect.Value) error {
 	name := argType.Elem().Name()
 	switch {
+	case name == reflect.Uint8.String():
+		if inv.Arguments[index].Bytes == nil {
+			return fmt.Errorf("invalid argument for parameter at position %v, must be a byte slice literal", index)
+		}
+		*args = append(*args, reflect.ValueOf(([]byte)(*inv.Arguments[index].Bytes)))
 	case name == reflect.String.String():
-		var arg []string
-		for j := startingIndex; j < len(inv.Arguments); j++ {
-			if inv.Arguments[j].String == nil {
-				return fmt.Errorf("invalid argument for slice parameter at position %v, must be a string", j)
+		if inv.Arguments[index].List == nil {
+			return fmt.Errorf("invalid argument for parameter at position %v, must be a string list", index)
+		}
+
+		arg := []string{}
+		values := inv.Arguments[index].List.Values
+		for j := 0; j < len(values); j++ {
+			if values[j].String == nil {
+				return fmt.Errorf("invalid element type at list index %v for argument at position %v, must be a string", j, index)
 			}
-			arg = append(arg, *inv.Arguments[j].String)
+			arg = append(arg, *values[j].String)
 		}
 		*args = append(*args, reflect.ValueOf(arg))
 	case name == reflect.Float64.String():
-		var arg []float64
-		for j := startingIndex; j < len(inv.Arguments); j++ {
-			if inv.Arguments[j].Float == nil {
-				return fmt.Errorf("invalid argument for slice parameter at position %v, must be a float", j)
+		if inv.Arguments[index].List == nil {
+			return fmt.Errorf("invalid argument for parameter at position %v, must be a float list", index)
+		}
+
+		arg := []float64{}
+		values := inv.Arguments[index].List.Values
+		for j := 0; j < len(values); j++ {
+			if values[j].Float == nil {
+				return fmt.Errorf("invalid element type at list index %v for argument at position %v, must be a float", j, index)
 			}
-			arg = append(arg, *inv.Arguments[j].Float)
+			arg = append(arg, *values[j].Float)
 		}
 		*args = append(*args, reflect.ValueOf(arg))
 	case name == reflect.Int64.String():
-		var arg []int64
-		for j := startingIndex; j < len(inv.Arguments); j++ {
-			if inv.Arguments[j].Int == nil {
-				return fmt.Errorf("invalid argument for slice parameter at position %v, must be an int", j)
+		if inv.Arguments[index].List == nil {
+			return fmt.Errorf("invalid argument for parameter at position %v, must be an int list", index)
+		}
+
+		arg := []int64{}
+		values := inv.Arguments[index].List.Values
+		for j := 0; j < len(values); j++ {
+			if values[j].Int == nil {
+				return fmt.Errorf("invalid element type at list index %v for argument at position %v, must be an int", j, index)
 			}
-			arg = append(arg, *inv.Arguments[j].Int)
+			arg = append(arg, *values[j].Int)
 		}
 		*args = append(*args, reflect.ValueOf(arg))
-	case name == reflect.Uint8.String():
-		if inv.Arguments[startingIndex].Bytes == nil {
-			return fmt.Errorf("invalid argument for slice parameter at position %v, must be a byte slice literal", startingIndex)
-		}
-		*args = append(*args, reflect.ValueOf(([]byte)(*inv.Arguments[startingIndex].Bytes)))
 	case strings.HasPrefix(name, "Getter"):
-		var arg []Getter[K]
-		for j := startingIndex; j < len(inv.Arguments); j++ {
-			val, err := p.newGetter(inv.Arguments[j])
+		if inv.Arguments[index].List == nil {
+			return fmt.Errorf("invalid argument for slice parameter at position %v, must be a slice literal", index)
+		}
+
+		arg := []Getter[K]{}
+		values := inv.Arguments[index].List.Values
+		for j := 0; j < len(values); j++ {
+			val, err := p.newGetter(values[j])
 			if err != nil {
 				return err
 			}
@@ -140,6 +167,44 @@ func (p *Parser[K]) buildSliceArg(inv invocation, argType reflect.Type, starting
 		*args = append(*args, reflect.ValueOf(arg))
 	default:
 		return fmt.Errorf("unsupported slice type '%s' for function '%v'", argType.Elem().Name(), inv.Function)
+	}
+	return nil
+}
+
+func (p *Parser[K]) buildVariadicArg(inv invocation, argType reflect.Type, startingIndex int, args *[]reflect.Value) error {
+	name := argType.Elem().Name()
+	switch {
+	case name == reflect.String.String():
+		for j := startingIndex; j < len(inv.Arguments); j++ {
+			if inv.Arguments[j].String == nil {
+				return fmt.Errorf("invalid variadic argument at position %v, must be a string", j)
+			}
+			*args = append(*args, reflect.ValueOf(*inv.Arguments[j].String))
+		}
+	case name == reflect.Float64.String():
+		for j := startingIndex; j < len(inv.Arguments); j++ {
+			if inv.Arguments[j].Float == nil {
+				return fmt.Errorf("invalid variadic argument at position %v, must be a float", j)
+			}
+			*args = append(*args, reflect.ValueOf(*inv.Arguments[j].Float))
+		}
+	case name == reflect.Int64.String():
+		for j := startingIndex; j < len(inv.Arguments); j++ {
+			if inv.Arguments[j].Int == nil {
+				return fmt.Errorf("invalid variadic argument at position %v, must be an int", j)
+			}
+			*args = append(*args, reflect.ValueOf(*inv.Arguments[j].Int))
+		}
+	case strings.HasPrefix(name, "Getter"):
+		for j := startingIndex; j < len(inv.Arguments); j++ {
+			val, err := p.newGetter(inv.Arguments[j])
+			if err != nil {
+				return err
+			}
+			*args = append(*args, reflect.ValueOf(val))
+		}
+	default:
+		return fmt.Errorf("unsupported variadic argument type '%s' for function '%v'", argType.Elem().Name(), inv.Function)
 	}
 	return nil
 }

@@ -41,13 +41,20 @@ For slice parameters, the following types are supported:
 - `string`
 - `float64`
 - `int64`
-- `uint8`. Slices of bytes will be interpreted as a byte array.
+- `uint8`. Byte slice literals are parsed as byte slices by the OTTL.
+- `Getter`
+
+For variadic parameters, the following types are supported:
+- `string`
+- `float64`
+- `int64`
 - `Getter`
 
 ### Values
 
 Values are passed as input to an Invocation or are used in an Expression. Values can take the form of:
 - [Paths](#paths).
+- [Lists](#lists).
 - [Literals](#literals).
 - [Enums](#enums).
 - [Invocations](#invocations).
@@ -67,6 +74,16 @@ Example Paths
 - `value_double`
 - `resource.name`
 - `resource.attributes["key"]`
+
+#### Lists
+
+A List Value comprises a sequence of Expressions or supported Literals.
+
+Example List Values:
+- `[]`
+- `[1]`
+- `["1", "2", "3"]`
+- `["a", attributes["key"], Concat("-", "a", "b")]`
 
 #### Literals
 

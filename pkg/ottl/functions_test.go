@@ -31,7 +31,9 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 	functions["testing_getter"] = functionWithGetter
 	functions["testing_multiple_args"] = functionWithMultipleArgs
 	functions["testing_string"] = functionWithString
+	functions["testing_string_slice"] = functionWithStringSlice
 	functions["testing_byte_slice"] = functionWithByteSlice
+	functions["testing_string_variadic"] = functionWithStringVariadic
 	functions["testing_enum"] = functionWithEnum
 	functions["testing_telemetry_settings_first"] = functionWithTelemetrySettingsFirst
 
@@ -183,6 +185,51 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
+			name: "mismatching slice element type",
+			inv: invocation{
+				Function: "testing_string_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+								{
+									Int: ottltest.Intp(10),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "mismatching slice argument type",
+			inv: invocation{
+				Function: "testing_string_slice",
+				Arguments: []value{
+					{
+						String: ottltest.Strp("test"),
+					},
+				},
+			},
+		},
+		{
+			name: "mismatching variadic argument type",
+			inv: invocation{
+				Function: "testing_string_variadic",
+				Arguments: []value{
+					{
+						String: ottltest.Strp("test"),
+					},
+					{
+						Int: ottltest.Intp(10),
+					},
+				},
+			},
+		},
+		{
 			name: "function call returns error",
 			inv: invocation{
 				Function: "testing_error",
@@ -220,11 +267,20 @@ func Test_NewFunctionCall(t *testing.T) {
 	tests := []struct {
 		name string
 		inv  invocation
+		want any
 	}{
 		{
-			name: "string slice arg",
+			name: "empty variadic arg",
 			inv: invocation{
-				Function: "testing_string_slice",
+				Function:  "testing_string_variadic",
+				Arguments: []value{},
+			},
+			want: 0,
+		},
+		{
+			name: "string variadic arg",
+			inv: invocation{
+				Function: "testing_string_variadic",
 				Arguments: []value{
 					{
 						String: ottltest.Strp("test"),
@@ -237,11 +293,12 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: 3,
 		},
 		{
-			name: "float slice arg",
+			name: "float variadic arg",
 			inv: invocation{
-				Function: "testing_float_slice",
+				Function: "testing_float_variadic",
 				Arguments: []value{
 					{
 						Float: ottltest.Floatp(1.1),
@@ -254,28 +311,30 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: 3,
 		},
 		{
-			name: "int slice arg",
+			name: "int variadic arg",
 			inv: invocation{
-				Function: "testing_int_slice",
+				Function: "testing_int_variadic",
 				Arguments: []value{
 					{
 						Int: ottltest.Intp(1),
 					},
 					{
-						Int: ottltest.Intp(1),
+						Int: ottltest.Intp(2),
 					},
 					{
-						Int: ottltest.Intp(1),
+						Int: ottltest.Intp(3),
 					},
 				},
 			},
+			want: 3,
 		},
 		{
-			name: "getter slice arg",
+			name: "getter variadic arg",
 			inv: invocation{
-				Function: "testing_getter_slice",
+				Function: "testing_getter_variadic",
 				Arguments: []value{
 					{
 						Path: &Path{
@@ -319,8 +378,149 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: 7,
 		},
 		{
+			name: "empty slice arg",
+			inv: invocation{
+				Function: "testing_string_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{},
+						},
+					},
+				},
+			},
+			want: 0,
+		},
+		{
+			name: "string slice arg",
+			inv: invocation{
+				Function: "testing_string_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+								{
+									String: ottltest.Strp("test"),
+								},
+								{
+									String: ottltest.Strp("test"),
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 3,
+		},
+		{
+			name: "float slice arg",
+			inv: invocation{
+				Function: "testing_float_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									Float: ottltest.Floatp(1.1),
+								},
+								{
+									Float: ottltest.Floatp(1.2),
+								},
+								{
+									Float: ottltest.Floatp(1.3),
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 3,
+		},
+		{
+			name: "int slice arg",
+			inv: invocation{
+				Function: "testing_int_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									Int: ottltest.Intp(1),
+								},
+								{
+									Int: ottltest.Intp(1),
+								},
+								{
+									Int: ottltest.Intp(1),
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 3,
+		},
+		{
+			name: "getter slice arg",
+			inv: invocation{
+				Function: "testing_getter_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "name",
+											},
+										},
+									},
+								},
+								{
+									String: ottltest.Strp("test"),
+								},
+								{
+									Int: ottltest.Intp(1),
+								},
+								{
+									Float: ottltest.Floatp(1.1),
+								},
+								{
+									Bool: (*boolean)(ottltest.Boolp(true)),
+								},
+								{
+									Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM")),
+								},
+								{
+									Invocation: &invocation{
+										Function: "testing_getter",
+										Arguments: []value{
+											{
+												Path: &Path{
+													Fields: []Field{
+														{
+															Name: "name",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 7,
+		}, {
 			name: "setter arg",
 			inv: invocation{
 				Function: "testing_setter",
@@ -336,6 +536,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "getsetter arg",
@@ -353,6 +554,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "getter arg",
@@ -370,6 +572,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "getter arg with nil literal",
@@ -381,6 +584,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "string arg",
@@ -392,6 +596,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "float arg",
@@ -403,6 +608,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "int arg",
@@ -414,6 +620,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "bool arg",
@@ -425,6 +632,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "byteSlice arg",
@@ -436,6 +644,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "multiple args",
@@ -468,6 +677,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "Enum arg",
@@ -479,6 +689,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "telemetrySettings first",
@@ -496,6 +707,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "telemetrySettings middle",
@@ -513,6 +725,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "telemetrySettings last",
@@ -530,43 +743,72 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := p.newFunctionCall(tt.inv)
+			fn, err := p.newFunctionCall(tt.inv)
 			assert.NoError(t, err)
+
+			if tt.want != nil {
+				assert.Equal(t, tt.want, fn(nil))
+			}
 		})
 	}
 }
 
-func functionWithStringSlice(_ []string) (ExprFunc[interface{}], error) {
+func functionWithStringSlice(strs []string) (ExprFunc[interface{}], error) {
 	return func(interface{}) interface{} {
-		return "anything"
+		return len(strs)
 	}, nil
 }
 
-func functionWithFloatSlice(_ []float64) (ExprFunc[interface{}], error) {
+func functionWithFloatSlice(floats []float64) (ExprFunc[interface{}], error) {
 	return func(interface{}) interface{} {
-		return "anything"
+		return len(floats)
 	}, nil
 }
 
-func functionWithIntSlice(_ []int64) (ExprFunc[interface{}], error) {
+func functionWithIntSlice(ints []int64) (ExprFunc[interface{}], error) {
 	return func(interface{}) interface{} {
-		return "anything"
+		return len(ints)
 	}, nil
 }
 
-func functionWithByteSlice([]byte) (ExprFunc[interface{}], error) {
+func functionWithByteSlice(bytes []byte) (ExprFunc[interface{}], error) {
 	return func(interface{}) interface{} {
-		return "anything"
+		return len(bytes)
 	}, nil
 }
 
-func functionWithGetterSlice([]Getter[interface{}]) (ExprFunc[interface{}], error) {
+func functionWithGetterSlice(getters []Getter[interface{}]) (ExprFunc[interface{}], error) {
 	return func(interface{}) interface{} {
-		return "anything"
+		return len(getters)
+	}, nil
+}
+
+func functionWithStringVariadic(strs ...string) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
+		return len(strs)
+	}, nil
+}
+
+func functionWithFloatVariadic(floats ...float64) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
+		return len(floats)
+	}, nil
+}
+
+func functionWithIntVariadic(ints ...int64) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
+		return len(ints)
+	}, nil
+}
+
+func functionWithGetterVariadic(getters ...Getter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
+		return len(getters)
 	}, nil
 }
 
@@ -612,7 +854,7 @@ func functionWithBool(bool) (ExprFunc[interface{}], error) {
 	}, nil
 }
 
-func functionWithMultipleArgs(GetSetter[interface{}], string, float64, int64, []string) (ExprFunc[interface{}], error) {
+func functionWithMultipleArgs(GetSetter[interface{}], string, float64, int64, ...string) (ExprFunc[interface{}], error) {
 	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
@@ -625,25 +867,25 @@ func functionThatHasAnError() (ExprFunc[interface{}], error) {
 	}, err
 }
 
-func functionWithEnum(_ Enum) (ExprFunc[interface{}], error) {
+func functionWithEnum(Enum) (ExprFunc[interface{}], error) {
 	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithTelemetrySettingsFirst(_ component.TelemetrySettings, _ string, _ string, _ int64) (ExprFunc[interface{}], error) {
+func functionWithTelemetrySettingsFirst(component.TelemetrySettings, string, string, int64) (ExprFunc[interface{}], error) {
 	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithTelemetrySettingsMiddle(_ string, _ string, _ component.TelemetrySettings, _ int64) (ExprFunc[interface{}], error) {
+func functionWithTelemetrySettingsMiddle(string, string, component.TelemetrySettings, int64) (ExprFunc[interface{}], error) {
 	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithTelemetrySettingsLast(_ string, _ string, _ int64, _ component.TelemetrySettings) (ExprFunc[interface{}], error) {
+func functionWithTelemetrySettingsLast(string, string, int64, component.TelemetrySettings) (ExprFunc[interface{}], error) {
 	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
@@ -656,6 +898,10 @@ func defaultFunctionsForTests() map[string]interface{} {
 	functions["testing_int_slice"] = functionWithIntSlice
 	functions["testing_byte_slice"] = functionWithByteSlice
 	functions["testing_getter_slice"] = functionWithGetterSlice
+	functions["testing_string_variadic"] = functionWithStringVariadic
+	functions["testing_float_variadic"] = functionWithFloatVariadic
+	functions["testing_int_variadic"] = functionWithIntVariadic
+	functions["testing_getter_variadic"] = functionWithGetterVariadic
 	functions["testing_setter"] = functionWithSetter
 	functions["testing_getsetter"] = functionWithGetSetter
 	functions["testing_getter"] = functionWithGetter

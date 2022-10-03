@@ -233,7 +233,7 @@ func Test_concat(t *testing.T) {
 				getters[i] = val
 			}
 
-			exprFunc, err := Concat(tt.delimiter, getters)
+			exprFunc, err := Concat(tt.delimiter, getters...)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, exprFunc(nil))
 		})
