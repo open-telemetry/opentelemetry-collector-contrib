@@ -67,7 +67,7 @@ func (p *azureBlobEventHandler) run(ctx context.Context) error {
 	}
 
 	for _, partitionID := range runtimeInfo.PartitionIDs {
-		_, err := hub.Receive(ctx, partitionID, p.newMessageHangdler, eventhub.ReceiveWithLatestOffset())
+		_, err := hub.Receive(ctx, partitionID, p.newMessageHandler, eventhub.ReceiveWithLatestOffset())
 		if err != nil {
 			return err
 		}
@@ -76,13 +76,12 @@ func (p *azureBlobEventHandler) run(ctx context.Context) error {
 	return nil
 }
 
-func (p *azureBlobEventHandler) newMessageHangdler(ctx context.Context, event *eventhub.Event) error {
+func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *eventhub.Event) error {
 	p.logger.Debug(fmt.Sprintf("New event: %s", string(event.Data)))
 
 	var eventDataSlice []map[string]interface{}
 	marshalErr := json.Unmarshal(event.Data, &eventDataSlice)
 	if marshalErr != nil {
-		p.logger.Error(marshalErr.Error())
 		return marshalErr
 	}
 
@@ -91,31 +90,28 @@ func (p *azureBlobEventHandler) newMessageHangdler(ctx context.Context, event *e
 	eventType := eventDataSlice[0]["eventType"].(string)
 	blobName := strings.Split(subject, "blobs/")[1]
 
-	p.logger.Debug(fmt.Sprintf("containerName: %s", containerName))
-	p.logger.Debug(fmt.Sprintf("blobName: %s", blobName))
-
 	if eventType == blobCreatedEventType {
 		blobData, err := p.blobClient.readBlob(ctx, containerName, blobName)
 
 		if err != nil {
-			p.logger.Error(err.Error())
+			p.logger.Error(zap.Error(err))
 			return err
 		}
 		switch {
 		case containerName == p.logsContainerName:
 			err = p.logsDataConsumer.consumeLogsJSON(ctx, blobData.Bytes())
 			if err != nil {
-				p.logger.Error(err.Error())
+				p.logger.Error(zap.Error(err))
 				return err
 			}
 		case containerName == p.tracesContainerName:
 			err = p.tracesDataConsumer.consumeTracesJSON(ctx, blobData.Bytes())
 			if err != nil {
-				p.logger.Error(err.Error())
+				p.logger.Error(zap.Error(err))
 				return err
 			}
 		default:
-			p.logger.Debug(fmt.Sprintf("Unknown container name %s", containerName))
+			p.logger.Debug("Unknown container name", zap.String("containerName", containerName))
 		}
 	}
 
