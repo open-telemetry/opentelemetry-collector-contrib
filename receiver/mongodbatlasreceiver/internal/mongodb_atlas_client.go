@@ -165,7 +165,10 @@ func checkMongoDBClientErr(err error, response *mongodbatlas.Response) error {
 		return err
 	}
 	if response != nil {
-		return mongodbatlas.CheckResponse(response.Response)
+		err = response.CheckResponse(response.Body)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -267,7 +270,9 @@ func (s *MongoDBAtlasClient) getProjectsPage(
 	projects, response, err := s.client.Organizations.Projects(
 		ctx,
 		orgID,
-		&mongodbatlas.ListOptions{PageNum: pageNum},
+		&mongodbatlas.ProjectsListOptions{
+			ListOptions: mongodbatlas.ListOptions{PageNum: pageNum},
+		},
 	)
 	err = checkMongoDBClientErr(err, response)
 	if err != nil {
