@@ -1,10 +1,10 @@
 # Azure Data Explorer Exporter
 
-| Status                   |           |
-| ------------------------ | --------- |
-| Stability                | [alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha    |
-| Supported pipeline types | logs,metrics,traces  |
-| Distributions            | [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib  |
+| Status                   |                       |
+| ------------------------ | --------------------- |
+| Stability                | [alpha]               |
+| Supported pipeline types | logs, metrics, traces |
+| Distributions            | [contrib]             |
 
 This exporter sends metrics, logs and trace data to [Azure Data Explorer](https://azure.microsoft.com/services/data-explorer/).
 
@@ -176,3 +176,6 @@ with ( docstring = "Histo sum count processing function", folder = "UpdatePolicy
 .alter table HistoData policy update 
 @'[{ "IsEnabled": true, "Source": "RawMetricsData","Query": "ExtractHistoCountColumns()", "IsTransactional": false, "PropagateIngestionProperties": false}]'
 ```
+
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
