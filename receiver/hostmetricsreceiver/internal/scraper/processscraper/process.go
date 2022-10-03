@@ -96,6 +96,8 @@ type processHandle interface {
 	PageFaults() (*process.PageFaultsStat, error)
 	NumCtxSwitches() (*process.NumCtxSwitchesStat, error)
 	NumFDs() (int32, error)
+	// If gatherUsed is true, the currently used value will be gathered and added to the resulting RlimitStat.
+	RlimitUsage(gatherUsed bool) ([]process.RlimitStat, error)
 }
 
 type gopsProcessHandles struct {

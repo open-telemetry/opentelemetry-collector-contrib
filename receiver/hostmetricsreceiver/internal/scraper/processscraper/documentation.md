@@ -17,6 +17,7 @@ These are the metrics available for this scraper.
 | **process.memory.virtual_usage** | Deprecated: Use `process.memory.virtual` metric instead. Virtual memory size. | By | Sum(Int) | <ul> </ul> |
 | process.open_file_descriptors | Number of file descriptors in use by the process. | {count} | Sum(Int) | <ul> </ul> |
 | process.paging.faults | Number of page faults the process has made. This metric is only available on Linux. | {faults} | Sum(Int) | <ul> <li>paging_fault_type</li> </ul> |
+| process.signals_pending | Number of pending signals for the process. This metric is only available on Linux. | {signals} | Sum(Int) | <ul> </ul> |
 | process.threads | Process threads count. | {threads} | Sum(Int) | <ul> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
