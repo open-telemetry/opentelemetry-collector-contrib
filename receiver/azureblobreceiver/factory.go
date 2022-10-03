@@ -115,7 +115,7 @@ func (f *blobReceiverFactory) getReceiver(
 		var beh blobEventHandler
 		beh, err = f.getBlobEventHandler(receiverConfig, set.Logger)
 		if err != nil {
-			return nil
+			return fmt.Errorf("failed to build blob event handler: %w", err)
 		}
 
 		var receiver component.Receiver
@@ -133,7 +133,6 @@ func (f *blobReceiverFactory) getReceiver(
 func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger) (blobEventHandler, error) {
 	bc, err := newBlobClient(cfg.ConnectionString, logger)
 	if err != nil {
-		logger.Error(err.Error())
 		return nil, err
 	}
 
