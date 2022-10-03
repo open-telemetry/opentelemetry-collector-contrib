@@ -48,8 +48,12 @@ func copyMetric(src datadog.Metric, name string, div float64, interval int) data
 	return cp
 }
 
-// mebibytes is the number of bytes in a mebibyte
-const mebibytes = 1024 * 1024
+const (
+	// divMebibytes specifies the number of bytes in a mebibyte.
+	divMebibytes = 1024 * 1024
+	// divPercentage specifies the division necessary for converting fractions to percentages.
+	divPercentage = 0.01
+)
 
 // extractSystemMetrics takes an OpenTelemetry metric m and extracts Datadog system metrics from it,
 // if m is a valid system metric. The boolean argument reports whether any system metrics were extractd.
@@ -66,23 +70,23 @@ func extractSystemMetrics(m datadog.Metric) (ms []datadog.Metric, ok bool) {
 		for _, tag := range m.Tags {
 			switch tag {
 			case "state:idle":
-				series = append(series, copyMetric(m, "system.cpu.idle", 0.01, 1))
+				series = append(series, copyMetric(m, "system.cpu.idle", divPercentage, 1))
 			case "state:user":
-				series = append(series, copyMetric(m, "system.cpu.user", 0.01, 1))
+				series = append(series, copyMetric(m, "system.cpu.user", divPercentage, 1))
 			case "state:system":
-				series = append(series, copyMetric(m, "system.cpu.system", 0.01, 1))
+				series = append(series, copyMetric(m, "system.cpu.system", divPercentage, 1))
 			case "state:wait":
-				series = append(series, copyMetric(m, "system.cpu.iowait", 0.01, 1))
+				series = append(series, copyMetric(m, "system.cpu.iowait", divPercentage, 1))
 			case "state:steal":
-				series = append(series, copyMetric(m, "system.cpu.stolen", 0.01, 0))
+				series = append(series, copyMetric(m, "system.cpu.stolen", divPercentage, 0))
 			}
 		}
 	case "system.memory.usage":
-		series = append(series, copyMetric(m, "system.mem.total", mebibytes, 1))
+		series = append(series, copyMetric(m, "system.mem.total", divMebibytes, 1))
 		for _, tag := range m.Tags {
 			switch tag {
 			case "state:free", "state:cached", "state:buffered":
-				series = append(series, copyMetric(m, "system.mem.usable", mebibytes, 1))
+				series = append(series, copyMetric(m, "system.mem.usable", divMebibytes, 1))
 			}
 		}
 	case "system.network.io":
@@ -98,9 +102,9 @@ func extractSystemMetrics(m datadog.Metric) (ms []datadog.Metric, ok bool) {
 		for _, tag := range m.Tags {
 			switch tag {
 			case "state:free":
-				series = append(series, copyMetric(m, "system.swap.free", mebibytes, 1))
+				series = append(series, copyMetric(m, "system.swap.free", divMebibytes, 1))
 			case "state:used":
-				series = append(series, copyMetric(m, "system.swap.used", mebibytes, 1))
+				series = append(series, copyMetric(m, "system.swap.used", divMebibytes, 1))
 			}
 		}
 	case "system.filesystem.utilization":
