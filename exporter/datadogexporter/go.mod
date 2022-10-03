@@ -7,7 +7,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/otlp/model v0.40.0-rc.2.0.20220930142800-72e24cd2e404
 	github.com/DataDog/datadog-agent/pkg/quantile v0.40.0-rc.2.0.20220930142800-72e24cd2e404
 	github.com/DataDog/datadog-agent/pkg/trace v0.40.0-rc.2.0.20220930142800-72e24cd2e404
-	github.com/DataDog/datadog-api-client-go/v2 v2.2.0
+	github.com/DataDog/datadog-api-client-go/v2 v2.3.1
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.33.0
 	github.com/aws/aws-sdk-go v1.44.106
