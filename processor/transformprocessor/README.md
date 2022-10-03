@@ -65,7 +65,7 @@ You can learn more in-depth details on the capabilities and limitations of the O
 The transform processor utilizes the OTTL's standard contexts for Traces, Metrics and Logs.  The contexts allow the OTTL to interact with the underlying telemetry data in its pdata form.
 
 - [Traces Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottltraces)
-- [Metrics Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlmetrics)
+- [Metrics Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottldatapoints)
 - [Logs Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottllogs)
 
 ## Supported functions:
