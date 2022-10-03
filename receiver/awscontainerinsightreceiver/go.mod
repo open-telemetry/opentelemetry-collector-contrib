@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.106
+	github.com/aws/aws-sdk-go v1.44.110
 	github.com/google/cadvisor v0.45.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.61.0
@@ -11,7 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.61.0
-	github.com/shirou/gopsutil/v3 v3.22.8
+	github.com/shirou/gopsutil/v3 v3.22.9
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.61.0
 	go.opentelemetry.io/collector/pdata v0.61.0
@@ -63,7 +63,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/karrick/godirwalk v1.16.1 // indirect
-	github.com/klauspost/compress v1.15.10 // indirect
+	github.com/klauspost/compress v1.15.11 // indirect
 	github.com/knadh/koanf v1.4.3 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
