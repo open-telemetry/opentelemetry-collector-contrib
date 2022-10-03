@@ -8,7 +8,7 @@ component: hostmetricsreceiver
 note: Add a new metric `process.paging.faults` to the `process` scraper of the `hostmetrics` receiver.
 
 # One or more tracking issues related to the change
-issues: [14130]
+issues: [14084]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
