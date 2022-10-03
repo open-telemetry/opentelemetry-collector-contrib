@@ -347,10 +347,10 @@ func (mf *metricFamily) addExemplar(l labels.Labels, e exemplar.Exemplar) {
 		return
 	}
 	es := mg.exemplars
-	convertToOtlpExemplar(e, es.AppendEmpty())
+	convertExemplar(e, es.AppendEmpty())
 }
 
-func convertToOtlpExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
+func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 	e.SetTimestamp(timestampFromMs(pe.Ts))
 	e.SetDoubleValue(pe.Value)
 	e.FilteredAttributes().EnsureCapacity(len(pe.Labels))
