@@ -85,7 +85,7 @@ Depending on your region, you might need to use a different endpoint. Here are t
 
 ### Application and SubSystem attributes
 
-v0.61 release of OpenTelemetry Collector allows you to map Application name and Subsystem name to Resource attributes. 
+v0.62.0 release of OpenTelemetry Collector allows you to map Application name and Subsystem name to Resource attributes. 
 You need to set `application_name_attributes` and `subsystem_name_attributes` fields with a list of potential Resource attributes for the AppName and Subsystem values. The first not-empty Resource attribute is going to be used.
 
 ### Kubernetes attributes
@@ -211,6 +211,7 @@ exporters:
 ```
 
 ### Need help?
+
 We love to assist our customers, simply [book your implementation session](https://calendly.com/info-coralogix/implementation),
 and we will walk you through setting up this exporter, step by step.
 
