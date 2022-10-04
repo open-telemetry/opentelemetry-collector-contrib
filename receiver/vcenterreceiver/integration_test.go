@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ func TestEndtoEnd_ESX(t *testing.T) {
 		// please see #10129
 		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 			if val, ok := metrics.ResourceMetrics().At(i).Resource().Attributes().Get("vcenter.host.name"); ok {
-				val.SetStringVal("DC0_C0_H0")
+				val.SetStr("DC0_C0_H0")
 			}
 		}
 

@@ -69,26 +69,26 @@ func serializeBody(body pcommon.Value) ([]byte, error) {
 	case pcommon.ValueTypeEmpty:
 		// no body
 
-	case pcommon.ValueTypeString:
-		str, err = json.Marshal(body.StringVal())
+	case pcommon.ValueTypeStr:
+		str, err = json.Marshal(body.Str())
 
 	case pcommon.ValueTypeInt:
-		str, err = json.Marshal(body.IntVal())
+		str, err = json.Marshal(body.Int())
 
 	case pcommon.ValueTypeDouble:
-		str, err = json.Marshal(body.DoubleVal())
+		str, err = json.Marshal(body.Double())
 
 	case pcommon.ValueTypeBool:
-		str, err = json.Marshal(body.BoolVal())
+		str, err = json.Marshal(body.Bool())
 
 	case pcommon.ValueTypeMap:
-		str, err = json.Marshal(body.MapVal().AsRaw())
+		str, err = json.Marshal(body.Map().AsRaw())
 
 	case pcommon.ValueTypeSlice:
-		str, err = json.Marshal(body.SliceVal().AsRaw())
+		str, err = json.Marshal(body.Slice().AsRaw())
 
 	case pcommon.ValueTypeBytes:
-		str, err = json.Marshal(body.BytesVal().AsRaw())
+		str, err = json.Marshal(body.Bytes().AsRaw())
 
 	default:
 		err = fmt.Errorf("unsuported body type to serialize")

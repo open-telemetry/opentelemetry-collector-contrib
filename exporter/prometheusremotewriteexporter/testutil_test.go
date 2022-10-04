@@ -209,7 +209,7 @@ func getIntGaugeMetric(name string, attributes pcommon.Map, value int64, ts uint
 	if strings.HasPrefix(name, "staleNaN") {
 		dp.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 	}
-	dp.SetIntVal(value)
+	dp.SetIntValue(value)
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetStartTimestamp(pcommon.Timestamp(0))
@@ -224,7 +224,7 @@ func getDoubleGaugeMetric(name string, attributes pcommon.Map, value float64, ts
 	if strings.HasPrefix(name, "staleNaN") {
 		dp.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 	}
-	dp.SetDoubleVal(value)
+	dp.SetDoubleValue(value)
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetStartTimestamp(pcommon.Timestamp(0))
@@ -247,7 +247,7 @@ func getIntSumMetric(name string, attributes pcommon.Map, value int64, ts uint64
 	if strings.HasPrefix(name, "staleNaN") {
 		dp.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 	}
-	dp.SetIntVal(value)
+	dp.SetIntValue(value)
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetStartTimestamp(pcommon.Timestamp(0))
@@ -270,7 +270,7 @@ func getSumMetric(name string, attributes pcommon.Map, value float64, ts uint64)
 	if strings.HasPrefix(name, "staleNaN") {
 		dp.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 	}
-	dp.SetDoubleVal(value)
+	dp.SetDoubleValue(value)
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetStartTimestamp(pcommon.Timestamp(0))

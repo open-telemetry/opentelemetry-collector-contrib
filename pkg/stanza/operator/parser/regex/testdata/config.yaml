@@ -10,6 +10,15 @@ on_error_drop:
 parse_from_simple:
   type: regex_parser
   parse_from: "body.from"
+parse_to_attributes:
+  type: regex_parser
+  parse_to: attributes
+parse_to_body:
+  type: regex_parser
+  parse_to: body
+parse_to_resource:
+  type: regex_parser
+  parse_to: resource
 parse_to_simple:
   type: regex_parser
   parse_to: "body.log"

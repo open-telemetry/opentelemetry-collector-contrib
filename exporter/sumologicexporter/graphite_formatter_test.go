@@ -44,7 +44,7 @@ func TestGraphiteFormat(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
-func TestGraphiteMetricDataTypeIntGauge(t *testing.T) {
+func TestGraphiteMetricTypeIntGauge(t *testing.T) {
 	gf := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 
 	metric := exampleIntGaugeMetric()
@@ -58,7 +58,7 @@ my_cluster.default.some_pod.gauge_metric_name 245 1608124662`
 	assert.Equal(t, expected, result)
 }
 
-func TestGraphiteMetricDataTypeDoubleGauge(t *testing.T) {
+func TestGraphiteMetricTypeDoubleGauge(t *testing.T) {
 	gf := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 
 	metric := exampleDoubleGaugeMetric()
@@ -85,7 +85,7 @@ my_cluster..some_pod.gauge_metric_name_double_test 56.8 1608124662`
 	assert.Equal(t, expected, result)
 }
 
-func TestGraphiteMetricDataTypeIntSum(t *testing.T) {
+func TestGraphiteMetricTypeIntSum(t *testing.T) {
 	gf := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 
 	metric := exampleIntSumMetric()
@@ -99,7 +99,7 @@ my_cluster.default.some_pod.sum_metric_int_test 1238 1608124699`
 	assert.Equal(t, expected, result)
 }
 
-func TestGraphiteMetricDataTypeDoubleSum(t *testing.T) {
+func TestGraphiteMetricTypeDoubleSum(t *testing.T) {
 	gf := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 
 	metric := exampleDoubleSumMetric()
@@ -113,7 +113,7 @@ my_cluster.default.some_pod.sum_metric_double_test 1238.1 1608424699`
 	assert.Equal(t, expected, result)
 }
 
-func TestGraphiteMetricDataTypeSummary(t *testing.T) {
+func TestGraphiteMetricTypeSummary(t *testing.T) {
 	gf := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 
 	metric := exampleSummaryMetric()
@@ -130,7 +130,7 @@ func TestGraphiteMetricDataTypeSummary(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
-func TestGraphiteMetricDataTypeHistogram(t *testing.T) {
+func TestGraphiteMetricTypeHistogram(t *testing.T) {
 	gf := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 
 	metric := exampleHistogramMetric()

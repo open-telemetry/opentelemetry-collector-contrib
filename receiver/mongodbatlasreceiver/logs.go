@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -53,17 +53,15 @@ type ProjectContext struct {
 // MongoDB Atlas Documentation reccommends a polling interval of 5  minutes: https://www.mongodb.com/docs/atlas/reference/api/logs/#logs
 const collectionInterval = time.Minute * 5
 
-func newMongoDBAtlasLogsReceiver(settings component.ReceiverCreateSettings, cfg *Config, consumer consumer.Logs) (*logsReceiver, error) {
-	client, err := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, settings.Logger)
-	if err != nil {
-		return nil, err
-	}
+func newMongoDBAtlasLogsReceiver(settings component.ReceiverCreateSettings, cfg *Config, consumer consumer.Logs) *logsReceiver {
+	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, settings.Logger)
 	return &logsReceiver{
 		log:         settings.Logger,
 		cfg:         cfg,
 		client:      client,
 		stopperChan: make(chan struct{}),
-		consumer:    consumer}, nil
+		consumer:    consumer,
+	}
 }
 
 // Log receiver logic
@@ -218,7 +216,7 @@ func (s *logsReceiver) getHostAuditLogs(groupID, hostname, logName string) ([]mo
 		return nil, err
 	}
 
-	return decodeAuditJSON(buf)
+	return decodeAuditJSON(s.log, buf)
 }
 
 func (s *logsReceiver) collectLogs(pc ProjectContext, hostname, logName, clusterName, clusterMajorVersion string) {

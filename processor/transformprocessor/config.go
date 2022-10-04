@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,14 +15,15 @@
 package transformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
 
 import (
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqllogs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqltraces"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tqlconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
@@ -31,7 +32,7 @@ import (
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"`
 
-	tqlconfig.Config `mapstructure:",squash"`
+	ottlconfig.Config `mapstructure:",squash"`
 }
 
 var _ config.Processor = (*Config)(nil)
@@ -39,35 +40,20 @@ var _ config.Processor = (*Config)(nil)
 func (c *Config) Validate() error {
 	var errors error
 
-	tqlp := tql.NewParser(
-		traces.Functions(),
-		tqltraces.ParsePath,
-		tqltraces.ParseEnum,
-		tql.NoOpLogger{},
-	)
-	_, err := tqlp.ParseQueries(c.Traces.Queries)
+	ottltracesp := ottltraces.NewParser(traces.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+	_, err := ottltracesp.ParseStatements(c.Traces.Queries)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
 
-	tqlp = tql.NewParser(
-		metrics.Functions(),
-		tqlmetrics.ParsePath,
-		tqlmetrics.ParseEnum,
-		tql.NoOpLogger{},
-	)
-	_, err = tqlp.ParseQueries(c.Metrics.Queries)
+	ottlmetricsp := ottldatapoints.NewParser(metrics.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+	_, err = ottlmetricsp.ParseStatements(c.Metrics.Queries)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
 
-	tqlp = tql.NewParser(
-		logs.Functions(),
-		tqllogs.ParsePath,
-		tqllogs.ParseEnum,
-		tql.NoOpLogger{},
-	)
-	_, err = tqlp.ParseQueries(c.Logs.Queries)
+	ottllogsp := ottllogs.NewParser(logs.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+	_, err = ottllogsp.ParseStatements(c.Logs.Queries)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}

@@ -39,7 +39,7 @@ func TestSerializeMetric(t *testing.T) {
 		metric := pmetric.NewMetric()
 		metric.SetName("metric_name")
 		gaugeDp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
-		gaugeDp.SetIntVal(3)
+		gaugeDp.SetIntValue(3)
 
 		prev := ttlmap.New(1, 1)
 
@@ -59,7 +59,7 @@ func TestSerializeMetric(t *testing.T) {
 		sum.SetIsMonotonic(true)
 		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 		sumDp := sum.DataPoints().AppendEmpty()
-		sumDp.SetIntVal(4)
+		sumDp.SetIntValue(4)
 
 		prev := ttlmap.New(1, 1)
 

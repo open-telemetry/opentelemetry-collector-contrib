@@ -50,7 +50,7 @@ func createDefaultConfig() *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
+			Operators:        []operator.Config{},
 			Converter:        adapter.ConverterConfig{},
 		},
 		InputConfig: *file.NewConfig(),

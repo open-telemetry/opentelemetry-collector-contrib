@@ -51,10 +51,6 @@ func LogsToLoki(ld plog.Logs) (*logproto.PushRequest, *PushReport) {
 	for i := 0; i < rls.Len(); i++ {
 		ills := rls.At(i).ScopeLogs()
 
-		// we may remove attributes, so we make a copy and change our version
-		resource := pcommon.NewResource()
-		rls.At(i).Resource().CopyTo(resource)
-
 		for j := 0; j < ills.Len(); j++ {
 			logs := ills.At(j).LogRecords()
 			for k := 0; k < logs.Len(); k++ {
@@ -62,6 +58,10 @@ func LogsToLoki(ld plog.Logs) (*logproto.PushRequest, *PushReport) {
 				// similarly, we may remove attributes, so change only our version
 				log := plog.NewLogRecord()
 				logs.At(k).CopyTo(log)
+
+				// we may remove attributes, so we make a copy and change our version
+				resource := pcommon.NewResource()
+				rls.At(i).Resource().CopyTo(resource)
 
 				mergedLabels := convertAttributesAndMerge(log.Attributes(), resource.Attributes())
 				// remove the attributes that were promoted to labels

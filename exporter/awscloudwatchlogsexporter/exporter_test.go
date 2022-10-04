@@ -129,7 +129,7 @@ func testLogRecord() plog.LogRecord {
 	record.SetSeverityNumber(5)
 	record.SetSeverityText("debug")
 	record.SetDroppedAttributesCount(4)
-	record.Body().SetStringVal("hello world")
+	record.Body().SetStr("hello world")
 	record.Attributes().PutInt("key1", 1)
 	record.Attributes().PutString("key2", "attr2")
 	record.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
@@ -144,7 +144,7 @@ func testLogRecordWithoutTrace() plog.LogRecord {
 	record.SetSeverityNumber(5)
 	record.SetSeverityText("debug")
 	record.SetDroppedAttributesCount(4)
-	record.Body().SetStringVal("hello world")
+	record.Body().SetStr("hello world")
 	record.Attributes().PutInt("key1", 1)
 	record.Attributes().PutString("key2", "attr2")
 	record.SetTimestamp(1609719139000000)
@@ -181,7 +181,7 @@ func TestAttrValue(t *testing.T) {
 			name: "map",
 			value: func() pcommon.Value {
 				mAttr := pcommon.NewValueMap()
-				m := mAttr.MapVal()
+				m := mAttr.Map()
 				m.PutString("key1", "value1")
 				m.PutEmpty("key2")
 				m.PutBool("key3", true)
@@ -201,7 +201,7 @@ func TestAttrValue(t *testing.T) {
 			name: "array",
 			value: func() pcommon.Value {
 				arrAttr := pcommon.NewValueSlice()
-				arr := arrAttr.SliceVal()
+				arr := arrAttr.Slice()
 				for _, av := range []pcommon.Value{
 					pcommon.NewValueDouble(1.2),
 					pcommon.NewValueDouble(1.6),

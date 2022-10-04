@@ -41,20 +41,20 @@ var (
 func sha1Hasher(attr pcommon.Value) {
 	var val []byte
 	switch attr.Type() {
-	case pcommon.ValueTypeString:
-		val = []byte(attr.StringVal())
+	case pcommon.ValueTypeStr:
+		val = []byte(attr.Str())
 	case pcommon.ValueTypeBool:
-		if attr.BoolVal() {
+		if attr.Bool() {
 			val = byteTrue[:]
 		} else {
 			val = byteFalse[:]
 		}
 	case pcommon.ValueTypeInt:
 		val = make([]byte, int64ByteSize)
-		binary.LittleEndian.PutUint64(val, uint64(attr.IntVal()))
+		binary.LittleEndian.PutUint64(val, uint64(attr.Int()))
 	case pcommon.ValueTypeDouble:
 		val = make([]byte, float64ByteSize)
-		binary.LittleEndian.PutUint64(val, math.Float64bits(attr.DoubleVal()))
+		binary.LittleEndian.PutUint64(val, math.Float64bits(attr.Double()))
 	}
 
 	var hashed string
@@ -68,5 +68,5 @@ func sha1Hasher(attr pcommon.Value) {
 		hashed = string(hashedBytes)
 	}
 
-	attr.SetStringVal(hashed)
+	attr.SetStr(hashed)
 }

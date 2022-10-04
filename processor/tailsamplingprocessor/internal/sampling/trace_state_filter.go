@@ -57,7 +57,7 @@ func (tsf *traceStateFilter) Evaluate(_ pcommon.TraceID, trace *TraceData) (Deci
 	trace.Unlock()
 
 	return hasSpanWithCondition(batches, func(span ptrace.Span) bool {
-		traceState, err := tracesdk.ParseTraceState(span.TraceStateStruct().AsRaw())
+		traceState, err := tracesdk.ParseTraceState(span.TraceState().AsRaw())
 		if err != nil {
 			return false
 		}

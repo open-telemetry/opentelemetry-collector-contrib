@@ -26,17 +26,27 @@ hostmetrics:
 
 The available scrapers are:
 
-| Scraper    | Supported OSs                | Description                                            |
-| ---------- | ---------------------------- | ------------------------------------------------------ |
-| cpu        | All except Mac<sup>[1]</sup> | CPU utilization metrics                                |
-| disk       | All except Mac<sup>[1]</sup> | Disk I/O metrics                                       |
-| load       | All                          | CPU load metrics                                       |
-| filesystem | All                          | File System utilization metrics                        |
-| memory     | All                          | Memory utilization metrics                             |
-| network    | All                          | Network interface I/O metrics & TCP connection metrics |
-| paging     | All                          | Paging/Swap space utilization and I/O metrics          |
-| processes  | Linux                        | Process count metrics                                  |
-| process    | Linux & Windows              | Per process CPU, Memory, and Disk I/O metrics          |
+| Scraper      | Supported OSs                | Description                                            |
+| ------------ | ---------------------------- | ------------------------------------------------------ |
+| [cpu]        | All except Mac<sup>[1]</sup> | CPU utilization metrics                                |
+| [disk]       | All except Mac<sup>[1]</sup> | Disk I/O metrics                                       |
+| [load]       | All                          | CPU load metrics                                       |
+| [filesystem] | All                          | File System utilization metrics                        |
+| [memory]     | All                          | Memory utilization metrics                             |
+| [network]    | All                          | Network interface I/O metrics & TCP connection metrics |
+| [paging]     | All                          | Paging/Swap space utilization and I/O metrics          |
+| [processes]  | Linux                        | Process count metrics                                  |
+| [process]    | Linux & Windows              | Per process CPU, Memory, and Disk I/O metrics          |
+
+[cpu]: ./internal/scraper/cpuscraper/documentation.md
+[disk]: ./internal/scraper/diskscraper/documentation.md
+[filesystem]: ./internal/scraper/filesystemscraper/documentation.md
+[load]: ./internal/scraper/loadscraper/documentation.md
+[memory]: ./internal/scraper/memoryscraper/documentation.md
+[network]: ./internal/scraper/networkscraper/documentation.md
+[paging]: ./internal/scraper/pagingscraper/documentation.md
+[processes]: ./internal/scraper/processesscraper/documentation.md
+[process]: ./internal/scraper/processscraper/documentation.md
 
 ### Notes
 

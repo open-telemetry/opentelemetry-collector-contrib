@@ -319,7 +319,7 @@ func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) error {
 		dpCalls := mCalls.Sum().DataPoints().AppendEmpty()
 		dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 		dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		dpCalls.SetIntVal(p.callSum[key])
+		dpCalls.SetIntValue(p.callSum[key])
 
 		dimensions, err := p.getDimensionsByMetricKey(key)
 		if err != nil {
@@ -356,7 +356,7 @@ func (p *processorImp) aggregateMetrics(traces ptrace.Traces) {
 		if !ok {
 			continue
 		}
-		serviceName := attr.StringVal()
+		serviceName := attr.Str()
 		p.aggregateMetricsForServiceSpans(rspans, serviceName)
 	}
 }
@@ -566,7 +566,7 @@ func setLatencyExemplars(exemplarsData []exemplarData, timestamp pcommon.Timesta
 			continue
 		}
 
-		exemplar.SetDoubleVal(value)
+		exemplar.SetDoubleValue(value)
 		exemplar.SetTimestamp(timestamp)
 		exemplar.FilteredAttributes().PutString(traceIDKey, traceID.HexString())
 	}

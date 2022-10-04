@@ -253,7 +253,7 @@ func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics) []pmetric.Reso
 func isFirstFailedScrape(metrics []pmetric.Metric) bool {
 	for _, m := range metrics {
 		if m.Name() == "up" {
-			if m.Gauge().DataPoints().At(0).DoubleVal() == 1 { // assumed up will not have multiple datapoints
+			if m.Gauge().DataPoints().At(0).DoubleValue() == 1 { // assumed up will not have multiple datapoints
 				return false
 			}
 		}
@@ -264,26 +264,26 @@ func isFirstFailedScrape(metrics []pmetric.Metric) bool {
 		case "up", "scrape_duration_seconds", "scrape_samples_scraped", "scrape_samples_post_metric_relabeling", "scrape_series_added":
 			continue
 		}
-		switch m.DataType() {
-		case pmetric.MetricDataTypeGauge:
+		switch m.Type() {
+		case pmetric.MetricTypeGauge:
 			for i := 0; i < m.Gauge().DataPoints().Len(); i++ {
 				if !m.Gauge().DataPoints().At(i).Flags().NoRecordedValue() {
 					return false
 				}
 			}
-		case pmetric.MetricDataTypeSum:
+		case pmetric.MetricTypeSum:
 			for i := 0; i < m.Sum().DataPoints().Len(); i++ {
 				if !m.Sum().DataPoints().At(i).Flags().NoRecordedValue() {
 					return false
 				}
 			}
-		case pmetric.MetricDataTypeHistogram:
+		case pmetric.MetricTypeHistogram:
 			for i := 0; i < m.Histogram().DataPoints().Len(); i++ {
 				if !m.Histogram().DataPoints().At(i).Flags().NoRecordedValue() {
 					return false
 				}
 			}
-		case pmetric.MetricDataTypeSummary:
+		case pmetric.MetricTypeSummary:
 			for i := 0; i < m.Summary().DataPoints().Len(); i++ {
 				if !m.Summary().DataPoints().At(i).Flags().NoRecordedValue() {
 					return false
@@ -297,7 +297,7 @@ func isFirstFailedScrape(metrics []pmetric.Metric) bool {
 func assertUp(t *testing.T, expected float64, metrics []pmetric.Metric) {
 	for _, m := range metrics {
 		if m.Name() == "up" {
-			assert.Equal(t, expected, m.Gauge().DataPoints().At(0).DoubleVal()) // (assumed up will not have multiple datapoints)
+			assert.Equal(t, expected, m.Gauge().DataPoints().At(0).DoubleValue()) // (assumed up will not have multiple datapoints)
 			return
 		}
 	}
@@ -376,23 +376,23 @@ func assertMetricPresent(name string, metricTypeExpectations metricTypeComparato
 			}
 			metricTypeExpectations(t, m)
 			for i, de := range dataPointExpectations {
-				switch m.DataType() {
-				case pmetric.MetricDataTypeGauge:
+				switch m.Type() {
+				case pmetric.MetricTypeGauge:
 					for _, npc := range de.numberPointComparator {
 						require.Equal(t, m.Gauge().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Gauge metric does not match to testdata")
 						npc(t, m.Gauge().DataPoints().At(i))
 					}
-				case pmetric.MetricDataTypeSum:
+				case pmetric.MetricTypeSum:
 					for _, npc := range de.numberPointComparator {
 						require.Equal(t, m.Sum().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Sum metric does not match to testdata")
 						npc(t, m.Sum().DataPoints().At(i))
 					}
-				case pmetric.MetricDataTypeHistogram:
+				case pmetric.MetricTypeHistogram:
 					for _, hpc := range de.histogramPointComparator {
 						require.Equal(t, m.Histogram().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Histogram metric does not match to testdata")
 						hpc(t, m.Histogram().DataPoints().At(i))
 					}
-				case pmetric.MetricDataTypeSummary:
+				case pmetric.MetricTypeSummary:
 					for _, spc := range de.summaryPointComparator {
 						require.Equal(t, m.Summary().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Summary metric does not match to testdata")
 						spc(t, m.Summary().DataPoints().At(i))
@@ -412,15 +412,15 @@ func assertMetricAbsent(name string) testExpectation {
 	}
 }
 
-func compareMetricType(typ pmetric.MetricDataType) metricTypeComparator {
+func compareMetricType(typ pmetric.MetricType) metricTypeComparator {
 	return func(t *testing.T, metric pmetric.Metric) {
-		assert.Equal(t, typ.String(), metric.DataType().String(), "Metric type does not match")
+		assert.Equal(t, typ.String(), metric.Type().String(), "Metric type does not match")
 	}
 }
 
 func compareMetricIsMonotonic(isMonotonic bool) metricTypeComparator {
 	return func(t *testing.T, metric pmetric.Metric) {
-		assert.Equal(t, pmetric.MetricDataTypeSum.String(), metric.DataType().String(), "IsMonotonic only exists for sums")
+		assert.Equal(t, pmetric.MetricTypeSum.String(), metric.Type().String(), "IsMonotonic only exists for sums")
 		assert.Equal(t, isMonotonic, metric.Sum().IsMonotonic(), "IsMonotonic does not match")
 	}
 }
@@ -538,13 +538,13 @@ func compareSummaryStartTimestamp(timeStamp pcommon.Timestamp) summaryPointCompa
 
 func compareDoubleValue(doubleVal float64) numberPointComparator {
 	return func(t *testing.T, numberDataPoint pmetric.NumberDataPoint) {
-		assert.Equal(t, doubleVal, numberDataPoint.DoubleVal(), "Metric double value does not match")
+		assert.Equal(t, doubleVal, numberDataPoint.DoubleValue(), "Metric double value does not match")
 	}
 }
 
 func assertNormalNan() numberPointComparator {
 	return func(t *testing.T, numberDataPoint pmetric.NumberDataPoint) {
-		assert.True(t, math.Float64bits(numberDataPoint.DoubleVal()) == value.NormalNaN,
+		assert.True(t, math.Float64bits(numberDataPoint.DoubleValue()) == value.NormalNaN,
 			"Metric double value is not normalNaN as expected")
 	}
 }
@@ -666,16 +666,16 @@ func getTS(ms pmetric.MetricSlice) pcommon.Timestamp {
 		return 0
 	}
 	m := ms.At(0)
-	switch m.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch m.Type() {
+	case pmetric.MetricTypeGauge:
 		return m.Gauge().DataPoints().At(0).Timestamp()
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		return m.Sum().DataPoints().At(0).Timestamp()
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		return m.Histogram().DataPoints().At(0).Timestamp()
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		return m.Summary().DataPoints().At(0).Timestamp()
-	case pmetric.MetricDataTypeExponentialHistogram:
+	case pmetric.MetricTypeExponentialHistogram:
 		return m.ExponentialHistogram().DataPoints().At(0).Timestamp()
 	}
 	return 0

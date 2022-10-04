@@ -62,10 +62,10 @@ func setDataTypeAndPoints(sfxDataPoint *model.DataPoint, ms pmetric.MetricSlice,
 	if ok && sfxMetricType < numMetricTypes && idxs[sfxMetricType] != 0 {
 		m := ms.At(idxs[sfxMetricType] - 1)
 		// Only emit gauge and sum.
-		switch m.DataType() {
-		case pmetric.MetricDataTypeGauge:
+		switch m.Type() {
+		case pmetric.MetricTypeGauge:
 			fillNumberDataPoint(sfxDataPoint, m.Gauge().DataPoints())
-		case pmetric.MetricDataTypeSum:
+		case pmetric.MetricTypeSum:
 			fillNumberDataPoint(sfxDataPoint, m.Sum().DataPoints())
 		}
 		return nil
@@ -105,9 +105,9 @@ func fillNumberDataPoint(sfxDataPoint *model.DataPoint, dps pmetric.NumberDataPo
 	dp.SetTimestamp(toTimestamp(sfxDataPoint.GetTimestamp()))
 	switch {
 	case sfxDataPoint.Value.IntValue != nil:
-		dp.SetIntVal(*sfxDataPoint.Value.IntValue)
+		dp.SetIntValue(*sfxDataPoint.Value.IntValue)
 	case sfxDataPoint.Value.DoubleValue != nil:
-		dp.SetDoubleVal(*sfxDataPoint.Value.DoubleValue)
+		dp.SetDoubleValue(*sfxDataPoint.Value.DoubleValue)
 	}
 	fillInAttributes(sfxDataPoint.Dimensions, dp.Attributes())
 }

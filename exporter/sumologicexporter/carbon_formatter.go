@@ -71,13 +71,13 @@ func carbon2NumberRecord(record metricPair, dataPoint pmetric.NumberDataPoint) s
 	case pmetric.NumberDataPointValueTypeDouble:
 		return fmt.Sprintf("%s  %g %d",
 			carbon2TagString(record),
-			dataPoint.DoubleVal(),
+			dataPoint.DoubleValue(),
 			dataPoint.Timestamp()/1e9,
 		)
 	case pmetric.NumberDataPointValueTypeInt:
 		return fmt.Sprintf("%s  %d %d",
 			carbon2TagString(record),
-			dataPoint.IntVal(),
+			dataPoint.IntValue(),
 			dataPoint.Timestamp()/1e9,
 		)
 	}
@@ -88,22 +88,22 @@ func carbon2NumberRecord(record metricPair, dataPoint pmetric.NumberDataPoint) s
 func carbon2Metric2String(record metricPair) string {
 	var nextLines []string
 
-	switch record.metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch record.metric.Type() {
+	case pmetric.MetricTypeGauge:
 		dps := record.metric.Gauge().DataPoints()
 		nextLines = make([]string, 0, dps.Len())
 		for i := 0; i < dps.Len(); i++ {
 			nextLines = append(nextLines, carbon2NumberRecord(record, dps.At(i)))
 		}
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		dps := record.metric.Sum().DataPoints()
 		nextLines = make([]string, 0, dps.Len())
 		for i := 0; i < dps.Len(); i++ {
 			nextLines = append(nextLines, carbon2NumberRecord(record, dps.At(i)))
 		}
 	// Skip complex metrics
-	case pmetric.MetricDataTypeHistogram:
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeHistogram:
+	case pmetric.MetricTypeSummary:
 	}
 
 	return strings.Join(nextLines, "\n")

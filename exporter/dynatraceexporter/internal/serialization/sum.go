@@ -112,9 +112,9 @@ func serializeDeltaCounter(name, prefix string, dims dimensions.NormalizedDimens
 	case pmetric.NumberDataPointValueTypeNone:
 		return "", fmt.Errorf("unsupported value type none")
 	case pmetric.NumberDataPointValueTypeInt:
-		valueOpt = dtMetric.WithIntCounterValueDelta(dp.IntVal())
+		valueOpt = dtMetric.WithIntCounterValueDelta(dp.IntValue())
 	case pmetric.NumberDataPointValueTypeDouble:
-		valueOpt = dtMetric.WithFloatCounterValueDelta(dp.DoubleVal())
+		valueOpt = dtMetric.WithFloatCounterValueDelta(dp.DoubleValue())
 	default:
 		return "", fmt.Errorf("unknown data type")
 	}
@@ -179,9 +179,9 @@ func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedD
 
 	switch {
 	case dp.ValueType() == pmetric.NumberDataPointValueTypeInt:
-		valueOpt = dtMetric.WithIntCounterValueDelta(dp.IntVal() - oldCount.IntVal())
+		valueOpt = dtMetric.WithIntCounterValueDelta(dp.IntValue() - oldCount.IntValue())
 	case dp.ValueType() == pmetric.NumberDataPointValueTypeDouble:
-		valueOpt = dtMetric.WithFloatCounterValueDelta(dp.DoubleVal() - oldCount.DoubleVal())
+		valueOpt = dtMetric.WithFloatCounterValueDelta(dp.DoubleValue() - oldCount.DoubleValue())
 	default:
 		return nil, fmt.Errorf("%s value type %s not supported", name, metricValueTypeToString(dp.ValueType()))
 	}

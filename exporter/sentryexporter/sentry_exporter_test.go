@@ -17,6 +17,7 @@ package sentryexporter
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -483,6 +484,7 @@ type SpanStatusCase struct {
 	// output
 	status  sentry.SpanStatus
 	message string
+	tags    map[string]string
 }
 
 func TestStatusFromSpanStatus(t *testing.T) {
@@ -490,8 +492,9 @@ func TestStatusFromSpanStatus(t *testing.T) {
 		{
 			testName:   "with empty status",
 			spanStatus: ptrace.NewSpanStatus(),
-			status:     sentry.SpanStatusUndefined,
+			status:     sentry.SpanStatusOK,
 			message:    "",
+			tags:       map[string]string{},
 		},
 		{
 			testName: "with status code",
@@ -504,6 +507,7 @@ func TestStatusFromSpanStatus(t *testing.T) {
 			}(),
 			status:  sentry.SpanStatusUnknown,
 			message: "message",
+			tags:    map[string]string{},
 		},
 		{
 			testName: "with unimplemented status code",
@@ -516,12 +520,56 @@ func TestStatusFromSpanStatus(t *testing.T) {
 			}(),
 			status:  sentry.SpanStatusUnknown,
 			message: "error code 1337",
+			tags:    map[string]string{},
+		},
+		{
+			testName: "with ok status code",
+			spanStatus: func() ptrace.SpanStatus {
+				spanStatus := ptrace.NewSpanStatus()
+				spanStatus.SetMessage("message")
+				spanStatus.SetCode(ptrace.StatusCodeOk)
+
+				return spanStatus
+			}(),
+			status:  sentry.SpanStatusOK,
+			message: "message",
+			tags:    map[string]string{},
+		},
+		{
+			testName: "with 400 http status code",
+			spanStatus: func() ptrace.SpanStatus {
+				spanStatus := ptrace.NewSpanStatus()
+				spanStatus.SetMessage("message")
+				spanStatus.SetCode(ptrace.StatusCodeError)
+
+				return spanStatus
+			}(),
+			status:  sentry.SpanStatusUnauthenticated,
+			message: "message",
+			tags: map[string]string{
+				"http.status_code": "401",
+			},
+		},
+		{
+			testName: "with canceled grpc status code",
+			spanStatus: func() ptrace.SpanStatus {
+				spanStatus := ptrace.NewSpanStatus()
+				spanStatus.SetMessage("message")
+				spanStatus.SetCode(ptrace.StatusCodeError)
+
+				return spanStatus
+			}(),
+			status:  sentry.SpanStatusCanceled,
+			message: "message",
+			tags: map[string]string{
+				"rpc.grpc.status_code": "1",
+			},
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.testName, func(t *testing.T) {
-			status, message := statusFromSpanStatus(test.spanStatus)
+			status, message := statusFromSpanStatus(test.spanStatus, test.tags)
 			assert.Equal(t, test.status, status)
 			assert.Equal(t, test.message, message)
 		})
@@ -684,6 +732,47 @@ func TestPushTraceData(t *testing.T) {
 			err := s.pushTraceData(context.Background(), test.td)
 			assert.Nil(t, err)
 			assert.Equal(t, test.called, transport.called)
+		})
+	}
+}
+
+type TransactionFromSpanMarshalEventTestCase struct {
+	testName string
+	// input
+	span *sentry.Span
+	// output
+	wantContains string
+}
+
+func TestTransactionFromSpanMarshalEvent(t *testing.T) {
+	testCases := []TransactionFromSpanMarshalEventTestCase{
+		{
+			testName: "with parent span id",
+			span: &sentry.Span{
+				TraceID:      TraceIDFromHex("1915f8aa35ff8fbebbfeedb9d7e07216"),
+				SpanID:       SpanIDFromHex("ea4864700408805c"),
+				ParentSpanID: SpanIDFromHex("4c577fe4aec9523b"),
+			},
+			wantContains: `"contexts":{"trace":{"trace_id":"1915f8aa35ff8fbebbfeedb9d7e07216","span_id":"ea4864700408805c","parent_span_id":"4c577fe4aec9523b"}}`,
+		},
+		{
+			testName: "without parent span id",
+			span: &sentry.Span{
+				TraceID: TraceIDFromHex("11ab4adc8ac6ed96f245cd96b5b6d141"),
+				SpanID:  SpanIDFromHex("cc55ac735f0170ac"),
+			},
+			wantContains: `"contexts":{"trace":{"trace_id":"11ab4adc8ac6ed96f245cd96b5b6d141","span_id":"cc55ac735f0170ac"}}`,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.testName, func(t *testing.T) {
+			event := transactionFromSpan(test.span)
+			// mimic what sentry is doing internally
+			// see: https://github.com/getsentry/sentry-go/blob/v0.13.0/transport.go#L66-L70
+			d, err := json.Marshal(event)
+			assert.NoError(t, err)
+			assert.Contains(t, string(d), test.wantContains)
 		})
 	}
 }

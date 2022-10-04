@@ -100,7 +100,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 // supported to have more than one of these specified, and all specified must
 // evaluate to true for a match to occur.
 func (mp *propertiesMatcher) MatchLogRecord(lr plog.LogRecord, resource pcommon.Resource, library pcommon.InstrumentationScope) bool {
-	if lr.Body().Type() == pcommon.ValueTypeString && mp.bodyFilters != nil && !mp.bodyFilters.Matches(lr.Body().StringVal()) {
+	if lr.Body().Type() == pcommon.ValueTypeStr && mp.bodyFilters != nil && !mp.bodyFilters.Matches(lr.Body().Str()) {
 		return false
 	}
 	if mp.severityTextFilters != nil && !mp.severityTextFilters.Matches(lr.SeverityText()) {

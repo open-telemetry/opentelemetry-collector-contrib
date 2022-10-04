@@ -378,7 +378,7 @@ func TestAccessTokenPassthrough(t *testing.T) {
 				attrs := rspan.Resource().Attributes()
 				amap, contains := attrs.Get("com.splunk.signalfx.access_token")
 				if tt.accessTokenPassthrough && tt.token != "" {
-					assert.Equal(t, tt.token, amap.StringVal())
+					assert.Equal(t, tt.token, amap.Str())
 				} else {
 					assert.False(t, contains)
 				}

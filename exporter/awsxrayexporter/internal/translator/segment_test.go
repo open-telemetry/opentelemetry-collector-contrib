@@ -741,9 +741,9 @@ func TestFilteredAttributesMetadata(t *testing.T) {
 	attrs.PutEmpty("null_value")
 
 	arrayValue := attrs.PutEmptySlice("array_value")
-	arrayValue.AppendEmpty().SetIntVal(12)
-	arrayValue.AppendEmpty().SetIntVal(34)
-	arrayValue.AppendEmpty().SetIntVal(56)
+	arrayValue.AppendEmpty().SetInt(12)
+	arrayValue.AppendEmpty().SetInt(34)
+	arrayValue.AppendEmpty().SetInt(56)
 
 	mapValue := attrs.PutEmptyMap("map_value")
 	mapValue.PutDouble("value1", -987.65)
@@ -858,8 +858,8 @@ func constructDefaultResource() pcommon.Resource {
 	resourceMap.PutString("key2", "value")
 
 	resourceArray := attrs.PutEmptySlice(resourceArrayKey)
-	resourceArray.AppendEmpty().SetStringVal("foo")
-	resourceArray.AppendEmpty().SetStringVal("bar")
+	resourceArray.AppendEmpty().SetStr("foo")
+	resourceArray.AppendEmpty().SetStr("bar")
 	return resource
 }
 

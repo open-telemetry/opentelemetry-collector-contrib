@@ -217,7 +217,7 @@ func TestMetricBuilderCounters(t *testing.T) {
 				sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				sum.SetIsMonotonic(true)
 				pt0 := sum.DataPoints().AppendEmpty()
-				pt0.SetDoubleVal(100.0)
+				pt0.SetDoubleValue(100.0)
 				pt0.SetStartTimestamp(startTimestamp)
 				pt0.SetTimestamp(tsNanos)
 				pt0.Attributes().PutString("foo", "bar")
@@ -244,13 +244,13 @@ func TestMetricBuilderCounters(t *testing.T) {
 				sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				sum.SetIsMonotonic(true)
 				pt0 := sum.DataPoints().AppendEmpty()
-				pt0.SetDoubleVal(150.0)
+				pt0.SetDoubleValue(150.0)
 				pt0.SetStartTimestamp(startTimestamp)
 				pt0.SetTimestamp(tsNanos)
 				pt0.Attributes().PutString("foo", "bar")
 
 				pt1 := sum.DataPoints().AppendEmpty()
-				pt1.SetDoubleVal(25.0)
+				pt1.SetDoubleValue(25.0)
 				pt1.SetStartTimestamp(startTimestamp)
 				pt1.SetTimestamp(tsNanos)
 				pt1.Attributes().PutString("foo", "other")
@@ -278,13 +278,13 @@ func TestMetricBuilderCounters(t *testing.T) {
 				sum0.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				sum0.SetIsMonotonic(true)
 				pt0 := sum0.DataPoints().AppendEmpty()
-				pt0.SetDoubleVal(150.0)
+				pt0.SetDoubleValue(150.0)
 				pt0.SetStartTimestamp(startTimestamp)
 				pt0.SetTimestamp(tsNanos)
 				pt0.Attributes().PutString("foo", "bar")
 
 				pt1 := sum0.DataPoints().AppendEmpty()
-				pt1.SetDoubleVal(25.0)
+				pt1.SetDoubleValue(25.0)
 				pt1.SetStartTimestamp(startTimestamp)
 				pt1.SetTimestamp(tsNanos)
 				pt1.Attributes().PutString("foo", "other")
@@ -295,7 +295,7 @@ func TestMetricBuilderCounters(t *testing.T) {
 				sum1.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				sum1.SetIsMonotonic(true)
 				pt2 := sum1.DataPoints().AppendEmpty()
-				pt2.SetDoubleVal(100.0)
+				pt2.SetDoubleValue(100.0)
 				pt2.SetStartTimestamp(startTimestamp)
 				pt2.SetTimestamp(tsNanos)
 				pt2.Attributes().PutString("foo", "bar")
@@ -321,7 +321,7 @@ func TestMetricBuilderCounters(t *testing.T) {
 				sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				sum.SetIsMonotonic(true)
 				pt0 := sum.DataPoints().AppendEmpty()
-				pt0.SetDoubleVal(100.0)
+				pt0.SetDoubleValue(100.0)
 				pt0.SetStartTimestamp(startTimestamp)
 				pt0.SetTimestamp(tsNanos)
 				pt0.Attributes().PutString("foo", "bar")
@@ -361,7 +361,7 @@ func TestMetricBuilderGauges(t *testing.T) {
 				m0.SetName("gauge_test")
 				gauge0 := m0.SetEmptyGauge()
 				pt0 := gauge0.DataPoints().AppendEmpty()
-				pt0.SetDoubleVal(100.0)
+				pt0.SetDoubleValue(100.0)
 				pt0.SetStartTimestamp(0)
 				pt0.SetTimestamp(tsNanos)
 				pt0.Attributes().PutString("foo", "bar")
@@ -372,7 +372,7 @@ func TestMetricBuilderGauges(t *testing.T) {
 				m1.SetName("gauge_test")
 				gauge1 := m1.SetEmptyGauge()
 				pt1 := gauge1.DataPoints().AppendEmpty()
-				pt1.SetDoubleVal(90.0)
+				pt1.SetDoubleValue(90.0)
 				pt1.SetStartTimestamp(0)
 				pt1.SetTimestamp(tsPlusIntervalNanos)
 				pt1.Attributes().PutString("foo", "bar")
@@ -397,13 +397,13 @@ func TestMetricBuilderGauges(t *testing.T) {
 				m0.SetName("gauge_test")
 				gauge0 := m0.SetEmptyGauge()
 				pt0 := gauge0.DataPoints().AppendEmpty()
-				pt0.SetDoubleVal(100.0)
+				pt0.SetDoubleValue(100.0)
 				pt0.SetStartTimestamp(0)
 				pt0.SetTimestamp(tsNanos)
 				pt0.Attributes().PutString("foo", "bar")
 
 				pt1 := gauge0.DataPoints().AppendEmpty()
-				pt1.SetDoubleVal(200.0)
+				pt1.SetDoubleValue(200.0)
 				pt1.SetStartTimestamp(0)
 				pt1.SetTimestamp(tsNanos)
 				pt1.Attributes().PutString("bar", "foo")
@@ -435,13 +435,13 @@ func TestMetricBuilderGauges(t *testing.T) {
 				m0.SetName("gauge_test")
 				gauge0 := m0.SetEmptyGauge()
 				pt0 := gauge0.DataPoints().AppendEmpty()
-				pt0.SetDoubleVal(100.0)
+				pt0.SetDoubleValue(100.0)
 				pt0.SetStartTimestamp(0)
 				pt0.SetTimestamp(tsNanos)
 				pt0.Attributes().PutString("foo", "bar")
 
 				pt1 := gauge0.DataPoints().AppendEmpty()
-				pt1.SetDoubleVal(200.0)
+				pt1.SetDoubleValue(200.0)
 				pt1.SetStartTimestamp(0)
 				pt1.SetTimestamp(tsNanos)
 				pt1.Attributes().PutString("bar", "foo")
@@ -452,7 +452,7 @@ func TestMetricBuilderGauges(t *testing.T) {
 				m1.SetName("gauge_test")
 				gauge1 := m1.SetEmptyGauge()
 				pt2 := gauge1.DataPoints().AppendEmpty()
-				pt2.SetDoubleVal(20.0)
+				pt2.SetDoubleValue(20.0)
 				pt2.SetStartTimestamp(0)
 				pt2.SetTimestamp(tsPlusIntervalNanos)
 				pt2.Attributes().PutString("foo", "bar")
@@ -487,7 +487,7 @@ func TestMetricBuilderUntyped(t *testing.T) {
 				m0.SetName("unknown_test")
 				gauge0 := m0.SetEmptyGauge()
 				pt0 := gauge0.DataPoints().AppendEmpty()
-				pt0.SetDoubleVal(100.0)
+				pt0.SetDoubleValue(100.0)
 				pt0.SetStartTimestamp(0)
 				pt0.SetTimestamp(tsNanos)
 				pt0.Attributes().PutString("foo", "bar")
@@ -513,7 +513,7 @@ func TestMetricBuilderUntyped(t *testing.T) {
 				m0.SetName("something_not_exists")
 				gauge0 := m0.SetEmptyGauge()
 				pt0 := gauge0.DataPoints().AppendEmpty()
-				pt0.SetDoubleVal(100.0)
+				pt0.SetDoubleValue(100.0)
 				pt0.SetTimestamp(tsNanos)
 				pt0.Attributes().PutString("foo", "bar")
 
@@ -521,12 +521,12 @@ func TestMetricBuilderUntyped(t *testing.T) {
 				m1.SetName("theother_not_exists")
 				gauge1 := m1.SetEmptyGauge()
 				pt1 := gauge1.DataPoints().AppendEmpty()
-				pt1.SetDoubleVal(200.0)
+				pt1.SetDoubleValue(200.0)
 				pt1.SetTimestamp(tsNanos)
 				pt1.Attributes().PutString("foo", "bar")
 
 				pt2 := gauge1.DataPoints().AppendEmpty()
-				pt2.SetDoubleVal(300.0)
+				pt2.SetDoubleValue(300.0)
 				pt2.SetTimestamp(tsNanos)
 				pt2.Attributes().PutString("bar", "foo")
 
@@ -549,7 +549,7 @@ func TestMetricBuilderUntyped(t *testing.T) {
 				m0.SetName("some_count")
 				gauge0 := m0.SetEmptyGauge()
 				pt0 := gauge0.DataPoints().AppendEmpty()
-				pt0.SetDoubleVal(100.0)
+				pt0.SetDoubleValue(100.0)
 				pt0.SetTimestamp(tsNanos)
 				pt0.Attributes().PutString("foo", "bar")
 
@@ -1066,18 +1066,18 @@ func (s *startTimeAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
 				metric := ilm.Metrics().At(k)
-				switch metric.DataType() {
-				case pmetric.MetricDataTypeSum:
+				switch metric.Type() {
+				case pmetric.MetricTypeSum:
 					dps := metric.Sum().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dps.At(l).SetStartTimestamp(s.startTime)
 					}
-				case pmetric.MetricDataTypeSummary:
+				case pmetric.MetricTypeSummary:
 					dps := metric.Summary().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dps.At(l).SetStartTimestamp(s.startTime)
 					}
-				case pmetric.MetricDataTypeHistogram:
+				case pmetric.MetricTypeHistogram:
 					dps := metric.Histogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dps.At(l).SetStartTimestamp(s.startTime)

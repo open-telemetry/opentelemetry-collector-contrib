@@ -39,7 +39,7 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, time
 	nm.Sum().SetIsMonotonic(isMonotonicCounter)
 
 	dp := nm.Sum().DataPoints().AppendEmpty()
-	dp.SetIntVal(parsedMetric.counterValue())
+	dp.SetIntValue(parsedMetric.counterValue())
 	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(lastIntervalTime))
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	for i := parsedMetric.description.attrs.Iter(); i.Next(); {
@@ -57,7 +57,7 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pmetric.Scop
 		nm.SetUnit(parsedMetric.unit)
 	}
 	dp := nm.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetDoubleVal(parsedMetric.gaugeValue())
+	dp.SetDoubleValue(parsedMetric.gaugeValue())
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	for i := parsedMetric.description.attrs.Iter(); i.Next(); {
 		dp.Attributes().PutString(string(i.Attribute().Key), i.Attribute().Value.AsString())

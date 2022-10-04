@@ -21,156 +21,170 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 4)
-
-	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
-	assert.Equal(t, r1,
-		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "customname")),
-			Protocols: Protocols{
-				GRPC: &configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
-						Endpoint:  "localhost:9876",
-						Transport: "tcp",
+	tests := []struct {
+		id       config.ComponentID
+		expected config.Receiver
+	}{
+		{
+			id: config.NewComponentIDWithName(typeStr, "customname"),
+			expected: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				Protocols: Protocols{
+					GRPC: &configgrpc.GRPCServerSettings{
+						NetAddr: confignet.NetAddr{
+							Endpoint:  "localhost:9876",
+							Transport: "tcp",
+						},
 					},
-				},
-				ThriftHTTP: &confighttp.HTTPServerSettings{
-					Endpoint: ":3456",
-				},
-				ThriftCompact: &ProtocolUDP{
-					Endpoint: "0.0.0.0:456",
-					ServerConfigUDP: ServerConfigUDP{
-						QueueSize:        100_000,
-						MaxPacketSize:    131_072,
-						Workers:          100,
-						SocketBufferSize: 65_536,
+					ThriftHTTP: &confighttp.HTTPServerSettings{
+						Endpoint: ":3456",
 					},
-				},
-				ThriftBinary: &ProtocolUDP{
-					Endpoint: "0.0.0.0:789",
-					ServerConfigUDP: ServerConfigUDP{
-						QueueSize:        1_000,
-						MaxPacketSize:    65_536,
-						Workers:          5,
-						SocketBufferSize: 0,
+					ThriftCompact: &ProtocolUDP{
+						Endpoint: "0.0.0.0:456",
+						ServerConfigUDP: ServerConfigUDP{
+							QueueSize:        100_000,
+							MaxPacketSize:    131_072,
+							Workers:          100,
+							SocketBufferSize: 65_536,
+						},
 					},
-				},
-			},
-			RemoteSampling: &RemoteSamplingConfig{
-				HostEndpoint: "0.0.0.0:5778",
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
-					Endpoint: "jaeger-collector:1234",
-				},
-				StrategyFile:               "/etc/strategies.json",
-				StrategyFileReloadInterval: time.Second * 10,
-			},
-		})
-
-	rDefaults := cfg.Receivers[config.NewComponentIDWithName(typeStr, "defaults")].(*Config)
-	assert.Equal(t, rDefaults,
-		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "defaults")),
-			Protocols: Protocols{
-				GRPC: &configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
-						Endpoint:  defaultGRPCBindEndpoint,
-						Transport: "tcp",
-					},
-				},
-				ThriftHTTP: &confighttp.HTTPServerSettings{
-					Endpoint: defaultHTTPBindEndpoint,
-				},
-				ThriftCompact: &ProtocolUDP{
-					Endpoint:        defaultThriftCompactBindEndpoint,
-					ServerConfigUDP: DefaultServerConfigUDP(),
-				},
-				ThriftBinary: &ProtocolUDP{
-					Endpoint:        defaultThriftBinaryBindEndpoint,
-					ServerConfigUDP: DefaultServerConfigUDP(),
-				},
-			},
-		})
-
-	rMixed := cfg.Receivers[config.NewComponentIDWithName(typeStr, "mixed")].(*Config)
-	assert.Equal(t, rMixed,
-		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "mixed")),
-			Protocols: Protocols{
-				GRPC: &configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
-						Endpoint:  "localhost:9876",
-						Transport: "tcp",
-					},
-				},
-				ThriftCompact: &ProtocolUDP{
-					Endpoint:        defaultThriftCompactBindEndpoint,
-					ServerConfigUDP: DefaultServerConfigUDP(),
-				},
-			},
-		})
-
-	tlsConfig := cfg.Receivers[config.NewComponentIDWithName(typeStr, "tls")].(*Config)
-
-	assert.Equal(t, tlsConfig,
-		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "tls")),
-			Protocols: Protocols{
-				GRPC: &configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
-						Endpoint:  "localhost:9876",
-						Transport: "tcp",
-					},
-					TLSSetting: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
-							CertFile: "/test.crt",
-							KeyFile:  "/test.key",
+					ThriftBinary: &ProtocolUDP{
+						Endpoint: "0.0.0.0:789",
+						ServerConfigUDP: ServerConfigUDP{
+							QueueSize:        1_000,
+							MaxPacketSize:    65_536,
+							Workers:          5,
+							SocketBufferSize: 0,
 						},
 					},
 				},
-				ThriftHTTP: &confighttp.HTTPServerSettings{
-					Endpoint: ":3456",
+				RemoteSampling: &RemoteSamplingConfig{
+					HostEndpoint: "0.0.0.0:5778",
+					GRPCClientSettings: configgrpc.GRPCClientSettings{
+						Endpoint: "jaeger-collector:1234",
+					},
+					StrategyFile:               "/etc/strategies.json",
+					StrategyFileReloadInterval: time.Second * 10,
 				},
 			},
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "defaults"),
+			expected: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				Protocols: Protocols{
+					GRPC: &configgrpc.GRPCServerSettings{
+						NetAddr: confignet.NetAddr{
+							Endpoint:  defaultGRPCBindEndpoint,
+							Transport: "tcp",
+						},
+					},
+					ThriftHTTP: &confighttp.HTTPServerSettings{
+						Endpoint: defaultHTTPBindEndpoint,
+					},
+					ThriftCompact: &ProtocolUDP{
+						Endpoint:        defaultThriftCompactBindEndpoint,
+						ServerConfigUDP: DefaultServerConfigUDP(),
+					},
+					ThriftBinary: &ProtocolUDP{
+						Endpoint:        defaultThriftBinaryBindEndpoint,
+						ServerConfigUDP: DefaultServerConfigUDP(),
+					},
+				},
+			},
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "mixed"),
+			expected: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				Protocols: Protocols{
+					GRPC: &configgrpc.GRPCServerSettings{
+						NetAddr: confignet.NetAddr{
+							Endpoint:  "localhost:9876",
+							Transport: "tcp",
+						},
+					},
+					ThriftCompact: &ProtocolUDP{
+						Endpoint:        defaultThriftCompactBindEndpoint,
+						ServerConfigUDP: DefaultServerConfigUDP(),
+					},
+				},
+			},
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "tls"),
+			expected: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				Protocols: Protocols{
+					GRPC: &configgrpc.GRPCServerSettings{
+						NetAddr: confignet.NetAddr{
+							Endpoint:  "localhost:9876",
+							Transport: "tcp",
+						},
+						TLSSetting: &configtls.TLSServerSetting{
+							TLSSetting: configtls.TLSSetting{
+								CertFile: "/test.crt",
+								KeyFile:  "/test.key",
+							},
+						},
+					},
+					ThriftHTTP: &confighttp.HTTPServerSettings{
+						Endpoint: ":3456",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
+	}
 }
 
 func TestFailedLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "bad_typo_default_proto_config.yaml"), factories)
-	assert.EqualError(t, err, "error reading receivers configuration for \"jaeger\": 1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
+	cfg := factory.CreateDefaultConfig()
 
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "bad_proto_config.yaml"), factories)
-	assert.EqualError(t, err, "error reading receivers configuration for \"jaeger\": 1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
+	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "typo_default_proto_config").String())
+	require.NoError(t, err)
+	err = config.UnmarshalReceiver(sub, cfg)
+	assert.EqualError(t, err, "1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
 
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "bad_no_proto_config.yaml"), factories)
-	assert.EqualError(t, err, "receiver \"jaeger\" has invalid configuration: must specify at least one protocol when using the Jaeger receiver")
+	sub, err = cm.Sub(config.NewComponentIDWithName(typeStr, "bad_proto_config").String())
+	require.NoError(t, err)
+	err = config.UnmarshalReceiver(sub, cfg)
+	assert.EqualError(t, err, "1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
 
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "bad_empty_config.yaml"), factories)
-	assert.EqualError(t, err, "error reading receivers configuration for \"jaeger\": empty config for Jaeger receiver")
+	sub, err = cm.Sub(config.NewComponentIDWithName(typeStr, "empty").String())
+	require.NoError(t, err)
+	err = config.UnmarshalReceiver(sub, cfg)
+	assert.EqualError(t, err, "empty config for Jaeger receiver")
 }
 
 func TestInvalidConfig(t *testing.T) {

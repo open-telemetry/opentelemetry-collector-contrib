@@ -493,7 +493,7 @@ func assertSampledData(t *testing.T, sampled []ptrace.Traces, serviceName string
 			ilss := rspan.ScopeSpans()
 			for j := 0; j < ilss.Len(); j++ {
 				ils := ilss.At(j)
-				if svcNameAttr, _ := rspan.Resource().Attributes().Get("service.name"); svcNameAttr.StringVal() != serviceName {
+				if svcNameAttr, _ := rspan.Resource().Attributes().Get("service.name"); svcNameAttr.Str() != serviceName {
 					continue
 				}
 				for k := 0; k < ils.Spans().Len(); k++ {

@@ -20,14 +20,13 @@ import (
 	"testing"
 	"time"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"google.golang.org/api/option"
 	cloudmetricpb "google.golang.org/genproto/googleapis/api/metric"
 	cloudmonitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
@@ -35,8 +34,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil/ocmetricstestutil"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 )
 
 type mockMetricServer struct {
@@ -115,74 +113,38 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { require.NoError(t, sde.Shutdown(context.Background())) }()
 
-	md := agentmetricspb.ExportMetricsServiceRequest{
-		Resource: &resourcepb.Resource{
-			Type: "host",
-			Labels: map[string]string{
-				"cloud.availability_zone": "us-central1",
-				"host.name":               "foo",
-				"k8s.cluster.name":        "test",
-				"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
-			},
-		},
-		Metrics: []*metricspb.Metric{
-			ocmetricstestutil.Gauge(
-				"test_gauge1",
-				[]string{"k0"},
-				ocmetricstestutil.Timeseries(
-					time.Now(),
-					[]string{"v0"},
-					ocmetricstestutil.Double(time.Now(), 1))),
-			ocmetricstestutil.Gauge(
-				"test_gauge2",
-				[]string{"k0", "k1"},
-				ocmetricstestutil.Timeseries(
-					time.Now(),
-					[]string{"v0", "v1"},
-					ocmetricstestutil.Double(time.Now(), 12))),
-			ocmetricstestutil.Gauge(
-				"test_gauge3",
-				[]string{"k0", "k1", "k2"},
-				ocmetricstestutil.Timeseries(
-					time.Now(),
-					[]string{"v0", "v1", "v2"},
-					ocmetricstestutil.Double(time.Now(), 123))),
-			ocmetricstestutil.Gauge(
-				"test_gauge4",
-				[]string{"k0", "k1", "k2", "k3"},
-				ocmetricstestutil.Timeseries(
-					time.Now(),
-					[]string{"v0", "v1", "v2", "v3"},
-					ocmetricstestutil.Double(time.Now(), 1234))),
-			ocmetricstestutil.Gauge(
-				"test_gauge5",
-				[]string{"k4", "k5"},
-				ocmetricstestutil.Timeseries(
-					time.Now(),
-					[]string{"v4", "v5"},
-					ocmetricstestutil.Double(time.Now(), 34))),
-		},
-	}
-	md.Metrics[2].Resource = &resourcepb.Resource{
-		Type: "host",
-		Labels: map[string]string{
-			"cloud.availability_zone": "us-central1",
-			"host.name":               "bar",
-			"k8s.cluster.name":        "test",
-			"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
-		},
-	}
-	md.Metrics[3].Resource = &resourcepb.Resource{
-		Type: "host",
-		Labels: map[string]string{
-			"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
-		},
-	}
-	md.Metrics[4].Resource = &resourcepb.Resource{
-		Type: "test",
-	}
-
-	assert.NoError(t, sde.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(md.Node, md.Resource, md.Metrics)), err)
+	md := pmetric.NewMetrics()
+	rm1 := md.ResourceMetrics().AppendEmpty()
+	rm1.Resource().Attributes().FromRaw(map[string]interface{}{
+		occonventions.AttributeResourceType: "host",
+		"cloud.availability_zone":           "us-central1",
+		"host.name":                         "foo",
+		"k8s.cluster.name":                  "test",
+		"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
+	})
+	initGaugeMetric0(rm1.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty())
+	initGaugeMetric1(rm1.ScopeMetrics().At(0).Metrics().AppendEmpty())
+	rm2 := md.ResourceMetrics().AppendEmpty()
+	rm2.Resource().Attributes().FromRaw(map[string]interface{}{
+		occonventions.AttributeResourceType: "host",
+		"cloud.availability_zone":           "us-central1",
+		"host.name":                         "bar",
+		"k8s.cluster.name":                  "test",
+		"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
+	})
+	initGaugeMetric2(rm2.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty())
+	rm3 := md.ResourceMetrics().AppendEmpty()
+	rm3.Resource().Attributes().FromRaw(map[string]interface{}{
+		occonventions.AttributeResourceType:                     "host",
+		"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
+	})
+	initGaugeMetric3(rm3.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty())
+	rm4 := md.ResourceMetrics().AppendEmpty()
+	rm4.Resource().Attributes().FromRaw(map[string]interface{}{
+		occonventions.AttributeResourceType: "test",
+	})
+	initGaugeMetric4(rm4.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty())
+	assert.NoError(t, sde.ConsumeMetrics(context.Background(), md))
 
 	expectedNames := map[string]struct{}{
 		"projects/idk/metricDescriptors/custom.googleapis.com/opencensus/test_gauge1": {},
@@ -261,4 +223,51 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 		assert.Equal(t, ts.value, tr.TimeSeries[i].Points[0].Value.GetDoubleValue())
 		assert.Equal(t, ts.resourceLabels, tr.TimeSeries[i].Resource.Labels)
 	}
+}
+
+func initGaugeMetric0(dest pmetric.Metric) {
+	dest.SetName("test_gauge1")
+	dp := dest.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.Attributes().PutString("k0", "v0")
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	dp.SetDoubleValue(1)
+}
+
+func initGaugeMetric1(dest pmetric.Metric) {
+	dest.SetName("test_gauge2")
+	dp := dest.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.Attributes().PutString("k0", "v0")
+	dp.Attributes().PutString("k1", "v1")
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	dp.SetDoubleValue(12)
+}
+
+func initGaugeMetric2(dest pmetric.Metric) {
+	dest.SetName("test_gauge3")
+	dp := dest.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.Attributes().PutString("k0", "v0")
+	dp.Attributes().PutString("k1", "v1")
+	dp.Attributes().PutString("k2", "v2")
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	dp.SetDoubleValue(123)
+}
+
+func initGaugeMetric3(dest pmetric.Metric) {
+	dest.SetName("test_gauge4")
+	dp := dest.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.Attributes().PutString("k0", "v0")
+	dp.Attributes().PutString("k1", "v1")
+	dp.Attributes().PutString("k2", "v2")
+	dp.Attributes().PutString("k3", "v3")
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	dp.SetDoubleValue(1234)
+}
+
+func initGaugeMetric4(dest pmetric.Metric) {
+	dest.SetName("test_gauge5")
+	dp := dest.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.Attributes().PutString("k4", "v4")
+	dp.Attributes().PutString("k5", "v5")
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	dp.SetDoubleValue(34)
 }

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -131,13 +131,13 @@ func testMetrics() pmetric.MetricSlice {
 }
 
 func setDPDoubleVal(dp pmetric.NumberDataPoint, value float64, attributes pcommon.Map, timeStamp time.Time) {
-	dp.SetDoubleVal(value)
+	dp.SetDoubleValue(value)
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeStamp))
 	attributes.CopyTo(dp.Attributes())
 }
 
 func setDPIntVal(dp pmetric.NumberDataPoint, value int64, attributes pcommon.Map, timeStamp time.Time) {
-	dp.SetIntVal(value)
+	dp.SetIntValue(value)
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeStamp))
 	attributes.CopyTo(dp.Attributes())
 }

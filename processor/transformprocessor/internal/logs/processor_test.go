@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
@@ -38,24 +38,24 @@ var (
 
 func TestProcess(t *testing.T) {
 	tests := []struct {
-		query string
-		want  func(td plog.Logs)
+		statement string
+		want      func(td plog.Logs)
 	}{
 		{
-			query: `set(attributes["test"], "pass") where body == "operationA"`,
+			statement: `set(attributes["test"], "pass") where body == "operationA"`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
-			query: `set(attributes["test"], "pass") where resource.attributes["host.name"] == "localhost"`,
+			statement: `set(attributes["test"], "pass") where resource.attributes["host.name"] == "localhost"`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("test", "pass")
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutString("test", "pass")
 			},
 		},
 		{
-			query: `keep_keys(attributes, "http.method") where body == "operationA"`,
+			statement: `keep_keys(attributes, "http.method") where body == "operationA"`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("http.method",
@@ -63,70 +63,70 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			query: `set(severity_text, "ok") where attributes["http.path"] == "/health"`,
+			statement: `set(severity_text, "ok") where attributes["http.path"] == "/health"`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SetSeverityText("ok")
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).SetSeverityText("ok")
 			},
 		},
 		{
-			query: `replace_pattern(attributes["http.method"], "get", "post")`,
+			statement: `replace_pattern(attributes["http.method"], "get", "post")`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("http.method", "post")
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutString("http.method", "post")
 			},
 		},
 		{
-			query: `replace_all_patterns(attributes, "get", "post")`,
+			statement: `replace_all_patterns(attributes, "get", "post")`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("http.method", "post")
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutString("http.method", "post")
 			},
 		},
 		{
-			query: `set(attributes["test"], "pass") where dropped_attributes_count == 1`,
+			statement: `set(attributes["test"], "pass") where dropped_attributes_count == 1`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
-			query: `set(attributes["test"], "pass") where flags == 1`,
+			statement: `set(attributes["test"], "pass") where flags == 1`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
-			query: `set(attributes["test"], "pass") where severity_number == SEVERITY_NUMBER_TRACE`,
+			statement: `set(attributes["test"], "pass") where severity_number == SEVERITY_NUMBER_TRACE`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
-			query: `set(severity_number, SEVERITY_NUMBER_TRACE2) where severity_number == 1`,
+			statement: `set(severity_number, SEVERITY_NUMBER_TRACE2) where severity_number == 1`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SetSeverityNumber(2)
 			},
 		},
 		{
-			query: `set(attributes["test"], "pass") where trace_id == TraceID(0x0102030405060708090a0b0c0d0e0f10)`,
+			statement: `set(attributes["test"], "pass") where trace_id == TraceID(0x0102030405060708090a0b0c0d0e0f10)`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
-			query: `set(attributes["test"], "pass") where span_id == SpanID(0x0102030405060708)`,
+			statement: `set(attributes["test"], "pass") where span_id == SpanID(0x0102030405060708)`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
-			query: `set(attributes["test"], "pass") where IsMatch(body, "operation[AC]") == true`,
+			statement: `set(attributes["test"], "pass") where IsMatch(body, "operation[AC]") == true`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("test", "pass")
 			},
 		},
 		{
-			query: `delete_key(attributes, "http.url") where body == "operationA"`,
+			statement: `delete_key(attributes, "http.url") where body == "operationA"`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("http.method",
@@ -138,7 +138,7 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			query: `delete_matching_keys(attributes, "http.*t.*") where body == "operationA"`,
+			statement: `delete_matching_keys(attributes, "http.*t.*") where body == "operationA"`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("http.url",
@@ -148,42 +148,42 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			query: `set(attributes["test"], Concat(": ", attributes["http.method"], attributes["http.url"])) where body == Concat("", "operation", "A")`,
+			statement: `set(attributes["test"], Concat(": ", attributes["http.method"], attributes["http.url"])) where body == Concat("", "operation", "A")`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("test", "get: http://localhost/health")
 			},
 		},
 		{
-			query: `set(attributes["test"], Split(attributes["flags"], "|"))`,
+			statement: `set(attributes["test"], Split(attributes["flags"], "|"))`,
 			want: func(td plog.Logs) {
 				v1 := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutEmptySlice("test")
-				v1.AppendEmpty().SetStringVal("A")
-				v1.AppendEmpty().SetStringVal("B")
-				v1.AppendEmpty().SetStringVal("C")
+				v1.AppendEmpty().SetStr("A")
+				v1.AppendEmpty().SetStr("B")
+				v1.AppendEmpty().SetStr("C")
 				v2 := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutEmptySlice("test")
-				v2.AppendEmpty().SetStringVal("C")
-				v2.AppendEmpty().SetStringVal("D")
+				v2.AppendEmpty().SetStr("C")
+				v2.AppendEmpty().SetStr("D")
 			},
 		},
 		{
-			query: `set(attributes["test"], Split(attributes["flags"], "|")) where body == "operationA"`,
+			statement: `set(attributes["test"], Split(attributes["flags"], "|")) where body == "operationA"`,
 			want: func(td plog.Logs) {
 				newValue := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutEmptySlice("test")
-				newValue.AppendEmpty().SetStringVal("A")
-				newValue.AppendEmpty().SetStringVal("B")
-				newValue.AppendEmpty().SetStringVal("C")
+				newValue.AppendEmpty().SetStr("A")
+				newValue.AppendEmpty().SetStr("B")
+				newValue.AppendEmpty().SetStr("C")
 			},
 		},
 		{
-			query: `set(attributes["test"], Split(attributes["not_exist"], "|"))`,
-			want:  func(td plog.Logs) {},
+			statement: `set(attributes["test"], Split(attributes["not_exist"], "|"))`,
+			want:      func(td plog.Logs) {},
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.query, func(t *testing.T) {
+		t.Run(tt.statement, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]string{tt.query}, Functions(), component.ProcessorCreateSettings{})
+			processor, err := NewProcessor([]string{tt.statement}, Functions(), componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessLogs(context.Background(), td)
@@ -208,7 +208,7 @@ func constructLogs() plog.Logs {
 }
 
 func fillLogOne(log plog.LogRecord) {
-	log.Body().SetStringVal("operationA")
+	log.Body().SetStr("operationA")
 	log.SetTimestamp(TestLogTimestamp)
 	log.SetObservedTimestamp(TestObservedTimestamp)
 	log.SetDroppedAttributesCount(1)
@@ -224,7 +224,7 @@ func fillLogOne(log plog.LogRecord) {
 }
 
 func fillLogTwo(log plog.LogRecord) {
-	log.Body().SetStringVal("operationB")
+	log.Body().SetStr("operationB")
 	log.SetTimestamp(TestLogTimestamp)
 	log.SetObservedTimestamp(TestObservedTimestamp)
 	log.Attributes().PutString("http.method", "get")

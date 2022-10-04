@@ -143,7 +143,7 @@ func NewMongoDBAtlasClient(
 	privateKey string,
 	retrySettings exporterhelper.RetrySettings,
 	log *zap.Logger,
-) (*MongoDBAtlasClient, error) {
+) *MongoDBAtlasClient {
 	t := digest.NewTransport(publicKey, privateKey)
 	roundTripper := newClientRoundTripper(t, log, retrySettings)
 	tc := &http.Client{Transport: roundTripper}
@@ -152,7 +152,7 @@ func NewMongoDBAtlasClient(
 		log,
 		client,
 		roundTripper,
-	}, nil
+	}
 }
 
 func (s *MongoDBAtlasClient) Shutdown() error {
@@ -165,7 +165,7 @@ func checkMongoDBClientErr(err error, response *mongodbatlas.Response) error {
 		return err
 	}
 	if response != nil {
-		return mongodbatlas.CheckResponse(response.Response)
+		return response.CheckResponse(response.Body)
 	}
 	return nil
 }
@@ -267,7 +267,9 @@ func (s *MongoDBAtlasClient) getProjectsPage(
 	projects, response, err := s.client.Organizations.Projects(
 		ctx,
 		orgID,
-		&mongodbatlas.ListOptions{PageNum: pageNum},
+		&mongodbatlas.ProjectsListOptions{
+			ListOptions: mongodbatlas.ListOptions{PageNum: pageNum},
+		},
 	)
 	err = checkMongoDBClientErr(err, response)
 	if err != nil {
@@ -624,6 +626,26 @@ func (s *MongoDBAtlasClient) GetClusters(ctx context.Context, groupID string) ([
 	}
 
 	return clusters, nil
+}
+
+type AlertPollOptions struct {
+	PageNum  int
+	PageSize int
+}
+
+// GetAlerts returns the alerts specified for the set projects
+func (s *MongoDBAtlasClient) GetAlerts(ctx context.Context, groupID string, opts *AlertPollOptions) (ret []mongodbatlas.Alert, nextPage bool, err error) {
+	lo := mongodbatlas.ListOptions{
+		PageNum:      opts.PageNum,
+		ItemsPerPage: opts.PageSize,
+	}
+	options := mongodbatlas.AlertsListOptions{ListOptions: lo}
+	alerts, response, err := s.client.Alerts.List(ctx, groupID, &options)
+	err = checkMongoDBClientErr(err, response)
+	if err != nil {
+		return nil, false, err
+	}
+	return alerts.Results, hasNext(response.Links), nil
 }
 
 func toUnixString(t time.Time) string {

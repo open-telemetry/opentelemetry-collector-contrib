@@ -62,26 +62,26 @@ func TestDataTypeFilter(t *testing.T) {
 }
 
 func TestGaugeMatch(t *testing.T) {
-	testMetricNameMatch(t, pmetric.MetricDataTypeGauge)
+	testMetricNameMatch(t, pmetric.MetricTypeGauge)
 }
 
 func TestSumMatch(t *testing.T) {
-	testMetricNameMatch(t, pmetric.MetricDataTypeSum)
+	testMetricNameMatch(t, pmetric.MetricTypeSum)
 }
 
 func TestHistogramMatch(t *testing.T) {
-	testMetricNameMatch(t, pmetric.MetricDataTypeHistogram)
+	testMetricNameMatch(t, pmetric.MetricTypeHistogram)
 }
 
 func TestExponentialHistogramMatch(t *testing.T) {
-	testMetricNameMatch(t, pmetric.MetricDataTypeExponentialHistogram)
+	testMetricNameMatch(t, pmetric.MetricTypeExponentialHistogram)
 }
 
 func TestSummaryMatch(t *testing.T) {
-	testMetricNameMatch(t, pmetric.MetricDataTypeSummary)
+	testMetricNameMatch(t, pmetric.MetricTypeSummary)
 }
 
-func testMetricNameMatch(t *testing.T, dataType pmetric.MetricDataType) {
+func testMetricNameMatch(t *testing.T, dataType pmetric.MetricType) {
 	matcher, err := NewMatcher(`MetricName == 'my.metric'`)
 	require.NoError(t, err)
 	m := pmetric.NewMetric()
@@ -89,15 +89,15 @@ func testMetricNameMatch(t *testing.T, dataType pmetric.MetricDataType) {
 
 	// Empty metric - no match.
 	switch dataType {
-	case pmetric.MetricDataTypeGauge:
+	case pmetric.MetricTypeGauge:
 		m.SetEmptyGauge()
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		m.SetEmptySum()
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		m.SetEmptyHistogram()
-	case pmetric.MetricDataTypeExponentialHistogram:
+	case pmetric.MetricTypeExponentialHistogram:
 		m.SetEmptyExponentialHistogram()
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		m.SetEmptySummary()
 	}
 	matched, err := matcher.MatchMetric(m)
@@ -106,15 +106,15 @@ func testMetricNameMatch(t *testing.T, dataType pmetric.MetricDataType) {
 
 	// Metric with one data point - match.
 	switch dataType {
-	case pmetric.MetricDataTypeGauge:
+	case pmetric.MetricTypeGauge:
 		m.Gauge().DataPoints().AppendEmpty()
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		m.Sum().DataPoints().AppendEmpty()
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		m.Histogram().DataPoints().AppendEmpty()
-	case pmetric.MetricDataTypeExponentialHistogram:
+	case pmetric.MetricTypeExponentialHistogram:
 		m.ExponentialHistogram().DataPoints().AppendEmpty()
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		m.Summary().DataPoints().AppendEmpty()
 	}
 	matched, err = matcher.MatchMetric(m)

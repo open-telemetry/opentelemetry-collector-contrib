@@ -178,7 +178,7 @@ func NewGaugeMetrics(tgs []TestGauge) pmetric.Metrics {
 		g := m.SetEmptyGauge()
 		for _, dp := range tg.DataPoints {
 			d := g.DataPoints().AppendEmpty()
-			d.SetDoubleVal(dp.Value)
+			d.SetDoubleValue(dp.Value)
 			fillAttributeMap(d.Attributes(), dp.Attributes)
 		}
 	}

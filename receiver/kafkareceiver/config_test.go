@@ -21,81 +21,100 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.Equal(t, 2, len(cfg.Receivers))
 
-	r1 := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
-	r2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "logs")].(*Config)
-	assert.Equal(t, &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		Topic:            "spans",
-		Encoding:         "otlp_proto",
-		Brokers:          []string{"foo:123", "bar:456"},
-		ClientID:         "otel-collector",
-		GroupID:          "otel-collector",
-		Authentication: kafkaexporter.Authentication{
-			TLS: &configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
-					CAFile:   "ca.pem",
-					CertFile: "cert.pem",
-					KeyFile:  "key.pem",
+	tests := []struct {
+		id          config.ComponentID
+		expected    config.Receiver
+		expectedErr error
+	}{
+		{
+			id: config.NewComponentIDWithName(typeStr, ""),
+			expected: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				Topic:            "spans",
+				Encoding:         "otlp_proto",
+				Brokers:          []string{"foo:123", "bar:456"},
+				ClientID:         "otel-collector",
+				GroupID:          "otel-collector",
+				Authentication: kafkaexporter.Authentication{
+					TLS: &configtls.TLSClientSetting{
+						TLSSetting: configtls.TLSSetting{
+							CAFile:   "ca.pem",
+							CertFile: "cert.pem",
+							KeyFile:  "key.pem",
+						},
+					},
+				},
+				Metadata: kafkaexporter.Metadata{
+					Full: true,
+					Retry: kafkaexporter.MetadataRetry{
+						Max:     10,
+						Backoff: time.Second * 5,
+					},
+				},
+				AutoCommit: AutoCommit{
+					Enable:   true,
+					Interval: 1 * time.Second,
 				},
 			},
 		},
-		Metadata: kafkaexporter.Metadata{
-			Full: true,
-			Retry: kafkaexporter.MetadataRetry{
-				Max:     10,
-				Backoff: time.Second * 5,
-			},
-		},
-		AutoCommit: AutoCommit{
-			Enable:   true,
-			Interval: 1 * time.Second,
-		},
-	}, r1)
+		{
 
-	assert.Equal(t, &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "logs")),
-		Topic:            "logs",
-		Encoding:         "direct",
-		Brokers:          []string{"coffee:123", "foobar:456"},
-		ClientID:         "otel-collector",
-		GroupID:          "otel-collector",
-		Authentication: kafkaexporter.Authentication{
-			TLS: &configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
-					CAFile:   "ca.pem",
-					CertFile: "cert.pem",
-					KeyFile:  "key.pem",
+			id: config.NewComponentIDWithName(typeStr, "logs"),
+			expected: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				Topic:            "logs",
+				Encoding:         "direct",
+				Brokers:          []string{"coffee:123", "foobar:456"},
+				ClientID:         "otel-collector",
+				GroupID:          "otel-collector",
+				Authentication: kafkaexporter.Authentication{
+					TLS: &configtls.TLSClientSetting{
+						TLSSetting: configtls.TLSSetting{
+							CAFile:   "ca.pem",
+							CertFile: "cert.pem",
+							KeyFile:  "key.pem",
+						},
+					},
+				},
+				Metadata: kafkaexporter.Metadata{
+					Full: true,
+					Retry: kafkaexporter.MetadataRetry{
+						Max:     10,
+						Backoff: time.Second * 5,
+					},
+				},
+				AutoCommit: AutoCommit{
+					Enable:   true,
+					Interval: 1 * time.Second,
 				},
 			},
 		},
-		Metadata: kafkaexporter.Metadata{
-			Full: true,
-			Retry: kafkaexporter.MetadataRetry{
-				Max:     10,
-				Backoff: time.Second * 5,
-			},
-		},
-		AutoCommit: AutoCommit{
-			Enable:   true,
-			Interval: 1 * time.Second,
-		},
-	}, r2)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
