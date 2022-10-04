@@ -1,4 +1,4 @@
-package k8sobjectreceiver
+package k8sobjectreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
 
 import (
 	"context"
