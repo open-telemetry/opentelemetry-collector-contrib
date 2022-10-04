@@ -228,7 +228,7 @@ func TestValue_FromAttribute(t *testing.T) {
 			want: nilValue,
 		},
 		"string": {
-			in:   pcommon.NewValueString("test"),
+			in:   pcommon.NewValueStr("test"),
 			want: StringValue("test"),
 		},
 		"int": {

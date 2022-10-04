@@ -91,7 +91,7 @@ func TestSerializeBody(t *testing.T) {
 			nil,
 		},
 		{
-			pcommon.NewValueString("a"),
+			pcommon.NewValueStr("a"),
 			[]byte(`"a"`),
 		},
 		{

@@ -234,7 +234,7 @@ func TestConvertToValueEmpty(t *testing.T) {
 func TestConvertToValueString(t *testing.T) {
 	value := pcommon.NewValueEmpty()
 	assert.NoError(t, convertToValue(zap.NewNop(), "foo", value))
-	assert.Equal(t, pcommon.NewValueString("foo"), value)
+	assert.Equal(t, pcommon.NewValueStr("foo"), value)
 }
 
 func TestConvertToValueBool(t *testing.T) {

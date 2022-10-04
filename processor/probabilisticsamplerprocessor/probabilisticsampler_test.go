@@ -264,7 +264,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pcommon.NewValueString("1")),
+				pcommon.NewValueStr("1")),
 			sampled: true,
 		},
 		{
@@ -295,7 +295,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pcommon.NewValueString("0")),
+				pcommon.NewValueStr("0")),
 		},
 		{
 			name: "defer_sample_expect_not_sampled",
@@ -395,22 +395,22 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 		},
 		{
 			name: "sampling_priority_string_zero",
-			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueString("0.0")),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueStr("0.0")),
 			want: doNotSampleSpan,
 		},
 		{
 			name: "sampling_priority_string_gt_zero",
-			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueString("0.5")),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueStr("0.5")),
 			want: mustSampleSpan,
 		},
 		{
 			name: "sampling_priority_string_lt_zero",
-			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueString("-0.5")),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueStr("-0.5")),
 			want: deferDecision,
 		},
 		{
 			name: "sampling_priority_string_NaN",
-			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueString("NaN")),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueStr("NaN")),
 			want: deferDecision,
 		},
 	}
