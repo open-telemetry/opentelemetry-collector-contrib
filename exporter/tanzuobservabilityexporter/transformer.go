@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"golang.org/x/exp/slices"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
@@ -43,6 +44,8 @@ var (
 	errInvalidSpanID  = errors.New("SpanID is invalid")
 	errInvalidTraceID = errors.New("TraceID is invalid")
 )
+
+var appResAttrsKeys = []string{"application", "service.name", "shard", "cluster"}
 
 type span struct {
 	Name           string
@@ -209,6 +212,20 @@ func attributesToTags(attributes ...pcommon.Map) map[string]string {
 		att.Range(func(k string, v pcommon.Value) bool {
 			tags[k] = v.AsString()
 			return true
+		})
+	}
+	return tags
+}
+
+func appAttributesToTags(attributes ...pcommon.Map) map[string]string {
+	tags := map[string]string{}
+	for _, att := range attributes {
+		att.Range(func(k string, v pcommon.Value) bool {
+			if slices.Contains(appResAttrsKeys, k) {
+				tags[k] = v.AsString()
+				return true
+			}
+			return false
 		})
 	}
 	return tags

@@ -118,6 +118,8 @@ func (c *metricsConsumer) Consume(ctx context.Context, md pmetric.Metrics) error
 				resAttrsMap := make(map[string]string)
 				if c.config.IncludeResourceAttrs {
 					resAttrsMap = attributesToTags(resAttrs)
+				} else if !c.config.ExcludeAppTags {
+					resAttrsMap = appAttributesToTags(resAttrs)
 				}
 				mi := metricInfo{Metric: m, Source: source, SourceKey: sourceKey, ResourceAttrs: resAttrsMap}
 				select {
