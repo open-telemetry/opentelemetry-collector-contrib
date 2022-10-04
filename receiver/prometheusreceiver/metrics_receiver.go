@@ -112,7 +112,7 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 
 func (r *pReceiver) startTargetAllocator(allocConf *targetAllocator, baseCfg *config.Config) error {
 	r.settings.Logger.Info("Starting target allocator discovery")
-	// immediately sync jobs and not wait for the first tick
+	// immediately sync jobs, not waiting for the first tick
 	savedHash, err := r.syncTargetAllocator(uint64(0), allocConf, baseCfg)
 	if err != nil {
 		return err
