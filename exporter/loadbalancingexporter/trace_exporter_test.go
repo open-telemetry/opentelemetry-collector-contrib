@@ -35,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 	"go.opentelemetry.io/collector/service/servicetest"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
@@ -345,14 +346,11 @@ func TestBatchWithTwoTraces(t *testing.T) {
 
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
 
-	first := simpleTraces()
-	second := simpleTraceWithID(pcommon.TraceID([16]byte{2, 3, 4, 5}))
-	batch := ptrace.NewTraces()
-	first.ResourceSpans().MoveAndAppendTo(batch.ResourceSpans())
-	second.ResourceSpans().MoveAndAppendTo(batch.ResourceSpans())
+	td := simpleTraces()
+	appendSimpleTraceWithID(td.ResourceSpans().AppendEmpty(), [16]byte{2, 3, 4, 5})
 
 	// test
-	err = p.ConsumeTraces(context.Background(), batch)
+	err = p.ConsumeTraces(context.Background(), td)
 
 	// verify
 	assert.NoError(t, err)
@@ -549,51 +547,40 @@ func randomTraces() ptrace.Traces {
 	v2 := uint8(rand.Intn(256))
 	v3 := uint8(rand.Intn(256))
 	v4 := uint8(rand.Intn(256))
-	return simpleTraceWithID(pcommon.TraceID([16]byte{v1, v2, v3, v4}))
+	traces := ptrace.NewTraces()
+	appendSimpleTraceWithID(traces.ResourceSpans().AppendEmpty(), [16]byte{v1, v2, v3, v4})
+	return traces
 }
 
 func simpleTraces() ptrace.Traces {
-	return simpleTraceWithID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
+	traces := ptrace.NewTraces()
+	appendSimpleTraceWithID(traces.ResourceSpans().AppendEmpty(), [16]byte{1, 2, 3, 4})
+	return traces
 }
 
 func simpleTracesWithServiceName() ptrace.Traces {
-	return simpleTraceWithServiceName(pcommon.TraceID([16]byte{1, 2, 3, 4}))
-}
-
-func twoServicesWithSameTraceID() ptrace.Traces {
-	return servicesWithSameTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
-}
-
-func simpleTraceWithID(id pcommon.TraceID) ptrace.Traces {
-	traces := ptrace.NewTraces()
-	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(id)
-	return traces
-}
-
-func servicesWithSameTraceID(id pcommon.TraceID) ptrace.Traces {
-	traces := ptrace.NewTraces()
-	traces.ResourceSpans().EnsureCapacity(2)
-	traces.ResourceSpans().AppendEmpty()
-	traces.ResourceSpans().AppendEmpty()
-	fillResource(traces.ResourceSpans().At(0).Resource(), "ad-service-1")
-	fillResource(traces.ResourceSpans().At(1).Resource(), "get-recommendations-7")
-	traces.ResourceSpans().At(0).ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(id)
-	traces.ResourceSpans().At(1).ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(id)
-	return traces
-}
-
-func simpleTraceWithServiceName(id pcommon.TraceID) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	traces.ResourceSpans().EnsureCapacity(1)
 	rspans := traces.ResourceSpans().AppendEmpty()
-	fillResource(rspans.Resource(), "service-name-1")
-	rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(id)
+	rspans.Resource().Attributes().PutString(conventions.AttributeServiceName, "service-name-1")
+	rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 4})
 	return traces
 }
 
-func fillResource(resource pcommon.Resource, svc string) {
-	attrs := resource.Attributes()
-	attrs.PutString("service.name", svc)
+func twoServicesWithSameTraceID() ptrace.Traces {
+	traces := ptrace.NewTraces()
+	traces.ResourceSpans().EnsureCapacity(2)
+	rs1 := traces.ResourceSpans().AppendEmpty()
+	rs1.Resource().Attributes().PutString(conventions.AttributeServiceName, "ad-service-1")
+	appendSimpleTraceWithID(rs1, [16]byte{1, 2, 3, 4})
+	rs2 := traces.ResourceSpans().AppendEmpty()
+	rs2.Resource().Attributes().PutString(conventions.AttributeServiceName, "get-recommendations-7")
+	appendSimpleTraceWithID(rs2, [16]byte{1, 2, 3, 4})
+	return traces
+}
+
+func appendSimpleTraceWithID(dest ptrace.ResourceSpans, id pcommon.TraceID) {
+	dest.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(id)
 }
 
 func simpleConfig() *Config {

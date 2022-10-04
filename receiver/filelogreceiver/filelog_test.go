@@ -36,7 +36,10 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -257,17 +260,22 @@ func testdataConfigYaml() *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators: adapter.OperatorConfigs{
-				map[string]interface{}{
-					"type":  "regex_parser",
-					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
-					"severity": map[string]interface{}{
-						"parse_from": "attributes.sev",
-					},
-					"timestamp": map[string]interface{}{
-						"layout":     "%Y-%m-%d",
-						"parse_from": "attributes.time",
-					},
+			Operators: []operator.Config{
+				{
+					Builder: func() *regex.Config {
+						cfg := regex.NewConfig()
+						cfg.Regex = "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$"
+						sevField := entry.NewAttributeField("sev")
+						sevCfg := helper.NewSeverityConfig()
+						sevCfg.ParseFrom = &sevField
+						cfg.SeverityConfig = &sevCfg
+						timeField := entry.NewAttributeField("time")
+						timeCfg := helper.NewTimeParser()
+						timeCfg.Layout = "%Y-%m-%d"
+						timeCfg.ParseFrom = &timeField
+						cfg.TimeParser = &timeCfg
+						return cfg
+					}(),
 				},
 			},
 			Converter: adapter.ConverterConfig{
@@ -288,14 +296,18 @@ func rotationTestConfig(tempDir string) *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators: adapter.OperatorConfigs{
-				map[string]interface{}{
-					"type":  "regex_parser",
-					"regex": "^(?P<ts>\\d{4}-\\d{2}-\\d{2}) (?P<msg>[^\n]+)",
-					"timestamp": map[interface{}]interface{}{
-						"layout":     "%Y-%m-%d",
-						"parse_from": "body.ts",
-					},
+			Operators: []operator.Config{
+				{
+					Builder: func() *regex.Config {
+						cfg := regex.NewConfig()
+						cfg.Regex = "^(?P<ts>\\d{4}-\\d{2}-\\d{2}) (?P<msg>[^\n]+)"
+						timeField := entry.NewAttributeField("ts")
+						timeCfg := helper.NewTimeParser()
+						timeCfg.Layout = "%Y-%m-%d"
+						timeCfg.ParseFrom = &timeField
+						cfg.TimeParser = &timeCfg
+						return cfg
+					}(),
 				},
 			},
 			Converter: adapter.ConverterConfig{},

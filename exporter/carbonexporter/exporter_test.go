@@ -27,20 +27,16 @@ import (
 	"testing"
 	"time"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 	"go.uber.org/atomic"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil/ocmetricstestutil"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 func TestNew(t *testing.T) {
@@ -87,16 +83,14 @@ func TestNew(t *testing.T) {
 
 func TestConsumeMetricsData(t *testing.T) {
 	t.Skip("skipping flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/396")
-	smallBatch := internaldata.OCToMetrics(nil, nil, []*metricspb.Metric{
-		ocmetricstestutil.Gauge(
-			"test_gauge",
-			[]string{"k0", "k1"},
-			ocmetricstestutil.Timeseries(
-				time.Now(),
-				[]string{"v0", "v1"},
-				ocmetricstestutil.Double(time.Now(), 123))),
-	})
-
+	smallBatch := pmetric.NewMetrics()
+	m := smallBatch.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetName("test_gauge")
+	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.Attributes().PutString("k0", "v0")
+	dp.Attributes().PutString("k1", "v1")
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	dp.SetDoubleValue(123)
 	largeBatch := generateLargeBatch()
 
 	tests := []struct {
@@ -284,29 +278,21 @@ func Test_connPool_Concurrency(t *testing.T) {
 }
 
 func generateLargeBatch() pmetric.Metrics {
-	var metrics []*metricspb.Metric
 	ts := time.Now()
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutString(conventions.AttributeServiceName, "test_carbon")
+	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
+
 	for i := 0; i < 65000; i++ {
-		metrics = append(metrics,
-			ocmetricstestutil.Gauge(
-				"test_"+strconv.Itoa(i),
-				[]string{"k0", "k1"},
-				ocmetricstestutil.Timeseries(
-					time.Now(),
-					[]string{"v0", "v1"},
-					&metricspb.Point{
-						Timestamp: timestamppb.New(ts),
-						Value:     &metricspb.Point_Int64Value{Int64Value: int64(i)},
-					},
-				),
-			),
-		)
+		m := ms.AppendEmpty()
+		m.SetName("test_" + strconv.Itoa(i))
+		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp.Attributes().PutString("k0", "v0")
+		dp.Attributes().PutString("k1", "v1")
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+		dp.SetIntValue(int64(i))
 	}
 
-	return internaldata.OCToMetrics(
-		&commonpb.Node{
-			ServiceInfo: &commonpb.ServiceInfo{Name: "test_carbon"},
-		},
-		&resourcepb.Resource{Type: "test"},
-		metrics)
+	return metrics
 }

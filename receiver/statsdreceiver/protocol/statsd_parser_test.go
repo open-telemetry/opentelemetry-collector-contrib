@@ -988,7 +988,7 @@ func TestStatsDParser_Mappings(t *testing.T) {
 				ilms := ilm.At(i).Metrics()
 				for j := 0; j < ilms.Len(); j++ {
 					m := ilms.At(j)
-					typeNames[m.DataType().String()] = m.Name()
+					typeNames[m.Type().String()] = m.Name()
 				}
 			}
 

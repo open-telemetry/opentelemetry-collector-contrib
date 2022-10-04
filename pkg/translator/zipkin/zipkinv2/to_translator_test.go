@@ -178,5 +178,5 @@ func TestV2SpanWithoutTimestampGetsTag(t *testing.T) {
 
 	wasAbsent, mapContainedKey := gs.Attributes().Get(zipkin.StartTimeAbsent)
 	assert.True(t, mapContainedKey)
-	assert.True(t, wasAbsent.BoolVal())
+	assert.True(t, wasAbsent.Bool())
 }

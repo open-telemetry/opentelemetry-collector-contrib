@@ -148,7 +148,7 @@ func (se *sapmExporter) retrieveAccessToken(md ptrace.ResourceSpans) string {
 
 	attrs := md.Resource().Attributes()
 	if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok {
-		return accessToken.StringVal()
+		return accessToken.Str()
 	}
 	return ""
 }

@@ -226,7 +226,7 @@ func (exporter *logzioExporter) export(ctx context.Context, url string, request 
 
 	defer func() {
 		// Discard any remaining response body when we are done reading.
-		io.CopyN(io.Discard, resp.Body, maxHTTPResponseReadBytes) // nolint:errcheck
+		_, _ = io.CopyN(io.Discard, resp.Body, maxHTTPResponseReadBytes)
 		resp.Body.Close()
 	}()
 	exporter.logger.Debug(fmt.Sprintf("Response status code: %d", resp.StatusCode))

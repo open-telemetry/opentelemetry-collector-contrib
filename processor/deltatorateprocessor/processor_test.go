@@ -164,17 +164,17 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 
 				require.Equal(t, eM.Name(), aM.Name())
 
-				if eM.DataType() == pmetric.MetricDataTypeGauge {
+				if eM.Type() == pmetric.MetricTypeGauge {
 					eDataPoints := eM.Gauge().DataPoints()
 					aDataPoints := aM.Gauge().DataPoints()
 					require.Equal(t, eDataPoints.Len(), aDataPoints.Len())
 
 					for j := 0; j < eDataPoints.Len(); j++ {
-						require.Equal(t, eDataPoints.At(j).DoubleVal(), aDataPoints.At(j).DoubleVal())
+						require.Equal(t, eDataPoints.At(j).DoubleValue(), aDataPoints.At(j).DoubleValue())
 					}
 				}
 
-				if eM.DataType() == pmetric.MetricDataTypeSum {
+				if eM.Type() == pmetric.MetricTypeSum {
 					eDataPoints := eM.Sum().DataPoints()
 					aDataPoints := aM.Sum().DataPoints()
 
@@ -182,7 +182,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 					require.Equal(t, eM.Sum().AggregationTemporality(), aM.Sum().AggregationTemporality())
 
 					for j := 0; j < eDataPoints.Len(); j++ {
-						require.Equal(t, eDataPoints.At(j).DoubleVal(), aDataPoints.At(j).DoubleVal())
+						require.Equal(t, eDataPoints.At(j).DoubleValue(), aDataPoints.At(j).DoubleValue())
 					}
 				}
 
@@ -217,7 +217,7 @@ func generateSumMetrics(tm testMetric) pmetric.Metrics {
 				dp := m.Sum().DataPoints().AppendEmpty()
 				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(delta * time.Second)))
-				dp.SetDoubleVal(value)
+				dp.SetDoubleValue(value)
 			}
 		}
 		if i < len(tm.metricIntValues) {
@@ -225,7 +225,7 @@ func generateSumMetrics(tm testMetric) pmetric.Metrics {
 				dp := m.Sum().DataPoints().AppendEmpty()
 				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(delta * time.Second)))
-				dp.SetIntVal(value)
+				dp.SetIntValue(value)
 			}
 		}
 	}
@@ -247,14 +247,14 @@ func generateGaugeMetrics(tm testMetric) pmetric.Metrics {
 			for _, value := range tm.metricValues[i] {
 				dp := dps.AppendEmpty()
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(120 * time.Second)))
-				dp.SetDoubleVal(value)
+				dp.SetDoubleValue(value)
 			}
 		}
 		if i < len(tm.metricIntValues) {
 			for _, value := range tm.metricIntValues[i] {
 				dp := dps.AppendEmpty()
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(120 * time.Second)))
-				dp.SetIntVal(value)
+				dp.SetIntValue(value)
 			}
 		}
 	}

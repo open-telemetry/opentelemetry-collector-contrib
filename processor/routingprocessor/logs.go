@@ -25,7 +25,8 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqllogs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
 
 var _ component.LogsProcessor = (*logProcessor)(nil)
@@ -35,21 +36,22 @@ type logProcessor struct {
 	config *Config
 
 	extractor extractor
-	router    router[component.LogsExporter]
+	router    router[component.LogsExporter, ottllogs.TransformContext]
 }
 
-func newLogProcessor(logger *zap.Logger, config config.Processor) *logProcessor {
+func newLogProcessor(settings component.TelemetrySettings, config config.Processor) *logProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
 	return &logProcessor{
-		logger: logger,
+		logger: settings.Logger,
 		config: cfg,
-		router: newRouter[component.LogsExporter](
+		router: newRouter[component.LogsExporter, ottllogs.TransformContext](
 			cfg.Table,
 			cfg.DefaultExporters,
-			logger,
+			settings,
+			ottllogs.NewParser(common.Functions[ottllogs.TransformContext](), settings),
 		),
-		extractor: newExtractor(cfg.FromAttribute, logger),
+		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
 }
 
@@ -78,7 +80,7 @@ func (p *logProcessor) ConsumeLogs(ctx context.Context, l plog.Logs) error {
 
 type logsGroup struct {
 	exporters []component.LogsExporter
-	resLogs   plog.ResourceLogsSlice
+	logs      plog.Logs
 }
 
 func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
@@ -91,7 +93,7 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 
 	for i := 0; i < l.ResourceLogs().Len(); i++ {
 		rlogs := l.ResourceLogs().At(i)
-		ltx := tqllogs.NewTransformContext(
+		ltx := ottllogs.NewTransformContext(
 			plog.LogRecord{},
 			pcommon.InstrumentationScope{},
 			rlogs.Resource(),
@@ -113,12 +115,8 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 		}
 	}
 	for _, g := range groups {
-		l := plog.NewLogs()
-		l.ResourceLogs().EnsureCapacity(g.resLogs.Len())
-		g.resLogs.MoveAndAppendTo(l.ResourceLogs())
-
 		for _, e := range g.exporters {
-			errs = multierr.Append(errs, e.ConsumeLogs(ctx, l))
+			errs = multierr.Append(errs, e.ConsumeLogs(ctx, g.logs))
 		}
 	}
 	return errs
@@ -132,10 +130,10 @@ func (p *logProcessor) group(
 ) {
 	group, ok := groups[key]
 	if !ok {
-		group.resLogs = plog.NewResourceLogsSlice()
+		group.logs = plog.NewLogs()
 		group.exporters = exporters
 	}
-	spans.CopyTo(group.resLogs.AppendEmpty())
+	spans.CopyTo(group.logs.ResourceLogs().AppendEmpty())
 	groups[key] = group
 }
 

@@ -112,7 +112,7 @@ func (tsm *timeseriesMap) get(metric pmetric.Metric, kv pcommon.Map) (*timeserie
 		name:       name,
 		attributes: getAttributesSignature(kv),
 	}
-	if metric.DataType() == pmetric.MetricDataTypeHistogram {
+	if metric.Type() == pmetric.MetricTypeHistogram {
 		// There are 2 types of Histograms whose aggregation temporality needs distinguishing:
 		// * CumulativeHistogram
 		// * GaugeHistogram
@@ -133,7 +133,7 @@ func (tsm *timeseriesMap) get(metric pmetric.Metric, kv pcommon.Map) (*timeserie
 func getAttributesSignature(kv pcommon.Map) string {
 	labelValues := make([]string, 0, kv.Len())
 	kv.Sort().Range(func(_ string, attrValue pcommon.Value) bool {
-		value := attrValue.StringVal()
+		value := attrValue.Str()
 		if value != "" {
 			labelValues = append(labelValues, value)
 		}
@@ -268,7 +268,7 @@ func (ma *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 	if !found {
 		return errors.New("adjusting metrics without instance")
 	}
-	tsm := ma.jobsMap.get(job.StringVal(), instance.StringVal())
+	tsm := ma.jobsMap.get(job.Str(), instance.Str())
 
 	// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
 	// nothing else can modify the data used for adjustment.
@@ -280,17 +280,17 @@ func (ma *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
 				metric := ilm.Metrics().At(k)
-				switch dataType := metric.DataType(); dataType {
-				case pmetric.MetricDataTypeGauge:
+				switch dataType := metric.Type(); dataType {
+				case pmetric.MetricTypeGauge:
 					// gauges don't need to be adjusted so no additional processing is necessary
 
-				case pmetric.MetricDataTypeHistogram:
+				case pmetric.MetricTypeHistogram:
 					adjustMetricHistogram(tsm, metric)
 
-				case pmetric.MetricDataTypeSummary:
+				case pmetric.MetricTypeSummary:
 					adjustMetricSummary(tsm, metric)
 
-				case pmetric.MetricDataTypeSum:
+				case pmetric.MetricTypeSum:
 					adjustMetricSum(tsm, metric)
 
 				default:
@@ -351,7 +351,7 @@ func adjustMetricSum(tsm *timeseriesMap, current pmetric.Metric) {
 		if !found {
 			// initialize everything.
 			tsi.number.startTime = currentSum.StartTimestamp()
-			tsi.number.previousValue = currentSum.DoubleVal()
+			tsi.number.previousValue = currentSum.DoubleValue()
 			continue
 		}
 
@@ -361,15 +361,15 @@ func adjustMetricSum(tsm *timeseriesMap, current pmetric.Metric) {
 			continue
 		}
 
-		if currentSum.DoubleVal() < tsi.number.previousValue {
+		if currentSum.DoubleValue() < tsi.number.previousValue {
 			// reset re-initialize everything.
 			tsi.number.startTime = currentSum.StartTimestamp()
-			tsi.number.previousValue = currentSum.DoubleVal()
+			tsi.number.previousValue = currentSum.DoubleValue()
 			continue
 		}
 
 		// Update only previous values.
-		tsi.number.previousValue = currentSum.DoubleVal()
+		tsi.number.previousValue = currentSum.DoubleValue()
 		currentSum.SetStartTimestamp(tsi.number.startTime)
 	}
 }

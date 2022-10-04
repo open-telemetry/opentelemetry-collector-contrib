@@ -109,7 +109,7 @@ func extractBody(t *testing.T, req *http.Request) string {
 func exampleLog() []plog.LogRecord {
 	buffer := make([]plog.LogRecord, 1)
 	buffer[0] = plog.NewLogRecord()
-	buffer[0].Body().SetStringVal("Example log")
+	buffer[0].Body().SetStr("Example log")
 
 	return buffer
 }
@@ -117,11 +117,11 @@ func exampleLog() []plog.LogRecord {
 func exampleTwoLogs() []plog.LogRecord {
 	buffer := make([]plog.LogRecord, 2)
 	buffer[0] = plog.NewLogRecord()
-	buffer[0].Body().SetStringVal("Example log")
+	buffer[0].Body().SetStr("Example log")
 	buffer[0].Attributes().PutString("key1", "value1")
 	buffer[0].Attributes().PutString("key2", "value2")
 	buffer[1] = plog.NewLogRecord()
-	buffer[1].Body().SetStringVal("Another example log")
+	buffer[1].Body().SetStr("Another example log")
 	buffer[1].Attributes().PutString("key1", "value1")
 	buffer[1].Attributes().PutString("key2", "value2")
 
@@ -131,11 +131,11 @@ func exampleTwoLogs() []plog.LogRecord {
 func exampleTwoDifferentLogs() []plog.LogRecord {
 	buffer := make([]plog.LogRecord, 2)
 	buffer[0] = plog.NewLogRecord()
-	buffer[0].Body().SetStringVal("Example log")
+	buffer[0].Body().SetStr("Example log")
 	buffer[0].Attributes().PutString("key1", "value1")
 	buffer[0].Attributes().PutString("key2", "value2")
 	buffer[1] = plog.NewLogRecord()
-	buffer[1].Body().SetStringVal("Another example log")
+	buffer[1].Body().SetStr("Another example log")
 	buffer[1].Attributes().PutString("key3", "value3")
 	buffer[1].Attributes().PutString("key4", "value4")
 
@@ -146,7 +146,7 @@ func exampleMultitypeLogs() []plog.LogRecord {
 	buffer := make([]plog.LogRecord, 2)
 
 	attVal := pcommon.NewValueMap()
-	attMap := attVal.MapVal()
+	attMap := attVal.Map()
 	attMap.PutString("lk1", "lv1")
 	attMap.PutInt("lk2", 13)
 
@@ -159,11 +159,11 @@ func exampleMultitypeLogs() []plog.LogRecord {
 	buffer[1] = plog.NewLogRecord()
 
 	attVal = pcommon.NewValueSlice()
-	attArr := attVal.SliceVal()
+	attArr := attVal.Slice()
 	strVal := pcommon.NewValueEmpty()
-	strVal.SetStringVal("lv2")
+	strVal.SetStr("lv2")
 	intVal := pcommon.NewValueEmpty()
-	intVal.SetIntVal(13)
+	intVal.SetInt(13)
 
 	strTgt := attArr.AppendEmpty()
 	strVal.CopyTo(strTgt)

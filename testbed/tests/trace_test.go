@@ -459,7 +459,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 				require.Equal(t, span.Attributes().Len(), 1)
 				attrVal, ok := span.Attributes().Get("new_attr")
 				assert.True(t, ok)
-				assert.EqualValues(t, "string value", attrVal.StringVal())
+				assert.EqualValues(t, "string value", attrVal.Str())
 			}
 
 			verifySingleSpan(t, tc, nodeToInclude, spanToInclude, verifySpan)

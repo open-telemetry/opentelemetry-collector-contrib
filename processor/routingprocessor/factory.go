@@ -50,17 +50,17 @@ func createDefaultConfig() config.Processor {
 
 func createTracesProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 	warnIfNotLastInPipeline(nextConsumer, params.Logger)
-	return newTracesProcessor(params.Logger, cfg), nil
+	return newTracesProcessor(params.TelemetrySettings, cfg), nil
 }
 
 func createMetricsProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
 	warnIfNotLastInPipeline(nextConsumer, params.Logger)
-	return newMetricProcessor(params.Logger, cfg), nil
+	return newMetricProcessor(params.TelemetrySettings, cfg), nil
 }
 
 func createLogsProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 	warnIfNotLastInPipeline(nextConsumer, params.Logger)
-	return newLogProcessor(params.Logger, cfg), nil
+	return newLogProcessor(params.TelemetrySettings, cfg), nil
 }
 
 func warnIfNotLastInPipeline(nextConsumer interface{}, logger *zap.Logger) {

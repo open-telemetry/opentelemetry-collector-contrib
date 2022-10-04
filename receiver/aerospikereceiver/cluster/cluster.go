@@ -14,7 +14,7 @@
 package cluster // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/cluster"
 
 import (
-	as "github.com/aerospike/aerospike-client-go/v5"
+	as "github.com/aerospike/aerospike-client-go/v6"
 )
 
 // asclient interface is for mocking

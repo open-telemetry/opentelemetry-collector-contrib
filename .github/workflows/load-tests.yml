@@ -38,6 +38,8 @@ jobs:
             ~/go/pkg/mod
             ~/.cache/go-build
           key: loadtest-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: "10"
       - name: Install Dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -70,6 +72,8 @@ jobs:
         with:
           path: /opt/td-agent-bit
           key: fluentbit-cache-1.5.3
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: "10"
       - run: sudo ln -s /opt/td-agent-bit/bin/td-agent-bit /usr/local/bin/fluent-bit
       - name: Install fluentbit
         if: steps.fluentbit-cache.outputs.cache-hit != 'true'
@@ -89,6 +93,8 @@ jobs:
             ~/go/pkg/mod
             ~/.cache/go-build
           key: loadtest-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: "10"
       - name: Install Dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload

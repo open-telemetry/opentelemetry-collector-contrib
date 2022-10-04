@@ -68,7 +68,7 @@ func fillLogOne(log plog.LogRecord) {
 	attrs.PutDouble("instance_num", 1)
 
 	// nested body map
-	attMap := log.Body().SetEmptyMapVal()
+	attMap := log.Body().SetEmptyMap()
 	attMap.PutDouble("23", 45)
 	attMap.PutString("foo", "bar")
 	attMap.PutString("message", "hello there")
@@ -88,7 +88,7 @@ func fillLogTwo(log plog.LogRecord) {
 	attrs.PutDouble("number", 64)
 	attrs.PutBool("bool", true)
 	attrs.PutString("env", "dev")
-	log.Body().SetStringVal("something happened")
+	log.Body().SetStr("something happened")
 }
 func fillLogNoTimestamp(log plog.LogRecord) {
 	log.SetDroppedAttributesCount(1)
@@ -100,7 +100,7 @@ func fillLogNoTimestamp(log plog.LogRecord) {
 	attrs.PutDouble("number", 64)
 	attrs.PutBool("bool", true)
 	attrs.PutString("env", "dev")
-	log.Body().SetStringVal("something happened")
+	log.Body().SetStr("something happened")
 }
 
 func generateLogsOneEmptyTimestamp() plog.Logs {

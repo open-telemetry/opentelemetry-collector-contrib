@@ -4,13 +4,13 @@ go 1.18
 
 require (
 	github.com/docker/docker v20.10.18+incompatible
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.60.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.60.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.60.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.61.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.60.0
-	go.opentelemetry.io/collector/pdata v0.60.0
-	go.opentelemetry.io/collector/semconv v0.60.0
+	go.opentelemetry.io/collector v0.61.0
+	go.opentelemetry.io/collector/pdata v0.61.0
+	go.opentelemetry.io/collector/semconv v0.61.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 )
@@ -44,9 +44,9 @@ require (
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel v1.9.0 // indirect
-	go.opentelemetry.io/otel/metric v0.31.0 // indirect
-	go.opentelemetry.io/otel/trace v1.9.0 // indirect
+	go.opentelemetry.io/otel v1.10.0 // indirect
+	go.opentelemetry.io/otel/metric v0.32.1 // indirect
+	go.opentelemetry.io/otel/trace v1.10.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664 // indirect

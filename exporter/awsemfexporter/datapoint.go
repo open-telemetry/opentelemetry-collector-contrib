@@ -117,9 +117,9 @@ func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
 	var metricVal float64
 	switch metric.ValueType() {
 	case pmetric.NumberDataPointValueTypeDouble:
-		metricVal = metric.DoubleVal()
+		metricVal = metric.DoubleValue()
 	case pmetric.NumberDataPointValueTypeInt:
-		metricVal = float64(metric.IntVal())
+		metricVal = float64(metric.IntValue())
 	}
 
 	retained := true
@@ -227,15 +227,15 @@ func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Lo
 		metadata.logStream,
 	}
 
-	switch pmd.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch pmd.Type() {
+	case pmetric.MetricTypeGauge:
 		metric := pmd.Gauge()
 		dps = numberDataPointSlice{
 			metadata.instrumentationLibraryName,
 			adjusterMetadata,
 			metric.DataPoints(),
 		}
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		metric := pmd.Sum()
 		adjusterMetadata.adjustToDelta = metric.AggregationTemporality() == pmetric.MetricAggregationTemporalityCumulative
 		dps = numberDataPointSlice{
@@ -243,13 +243,13 @@ func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Lo
 			adjusterMetadata,
 			metric.DataPoints(),
 		}
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		metric := pmd.Histogram()
 		dps = histogramDataPointSlice{
 			metadata.instrumentationLibraryName,
 			metric.DataPoints(),
 		}
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		metric := pmd.Summary()
 		// For summaries coming from the prometheus receiver, the sum and count are cumulative, whereas for summaries
 		// coming from other sources, e.g. SDK, the sum and count are delta by being accumulated and reset periodically.
@@ -265,7 +265,7 @@ func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Lo
 		}
 	default:
 		logger.Warn("Unhandled metric data type.",
-			zap.String("DataType", pmd.DataType().String()),
+			zap.String("DataType", pmd.Type().String()),
 			zap.String("Name", pmd.Name()),
 			zap.String("Unit", pmd.Unit()),
 		)

@@ -527,11 +527,11 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	for _, id := range c.getIdentifiersFromAssoc(newPod) {
 		// compare initial scheduled timestamp for existing pod and new pod with same identifier
 		// and only replace old pod if scheduled time of new pod is newer or equal.
-		// This should fix the case where scheduler has assigned the same attribtues (like IP address)
+		// This should fix the case where scheduler has assigned the same attributes (like IP address)
 		// to a new pod but update event for the old pod came in later.
 		if p, ok := c.Pods[id]; ok {
 			if pod.Status.StartTime.Before(p.StartTime) {
-				return
+				continue
 			}
 		}
 		c.Pods[id] = newPod

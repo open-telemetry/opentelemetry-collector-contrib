@@ -20,7 +20,6 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -40,7 +39,7 @@ func Test_RawMarshaler(t *testing.T) {
 			name: "string",
 			logRecord: func() plog.LogRecord {
 				lr := plog.NewLogRecord()
-				lr.Body().SetStringVal("foo")
+				lr.Body().SetStr("foo")
 				return lr
 			},
 			errorExpected: false,
@@ -50,7 +49,7 @@ func Test_RawMarshaler(t *testing.T) {
 			name: "[]byte",
 			logRecord: func() plog.LogRecord {
 				lr := plog.NewLogRecord()
-				lr.Body().SetBytesVal(pcommon.NewImmutableByteSlice([]byte("foo")))
+				lr.Body().SetEmptyBytes().FromRaw([]byte("foo"))
 				return lr
 			},
 			errorExpected: false,
@@ -60,7 +59,7 @@ func Test_RawMarshaler(t *testing.T) {
 			name: "double",
 			logRecord: func() plog.LogRecord {
 				lr := plog.NewLogRecord()
-				lr.Body().SetDoubleVal(float64(1.64))
+				lr.Body().SetDouble(float64(1.64))
 				return lr
 			},
 			errorExpected: false,
@@ -70,7 +69,7 @@ func Test_RawMarshaler(t *testing.T) {
 			name: "int",
 			logRecord: func() plog.LogRecord {
 				lr := plog.NewLogRecord()
-				lr.Body().SetIntVal(int64(456))
+				lr.Body().SetInt(int64(456))
 				return lr
 			},
 			errorExpected: false,
@@ -90,7 +89,7 @@ func Test_RawMarshaler(t *testing.T) {
 			name: "bool",
 			logRecord: func() plog.LogRecord {
 				lr := plog.NewLogRecord()
-				lr.Body().SetBoolVal(false)
+				lr.Body().SetBool(false)
 				return lr
 			},
 			errorExpected: false,
@@ -100,10 +99,10 @@ func Test_RawMarshaler(t *testing.T) {
 			name: "slice",
 			logRecord: func() plog.LogRecord {
 				lr := plog.NewLogRecord()
-				slice := lr.Body().SetEmptySliceVal()
-				slice.AppendEmpty().SetStringVal("foo")
-				slice.AppendEmpty().SetStringVal("bar")
-				slice.AppendEmpty().SetBoolVal(false)
+				slice := lr.Body().SetEmptySlice()
+				slice.AppendEmpty().SetStr("foo")
+				slice.AppendEmpty().SetStr("bar")
+				slice.AppendEmpty().SetBool(false)
 				return lr
 			},
 			errorExpected: false,
@@ -113,7 +112,7 @@ func Test_RawMarshaler(t *testing.T) {
 			name: "map",
 			logRecord: func() plog.LogRecord {
 				lr := plog.NewLogRecord()
-				m := lr.Body().SetEmptyMapVal()
+				m := lr.Body().SetEmptyMap()
 				m.PutString("foo", "foo")
 				m.PutString("bar", "bar")
 				m.PutBool("foobar", false)

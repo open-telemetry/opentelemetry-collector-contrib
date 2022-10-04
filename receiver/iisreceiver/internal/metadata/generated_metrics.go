@@ -167,7 +167,7 @@ func (m *metricIisConnectionActive) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -218,7 +218,7 @@ func (m *metricIisConnectionAnonymous) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -269,7 +269,7 @@ func (m *metricIisConnectionAttemptCount) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -320,7 +320,7 @@ func (m *metricIisNetworkBlocked) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -372,7 +372,7 @@ func (m *metricIisNetworkFileCount) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("direction", directionAttributeValue)
 }
 
@@ -425,7 +425,7 @@ func (m *metricIisNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("direction", directionAttributeValue)
 }
 
@@ -478,7 +478,7 @@ func (m *metricIisRequestCount) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutString("request", requestAttributeValue)
 }
 
@@ -528,7 +528,7 @@ func (m *metricIisRequestQueueAgeMax) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -579,7 +579,7 @@ func (m *metricIisRequestQueueCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -630,7 +630,7 @@ func (m *metricIisRequestRejected) recordDataPoint(start pcommon.Timestamp, ts p
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -681,7 +681,7 @@ func (m *metricIisThreadActive) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -730,7 +730,7 @@ func (m *metricIisUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Ti
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -827,6 +827,20 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
+// WithIisApplicationPool sets provided value as "iis.application_pool" attribute for current resource.
+func WithIisApplicationPool(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().PutString("iis.application_pool", val)
+	}
+}
+
+// WithIisSite sets provided value as "iis.site" attribute for current resource.
+func WithIisSite(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().PutString("iis.site", val)
+	}
+}
+
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
@@ -834,10 +848,10 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {

@@ -658,22 +658,22 @@ func assertAttributesCopiedToPropertiesOrMeasurements(
 
 	attributeMap.Range(func(k string, v pcommon.Value) bool {
 		switch v.Type() {
-		case pcommon.ValueTypeString:
+		case pcommon.ValueTypeStr:
 			p, exists := properties[k]
 			assert.True(t, exists)
-			assert.Equal(t, v.StringVal(), p)
+			assert.Equal(t, v.Str(), p)
 		case pcommon.ValueTypeBool:
 			p, exists := properties[k]
 			assert.True(t, exists)
-			assert.Equal(t, strconv.FormatBool(v.BoolVal()), p)
+			assert.Equal(t, strconv.FormatBool(v.Bool()), p)
 		case pcommon.ValueTypeInt:
 			m, exists := measurements[k]
 			assert.True(t, exists)
-			assert.Equal(t, float64(v.IntVal()), m)
+			assert.Equal(t, float64(v.Int()), m)
 		case pcommon.ValueTypeDouble:
 			m, exists := measurements[k]
 			assert.True(t, exists)
-			assert.Equal(t, v.DoubleVal(), m)
+			assert.Equal(t, v.Double(), m)
 		}
 		return true
 	})

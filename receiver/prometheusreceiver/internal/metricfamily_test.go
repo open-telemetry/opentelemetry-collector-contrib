@@ -461,7 +461,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			},
 			want: func() pmetric.NumberDataPoint {
 				point := pmetric.NewNumberDataPoint()
-				point.SetDoubleVal(33.7)
+				point.SetDoubleValue(33.7)
 				point.SetTimestamp(pcommon.Timestamp(13 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(pcommon.Timestamp(13 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
@@ -480,7 +480,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			},
 			want: func() pmetric.NumberDataPoint {
 				point := pmetric.NewNumberDataPoint()
-				point.SetDoubleVal(99.9)
+				point.SetDoubleValue(99.9)
 				point.SetTimestamp(pcommon.Timestamp(28 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(pcommon.Timestamp(28 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()

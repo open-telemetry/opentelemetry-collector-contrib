@@ -30,7 +30,7 @@ func (ts *AttributeTenantSource) GetTenant(_ context.Context, logs plog.Logs) (s
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		rl := logs.ResourceLogs().At(i)
 		if v, found := rl.Resource().Attributes().Get(ts.Value); found {
-			return v.StringVal(), nil
+			return v.Str(), nil
 		}
 	}
 	return "", nil

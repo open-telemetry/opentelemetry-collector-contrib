@@ -142,7 +142,7 @@ func (receiver *pubsubReceiver) handleLogStrings(ctx context.Context, message *p
 	ills := rls.ScopeLogs().AppendEmpty()
 	lr := ills.LogRecords().AppendEmpty()
 
-	lr.Body().SetStringVal(data)
+	lr.Body().SetStr(data)
 	lr.SetTimestamp(pcommon.NewTimestampFromTime(timestamp.AsTime()))
 	return receiver.logsConsumer.ConsumeLogs(ctx, out)
 }

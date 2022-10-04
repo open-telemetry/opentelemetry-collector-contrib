@@ -54,25 +54,25 @@ func (stma *startTimeMetricAdjuster) AdjustMetrics(metrics pmetric.Metrics) erro
 			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
 				metric := ilm.Metrics().At(k)
-				switch metric.DataType() {
-				case pmetric.MetricDataTypeGauge:
+				switch metric.Type() {
+				case pmetric.MetricTypeGauge:
 					continue
 
-				case pmetric.MetricDataTypeSum:
+				case pmetric.MetricTypeSum:
 					dataPoints := metric.Sum().DataPoints()
 					for l := 0; l < dataPoints.Len(); l++ {
 						dp := dataPoints.At(l)
 						dp.SetStartTimestamp(startTimeTs)
 					}
 
-				case pmetric.MetricDataTypeSummary:
+				case pmetric.MetricTypeSummary:
 					dataPoints := metric.Summary().DataPoints()
 					for l := 0; l < dataPoints.Len(); l++ {
 						dp := dataPoints.At(l)
 						dp.SetStartTimestamp(startTimeTs)
 					}
 
-				case pmetric.MetricDataTypeHistogram:
+				case pmetric.MetricTypeHistogram:
 					dataPoints := metric.Histogram().DataPoints()
 					for l := 0; l < dataPoints.Len(); l++ {
 						dp := dataPoints.At(l)
@@ -80,7 +80,7 @@ func (stma *startTimeMetricAdjuster) AdjustMetrics(metrics pmetric.Metrics) erro
 					}
 
 				default:
-					stma.logger.Warn("Unknown metric type", zap.String("type", metric.DataType().String()))
+					stma.logger.Warn("Unknown metric type", zap.String("type", metric.Type().String()))
 				}
 			}
 		}
@@ -97,18 +97,18 @@ func (stma *startTimeMetricAdjuster) getStartTime(metrics pmetric.Metrics) (floa
 			for k := 0; k < ilm.Metrics().Len(); k++ {
 				metric := ilm.Metrics().At(k)
 				if stma.matchStartTimeMetric(metric.Name()) {
-					switch metric.DataType() {
-					case pmetric.MetricDataTypeGauge:
+					switch metric.Type() {
+					case pmetric.MetricTypeGauge:
 						if metric.Gauge().DataPoints().Len() == 0 {
 							return 0.0, errNoDataPointsStartTimeMetric
 						}
-						return metric.Gauge().DataPoints().At(0).DoubleVal(), nil
+						return metric.Gauge().DataPoints().At(0).DoubleValue(), nil
 
-					case pmetric.MetricDataTypeSum:
+					case pmetric.MetricTypeSum:
 						if metric.Sum().DataPoints().Len() == 0 {
 							return 0.0, errNoDataPointsStartTimeMetric
 						}
-						return metric.Sum().DataPoints().At(0).DoubleVal(), nil
+						return metric.Sum().DataPoints().At(0).DoubleValue(), nil
 
 					default:
 						return 0, errUnsupportedTypeStartTimeMetric

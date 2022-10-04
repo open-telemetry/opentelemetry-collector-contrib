@@ -62,7 +62,7 @@ func (e *instanaExporter) pushConvertedTraces(ctx context.Context, td ptrace.Tra
 
 		hostIDAttr, ok := resource.Attributes().Get(backend.AttributeInstanaHostID)
 		if ok {
-			hostID = hostIDAttr.StringVal()
+			hostID = hostIDAttr.Str()
 		}
 
 		ilSpans := resSpan.ScopeSpans()

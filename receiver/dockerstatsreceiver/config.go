@@ -60,7 +60,7 @@ type Config struct {
 	DockerAPIVersion float64 `mapstructure:"api_version"`
 
 	// Metrics config. Enable or disable stats by name.
-	MetricsConfig metadata.MetricsSettings `mapstructure:"stats"`
+	MetricsConfig metadata.MetricsSettings `mapstructure:"metrics"`
 }
 
 func (config Config) Validate() error {
