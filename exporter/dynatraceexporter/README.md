@@ -340,6 +340,14 @@ can produce inconsistent data unless it can be guaranteed that metrics from the
 same source are processed by the same collector instance. This can be circumvented 
 by configuring the OpenTelemetry SDK to export DELTA values.
 
+# Typed attributes support
+
+The OpenTelemetry Collector supports the concept of [Attributes]( https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/common/common.md#attributes).
+These attributes consist of key-value pairs, where the keys are strings and the values are either primitive types or arrays of uniform primitive types.
+
+At the moment, this exporter **only supports attributes with string key and value type**.
+This means that if attributes of any other type are used, they will be **ignored** and **only** the string-valued attributes are going to be sent to Dynatrace.
+
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [AWS]:https://aws-otel.github.io/docs/partners/dynatrace
