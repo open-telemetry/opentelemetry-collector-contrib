@@ -83,7 +83,7 @@ require (
 	github.com/apache/thrift v0.17.0 // indirect
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
-	github.com/aws/aws-sdk-go v1.44.106 // indirect
+	github.com/aws/aws-sdk-go v1.44.110 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.16.16 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.8 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.17.7 // indirect
@@ -401,6 +401,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver v0.61.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver v0.61.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.61.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver v0.61.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver v0.61.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.61.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver v0.61.0 // indirect
@@ -843,6 +844,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aeros
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver => ../../receiver/apachereceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver => ../../receiver/awscontainerinsightreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver => ../../receiver/awscloudwatchreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver => ../../receiver/awsecscontainermetricsreceiver
 

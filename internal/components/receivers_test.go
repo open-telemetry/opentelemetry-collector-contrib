@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	tcpop "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
@@ -67,6 +68,14 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "apache",
+		},
+		{
+			receiver: "awscloudwatch",
+			getConfigFn: func() config.Receiver {
+				cfg := rcvrFactories["awscloudwatch"].CreateDefaultConfig().(*awscloudwatchreceiver.Config)
+				cfg.Region = "us-west-2"
+				return cfg
+			},
 		},
 		{
 			receiver: "awscontainerinsightreceiver",
