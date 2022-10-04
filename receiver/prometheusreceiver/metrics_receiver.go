@@ -46,41 +46,29 @@ const (
 	gcIntervalDelta   = 1 * time.Minute
 )
 
-// closeOnce ensures that the scrape manager is started after the discovery manager
-type closeOnce struct {
-	Loaded chan struct{}
-	once   sync.Once
-	Close  func()
-}
-
 // pReceiver is the type that provides Prometheus scraper/receiver functionality.
 type pReceiver struct {
-	cfg         *Config
-	consumer    consumer.Metrics
-	cancelFunc  context.CancelFunc
-	reloadReady *closeOnce
+	cfg            *Config
+	consumer       consumer.Metrics
+	cancelFunc     context.CancelFunc
+	configLoaded   chan struct{}
+	loadConfigOnce sync.Once
 
 	settings                      component.ReceiverCreateSettings
 	scrapeManager                 *scrape.Manager
 	discoveryManager              *discovery.Manager
 	targetAllocatorIntervalTicker *time.Ticker
+	targetAllocatorStop           chan bool
 }
 
 // New creates a new prometheus.Receiver reference.
 func newPrometheusReceiver(set component.ReceiverCreateSettings, cfg *Config, next consumer.Metrics) *pReceiver {
-	reloadReady := &closeOnce{
-		Loaded: make(chan struct{}),
-	}
-	reloadReady.Close = func() {
-		reloadReady.once.Do(func() {
-			close(reloadReady.Loaded)
-		})
-	}
 	pr := &pReceiver{
-		cfg:         cfg,
-		consumer:    next,
-		settings:    set,
-		reloadReady: reloadReady,
+		cfg:                 cfg,
+		consumer:            next,
+		settings:            set,
+		configLoaded:        make(chan struct{}),
+		targetAllocatorStop: make(chan bool, 1),
 	}
 	return pr
 }
@@ -110,18 +98,20 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 
 	allocConf := r.cfg.TargetAllocator
 	if allocConf != nil {
-		err = r.initTargetAllocator(allocConf, baseCfg)
+		err = r.startTargetAllocator(allocConf, baseCfg)
 		if err != nil {
 			return err
 		}
 	}
 
-	r.reloadReady.Close()
+	r.loadConfigOnce.Do(func() {
+		close(r.configLoaded)
+	})
 
 	return nil
 }
 
-func (r *pReceiver) initTargetAllocator(allocConf *targetAllocator, baseCfg *config.Config) error {
+func (r *pReceiver) startTargetAllocator(allocConf *targetAllocator, baseCfg *config.Config) error {
 	r.settings.Logger.Info("Starting target allocator discovery")
 	// immediately sync jobs and not wait for the first tick
 	savedHash, err := r.syncTargetAllocator(uint64(0), allocConf, baseCfg)
@@ -129,19 +119,23 @@ func (r *pReceiver) initTargetAllocator(allocConf *targetAllocator, baseCfg *con
 		return err
 	}
 	go func() {
-		<-r.reloadReady.Loaded
 		r.targetAllocatorIntervalTicker = time.NewTicker(allocConf.Interval)
 		for {
-			<-r.targetAllocatorIntervalTicker.C
-			hash, newErr := r.syncTargetAllocator(savedHash, allocConf, baseCfg)
-			if newErr != nil {
-				r.settings.Logger.Error(newErr.Error())
-				continue
+			select {
+			case <-r.targetAllocatorIntervalTicker.C:
+				hash, newErr := r.syncTargetAllocator(savedHash, allocConf, baseCfg)
+				if newErr != nil {
+					r.settings.Logger.Error(newErr.Error())
+					continue
+				}
+				savedHash = hash
+			case <-r.targetAllocatorStop:
+				r.settings.Logger.Info("Stopping target allocator")
+				return
 			}
-			savedHash = hash
 		}
 	}()
-	return err
+	return nil
 }
 
 // syncTargetAllocator request jobs from targetAllocator and update underlying receiver, if the response does not match the provided compareHash.
@@ -282,7 +276,8 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 	r.scrapeManager = scrape.NewManager(&scrape.Options{PassMetadataInContext: true}, logger, store)
 
 	go func() {
-		<-r.reloadReady.Loaded
+		// The scrape manager needs to wait for the configuration to be loaded before beginning
+		<-r.configLoaded
 		r.settings.Logger.Info("Starting scrape manager")
 		if err := r.scrapeManager.Run(r.discoveryManager.SyncCh()); err != nil {
 			r.settings.Logger.Error("Scrape manager failed", zap.Error(err))
@@ -312,9 +307,9 @@ func gcInterval(cfg *config.Config) time.Duration {
 func (r *pReceiver) Shutdown(context.Context) error {
 	r.cancelFunc()
 	r.scrapeManager.Stop()
-	r.reloadReady.Close()
 	if r.targetAllocatorIntervalTicker != nil {
 		r.targetAllocatorIntervalTicker.Stop()
+		r.targetAllocatorStop <- true
 	}
 	return nil
 }
