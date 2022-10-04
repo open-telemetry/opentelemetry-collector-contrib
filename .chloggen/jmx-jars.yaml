@@ -8,4 +8,4 @@ component: jmxreceiver
 note: Adds support for new versions of the jmx metrics receiver
 
 # One or more tracking issues related to the change
-issues: []
+issues: [14698]
