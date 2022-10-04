@@ -39,6 +39,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	require.True(t, ok, "invalid Config: %#v", cfg)
 	assert.False(t, actual.hasMetricsEndpoint())
 	assert.False(t, actual.hasTracesEndpoint())
+	assert.False(t, actual.Metrics.IncludeResourceAttrs)
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -60,8 +61,8 @@ func TestLoadConfig(t *testing.T) {
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:40001"},
 		},
 		Metrics: MetricsConfig{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:2916"},
-			//ResourceAttributes: resourcetotelemetry.Settings{Enabled: true},
+			HTTPClientSettings:   confighttp.HTTPClientSettings{Endpoint: "http://localhost:2916"},
+			IncludeResourceAttrs: true,
 		},
 		QueueSettings: exporterhelper.QueueSettings{
 			Enabled:      true,

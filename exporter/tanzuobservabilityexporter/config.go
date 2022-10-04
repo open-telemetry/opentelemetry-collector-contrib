@@ -53,10 +53,6 @@ func (c *Config) hasTracesEndpoint() bool {
 	return c.Traces.Endpoint != ""
 }
 
-func (c *Config) includeResourceAttr() bool {
-	return c.Metrics.IncludeResourceAttrs
-}
-
 func (c *Config) parseMetricsEndpoint() (hostName string, port int, err error) {
 	return parseEndpoint(c.Metrics.Endpoint)
 }

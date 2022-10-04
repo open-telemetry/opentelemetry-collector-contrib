@@ -16,6 +16,7 @@ package tanzuobservabilityexporter // import "github.com/open-telemetry/opentele
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -58,7 +59,10 @@ func createTracesExporter(
 		return nil, err
 	}
 
-	tobsCfg := cfg.(*Config)
+	tobsCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("invalid config: %#v", cfg)
+	}
 
 	return exporterhelper.NewTracesExporter(
 		ctx,
@@ -76,12 +80,14 @@ func createMetricsExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
-	exp, err := newMetricsExporter(set, cfg, createMetricsConsumer)
+	tobsCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("invalid config: %#v", cfg)
+	}
+	exp, err := newMetricsExporter(set, tobsCfg, createMetricsConsumer)
 	if err != nil {
 		return nil, err
 	}
-
-	tobsCfg := cfg.(*Config)
 
 	exporter, err := exporterhelper.NewMetricsExporter(
 		ctx,

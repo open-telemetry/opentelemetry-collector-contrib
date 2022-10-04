@@ -400,3 +400,29 @@ func spanWithStatus(statusCode ptrace.StatusCode, message string) ptrace.Span {
 	status.CopyTo(span.Status())
 	return span
 }
+
+func TestAttributesToTagsForMetrics(t *testing.T) {
+	// 1. Empty sourceKey: does not change resulting wfTags
+	attrMap := newMap(map[string]string{"k": "v"})
+	wfTags := attributesToTagsForMetrics("", attrMap)
+	assert.Equal(t, map[string]string{"k": "v"}, wfTags)
+
+	// 2. sourceKey exists in attrMap: delete from resulting wfTags
+	attrMap = newMap(map[string]string{"k": "v", "a_key": "a_val"})
+	wfTags = attributesToTagsForMetrics("a_key", attrMap)
+	assert.Equal(t, map[string]string{"k": "v"}, wfTags)
+
+	// 3. sourceKey is "source": delete from resulting wfTags. This scenario should only occur when
+	//    the Resource Attrs contained an Attr named "source", which is the determinant of sourceKey.
+	attrMap = newMap(map[string]string{"k": "v", "source": "a_source"})
+	wfTags = attributesToTagsForMetrics("source", attrMap)
+	assert.Equal(t, map[string]string{"k": "v"}, wfTags)
+
+	// 4. sourceKey is not "source", but a "source" tag exists in Attrs
+	//    This scenario should only occur if Resource Attrs did not include a "source" attr, but
+	//    the Attrs at the metric-level happened to include an attr named "source". In this edge-
+	//    case scenario, rename the resulting wfTag to "_source" so the data isn't lost.
+	attrMap = newMap(map[string]string{"k": "v", "source": "a_val"})
+	wfTags = attributesToTagsForMetrics("", attrMap)
+	assert.Equal(t, map[string]string{"k": "v", "_source": "a_val"}, wfTags)
+}

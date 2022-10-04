@@ -25,12 +25,11 @@ import (
 )
 
 type metricsExporter struct {
-	consumer             *metricsConsumer
-	includeResourceAttrs bool
+	consumer *metricsConsumer
 }
 
-func createMetricsConsumer(metricsConfig MetricsConfig, settings component.TelemetrySettings, otelVersion string) (*metricsConsumer, error) {
-	s, err := senders.NewSender(metricsConfig.Endpoint,
+func createMetricsConsumer(config MetricsConfig, settings component.TelemetrySettings, otelVersion string) (*metricsConsumer, error) {
+	s, err := senders.NewSender(config.Endpoint,
 		senders.FlushIntervalSeconds(60),
 		senders.SDKMetricsTags(map[string]string{"otel.metrics.collector_version": otelVersion}),
 	)
@@ -48,10 +47,10 @@ func createMetricsConsumer(metricsConfig MetricsConfig, settings component.Telem
 			newSummaryConsumer(s, settings),
 		},
 		s,
-		true, metricsConfig.IncludeResourceAttrs), nil
+		true, config), nil
 }
 
-type metricsConsumerCreator func(metricsConfig MetricsConfig, settings component.TelemetrySettings, otelVersion string) (
+type metricsConsumerCreator func(config MetricsConfig, settings component.TelemetrySettings, otelVersion string) (
 	*metricsConsumer, error)
 
 func newMetricsExporter(settings component.ExporterCreateSettings, c config.Exporter, creator metricsConsumerCreator) (*metricsExporter, error) {
@@ -70,8 +69,7 @@ func newMetricsExporter(settings component.ExporterCreateSettings, c config.Expo
 		return nil, err
 	}
 	return &metricsExporter{
-		consumer:             consumer,
-		includeResourceAttrs: cfg.includeResourceAttr(),
+		consumer: consumer,
 	}, nil
 }
 

@@ -144,11 +144,6 @@ func getSourceAndKey(attributes pcommon.Map) (string, string) {
 	return source, sourceKey
 }
 
-func getAttributesWithoutSource(attributes pcommon.Map) map[string]string {
-	_, attributesWithoutSource, _ := getSourceAndResourceTagsAndSourceKey(attributes)
-	return attributesWithoutSource
-}
-
 func spanKind(span ptrace.Span) string {
 	switch span.Kind() {
 	case ptrace.SpanKindClient:
@@ -228,6 +223,13 @@ func replaceSource(tags map[string]string) {
 
 func attributesToTagsReplaceSource(attributes ...pcommon.Map) map[string]string {
 	tags := attributesToTags(attributes...)
+	replaceSource(tags)
+	return tags
+}
+
+func attributesToTagsForMetrics(sourceKey string, attributes ...pcommon.Map) map[string]string {
+	tags := attributesToTags(attributes...)
+	delete(tags, sourceKey)
 	replaceSource(tags)
 	return tags
 }
