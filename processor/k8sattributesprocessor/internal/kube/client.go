@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/docker/distribution/reference"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	apps_v1 "k8s.io/api/apps/v1"
@@ -409,16 +410,20 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag {
 		for _, spec := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
 			container := &Container{}
-			nameTagSep := strings.LastIndex(spec.Image, ":")
-			if c.Rules.ContainerImageName {
-				if nameTagSep > 0 {
-					container.ImageName = spec.Image[:nameTagSep]
-				} else {
-					container.ImageName = spec.Image
-				}
+			ref, err := reference.Parse(spec.Image)
+			if err != nil {
+				c.logger.Warn("Invalid image reference found", zap.String("image", spec.Image), zap.Error(err))
+				continue
 			}
-			if c.Rules.ContainerImageTag && nameTagSep > 0 {
-				container.ImageTag = spec.Image[nameTagSep+1:]
+
+			if named, ok := ref.(reference.Named); c.Rules.ContainerImageName && ok {
+				container.ImageName = named.Name()
+			}
+			if tagged, ok := ref.(reference.Tagged); c.Rules.ContainerImageTag && ok {
+				container.ImageTag = tagged.Tag()
+			}
+			if digested, ok := ref.(reference.Digested); c.Rules.ContainerImageTag && ok {
+				container.ImageTag = digested.Digest().String()
 			}
 			containers.ByName[spec.Name] = container
 		}

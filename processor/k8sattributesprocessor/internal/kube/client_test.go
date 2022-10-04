@@ -1269,7 +1269,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			InitContainers: []api_v1.Container{
 				{
 					Name:  "init_container",
-					Image: "test/init-image:1.0.2",
+					Image: "test/init-image@sha256:938b5909efe517c9cfdada4c23a93a2e003756603e353977ae0b2684268346eb",
 				},
 			},
 		},
@@ -1450,7 +1450,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 					},
 					"init_container": {
 						ImageName: "test/init-image",
-						ImageTag:  "1.0.2",
+						ImageTag:  "sha256:938b5909efe517c9cfdada4c23a93a2e003756603e353977ae0b2684268346eb",
 						Statuses: map[int]ContainerStatus{
 							0: {ContainerID: "init-container-id-123"},
 						},
