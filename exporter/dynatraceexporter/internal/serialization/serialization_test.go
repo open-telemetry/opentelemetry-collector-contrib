@@ -103,6 +103,12 @@ func Test_makeCombinedDimensions(t *testing.T) {
 	attributes := pcommon.NewMap()
 	attributes.PutString("a", "attribute")
 	attributes.PutString("b", "attribute")
+
+	// these should all be droped
+	attributes.PutBool("dropped_bool", true)
+	attributes.PutDouble("drouped_double", 1.5)
+	attributes.PutInt("dropped_int", 1)
+
 	staticDims := dimensions.NewNormalizedDimensionList(
 		dimensions.NewDimension("a", "static"),
 	)
