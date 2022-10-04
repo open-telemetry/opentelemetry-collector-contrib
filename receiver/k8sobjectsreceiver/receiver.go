@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sobjectreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
+package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
 
 import (
 	"context"
@@ -25,7 +25,7 @@ import (
 	"k8s.io/client-go/dynamic"
 )
 
-type k8sobjectreceiver struct {
+type k8sobjectsreceiver struct {
 	setting         component.ReceiverCreateSettings
 	objects         []*K8sObjectsConfig
 	stopperChanList []chan struct{}
@@ -39,7 +39,7 @@ func newReceiver(params component.ReceiverCreateSettings, config *Config, consum
 		return nil, err
 	}
 
-	return &k8sobjectreceiver{
+	return &k8sobjectsreceiver{
 		client:   client,
 		setting:  params,
 		consumer: consumer,
@@ -47,7 +47,7 @@ func newReceiver(params component.ReceiverCreateSettings, config *Config, consum
 	}, nil
 }
 
-func (kr *k8sobjectreceiver) Start(ctx context.Context, host component.Host) error {
+func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) error {
 	kr.setting.Logger.Info("Object Receiver started")
 
 	for _, object := range kr.objects {
@@ -56,7 +56,7 @@ func (kr *k8sobjectreceiver) Start(ctx context.Context, host component.Host) err
 	return nil
 }
 
-func (kr *k8sobjectreceiver) Shutdown(context.Context) error {
+func (kr *k8sobjectsreceiver) Shutdown(context.Context) error {
 	kr.setting.Logger.Info("Object Receiver stopped")
 	for _, stopperChan := range kr.stopperChanList {
 		close(stopperChan)
@@ -64,7 +64,7 @@ func (kr *k8sobjectreceiver) Shutdown(context.Context) error {
 	return nil
 }
 
-func (kr *k8sobjectreceiver) start(ctx context.Context, object *K8sObjectsConfig) {
+func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfig) {
 	resource := kr.client.Resource(*object.gvr)
 
 	switch object.Mode {
@@ -88,7 +88,7 @@ func (kr *k8sobjectreceiver) start(ctx context.Context, object *K8sObjectsConfig
 	}
 }
 
-func (kr *k8sobjectreceiver) startPull(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) {
+func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) {
 	stopperChan := make(chan struct{})
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	ticker := NewTicker(config.Interval)
@@ -114,7 +114,7 @@ func (kr *k8sobjectreceiver) startPull(ctx context.Context, config *K8sObjectsCo
 
 }
 
-func (kr *k8sobjectreceiver) startWatch(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) {
+func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) {
 
 	stopperChan := make(chan struct{})
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
