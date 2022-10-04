@@ -16,19 +16,22 @@ package k8sobjectreceiver
 
 import (
 	"context"
+	"sync"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 type mockLogConsumer struct {
-	Logs  []plog.Logs
-	Count int
+	logs  []plog.Logs
+	count int
+	lock  sync.Mutex
 }
 
 func newMockLogConsumer() *mockLogConsumer {
 	return &mockLogConsumer{
-		Logs: make([]plog.Logs, 0),
+		logs: make([]plog.Logs, 0),
+		lock: sync.Mutex{},
 	}
 }
 
@@ -39,7 +42,26 @@ func (m *mockLogConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (m *mockLogConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	m.Logs = append(m.Logs, ld)
-	m.Count += ld.LogRecordCount()
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	m.logs = append(m.logs, ld)
+	m.count += ld.LogRecordCount()
 	return nil
+}
+
+func (m *mockLogConsumer) Count() int {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	return m.count
+}
+
+func (m *mockLogConsumer) Logs() []plog.Logs {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	logs := make([]plog.Logs, len(m.logs))
+	for i, log := range m.logs {
+		logs[i] = log.Clone()
+	}
+
+	return logs
 }

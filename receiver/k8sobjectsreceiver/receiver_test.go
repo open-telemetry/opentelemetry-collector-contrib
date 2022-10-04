@@ -84,8 +84,8 @@ func TestPullObject(t *testing.T) {
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 	time.Sleep(time.Second)
-	assert.Len(t, consumer.Logs, 1)
-	assert.Equal(t, 2, consumer.Count)
+	assert.Len(t, consumer.Logs(), 1)
+	assert.Equal(t, 2, consumer.Count())
 	assert.NoError(t, r.Shutdown(context.Background()))
 }
 
@@ -135,8 +135,8 @@ func TestWatchObject(t *testing.T) {
 		}),
 	)
 	time.Sleep(time.Millisecond * 100)
-	assert.Len(t, consumer.Logs, 2)
-	assert.Equal(t, 2, consumer.Count)
+	assert.Len(t, consumer.Logs(), 2)
+	assert.Equal(t, 2, consumer.Count())
 
 	mockClient.createPods(
 		generatePod("pod4", "default", map[string]interface{}{
@@ -144,8 +144,8 @@ func TestWatchObject(t *testing.T) {
 		}),
 	)
 	time.Sleep(time.Millisecond * 100)
-	assert.Len(t, consumer.Logs, 3)
-	assert.Equal(t, 3, consumer.Count)
+	assert.Len(t, consumer.Logs(), 3)
+	assert.Equal(t, 3, consumer.Count())
 
 	assert.NoError(t, r.Shutdown(ctx))
 }
