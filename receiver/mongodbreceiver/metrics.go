@@ -27,7 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
-var keyNotFoundError = errors.New("could not find key for metric")
+var errKeyNotFound = errors.New("could not find key for metric")
 
 var operationsMap = map[string]metadata.AttributeOperation{
 	"insert":   metadata.AttributeOperationInsert,
@@ -353,7 +353,7 @@ func (s *mongodbScraper) recordLockAcquireCounts(now pcommon.Timestamp, doc bson
 			val, err := collectMetric(doc, metricPath)
 			// MongoDB only publishes this lock metric is it is available.
 			// Do not raise error when key is not found
-			if errors.Is(err, keyNotFoundError) {
+			if errors.Is(err, errKeyNotFound) {
 				continue
 			}
 			if err != nil {
@@ -366,8 +366,8 @@ func (s *mongodbScraper) recordLockAcquireCounts(now pcommon.Timestamp, doc bson
 }
 
 func (s *mongodbScraper) recordLockAcquireWaitCounts(now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
-	mongo30, _ := version.NewVersion("3.2")
-	if s.mongoVersion.LessThan(mongo30) {
+	mongo32, _ := version.NewVersion("3.2")
+	if s.mongoVersion.LessThan(mongo32) {
 		return
 	}
 	mongo42, _ := version.NewVersion("4.2")
@@ -383,7 +383,7 @@ func (s *mongodbScraper) recordLockAcquireWaitCounts(now pcommon.Timestamp, doc 
 			val, err := collectMetric(doc, metricPath)
 			// MongoDB only publishes this lock metric is it is available.
 			// Do not raise error when key is not found
-			if errors.Is(err, keyNotFoundError) {
+			if errors.Is(err, errKeyNotFound) {
 				continue
 			}
 			if err != nil {
@@ -396,8 +396,8 @@ func (s *mongodbScraper) recordLockAcquireWaitCounts(now pcommon.Timestamp, doc 
 }
 
 func (s *mongodbScraper) recordLockTimeAcquiringMicros(now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
-	mongo30, _ := version.NewVersion("3.2")
-	if s.mongoVersion.LessThan(mongo30) {
+	mongo32, _ := version.NewVersion("3.2")
+	if s.mongoVersion.LessThan(mongo32) {
 		return
 	}
 	mongo42, _ := version.NewVersion("4.2")
@@ -413,7 +413,7 @@ func (s *mongodbScraper) recordLockTimeAcquiringMicros(now pcommon.Timestamp, do
 			val, err := collectMetric(doc, metricPath)
 			// MongoDB only publishes this lock metric is it is available.
 			// Do not raise error when key is not found
-			if errors.Is(err, keyNotFoundError) {
+			if errors.Is(err, errKeyNotFound) {
 				continue
 			}
 			if err != nil {
@@ -426,8 +426,8 @@ func (s *mongodbScraper) recordLockTimeAcquiringMicros(now pcommon.Timestamp, do
 }
 
 func (s *mongodbScraper) recordLockDeadlockCount(now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
-	mongo30, _ := version.NewVersion("3.2")
-	if s.mongoVersion.LessThan(mongo30) {
+	mongo32, _ := version.NewVersion("3.2")
+	if s.mongoVersion.LessThan(mongo32) {
 		return
 	}
 	mongo42, _ := version.NewVersion("4.2")
@@ -443,7 +443,7 @@ func (s *mongodbScraper) recordLockDeadlockCount(now pcommon.Timestamp, doc bson
 			val, err := collectMetric(doc, metricPath)
 			// MongoDB only publishes this lock metric is it is available.
 			// Do not raise error when key is not found
-			if errors.Is(err, keyNotFoundError) {
+			if errors.Is(err, errKeyNotFound) {
 				continue
 			}
 			if err != nil {
@@ -532,7 +532,7 @@ func getOperationTimeValues(document bson.M, collectionPathName, operation strin
 func digForCollectionPathNames(document bson.M) ([]string, error) {
 	docTotals, ok := document["totals"].(bson.M)
 	if !ok {
-		return nil, keyNotFoundError
+		return nil, errKeyNotFound
 	}
 	var collectionPathNames []string
 	for collectionPathName := range docTotals {
@@ -555,7 +555,7 @@ func dig(document bson.M, path []string) (interface{}, error) {
 	curItem, remainingPath := path[0], path[1:]
 	value := document[curItem]
 	if value == nil {
-		return 0, keyNotFoundError
+		return 0, errKeyNotFound
 	}
 	if len(remainingPath) == 0 {
 		return value, nil
