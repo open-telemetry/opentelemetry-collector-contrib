@@ -82,15 +82,15 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	}
 
 	attr := res.Attributes()
-	attr.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attr.PutString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEC2)
-	attr.PutString(conventions.AttributeCloudRegion, meta.Region)
-	attr.PutString(conventions.AttributeCloudAccountID, meta.AccountID)
-	attr.PutString(conventions.AttributeCloudAvailabilityZone, meta.AvailabilityZone)
-	attr.PutString(conventions.AttributeHostID, meta.InstanceID)
-	attr.PutString(conventions.AttributeHostImageID, meta.ImageID)
-	attr.PutString(conventions.AttributeHostType, meta.InstanceType)
-	attr.PutString(conventions.AttributeHostName, hostname)
+	attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attr.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEC2)
+	attr.PutStr(conventions.AttributeCloudRegion, meta.Region)
+	attr.PutStr(conventions.AttributeCloudAccountID, meta.AccountID)
+	attr.PutStr(conventions.AttributeCloudAvailabilityZone, meta.AvailabilityZone)
+	attr.PutStr(conventions.AttributeHostID, meta.InstanceID)
+	attr.PutStr(conventions.AttributeHostImageID, meta.ImageID)
+	attr.PutStr(conventions.AttributeHostType, meta.InstanceType)
+	attr.PutStr(conventions.AttributeHostName, hostname)
 
 	if len(d.tagKeyRegexes) != 0 {
 		client := getHTTPClientSettings(ctx, d.logger)
@@ -99,7 +99,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			return res, "", fmt.Errorf("failed fetching ec2 instance tags: %w", err)
 		}
 		for key, val := range tags {
-			attr.PutString(tagPrefix+key, val)
+			attr.PutStr(tagPrefix+key, val)
 		}
 	}
 

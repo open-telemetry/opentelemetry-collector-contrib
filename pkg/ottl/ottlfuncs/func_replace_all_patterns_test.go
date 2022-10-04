@@ -26,9 +26,9 @@ import (
 
 func Test_replaceAllPatterns(t *testing.T) {
 	input := pcommon.NewMap()
-	input.PutString("test", "hello world")
-	input.PutString("test2", "hello")
-	input.PutString("test3", "goodbye world1 and world2")
+	input.PutStr("test", "hello world")
+	input.PutStr("test2", "hello")
+	input.PutStr("test3", "goodbye world1 and world2")
 
 	target := &ottl.StandardGetSetter[pcommon.Map]{
 		Getter: func(ctx pcommon.Map) interface{} {
@@ -54,9 +54,9 @@ func Test_replaceAllPatterns(t *testing.T) {
 			replacement: "hello {universe}",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.PutString("test", "hello {universe} world")
-				expectedMap.PutString("test2", "hello {universe}")
-				expectedMap.PutString("test3", "goodbye world1 and world2")
+				expectedMap.PutStr("test", "hello {universe} world")
+				expectedMap.PutStr("test2", "hello {universe}")
+				expectedMap.PutStr("test3", "goodbye world1 and world2")
 			},
 		},
 		{
@@ -66,9 +66,9 @@ func Test_replaceAllPatterns(t *testing.T) {
 			replacement: "nothing {matches}",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.PutString("test", "hello world")
-				expectedMap.PutString("test2", "hello")
-				expectedMap.PutString("test3", "goodbye world1 and world2")
+				expectedMap.PutStr("test", "hello world")
+				expectedMap.PutStr("test2", "hello")
+				expectedMap.PutStr("test3", "goodbye world1 and world2")
 			},
 		},
 		{
@@ -78,9 +78,9 @@ func Test_replaceAllPatterns(t *testing.T) {
 			replacement: "**** ",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.PutString("test", "hello **** ")
-				expectedMap.PutString("test2", "hello")
-				expectedMap.PutString("test3", "goodbye **** and **** ")
+				expectedMap.PutStr("test", "hello **** ")
+				expectedMap.PutStr("test2", "hello")
+				expectedMap.PutStr("test3", "goodbye **** and **** ")
 			},
 		},
 	}
@@ -102,7 +102,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 }
 
 func Test_replaceAllPatterns_bad_input(t *testing.T) {
-	input := pcommon.NewValueString("not a map")
+	input := pcommon.NewValueStr("not a map")
 
 	target := &ottl.StandardGetSetter[interface{}]{
 		Getter: func(ctx interface{}) interface{} {
@@ -118,7 +118,7 @@ func Test_replaceAllPatterns_bad_input(t *testing.T) {
 
 	exprFunc(input)
 
-	assert.Equal(t, pcommon.NewValueString("not a map"), input)
+	assert.Equal(t, pcommon.NewValueStr("not a map"), input)
 }
 
 func Test_replaceAllPatterns_get_nil(t *testing.T) {

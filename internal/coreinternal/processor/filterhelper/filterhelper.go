@@ -30,7 +30,7 @@ func NewAttributeValueRaw(value interface{}) (pcommon.Value, error) {
 	case float32, float64:
 		return pcommon.NewValueDouble(cast.ToFloat64(val)), nil
 	case string:
-		return pcommon.NewValueString(val), nil
+		return pcommon.NewValueStr(val), nil
 	case bool:
 		return pcommon.NewValueBool(val), nil
 	default:

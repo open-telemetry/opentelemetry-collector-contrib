@@ -71,36 +71,36 @@ func (d *Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 	}
 
 	attr := res.Attributes()
-	attr.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attr.PutString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
-	attr.PutString(conventions.AttributeAWSECSTaskARN, tmdeResp.TaskARN)
-	attr.PutString(conventions.AttributeAWSECSTaskFamily, tmdeResp.Family)
-	attr.PutString(conventions.AttributeAWSECSTaskRevision, tmdeResp.Revision)
+	attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attr.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
+	attr.PutStr(conventions.AttributeAWSECSTaskARN, tmdeResp.TaskARN)
+	attr.PutStr(conventions.AttributeAWSECSTaskFamily, tmdeResp.Family)
+	attr.PutStr(conventions.AttributeAWSECSTaskRevision, tmdeResp.Revision)
 
 	region, account := parseRegionAndAccount(tmdeResp.TaskARN)
 	if account != "" {
-		attr.PutString(conventions.AttributeCloudAccountID, account)
+		attr.PutStr(conventions.AttributeCloudAccountID, account)
 	}
 
 	if region != "" {
-		attr.PutString(conventions.AttributeCloudRegion, region)
+		attr.PutStr(conventions.AttributeCloudRegion, region)
 	}
 
 	// TMDE returns the cluster short name or ARN, so we need to construct the ARN if necessary
-	attr.PutString(conventions.AttributeAWSECSClusterARN, constructClusterArn(tmdeResp.Cluster, region, account))
+	attr.PutStr(conventions.AttributeAWSECSClusterARN, constructClusterArn(tmdeResp.Cluster, region, account))
 
 	// The Availability Zone is not available in all Fargate runtimes
 	if tmdeResp.AvailabilityZone != "" {
-		attr.PutString(conventions.AttributeCloudAvailabilityZone, tmdeResp.AvailabilityZone)
+		attr.PutStr(conventions.AttributeCloudAvailabilityZone, tmdeResp.AvailabilityZone)
 	}
 
 	// The launch type and log data attributes are only available in TMDE v4
 	switch lt := strings.ToLower(tmdeResp.LaunchType); lt {
 	case "ec2":
-		attr.PutString(conventions.AttributeAWSECSLaunchtype, "ec2")
+		attr.PutStr(conventions.AttributeAWSECSLaunchtype, "ec2")
 
 	case "fargate":
-		attr.PutString(conventions.AttributeAWSECSLaunchtype, "fargate")
+		attr.PutStr(conventions.AttributeAWSECSLaunchtype, "fargate")
 	}
 
 	selfMetaData, err := d.provider.FetchContainerMetadata()

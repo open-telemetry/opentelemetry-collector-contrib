@@ -264,7 +264,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pcommon.NewValueString("1")),
+				pcommon.NewValueStr("1")),
 			sampled: true,
 		},
 		{
@@ -295,7 +295,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pcommon.NewValueString("0")),
+				pcommon.NewValueStr("0")),
 		},
 		{
 			name: "defer_sample_expect_not_sampled",
@@ -395,22 +395,22 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 		},
 		{
 			name: "sampling_priority_string_zero",
-			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueString("0.0")),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueStr("0.0")),
 			want: doNotSampleSpan,
 		},
 		{
 			name: "sampling_priority_string_gt_zero",
-			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueString("0.5")),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueStr("0.5")),
 			want: mustSampleSpan,
 		},
 		{
 			name: "sampling_priority_string_lt_zero",
-			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueString("-0.5")),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueStr("-0.5")),
 			want: deferDecision,
 		},
 		{
 			name: "sampling_priority_string_NaN",
-			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueString("NaN")),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueStr("NaN")),
 			want: deferDecision,
 		},
 	}
@@ -461,9 +461,9 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 		traces.ResourceSpans().EnsureCapacity(resourceSpanCount)
 		for j := 0; j < resourceSpanCount; j++ {
 			rs := traces.ResourceSpans().AppendEmpty()
-			rs.Resource().Attributes().PutString("service.name", serviceName)
+			rs.Resource().Attributes().PutStr("service.name", serviceName)
 			rs.Resource().Attributes().PutBool("bool", true)
-			rs.Resource().Attributes().PutString("string", "yes")
+			rs.Resource().Attributes().PutStr("string", "yes")
 			rs.Resource().Attributes().PutInt("int64", 10000000)
 			ils := rs.ScopeSpans().AppendEmpty()
 			ils.Spans().EnsureCapacity(numTracesPerBatch)
@@ -473,7 +473,7 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 				span.SetTraceID(idutils.UInt64ToTraceID(r.Uint64(), r.Uint64()))
 				span.SetSpanID(idutils.UInt64ToSpanID(r.Uint64()))
 				span.Attributes().PutInt(conventions.AttributeHTTPStatusCode, 404)
-				span.Attributes().PutString("http.status_text", "Not Found")
+				span.Attributes().PutStr("http.status_text", "Not Found")
 			}
 		}
 		traceBatches = append(traceBatches, traces)

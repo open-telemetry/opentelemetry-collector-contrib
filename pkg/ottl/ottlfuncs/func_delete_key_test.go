@@ -26,7 +26,7 @@ import (
 
 func Test_deleteKey(t *testing.T) {
 	input := pcommon.NewMap()
-	input.PutString("test", "hello world")
+	input.PutStr("test", "hello world")
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
@@ -58,7 +58,7 @@ func Test_deleteKey(t *testing.T) {
 			key:    "test2",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutBool("test3", true)
 			},
 		},
@@ -68,7 +68,7 @@ func Test_deleteKey(t *testing.T) {
 			key:    "not a valid key",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)
 			},
@@ -92,7 +92,7 @@ func Test_deleteKey(t *testing.T) {
 }
 
 func Test_deleteKey_bad_input(t *testing.T) {
-	input := pcommon.NewValueString("not a map")
+	input := pcommon.NewValueStr("not a map")
 	target := &ottl.StandardGetSetter[interface{}]{
 		Getter: func(ctx interface{}) interface{} {
 			return ctx
@@ -107,7 +107,7 @@ func Test_deleteKey_bad_input(t *testing.T) {
 	exprFunc, err := DeleteKey[interface{}](target, key)
 	require.NoError(t, err)
 	assert.Nil(t, exprFunc(input))
-	assert.Equal(t, pcommon.NewValueString("not a map"), input)
+	assert.Equal(t, pcommon.NewValueStr("not a map"), input)
 }
 
 func Test_deleteKey_get_nil(t *testing.T) {

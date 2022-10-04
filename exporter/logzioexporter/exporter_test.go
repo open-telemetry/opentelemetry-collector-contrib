@@ -64,16 +64,16 @@ func fillLogOne(log plog.LogRecord) {
 	log.SetTraceID([16]byte{0x08, 0x04, 0x02, 0x01})
 
 	attrs := log.Attributes()
-	attrs.PutString("app", "server")
+	attrs.PutStr("app", "server")
 	attrs.PutDouble("instance_num", 1)
 
 	// nested body map
 	attMap := log.Body().SetEmptyMap()
 	attMap.PutDouble("23", 45)
-	attMap.PutString("foo", "bar")
-	attMap.PutString("message", "hello there")
+	attMap.PutStr("foo", "bar")
+	attMap.PutStr("message", "hello there")
 	attNestedMap := attMap.PutEmptyMap("nested")
-	attNestedMap.PutString("string", "v1")
+	attNestedMap.PutStr("string", "v1")
 	attNestedMap.PutDouble("number", 499)
 }
 
@@ -84,10 +84,10 @@ func fillLogTwo(log plog.LogRecord) {
 	log.SetSeverityText("Info")
 
 	attrs := log.Attributes()
-	attrs.PutString("customer", "acme")
+	attrs.PutStr("customer", "acme")
 	attrs.PutDouble("number", 64)
 	attrs.PutBool("bool", true)
-	attrs.PutString("env", "dev")
+	attrs.PutStr("env", "dev")
 	log.Body().SetStr("something happened")
 }
 func fillLogNoTimestamp(log plog.LogRecord) {
@@ -96,10 +96,10 @@ func fillLogNoTimestamp(log plog.LogRecord) {
 	log.SetSeverityText("Info")
 
 	attrs := log.Attributes()
-	attrs.PutString("customer", "acme")
+	attrs.PutStr("customer", "acme")
 	attrs.PutDouble("number", 64)
 	attrs.PutBool("bool", true)
-	attrs.PutString("env", "dev")
+	attrs.PutStr("env", "dev")
 	log.Body().SetStr("something happened")
 }
 
@@ -143,7 +143,7 @@ func newTestTracesWithAttributes() ptrace.Traces {
 		s.SetTraceID(pcommon.TraceID([16]byte{byte(i), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
 		s.SetSpanID(pcommon.SpanID([8]byte{byte(i), 0, 0, 0, 0, 0, 0, 2}))
 		for j := 0; j < 5; j++ {
-			s.Attributes().PutString(fmt.Sprintf("k%d", j), fmt.Sprintf("v%d", j))
+			s.Attributes().PutStr(fmt.Sprintf("k%d", j), fmt.Sprintf("v%d", j))
 		}
 		s.SetKind(ptrace.SpanKindServer)
 	}
@@ -278,8 +278,8 @@ func TestPushTraceData(tester *testing.T) {
 	defer server.Close()
 	td := newTestTraces()
 	res := td.ResourceSpans().At(0).Resource()
-	res.Attributes().PutString(conventions.AttributeServiceName, testService)
-	res.Attributes().PutString(conventions.AttributeHostName, testHost)
+	res.Attributes().PutStr(conventions.AttributeServiceName, testService)
+	res.Attributes().PutStr(conventions.AttributeHostName, testHost)
 	err := testTracesExporter(td, tester, &cfg)
 	require.NoError(tester, err)
 	var newSpan logzioSpan
@@ -312,8 +312,8 @@ func TestPushLogsData(tester *testing.T) {
 	defer server.Close()
 	ld := testdata.GenerateLogsManyLogRecordsSameResource(2)
 	res := ld.ResourceLogs().At(0).Resource()
-	res.Attributes().PutString(conventions.AttributeServiceName, testService)
-	res.Attributes().PutString(conventions.AttributeHostName, testHost)
+	res.Attributes().PutStr(conventions.AttributeServiceName, testService)
+	res.Attributes().PutStr(conventions.AttributeHostName, testHost)
 	err := testLogsExporter(ld, tester, &cfg)
 	require.NoError(tester, err)
 	var jsonLog map[string]interface{}

@@ -25,7 +25,7 @@ import (
 )
 
 func Test_set(t *testing.T) {
-	input := pcommon.NewValueString("original name")
+	input := pcommon.NewValueStr("original name")
 
 	target := &ottl.StandardGetSetter[pcommon.Value]{
 		Setter: func(ctx pcommon.Value, val interface{}) {
@@ -66,13 +66,13 @@ func Test_set(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scenarioValue := pcommon.NewValueString(input.Str())
+			scenarioValue := pcommon.NewValueStr(input.Str())
 
 			exprFunc, err := Set(tt.setter, tt.getter)
 			require.NoError(t, err)
 			assert.Nil(t, exprFunc(scenarioValue))
 
-			expected := pcommon.NewValueString("")
+			expected := pcommon.NewValueStr("")
 			tt.want(expected)
 
 			assert.Equal(t, expected, scenarioValue)

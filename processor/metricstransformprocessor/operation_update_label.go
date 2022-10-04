@@ -40,7 +40,7 @@ func updateLabelOp(metric pmetric.Metric, mtpOp internalOperation, f internalFil
 		}
 
 		if newValue, ok := mtpOp.valueActionsMapping[attrVal.Str()]; ok {
-			attrs.PutString(attrKey, newValue)
+			attrs.PutStr(attrKey, newValue)
 		}
 		return true
 	})

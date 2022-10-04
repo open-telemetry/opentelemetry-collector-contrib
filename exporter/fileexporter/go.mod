@@ -7,8 +7,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.61.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.61.0
-	go.opentelemetry.io/collector/pdata v0.61.0
+	go.opentelemetry.io/collector v0.61.1-0.20221004200446-8efcb44cc981
+	go.opentelemetry.io/collector/pdata v0.61.1-0.20221004200446-8efcb44cc981
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
 

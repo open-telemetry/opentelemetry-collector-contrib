@@ -90,7 +90,7 @@ func TestBuildPath(t *testing.T) {
 			name: "happy_path",
 			attributes: func() pcommon.Map {
 				attr := pcommon.NewMap()
-				attr.PutString("key0", "val0")
+				attr.PutStr("key0", "val0")
 				return attr
 			}(),
 			want: "happy_path;key0=val0",
@@ -99,8 +99,8 @@ func TestBuildPath(t *testing.T) {
 			name: "empty_value",
 			attributes: func() pcommon.Map {
 				attr := pcommon.NewMap()
-				attr.PutString("k0", "")
-				attr.PutString("k1", "v1")
+				attr.PutStr("k0", "")
+				attr.PutStr("k1", "v1")
 				return attr
 			}(),
 			want: "empty_value;k0=" + tagValueEmptyPlaceholder + ";k1=v1",
@@ -195,29 +195,29 @@ func TestToPlaintext(t *testing.T) {
 				ms.AppendEmpty().SetName("gauge_double_with_dims")
 				dps1 := ms.At(0).SetEmptyGauge().DataPoints()
 				dps1.AppendEmpty().SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
-				dps1.At(0).Attributes().PutString("k0", "v0")
-				dps1.At(0).Attributes().PutString("k1", "v1")
+				dps1.At(0).Attributes().PutStr("k0", "v0")
+				dps1.At(0).Attributes().PutStr("k1", "v1")
 				dps1.At(0).SetDoubleValue(doubleVal)
 				ms.AppendEmpty().SetName("gauge_int_with_dims")
 				dps2 := ms.At(1).SetEmptyGauge().DataPoints()
 				dps2.AppendEmpty().SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
-				dps2.At(0).Attributes().PutString("k0", "v0")
-				dps2.At(0).Attributes().PutString("k1", "v1")
+				dps2.At(0).Attributes().PutStr("k0", "v0")
+				dps2.At(0).Attributes().PutStr("k1", "v1")
 				dps2.At(0).SetIntValue(int64Val)
 
 				ms.AppendEmpty().SetName("cumulative_double_with_dims")
 				ms.At(2).SetEmptySum().SetIsMonotonic(true)
 				dps3 := ms.At(2).Sum().DataPoints()
 				dps3.AppendEmpty().SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
-				dps3.At(0).Attributes().PutString("k0", "v0")
-				dps3.At(0).Attributes().PutString("k1", "v1")
+				dps3.At(0).Attributes().PutStr("k0", "v0")
+				dps3.At(0).Attributes().PutStr("k1", "v1")
 				dps3.At(0).SetDoubleValue(doubleVal)
 				ms.AppendEmpty().SetName("cumulative_int_with_dims")
 				ms.At(3).SetEmptySum().SetIsMonotonic(true)
 				dps4 := ms.At(3).Sum().DataPoints()
 				dps4.AppendEmpty().SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
-				dps4.At(0).Attributes().PutString("k0", "v0")
-				dps4.At(0).Attributes().PutString("k1", "v1")
+				dps4.At(0).Attributes().PutStr("k0", "v0")
+				dps4.At(0).Attributes().PutStr("k1", "v1")
 				dps4.At(0).SetIntValue(int64Val)
 				return md
 			},
