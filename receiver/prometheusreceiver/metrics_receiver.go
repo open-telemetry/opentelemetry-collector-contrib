@@ -48,16 +48,16 @@ const (
 
 // pReceiver is the type that provides Prometheus scraper/receiver functionality.
 type pReceiver struct {
-	cfg            *Config
-	consumer       consumer.Metrics
-	cancelFunc     context.CancelFunc
-	configLoaded   chan struct{}
-	loadConfigOnce sync.Once
+	cfg                 *Config
+	consumer            consumer.Metrics
+	cancelFunc          context.CancelFunc
+	targetAllocatorStop chan struct{}
+	configLoaded        chan struct{}
+	loadConfigOnce      sync.Once
 
-	settings            component.ReceiverCreateSettings
-	scrapeManager       *scrape.Manager
-	discoveryManager    *discovery.Manager
-	targetAllocatorStop chan bool
+	settings         component.ReceiverCreateSettings
+	scrapeManager    *scrape.Manager
+	discoveryManager *discovery.Manager
 }
 
 // New creates a new prometheus.Receiver reference.
@@ -67,7 +67,7 @@ func newPrometheusReceiver(set component.ReceiverCreateSettings, cfg *Config, ne
 		consumer:            next,
 		settings:            set,
 		configLoaded:        make(chan struct{}),
-		targetAllocatorStop: make(chan bool, 1),
+		targetAllocatorStop: make(chan struct{}),
 	}
 	return pr
 }
