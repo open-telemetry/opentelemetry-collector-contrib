@@ -48,9 +48,9 @@ const (
 
 // closeOnce ensures that the scrape manager is started after the discovery manager
 type closeOnce struct {
-	C     chan struct{}
-	once  sync.Once
-	Close func()
+	Loaded chan struct{}
+	once   sync.Once
+	Close  func()
 }
 
 // pReceiver is the type that provides Prometheus scraper/receiver functionality.
@@ -69,11 +69,11 @@ type pReceiver struct {
 // New creates a new prometheus.Receiver reference.
 func newPrometheusReceiver(set component.ReceiverCreateSettings, cfg *Config, next consumer.Metrics) *pReceiver {
 	reloadReady := &closeOnce{
-		C: make(chan struct{}),
+		Loaded: make(chan struct{}),
 	}
 	reloadReady.Close = func() {
 		reloadReady.once.Do(func() {
-			close(reloadReady.C)
+			close(reloadReady.Loaded)
 		})
 	}
 	pr := &pReceiver{
@@ -128,9 +128,9 @@ func (r *pReceiver) initTargetAllocator(allocConf *targetAllocator, baseCfg *con
 	if err != nil {
 		return err
 	}
-	r.targetAllocatorIntervalTicker = time.NewTicker(allocConf.Interval)
 	go func() {
-		<-r.reloadReady.C
+		<-r.reloadReady.Loaded
+		r.targetAllocatorIntervalTicker = time.NewTicker(allocConf.Interval)
 		for {
 			<-r.targetAllocatorIntervalTicker.C
 			hash, newErr := r.syncTargetAllocator(savedHash, allocConf, baseCfg)
@@ -282,7 +282,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 	r.scrapeManager = scrape.NewManager(&scrape.Options{PassMetadataInContext: true}, logger, store)
 
 	go func() {
-		<-r.reloadReady.C
+		<-r.reloadReady.Loaded
 		r.settings.Logger.Info("Starting scrape manager")
 		if err := r.scrapeManager.Run(r.discoveryManager.SyncCh()); err != nil {
 			r.settings.Logger.Error("Scrape manager failed", zap.Error(err))
