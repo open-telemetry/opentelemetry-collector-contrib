@@ -54,11 +54,10 @@ type pReceiver struct {
 	configLoaded   chan struct{}
 	loadConfigOnce sync.Once
 
-	settings                      component.ReceiverCreateSettings
-	scrapeManager                 *scrape.Manager
-	discoveryManager              *discovery.Manager
-	targetAllocatorIntervalTicker *time.Ticker
-	targetAllocatorStop           chan bool
+	settings            component.ReceiverCreateSettings
+	scrapeManager       *scrape.Manager
+	discoveryManager    *discovery.Manager
+	targetAllocatorStop chan bool
 }
 
 // New creates a new prometheus.Receiver reference.
@@ -119,10 +118,10 @@ func (r *pReceiver) startTargetAllocator(allocConf *targetAllocator, baseCfg *co
 		return err
 	}
 	go func() {
-		r.targetAllocatorIntervalTicker = time.NewTicker(allocConf.Interval)
+		targetAllocatorIntervalTicker := time.NewTicker(allocConf.Interval)
 		for {
 			select {
-			case <-r.targetAllocatorIntervalTicker.C:
+			case <-targetAllocatorIntervalTicker.C:
 				hash, newErr := r.syncTargetAllocator(savedHash, allocConf, baseCfg)
 				if newErr != nil {
 					r.settings.Logger.Error(newErr.Error())
@@ -130,6 +129,7 @@ func (r *pReceiver) startTargetAllocator(allocConf *targetAllocator, baseCfg *co
 				}
 				savedHash = hash
 			case <-r.targetAllocatorStop:
+				targetAllocatorIntervalTicker.Stop()
 				r.settings.Logger.Info("Stopping target allocator")
 				return
 			}
@@ -307,9 +307,6 @@ func gcInterval(cfg *config.Config) time.Duration {
 func (r *pReceiver) Shutdown(context.Context) error {
 	r.cancelFunc()
 	r.scrapeManager.Stop()
-	if r.targetAllocatorIntervalTicker != nil {
-		r.targetAllocatorIntervalTicker.Stop()
-		r.targetAllocatorStop <- true
-	}
+	close(r.targetAllocatorStop)
 	return nil
 }
