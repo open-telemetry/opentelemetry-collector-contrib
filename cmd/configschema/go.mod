@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.61.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.61.0
+	go.opentelemetry.io/collector v0.61.1-0.20221004012633-7cb544d3be36
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4
 	golang.org/x/text v0.3.7
 )
@@ -575,11 +575,11 @@ require (
 	go.mongodb.org/atlas v0.17.0 // indirect
 	go.mongodb.org/mongo-driver v1.10.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.61.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.61.0 // indirect
+	go.opentelemetry.io/collector/pdata v0.61.1-0.20221004012633-7cb544d3be36 // indirect
+	go.opentelemetry.io/collector/semconv v0.61.1-0.20221004012633-7cb544d3be36 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.1 // indirect
-	go.opentelemetry.io/contrib/zpages v0.36.0 // indirect
+	go.opentelemetry.io/contrib/zpages v0.36.1 // indirect
 	go.opentelemetry.io/otel v1.10.0 // indirect
 	go.opentelemetry.io/otel/metric v0.32.1 // indirect
 	go.opentelemetry.io/otel/sdk v1.10.0 // indirect
