@@ -1,0 +1,21 @@
+default:
+  type: promtail_input
+static_config:
+  type: promtail_input
+  scrape_configs:
+    - job_name: testjob
+      static_configs:
+        - labels:
+            job: varlogs
+            __path__: /var/log/example.log
+loki_push_api:
+  type: promtail_input
+  scrape_configs:
+    - job_name: push
+      loki_push_api:
+        server:
+          http_listen_port: 3101
+          grpc_listen_port: 3600
+        labels:
+          pushserver: push1
+        use_incoming_timestamp: true

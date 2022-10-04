@@ -15,57 +15,111 @@
 package promtailreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/promtailreceiver"
 
 import (
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"context"
+	"path"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/go-kit/log"
+
+	"github.com/grafana/loki/clients/pkg/promtail/api"
+	"github.com/grafana/loki/clients/pkg/promtail/targets"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/promtail"
 )
 
 const (
-	typeStr   = "promtail"
-	stability = component.StabilityLevelInDevelopment
+	operatorType = "promtail_input"
 )
 
-// NewFactory creates a factory for promtail receiver
-func NewFactory() component.ReceiverFactory {
-	return adapter.NewFactory(ReceiverType{}, stability)
+func init() {
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
-// ReceiverType implements stanza.LogReceiverType
-// to create a promtail receiver
-type ReceiverType struct{}
-
-// Type is the receiver type
-func (f ReceiverType) Type() config.Type {
-	return typeStr
+type PromtailInput struct {
+	helper.InputOperator
+	config *Config
+	app    *app
+	cancel context.CancelFunc
 }
 
-// CreateDefaultConfig creates a config with type and version
-func (f ReceiverType) CreateDefaultConfig() config.Receiver {
-	return &PromtailConfig{
-		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        []operator.Config{},
-		},
-		InputConfig: *promtail.NewConfig(),
+type app struct {
+	manager *targets.TargetManagers
+	client  api.EntryHandler
+	entries chan api.Entry
+	logger  log.Logger
+	reg     prometheus.Registerer
+}
+
+func (a *app) Shutdown() {
+	if a.manager != nil {
+		a.manager.Stop()
 	}
+	a.client.Stop()
 }
 
-// BaseConfig gets the base config from config, for now
-func (f ReceiverType) BaseConfig(cfg config.Receiver) adapter.BaseConfig {
-	return cfg.(*PromtailConfig).BaseConfig
+func (p *PromtailInput) Start(_ operator.Persister) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	p.cancel = cancel
+
+	manager, err := targets.NewTargetManagers(
+		p.app,
+		p.app.reg,
+		p.app.logger,
+		p.config.PositionsConfig,
+		p.app.client,
+		p.config.ScrapeConfig,
+		&p.config.TargetConfig,
+	)
+
+	if err != nil {
+		return err
+	}
+	p.app.manager = manager
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case inputEntry := <-p.app.entries:
+				entry, err := p.parsePromtailEntry(inputEntry)
+				if err != nil {
+					p.Warnw("Failed to parse promtail entry", zap.Error(err))
+					continue
+				}
+				p.Write(ctx, entry)
+			}
+		}
+	}()
+	return nil
 }
 
-// PromtailConfig defines configuration for the promtail receiver
-type PromtailConfig struct {
-	adapter.BaseConfig `mapstructure:",squash"`
-	InputConfig        promtail.Config `mapstructure:",squash"`
+func (p *PromtailInput) Stop() error {
+	p.cancel()
+	p.app.Shutdown()
+	return nil
 }
 
-// InputConfig unmarshals the input operator
-func (f ReceiverType) InputConfig(cfg config.Receiver) operator.Config {
-	return operator.NewConfig(&cfg.(*PromtailConfig).InputConfig)
+func (p *PromtailInput) parsePromtailEntry(inputEntry api.Entry) (*entry.Entry, error) {
+	outputEntry, err := p.NewEntry(inputEntry.Entry.Line)
+	if err != nil {
+		return nil, err
+	}
+	outputEntry.Timestamp = inputEntry.Entry.Timestamp
+
+	for key, val := range inputEntry.Labels {
+		valStr := string(val)
+		keyStr := string(key)
+		switch key {
+		case "filename":
+			outputEntry.AddAttribute("log.file.path", valStr)
+			outputEntry.AddAttribute("log.file.name", path.Base(valStr))
+		default:
+			outputEntry.AddAttribute(keyStr, valStr)
+		}
+	}
+	return outputEntry, nil
 }

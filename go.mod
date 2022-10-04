@@ -395,7 +395,7 @@ require (
 	github.com/grafana/dskit v0.0.0-20220928083349-b1b307db4f30 // indirect
 	github.com/grafana/go-gelf/v2 v2.0.1 // indirect
 	github.com/grafana/groupcache_exporter v0.0.0-20220629095919-59a8c6428a43 // indirect
-	github.com/grafana/loki v1.6.2-0.20220927161239-f3b72c8b591e // indirect
+	github.com/grafana/loki v1.6.2-0.20221004074821-dcd2d06823e2 // indirect
 	github.com/grafana/regexp v0.0.0-20220304100321-149c8afcd6cb // indirect
 	github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
@@ -1074,10 +1074,6 @@ replace github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.
 replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ./internal/filter
-
-// TODO remove when https://github.com/grafana/loki/pull/7320 is merged
-// added mapstructure support to promtail config structs
-replace github.com/grafana/loki v1.6.2-0.20220927161239-f3b72c8b591e => github.com/mar4uk/loki v1.6.2-0.20221003072150-8bafc67b5c08
 
 replace github.com/hpcloud/tail => github.com/grafana/tail v0.0.0-20220426200921-98e8eb28ea4c
 
