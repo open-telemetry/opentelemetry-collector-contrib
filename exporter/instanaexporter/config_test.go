@@ -34,7 +34,7 @@ func TestConfigValidate(t *testing.T) {
 	})
 
 	t.Run("Invalid Endpoint Invalid URL", func(t *testing.T) {
-		c := &Config{Endpoint: "http://example.}~", AgentKey: "key1"}
+		c := &Config{Endpoint: "http://example.~}", AgentKey: "key1"}
 		err := c.Validate()
 		assert.Error(t, err)
 	})
