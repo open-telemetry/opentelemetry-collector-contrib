@@ -44,8 +44,8 @@ These are the metrics available for this scraper.
 | **elasticsearch.node.ingest.documents.current** | Total number of documents currently being ingested. | {documents} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.ingest.operations.failed** | Total number of failed ingest operations during the lifetime of this node. | {operation} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.open_files** | The number of open file descriptors held by the node. | {files} | Sum(Int) | <ul> </ul> |
-| **elasticsearch.node.operations.completed** | The number of operations completed. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
-| **elasticsearch.node.operations.time** | Time spent on operations. | ms | Sum(Int) | <ul> <li>operation</li> </ul> |
+| **elasticsearch.node.operations.completed** | The number of operations completed for a node. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
+| **elasticsearch.node.operations.time** | Time spent on operations for a node. | ms | Sum(Int) | <ul> <li>operation</li> </ul> |
 | **elasticsearch.node.pipeline.ingest.documents.current** | Total number of documents currently being ingested by a pipeline. | {documents} | Sum(Int) | <ul> <li>ingest_pipeline_name</li> </ul> |
 | **elasticsearch.node.pipeline.ingest.documents.preprocessed** | Number of documents preprocessed by the ingest pipeline. | {documents} | Sum(Int) | <ul> <li>ingest_pipeline_name</li> </ul> |
 | **elasticsearch.node.pipeline.ingest.operations.failed** | Total number of failed operations for the ingest pipeline. | {operation} | Sum(Int) | <ul> <li>ingest_pipeline_name</li> </ul> |
@@ -92,6 +92,7 @@ metrics:
 | Name | Description | Type |
 | ---- | ----------- | ---- |
 | elasticsearch.cluster.name | The name of the elasticsearch cluster. | String |
+| elasticsearch.index.name | The name of the elasticsearch index. | String |
 | elasticsearch.node.name | The name of the elasticsearch node. | String |
 
 ## Metric attributes

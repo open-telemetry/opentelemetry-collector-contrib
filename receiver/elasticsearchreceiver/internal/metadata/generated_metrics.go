@@ -2656,7 +2656,7 @@ type metricElasticsearchNodeOperationsCompleted struct {
 // init fills elasticsearch.node.operations.completed metric with initial data.
 func (m *metricElasticsearchNodeOperationsCompleted) init() {
 	m.data.SetName("elasticsearch.node.operations.completed")
-	m.data.SetDescription("The number of operations completed.")
+	m.data.SetDescription("The number of operations completed for a node.")
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -2709,7 +2709,7 @@ type metricElasticsearchNodeOperationsTime struct {
 // init fills elasticsearch.node.operations.time metric with initial data.
 func (m *metricElasticsearchNodeOperationsTime) init() {
 	m.data.SetName("elasticsearch.node.operations.time")
-	m.data.SetDescription("Time spent on operations.")
+	m.data.SetDescription("Time spent on operations for a node.")
 	m.data.SetUnit("ms")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -4517,6 +4517,13 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 func WithElasticsearchClusterName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
 		rm.Resource().Attributes().PutStr("elasticsearch.cluster.name", val)
+	}
+}
+
+// WithElasticsearchIndexName sets provided value as "elasticsearch.index.name" attribute for current resource.
+func WithElasticsearchIndexName(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().PutString("elasticsearch.index.name", val)
 	}
 }
 

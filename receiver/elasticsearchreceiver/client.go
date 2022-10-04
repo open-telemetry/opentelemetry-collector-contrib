@@ -40,6 +40,7 @@ var (
 type elasticsearchClient interface {
 	NodeStats(ctx context.Context, nodes []string) (*model.NodeStats, error)
 	ClusterHealth(ctx context.Context) (*model.ClusterHealth, error)
+	IndexStats(ctx context.Context, indices []string) (*model.IndexStats, error)
 	Version(ctx context.Context) (*model.VersionResponse, error)
 }
 
@@ -88,6 +89,8 @@ const nodeStatsMetrics = "breaker,indices,process,jvm,thread_pool,transport,http
 // nodeStatsIndexMetrics is a comma separated list of index metrics that will be gathered from NodeStats.
 const nodeStatsIndexMetrics = "store,docs,indexing,get,search,merge,refresh,flush,warmer,query_cache,fielddata,translog"
 
+const indexStatsMetrics = "search"
+
 func (c defaultElasticsearchClient) NodeStats(ctx context.Context, nodes []string) (*model.NodeStats, error) {
 	var nodeSpec string
 	if len(nodes) > 0 {
@@ -117,6 +120,27 @@ func (c defaultElasticsearchClient) ClusterHealth(ctx context.Context) (*model.C
 	clusterHealth := model.ClusterHealth{}
 	err = json.Unmarshal(body, &clusterHealth)
 	return &clusterHealth, err
+}
+
+func (c defaultElasticsearchClient) IndexStats(ctx context.Context, indices []string) (*model.IndexStats, error) {
+	var indexSpec string
+	if len(indices) > 0 {
+		indexSpec = strings.Join(indices, ",")
+	} else {
+		indexSpec = "_all"
+	}
+
+	indexStatsPath := fmt.Sprintf("%s/_stats/%s", indexSpec, indexStatsMetrics)
+
+	body, err := c.doRequest(ctx, indexStatsPath)
+	if err != nil {
+		return nil, err
+	}
+
+	indexStats := model.IndexStats{}
+	err = json.Unmarshal(body, &indexStats)
+
+	return &indexStats, err
 }
 
 func (c defaultElasticsearchClient) Version(ctx context.Context) (*model.VersionResponse, error) {

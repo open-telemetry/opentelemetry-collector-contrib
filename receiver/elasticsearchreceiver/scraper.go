@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
 )
 
 const (
@@ -111,6 +112,7 @@ func (r *elasticsearchScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 	r.getVersion(ctx, errs)
 	r.scrapeNodeMetrics(ctx, now, errs)
 	r.scrapeClusterMetrics(ctx, now, errs)
+	r.scrapeIndicesMetrics(ctx, now, errs)
 
 	return r.mb.Emit(), errs.Combine()
 }
@@ -362,4 +364,25 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pco
 	}
 
 	r.mb.EmitForResource(metadata.WithElasticsearchClusterName(clusterHealth.ClusterName))
+}
+
+func (r *elasticsearchScraper) scrapeIndicesMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	// TODO: config
+	indexStats, err := r.client.IndexStats(ctx, []string{})
+
+	if err != nil {
+		errs.AddPartial(4, err)
+		return
+	}
+
+	// The metrics for all indices are queried by using "_all" name and hence its the name used for labeling them.
+	r.scrapeOneIndexMetrics(now, "_all", &indexStats.All)
+
+	for name, stats := range indexStats.Indices {
+		r.scrapeOneIndexMetrics(now, name, &stats)
+	}
+}
+
+func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name string, stats *model.IndexStatsIndexInfo) {
+	r.mb.EmitForResource(metadata.WithElasticsearchIndexName(name))
 }

@@ -7,6 +7,9 @@ resource_attributes:
   elasticsearch.node.name:
     description: The name of the elasticsearch node.
     type: string
+  elasticsearch.index.name:
+    description: The name of the elasticsearch index.
+    type: string
 
 attributes:
   cache_name:
@@ -137,6 +140,7 @@ attributes:
     enum:
       - hit
       - miss
+
 metrics:
   # these metrics are from /_nodes/stats, and are node level metrics
   elasticsearch.breaker.memory.estimated:
@@ -295,7 +299,7 @@ metrics:
     attributes: []
     enabled: true
   elasticsearch.node.operations.completed:
-    description: The number of operations completed.
+    description: The number of operations completed for a node.
     unit: "{operations}"
     sum:
       monotonic: true
@@ -304,7 +308,7 @@ metrics:
     attributes: [operation]
     enabled: true
   elasticsearch.node.operations.time:
-    description: Time spent on operations.
+    description: Time spent on operations for a node.
     unit: ms
     sum:
       monotonic: true
