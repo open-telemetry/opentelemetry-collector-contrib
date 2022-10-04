@@ -261,9 +261,9 @@ func testMovieMetrics(t *testing.T, rm pmetric.ResourceMetrics, genreAttrKey str
 		genreStr := genre.AsString()
 		switch genreStr {
 		case "SciFi":
-			assert.EqualValues(t, 3, pt.IntVal())
+			assert.EqualValues(t, 3, pt.IntValue())
 		case "Action":
-			assert.EqualValues(t, 2, pt.IntVal())
+			assert.EqualValues(t, 2, pt.IntValue())
 		default:
 			assert.Failf(t, "unexpected genre: %s", genreStr)
 		}

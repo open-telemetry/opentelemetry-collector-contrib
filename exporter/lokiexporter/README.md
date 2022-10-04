@@ -35,16 +35,16 @@ processors:
     actions:
     - action: insert
       key: loki.attribute.labels
-      value: [http.status_code]
+      value: http.status_code
 
   resource:
     attributes:
     - action: insert
       key: loki.attribute.labels
-      value: [http.status]
+      value: http.status
     - action: insert
       key: loki.resource.labels
-      value: [host.name, pod.name]
+      value: host.name, pod.name
 
 extensions:
 
@@ -73,13 +73,13 @@ processors:
     actions:
     - action: insert
       key: loki.attribute.labels
-      value: [http.status_code]
+      value: http.status_code
 
   resource:
     attributes:
     - action: insert
       key: loki.resource.labels
-      value: [pod.name]
+      value: pod.name
 ```
 
 ## Tenant information

@@ -21,12 +21,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func ReplacePattern(target ottl.GetSetter, regexPattern string, replacement string) (ottl.ExprFunc, error) {
+func ReplacePattern[K any](target ottl.GetSetter[K], regexPattern string, replacement string) (ottl.ExprFunc[K], error) {
 	compiledPattern, err := regexp.Compile(regexPattern)
 	if err != nil {
 		return nil, fmt.Errorf("the regex pattern supplied to replace_pattern is not a valid pattern: %w", err)
 	}
-	return func(ctx ottl.TransformContext) interface{} {
+	return func(ctx K) interface{} {
 		originalVal := target.Get(ctx)
 		if originalVal == nil {
 			return nil

@@ -20,16 +20,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 // valueFor is a test helper to eliminate a lot of tedium in writing tests of Comparisons.
-func valueFor(x any) Value {
-	val := Value{}
+func valueFor(x any) value {
+	val := value{}
 	switch v := x.(type) {
 	case []byte:
-		var b Bytes = v
+		var b byteSlice = v
 		val.Bytes = &b
 	case string:
 		switch {
@@ -57,9 +58,9 @@ func valueFor(x any) Value {
 	case *int64:
 		val.Int = v
 	case bool:
-		val.Bool = Booleanp(Boolean(v))
+		val.Bool = booleanp(boolean(v))
 	case nil:
-		var n IsNil = true
+		var n isNil = true
 		val.IsNil = &n
 	default:
 		panic("test error!")
@@ -67,9 +68,9 @@ func valueFor(x any) Value {
 	return val
 }
 
-// comparison is a test helper that constructs a Comparison object using valueFor
-func comparison(left any, right any, op string) *Comparison {
-	return &Comparison{
+// comparison is a test helper that constructs a comparison object using valueFor
+func comparisonHelper(left any, right any, op string) *comparison {
+	return &comparison{
 		Left:  valueFor(left),
 		Right: valueFor(right),
 		Op:    compareOpTable[op],
@@ -81,48 +82,46 @@ func Test_newComparisonEvaluator(t *testing.T) {
 		defaultFunctionsForTests(),
 		testParsePath,
 		testParseEnum,
-		component.TelemetrySettings{},
+		componenttest.NewNopTelemetrySettings(),
 	)
 
-	tests := []struct {
+	var tests = []struct {
 		name string
 		l    any
 		r    any
 		op   string
-		item interface{}
+		item string
 		want bool
 	}{
-		{"literals match", "hello", "hello", "==", nil, true},
-		{"literals don't match", "hello", "goodbye", "!=", nil, true},
-		{"path expression matches", "NAME", "bear", "==", "bear", true},
-		{"path expression not matches", "NAME", "cat", "!=", "bear", true},
-		{"compare Enum to int", "TEST_ENUM", int(0), "==", nil, true},
-		{"compare int to Enum", int(2), "TEST_ENUM_TWO", "==", nil, true},
-		{"2 > Enum 0", int(2), "TEST_ENUM", ">", nil, true},
-		{"not 2 < Enum 0", int(2), "TEST_ENUM", "<", nil, false},
-		{"not 6 == 3.14", 6, 3.14, "==", nil, false},
-		{"6 != 3.14", 6, 3.14, "!=", nil, true},
-		{"6 > 3.14", 6, 3.14, ">", nil, true},
-		{"6 >= 3.14", 6, 3.14, ">=", nil, true},
-		{"not 6 < 3.14", 6, 3.14, "<", nil, false},
-		{"not 6 <= 3.14", 6, 3.14, "<=", nil, false},
-		{"'foo' > 'bar'", "foo", "bar", ">", nil, true},
-		{"'foo' > bear", "foo", "NAME", ">", "bear", true},
-		{"true > false", true, false, ">", nil, true},
-		{"not true > 0", true, 0, ">", nil, false},
-		{"not 'true' == true", "true", true, "==", nil, false},
-		{"[]byte('a') < []byte('b')", []byte("a"), []byte("b"), "<", nil, true},
-		{"nil == nil", nil, nil, "==", nil, true},
-		{"nil == []byte(nil)", nil, []byte(nil), "==", nil, true},
+		{name: "literals match", l: "hello", r: "hello", op: "==", want: true},
+		{name: "literals don't match", l: "hello", r: "goodbye", op: "!=", want: true},
+		{name: "path expression matches", l: "NAME", r: "bear", op: "==", item: "bear", want: true},
+		{name: "path expression not matches", l: "NAME", r: "cat", op: "!=", item: "bear", want: true},
+		{name: "compare Enum to int", l: "TEST_ENUM", r: 0, op: "==", want: true},
+		{name: "compare int to Enum", l: 2, r: "TEST_ENUM_TWO", op: "==", want: true},
+		{name: "2 > Enum 0", l: 2, r: "TEST_ENUM", op: ">", want: true},
+		{name: "not 2 < Enum 0", l: 2, r: "TEST_ENUM", op: "<"},
+		{name: "not 6 == 3.14", l: 6, r: 3.14, op: "=="},
+		{name: "6 != 3.14", l: 6, r: 3.14, op: "!=", want: true},
+		{name: "6 > 3.14", l: 6, r: 3.14, op: ">", want: true},
+		{name: "6 >= 3.14", l: 6, r: 3.14, op: ">=", want: true},
+		{name: "not 6 < 3.14", l: 6, r: 3.14, op: "<"},
+		{name: "not 6 <= 3.14", l: 6, r: 3.14, op: "<="},
+		{name: "'foo' > 'bar'", l: "foo", r: "bar", op: ">", want: true},
+		{name: "'foo' > bear", l: "foo", r: "NAME", op: ">", item: "bear", want: true},
+		{name: "true > false", l: true, r: false, op: ">", want: true},
+		{name: "not true > 0", l: true, r: 0, op: ">"},
+		{name: "not 'true' == true", l: "true", r: true, op: "=="},
+		{name: "[]byte('a') < []byte('b')", l: []byte("a"), r: []byte("b"), op: "<", want: true},
+		{name: "nil == nil", op: "==", want: true},
+		{name: "nil == []byte(nil)", r: []byte(nil), op: "==", want: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			comp := comparison(tt.l, tt.r, tt.op)
+			comp := comparisonHelper(tt.l, tt.r, tt.op)
 			evaluate, err := p.newComparisonEvaluator(comp)
 			assert.NoError(t, err)
-			assert.Equal(t, tt.want, evaluate(ottltest.TestTransformContext{
-				Item: tt.item,
-			}))
+			assert.Equal(t, tt.want, evaluate(tt.item))
 		})
 	}
 }
@@ -137,16 +136,16 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		comparison *Comparison
+		comparison *comparison
 	}{
 		{
 			name: "unknown Path",
-			comparison: &Comparison{
-				Left: Value{
+			comparison: &comparison{
+				Left: value{
 					Enum: (*EnumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
 				},
 				Op: EQ,
-				Right: Value{
+				Right: value{
 					String: ottltest.Strp("trash"),
 				},
 			},
@@ -171,19 +170,19 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 	tests := []struct {
 		name string
 		want bool
-		expr *BooleanExpression
+		expr *booleanExpression
 	}{
 		{"a", false,
-			&BooleanExpression{
-				Left: &Term{
-					Left: &BooleanValue{
-						ConstExpr: Booleanp(true),
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: booleanp(true),
 					},
-					Right: []*OpAndBooleanValue{
+					Right: []*opAndBooleanValue{
 						{
 							Operator: "and",
-							Value: &BooleanValue{
-								ConstExpr: Booleanp(false),
+							Value: &booleanValue{
+								ConstExpr: booleanp(false),
 							},
 						},
 					},
@@ -191,16 +190,16 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 			},
 		},
 		{"b", true,
-			&BooleanExpression{
-				Left: &Term{
-					Left: &BooleanValue{
-						ConstExpr: Booleanp(true),
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: booleanp(true),
 					},
-					Right: []*OpAndBooleanValue{
+					Right: []*opAndBooleanValue{
 						{
 							Operator: "and",
-							Value: &BooleanValue{
-								ConstExpr: Booleanp(true),
+							Value: &booleanValue{
+								ConstExpr: booleanp(true),
 							},
 						},
 					},
@@ -208,22 +207,22 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 			},
 		},
 		{"c", false,
-			&BooleanExpression{
-				Left: &Term{
-					Left: &BooleanValue{
-						ConstExpr: Booleanp(true),
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: booleanp(true),
 					},
-					Right: []*OpAndBooleanValue{
+					Right: []*opAndBooleanValue{
 						{
 							Operator: "and",
-							Value: &BooleanValue{
-								ConstExpr: Booleanp(true),
+							Value: &booleanValue{
+								ConstExpr: booleanp(true),
 							},
 						},
 						{
 							Operator: "and",
-							Value: &BooleanValue{
-								ConstExpr: Booleanp(false),
+							Value: &booleanValue{
+								ConstExpr: booleanp(false),
 							},
 						},
 					},
@@ -231,18 +230,18 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 			},
 		},
 		{"d", true,
-			&BooleanExpression{
-				Left: &Term{
-					Left: &BooleanValue{
-						ConstExpr: Booleanp(true),
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: booleanp(true),
 					},
 				},
-				Right: []*OpOrTerm{
+				Right: []*opOrTerm{
 					{
 						Operator: "or",
-						Term: &Term{
-							Left: &BooleanValue{
-								ConstExpr: Booleanp(false),
+						Term: &term{
+							Left: &booleanValue{
+								ConstExpr: booleanp(false),
 							},
 						},
 					},
@@ -250,18 +249,18 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 			},
 		},
 		{"e", true,
-			&BooleanExpression{
-				Left: &Term{
-					Left: &BooleanValue{
-						ConstExpr: Booleanp(false),
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: booleanp(false),
 					},
 				},
-				Right: []*OpOrTerm{
+				Right: []*opOrTerm{
 					{
 						Operator: "or",
-						Term: &Term{
-							Left: &BooleanValue{
-								ConstExpr: Booleanp(true),
+						Term: &term{
+							Left: &booleanValue{
+								ConstExpr: booleanp(true),
 							},
 						},
 					},
@@ -269,18 +268,18 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 			},
 		},
 		{"f", false,
-			&BooleanExpression{
-				Left: &Term{
-					Left: &BooleanValue{
-						ConstExpr: Booleanp(false),
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: booleanp(false),
 					},
 				},
-				Right: []*OpOrTerm{
+				Right: []*opOrTerm{
 					{
 						Operator: "or",
-						Term: &Term{
-							Left: &BooleanValue{
-								ConstExpr: Booleanp(false),
+						Term: &term{
+							Left: &booleanValue{
+								ConstExpr: booleanp(false),
 							},
 						},
 					},
@@ -288,26 +287,26 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 			},
 		},
 		{"g", true,
-			&BooleanExpression{
-				Left: &Term{
-					Left: &BooleanValue{
-						ConstExpr: Booleanp(false),
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: booleanp(false),
 					},
-					Right: []*OpAndBooleanValue{
+					Right: []*opAndBooleanValue{
 						{
 							Operator: "and",
-							Value: &BooleanValue{
-								ConstExpr: Booleanp(false),
+							Value: &booleanValue{
+								ConstExpr: booleanp(false),
 							},
 						},
 					},
 				},
-				Right: []*OpOrTerm{
+				Right: []*opOrTerm{
 					{
 						Operator: "or",
-						Term: &Term{
-							Left: &BooleanValue{
-								ConstExpr: Booleanp(true),
+						Term: &term{
+							Left: &booleanValue{
+								ConstExpr: booleanp(true),
 							},
 						},
 					},
@@ -315,27 +314,27 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 			},
 		},
 		{"h", true,
-			&BooleanExpression{
-				Left: &Term{
-					Left: &BooleanValue{
-						ConstExpr: Booleanp(true),
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: booleanp(true),
 					},
-					Right: []*OpAndBooleanValue{
+					Right: []*opAndBooleanValue{
 						{
 							Operator: "and",
-							Value: &BooleanValue{
-								SubExpr: &BooleanExpression{
-									Left: &Term{
-										Left: &BooleanValue{
-											ConstExpr: Booleanp(true),
+							Value: &booleanValue{
+								SubExpr: &booleanExpression{
+									Left: &term{
+										Left: &booleanValue{
+											ConstExpr: booleanp(true),
 										},
 									},
-									Right: []*OpOrTerm{
+									Right: []*opOrTerm{
 										{
 											Operator: "or",
-											Term: &Term{
-												Left: &BooleanValue{
-													ConstExpr: Booleanp(false),
+											Term: &term{
+												Left: &booleanValue{
+													ConstExpr: booleanp(false),
 												},
 											},
 										},
@@ -352,9 +351,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluate, err := p.newBooleanExpressionEvaluator(tt.expr)
 			assert.NoError(t, err)
-			assert.Equal(t, tt.want, evaluate(ottltest.TestTransformContext{
-				Item: nil,
-			}))
+			assert.Equal(t, tt.want, evaluate(nil))
 		})
 	}
 }

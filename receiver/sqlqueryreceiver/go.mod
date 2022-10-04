@@ -12,8 +12,8 @@ require (
 	github.com/snowflakedb/gosnowflake v1.6.13
 	github.com/stretchr/testify v1.8.0
 	github.com/testcontainers/testcontainers-go v0.14.0
-	go.opentelemetry.io/collector v0.60.1-0.20220923151520-96e9af35c002
-	go.opentelemetry.io/collector/pdata v0.60.1-0.20220923151520-96e9af35c002
+	go.opentelemetry.io/collector v0.61.0
+	go.opentelemetry.io/collector/pdata v0.61.0
 	go.opentelemetry.io/otel/trace v1.10.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
@@ -28,7 +28,7 @@ require (
 	github.com/apache/arrow/go/arrow v0.0.0-20211112161151-bc219186db40 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.16.16 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.0.0 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.12.20 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.12.21 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.7.1 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.23 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.17 // indirect
@@ -55,7 +55,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.15.10 // indirect
+	github.com/klauspost/compress v1.15.11 // indirect
 	github.com/knadh/koanf v1.4.3 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect

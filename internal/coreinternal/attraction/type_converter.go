@@ -31,26 +31,26 @@ func convertValue(logger *zap.Logger, key string, to string, v pcommon.Value) {
 	switch to {
 	case stringConversionTarget:
 		switch v.Type() {
-		case pcommon.ValueTypeString:
+		case pcommon.ValueTypeStr:
 		default:
-			v.SetStringVal(v.AsString())
+			v.SetStr(v.AsString())
 		}
 	case intConversionTarget:
 		switch v.Type() {
 		case pcommon.ValueTypeInt:
 		case pcommon.ValueTypeDouble:
-			v.SetIntVal(int64(v.DoubleVal()))
+			v.SetInt(int64(v.Double()))
 		case pcommon.ValueTypeBool:
-			if v.BoolVal() {
-				v.SetIntVal(1)
+			if v.Bool() {
+				v.SetInt(1)
 			} else {
-				v.SetIntVal(0)
+				v.SetInt(0)
 			}
-		case pcommon.ValueTypeString:
-			s := v.StringVal()
+		case pcommon.ValueTypeStr:
+			s := v.Str()
 			n, err := strconv.ParseInt(s, 10, 64)
 			if err == nil {
-				v.SetIntVal(n)
+				v.SetInt(n)
 			} else {
 				logger.Debug("String could not be converted to int", zap.String("key", key), zap.String("value", s), zap.Error(err))
 			}
@@ -60,19 +60,19 @@ func convertValue(logger *zap.Logger, key string, to string, v pcommon.Value) {
 	case doubleConversionTarget:
 		switch v.Type() {
 		case pcommon.ValueTypeInt:
-			v.SetDoubleVal(float64(v.IntVal()))
+			v.SetDouble(float64(v.Int()))
 		case pcommon.ValueTypeDouble:
 		case pcommon.ValueTypeBool:
-			if v.BoolVal() {
-				v.SetDoubleVal(1)
+			if v.Bool() {
+				v.SetDouble(1)
 			} else {
-				v.SetDoubleVal(0)
+				v.SetDouble(0)
 			}
-		case pcommon.ValueTypeString:
-			s := v.StringVal()
+		case pcommon.ValueTypeStr:
+			s := v.Str()
 			n, err := strconv.ParseFloat(s, 64)
 			if err == nil {
-				v.SetDoubleVal(n)
+				v.SetDouble(n)
 			} else {
 				logger.Debug("String could not be converted to double", zap.String("key", key), zap.String("value", s), zap.Error(err))
 			}

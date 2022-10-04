@@ -16,12 +16,14 @@ package helper
 
 import (
 	"math"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 )
 
 func Test_setTimestampYear(t *testing.T) {
@@ -638,4 +640,50 @@ func TestParseGoTimeBadLocation(t *testing.T) {
 	_, err = tp.parseGotime("02 Jan 06 15:04 BST")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to load location BST")
+}
+
+func TestUnmarshalTimeConfig(t *testing.T) {
+	operatortest.ConfigUnmarshalTests{
+		DefaultConfig: newHelpersConfig(),
+		TestsFile:     filepath.Join(".", "testdata", "timestamp.yaml"),
+		Tests: []operatortest.ConfigUnmarshalTest{
+			{
+				Name: "layout",
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Time = NewTimeParser()
+					c.Time.Layout = "%Y-%m-%d"
+					return c
+				}(),
+			},
+			{
+				Name: "layout_type",
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Time = NewTimeParser()
+					c.Time.LayoutType = "epoch"
+					return c
+				}(),
+			},
+			{
+				Name: "location",
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Time = NewTimeParser()
+					c.Time.Location = "America/Shiprock"
+					return c
+				}(),
+			},
+			{
+				Name: "parse_from",
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					from := entry.NewBodyField("from")
+					c.Time = NewTimeParser()
+					c.Time.ParseFrom = &from
+					return c
+				}(),
+			},
+		},
+	}.Run(t)
 }

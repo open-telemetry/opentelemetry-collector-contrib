@@ -59,14 +59,14 @@ func NewAttributesMatcher(config filterset.Config, attributes []filterconfig.Att
 
 			switch config.MatchType {
 			case filterset.Regexp:
-				if val.Type() != pcommon.ValueTypeString {
+				if val.Type() != pcommon.ValueTypeStr {
 					return nil, fmt.Errorf(
 						"%s=%s for %q only supports STRING, but found %s",
 						filterset.MatchTypeFieldName, filterset.Regexp, attribute.Key, val.Type(),
 					)
 				}
 
-				filter, err := filterset.CreateFilterSet([]string{val.StringVal()}, &config)
+				filter, err := filterset.CreateFilterSet([]string{val.Str()}, &config)
 				if err != nil {
 					return nil, err
 				}
@@ -120,14 +120,14 @@ func (ma AttributesMatcher) Match(attrs pcommon.Map) bool {
 
 func attributeStringValue(attr pcommon.Value) (string, error) {
 	switch attr.Type() {
-	case pcommon.ValueTypeString:
-		return attr.StringVal(), nil
+	case pcommon.ValueTypeStr:
+		return attr.Str(), nil
 	case pcommon.ValueTypeBool:
-		return strconv.FormatBool(attr.BoolVal()), nil
+		return strconv.FormatBool(attr.Bool()), nil
 	case pcommon.ValueTypeDouble:
-		return strconv.FormatFloat(attr.DoubleVal(), 'f', -1, 64), nil
+		return strconv.FormatFloat(attr.Double(), 'f', -1, 64), nil
 	case pcommon.ValueTypeInt:
-		return strconv.FormatInt(attr.IntVal(), 10), nil
+		return strconv.FormatInt(attr.Int(), 10), nil
 	default:
 		return "", errUnexpectedAttributeType
 	}

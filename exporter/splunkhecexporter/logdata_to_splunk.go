@@ -60,13 +60,13 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 	res.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch k {
 		case hostKey:
-			host = v.StringVal()
+			host = v.Str()
 		case sourceKey:
-			source = v.StringVal()
+			source = v.Str()
 		case sourceTypeKey:
-			sourcetype = v.StringVal()
+			sourcetype = v.Str()
 		case indexKey:
-			index = v.StringVal()
+			index = v.Str()
 		case splunk.HecTokenLabel:
 			// ignore
 		default:
@@ -77,13 +77,13 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch k {
 		case hostKey:
-			host = v.StringVal()
+			host = v.Str()
 		case sourceKey:
-			source = v.StringVal()
+			source = v.Str()
 		case sourceTypeKey:
-			sourcetype = v.StringVal()
+			sourcetype = v.Str()
 		case indexKey:
-			index = v.StringVal()
+			index = v.Str()
 		case splunk.HecTokenLabel:
 			// ignore
 		default:
@@ -107,22 +107,22 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 func convertAttributeValue(value pcommon.Value, logger *zap.Logger) interface{} {
 	switch value.Type() {
 	case pcommon.ValueTypeInt:
-		return value.IntVal()
+		return value.Int()
 	case pcommon.ValueTypeBool:
-		return value.BoolVal()
+		return value.Bool()
 	case pcommon.ValueTypeDouble:
-		return value.DoubleVal()
-	case pcommon.ValueTypeString:
-		return value.StringVal()
+		return value.Double()
+	case pcommon.ValueTypeStr:
+		return value.Str()
 	case pcommon.ValueTypeMap:
 		values := map[string]interface{}{}
-		value.MapVal().Range(func(k string, v pcommon.Value) bool {
+		value.Map().Range(func(k string, v pcommon.Value) bool {
 			values[k] = convertAttributeValue(v, logger)
 			return true
 		})
 		return values
 	case pcommon.ValueTypeSlice:
-		arrayVal := value.SliceVal()
+		arrayVal := value.Slice()
 		values := make([]interface{}, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {
 			values[i] = convertAttributeValue(arrayVal.At(i), logger)

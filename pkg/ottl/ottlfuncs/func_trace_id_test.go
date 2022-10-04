@@ -18,9 +18,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_traceID(t *testing.T) {
@@ -37,13 +36,9 @@ func Test_traceID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			ctx := ottltest.TestTransformContext{}
-
-			exprFunc, _ := TraceID(tt.bytes)
-			actual := exprFunc(ctx)
-
-			assert.Equal(t, tt.want, actual)
+			exprFunc, err := TraceID[interface{}](tt.bytes)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, exprFunc(nil))
 		})
 	}
 }
@@ -64,8 +59,9 @@ func Test_traceID_validation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := TraceID(tt.bytes)
-			assert.Error(t, err, "traces ids must be 16 bytes")
+			_, err := TraceID[interface{}](tt.bytes)
+			require.Error(t, err)
+			assert.ErrorContains(t, err, "traces ids must be 16 bytes")
 		})
 	}
 }

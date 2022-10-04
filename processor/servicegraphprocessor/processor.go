@@ -346,7 +346,7 @@ func buildDimensions(e *store.Edge) pcommon.Map {
 func (p *processor) buildMetrics() (pmetric.Metrics, error) {
 	m := pmetric.NewMetrics()
 	ilm := m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-	ilm.Scope().SetName("servicegraphprocessor")
+	ilm.Scope().SetName("traces_service_graph_servicegraphprocessor")
 
 	// Obtain write lock to reset data
 	p.seriesMutex.Lock()
@@ -366,7 +366,7 @@ func (p *processor) buildMetrics() (pmetric.Metrics, error) {
 func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 	for key, c := range p.reqTotal {
 		mCount := ilm.Metrics().AppendEmpty()
-		mCount.SetName("request_total")
+		mCount.SetName("traces_service_graph_request_total")
 		mCount.SetEmptySum().SetIsMonotonic(true)
 		// TODO: Support other aggregation temporalities
 		mCount.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -386,7 +386,7 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 
 	for key, c := range p.reqFailedTotal {
 		mCount := ilm.Metrics().AppendEmpty()
-		mCount.SetName("request_failed_total")
+		mCount.SetName("traces_service_graph_request_failed_total")
 		mCount.SetEmptySum().SetIsMonotonic(true)
 		// TODO: Support other aggregation temporalities
 		mCount.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -410,7 +410,7 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 func (p *processor) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 	for key := range p.reqDurationSecondsCount {
 		mDuration := ilm.Metrics().AppendEmpty()
-		mDuration.SetName("request_duration_seconds")
+		mDuration.SetName("traces_service_graph_request_duration_seconds")
 		// TODO: Support other aggregation temporalities
 		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 

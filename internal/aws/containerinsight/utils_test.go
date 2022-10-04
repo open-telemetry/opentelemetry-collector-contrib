@@ -161,7 +161,7 @@ func checkMetricsAreExpected(t *testing.T, md pmetric.Metrics, fields map[string
 			timeUnixNano, _ = strconv.ParseUint(val, 10, 64)
 			val = strconv.FormatUint(timeUnixNano/uint64(time.Millisecond), 10)
 		}
-		assert.Equal(t, val, attr.StringVal())
+		assert.Equal(t, val, attr.Str())
 	}
 
 	// check the metrics are expected

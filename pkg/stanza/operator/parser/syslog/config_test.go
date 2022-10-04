@@ -83,7 +83,7 @@ func TestUnmarshal(t *testing.T) {
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.Protocol = RFC5424
-					cfg.ParseTo = entry.NewBodyField("log")
+					cfg.ParseTo = entry.RootableField{Field: entry.NewBodyField("log")}
 					return cfg
 				}(),
 			},

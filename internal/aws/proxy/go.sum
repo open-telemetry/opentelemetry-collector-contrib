@@ -1,5 +1,5 @@
-github.com/aws/aws-sdk-go v1.44.103 h1:tbhBHKgiZSIUkG8FcHy3wYKpPVvp65Wn7ZiX0B8phpY=
-github.com/aws/aws-sdk-go v1.44.103/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX4oIKwKHZo=
+github.com/aws/aws-sdk-go v1.44.110 h1:unno3l2FYQo6p0wYCp9gUk8YNzhOxqSktM0Y1vukl9k=
+github.com/aws/aws-sdk-go v1.44.110/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX4oIKwKHZo=
 github.com/benbjohnson/clock v1.3.0 h1:ip6w0uFQkncKQ979AypyG0ER7mqUSBdKLOgAle/AT8A=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -29,8 +29,8 @@ github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.8.0 h1:pSgiaMZlXftHpm5L7V1+rVB+AZJydKsMxsQBIJw4PKk=
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
-go.opentelemetry.io/collector v0.60.1-0.20220923151520-96e9af35c002 h1:+KmAweE0XE/8cGo6ZqE7Qb83vnFVZ5agFjo/QBJ0vvQ=
-go.opentelemetry.io/collector v0.60.1-0.20220923151520-96e9af35c002/go.mod h1:DJMX+EnDACRnwynrLOpWShrYbxx7+rFZTNHTiRTvU3w=
+go.opentelemetry.io/collector v0.61.0 h1:lvuhmlskup6Z3AfQKZwuRk43jRClB+1FkwjGXRoxhfs=
+go.opentelemetry.io/collector v0.61.0/go.mod h1:515eomlUIwLEXTBwLAEEtl2HPreJy5xtv//LYMk/SZE=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
 go.uber.org/atomic v1.10.0 h1:9qC72Qh0+3MqyJbAn8YU5xVq1frD8bn3JtD2oXtafVQ=
 go.uber.org/atomic v1.10.0/go.mod h1:LUxbIzbOniOlMKjJjyPfpl4v+PKK2cNJn91OQbhoJI0=

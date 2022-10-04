@@ -121,16 +121,16 @@ func metadataFromAttributesWithRegistry(registry *featuregate.Registry, attrs pc
 	// AWS EC2 resource metadata
 	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
 	switch {
-	case ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAWS:
+	case ok && cloudProvider.Str() == conventions.AttributeCloudProviderAWS:
 		ec2HostInfo := ec2Attributes.HostInfoFromAttributes(attrs)
 		hm.Meta.InstanceID = ec2HostInfo.InstanceID
 		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
 		hm.Tags.OTel = append(hm.Tags.OTel, ec2HostInfo.EC2Tags...)
-	case ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderGCP:
+	case ok && cloudProvider.Str() == conventions.AttributeCloudProviderGCP:
 		gcpHostInfo := gcp.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
 		hm.Tags.GCP = gcpHostInfo.GCPTags
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, gcpHostInfo.HostAliases...)
-	case ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure:
+	case ok && cloudProvider.Str() == conventions.AttributeCloudProviderAzure:
 		azureHostInfo := azure.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, azureHostInfo.HostAliases...)
 	}

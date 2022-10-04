@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -55,6 +55,20 @@ func TestProcess(t *testing.T) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().PutString("test", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().PutString("test", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().At(0).Attributes().PutString("test", "pass")
+			},
+		},
+		{
+			statements: []string{`set(attributes["int_value"], Int("2")) where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutInt("int_value", 2)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutInt("int_value", 2)
+			},
+		},
+		{
+			statements: []string{`set(attributes["int_value"], Int(value_double)) where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutInt("int_value", 1)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutInt("int_value", 3)
 			},
 		},
 		{
@@ -277,32 +291,32 @@ func TestProcess(t *testing.T) {
 			statements: []string{`set(attributes["test"], Split(attributes["flags"], "|"))`},
 			want: func(td pmetric.Metrics) {
 				v00 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutEmptySlice("test")
-				v00.AppendEmpty().SetStringVal("A")
-				v00.AppendEmpty().SetStringVal("B")
-				v00.AppendEmpty().SetStringVal("C")
+				v00.AppendEmpty().SetStr("A")
+				v00.AppendEmpty().SetStr("B")
+				v00.AppendEmpty().SetStr("C")
 				v01 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutEmptySlice("test")
-				v01.AppendEmpty().SetStringVal("A")
-				v01.AppendEmpty().SetStringVal("B")
-				v01.AppendEmpty().SetStringVal("C")
+				v01.AppendEmpty().SetStr("A")
+				v01.AppendEmpty().SetStr("B")
+				v01.AppendEmpty().SetStr("C")
 				v10 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().PutEmptySlice("test")
-				v10.AppendEmpty().SetStringVal("C")
-				v10.AppendEmpty().SetStringVal("D")
+				v10.AppendEmpty().SetStr("C")
+				v10.AppendEmpty().SetStr("D")
 				v11 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().PutEmptySlice("test")
-				v11.AppendEmpty().SetStringVal("C")
-				v11.AppendEmpty().SetStringVal("D")
+				v11.AppendEmpty().SetStr("C")
+				v11.AppendEmpty().SetStr("D")
 			},
 		},
 		{
 			statements: []string{`set(attributes["test"], Split(attributes["flags"], "|")) where metric.name == "operationA"`},
 			want: func(td pmetric.Metrics) {
 				v00 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutEmptySlice("test")
-				v00.AppendEmpty().SetStringVal("A")
-				v00.AppendEmpty().SetStringVal("B")
-				v00.AppendEmpty().SetStringVal("C")
+				v00.AppendEmpty().SetStr("A")
+				v00.AppendEmpty().SetStr("B")
+				v00.AppendEmpty().SetStr("C")
 				v01 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutEmptySlice("test")
-				v01.AppendEmpty().SetStringVal("A")
-				v01.AppendEmpty().SetStringVal("B")
-				v01.AppendEmpty().SetStringVal("C")
+				v01.AppendEmpty().SetStr("A")
+				v01.AppendEmpty().SetStr("B")
+				v01.AppendEmpty().SetStr("C")
 			},
 		},
 		{
@@ -314,7 +328,7 @@ func TestProcess(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statements[0], func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor(tt.statements, Functions(), component.TelemetrySettings{})
+			processor, err := NewProcessor(tt.statements, Functions(), componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(context.Background(), td)
@@ -355,6 +369,7 @@ func fillMetricOne(m pmetric.Metric) {
 
 	dataPoint1 := m.Sum().DataPoints().AppendEmpty()
 	dataPoint1.SetStartTimestamp(StartTimestamp)
+	dataPoint1.SetDoubleValue(3.7)
 	dataPoint1.Attributes().PutString("attr1", "test1")
 	dataPoint1.Attributes().PutString("attr2", "test2")
 	dataPoint1.Attributes().PutString("attr3", "test3")

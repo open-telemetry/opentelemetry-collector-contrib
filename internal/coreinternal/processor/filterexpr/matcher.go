@@ -39,7 +39,7 @@ func (e *env) HasLabel(key string) bool {
 
 func (e *env) Label(key string) string {
 	v, _ := e.attributes.Get(key)
-	return v.StringVal()
+	return v.Str()
 }
 
 func NewMatcher(expression string) (*Matcher, error) {

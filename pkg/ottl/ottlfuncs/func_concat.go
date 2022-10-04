@@ -21,8 +21,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Concat(delimiter string, vals []ottl.Getter) (ottl.ExprFunc, error) {
-	return func(ctx ottl.TransformContext) interface{} {
+func Concat[K any](delimiter string, vals []ottl.Getter[K]) (ottl.ExprFunc[K], error) {
+	return func(ctx K) interface{} {
 		builder := strings.Builder{}
 		for i, rv := range vals {
 			switch val := rv.Get(ctx).(type) {

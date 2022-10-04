@@ -57,22 +57,22 @@ func ResourceToHostID(res pcommon.Resource) (HostID, bool) {
 	}
 
 	if attr, ok := attrs.Get(conventions.AttributeCloudAccountID); ok {
-		cloudAccount = attr.StringVal()
+		cloudAccount = attr.Str()
 	}
 
 	if attr, ok := attrs.Get(conventions.AttributeHostID); ok {
-		hostID = attr.StringVal()
+		hostID = attr.Str()
 	}
 
 	if attr, ok := attrs.Get(conventions.AttributeCloudProvider); ok {
-		provider = attr.StringVal()
+		provider = attr.Str()
 	}
 
 	switch provider {
 	case conventions.AttributeCloudProviderAWS:
 		var region string
 		if attr, ok := attrs.Get(conventions.AttributeCloudRegion); ok {
-			region = attr.StringVal()
+			region = attr.Str()
 		}
 		if hostID == "" || region == "" || cloudAccount == "" {
 			break
@@ -106,7 +106,7 @@ func ResourceToHostID(res pcommon.Resource) (HostID, bool) {
 	if attr, ok := attrs.Get(conventions.AttributeHostName); ok {
 		return HostID{
 			Key: HostIDKeyHost,
-			ID:  attr.StringVal(),
+			ID:  attr.Str(),
 		}, true
 	}
 
@@ -116,7 +116,7 @@ func ResourceToHostID(res pcommon.Resource) (HostID, bool) {
 func azureID(attrs pcommon.Map, cloudAccount string) string {
 	var resourceGroupName string
 	if attr, ok := attrs.Get("azure.resourcegroup.name"); ok {
-		resourceGroupName = attr.StringVal()
+		resourceGroupName = attr.Str()
 	}
 	if resourceGroupName == "" {
 		return ""
@@ -124,7 +124,7 @@ func azureID(attrs pcommon.Map, cloudAccount string) string {
 
 	var hostname string
 	if attr, ok := attrs.Get("azure.vm.name"); ok {
-		hostname = attr.StringVal()
+		hostname = attr.Str()
 	}
 	if hostname == "" {
 		return ""
@@ -132,7 +132,7 @@ func azureID(attrs pcommon.Map, cloudAccount string) string {
 
 	var vmScaleSetName string
 	if attr, ok := attrs.Get("azure.vm.scaleset.name"); ok {
-		vmScaleSetName = attr.StringVal()
+		vmScaleSetName = attr.Str()
 	}
 	if vmScaleSetName == "" {
 		return strings.ToLower(fmt.Sprintf(

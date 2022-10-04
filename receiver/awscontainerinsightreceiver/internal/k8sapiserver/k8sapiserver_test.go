@@ -119,7 +119,7 @@ func getStringAttrVal(m pmetric.Metrics, key string) string {
 	rm := m.ResourceMetrics().At(0)
 	attributes := rm.Resource().Attributes()
 	if attributeValue, ok := attributes.Get(key); ok {
-		return attributeValue.StringVal()
+		return attributeValue.Str()
 	}
 	return ""
 }

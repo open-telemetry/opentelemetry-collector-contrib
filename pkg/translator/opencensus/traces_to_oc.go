@@ -124,21 +124,21 @@ func attributeValueToOC(attr pcommon.Value) *octrace.AttributeValue {
 	a := &octrace.AttributeValue{}
 
 	switch attr.Type() {
-	case pcommon.ValueTypeString:
+	case pcommon.ValueTypeStr:
 		a.Value = &octrace.AttributeValue_StringValue{
-			StringValue: stringToTruncatableString(attr.StringVal()),
+			StringValue: stringToTruncatableString(attr.Str()),
 		}
 	case pcommon.ValueTypeBool:
 		a.Value = &octrace.AttributeValue_BoolValue{
-			BoolValue: attr.BoolVal(),
+			BoolValue: attr.Bool(),
 		}
 	case pcommon.ValueTypeDouble:
 		a.Value = &octrace.AttributeValue_DoubleValue{
-			DoubleValue: attr.DoubleVal(),
+			DoubleValue: attr.Double(),
 		}
 	case pcommon.ValueTypeInt:
 		a.Value = &octrace.AttributeValue_IntValue{
-			IntValue: attr.IntVal(),
+			IntValue: attr.Int(),
 		}
 	case pcommon.ValueTypeMap:
 		a.Value = &octrace.AttributeValue_StringValue{
@@ -194,7 +194,7 @@ func attributesMapToOCSameProcessAsParentSpan(attr pcommon.Map) *wrapperspb.Bool
 	if !ok || val.Type() != pcommon.ValueTypeBool {
 		return nil
 	}
-	return wrapperspb.Bool(val.BoolVal())
+	return wrapperspb.Bool(val.Bool())
 }
 
 // OTLP follows the W3C format, e.g. "vendorname1=opaqueValue1,vendorname2=opaqueValue2"
@@ -292,15 +292,15 @@ func eventToOC(event ptrace.SpanEvent) *octrace.Span_TimeEvent {
 		}
 		if ocMessageEventAttrFound {
 			ocMessageEventType := ocMessageEventAttrValues["message.type"]
-			ocMessageEventTypeVal := octrace.Span_TimeEvent_MessageEvent_Type_value[ocMessageEventType.StringVal()]
+			ocMessageEventTypeVal := octrace.Span_TimeEvent_MessageEvent_Type_value[ocMessageEventType.Str()]
 			return &octrace.Span_TimeEvent{
 				Time: timestampAsTimestampPb(event.Timestamp()),
 				Value: &octrace.Span_TimeEvent_MessageEvent_{
 					MessageEvent: &octrace.Span_TimeEvent_MessageEvent{
 						Type:             octrace.Span_TimeEvent_MessageEvent_Type(ocMessageEventTypeVal),
-						Id:               uint64(ocMessageEventAttrValues[conventions.AttributeMessagingMessageID].IntVal()),
-						UncompressedSize: uint64(ocMessageEventAttrValues[conventions.AttributeMessagingMessagePayloadSizeBytes].IntVal()),
-						CompressedSize:   uint64(ocMessageEventAttrValues[conventions.AttributeMessagingMessagePayloadCompressedSizeBytes].IntVal()),
+						Id:               uint64(ocMessageEventAttrValues[conventions.AttributeMessagingMessageID].Int()),
+						UncompressedSize: uint64(ocMessageEventAttrValues[conventions.AttributeMessagingMessagePayloadSizeBytes].Int()),
+						CompressedSize:   uint64(ocMessageEventAttrValues[conventions.AttributeMessagingMessagePayloadCompressedSizeBytes].Int()),
 					},
 				},
 			}

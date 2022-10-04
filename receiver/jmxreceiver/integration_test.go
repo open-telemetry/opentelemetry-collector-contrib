@@ -198,23 +198,23 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 				attributes := resource.Attributes()
 				lang, ok := attributes.Get("telemetry.sdk.language")
 				require.True(t, ok)
-				require.Equal(t, "java", lang.StringVal())
+				require.Equal(t, "java", lang.Str())
 
 				sdkName, ok := attributes.Get("telemetry.sdk.name")
 				require.True(t, ok)
-				require.Equal(t, "opentelemetry", sdkName.StringVal())
+				require.Equal(t, "opentelemetry", sdkName.Str())
 
 				version, ok := attributes.Get("telemetry.sdk.version")
 				require.True(t, ok)
-				require.NotEmpty(t, version.StringVal())
+				require.NotEmpty(t, version.Str())
 
 				customAttr, ok := attributes.Get("myattr")
 				require.True(t, ok)
-				require.Equal(t, "myvalue", customAttr.StringVal())
+				require.Equal(t, "myvalue", customAttr.Str())
 
 				anotherCustomAttr, ok := attributes.Get("myotherattr")
 				require.True(t, ok)
-				require.Equal(t, "myothervalue", anotherCustomAttr.StringVal())
+				require.Equal(t, "myothervalue", anotherCustomAttr.Str())
 
 				ilm := rm.ScopeMetrics().At(0)
 				require.Equal(t, "io.opentelemetry.contrib.jmxmetrics", ilm.Scope().Name())

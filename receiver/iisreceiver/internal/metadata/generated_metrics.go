@@ -827,6 +827,20 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
+// WithIisApplicationPool sets provided value as "iis.application_pool" attribute for current resource.
+func WithIisApplicationPool(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().PutString("iis.application_pool", val)
+	}
+}
+
+// WithIisSite sets provided value as "iis.site" attribute for current resource.
+func WithIisSite(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().PutString("iis.site", val)
+	}
+}
+
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {

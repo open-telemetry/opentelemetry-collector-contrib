@@ -1,7 +1,16 @@
 {
    "resourceMetrics": [
       {
-         "resource": {},
+         "resource": {
+            "attributes": [
+               {
+                  "key": "iis.site",
+                  "value": {
+                     "stringValue": "Instance"
+                  }
+               }
+            ]
+         },
          "scopeMetrics": [
             {
                "metrics": [
@@ -13,8 +22,8 @@
                         "dataPoints": [
                            {
                               "asInt": "1",
-                              "startTimeUnixNano": "1649969943717902800",
-                              "timeUnixNano": "1649969943717902800"
+                              "startTimeUnixNano": "1664375532831495700",
+                              "timeUnixNano": "1664375532831495700"
                            }
                         ]
                      },
@@ -28,8 +37,8 @@
                         "dataPoints": [
                            {
                               "asInt": "1",
-                              "startTimeUnixNano": "1649969943717902800",
-                              "timeUnixNano": "1649969943717902800"
+                              "startTimeUnixNano": "1664375532831495700",
+                              "timeUnixNano": "1664375532831495700"
                            }
                         ],
                         "isMonotonic": true
@@ -44,8 +53,8 @@
                         "dataPoints": [
                            {
                               "asInt": "1",
-                              "startTimeUnixNano": "1649969943717902800",
-                              "timeUnixNano": "1649969943717902800"
+                              "startTimeUnixNano": "1664375532831495700",
+                              "timeUnixNano": "1664375532831495700"
                            }
                         ],
                         "isMonotonic": true
@@ -60,8 +69,8 @@
                         "dataPoints": [
                            {
                               "asInt": "1",
-                              "startTimeUnixNano": "1649969943717902800",
-                              "timeUnixNano": "1649969943717902800"
+                              "startTimeUnixNano": "1664375532831495700",
+                              "timeUnixNano": "1664375532831495700"
                            }
                         ],
                         "isMonotonic": true
@@ -84,8 +93,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649969943717902800",
-                              "timeUnixNano": "1649969943717902800"
+                              "startTimeUnixNano": "1664375532831495700",
+                              "timeUnixNano": "1664375532831495700"
                            },
                            {
                               "asInt": "1",
@@ -97,8 +106,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649969943717902800",
-                              "timeUnixNano": "1649969943717902800"
+                              "startTimeUnixNano": "1664375532831495700",
+                              "timeUnixNano": "1664375532831495700"
                            }
                         ],
                         "isMonotonic": true
@@ -117,12 +126,12 @@
                                  {
                                     "key": "direction",
                                     "value": {
-                                       "stringValue": "received"
+                                       "stringValue": "sent"
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649969943717902800",
-                              "timeUnixNano": "1649969943717902800"
+                              "startTimeUnixNano": "1664375532831495700",
+                              "timeUnixNano": "1664375532831495700"
                            },
                            {
                               "asInt": "1",
@@ -130,12 +139,12 @@
                                  {
                                     "key": "direction",
                                     "value": {
-                                       "stringValue": "sent"
+                                       "stringValue": "received"
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649969943717902800",
-                              "timeUnixNano": "1649969943717902800"
+                              "startTimeUnixNano": "1664375532831495700",
+                              "timeUnixNano": "1664375532831495700"
                            }
                         ],
                         "isMonotonic": true
@@ -154,38 +163,12 @@
                                  {
                                     "key": "request",
                                     "value": {
-                                       "stringValue": "delete"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1649969943717902800",
-                              "timeUnixNano": "1649969943717902800"
-                           },
-                           {
-                              "asInt": "1",
-                              "attributes": [
-                                 {
-                                    "key": "request",
-                                    "value": {
                                        "stringValue": "get"
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649969943717902800",
-                              "timeUnixNano": "1649969943717902800"
-                           },
-                           {
-                              "asInt": "1",
-                              "attributes": [
-                                 {
-                                    "key": "request",
-                                    "value": {
-                                       "stringValue": "head"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1649969943717902800",
-                              "timeUnixNano": "1649969943717902800"
+                              "startTimeUnixNano": "1664375532831495700",
+                              "timeUnixNano": "1664375532831495700"
                            },
                            {
                               "asInt": "1",
@@ -197,8 +180,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649969943717902800",
-                              "timeUnixNano": "1649969943717902800"
+                              "startTimeUnixNano": "1664375532831495700",
+                              "timeUnixNano": "1664375532831495700"
                            },
                            {
                               "asInt": "1",
@@ -210,8 +193,34 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649969943717902800",
-                              "timeUnixNano": "1649969943717902800"
+                              "startTimeUnixNano": "1664375532831495700",
+                              "timeUnixNano": "1664375532831495700"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "request",
+                                    "value": {
+                                       "stringValue": "delete"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1664375532831495700",
+                              "timeUnixNano": "1664375532831495700"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "request",
+                                    "value": {
+                                       "stringValue": "head"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1664375532831495700",
+                              "timeUnixNano": "1664375532831495700"
                            },
                            {
                               "asInt": "1",
@@ -223,8 +232,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649969943717902800",
-                              "timeUnixNano": "1649969943717902800"
+                              "startTimeUnixNano": "1664375532831495700",
+                              "timeUnixNano": "1664375532831495700"
                            },
                            {
                               "asInt": "1",
@@ -236,8 +245,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649969943717902800",
-                              "timeUnixNano": "1649969943717902800"
+                              "startTimeUnixNano": "1664375532831495700",
+                              "timeUnixNano": "1664375532831495700"
                            }
                         ],
                         "isMonotonic": true
@@ -245,13 +254,49 @@
                      "unit": "{requests}"
                   },
                   {
+                     "description": "The amount of time the server has been up.",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "startTimeUnixNano": "1664375532831495700",
+                              "timeUnixNano": "1664375532831495700"
+                           }
+                        ]
+                     },
+                     "name": "iis.uptime",
+                     "unit": "s"
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/iisreceiver",
+                  "version": "latest"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {
+            "attributes": [
+               {
+                  "key": "iis.application_pool",
+                  "value": {
+                     "stringValue": "Instance"
+                  }
+               }
+            ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
                      "description": "Age of oldest request in the queue.",
                      "gauge": {
                         "dataPoints": [
                            {
                               "asInt": "1",
-                              "startTimeUnixNano": "1649969943717902800",
-                              "timeUnixNano": "1649969943717902800"
+                              "startTimeUnixNano": "1664375532831495700",
+                              "timeUnixNano": "1664375532831495700"
                            }
                         ]
                      },
@@ -266,8 +311,8 @@
                         "dataPoints": [
                            {
                               "asInt": "1",
-                              "startTimeUnixNano": "1649969943717902800",
-                              "timeUnixNano": "1649969943717902800"
+                              "startTimeUnixNano": "1664375532831495700",
+                              "timeUnixNano": "1664375532831495700"
                            }
                         ]
                      },
@@ -281,14 +326,29 @@
                         "dataPoints": [
                            {
                               "asInt": "1",
-                              "startTimeUnixNano": "1649969943717902800",
-                              "timeUnixNano": "1649969943717902800"
+                              "startTimeUnixNano": "1664375532831495700",
+                              "timeUnixNano": "1664375532831495700"
                            }
                         ],
                         "isMonotonic": true
                      },
                      "unit": "{requests}"
-                  },
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/iisreceiver",
+                  "version": "latest"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {
+            "attributes": []
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
                   {
                      "description": "Current number of active threads.",
                      "name": "iis.thread.active",
@@ -297,26 +357,12 @@
                         "dataPoints": [
                            {
                               "asInt": "1",
-                              "startTimeUnixNano": "1649969943717902800",
-                              "timeUnixNano": "1649969943717902800"
+                              "startTimeUnixNano": "1664375532831495700",
+                              "timeUnixNano": "1664375532831495700"
                            }
                         ]
                      },
                      "unit": "{threads}"
-                  },
-                  {
-                     "description": "The amount of time the server has been up.",
-                     "gauge": {
-                        "dataPoints": [
-                           {
-                              "asInt": "1",
-                              "startTimeUnixNano": "1649969943717902800",
-                              "timeUnixNano": "1649969943717902800"
-                           }
-                        ]
-                     },
-                     "name": "iis.uptime",
-                     "unit": "s"
                   }
                ],
                "scope": {

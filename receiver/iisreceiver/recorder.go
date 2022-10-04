@@ -23,7 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver/internal/metadata"
 )
 
-type recordFunc = func(*metadata.MetricsBuilder, pcommon.Timestamp, float64)
+type recordFunc = func(md *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64)
 
 type perfCounterRecorderConf struct {
 	object    string
@@ -31,10 +31,22 @@ type perfCounterRecorderConf struct {
 	recorders map[string]recordFunc
 }
 
-var perfCounterRecorders = []perfCounterRecorderConf{
+var totalPerfCounterRecorders = []perfCounterRecorderConf{
+	{
+		object:   "Process",
+		instance: "_Total",
+		recorders: map[string]recordFunc{
+			"Thread Count": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+				mb.RecordIisThreadActiveDataPoint(ts, int64(val))
+			},
+		},
+	},
+}
+
+var sitePerfCounterRecorders = []perfCounterRecorderConf{
 	{
 		object:   "Web Service",
-		instance: "_Total",
+		instance: "*",
 		recorders: map[string]recordFunc{
 			"Current Connections": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisConnectionActiveDataPoint(ts, int64(val))
@@ -87,6 +99,9 @@ var perfCounterRecorders = []perfCounterRecorderConf{
 			},
 		},
 	},
+}
+
+var appPoolPerfCounterRecorders = []perfCounterRecorderConf{
 	{
 		object:   "HTTP Service Request Queues",
 		instance: "*",
@@ -99,15 +114,6 @@ var perfCounterRecorders = []perfCounterRecorderConf{
 			},
 			"MaxQueueItemAge": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisRequestQueueAgeMaxDataPoint(ts, int64(val))
-			},
-		},
-	},
-	{
-		object:   "Process",
-		instance: "_Total",
-		recorders: map[string]recordFunc{
-			"Thread Count": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisThreadActiveDataPoint(ts, int64(val))
 			},
 		},
 	},

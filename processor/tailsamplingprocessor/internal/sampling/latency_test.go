@@ -87,7 +87,6 @@ type spanWithTimeAndDuration struct {
 }
 
 func newTraceWithSpans(spans []spanWithTimeAndDuration) *TraceData {
-	var traceBatches []ptrace.Traces
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	ils := rs.ScopeSpans().AppendEmpty()
@@ -100,8 +99,7 @@ func newTraceWithSpans(spans []spanWithTimeAndDuration) *TraceData {
 		span.SetEndTimestamp(pcommon.NewTimestampFromTime(s.StartTime.Add(s.Duration)))
 	}
 
-	traceBatches = append(traceBatches, traces)
 	return &TraceData{
-		ReceivedBatches: traceBatches,
+		ReceivedBatches: traces,
 	}
 }

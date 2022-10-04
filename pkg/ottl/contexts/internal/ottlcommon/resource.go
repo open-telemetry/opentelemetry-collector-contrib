@@ -22,30 +22,34 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func ResourcePathGetSetter(path []ottl.Field) (ottl.GetSetter, error) {
+type ResourceContext interface {
+	GetResource() pcommon.Resource
+}
+
+func ResourcePathGetSetter[K ResourceContext](path []ottl.Field) (ottl.GetSetter[K], error) {
 	if len(path) == 0 {
-		return accessResource(), nil
+		return accessResource[K](), nil
 	}
 	switch path[0].Name {
 	case "attributes":
 		mapKey := path[0].MapKey
 		if mapKey == nil {
-			return accessResourceAttributes(), nil
+			return accessResourceAttributes[K](), nil
 		}
-		return accessResourceAttributesKey(mapKey), nil
+		return accessResourceAttributesKey[K](mapKey), nil
 	case "dropped_attributes_count":
-		return accessDroppedAttributesCount(), nil
+		return accessDroppedAttributesCount[K](), nil
 	}
 
 	return nil, fmt.Errorf("invalid resource path expression %v", path)
 }
 
-func accessResource() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
+func accessResource[K ResourceContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx K) interface{} {
 			return ctx.GetResource()
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx K, val interface{}) {
 			if newRes, ok := val.(pcommon.Resource); ok {
 				newRes.CopyTo(ctx.GetResource())
 			}
@@ -53,12 +57,12 @@ func accessResource() ottl.StandardGetSetter {
 	}
 }
 
-func accessResourceAttributes() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
+func accessResourceAttributes[K ResourceContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx K) interface{} {
 			return ctx.GetResource().Attributes()
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx K, val interface{}) {
 			if attrs, ok := val.(pcommon.Map); ok {
 				attrs.CopyTo(ctx.GetResource().Attributes())
 			}
@@ -66,23 +70,23 @@ func accessResourceAttributes() ottl.StandardGetSetter {
 	}
 }
 
-func accessResourceAttributesKey(mapKey *string) ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
+func accessResourceAttributesKey[K ResourceContext](mapKey *string) ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx K) interface{} {
 			return GetMapValue(ctx.GetResource().Attributes(), *mapKey)
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx K, val interface{}) {
 			SetMapValue(ctx.GetResource().Attributes(), *mapKey, val)
 		},
 	}
 }
 
-func accessDroppedAttributesCount() ottl.StandardGetSetter {
-	return ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
+func accessDroppedAttributesCount[K ResourceContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx K) interface{} {
 			return int64(ctx.GetResource().DroppedAttributesCount())
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx K, val interface{}) {
 			if i, ok := val.(int64); ok {
 				ctx.GetResource().SetDroppedAttributesCount(uint32(i))
 			}

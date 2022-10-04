@@ -18,10 +18,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_truncateAll(t *testing.T) {
@@ -30,19 +30,19 @@ func Test_truncateAll(t *testing.T) {
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem()
+	target := &ottl.StandardGetSetter[pcommon.Map]{
+		Getter: func(ctx pcommon.Map) interface{} {
+			return ctx
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
-			ctx.GetItem().(pcommon.Map).Clear()
-			val.(pcommon.Map).CopyTo(ctx.GetItem().(pcommon.Map))
+		Setter: func(ctx pcommon.Map, val interface{}) {
+			ctx.Clear()
+			val.(pcommon.Map).CopyTo(ctx)
 		},
 	}
 
 	tests := []struct {
 		name   string
-		target ottl.GetSetter
+		target ottl.GetSetter[pcommon.Map]
 		limit  int64
 		want   func(pcommon.Map)
 	}{
@@ -96,12 +96,9 @@ func Test_truncateAll(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			ctx := ottltest.TestTransformContext{
-				Item: scenarioMap,
-			}
-
-			exprFunc, _ := TruncateAll(tt.target, tt.limit)
-			exprFunc(ctx)
+			exprFunc, err := TruncateAll(tt.target, tt.limit)
+			require.NoError(t, err)
+			assert.Nil(t, exprFunc(scenarioMap))
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
@@ -112,60 +109,39 @@ func Test_truncateAll(t *testing.T) {
 }
 
 func Test_truncateAll_validation(t *testing.T) {
-	tests := []struct {
-		name   string
-		target ottl.GetSetter
-		limit  int64
-	}{
-		{
-			name:   "limit less than zero",
-			target: &ottl.StandardGetSetter{},
-			limit:  int64(-1),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := TruncateAll(tt.target, tt.limit)
-			assert.Error(t, err, "invalid limit for truncate_all function, -1 cannot be negative")
-		})
-	}
+	_, err := TruncateAll[interface{}](&ottl.StandardGetSetter[interface{}]{}, -1)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "invalid limit for truncate_all function, -1 cannot be negative")
 }
 
 func Test_truncateAll_bad_input(t *testing.T) {
 	input := pcommon.NewValueString("not a map")
-	ctx := ottltest.TestTransformContext{
-		Item: input,
-	}
-
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem()
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx interface{}) interface{} {
+			return ctx
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) {
 			t.Errorf("nothing should be set in this scenario")
 		},
 	}
 
-	exprFunc, _ := TruncateAll(target, 1)
-	exprFunc(ctx)
-
+	exprFunc, err := TruncateAll[interface{}](target, 1)
+	require.NoError(t, err)
+	assert.Nil(t, exprFunc(input))
 	assert.Equal(t, pcommon.NewValueString("not a map"), input)
 }
 
 func Test_truncateAll_get_nil(t *testing.T) {
-	ctx := ottltest.TestTransformContext{
-		Item: nil,
-	}
-
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem()
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx interface{}) interface{} {
+			return ctx
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) {
 			t.Errorf("nothing should be set in this scenario")
 		},
 	}
 
-	exprFunc, _ := TruncateAll(target, 1)
-	exprFunc(ctx)
+	exprFunc, err := TruncateAll[interface{}](target, 1)
+	require.NoError(t, err)
+	assert.Nil(t, exprFunc(nil))
 }

@@ -24,22 +24,22 @@ import (
 func convertAttributeValue(value pcommon.Value, logger hclog.Logger) interface{} {
 	switch value.Type() {
 	case pcommon.ValueTypeInt:
-		return value.IntVal()
+		return value.Int()
 	case pcommon.ValueTypeBool:
-		return value.BoolVal()
+		return value.Bool()
 	case pcommon.ValueTypeDouble:
-		return value.DoubleVal()
-	case pcommon.ValueTypeString:
-		return value.StringVal()
+		return value.Double()
+	case pcommon.ValueTypeStr:
+		return value.Str()
 	case pcommon.ValueTypeMap:
 		values := map[string]interface{}{}
-		value.MapVal().Range(func(k string, v pcommon.Value) bool {
+		value.Map().Range(func(k string, v pcommon.Value) bool {
 			values[k] = convertAttributeValue(v, logger)
 			return true
 		})
 		return values
 	case pcommon.ValueTypeSlice:
-		arrayVal := value.SliceVal()
+		arrayVal := value.Slice()
 		values := make([]interface{}, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {
 			values[i] = convertAttributeValue(arrayVal.At(i), logger)
@@ -81,8 +81,8 @@ func convertLogRecordToJSON(log plog.LogRecord, resource pcommon.Resource, logge
 	})
 
 	switch log.Body().Type() {
-	case pcommon.ValueTypeString:
-		jsonLog["message"] = log.Body().StringVal()
+	case pcommon.ValueTypeStr:
+		jsonLog["message"] = log.Body().Str()
 	case pcommon.ValueTypeMap:
 		bodyFieldsMap := convertAttributeValue(log.Body(), logger).(map[string]interface{})
 		for key, value := range bodyFieldsMap {

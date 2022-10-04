@@ -539,7 +539,7 @@ func TestConsumeEventData(t *testing.T) {
 				attrs.PutEmptyMap("map")
 
 				propsAttrs, _ := attrs.Get("com.splunk.signalfx.event_properties")
-				propsAttrs.MapVal().PutEmptyMap("map")
+				propsAttrs.Map().PutEmptyMap("map")
 
 				return out
 			}(),

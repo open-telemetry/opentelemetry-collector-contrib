@@ -331,7 +331,7 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 	assert.False(t, ok, "routing attribute should have been dropped")
 	v, ok := attrs.Get("attr")
 	assert.True(t, ok, "non-routing attributes shouldn't have been dropped")
-	assert.Equal(t, "acme", v.StringVal())
+	assert.Equal(t, "acme", v.Str())
 }
 
 func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
@@ -457,7 +457,7 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		rspan := defaultExp.AllTraces()[0].ResourceSpans().At(0)
 		attr, ok := rspan.Resource().Attributes().Get("value")
 		assert.True(t, ok, "routing attribute must exists")
-		assert.Equal(t, attr.IntVal(), int64(-1))
+		assert.Equal(t, attr.Int(), int64(-1))
 	})
 }
 

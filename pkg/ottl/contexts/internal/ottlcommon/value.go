@@ -20,20 +20,20 @@ import (
 
 func GetValue(val pcommon.Value) interface{} {
 	switch val.Type() {
-	case pcommon.ValueTypeString:
-		return val.StringVal()
+	case pcommon.ValueTypeStr:
+		return val.Str()
 	case pcommon.ValueTypeBool:
-		return val.BoolVal()
+		return val.Bool()
 	case pcommon.ValueTypeInt:
-		return val.IntVal()
+		return val.Int()
 	case pcommon.ValueTypeDouble:
-		return val.DoubleVal()
+		return val.Double()
 	case pcommon.ValueTypeMap:
-		return val.MapVal()
+		return val.Map()
 	case pcommon.ValueTypeSlice:
-		return val.SliceVal()
+		return val.Slice()
 	case pcommon.ValueTypeBytes:
-		return val.BytesVal().AsRaw()
+		return val.Bytes().AsRaw()
 	}
 	return nil
 }
@@ -41,49 +41,49 @@ func GetValue(val pcommon.Value) interface{} {
 func SetValue(value pcommon.Value, val interface{}) {
 	switch v := val.(type) {
 	case string:
-		value.SetStringVal(v)
+		value.SetStr(v)
 	case bool:
-		value.SetBoolVal(v)
+		value.SetBool(v)
 	case int64:
-		value.SetIntVal(v)
+		value.SetInt(v)
 	case float64:
-		value.SetDoubleVal(v)
+		value.SetDouble(v)
 	case []byte:
-		value.SetEmptyBytesVal().FromRaw(v)
+		value.SetEmptyBytes().FromRaw(v)
 	case []string:
-		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
+		value.Slice().RemoveIf(func(_ pcommon.Value) bool {
 			return true
 		})
 		for _, str := range v {
-			value.SliceVal().AppendEmpty().SetStringVal(str)
+			value.Slice().AppendEmpty().SetStr(str)
 		}
 	case []bool:
-		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
+		value.Slice().RemoveIf(func(_ pcommon.Value) bool {
 			return true
 		})
 		for _, b := range v {
-			value.SliceVal().AppendEmpty().SetBoolVal(b)
+			value.Slice().AppendEmpty().SetBool(b)
 		}
 	case []int64:
-		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
+		value.Slice().RemoveIf(func(_ pcommon.Value) bool {
 			return true
 		})
 		for _, i := range v {
-			value.SliceVal().AppendEmpty().SetIntVal(i)
+			value.Slice().AppendEmpty().SetInt(i)
 		}
 	case []float64:
-		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
+		value.Slice().RemoveIf(func(_ pcommon.Value) bool {
 			return true
 		})
 		for _, f := range v {
-			value.SliceVal().AppendEmpty().SetDoubleVal(f)
+			value.Slice().AppendEmpty().SetDouble(f)
 		}
 	case [][]byte:
-		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
+		value.Slice().RemoveIf(func(_ pcommon.Value) bool {
 			return true
 		})
 		for _, b := range v {
-			value.SliceVal().AppendEmpty().SetEmptyBytesVal().FromRaw(b)
+			value.Slice().AppendEmpty().SetEmptyBytes().FromRaw(b)
 		}
 	default:
 		// TODO(anuraaga): Support set of map type.

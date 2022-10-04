@@ -242,6 +242,13 @@ type TracesConfig struct {
 	flushInterval float64
 }
 
+// LogsConfig defines logs exporter specific configuration
+type LogsConfig struct {
+	// TCPAddr.Endpoint is the host of the Datadog intake server to send logs to.
+	// If unset, the value is obtained from the Site.
+	confignet.TCPAddr `mapstructure:",squash"`
+}
+
 // TagsConfig defines the tag-related configuration
 // It is embedded in the configuration
 type TagsConfig struct {
@@ -338,6 +345,9 @@ type Config struct {
 
 	// Traces defines the Traces exporter specific configuration
 	Traces TracesConfig `mapstructure:"traces"`
+
+	// Logs defines the Logs exporter specific configuration
+	Logs LogsConfig `mapstructure:"logs"`
 
 	// HostMetadata defines the host metadata specific configuration
 	HostMetadata HostMetadataConfig `mapstructure:"host_metadata"`
@@ -482,6 +492,9 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	}
 	if !configMap.IsSet("traces::endpoint") {
 		c.Traces.TCPAddr.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
+	}
+	if !configMap.IsSet("logs::endpoint") {
+		c.Logs.TCPAddr.Endpoint = fmt.Sprintf("https://http-intake.logs.%s", c.API.Site)
 	}
 	return nil
 }
