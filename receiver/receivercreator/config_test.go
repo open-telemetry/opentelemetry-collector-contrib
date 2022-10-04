@@ -24,9 +24,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/servicetest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
 type mockHostFactories struct {
@@ -54,46 +56,78 @@ func (mh *mockHostFactories) GetExtensions() map[config.ComponentID]component.Ex
 	return mh.extensions
 }
 
-func exampleCreatorFactory(t *testing.T) (*mockHostFactories, *service.Config) {
-	factories, err := componenttest.NopFactories()
-	require.Nil(t, err)
-
-	factories.Receivers[("nop")] = &nopWithEndpointFactory{ReceiverFactory: componenttest.NewNopReceiverFactory()}
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	assert.Equal(t, len(cfg.Receivers), 2)
-
-	return &mockHostFactories{Host: componenttest.NewNopHost(), factories: factories}, cfg
-}
-
 func TestLoadConfig(t *testing.T) {
-	_, cfg := exampleCreatorFactory(t)
-	factory := NewFactory()
+	t.Parallel()
 
-	r0 := cfg.Receivers[config.NewComponentID("receiver_creator")]
-	assert.Equal(t, r0, factory.CreateDefaultConfig())
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
 
-	r1 := cfg.Receivers[config.NewComponentIDWithName("receiver_creator", "1")].(*Config)
+	tests := []struct {
+		id       config.ComponentID
+		expected config.Receiver
+	}{
+		{
+			id:       config.NewComponentIDWithName(typeStr, ""),
+			expected: createDefaultConfig(),
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "1"),
+			expected: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				receiverTemplates: map[string]receiverTemplate{
+					"examplereceiver/1": {
+						receiverConfig: receiverConfig{
+							id: config.NewComponentIDWithName("examplereceiver", "1"),
+							config: userConfigMap{
+								"key": "value",
+							},
+							endpointID: "endpoint.id",
+						},
+						Rule:               `type == "port"`,
+						ResourceAttributes: map[string]interface{}{"one": "two"},
+						rule:               newRuleOrPanic(`type == "port"`),
+					},
+					"nop/1": {
+						receiverConfig: receiverConfig{
+							id: config.NewComponentIDWithName("nop", "1"),
+							config: userConfigMap{
+								endpointConfigKey: "localhost:12345",
+							},
+							endpointID: "endpoint.id",
+						},
+						Rule:               `type == "port"`,
+						ResourceAttributes: map[string]interface{}{"two": "three"},
+						rule:               newRuleOrPanic(`type == "port"`),
+					},
+				},
+				WatchObservers: []config.ComponentID{
+					config.NewComponentID("mock_observer"),
+					config.NewComponentIDWithName("mock_observer", "with_name"),
+				},
+				ResourceAttributes: map[observer.EndpointType]map[string]string{
+					observer.ContainerType: {"container.key": "container.value"},
+					observer.PodType:       {"pod.key": "pod.value"},
+					observer.PortType:      {"port.key": "port.value"},
+					observer.HostPortType:  {"hostport.key": "hostport.value"},
+					observer.K8sNodeType:   {"k8s.node.key": "k8s.node.value"},
+				},
+			},
+		},
+	}
 
-	assert.NotNil(t, r1)
-	assert.Len(t, r1.receiverTemplates, 2)
-	assert.Contains(t, r1.receiverTemplates, "examplereceiver/1")
-	assert.Equal(t, `type == "port"`, r1.receiverTemplates["examplereceiver/1"].Rule)
-	assert.Contains(t, r1.receiverTemplates, "nop/1")
-	assert.Equal(t, `type == "port"`, r1.receiverTemplates["nop/1"].Rule)
-	assert.Equal(t, userConfigMap{
-		endpointConfigKey: "localhost:12345",
-	}, r1.receiverTemplates["nop/1"].config)
-	assert.Equal(t, []config.ComponentID{
-		config.NewComponentID("mock_observer"),
-		config.NewComponentIDWithName("mock_observer", "with_name"),
-	}, r1.WatchObservers)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
 
 func TestInvalidResourceAttributeEndpointType(t *testing.T) {
