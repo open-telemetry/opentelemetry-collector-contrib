@@ -105,6 +105,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	rotation := componentParser.Get(rotationFieldName)
 	if rotation == nil {
 		cfg.Rotation = &Rotation{MaxBackups: defaultMaxBackups}
+		return nil
 	}
 	rotationCfg, err := componentParser.Sub(rotationFieldName)
 	if err != nil {
