@@ -8,7 +8,7 @@ component: pkg/ottl
 note: Add ability to specify `zap.Logger` in function params
 
 # One or more tracking issues related to the change
-issues: [14471]
+issues: [14703]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
