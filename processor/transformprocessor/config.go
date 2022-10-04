@@ -23,7 +23,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
@@ -32,7 +31,17 @@ import (
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"`
 
-	ottlconfig.Config `mapstructure:",squash"`
+	OTTLConfig `mapstructure:",squash"`
+}
+
+type OTTLConfig struct {
+	Traces  SignalConfig `mapstructure:"traces"`
+	Metrics SignalConfig `mapstructure:"metrics"`
+	Logs    SignalConfig `mapstructure:"logs"`
+}
+
+type SignalConfig struct {
+	Statements []string `mapstructure:"statements"`
 }
 
 var _ config.Processor = (*Config)(nil)

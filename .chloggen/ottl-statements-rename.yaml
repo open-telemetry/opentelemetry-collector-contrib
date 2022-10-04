@@ -5,7 +5,7 @@ change_type: breaking
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Rename the `Queries` signal configuration field to `Statements`.
+note: Rename the `Queries` signal configuration field to `Statements` and remove the `ottlconfig` package.
 
 # One or more tracking issues related to the change
 issues: [14680]
