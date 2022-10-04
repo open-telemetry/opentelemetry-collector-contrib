@@ -16,6 +16,7 @@ package ottl
 
 import (
 	"errors"
+	"go.uber.org/zap"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -214,7 +215,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		defaultFunctionsForTests(),
 		testParsePath,
 		testParseEnum,
-		component.TelemetrySettings{},
+		component.TelemetrySettings{Logger: zap.NewNop()},
 	)
 
 	tests := []struct {
@@ -531,6 +532,23 @@ func Test_NewFunctionCall(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Logger",
+			inv: invocation{
+				Function: "testing_logger",
+				Arguments: []value{
+					{
+						String: ottltest.Strp("test0"),
+					},
+					{
+						String: ottltest.Strp("test1"),
+					},
+					{
+						Int: ottltest.Intp(1),
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -649,6 +667,12 @@ func functionWithTelemetrySettingsLast(_ string, _ string, _ int64, _ component.
 	}, nil
 }
 
+func functionWithLogger(_ zap.Logger, _ string, _ string, _ int64) (ExprFunc[interface{}], error) {
+	return func(interface{}) interface{} {
+		return "anything"
+	}, nil
+}
+
 func defaultFunctionsForTests() map[string]interface{} {
 	functions := make(map[string]interface{})
 	functions["testing_string_slice"] = functionWithStringSlice
@@ -668,5 +692,6 @@ func defaultFunctionsForTests() map[string]interface{} {
 	functions["testing_telemetry_settings_first"] = functionWithTelemetrySettingsFirst
 	functions["testing_telemetry_settings_middle"] = functionWithTelemetrySettingsMiddle
 	functions["testing_telemetry_settings_last"] = functionWithTelemetrySettingsLast
+	functions["testing_logger"] = functionWithLogger
 	return functions
 }

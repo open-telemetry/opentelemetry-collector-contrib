@@ -197,9 +197,13 @@ func (p *Parser[K]) buildArg(argDef value, argType reflect.Type, index int, args
 // Handle interfaces that can be declared as parameters to a OTTL function, but will
 // never be called in an invocation. Returns whether the arg is an internal arg.
 func (p *Parser[K]) buildInternalArg(argType reflect.Type, args *[]reflect.Value) bool {
-	switch argType.Name() {
+	temp := argType.Name()
+
+	switch temp {
 	case "TelemetrySettings":
 		*args = append(*args, reflect.ValueOf(p.telemetrySettings))
+	case "Logger":
+		*args = append(*args, reflect.ValueOf(*p.telemetrySettings.Logger))
 	default:
 		return false
 	}
