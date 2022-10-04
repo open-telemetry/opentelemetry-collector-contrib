@@ -25,11 +25,12 @@ import (
 )
 
 type metricsExporter struct {
-	consumer *metricsConsumer
+	consumer             *metricsConsumer
+	includeResourceAttrs bool
 }
 
-func createMetricsConsumer(endpoint string, settings component.TelemetrySettings, otelVersion string) (*metricsConsumer, error) {
-	s, err := senders.NewSender(endpoint,
+func createMetricsConsumer(metricsConfig MetricsConfig, settings component.TelemetrySettings, otelVersion string) (*metricsConsumer, error) {
+	s, err := senders.NewSender(metricsConfig.Endpoint,
 		senders.FlushIntervalSeconds(60),
 		senders.SDKMetricsTags(map[string]string{"otel.metrics.collector_version": otelVersion}),
 	)
@@ -47,10 +48,10 @@ func createMetricsConsumer(endpoint string, settings component.TelemetrySettings
 			newSummaryConsumer(s, settings),
 		},
 		s,
-		true), nil
+		true, metricsConfig.IncludeResourceAttrs), nil
 }
 
-type metricsConsumerCreator func(endpoint string, settings component.TelemetrySettings, otelVersion string) (
+type metricsConsumerCreator func(metricsConfig MetricsConfig, settings component.TelemetrySettings, otelVersion string) (
 	*metricsConsumer, error)
 
 func newMetricsExporter(settings component.ExporterCreateSettings, c config.Exporter, creator metricsConsumerCreator) (*metricsExporter, error) {
@@ -64,12 +65,13 @@ func newMetricsExporter(settings component.ExporterCreateSettings, c config.Expo
 	if _, _, err := cfg.parseMetricsEndpoint(); err != nil {
 		return nil, fmt.Errorf("failed to parse metrics.endpoint: %w", err)
 	}
-	consumer, err := creator(cfg.Metrics.Endpoint, settings.TelemetrySettings, settings.BuildInfo.Version)
+	consumer, err := creator(cfg.Metrics, settings.TelemetrySettings, settings.BuildInfo.Version)
 	if err != nil {
 		return nil, err
 	}
 	return &metricsExporter{
-		consumer: consumer,
+		consumer:             consumer,
+		includeResourceAttrs: cfg.includeResourceAttr(),
 	}, nil
 }
 

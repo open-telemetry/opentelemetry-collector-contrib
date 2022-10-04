@@ -16,13 +16,10 @@ package tanzuobservabilityexporter // import "github.com/open-telemetry/opentele
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 const (
@@ -98,12 +95,6 @@ func createMetricsExporter(
 	if err != nil {
 		return nil, err
 	}
-	ourConfig, ok := cfg.(*Config)
-	if !ok {
-		return nil, fmt.Errorf("invalid config: %#v", cfg)
-	}
-	return resourcetotelemetry.WrapMetricsExporter(
-		ourConfig.Metrics.ResourceAttributes,
-		exporter,
-	), nil
+
+	return exporter, nil
 }

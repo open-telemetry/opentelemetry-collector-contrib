@@ -23,8 +23,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 type TracesConfig struct {
@@ -33,7 +31,7 @@ type TracesConfig struct {
 
 type MetricsConfig struct {
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
-	ResourceAttributes            resourcetotelemetry.Settings `mapstructure:"resource_attributes"`
+	IncludeResourceAttrs          bool `mapstructure:"resource_attrs_included"`
 }
 
 // Config defines configuration options for the exporter.
@@ -53,6 +51,10 @@ func (c *Config) hasMetricsEndpoint() bool {
 
 func (c *Config) hasTracesEndpoint() bool {
 	return c.Traces.Endpoint != ""
+}
+
+func (c *Config) includeResourceAttr() bool {
+	return c.Metrics.IncludeResourceAttrs
 }
 
 func (c *Config) parseMetricsEndpoint() (hostName string, port int, err error) {
