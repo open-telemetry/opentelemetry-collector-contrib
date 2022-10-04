@@ -342,7 +342,7 @@ by configuring the OpenTelemetry SDK to export DELTA values.
 
 # Typed attributes support
 
-The OpenTelemetry Collector supports the concept of [Attributes]( https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/common/common.md#attributes).
+The OpenTelemetry Collector supports the concept of [Attributes](https://github.com/open-telemetry/opentelemetry-specification/tree/main/specification/common#attribute).
 These attributes consist of key-value pairs, where the keys are strings and the values are either primitive types or arrays of uniform primitive types.
 
 At the moment, this exporter **only supports attributes with string key and value type**.
