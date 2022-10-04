@@ -152,7 +152,9 @@ func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedD
 	id := name
 
 	dp.Attributes().Sort().Range(func(k string, v pcommon.Value) bool {
-		id += fmt.Sprintf(",%s=%s", k, v.AsString())
+		if v.Type() == pcommon.ValueTypeStr {
+			id += fmt.Sprintf(",%s=%s", k, v.AsString())
+		}
 		return true
 	})
 

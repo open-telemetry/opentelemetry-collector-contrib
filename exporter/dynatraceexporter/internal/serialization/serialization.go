@@ -53,7 +53,9 @@ func makeCombinedDimensions(defaultDimensions dimensions.NormalizedDimensionList
 	dimsFromAttributes := make([]dimensions.Dimension, 0, dataPointAttributes.Len())
 
 	dataPointAttributes.Range(func(k string, v pcommon.Value) bool {
-		dimsFromAttributes = append(dimsFromAttributes, dimensions.NewDimension(k, v.AsString()))
+		if v.Type() == pcommon.ValueTypeStr {
+			dimsFromAttributes = append(dimsFromAttributes, dimensions.NewDimension(k, v.AsString()))
+		}
 		return true
 	})
 	return dimensions.MergeLists(
