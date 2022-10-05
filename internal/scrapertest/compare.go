@@ -29,7 +29,9 @@ type CompareOption interface {
 }
 
 func CompareMetrics(expected, actual pmetric.Metrics, options ...CompareOption) error {
-	expected, actual = expected.Clone(), actual.Clone()
+	exp, act := pmetric.NewMetrics(), pmetric.NewMetrics()
+	expected.CopyTo(exp)
+	actual.CopyTo(act)
 
 	for _, option := range options {
 		option.apply(expected, actual)

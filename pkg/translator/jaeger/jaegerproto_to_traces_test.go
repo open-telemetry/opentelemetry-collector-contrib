@@ -51,7 +51,7 @@ func TestCodeFromAttr(t *testing.T) {
 	}{
 		{
 			name: "ok-string",
-			attr: pcommon.NewValueString("0"),
+			attr: pcommon.NewValueStr("0"),
 			code: 0,
 		},
 
@@ -70,7 +70,7 @@ func TestCodeFromAttr(t *testing.T) {
 
 		{
 			name: "invalid-string",
-			attr: pcommon.NewValueString("inf"),
+			attr: pcommon.NewValueStr("inf"),
 			code: 0,
 			err:  strconv.ErrSyntax,
 		},
@@ -97,13 +97,13 @@ func TestGetStatusCodeFromHTTPStatusAttr(t *testing.T) {
 	}{
 		{
 			name: "string-unknown",
-			attr: pcommon.NewValueString("10"),
+			attr: pcommon.NewValueStr("10"),
 			code: ptrace.StatusCodeError,
 		},
 
 		{
 			name: "string-ok",
-			attr: pcommon.NewValueString("101"),
+			attr: pcommon.NewValueStr("101"),
 			code: ptrace.StatusCodeUnset,
 		},
 

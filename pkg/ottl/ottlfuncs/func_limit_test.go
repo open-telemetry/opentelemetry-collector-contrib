@@ -167,7 +167,7 @@ func Test_limit_validation(t *testing.T) {
 }
 
 func Test_limit_bad_input(t *testing.T) {
-	input := pcommon.NewValueString("not a map")
+	input := pcommon.NewValueStr("not a map")
 	target := &ottl.StandardGetSetter[interface{}]{
 		Getter: func(ctx interface{}) interface{} {
 			return ctx
@@ -180,7 +180,7 @@ func Test_limit_bad_input(t *testing.T) {
 	exprFunc, err := Limit[interface{}](target, 1, []string{})
 	require.NoError(t, err)
 	assert.Nil(t, exprFunc(input))
-	assert.Equal(t, pcommon.NewValueString("not a map"), input)
+	assert.Equal(t, pcommon.NewValueStr("not a map"), input)
 }
 
 func Test_limit_get_nil(t *testing.T) {

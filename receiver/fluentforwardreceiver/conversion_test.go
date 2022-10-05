@@ -39,7 +39,7 @@ func TestMessageEventConversion(t *testing.T) {
 	expected := Logs(
 		Log{
 			Timestamp: 1593031012000000000,
-			Body:      pcommon.NewValueString("..."),
+			Body:      pcommon.NewValueStr("..."),
 			Attributes: map[string]interface{}{
 				"container_id":   "b00a67eb645849d6ab38ff8beb4aad035cc7e917bf123c3e9057c7e89fc73d2d",
 				"container_name": "/unruffled_cannon",
