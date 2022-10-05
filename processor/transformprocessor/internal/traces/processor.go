@@ -25,17 +25,17 @@ import (
 )
 
 type Processor struct {
-	queries []ottl.Statement[ottltraces.TransformContext]
+	statements []ottl.Statement[ottltraces.TransformContext]
 }
 
 func NewProcessor(statements []string, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
 	ottlp := ottltraces.NewParser(functions, settings)
-	queries, err := ottlp.ParseStatements(statements)
+	parsedStatements, err := ottlp.ParseStatements(statements)
 	if err != nil {
 		return nil, err
 	}
 	return &Processor{
-		queries: queries,
+		statements: parsedStatements,
 	}, nil
 }
 
@@ -47,7 +47,7 @@ func (p *Processor) ProcessTraces(_ context.Context, td ptrace.Traces) (ptrace.T
 			spans := sspan.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				ctx := ottltraces.NewTransformContext(spans.At(k), sspan.Scope(), rspans.Resource())
-				for _, statement := range p.queries {
+				for _, statement := range p.statements {
 					if statement.Condition(ctx) {
 						statement.Function(ctx)
 					}
