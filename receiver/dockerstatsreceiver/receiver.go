@@ -72,7 +72,7 @@ func (r *receiver) start(ctx context.Context, _ component.Host) error {
 }
 
 type result struct {
-	md  pmetric.Metrics
+	md  pmetric.ResourceMetrics
 	err error
 }
 
@@ -87,7 +87,7 @@ func (r *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			defer wg.Done()
 			statsJSON, err := r.client.FetchContainerStatsAsJSON(ctx, c)
 			if err != nil {
-				results <- result{md: pmetric.Metrics{}, err: err}
+				results <- result{md: pmetric.ResourceMetrics{}, err: err}
 				return
 			}
 
@@ -108,7 +108,7 @@ func (r *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(res.err, 0))
 			continue
 		}
-		res.md.ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
+		res.md.MoveTo(md.ResourceMetrics().AppendEmpty())
 	}
 
 	return md, errs

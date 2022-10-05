@@ -113,7 +113,6 @@ func fillNumberDataPoint(sfxDataPoint *model.DataPoint, dps pmetric.NumberDataPo
 }
 
 func fillInAttributes(dimensions []*model.Dimension, attributes pcommon.Map) {
-	attributes.Clear()
 	attributes.EnsureCapacity(len(dimensions))
 
 	for _, dim := range dimensions {

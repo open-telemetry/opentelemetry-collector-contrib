@@ -1462,7 +1462,7 @@ type metricSaphanaLicenseLimit struct {
 func (m *metricSaphanaLicenseLimit) init() {
 	m.data.SetName("saphana.license.limit")
 	m.data.SetDescription("The allowed product usage as specified by the license (for example, main memory).")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{licenses}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1516,7 +1516,7 @@ type metricSaphanaLicensePeak struct {
 func (m *metricSaphanaLicensePeak) init() {
 	m.data.SetName("saphana.license.peak")
 	m.data.SetDescription("The peak product usage value during last 13 months, measured periodically.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{licenses}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)

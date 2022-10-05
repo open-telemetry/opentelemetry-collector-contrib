@@ -33,6 +33,7 @@ exporter/awsemfexporter/                             @open-telemetry/collector-c
 exporter/awskinesisexporter/                         @open-telemetry/collector-contrib-approvers @Aneurysm9 @MovieStoreGuy
 exporter/awsxrayexporter/                            @open-telemetry/collector-contrib-approvers @willarmiros
 exporter/azuremonitorexporter/                       @open-telemetry/collector-contrib-approvers @pcwiese
+exporter/azuredataexplorerexporter/                  @open-telemetry/collector-contrib-approvers @asaharan @ag-ramachandran
 exporter/carbonexporter/                             @open-telemetry/collector-contrib-approvers @pjanotti
 exporter/clickhouseexporter/                         @open-telemetry/collector-contrib-approvers @hanjm @dmitryax
 exporter/coralogixexporter/                          @open-telemetry/collector-contrib-approvers @oded-dd @ofirshmuel
@@ -171,6 +172,7 @@ receiver/mysqlreceiver/                              @open-telemetry/collector-c
 receiver/nginxreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/nsxtreceiver/                               @open-telemetry/collector-contrib-approvers @dashpole @schmikei
 receiver/opencensusreceiver/                         @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
+receiver/oracledbreceiver/                           @open-telemetry/collector-contrib-approvers @dmitryax @crobert-1 @atoulme
 receiver/podmanreceiver/                             @open-telemetry/collector-contrib-approvers @rogercoll
 receiver/otlpjsonfilereceiver/                       @open-telemetry/collector-contrib-approvers @djaglowski @atoulme
 receiver/postgresqlreceiver/                         @open-telemetry/collector-contrib-approvers @djaglowski

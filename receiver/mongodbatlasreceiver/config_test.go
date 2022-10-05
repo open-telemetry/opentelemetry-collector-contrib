@@ -164,6 +164,7 @@ func TestValidate(t *testing.T) {
 							IncludeClusters: []string{"cluster2"},
 						},
 					},
+					PageSize: defaultAlertsPageSize,
 				},
 			},
 			expectedErr: errClusterConfig.Error(),
@@ -175,6 +176,7 @@ func TestValidate(t *testing.T) {
 					Enabled:  true,
 					Mode:     alertModePoll,
 					Projects: []*ProjectConfig{},
+					PageSize: defaultAlertsPageSize,
 				},
 			},
 			expectedErr: errNoProjects.Error(),
@@ -190,6 +192,7 @@ func TestValidate(t *testing.T) {
 							Name: "Project1",
 						},
 					},
+					PageSize: defaultAlertsPageSize,
 				},
 			},
 		},
@@ -203,6 +206,22 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			expectedErr: errNoModeRecognized.Error(),
+		},
+		{
+			name: "Invalid Page Size",
+			input: Config{
+				Alerts: AlertConfig{
+					Enabled: true,
+					Mode:    alertModePoll,
+					Projects: []*ProjectConfig{
+						{
+							Name: "Test",
+						},
+					},
+					PageSize: -1,
+				},
+			},
+			expectedErr: errPageSizeIncorrect.Error(),
 		},
 	}
 

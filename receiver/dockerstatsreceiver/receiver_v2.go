@@ -68,20 +68,19 @@ func (r *receiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error) {
 	var errs error
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-	md := pmetric.NewMetrics()
 	for res := range results {
 		if res.err != nil {
 			// Don't know the number of failed stats, but one container fetch is a partial error.
 			errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(res.err, 0))
 			continue
 		}
-		r.recordContainerStats(now, res.stats, res.container).ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
+		r.recordContainerStats(now, res.stats, res.container)
 	}
 
-	return md, errs
+	return r.mb.Emit(), errs
 }
 
-func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *dtypes.StatsJSON, container *docker.Container) pmetric.Metrics {
+func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *dtypes.StatsJSON, container *docker.Container) {
 	r.recordCPUMetrics(now, &containerStats.CPUStats, &containerStats.PreCPUStats)
 	r.recordMemoryMetrics(now, &containerStats.MemoryStats)
 	r.recordBlkioMetrics(now, &containerStats.BlkioStats)
@@ -112,7 +111,7 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 		}
 	}
 
-	return r.mb.Emit(resourceMetricsOptions...)
+	r.mb.EmitForResource(resourceMetricsOptions...)
 }
 
 func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtypes.MemoryStats) {

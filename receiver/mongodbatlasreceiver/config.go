@@ -52,9 +52,10 @@ type AlertConfig struct {
 	Mode     string                      `mapstructure:"mode"`
 
 	// these parameters are only relevant in retrieval mode
-	Projects           []*ProjectConfig `mapstructure:"projects"`
-	PollInterval       time.Duration    `mapstructure:"poll_interval"`
-	MaxAlertProcessing int64            `mapstructure:"max_alerts"`
+	Projects     []*ProjectConfig `mapstructure:"projects"`
+	PollInterval time.Duration    `mapstructure:"poll_interval"`
+	PageSize     int64            `mapstructure:"page_size"`
+	MaxPages     int64            `mapstructure:"max_pages"`
 }
 
 type LogConfig struct {
@@ -96,6 +97,7 @@ var (
 		alertModeListen,
 		alertModePoll,
 	}, ","))
+	errPageSizeIncorrect = errors.New("page size must be a value between 1 and 500")
 
 	// Logs Receiver Errors
 	errNoProjects    = errors.New("at least one 'project' must be specified")
@@ -152,12 +154,18 @@ func (a AlertConfig) validatePollConfig() error {
 		return errNoProjects
 	}
 
+	// based off API limits https://www.mongodb.com/docs/atlas/reference/api/alerts-get-all-alerts/
+	if 0 >= a.PageSize || a.PageSize > 500 {
+		return errPageSizeIncorrect
+	}
+
 	var errs error
 	for _, project := range a.Projects {
 		if len(project.ExcludeClusters) != 0 && len(project.IncludeClusters) != 0 {
 			errs = multierr.Append(errs, errClusterConfig)
 		}
 	}
+
 	return errs
 }
 

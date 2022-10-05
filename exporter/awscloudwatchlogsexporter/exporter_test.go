@@ -206,7 +206,7 @@ func TestAttrValue(t *testing.T) {
 					pcommon.NewValueDouble(1.2),
 					pcommon.NewValueDouble(1.6),
 					pcommon.NewValueBool(true),
-					pcommon.NewValueString("hello"),
+					pcommon.NewValueStr("hello"),
 					pcommon.NewValueEmpty(),
 				} {
 					tgt := arr.AppendEmpty()

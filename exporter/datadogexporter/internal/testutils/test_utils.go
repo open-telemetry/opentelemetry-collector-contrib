@@ -140,7 +140,6 @@ func newMetadataEndpoint(c chan []byte) func(http.ResponseWriter, *http.Request)
 }
 
 func fillAttributeMap(attrs pcommon.Map, mp map[string]string) {
-	attrs.Clear()
 	attrs.EnsureCapacity(len(mp))
 	for k, v := range mp {
 		attrs.PutString(k, v)

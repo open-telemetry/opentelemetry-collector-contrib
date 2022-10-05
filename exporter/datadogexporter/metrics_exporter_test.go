@@ -67,13 +67,17 @@ func TestNewExporter(t *testing.T) {
 	exp, err := f.CreateMetricsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
-	err = exp.ConsumeMetrics(context.Background(), testutils.TestMetrics.Clone())
+	testMetrics := pmetric.NewMetrics()
+	testutils.TestMetrics.CopyTo(testMetrics)
+	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	assert.Equal(t, len(server.MetadataChan), 0)
 
 	cfg.HostMetadata.Enabled = true
 	cfg.HostMetadata.HostnameSource = HostnameSourceFirstResource
-	err = exp.ConsumeMetrics(context.Background(), testutils.TestMetrics.Clone())
+	testMetrics = pmetric.NewMetrics()
+	testutils.TestMetrics.CopyTo(testMetrics)
+	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	body := <-server.MetadataChan
 	var recvMetadata metadata.HostMetadata

@@ -36,17 +36,11 @@ func (f FakeTimeProvider) getCurSecond() int64 {
 var traceID = pcommon.TraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F})
 
 func createTrace() *TraceData {
-	trace := &TraceData{SpanCount: atomic.NewInt64(1)}
+	trace := &TraceData{SpanCount: atomic.NewInt64(1), ReceivedBatches: ptrace.NewTraces()}
 	return trace
 }
 
-func newTraceID() pcommon.TraceID {
-	r := [16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F}
-	return pcommon.TraceID(r)
-}
-
 func newTraceWithKV(traceID pcommon.TraceID, key string, val int64) *TraceData {
-	var traceBatches []ptrace.Traces
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	ils := rs.ScopeSpans().AppendEmpty()
@@ -61,9 +55,8 @@ func newTraceWithKV(traceID pcommon.TraceID, key string, val int64) *TraceData {
 	))
 	span.Attributes().PutInt(key, val)
 
-	traceBatches = append(traceBatches, traces)
 	return &TraceData{
-		ReceivedBatches: traceBatches,
+		ReceivedBatches: traces,
 		SpanCount:       atomic.NewInt64(1),
 	}
 }
@@ -112,29 +105,26 @@ func TestCompositeEvaluator_OverflowAlwaysSampled(t *testing.T) {
 	n2 := NewAlwaysSample(zap.NewNop())
 	c := NewComposite(zap.NewNop(), 3, []SubPolicyEvalParams{{n1, 1}, {n2, 1}}, timeProvider)
 
-	trcID := newTraceID()
-	trace := newTraceWithKV(trcID, "tag", int64(10))
+	trace := newTraceWithKV(traceID, "tag", int64(10))
 
-	decision, err := c.Evaluate(trcID, trace)
+	decision, err := c.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 	// The first policy is NewNumericAttributeFilter and trace tag matches criteria, so the decision should be Sampled.
 	expected := Sampled
 	assert.Equal(t, decision, expected)
 
-	trcID = newTraceID()
-	trace = newTraceWithKV(trcID, "tag", int64(11))
+	trace = newTraceWithKV(traceID, "tag", int64(11))
 
-	decision, err = c.Evaluate(trcID, trace)
+	decision, err = c.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 	// The first policy is NewNumericAttributeFilter and trace tag matches criteria, so the decision should be Sampled.
 	expected = NotSampled
 	assert.Equal(t, decision, expected)
 
-	trcID = newTraceID()
-	trace = newTraceWithKV(trcID, "tag", int64(1001))
-	decision, err = c.Evaluate(trcID, trace)
+	trace = newTraceWithKV(traceID, "tag", int64(1001))
+	decision, err = c.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 	// The first policy fails as the tag value is higher than the range set where as the second policy is AlwaysSample, so the decision should be Sampled.

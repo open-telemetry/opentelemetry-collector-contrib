@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
@@ -526,7 +527,9 @@ func TestOnlyMetadata(t *testing.T) {
 		assert.NoError(t, expTraces.Shutdown(ctx))
 	}()
 
-	err = expTraces.ConsumeTraces(ctx, testutils.TestTraces.Clone())
+	testTraces := ptrace.NewTraces()
+	testutils.TestTraces.CopyTo(testTraces)
+	err = expTraces.ConsumeTraces(ctx, testTraces)
 	require.NoError(t, err)
 
 	body := <-server.MetadataChan

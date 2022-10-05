@@ -363,24 +363,24 @@ func assertCPUMetricValid(t *testing.T, metric pmetric.Metric, startTime pcommon
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 4*runtime.NumCPU())
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "cpu")
 	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state",
-		pcommon.NewValueString(metadata.AttributeStateUser.String()))
+		pcommon.NewValueStr(metadata.AttributeStateUser.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state",
-		pcommon.NewValueString(metadata.AttributeStateSystem.String()))
+		pcommon.NewValueStr(metadata.AttributeStateSystem.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 2, "state",
-		pcommon.NewValueString(metadata.AttributeStateIdle.String()))
+		pcommon.NewValueStr(metadata.AttributeStateIdle.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 3, "state",
-		pcommon.NewValueString(metadata.AttributeStateInterrupt.String()))
+		pcommon.NewValueStr(metadata.AttributeStateInterrupt.String()))
 }
 
 func assertCPUMetricHasLinuxSpecificStateLabels(t *testing.T, metric pmetric.Metric) {
 	internal.AssertSumMetricHasAttributeValue(t, metric, 4, "state",
-		pcommon.NewValueString(metadata.AttributeStateNice.String()))
+		pcommon.NewValueStr(metadata.AttributeStateNice.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 5, "state",
-		pcommon.NewValueString(metadata.AttributeStateSoftirq.String()))
+		pcommon.NewValueStr(metadata.AttributeStateSoftirq.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 6, "state",
-		pcommon.NewValueString(metadata.AttributeStateSteal.String()))
+		pcommon.NewValueStr(metadata.AttributeStateSteal.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 7, "state",
-		pcommon.NewValueString(metadata.AttributeStateWait.String()))
+		pcommon.NewValueStr(metadata.AttributeStateWait.String()))
 }
 
 func assertCPUUtilizationMetricValid(t *testing.T, metric pmetric.Metric, startTime pcommon.Timestamp) {
@@ -395,22 +395,22 @@ func assertCPUUtilizationMetricValid(t *testing.T, metric pmetric.Metric, startT
 	}
 	internal.AssertGaugeMetricHasAttribute(t, metric, 0, "cpu")
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 0, "state",
-		pcommon.NewValueString(metadata.AttributeStateUser.String()))
+		pcommon.NewValueStr(metadata.AttributeStateUser.String()))
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 1, "state",
-		pcommon.NewValueString(metadata.AttributeStateSystem.String()))
+		pcommon.NewValueStr(metadata.AttributeStateSystem.String()))
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 2, "state",
-		pcommon.NewValueString(metadata.AttributeStateIdle.String()))
+		pcommon.NewValueStr(metadata.AttributeStateIdle.String()))
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 3, "state",
-		pcommon.NewValueString(metadata.AttributeStateInterrupt.String()))
+		pcommon.NewValueStr(metadata.AttributeStateInterrupt.String()))
 }
 
 func assertCPUUtilizationMetricHasLinuxSpecificStateLabels(t *testing.T, metric pmetric.Metric) {
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 4, "state",
-		pcommon.NewValueString(metadata.AttributeStateNice.String()))
+		pcommon.NewValueStr(metadata.AttributeStateNice.String()))
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 5, "state",
-		pcommon.NewValueString(metadata.AttributeStateSoftirq.String()))
+		pcommon.NewValueStr(metadata.AttributeStateSoftirq.String()))
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 6, "state",
-		pcommon.NewValueString(metadata.AttributeStateSteal.String()))
+		pcommon.NewValueStr(metadata.AttributeStateSteal.String()))
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 7, "state",
-		pcommon.NewValueString(metadata.AttributeStateWait.String()))
+		pcommon.NewValueStr(metadata.AttributeStateWait.String()))
 }
