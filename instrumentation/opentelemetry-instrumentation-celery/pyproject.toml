@@ -36,6 +36,7 @@ instruments = [
 test = [
   "opentelemetry-instrumentation-celery[instruments]",
   "opentelemetry-test-utils == 0.34b0",
+  "importlib-metadata==4.13.0",
   "pytest",
 ]
 
