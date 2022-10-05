@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,32 +19,23 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqllogs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
 )
 
 type Processor struct {
-	queries []tql.Query
-	logger  *zap.Logger
+	statements []ottl.Statement[ottllogs.TransformContext]
 }
 
-func NewProcessor(statements []string, functions map[string]interface{}, settings component.ProcessorCreateSettings) (*Processor, error) {
-	tqlp := tql.NewParser(
-		functions,
-		tqllogs.ParsePath,
-		tqllogs.ParseEnum,
-		common.NewTQLLogger(settings.Logger),
-	)
-	queries, err := tqlp.ParseQueries(statements)
+func NewProcessor(statements []string, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
+	ottlp := ottllogs.NewParser(functions, settings)
+	parsedStatements, err := ottlp.ParseStatements(statements)
 	if err != nil {
 		return nil, err
 	}
 	return &Processor{
-		queries: queries,
-		logger:  settings.Logger,
+		statements: parsedStatements,
 	}, nil
 }
 
@@ -55,8 +46,8 @@ func (p *Processor) ProcessLogs(_ context.Context, td plog.Logs) (plog.Logs, err
 			slogs := rlogs.ScopeLogs().At(j)
 			logs := slogs.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				ctx := tqllogs.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
-				for _, statement := range p.queries {
+				ctx := ottllogs.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
+				for _, statement := range p.statements {
 					if statement.Condition(ctx) {
 						statement.Function(ctx)
 					}

@@ -140,8 +140,8 @@ func TestOCToMetrics(t *testing.T) {
 func TestOCToMetrics_ResourceInMetric(t *testing.T) {
 	internal := testdata.GenerateMetricsOneMetric()
 	want := pmetric.NewMetrics()
-	internal.Clone().ResourceMetrics().MoveAndAppendTo(want.ResourceMetrics())
-	internal.Clone().ResourceMetrics().MoveAndAppendTo(want.ResourceMetrics())
+	internal.CopyTo(want)
+	want.ResourceMetrics().At(0).CopyTo(want.ResourceMetrics().AppendEmpty())
 	want.ResourceMetrics().At(1).Resource().Attributes().PutString("resource-attr", "another-value")
 	oc := generateOCTestDataMetricsOneMetric()
 	oc2 := generateOCTestDataMetricsOneMetric()
@@ -155,7 +155,7 @@ func TestOCToMetrics_ResourceInMetric(t *testing.T) {
 func TestOCToMetrics_ResourceInMetricOnly(t *testing.T) {
 	internal := testdata.GenerateMetricsOneMetric()
 	want := pmetric.NewMetrics()
-	internal.Clone().ResourceMetrics().MoveAndAppendTo(want.ResourceMetrics())
+	internal.CopyTo(want)
 	oc := generateOCTestDataMetricsOneMetric()
 	// Move resource to metric level.
 	// We shouldn't have a "combined" resource after conversion

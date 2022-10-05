@@ -40,7 +40,7 @@ func TestMetricProcessorCapabilities(t *testing.T) {
 	}
 
 	// test
-	p := newMetricProcessor(zap.NewNop(), config)
+	p := newMetricProcessor(component.TelemetrySettings{}, config)
 	require.NotNil(t, p)
 
 	// verify
@@ -63,7 +63,7 @@ func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		},
 	}
 
-	exp := newMetricProcessor(zap.NewNop(), &Config{
+	exp := newMetricProcessor(component.TelemetrySettings{}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -126,7 +126,7 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 		},
 	}
 
-	exp := newMetricProcessor(zap.NewNop(), &Config{
+	exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  contextAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -190,7 +190,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 		},
 	}
 
-	exp := newMetricProcessor(zap.NewNop(), &Config{
+	exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -248,7 +248,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing
 		},
 	}
 
-	exp := newMetricProcessor(zap.NewNop(), &Config{
+	exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		AttributeSource:              resourceAttributeSource,
 		FromAttribute:                "X-Tenant",
 		DropRoutingResourceAttribute: true,
@@ -276,7 +276,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing
 	assert.False(t, ok, "routing attribute should have been dropped")
 	v, ok := attrs.Get("attr")
 	assert.True(t, ok, "non routing attributes shouldn't be dropped")
-	assert.Equal(t, "acme", v.StringVal())
+	assert.Equal(t, "acme", v.Str())
 }
 
 type mockMetricsExporter struct {
@@ -313,7 +313,7 @@ func Benchmark_MetricsRouting_ResourceAttribute(b *testing.B) {
 			},
 		}
 
-		exp := newMetricProcessor(zap.NewNop(), cfg)
+		exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, cfg)
 		assert.NoError(b, exp.Start(context.Background(), host))
 
 		for i := 0; i < b.N; i++ {
@@ -330,4 +330,141 @@ func Benchmark_MetricsRouting_ResourceAttribute(b *testing.B) {
 	}
 
 	runBenchmark(b, cfg)
+}
+
+func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithOTTL(t *testing.T) {
+	defaultExp := &mockMetricsExporter{}
+	firstExp := &mockMetricsExporter{}
+	secondExp := &mockMetricsExporter{}
+
+	host := &mockHost{
+		Host: componenttest.NewNopHost(),
+		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
+			return map[config.DataType]map[config.ComponentID]component.Exporter{
+				config.MetricsDataType: {
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "1"): firstExp,
+					config.NewComponentIDWithName("otlp", "2"): secondExp,
+				},
+			}
+		},
+	}
+
+	exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Expression: `route() where resource.attributes["value"] > 2.5`,
+				Exporters:  []string{"otlp/1"},
+			},
+			{
+				Expression: `route() where resource.attributes["value"] > 3.0`,
+				Exporters:  []string{"otlp/2"},
+			},
+		},
+	})
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	t.Run("metric matched by no expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		m := pmetric.NewMetrics()
+
+		rm := m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 0.0)
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu")
+
+		require.NoError(t, exp.ConsumeMetrics(context.Background(), m))
+
+		assert.Len(t, defaultExp.AllMetrics(), 1)
+		assert.Len(t, firstExp.AllMetrics(), 0)
+		assert.Len(t, secondExp.AllMetrics(), 0)
+	})
+
+	t.Run("metric matched by one of two expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		m := pmetric.NewMetrics()
+
+		rm := m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 2.7)
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu")
+
+		require.NoError(t, exp.ConsumeMetrics(context.Background(), m))
+
+		assert.Len(t, defaultExp.AllMetrics(), 0)
+		assert.Len(t, firstExp.AllMetrics(), 1)
+		assert.Len(t, secondExp.AllMetrics(), 0)
+	})
+
+	t.Run("metric matched by all expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		m := pmetric.NewMetrics()
+
+		rm := m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 5.0)
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu")
+
+		rm = m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 3.1)
+		metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu1")
+
+		require.NoError(t, exp.ConsumeMetrics(context.Background(), m))
+
+		assert.Len(t, defaultExp.AllMetrics(), 0)
+		assert.Len(t, firstExp.AllMetrics(), 1)
+		assert.Len(t, secondExp.AllMetrics(), 1)
+
+		assert.Equal(t, firstExp.AllMetrics()[0].MetricCount(), 2)
+		assert.Equal(t, secondExp.AllMetrics()[0].MetricCount(), 2)
+		assert.Equal(t, firstExp.AllMetrics(), secondExp.AllMetrics())
+	})
+
+	t.Run("one metric matched by all expressions, other matched by none", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		m := pmetric.NewMetrics()
+
+		rm := m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 5.0)
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu")
+
+		rm = m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", -1.0)
+		metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu1")
+
+		require.NoError(t, exp.ConsumeMetrics(context.Background(), m))
+
+		assert.Len(t, defaultExp.AllMetrics(), 1)
+		assert.Len(t, firstExp.AllMetrics(), 1)
+		assert.Len(t, secondExp.AllMetrics(), 1)
+
+		assert.Equal(t, firstExp.AllMetrics(), secondExp.AllMetrics())
+
+		rmetric := defaultExp.AllMetrics()[0].ResourceMetrics().At(0)
+		attr, ok := rmetric.Resource().Attributes().Get("value")
+		assert.True(t, ok, "routing attribute must exists")
+		assert.Equal(t, attr.Double(), float64(-1.0))
+	})
 }

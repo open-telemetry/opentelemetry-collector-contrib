@@ -319,7 +319,7 @@ func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) error {
 		dpCalls := mCalls.Sum().DataPoints().AppendEmpty()
 		dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 		dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		dpCalls.SetIntVal(p.callSum[key])
+		dpCalls.SetIntValue(p.callSum[key])
 
 		dimensions, err := p.getDimensionsByMetricKey(key)
 		if err != nil {
@@ -356,7 +356,7 @@ func (p *processorImp) aggregateMetrics(traces ptrace.Traces) {
 		if !ok {
 			continue
 		}
-		serviceName := attr.StringVal()
+		serviceName := attr.Str()
 		p.aggregateMetricsForServiceSpans(rspans, serviceName)
 	}
 }
@@ -500,7 +500,7 @@ func getDimensionValue(d Dimension, spanAttr pcommon.Map, resourceAttr pcommon.M
 	}
 	// Set the default if configured, otherwise this metric will have no value set for the dimension.
 	if d.Default != nil {
-		return pcommon.NewValueString(*d.Default), true
+		return pcommon.NewValueStr(*d.Default), true
 	}
 	return v, ok
 }
@@ -566,7 +566,7 @@ func setLatencyExemplars(exemplarsData []exemplarData, timestamp pcommon.Timesta
 			continue
 		}
 
-		exemplar.SetDoubleVal(value)
+		exemplar.SetDoubleValue(value)
 		exemplar.SetTimestamp(timestamp)
 		exemplar.FilteredAttributes().PutString(traceIDKey, traceID.HexString())
 	}

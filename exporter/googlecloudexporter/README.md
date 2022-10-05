@@ -308,7 +308,7 @@ By default, the exporter sends telemetry to the project specified by `project` i
 
 ## Features and Feature-Gates
 
-See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/service/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
+See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
 
 **BETA**: `exporter.googlecloud.OTLPDirect`
 

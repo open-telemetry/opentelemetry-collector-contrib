@@ -1,4 +1,0 @@
-change_type: bug_fix
-component: awsemfexporter
-note: "Properly handle empty dimension set in metric_declarations"
-issues: [13766]

@@ -69,65 +69,65 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource) (ma
 	resource.Attributes().Range(func(key string, value pcommon.Value) bool {
 		switch key {
 		case conventions.AttributeCloudProvider:
-			cloud = value.StringVal()
+			cloud = value.Str()
 		case conventions.AttributeCloudPlatform:
-			service = value.StringVal()
+			service = value.Str()
 		case conventions.AttributeCloudAccountID:
-			account = value.StringVal()
+			account = value.Str()
 		case conventions.AttributeCloudAvailabilityZone:
-			zone = value.StringVal()
+			zone = value.Str()
 		case conventions.AttributeHostID:
-			hostID = value.StringVal()
+			hostID = value.Str()
 		case conventions.AttributeHostType:
-			hostType = value.StringVal()
+			hostType = value.Str()
 		case conventions.AttributeHostImageID:
-			amiID = value.StringVal()
+			amiID = value.Str()
 		case conventions.AttributeContainerName:
 			if container == "" {
-				container = value.StringVal()
+				container = value.Str()
 			}
 		case conventions.AttributeK8SPodName:
-			podUID = value.StringVal()
+			podUID = value.Str()
 		case conventions.AttributeServiceNamespace:
-			namespace = value.StringVal()
+			namespace = value.Str()
 		case conventions.AttributeServiceInstanceID:
-			deployID = value.StringVal()
+			deployID = value.Str()
 		case conventions.AttributeServiceVersion:
-			versionLabel = value.StringVal()
+			versionLabel = value.Str()
 		case conventions.AttributeTelemetrySDKName:
-			sdkName = value.StringVal()
+			sdkName = value.Str()
 		case conventions.AttributeTelemetrySDKLanguage:
-			sdkLanguage = value.StringVal()
+			sdkLanguage = value.Str()
 		case conventions.AttributeTelemetrySDKVersion:
-			sdkVersion = value.StringVal()
+			sdkVersion = value.Str()
 		case conventions.AttributeTelemetryAutoVersion:
-			autoVersion = value.StringVal()
+			autoVersion = value.Str()
 		case conventions.AttributeContainerID:
-			containerID = value.StringVal()
+			containerID = value.Str()
 		case conventions.AttributeK8SClusterName:
-			clusterName = value.StringVal()
+			clusterName = value.Str()
 		case conventions.AttributeAWSECSClusterARN:
-			clusterArn = value.StringVal()
+			clusterArn = value.Str()
 		case conventions.AttributeAWSECSContainerARN:
-			containerArn = value.StringVal()
+			containerArn = value.Str()
 		case conventions.AttributeAWSECSTaskARN:
-			taskArn = value.StringVal()
+			taskArn = value.Str()
 		case conventions.AttributeAWSECSTaskFamily:
-			taskFamily = value.StringVal()
+			taskFamily = value.Str()
 		case conventions.AttributeAWSECSLaunchtype:
-			launchType = value.StringVal()
+			launchType = value.Str()
 		case conventions.AttributeAWSLogGroupNames:
-			logGroups = value.SliceVal()
+			logGroups = value.Slice()
 		case conventions.AttributeAWSLogGroupARNs:
-			logGroupArns = value.SliceVal()
+			logGroupArns = value.Slice()
 		}
 		return true
 	})
 
 	if awsOperation, ok := attributes[awsxray.AWSOperationAttribute]; ok {
-		operation = awsOperation.StringVal()
+		operation = awsOperation.Str()
 	} else if rpcMethod, ok := attributes[conventions.AttributeRPCMethod]; ok {
-		operation = rpcMethod.StringVal()
+		operation = rpcMethod.Str()
 	}
 
 	for key, value := range attributes {
@@ -138,22 +138,22 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource) (ma
 			// Determinstically handled with if else above
 		case awsxray.AWSAccountAttribute:
 			if value.Type() != pcommon.ValueTypeEmpty {
-				account = value.StringVal()
+				account = value.Str()
 			}
 		case awsxray.AWSRegionAttribute:
-			remoteRegion = value.StringVal()
+			remoteRegion = value.Str()
 		case awsxray.AWSRequestIDAttribute:
 			fallthrough
 		case awsxray.AWSRequestIDAttribute2:
-			requestID = value.StringVal()
+			requestID = value.Str()
 		case awsxray.AWSQueueURLAttribute:
 			fallthrough
 		case awsxray.AWSQueueURLAttribute2:
-			queueURL = value.StringVal()
+			queueURL = value.Str()
 		case awsxray.AWSTableNameAttribute:
 			fallthrough
 		case awsxray.AWSTableNameAttribute2:
-			tableName = value.StringVal()
+			tableName = value.Str()
 		default:
 			filtered[key] = value
 		}
@@ -256,12 +256,12 @@ func getLogGroupMetadata(logGroups pcommon.Slice, isArn bool) []awsxray.LogGroup
 	for i := 0; i < logGroups.Len(); i++ {
 		if isArn {
 			lgm = append(lgm, awsxray.LogGroupMetadata{
-				Arn:      awsxray.String(logGroups.At(i).StringVal()),
-				LogGroup: awsxray.String(parseLogGroup(logGroups.At(i).StringVal())),
+				Arn:      awsxray.String(logGroups.At(i).Str()),
+				LogGroup: awsxray.String(parseLogGroup(logGroups.At(i).Str())),
 			})
 		} else {
 			lgm = append(lgm, awsxray.LogGroupMetadata{
-				LogGroup: awsxray.String(logGroups.At(i).StringVal()),
+				LogGroup: awsxray.String(logGroups.At(i).Str()),
 			})
 		}
 	}

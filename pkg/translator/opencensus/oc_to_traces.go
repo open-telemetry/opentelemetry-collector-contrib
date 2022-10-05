@@ -129,7 +129,7 @@ func ocSpanToInternal(src *octrace.Span, dest ptrace.Span) {
 
 	dest.SetTraceID(traceIDToInternal(src.TraceId))
 	dest.SetSpanID(spanIDToInternal(src.SpanId))
-	dest.TraceStateStruct().FromRaw(ocTraceStateToInternal(src.Tracestate))
+	dest.TraceState().FromRaw(ocTraceStateToInternal(src.Tracestate))
 	dest.SetParentSpanID(spanIDToInternal(src.ParentSpanId))
 
 	dest.SetName(src.Name.GetValue())
@@ -219,7 +219,6 @@ func initAttributeMapFromOC(ocAttrs *octrace.Span_Attributes, dest pcommon.Map) 
 		return
 	}
 
-	dest.Clear()
 	dest.EnsureCapacity(len(ocAttrs.AttributeMap))
 	for key, ocAttr := range ocAttrs.AttributeMap {
 		switch attribValue := ocAttr.Value.(type) {
@@ -342,7 +341,7 @@ func ocLinksToInternal(ocLinks *octrace.Span_Links, dest ptrace.Span) {
 		link := links.AppendEmpty()
 		link.SetTraceID(traceIDToInternal(ocLink.TraceId))
 		link.SetSpanID(spanIDToInternal(ocLink.SpanId))
-		link.TraceStateStruct().FromRaw(ocTraceStateToInternal(ocLink.Tracestate))
+		link.TraceState().FromRaw(ocTraceStateToInternal(ocLink.Tracestate))
 		initAttributeMapFromOC(ocLink.Attributes, link.Attributes())
 		link.SetDroppedAttributesCount(ocAttrsToDroppedAttributes(ocLink.Attributes))
 	}

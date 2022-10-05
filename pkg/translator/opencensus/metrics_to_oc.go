@@ -93,14 +93,14 @@ func collectLabelKeysAndValueType(metric pmetric.Metric) *labelKeysAndType {
 	// First, collect a set of all labels present in the metric
 	keySet := make(map[string]struct{})
 	allNumberDataPointValueInt := false
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		allNumberDataPointValueInt = collectLabelKeysNumberDataPoints(metric.Gauge().DataPoints(), keySet)
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		allNumberDataPointValueInt = collectLabelKeysNumberDataPoints(metric.Sum().DataPoints(), keySet)
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		collectLabelKeysHistogramDataPoints(metric.Histogram().DataPoints(), keySet)
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		collectLabelKeysSummaryDataPoints(metric.Summary().DataPoints(), keySet)
 	}
 
@@ -168,22 +168,22 @@ func addLabelKeys(keySet map[string]struct{}, attributes pcommon.Map) {
 }
 
 func descriptorTypeToOC(metric pmetric.Metric, allNumberDataPointValueInt bool) ocmetrics.MetricDescriptor_Type {
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		return gaugeType(allNumberDataPointValueInt)
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		sd := metric.Sum()
 		if sd.IsMonotonic() && sd.AggregationTemporality() == pmetric.MetricAggregationTemporalityCumulative {
 			return cumulativeType(allNumberDataPointValueInt)
 		}
 		return gaugeType(allNumberDataPointValueInt)
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		hd := metric.Histogram()
 		if hd.AggregationTemporality() == pmetric.MetricAggregationTemporalityCumulative {
 			return ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION
 		}
 		return ocmetrics.MetricDescriptor_GAUGE_DISTRIBUTION
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		return ocmetrics.MetricDescriptor_SUMMARY
 	}
 	return ocmetrics.MetricDescriptor_UNSPECIFIED
@@ -204,14 +204,14 @@ func cumulativeType(allNumberDataPointValueInt bool) ocmetrics.MetricDescriptor_
 }
 
 func dataPointsToTimeseries(metric pmetric.Metric, labelKeys *labelKeysAndType) []*ocmetrics.TimeSeries {
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		return numberDataPointsToOC(metric.Gauge().DataPoints(), labelKeys)
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		return numberDataPointsToOC(metric.Sum().DataPoints(), labelKeys)
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		return doubleHistogramPointToOC(metric.Histogram().DataPoints(), labelKeys)
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		return doubleSummaryPointToOC(metric.Summary().DataPoints(), labelKeys)
 	}
 
@@ -231,11 +231,11 @@ func numberDataPointsToOC(dps pmetric.NumberDataPointSlice, labelKeys *labelKeys
 		switch dp.ValueType() {
 		case pmetric.NumberDataPointValueTypeInt:
 			point.Value = &ocmetrics.Point_Int64Value{
-				Int64Value: dp.IntVal(),
+				Int64Value: dp.IntValue(),
 			}
 		case pmetric.NumberDataPointValueTypeDouble:
 			point.Value = &ocmetrics.Point_DoubleValue{
-				DoubleValue: dp.DoubleVal(),
+				DoubleValue: dp.DoubleValue(),
 			}
 		}
 		ts := &ocmetrics.TimeSeries{
@@ -367,9 +367,9 @@ func exemplarsToOC(bounds pcommon.Float64Slice, ocBuckets []*ocmetrics.Distribut
 		var val float64
 		switch exemplar.ValueType() {
 		case pmetric.ExemplarValueTypeInt:
-			val = float64(exemplar.IntVal())
+			val = float64(exemplar.IntValue())
 		case pmetric.ExemplarValueTypeDouble:
-			val = exemplar.DoubleVal()
+			val = exemplar.DoubleValue()
 		}
 		pos := 0
 		for ; pos < bounds.Len(); pos++ {

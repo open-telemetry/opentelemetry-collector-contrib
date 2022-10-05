@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/lightstep/otel-launcher-go/lightstep/sdk/metric/aggregator/histogram/structure"
+	"github.com/lightstep/go-expohisto/structure"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/multierr"

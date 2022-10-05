@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -64,6 +64,7 @@ func TestDefaultLogsMarshalers(t *testing.T) {
 	expectedEncodings := []string{
 		"otlp_proto",
 		"otlp_json",
+		"raw",
 	}
 	marshalers := logsMarshalers()
 	assert.Equal(t, len(expectedEncodings), len(marshalers))

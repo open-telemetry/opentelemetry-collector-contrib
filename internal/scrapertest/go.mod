@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector/pdata v0.59.1-0.20220914173239-9df807d51dad
+	go.opentelemetry.io/collector/pdata v0.61.1-0.20221004012633-7cb544d3be36
 	go.uber.org/multierr v1.8.0
 )
 
@@ -27,5 +27,3 @@ require (
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper => ../../receiver/scraperhelper

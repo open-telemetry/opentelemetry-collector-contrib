@@ -47,17 +47,17 @@ func NewConfig() *Config {
 
 // Config is the configuration of a file input operator
 type Config struct {
-	Finder                  `mapstructure:",squash" yaml:",inline"`
-	IncludeFileName         bool                  `mapstructure:"include_file_name,omitempty"              json:"include_file_name,omitempty"             yaml:"include_file_name,omitempty"`
-	IncludeFilePath         bool                  `mapstructure:"include_file_path,omitempty"              json:"include_file_path,omitempty"             yaml:"include_file_path,omitempty"`
-	IncludeFileNameResolved bool                  `mapstructure:"include_file_name_resolved,omitempty"     json:"include_file_name_resolved,omitempty"    yaml:"include_file_name_resolved,omitempty"`
-	IncludeFilePathResolved bool                  `mapstructure:"include_file_path_resolved,omitempty"     json:"include_file_path_resolved,omitempty"    yaml:"include_file_path_resolved,omitempty"`
-	PollInterval            time.Duration         `mapstructure:"poll_interval,omitempty"                  json:"poll_interval,omitempty"                 yaml:"poll_interval,omitempty"`
-	StartAt                 string                `mapstructure:"start_at,omitempty"                       json:"start_at,omitempty"                      yaml:"start_at,omitempty"`
-	FingerprintSize         helper.ByteSize       `mapstructure:"fingerprint_size,omitempty"               json:"fingerprint_size,omitempty"              yaml:"fingerprint_size,omitempty"`
-	MaxLogSize              helper.ByteSize       `mapstructure:"max_log_size,omitempty"                   json:"max_log_size,omitempty"                  yaml:"max_log_size,omitempty"`
-	MaxConcurrentFiles      int                   `mapstructure:"max_concurrent_files,omitempty"           json:"max_concurrent_files,omitempty"          yaml:"max_concurrent_files,omitempty"`
-	Splitter                helper.SplitterConfig `mapstructure:",squash,omitempty"                        json:",inline,omitempty"                       yaml:",inline,omitempty"`
+	Finder                  `mapstructure:",squash"`
+	IncludeFileName         bool                  `mapstructure:"include_file_name,omitempty"`
+	IncludeFilePath         bool                  `mapstructure:"include_file_path,omitempty"`
+	IncludeFileNameResolved bool                  `mapstructure:"include_file_name_resolved,omitempty"`
+	IncludeFilePathResolved bool                  `mapstructure:"include_file_path_resolved,omitempty"`
+	PollInterval            time.Duration         `mapstructure:"poll_interval,omitempty"`
+	StartAt                 string                `mapstructure:"start_at,omitempty"`
+	FingerprintSize         helper.ByteSize       `mapstructure:"fingerprint_size,omitempty"`
+	MaxLogSize              helper.ByteSize       `mapstructure:"max_log_size,omitempty"`
+	MaxConcurrentFiles      int                   `mapstructure:"max_concurrent_files,omitempty"`
+	Splitter                helper.SplitterConfig `mapstructure:",squash,omitempty"`
 }
 
 // Build will build a file input operator from the supplied configuration

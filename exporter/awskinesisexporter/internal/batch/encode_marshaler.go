@@ -57,12 +57,12 @@ func (bm *batchMarshaller) Logs(ld plog.Logs) (*Batch, error) {
 			if errors.Is(err, ErrUnsupportedEncoding) {
 				return nil, err
 			}
-			errs = multierr.Append(errs, consumererror.NewLogs(err, export.Clone()))
+			errs = multierr.Append(errs, consumererror.NewLogs(err, export))
 			continue
 		}
 
 		if err := bt.AddRecord(data, bm.partitioner(export)); err != nil {
-			errs = multierr.Append(errs, consumererror.NewLogs(err, export.Clone()))
+			errs = multierr.Append(errs, consumererror.NewLogs(err, export))
 		}
 	}
 
@@ -89,12 +89,12 @@ func (bm *batchMarshaller) Traces(td ptrace.Traces) (*Batch, error) {
 			if errors.Is(err, ErrUnsupportedEncoding) {
 				return nil, err
 			}
-			errs = multierr.Append(errs, consumererror.NewTraces(err, export.Clone()))
+			errs = multierr.Append(errs, consumererror.NewTraces(err, export))
 			continue
 		}
 
 		if err := bt.AddRecord(data, bm.partitioner(span)); err != nil {
-			errs = multierr.Append(errs, consumererror.NewTraces(err, export.Clone()))
+			errs = multierr.Append(errs, consumererror.NewTraces(err, export))
 		}
 	}
 
@@ -121,12 +121,12 @@ func (bm *batchMarshaller) Metrics(md pmetric.Metrics) (*Batch, error) {
 			if errors.Is(err, ErrUnsupportedEncoding) {
 				return nil, err
 			}
-			errs = multierr.Append(errs, consumererror.NewMetrics(err, export.Clone()))
+			errs = multierr.Append(errs, consumererror.NewMetrics(err, export))
 			continue
 		}
 
 		if err := bt.AddRecord(data, bm.partitioner(export)); err != nil {
-			errs = multierr.Append(errs, consumererror.NewMetrics(err, export.Clone()))
+			errs = multierr.Append(errs, consumererror.NewMetrics(err, export))
 		}
 	}
 

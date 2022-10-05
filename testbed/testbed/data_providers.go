@@ -15,7 +15,6 @@
 package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
-	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -127,7 +126,7 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pmetric.Metrics, bool) {
 			dataPoint := dps.AppendEmpty()
 			dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 			value := dp.dataItemsGenerated.Inc()
-			dataPoint.SetIntVal(int64(value))
+			dataPoint.SetIntValue(int64(value))
 			dataPoint.Attributes().PutString("item_index", "item_"+strconv.Itoa(j))
 			dataPoint.Attributes().PutString("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))
 		}
@@ -157,7 +156,7 @@ func (dp *perfTestDataProvider) GenerateLogs() (plog.Logs, bool) {
 		record := logRecords.AppendEmpty()
 		record.SetSeverityNumber(plog.SeverityNumberInfo3)
 		record.SetSeverityText("INFO3")
-		record.Body().SetStringVal("Load Generator Counter #" + strconv.Itoa(i))
+		record.Body().SetStr("Load Generator Counter #" + strconv.Itoa(i))
 		record.SetFlags(plog.DefaultLogRecordFlags.WithIsSampled(true))
 		record.SetTimestamp(now)
 
@@ -256,12 +255,7 @@ type FileDataProvider struct {
 // NewFileDataProvider creates an instance of FileDataProvider which generates test data
 // loaded from a file.
 func NewFileDataProvider(filePath string, dataType config.DataType) (*FileDataProvider, error) {
-	file, err := os.OpenFile(filepath.Clean(filePath), os.O_RDONLY, 0)
-	if err != nil {
-		return nil, err
-	}
-	var buf []byte
-	buf, err = io.ReadAll(file)
+	buf, err := os.ReadFile(filepath.Clean(filePath))
 	if err != nil {
 		return nil, err
 	}

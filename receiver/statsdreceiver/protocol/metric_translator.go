@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/lightstep/otel-launcher-go/lightstep/sdk/metric/aggregator/histogram/structure"
+	"github.com/lightstep/go-expohisto/structure"
 	"gonum.org/v1/gonum/stat"
 )
 
@@ -41,7 +41,7 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, time
 	nm.Sum().SetIsMonotonic(isMonotonicCounter)
 
 	dp := nm.Sum().DataPoints().AppendEmpty()
-	dp.SetIntVal(parsedMetric.counterValue())
+	dp.SetIntValue(parsedMetric.counterValue())
 	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(lastIntervalTime))
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	for i := parsedMetric.description.attrs.Iter(); i.Next(); {
@@ -59,7 +59,7 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pmetric.Scop
 		nm.SetUnit(parsedMetric.unit)
 	}
 	dp := nm.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetDoubleVal(parsedMetric.gaugeValue())
+	dp.SetDoubleValue(parsedMetric.gaugeValue())
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	for i := parsedMetric.description.attrs.Iter(); i.Next(); {
 		dp.Attributes().PutString(string(i.Attribute().Key), i.Attribute().Value.AsString())
@@ -116,7 +116,7 @@ func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetri
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 
 	for i := desc.attrs.Iter(); i.Next(); {
-		dp.Attributes().InsertString(string(i.Attribute().Key), i.Attribute().Value.AsString())
+		dp.Attributes().PutString(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}
 
 	dp.SetZeroCount(agg.ZeroCount())
@@ -133,6 +133,11 @@ func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetri
 		out := half.outFunc()
 		out.SetOffset(in.Offset())
 
+		out.BucketCounts().EnsureCapacity(int(in.Len()))
+
+		for i := uint32(0); i < in.Len(); i++ {
+			out.BucketCounts().Append(uint64(in.At(i)))
+		}
 		// Note: The copy being made could be avoided if this
 		// code base would use an interface to access buckets
 		// instead of a slice.
@@ -140,7 +145,7 @@ func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetri
 		for i := range cpy {
 			cpy[i] = in.At(uint32(i))
 		}
-		out.SetBucketCounts(pcommon.NewImmutableUInt64Slice(cpy))
+		out.BucketCounts().FromRaw(cpy)
 	}
 }
 

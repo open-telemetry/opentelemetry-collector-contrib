@@ -1018,7 +1018,7 @@ func (m *metricMongodbatlasDbCounts) recordDataPoint(start pcommon.Timestamp, ts
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("object_type", objectTypeAttributeValue)
 }
 
@@ -1069,7 +1069,7 @@ func (m *metricMongodbatlasDbSize) recordDataPoint(start pcommon.Timestamp, ts p
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("object_type", objectTypeAttributeValue)
 }
 
@@ -1120,7 +1120,7 @@ func (m *metricMongodbatlasDiskPartitionIopsAverage) recordDataPoint(start pcomm
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("disk_direction", diskDirectionAttributeValue)
 }
 
@@ -1171,7 +1171,7 @@ func (m *metricMongodbatlasDiskPartitionIopsMax) recordDataPoint(start pcommon.T
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("disk_direction", diskDirectionAttributeValue)
 }
 
@@ -1222,7 +1222,7 @@ func (m *metricMongodbatlasDiskPartitionLatencyAverage) recordDataPoint(start pc
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("disk_direction", diskDirectionAttributeValue)
 }
 
@@ -1273,7 +1273,7 @@ func (m *metricMongodbatlasDiskPartitionLatencyMax) recordDataPoint(start pcommo
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("disk_direction", diskDirectionAttributeValue)
 }
 
@@ -1324,7 +1324,7 @@ func (m *metricMongodbatlasDiskPartitionSpaceAverage) recordDataPoint(start pcom
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("disk_status", diskStatusAttributeValue)
 }
 
@@ -1375,7 +1375,7 @@ func (m *metricMongodbatlasDiskPartitionSpaceMax) recordDataPoint(start pcommon.
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("disk_status", diskStatusAttributeValue)
 }
 
@@ -1426,7 +1426,7 @@ func (m *metricMongodbatlasDiskPartitionUsageAverage) recordDataPoint(start pcom
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("disk_status", diskStatusAttributeValue)
 }
 
@@ -1477,7 +1477,7 @@ func (m *metricMongodbatlasDiskPartitionUsageMax) recordDataPoint(start pcommon.
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("disk_status", diskStatusAttributeValue)
 }
 
@@ -1528,7 +1528,7 @@ func (m *metricMongodbatlasDiskPartitionUtilizationAverage) recordDataPoint(star
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("disk_status", diskStatusAttributeValue)
 }
 
@@ -1579,7 +1579,7 @@ func (m *metricMongodbatlasDiskPartitionUtilizationMax) recordDataPoint(start pc
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("disk_status", diskStatusAttributeValue)
 }
 
@@ -1630,7 +1630,7 @@ func (m *metricMongodbatlasProcessAsserts) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("assert_type", assertTypeAttributeValue)
 }
 
@@ -1680,7 +1680,7 @@ func (m *metricMongodbatlasProcessBackgroundFlush) recordDataPoint(start pcommon
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1730,7 +1730,7 @@ func (m *metricMongodbatlasProcessCacheIo) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("cache_direction", cacheDirectionAttributeValue)
 }
 
@@ -1783,7 +1783,7 @@ func (m *metricMongodbatlasProcessCacheSize) recordDataPoint(start pcommon.Times
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("cache_status", cacheStatusAttributeValue)
 }
 
@@ -1835,7 +1835,7 @@ func (m *metricMongodbatlasProcessConnections) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1885,7 +1885,7 @@ func (m *metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage) recordDataP
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("cpu_state", cpuStateAttributeValue)
 }
 
@@ -1936,7 +1936,7 @@ func (m *metricMongodbatlasProcessCPUChildrenNormalizedUsageMax) recordDataPoint
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("cpu_state", cpuStateAttributeValue)
 }
 
@@ -1987,7 +1987,7 @@ func (m *metricMongodbatlasProcessCPUChildrenUsageAverage) recordDataPoint(start
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("cpu_state", cpuStateAttributeValue)
 }
 
@@ -2038,7 +2038,7 @@ func (m *metricMongodbatlasProcessCPUChildrenUsageMax) recordDataPoint(start pco
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("cpu_state", cpuStateAttributeValue)
 }
 
@@ -2089,7 +2089,7 @@ func (m *metricMongodbatlasProcessCPUNormalizedUsageAverage) recordDataPoint(sta
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("cpu_state", cpuStateAttributeValue)
 }
 
@@ -2140,7 +2140,7 @@ func (m *metricMongodbatlasProcessCPUNormalizedUsageMax) recordDataPoint(start p
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("cpu_state", cpuStateAttributeValue)
 }
 
@@ -2191,7 +2191,7 @@ func (m *metricMongodbatlasProcessCPUUsageAverage) recordDataPoint(start pcommon
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("cpu_state", cpuStateAttributeValue)
 }
 
@@ -2242,7 +2242,7 @@ func (m *metricMongodbatlasProcessCPUUsageMax) recordDataPoint(start pcommon.Tim
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("cpu_state", cpuStateAttributeValue)
 }
 
@@ -2293,7 +2293,7 @@ func (m *metricMongodbatlasProcessCursors) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("cursor_state", cursorStateAttributeValue)
 }
 
@@ -2344,7 +2344,7 @@ func (m *metricMongodbatlasProcessDbDocumentRate) recordDataPoint(start pcommon.
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("document_status", documentStatusAttributeValue)
 }
 
@@ -2395,7 +2395,7 @@ func (m *metricMongodbatlasProcessDbOperationsRate) recordDataPoint(start pcommo
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("operation", operationAttributeValue)
 	dp.Attributes().PutString("cluster_role", clusterRoleAttributeValue)
 }
@@ -2449,7 +2449,7 @@ func (m *metricMongodbatlasProcessDbOperationsTime) recordDataPoint(start pcommo
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("execution_type", executionTypeAttributeValue)
 }
 
@@ -2500,7 +2500,7 @@ func (m *metricMongodbatlasProcessDbQueryExecutorScanned) recordDataPoint(start 
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("scanned_type", scannedTypeAttributeValue)
 }
 
@@ -2551,7 +2551,7 @@ func (m *metricMongodbatlasProcessDbQueryTargetingScannedPerReturned) recordData
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("scanned_type", scannedTypeAttributeValue)
 }
 
@@ -2602,7 +2602,7 @@ func (m *metricMongodbatlasProcessDbStorage) recordDataPoint(start pcommon.Times
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("storage_status", storageStatusAttributeValue)
 }
 
@@ -2653,7 +2653,7 @@ func (m *metricMongodbatlasProcessFtsCPUUsage) recordDataPoint(start pcommon.Tim
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("cpu_state", cpuStateAttributeValue)
 }
 
@@ -2704,7 +2704,7 @@ func (m *metricMongodbatlasProcessGlobalLock) recordDataPoint(start pcommon.Time
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("global_lock_state", globalLockStateAttributeValue)
 }
 
@@ -2754,7 +2754,7 @@ func (m *metricMongodbatlasProcessIndexBtreeMissRatio) recordDataPoint(start pco
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2804,7 +2804,7 @@ func (m *metricMongodbatlasProcessIndexCounters) recordDataPoint(start pcommon.T
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("btree_counter_type", btreeCounterTypeAttributeValue)
 }
 
@@ -2854,7 +2854,7 @@ func (m *metricMongodbatlasProcessJournalingCommits) recordDataPoint(start pcomm
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2903,7 +2903,7 @@ func (m *metricMongodbatlasProcessJournalingDataFiles) recordDataPoint(start pco
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2952,7 +2952,7 @@ func (m *metricMongodbatlasProcessJournalingWritten) recordDataPoint(start pcomm
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3002,7 +3002,7 @@ func (m *metricMongodbatlasProcessMemoryUsage) recordDataPoint(start pcommon.Tim
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("memory_state", memoryStateAttributeValue)
 }
 
@@ -3053,7 +3053,7 @@ func (m *metricMongodbatlasProcessNetworkIo) recordDataPoint(start pcommon.Times
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("direction", directionAttributeValue)
 }
 
@@ -3105,7 +3105,7 @@ func (m *metricMongodbatlasProcessNetworkRequests) recordDataPoint(start pcommon
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3154,7 +3154,7 @@ func (m *metricMongodbatlasProcessOplogRate) recordDataPoint(start pcommon.Times
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3204,7 +3204,7 @@ func (m *metricMongodbatlasProcessOplogTime) recordDataPoint(start pcommon.Times
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("oplog_type", oplogTypeAttributeValue)
 }
 
@@ -3255,7 +3255,7 @@ func (m *metricMongodbatlasProcessPageFaults) recordDataPoint(start pcommon.Time
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("memory_issue_type", memoryIssueTypeAttributeValue)
 }
 
@@ -3305,7 +3305,7 @@ func (m *metricMongodbatlasProcessRestarts) recordDataPoint(start pcommon.Timest
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3355,7 +3355,7 @@ func (m *metricMongodbatlasProcessTickets) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("ticket_type", ticketTypeAttributeValue)
 }
 
@@ -3406,7 +3406,7 @@ func (m *metricMongodbatlasSystemCPUNormalizedUsageAverage) recordDataPoint(star
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("cpu_state", cpuStateAttributeValue)
 }
 
@@ -3457,7 +3457,7 @@ func (m *metricMongodbatlasSystemCPUNormalizedUsageMax) recordDataPoint(start pc
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("cpu_state", cpuStateAttributeValue)
 }
 
@@ -3508,7 +3508,7 @@ func (m *metricMongodbatlasSystemCPUUsageAverage) recordDataPoint(start pcommon.
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("cpu_state", cpuStateAttributeValue)
 }
 
@@ -3559,7 +3559,7 @@ func (m *metricMongodbatlasSystemCPUUsageMax) recordDataPoint(start pcommon.Time
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("cpu_state", cpuStateAttributeValue)
 }
 
@@ -3610,7 +3610,7 @@ func (m *metricMongodbatlasSystemFtsCPUNormalizedUsage) recordDataPoint(start pc
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("cpu_state", cpuStateAttributeValue)
 }
 
@@ -3661,7 +3661,7 @@ func (m *metricMongodbatlasSystemFtsCPUUsage) recordDataPoint(start pcommon.Time
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("cpu_state", cpuStateAttributeValue)
 }
 
@@ -3711,7 +3711,7 @@ func (m *metricMongodbatlasSystemFtsDiskUsed) recordDataPoint(start pcommon.Time
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3763,7 +3763,7 @@ func (m *metricMongodbatlasSystemFtsMemoryUsage) recordDataPoint(start pcommon.T
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("memory_state", memoryStateAttributeValue)
 }
 
@@ -3814,7 +3814,7 @@ func (m *metricMongodbatlasSystemMemoryUsageAverage) recordDataPoint(start pcomm
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("memory_status", memoryStatusAttributeValue)
 }
 
@@ -3865,7 +3865,7 @@ func (m *metricMongodbatlasSystemMemoryUsageMax) recordDataPoint(start pcommon.T
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("memory_status", memoryStatusAttributeValue)
 }
 
@@ -3916,7 +3916,7 @@ func (m *metricMongodbatlasSystemNetworkIoAverage) recordDataPoint(start pcommon
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("direction", directionAttributeValue)
 }
 
@@ -3967,7 +3967,7 @@ func (m *metricMongodbatlasSystemNetworkIoMax) recordDataPoint(start pcommon.Tim
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("direction", directionAttributeValue)
 }
 
@@ -4018,7 +4018,7 @@ func (m *metricMongodbatlasSystemPagingIoAverage) recordDataPoint(start pcommon.
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("direction", directionAttributeValue)
 }
 
@@ -4069,7 +4069,7 @@ func (m *metricMongodbatlasSystemPagingIoMax) recordDataPoint(start pcommon.Time
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("direction", directionAttributeValue)
 }
 
@@ -4120,7 +4120,7 @@ func (m *metricMongodbatlasSystemPagingUsageAverage) recordDataPoint(start pcomm
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("memory_state", memoryStateAttributeValue)
 }
 
@@ -4171,7 +4171,7 @@ func (m *metricMongodbatlasSystemPagingUsageMax) recordDataPoint(start pcommon.T
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutString("memory_state", memoryStateAttributeValue)
 }
 
@@ -4441,10 +4441,10 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {

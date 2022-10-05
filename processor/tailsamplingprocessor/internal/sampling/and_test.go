@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ func TestAndEvaluatorNotSampled(t *testing.T) {
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
 	trace := &TraceData{
-		ReceivedBatches: []ptrace.Traces{traces},
+		ReceivedBatches: traces,
 	}
 	decision, err := and.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
@@ -70,7 +70,7 @@ func TestAndEvaluatorSampled(t *testing.T) {
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
 	trace := &TraceData{
-		ReceivedBatches: []ptrace.Traces{traces},
+		ReceivedBatches: traces,
 	}
 	decision, err := and.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
@@ -98,7 +98,7 @@ func TestAndEvaluatorStringInvertSampled(t *testing.T) {
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
 	trace := &TraceData{
-		ReceivedBatches: []ptrace.Traces{traces},
+		ReceivedBatches: traces,
 	}
 	decision, err := and.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
@@ -126,7 +126,7 @@ func TestAndEvaluatorStringInvertNotSampled(t *testing.T) {
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
 	trace := &TraceData{
-		ReceivedBatches: []ptrace.Traces{traces},
+		ReceivedBatches: traces,
 	}
 	decision, err := and.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)

@@ -40,10 +40,10 @@ func NewConfig(operatorID string) *Config {
 
 // Config is the configuration of a generate input operator.
 type Config struct {
-	helper.InputConfig `yaml:",inline"`
-	Entry              entry.Entry `json:"entry"           yaml:"entry"`
-	Count              int         `json:"count,omitempty" yaml:"count,omitempty"`
-	Static             bool        `json:"static"          yaml:"static,omitempty"`
+	helper.InputConfig `mapstructure:",squash"`
+	Entry              entry.Entry `mapstructure:"entry"`
+	Count              int         `mapstructure:"count"`
+	Static             bool        `mapstructure:"static"`
 }
 
 // Build will build a generate input operator.

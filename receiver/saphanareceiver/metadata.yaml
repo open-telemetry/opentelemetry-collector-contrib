@@ -266,7 +266,7 @@ metrics:
     enabled: true
   saphana.license.limit:
     description: The allowed product usage as specified by the license (for example, main memory).
-    unit: '1'
+    unit: '{licenses}'
     sum:
       monotonic: false
       aggregation: cumulative
@@ -276,7 +276,7 @@ metrics:
     enabled: true
   saphana.license.peak:
     description: The peak product usage value during last 13 months, measured periodically.
-    unit: '1'
+    unit: '{licenses}'
     sum:
       monotonic: false
       aggregation: cumulative

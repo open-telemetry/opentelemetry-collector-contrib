@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.59.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.61.0
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector/pdata v0.59.1-0.20220914173239-9df807d51dad
+	go.opentelemetry.io/collector/pdata v0.61.1-0.20221004012633-7cb544d3be36
 	go.uber.org/multierr v1.8.0
 )
 

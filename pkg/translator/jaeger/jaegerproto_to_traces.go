@@ -135,16 +135,7 @@ func protoBatchToResourceSpans(batch model.Batch, dest ptrace.ResourceSpans) {
 		return
 	}
 
-	groupByLibrary := jSpansToInternal(jSpans)
-	ilss := dest.ScopeSpans()
-	for library, spans := range groupByLibrary {
-		ils := ilss.AppendEmpty()
-		if library.name != "" {
-			ils.Scope().SetName(library.name)
-			ils.Scope().SetVersion(library.version)
-		}
-		spans.MoveAndAppendTo(ils.Spans())
-	}
+	jSpansToInternal(jSpans, dest.ScopeSpans())
 }
 
 func jProcessToInternalResource(process *model.Process, dest pcommon.Resource) {
@@ -159,7 +150,6 @@ func jProcessToInternalResource(process *model.Process, dest pcommon.Resource) {
 	}
 
 	attrs := dest.Attributes()
-	attrs.Clear()
 	if serviceName != "" {
 		attrs.EnsureCapacity(len(tags) + 1)
 		attrs.PutString(conventions.AttributeServiceName, serviceName)
@@ -188,36 +178,36 @@ func translateJaegerVersionAttr(attrs pcommon.Map) {
 	jaegerVersion, jaegerVersionFound := attrs.Get("jaeger.version")
 	_, exporterVersionFound := attrs.Get(occonventions.AttributeExporterVersion)
 	if jaegerVersionFound && !exporterVersionFound {
-		attrs.PutString(occonventions.AttributeExporterVersion, "Jaeger-"+jaegerVersion.StringVal())
+		attrs.PutString(occonventions.AttributeExporterVersion, "Jaeger-"+jaegerVersion.Str())
 		attrs.Remove("jaeger.version")
 	}
-}
-
-func jSpansToInternal(spans []*model.Span) map[scope]ptrace.SpanSlice {
-	spansByLibrary := make(map[scope]ptrace.SpanSlice)
-
-	for _, span := range spans {
-		if span == nil || reflect.DeepEqual(span, blankJaegerProtoSpan) {
-			continue
-		}
-		jSpanToInternal(span, spansByLibrary)
-	}
-	return spansByLibrary
 }
 
 type scope struct {
 	name, version string
 }
 
-func jSpanToInternal(span *model.Span, spansByLibrary map[scope]ptrace.SpanSlice) {
-	il := getScope(span)
-	ss, found := spansByLibrary[il]
-	if !found {
-		ss = ptrace.NewSpanSlice()
-		spansByLibrary[il] = ss
-	}
+func jSpansToInternal(spans []*model.Span, dest ptrace.ScopeSpansSlice) {
+	spansByLibrary := make(map[scope]ptrace.SpanSlice)
 
-	dest := ss.AppendEmpty()
+	for _, span := range spans {
+		if span == nil || reflect.DeepEqual(span, blankJaegerProtoSpan) {
+			continue
+		}
+		il := getScope(span)
+		sps, found := spansByLibrary[il]
+		if !found {
+			ss := dest.AppendEmpty()
+			ss.Scope().SetName(il.name)
+			ss.Scope().SetVersion(il.version)
+			sps = ss.Spans()
+			spansByLibrary[il] = sps
+		}
+		jSpanToInternal(span, sps.AppendEmpty())
+	}
+}
+
+func jSpanToInternal(span *model.Span, dest ptrace.Span) {
 	dest.SetTraceID(idutils.UInt64ToTraceID(span.TraceID.High, span.TraceID.Low))
 	dest.SetSpanID(idutils.UInt64ToSpanID(uint64(span.SpanID)))
 	dest.SetName(span.OperationName)
@@ -234,11 +224,11 @@ func jSpanToInternal(span *model.Span, spansByLibrary map[scope]ptrace.SpanSlice
 	jTagsToInternalAttributes(span.Tags, attrs)
 	setInternalSpanStatus(attrs, dest.Status())
 	if spanKindAttr, ok := attrs.Get(tracetranslator.TagSpanKind); ok {
-		dest.SetKind(jSpanKindToInternal(spanKindAttr.StringVal()))
+		dest.SetKind(jSpanKindToInternal(spanKindAttr.Str()))
 		attrs.Remove(tracetranslator.TagSpanKind)
 	}
 
-	dest.TraceStateStruct().FromRaw(getTraceStateFromAttrs(attrs))
+	dest.TraceState().FromRaw(getTraceStateFromAttrs(attrs))
 
 	// drop the attributes slice if all of them were replaced during translation
 	if attrs.Len() == 0 {
@@ -274,7 +264,7 @@ func setInternalSpanStatus(attrs pcommon.Map, dest ptrace.SpanStatus) {
 	statusExists := false
 
 	if errorVal, ok := attrs.Get(tracetranslator.TagError); ok {
-		if errorVal.BoolVal() {
+		if errorVal.Bool() {
 			statusCode = ptrace.StatusCodeError
 			attrs.Remove(tracetranslator.TagError)
 			statusExists = true
@@ -282,7 +272,7 @@ func setInternalSpanStatus(attrs pcommon.Map, dest ptrace.SpanStatus) {
 			if desc, ok := extractStatusDescFromAttr(attrs); ok {
 				statusMessage = desc
 			} else if descAttr, ok := attrs.Get(tracetranslator.TagHTTPStatusMsg); ok {
-				statusMessage = descAttr.StringVal()
+				statusMessage = descAttr.Str()
 			}
 		}
 	}
@@ -293,7 +283,7 @@ func setInternalSpanStatus(attrs pcommon.Map, dest ptrace.SpanStatus) {
 			// status. Only parse the otel.status_code tag if the error tag is
 			// not set to true.
 			statusExists = true
-			switch strings.ToUpper(codeAttr.StringVal()) {
+			switch strings.ToUpper(codeAttr.Str()) {
 			case statusOk:
 				statusCode = ptrace.StatusCodeOk
 			case statusError:
@@ -319,7 +309,7 @@ func setInternalSpanStatus(attrs pcommon.Map, dest ptrace.SpanStatus) {
 			}
 
 			if msgAttr, ok := attrs.Get(tracetranslator.TagHTTPStatusMsg); ok {
-				statusMessage = msgAttr.StringVal()
+				statusMessage = msgAttr.Str()
 			}
 		}
 	}
@@ -336,7 +326,7 @@ func setInternalSpanStatus(attrs pcommon.Map, dest ptrace.SpanStatus) {
 // the process.
 func extractStatusDescFromAttr(attrs pcommon.Map) (string, bool) {
 	if msgAttr, ok := attrs.Get(conventions.OtelStatusDescription); ok {
-		msg := msgAttr.StringVal()
+		msg := msgAttr.Str()
 		attrs.Remove(conventions.OtelStatusDescription)
 		return msg, true
 	}
@@ -350,10 +340,10 @@ func codeFromAttr(attrVal pcommon.Value) (int64, error) {
 	var val int64
 	switch attrVal.Type() {
 	case pcommon.ValueTypeInt:
-		val = attrVal.IntVal()
-	case pcommon.ValueTypeString:
+		val = attrVal.Int()
+	case pcommon.ValueTypeStr:
 		var err error
-		val, err = strconv.ParseInt(attrVal.StringVal(), 10, 0)
+		val, err = strconv.ParseInt(attrVal.Str(), 10, 0)
 		if err != nil {
 			return 0, err
 		}
@@ -409,11 +399,10 @@ func jLogsToSpanEvents(logs []model.Log, dest ptrace.SpanEventSlice) {
 		}
 
 		attrs := event.Attributes()
-		attrs.Clear()
 		attrs.EnsureCapacity(len(log.Fields))
 		jTagsToInternalAttributes(log.Fields, attrs)
 		if name, ok := attrs.Get(eventNameAttr); ok {
-			event.SetName(name.StringVal())
+			event.SetName(name.Str())
 			attrs.Remove(eventNameAttr)
 		}
 	}
@@ -441,7 +430,7 @@ func getTraceStateFromAttrs(attrs pcommon.Map) string {
 	traceState := ""
 	// TODO Bring this inline with solution for jaegertracing/jaeger-client-java #702 once available
 	if attr, ok := attrs.Get(tracetranslator.TagW3CTraceState); ok {
-		traceState = attr.StringVal()
+		traceState = attr.Str()
 		attrs.Remove(tracetranslator.TagW3CTraceState)
 	}
 	return traceState

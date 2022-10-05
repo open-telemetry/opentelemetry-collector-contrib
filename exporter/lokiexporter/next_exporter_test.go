@@ -24,13 +24,12 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"github.com/grafana/loki/pkg/logproto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/pdata/plog"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
 )
 
 func TestPushLogData(t *testing.T) {
@@ -49,7 +48,7 @@ func TestPushLogData(t *testing.T) {
 				"http.status": 200,
 			},
 			hints: map[string]interface{}{
-				hintAttributes: "host.name",
+				"loki.attribute.labels": "host.name",
 			},
 			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
 			expectedLine:  `{"traceid":"01020304000000000000000000000000","attributes":{"http.status":200}}`,
@@ -61,7 +60,7 @@ func TestPushLogData(t *testing.T) {
 				"region.az": "eu-west-1a",
 			},
 			hints: map[string]interface{}{
-				hintResources: "host.name",
+				"loki.resource.labels": "host.name",
 			},
 			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
 			expectedLine:  `{"traceid":"01020304000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,

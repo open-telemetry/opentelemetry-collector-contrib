@@ -51,7 +51,7 @@ func TestCodeFromAttr(t *testing.T) {
 	}{
 		{
 			name: "ok-string",
-			attr: pcommon.NewValueString("0"),
+			attr: pcommon.NewValueStr("0"),
 			code: 0,
 		},
 
@@ -70,7 +70,7 @@ func TestCodeFromAttr(t *testing.T) {
 
 		{
 			name: "invalid-string",
-			attr: pcommon.NewValueString("inf"),
+			attr: pcommon.NewValueStr("inf"),
 			code: 0,
 			err:  strconv.ErrSyntax,
 		},
@@ -97,13 +97,13 @@ func TestGetStatusCodeFromHTTPStatusAttr(t *testing.T) {
 	}{
 		{
 			name: "string-unknown",
-			attr: pcommon.NewValueString("10"),
+			attr: pcommon.NewValueStr("10"),
 			code: ptrace.StatusCodeError,
 		},
 
 		{
 			name: "string-ok",
-			attr: pcommon.NewValueString("101"),
+			attr: pcommon.NewValueStr("101"),
 			code: ptrace.StatusCodeUnset,
 		},
 
@@ -431,7 +431,6 @@ func TestSetInternalSpanStatus(t *testing.T) {
 }
 
 func TestProtoBatchesToInternalTraces(t *testing.T) {
-	t.Skip("skipping flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/12591")
 	batches := []*model.Batch{
 		{
 			Process: generateProtoProcess(),
@@ -459,8 +458,29 @@ func TestProtoBatchesToInternalTraces(t *testing.T) {
 	twoSpans.CopyTo(tgt)
 
 	got, err := ProtoToTraces(batches)
+
 	assert.NoError(t, err)
-	assert.EqualValues(t, expected, got)
+
+	assert.Equal(t, expected.ResourceSpans().Len(), got.ResourceSpans().Len())
+	assert.Equal(t, expected.SpanCount(), got.SpanCount())
+
+	lenbatches := expected.ResourceSpans().Len()
+	found := 0
+
+	for i := 0; i < lenbatches; i++ {
+		rsExpected := expected.ResourceSpans().At(i)
+		for j := 0; j < lenbatches; j++ {
+			got.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
+				nameExpected := rsExpected.ScopeSpans().At(0).Spans().At(0).Name()
+				nameGot := got.ResourceSpans().At(j).ScopeSpans().At(0).Scope().Name()
+				if nameExpected == nameGot {
+					assert.Equal(t, nameGot, found)
+					assert.Equal(t, got.SpanCount(), found)
+				}
+				return nameExpected == nameGot
+			})
+		}
+	}
 }
 
 func TestJSpanKindToInternal(t *testing.T) {
@@ -625,7 +645,7 @@ func generateTracesWithLibraryInfo() ptrace.Traces {
 func generateTracesOneSpanNoResourceWithTraceState() ptrace.Traces {
 	td := generateTracesOneSpanNoResource()
 	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-	span.TraceStateStruct().FromRaw("lasterror=f39cd56cc44274fd5abd07ef1164246d10ce2955")
+	span.TraceState().FromRaw("lasterror=f39cd56cc44274fd5abd07ef1164246d10ce2955")
 	return td
 }
 

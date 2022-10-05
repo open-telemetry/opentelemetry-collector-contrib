@@ -52,11 +52,11 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a windows event log operator.
 type Config struct {
-	helper.InputConfig `mapstructure:",squash" yaml:",inline"`
-	Channel            string        `mapstructure:"channel" json:"channel" yaml:"channel"`
-	MaxReads           int           `mapstructure:"max_reads,omitempty" json:"max_reads,omitempty" yaml:"max_reads,omitempty"`
-	StartAt            string        `mapstructure:"start_at,omitempty" json:"start_at,omitempty" yaml:"start_at,omitempty"`
-	PollInterval       time.Duration `mapstructure:"poll_interval,omitempty" json:"poll_interval,omitempty" yaml:"poll_interval,omitempty"`
+	helper.InputConfig `mapstructure:",squash"`
+	Channel            string        `mapstructure:"channel"`
+	MaxReads           int           `mapstructure:"max_reads,omitempty"`
+	StartAt            string        `mapstructure:"start_at,omitempty"`
+	PollInterval       time.Duration `mapstructure:"poll_interval,omitempty"`
 }
 
 // Build will build a windows event log operator.

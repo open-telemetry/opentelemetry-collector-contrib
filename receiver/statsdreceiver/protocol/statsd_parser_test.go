@@ -22,10 +22,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
+	"github.com/lightstep/go-expohisto/mapping/logarithm"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/sdk/metric/aggregator/exponential/mapping/logarithm"
 )
 
 func Test_ParseMessageToMetric(t *testing.T) {
@@ -992,7 +991,7 @@ func TestStatsDParser_Mappings(t *testing.T) {
 				ilms := ilm.At(i).Metrics()
 				for j := 0; j < ilms.Len(); j++ {
 					m := ilms.At(j)
-					typeNames[m.DataType().String()] = m.Name()
+					typeNames[m.Type().String()] = m.Name()
 				}
 			}
 
@@ -1050,7 +1049,7 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 		ep.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 		dp := ep.DataPoints().AppendEmpty()
 
-		dp.Attributes().InsertString("mykey", "myvalue")
+		dp.Attributes().PutString("mykey", "myvalue")
 		return data, dp
 	}
 
@@ -1082,10 +1081,9 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 				dp.SetZeroCount(1)
 				dp.SetScale(0)
 				dp.Positive().SetOffset(0)
-				dp.Positive().SetBucketCounts(
-					pcommon.NewImmutableUInt64Slice([]uint64{
-						1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-					}))
+				dp.Positive().BucketCounts().FromRaw([]uint64{
+					1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+				})
 				return data
 			}(),
 			mapping: normalMapping,
@@ -1112,10 +1110,9 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 				dp.SetZeroCount(1)
 				dp.SetScale(0)
 				dp.Negative().SetOffset(0)
-				dp.Negative().SetBucketCounts(
-					pcommon.NewImmutableUInt64Slice([]uint64{
-						1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-					}))
+				dp.Negative().BucketCounts().FromRaw([]uint64{
+					1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+				})
 				return data
 			}(),
 			mapping: normalMapping,
@@ -1136,10 +1133,9 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 				dp.SetZeroCount(0)
 				dp.SetScale(0)
 				dp.Positive().SetOffset(0)
-				dp.Positive().SetBucketCounts(
-					pcommon.NewImmutableUInt64Slice([]uint64{
-						1, 0, 1, 0, 1, 0, 1, 0, 0, 1,
-					}))
+				dp.Positive().BucketCounts().FromRaw([]uint64{
+					1, 0, 1, 0, 1, 0, 1, 0, 0, 1,
+				})
 				return data
 			}(),
 			mapping: normalMapping,
@@ -1159,14 +1155,12 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 				dp.SetScale(logarithm.MaxScale)
 				dp.Positive().SetOffset(-1)
 				dp.Negative().SetOffset(-1)
-				dp.Positive().SetBucketCounts(
-					pcommon.NewImmutableUInt64Slice([]uint64{
-						1,
-					}))
-				dp.Negative().SetBucketCounts(
-					pcommon.NewImmutableUInt64Slice([]uint64{
-						1,
-					}))
+				dp.Positive().BucketCounts().FromRaw([]uint64{
+					1,
+				})
+				dp.Negative().BucketCounts().FromRaw([]uint64{
+					1,
+				})
 				return data
 			}(),
 			mapping: normalMapping,
@@ -1204,14 +1198,12 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 				dp.SetScale(logarithm.MaxScale)
 				dp.Positive().SetOffset(-1)
 				dp.Negative().SetOffset(-1)
-				dp.Positive().SetBucketCounts(
-					pcommon.NewImmutableUInt64Slice([]uint64{
-						8, // 1 / 0.125
-					}))
-				dp.Negative().SetBucketCounts(
-					pcommon.NewImmutableUInt64Slice([]uint64{
-						2, // 1 / 0.5
-					}))
+				dp.Positive().BucketCounts().FromRaw([]uint64{
+					8, // 1 / 0.125
+				})
+				dp.Negative().BucketCounts().FromRaw([]uint64{
+					2, // 1 / 0.5
+				})
 				return data
 			}(),
 			mapping: normalMapping,

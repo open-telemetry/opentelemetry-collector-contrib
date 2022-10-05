@@ -149,6 +149,220 @@
               }
             },
             {
+              "name": "apache.cpu.time",
+              "description": "Jiffs used by processes of given category.",
+              "unit": "{jiff}",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      },
+                      {
+                        "key": "level",
+                        "value": {
+                          "stringValue": "children"
+                        }
+                      },
+                      {
+                        "key": "mode",
+                        "value": {
+                          "stringValue": "system"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asDouble": "0.01"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      },
+                      {
+                        "key": "level",
+                        "value": {
+                          "stringValue": "children"
+                        }
+                      },
+                      {
+                        "key": "mode",
+                        "value": {
+                          "stringValue": "user"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asDouble": "0.02"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      },
+                      {
+                        "key": "level",
+                        "value": {
+                          "stringValue": "self"
+                        }
+                      },
+                      {
+                        "key": "mode",
+                        "value": {
+                          "stringValue": "system"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asDouble": "0.03"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      },
+                      {
+                        "key": "level",
+                        "value": {
+                          "stringValue": "self"
+                        }
+                      },
+                      {
+                        "key": "mode",
+                        "value": {
+                          "stringValue": "user"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asDouble": "0.04"
+                  }
+                ],
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "isMonotonic": true
+              }
+            },
+            {
+              "name": "apache.cpu.load",
+              "description": "Current load of the CPU.",
+              "unit": "%",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asDouble": "0.66"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "apache.load.1",
+              "description": "The average server load during the last minute.",
+              "unit": "%",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asDouble": "0.9"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "apache.load.5",
+              "description": "The average server load during the last 5 minutes.",
+              "unit": "%",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asDouble": "0.4"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "apache.load.15",
+              "description": "The average server load during the last 15 minutes.",
+              "unit": "%",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asDouble": "0.3"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "apache.request.time",
+              "description": "Total time spent on handling requests.",
+              "unit": "ms",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asInt": "1501"
+                  }
+                ],
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "isMonotonic": true
+              }
+            },
+            {
               "name": "apache.scoreboard",
               "description": "The number of workers in each state.",
               "unit": "{workers}",

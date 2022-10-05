@@ -512,7 +512,7 @@ func metricBuilder(delta int64, prefix, job, instance string) pmetric.Metrics {
 	dp1.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1543160298+delta, 100000997)))
 	dp1.Attributes().PutString("os", "windows")
 	dp1.Attributes().PutString("arch", "x86")
-	dp1.SetIntVal(99 + delta)
+	dp1.SetIntValue(99 + delta)
 
 	m2 := ms.AppendEmpty()
 	m2.SetName(prefix + "this/one/there(where)")
@@ -526,7 +526,7 @@ func metricBuilder(delta int64, prefix, job, instance string) pmetric.Metrics {
 	dp2.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1543160298, 100000997)))
 	dp2.Attributes().PutString("os", "linux")
 	dp2.Attributes().PutString("arch", "x86")
-	dp2.SetIntVal(100 + delta)
+	dp2.SetIntValue(100 + delta)
 
 	return md
 }

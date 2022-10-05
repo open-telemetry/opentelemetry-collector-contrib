@@ -105,3 +105,199 @@ func TestLoadConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateConfig(t *testing.T) {
+	tests := []struct {
+		name   string
+		config config.Processor
+		error  string
+	}{
+		{
+			name: "both expression and value specified",
+			config: &Config{
+				FromAttribute:   "attr",
+				AttributeSource: resourceAttributeSource,
+				Table: []RoutingTableItem{
+					{
+						Exporters:  []string{"otlp"},
+						Value:      "acme",
+						Expression: `route() where resource.attributes["attr"] == "acme"`,
+					},
+				},
+			},
+			error: "invalid route: both expression (route() where resource.attributes[\"attr\"] == \"acme\") and value (acme) provided",
+		},
+		{
+			name: "neither expression or value provided",
+			config: &Config{
+				FromAttribute:   "attr",
+				AttributeSource: resourceAttributeSource,
+				Table: []RoutingTableItem{
+					{
+						Exporters: []string{"otlp"},
+					},
+				},
+			},
+			error: "invalid (empty) route : empty routing attribute provided",
+		},
+		{
+			name: "drop routing attribute with context as routing attribute source",
+			config: &Config{
+				FromAttribute:                "attr",
+				AttributeSource:              contextAttributeSource,
+				DropRoutingResourceAttribute: true,
+				Table: []RoutingTableItem{
+					{
+						Exporters: []string{"otlp"},
+						Value:     "test",
+					},
+				},
+			},
+			error: "using a different attribute source than 'attribute' and drop_resource_routing_attribute is set to true",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.EqualError(t, tt.config.Validate(), tt.error)
+		})
+	}
+}
+
+func TestRewriteLegacyConfigToOTTL(t *testing.T) {
+	tests := []struct {
+		name   string
+		config Config
+		want   Config
+	}{
+		{
+			name: "rewrite routing by resource attribute",
+			config: Config{
+				FromAttribute:   "attr",
+				AttributeSource: resourceAttributeSource,
+				Table: []RoutingTableItem{
+					{
+						Exporters: []string{"otlp"},
+						Value:     "acme",
+					},
+				},
+			},
+			want: Config{
+				Table: []RoutingTableItem{
+					{
+						Exporters:  []string{"otlp"},
+						Expression: `route() where resource.attributes["attr"] == "acme"`,
+					},
+				},
+			},
+		},
+		{
+			name: "rewrite routing by resource attribute multiple entries",
+			config: Config{
+				FromAttribute:   "attr",
+				AttributeSource: resourceAttributeSource,
+				Table: []RoutingTableItem{
+					{
+						Exporters: []string{"otlp"},
+						Value:     "acme",
+					},
+					{
+						Exporters: []string{"otlp/2"},
+						Value:     "ecorp",
+					},
+				},
+			},
+			want: Config{
+				Table: []RoutingTableItem{
+					{
+						Exporters:  []string{"otlp"},
+						Expression: `route() where resource.attributes["attr"] == "acme"`,
+					},
+					{
+						Exporters:  []string{"otlp/2"},
+						Expression: `route() where resource.attributes["attr"] == "ecorp"`,
+					},
+				},
+			},
+		},
+		{
+			name: "rewrite routing by resource attribute with dropping routing key",
+			config: Config{
+				FromAttribute:                "attr",
+				AttributeSource:              resourceAttributeSource,
+				DropRoutingResourceAttribute: true,
+				Table: []RoutingTableItem{
+					{
+						Exporters: []string{"otlp"},
+						Value:     "acme",
+					},
+				},
+			},
+			want: Config{
+				Table: []RoutingTableItem{
+					{
+						Exporters:  []string{"otlp"},
+						Expression: `delete_key(resource.attributes, "attr") where resource.attributes["attr"] == "acme"`,
+					},
+				},
+			},
+		},
+		{
+			name: "rewrite routing with context as attribute source",
+			config: Config{
+				FromAttribute:   "attr",
+				AttributeSource: contextAttributeSource,
+				Table: []RoutingTableItem{
+					{
+						Exporters: []string{"otlp"},
+						Value:     "acme",
+					},
+				},
+			},
+			want: Config{
+				FromAttribute:   "attr",
+				AttributeSource: contextAttributeSource,
+				Table: []RoutingTableItem{
+					{
+						Exporters: []string{"otlp"},
+						Value:     "acme",
+					},
+				},
+			},
+		},
+		{
+			name: "rewrite routing by resource attribute with mixed routing entries",
+			config: Config{
+				FromAttribute:   "attr",
+				AttributeSource: resourceAttributeSource,
+				Table: []RoutingTableItem{
+					{
+						Exporters: []string{"otlp"},
+						Value:     "acme",
+					},
+					{
+						Exporters:  []string{"otlp/2"},
+						Expression: `route() where resource.attributes["attr"] == "ecorp"`,
+					},
+				},
+			},
+			want: Config{
+				Table: []RoutingTableItem{
+					{
+						Exporters:  []string{"otlp"},
+						Expression: `route() where resource.attributes["attr"] == "acme"`,
+					},
+					{
+						Exporters:  []string{"otlp/2"},
+						Expression: `route() where resource.attributes["attr"] == "ecorp"`,
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, *rewriteRoutingEntriesToOTTL(&tt.config))
+		})
+	}
+}

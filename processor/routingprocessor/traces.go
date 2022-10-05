@@ -20,9 +20,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
 
 var _ component.TracesProcessor = (*tracesProcessor)(nil)
@@ -32,18 +36,22 @@ type tracesProcessor struct {
 	config *Config
 
 	extractor extractor
-	router    router[component.TracesExporter]
+	router    router[component.TracesExporter, ottltraces.TransformContext]
 }
 
-func newTracesProcessor(logger *zap.Logger, cfg config.Processor) *tracesProcessor {
-	oCfg := cfg.(*Config)
+func newTracesProcessor(settings component.TelemetrySettings, config config.Processor) *tracesProcessor {
+	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
 	return &tracesProcessor{
-		logger: logger,
-		config: oCfg,
-
-		extractor: newExtractor(oCfg.FromAttribute, logger),
-		router:    newRouter[component.TracesExporter](*oCfg, logger),
+		logger: settings.Logger,
+		config: cfg,
+		router: newRouter[component.TracesExporter, ottltraces.TransformContext](
+			cfg.Table,
+			cfg.DefaultExporters,
+			settings,
+			ottltraces.NewParser(common.Functions[ottltraces.TransformContext](), settings),
+		),
+		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
 }
 
@@ -56,78 +64,78 @@ func (p *tracesProcessor) Start(_ context.Context, host component.Host) error {
 }
 
 func (p *tracesProcessor) ConsumeTraces(ctx context.Context, t ptrace.Traces) error {
-	var errs error
-	switch p.config.AttributeSource {
-	case resourceAttributeSource:
-		errs = multierr.Append(errs, p.route(ctx, t))
-	case contextAttributeSource:
-		fallthrough
-	default:
-		errs = multierr.Append(errs, p.routeForContext(ctx, t))
-	}
 	// TODO: determine the proper action when errors happen
-	return errs
+	if p.config.FromAttribute == "" {
+		err := p.route(ctx, t)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	err := p.routeForContext(ctx, t)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type spanGroup struct {
+	exporters []component.TracesExporter
+	traces    ptrace.Traces
 }
 
 func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
-	// routingEntry is used to group ptrace.ResourceSpans that are routed to
-	// the same set of exporters.
-	// This way we're not ending up with all the logs split up which would cause
-	// higher CPU usage.
-	groups := map[string]struct {
-		exporters []component.TracesExporter
-		resSpans  ptrace.ResourceSpansSlice
-	}{}
+	// groups is used to group ptrace.ResourceSpans that are routed to
+	// the same set of exporters. This way we're not ending up with all the
+	// logs split up which would cause higher CPU usage.
+	groups := map[string]spanGroup{}
 
 	var errs error
-	resSpansSlice := t.ResourceSpans()
-	for i := 0; i < resSpansSlice.Len(); i++ {
-		resSpans := resSpansSlice.At(i)
+	for i := 0; i < t.ResourceSpans().Len(); i++ {
+		rspans := t.ResourceSpans().At(i)
+		stx := ottltraces.NewTransformContext(
+			ptrace.Span{},
+			pcommon.InstrumentationScope{},
+			rspans.Resource(),
+		)
 
-		attrValue := p.extractor.extractAttrFromResource(resSpans.Resource())
-		exp := p.router.defaultExporters
-		// If we have an exporter list defined for that attribute value then use it.
-		if e, ok := p.router.exporters[attrValue]; ok {
-			exp = e
-			if p.config.DropRoutingResourceAttribute {
-				resSpans.Resource().Attributes().Remove(p.config.FromAttribute)
+		matchCount := len(p.router.routes)
+		for key, route := range p.router.routes {
+			if !route.expression.Condition(stx) {
+				matchCount--
+				continue
 			}
+			route.expression.Function(stx)
+			p.group(key, groups, route.exporters, rspans)
 		}
 
-		if rEntry, ok := groups[attrValue]; ok {
-			resSpans.MoveTo(rEntry.resSpans.AppendEmpty())
-		} else {
-			newResSpans := ptrace.NewResourceSpansSlice()
-			resSpans.MoveTo(newResSpans.AppendEmpty())
-
-			groups[attrValue] = struct {
-				exporters []component.TracesExporter
-				resSpans  ptrace.ResourceSpansSlice
-			}{
-				exporters: exp,
-				resSpans:  newResSpans,
-			}
+		if matchCount == 0 {
+			// no route conditions are matched, add resource spans to default exporters group
+			p.group("", groups, p.router.defaultExporters, rspans)
 		}
 	}
 
 	for _, g := range groups {
-		t := ptrace.NewTraces()
-		t.ResourceSpans().EnsureCapacity(g.resSpans.Len())
-		g.resSpans.MoveAndAppendTo(t.ResourceSpans())
-
 		for _, e := range g.exporters {
-			errs = multierr.Append(errs, e.ConsumeTraces(ctx, t))
+			errs = multierr.Append(errs, e.ConsumeTraces(ctx, g.traces))
 		}
 	}
 	return errs
 }
 
+func (p *tracesProcessor) group(key string, groups map[string]spanGroup, exporters []component.TracesExporter, spans ptrace.ResourceSpans) {
+	group, ok := groups[key]
+	if !ok {
+		group.traces = ptrace.NewTraces()
+		group.exporters = exporters
+	}
+	spans.CopyTo(group.traces.ResourceSpans().AppendEmpty())
+	groups[key] = group
+}
+
 func (p *tracesProcessor) routeForContext(ctx context.Context, t ptrace.Traces) error {
 	value := p.extractor.extractFromContext(ctx)
-	exporters, ok := p.router.exporters[value]
-	if !ok {
-		exporters = p.router.defaultExporters
-	}
+	exporters := p.router.getExporters(value)
 
 	var errs error
 	for _, e := range exporters {

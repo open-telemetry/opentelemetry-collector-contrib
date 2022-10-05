@@ -225,7 +225,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	singleSpanWithAttrib := func(key string, attribValue pcommon.Value) ptrace.Traces {
 		traces := ptrace.NewTraces()
-		initSpanWithAttributes(key, attribValue, traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty())
+		initSpanWithAttribute(key, attribValue, traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty())
 		return traces
 	}
 	tests := []struct {
@@ -264,7 +264,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pcommon.NewValueString("1")),
+				pcommon.NewValueStr("1")),
 			sampled: true,
 		},
 		{
@@ -295,7 +295,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pcommon.NewValueString("0")),
+				pcommon.NewValueStr("0")),
 		},
 		{
 			name: "defer_sample_expect_not_sampled",
@@ -395,22 +395,22 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 		},
 		{
 			name: "sampling_priority_string_zero",
-			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueString("0.0")),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueStr("0.0")),
 			want: doNotSampleSpan,
 		},
 		{
 			name: "sampling_priority_string_gt_zero",
-			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueString("0.5")),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueStr("0.5")),
 			want: mustSampleSpan,
 		},
 		{
 			name: "sampling_priority_string_lt_zero",
-			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueString("-0.5")),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueStr("-0.5")),
 			want: deferDecision,
 		},
 		{
 			name: "sampling_priority_string_NaN",
-			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueString("NaN")),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueStr("NaN")),
 			want: deferDecision,
 		},
 	}
@@ -423,13 +423,12 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 
 func getSpanWithAttributes(key string, value pcommon.Value) ptrace.Span {
 	span := ptrace.NewSpan()
-	initSpanWithAttributes(key, value, span)
+	initSpanWithAttribute(key, value, span)
 	return span
 }
 
-func initSpanWithAttributes(key string, value pcommon.Value, dest ptrace.Span) {
+func initSpanWithAttribute(key string, value pcommon.Value, dest ptrace.Span) {
 	dest.SetName("spanName")
-	dest.Attributes().Clear()
 	value.CopyTo(dest.Attributes().PutEmpty(key))
 }
 
@@ -493,7 +492,7 @@ func assertSampledData(t *testing.T, sampled []ptrace.Traces, serviceName string
 			ilss := rspan.ScopeSpans()
 			for j := 0; j < ilss.Len(); j++ {
 				ils := ilss.At(j)
-				if svcNameAttr, _ := rspan.Resource().Attributes().Get("service.name"); svcNameAttr.StringVal() != serviceName {
+				if svcNameAttr, _ := rspan.Resource().Attributes().Get("service.name"); svcNameAttr.Str() != serviceName {
 					continue
 				}
 				for k := 0; k < ils.Spans().Len(); k++ {
