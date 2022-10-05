@@ -37,14 +37,14 @@ func TestEndToEndGaugeConsumer(t *testing.T) {
 	dataPoints.EnsureCapacity(1)
 	exporterConfig := createDefaultConfig()
 	tobsConfig := exporterConfig.(*Config)
-	// Here we test what happens with default config. IncludeResourceAttrs = false
+	// Here we test what happens with default config. IncludeResourceAttrs = false ExcludeAppTags = false
 	addDataPoint(
 		432.25,
 		1640123456,
 		map[string]interface{}{"source": "renamed", "host.name": "my_source", "env": "prod"},
 		dataPoints,
 	)
-	resourceAttributes := map[string]string{"host.name": "my_source", "res_attr_key": "res_attr_value"}
+	resourceAttributes := map[string]string{"host.name": "my_source", "res_attr_key": "res_attr_value", "application": "test_app", "service.name": "test_service", "shard": "test_shard", "cluster": "test_cluster"}
 	metrics := constructMetricsWithTags(resourceAttributes, gauge)
 	sender := &mockGaugeSender{}
 	gaugeConsumer := newGaugeConsumer(sender, componenttest.NewNopTelemetrySettings())
@@ -61,7 +61,7 @@ func TestEndToEndGaugeConsumer(t *testing.T) {
 			Name:   "gauge",
 			Ts:     1640123456,
 			Value:  432.25,
-			Tags:   map[string]string{"_source": "renamed", "env": "prod"},
+			Tags:   map[string]string{"_source": "renamed", "env": "prod", "application": "test_app", "service.name": "test_service", "shard": "test_shard", "cluster": "test_cluster"},
 			Source: "my_source",
 		},
 	)
@@ -82,7 +82,7 @@ func TestEndToEndGaugeConsumer(t *testing.T) {
 	)
 }
 
-func TestEndToEndGaugeConsumerWithResAttrs(t *testing.T) {
+func TestEndToEndGaugeConsumerWithResAttrsIncluded(t *testing.T) {
 	gauge := newMetric("gauge", pmetric.MetricTypeGauge)
 	dataPoints := gauge.Gauge().DataPoints()
 	dataPoints.EnsureCapacity(1)
@@ -114,6 +114,58 @@ func TestEndToEndGaugeConsumerWithResAttrs(t *testing.T) {
 			Ts:     1640123456,
 			Value:  432.25,
 			Tags:   map[string]string{"_source": "renamed", "env": "prod", "res_attr_key": "res_attr_value"},
+			Source: "my_source",
+		},
+	)
+
+	// Since internal metrics are coming from the exporter itself, we send
+	// them with an empty source which defaults to the host name of the
+	// exporter.
+	assert.Contains(
+		t,
+		sender.metrics,
+		tobsMetric{
+			Name:   missingValueMetricName,
+			Ts:     0,
+			Value:  0.0,
+			Tags:   typeIsGaugeTags,
+			Source: "",
+		},
+	)
+}
+
+func TestEndToEndGaugeConsumerWithAppResAttrsExcluded(t *testing.T) {
+	gauge := newMetric("gauge", pmetric.MetricTypeGauge)
+	dataPoints := gauge.Gauge().DataPoints()
+	dataPoints.EnsureCapacity(1)
+	exporterConfig := createDefaultConfig()
+	tobsConfig := exporterConfig.(*Config)
+	tobsConfig.Metrics.ExcludeAppTags = true
+	// Here we test what happens if IncludeResourceAttrs = false ExcludeAppTags = false
+	addDataPoint(
+		432.25,
+		1640123456,
+		map[string]interface{}{"source": "renamed", "host.name": "my_source", "env": "prod"},
+		dataPoints,
+	)
+	resourceAttributes := map[string]string{"host.name": "my_source", "res_attr_key": "res_attr_value", "application": "test_app", "service.name": "test_service", "shard": "test_shard", "cluster": "test_cluster"}
+	metrics := constructMetricsWithTags(resourceAttributes, gauge)
+	sender := &mockGaugeSender{}
+	gaugeConsumer := newGaugeConsumer(sender, componenttest.NewNopTelemetrySettings())
+	consumer := newMetricsConsumer(
+		[]typedMetricConsumer{gaugeConsumer}, &mockFlushCloser{}, true, tobsConfig.Metrics)
+	assert.NoError(t, consumer.Consume(context.Background(), metrics))
+
+	// The "host.name" tag gets filtered out as it contains our source, and the "source"
+	// tag gets renamed to "_source"
+	assert.Contains(
+		t,
+		sender.metrics,
+		tobsMetric{
+			Name:   "gauge",
+			Ts:     1640123456,
+			Value:  432.25,
+			Tags:   map[string]string{"_source": "renamed", "env": "prod"},
 			Source: "my_source",
 		},
 	)

@@ -426,3 +426,13 @@ func TestAttributesToTagsForMetrics(t *testing.T) {
 	wfTags = attributesToTagsForMetrics("", attrMap)
 	assert.Equal(t, map[string]string{"k": "v", "_source": "a_val"}, wfTags)
 }
+
+func TestAppAttributesToTags(t *testing.T) {
+	attrMap := newMap(map[string]string{"k": "v"})
+	tags := appAttributesToTags(attrMap)
+	assert.Equal(t, map[string]string{}, tags)
+
+	attrMap = newMap(map[string]string{"k": "v", "application": "test_app", "service.name": "test_service", "shard": "test_shard", "cluster": "test_cluster"})
+	tags = appAttributesToTags(attrMap)
+	assert.Equal(t, map[string]string{"application": "test_app", "service.name": "test_service", "shard": "test_shard", "cluster": "test_cluster"}, tags)
+}

@@ -33,6 +33,9 @@ const (
 	defaultServiceName      = "defaultService"
 	defaultMetricsPort      = 2878
 	labelApplication        = "application"
+	labelServiceName        = "service.name"
+	labelCluster            = "cluster"
+	labelShard              = "shard"
 	labelError              = "error"
 	labelEventName          = "name"
 	labelService            = "service"

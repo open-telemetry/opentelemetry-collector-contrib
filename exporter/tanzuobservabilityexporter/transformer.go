@@ -45,7 +45,7 @@ var (
 	errInvalidTraceID = errors.New("TraceID is invalid")
 )
 
-var appResAttrsKeys = []string{"application", "service.name", "shard", "cluster"}
+var appResAttrsKeys = []string{labelApplication, labelServiceName, labelShard, labelCluster}
 
 type span struct {
 	Name           string
@@ -223,9 +223,8 @@ func appAttributesToTags(attributes ...pcommon.Map) map[string]string {
 		att.Range(func(k string, v pcommon.Value) bool {
 			if slices.Contains(appResAttrsKeys, k) {
 				tags[k] = v.AsString()
-				return true
 			}
-			return false
+			return true
 		})
 	}
 	return tags
