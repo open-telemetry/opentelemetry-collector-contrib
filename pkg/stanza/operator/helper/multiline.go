@@ -18,8 +18,9 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"golang.org/x/text/encoding"
 	"regexp"
+
+	"golang.org/x/text/encoding"
 )
 
 // Multiline consists of splitFunc and variables needed to perform force flush
