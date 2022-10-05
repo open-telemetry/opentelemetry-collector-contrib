@@ -35,7 +35,6 @@ func Test_replaceAllMatches(t *testing.T) {
 			return ctx
 		},
 		Setter: func(ctx pcommon.Map, val interface{}) {
-			ctx.Clear()
 			val.(pcommon.Map).CopyTo(ctx)
 		},
 	}
@@ -53,7 +52,6 @@ func Test_replaceAllMatches(t *testing.T) {
 			pattern:     "hello*",
 			replacement: "hello {universe}",
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutString("test", "hello {universe}")
 				expectedMap.PutString("test2", "hello {universe}")
 				expectedMap.PutString("test3", "goodbye")
@@ -65,7 +63,6 @@ func Test_replaceAllMatches(t *testing.T) {
 			pattern:     "nothing*",
 			replacement: "nothing {matches}",
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutString("test", "hello world")
 				expectedMap.PutString("test2", "hello")
 				expectedMap.PutString("test3", "goodbye")

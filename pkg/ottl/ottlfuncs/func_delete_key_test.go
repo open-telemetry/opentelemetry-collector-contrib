@@ -47,7 +47,6 @@ func Test_deleteKey(t *testing.T) {
 			target: target,
 			key:    "test",
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutBool("test3", true)
 				expectedMap.PutInt("test2", 3)
 			},
@@ -57,7 +56,6 @@ func Test_deleteKey(t *testing.T) {
 			target: target,
 			key:    "test2",
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutString("test", "hello world")
 				expectedMap.PutBool("test3", true)
 			},
@@ -67,7 +65,6 @@ func Test_deleteKey(t *testing.T) {
 			target: target,
 			key:    "not a valid key",
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutString("test", "hello world")
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)

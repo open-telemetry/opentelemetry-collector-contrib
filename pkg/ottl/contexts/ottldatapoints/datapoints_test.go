@@ -128,7 +128,6 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			orig:   refNumberDataPoint.Attributes(),
 			newVal: newAttrs,
 			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.Attributes().Clear()
 				newAttrs.CopyTo(datapoint.Attributes())
 			},
 		},
@@ -454,7 +453,6 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			orig:   refHistogramDataPoint.Attributes(),
 			newVal: newAttrs,
 			modified: func(datapoint pmetric.HistogramDataPoint) {
-				datapoint.Attributes().Clear()
 				newAttrs.CopyTo(datapoint.Attributes())
 			},
 		},
@@ -876,7 +874,6 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			orig:   refExpoHistogramDataPoint.Attributes(),
 			newVal: newAttrs,
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
-				datapoint.Attributes().Clear()
 				newAttrs.CopyTo(datapoint.Attributes())
 			},
 		},
@@ -1183,7 +1180,6 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			orig:   refExpoHistogramDataPoint.Attributes(),
 			newVal: newAttrs,
 			modified: func(datapoint pmetric.SummaryDataPoint) {
-				datapoint.Attributes().Clear()
 				newAttrs.CopyTo(datapoint.Attributes())
 			},
 		},

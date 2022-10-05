@@ -58,9 +58,6 @@ func TestTags2String(t *testing.T) {
 
 func TestTags2StringNoAttributes(t *testing.T) {
 	f := newPrometheusFormatter()
-
-	mp := exampleIntMetric()
-	mp.attributes.Clear()
 	assert.Equal(t, prometheusTags(""), f.tags2String(pcommon.NewMap(), pcommon.NewMap()))
 }
 

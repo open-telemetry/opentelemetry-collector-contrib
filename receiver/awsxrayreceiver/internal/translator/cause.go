@@ -66,7 +66,6 @@ func addCause(seg *awsxray.Segment, span ptrace.Span) {
 			evt := evts.AppendEmpty()
 			evt.SetName(ExceptionEventName)
 			attrs := evt.Attributes()
-			attrs.Clear()
 			attrs.EnsureCapacity(8)
 
 			// ID is a required field

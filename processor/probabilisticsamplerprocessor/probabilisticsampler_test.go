@@ -225,7 +225,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	singleSpanWithAttrib := func(key string, attribValue pcommon.Value) ptrace.Traces {
 		traces := ptrace.NewTraces()
-		initSpanWithAttributes(key, attribValue, traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty())
+		initSpanWithAttribute(key, attribValue, traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty())
 		return traces
 	}
 	tests := []struct {
@@ -423,13 +423,12 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 
 func getSpanWithAttributes(key string, value pcommon.Value) ptrace.Span {
 	span := ptrace.NewSpan()
-	initSpanWithAttributes(key, value, span)
+	initSpanWithAttribute(key, value, span)
 	return span
 }
 
-func initSpanWithAttributes(key string, value pcommon.Value, dest ptrace.Span) {
+func initSpanWithAttribute(key string, value pcommon.Value, dest ptrace.Span) {
 	dest.SetName("spanName")
-	dest.Attributes().Clear()
 	value.CopyTo(dest.Attributes().PutEmpty(key))
 }
 
