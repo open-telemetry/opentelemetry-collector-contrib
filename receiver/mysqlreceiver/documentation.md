@@ -15,7 +15,7 @@ These are the metrics available for this scraper.
 | **mysql.buffer_pool.pages** | The number of pages in the InnoDB buffer pool. | 1 | Sum(Int) | <ul> <li>buffer_pool_pages</li> </ul> |
 | **mysql.buffer_pool.usage** | The number of bytes in the InnoDB buffer pool. | By | Sum(Int) | <ul> <li>buffer_pool_data</li> </ul> |
 | mysql.client.network.io | The number of transmitted bytes between server and clients. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
-| **mysql.commands** | The number of times each type of command has been executed. | 1 | Sum(Int) | <ul> <li>command</li> </ul> |
+| **mysql.commands** | The number of times each type of command has been executed. | 1 | Sum(Int) | <ul> <li>prepared_statements_command</li> </ul> |
 | mysql.connection.errors | Errors that occur during the client connection process. | 1 | Sum(Int) | <ul> <li>connection_error</li> </ul> |
 | **mysql.double_writes** | The number of writes to the InnoDB doublewrite buffer. | 1 | Sum(Int) | <ul> <li>double_writes</li> </ul> |
 | **mysql.handlers** | The number of requests to various MySQL handlers. | 1 | Sum(Int) | <ul> <li>handler</li> </ul> |
@@ -30,6 +30,7 @@ These are the metrics available for this scraper.
 | **mysql.opened_resources** | The number of opened resources. | 1 | Sum(Int) | <ul> <li>opened_resources</li> </ul> |
 | **mysql.operations** | The number of InnoDB operations. | 1 | Sum(Int) | <ul> <li>operations</li> </ul> |
 | **mysql.page_operations** | The number of InnoDB page operations. | 1 | Sum(Int) | <ul> <li>page_operations</li> </ul> |
+| **mysql.prepared_statements** | The number of times each type of prepared statement command has been issued. | 1 | Sum(Int) | <ul> <li>prepared_statements_command</li> </ul> |
 | mysql.query.client.count | The number of statements executed by the server. This includes only statements sent to the server by clients. | 1 | Sum(Int) | <ul> </ul> |
 | mysql.query.count | The number of statements executed by the server. | 1 | Sum(Int) | <ul> </ul> |
 | mysql.query.slow.count | The number of slow queries. | 1 | Sum(Int) | <ul> </ul> |
@@ -71,7 +72,6 @@ metrics:
 | buffer_pool_operations (operation) | The buffer pool operations types. | read_ahead_rnd, read_ahead, read_ahead_evicted, read_requests, reads, wait_free, write_requests |
 | buffer_pool_pages (kind) | The buffer pool pages types. | data, free, misc |
 | cache_status (status) | The status of cache access. | hit, miss, overflow |
-| command (command) | The command types. | execute, close, fetch, prepare, reset, send_long_data |
 | connection_error (error) | The connection error type. | accept, internal, max_connections, peer_address, select, tcpwrap |
 | connection_status (status) | The connection status. | accepted, closed, rejected |
 | digest (digest) | Digest. |  |
@@ -89,6 +89,7 @@ metrics:
 | opened_resources (kind) | The kind of the resource. | file, table_definition, table |
 | operations (operation) | The operation types. | fsyncs, reads, writes |
 | page_operations (operation) | The page operation types. | created, read, written |
+| prepared_statements_command (command) | The prepare statement command types. | execute, close, fetch, prepare, reset, send_long_data |
 | read_lock_type (kind) | Read operation types. | normal, with_shared_locks, high_priority, no_insert, external |
 | row_locks (kind) | The row lock type. | waits, time |
 | row_operations (operation) | The row operation type. | deleted, inserted, read, updated |
