@@ -22,7 +22,6 @@
 - `pkg/ottl`: Renames Telemetry Query Language to OpenTelemetry Transformation Language to avoid confusion with an analysis language. (#14150)
 - `pkg/ottl`: Flattens ottlcommon and ottlotel into ottlfuncs. (#14386)
 - `pkg/ottl`: Replaced Logger with TelemetrySettings (#14389)
-- `tanzuobservabilityexporter`: Add a new metric exporter config to exclude application resource attrs from the metric tags(#14733)
 
 ### 🚩 Deprecations 🚩
 
