@@ -61,7 +61,7 @@ func TestEndToEndGaugeConsumer(t *testing.T) {
 			Name:   "gauge",
 			Ts:     1640123456,
 			Value:  432.25,
-			Tags:   map[string]string{"_source": "renamed", "env": "prod", "application": "test_app", "service.name": "test_service", "shard": "test_shard", "cluster": "test_cluster"},
+			Tags:   map[string]string{"_source": "renamed", "env": "prod", "application": "test_app", "service": "test_service", "shard": "test_shard", "cluster": "test_cluster"},
 			Source: "my_source",
 		},
 	)
