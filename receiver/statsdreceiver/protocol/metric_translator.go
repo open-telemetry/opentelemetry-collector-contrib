@@ -136,7 +136,7 @@ func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetri
 		out.BucketCounts().EnsureCapacity(int(in.Len()))
 
 		for i := uint32(0); i < in.Len(); i++ {
-			out.BucketCounts().Append(uint64(in.At(i)))
+			out.BucketCounts().Append(in.At(i))
 		}
 		// Note: The copy being made could be avoided if this
 		// code base would use an interface to access buckets
