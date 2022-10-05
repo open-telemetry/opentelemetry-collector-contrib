@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -611,6 +612,51 @@ func TestDefaultCPUTranslations(t *testing.T) {
 		require.True(t, ok, fmt.Sprintf("%s metrics not found", metric))
 		require.Len(t, dps, 9)
 	}
+}
+
+func TestHostmetricsCPUTranslations(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	require.NoError(t, setDefaultExcludes(cfg))
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "")
+	require.NoError(t, err)
+
+	jsonpb := pmetric.NewJSONUnmarshaler()
+	bytes1, err := os.ReadFile(filepath.Join("testdata", "json", "hostmetrics_system_cpu_time_1.json"))
+	require.NoError(t, err)
+	md1, err := jsonpb.UnmarshalMetrics(bytes1)
+	require.NoError(t, err)
+
+	_ = converter.MetricsToSignalFxV2(md1)
+
+	bytes2, err := os.ReadFile(filepath.Join("testdata", "json", "hostmetrics_system_cpu_time_2.json"))
+	require.NoError(t, err)
+	md2, err := jsonpb.UnmarshalMetrics(bytes2)
+	require.NoError(t, err)
+
+	translated2 := converter.MetricsToSignalFxV2(md2)
+
+	m := map[string][]*sfxpb.DataPoint{}
+	for _, pt := range translated2 {
+		pts := m[pt.Metric]
+		pts = append(pts, pt)
+		m[pt.Metric] = pts
+	}
+
+	cpuUtil := m["cpu.utilization"]
+	require.Len(t, cpuUtil, 1)
+	require.Equal(t, sfxpb.MetricType_GAUGE, *cpuUtil[0].MetricType)
+	require.Equal(t, 59, int(*cpuUtil[0].Value.DoubleValue))
+
+	cpuNumProcessors := m["cpu.num_processors"]
+	require.Len(t, cpuNumProcessors, 1)
+	require.Equal(t, sfxpb.MetricType_GAUGE, *cpuNumProcessors[0].MetricType)
+	require.Equal(t, 2, int(*cpuNumProcessors[0].Value.IntValue))
+
+	cpuIdle := m["cpu.idle"]
+	require.Len(t, cpuIdle, 1)
+	require.Equal(t, sfxpb.MetricType_CUMULATIVE_COUNTER, *cpuIdle[0].MetricType)
+	require.Equal(t, 590, int(*cpuIdle[0].Value.IntValue))
 }
 
 func TestDefaultExcludes_translated(t *testing.T) {
