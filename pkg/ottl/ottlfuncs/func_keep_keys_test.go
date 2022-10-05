@@ -35,7 +35,6 @@ func Test_keepKeys(t *testing.T) {
 			return ctx
 		},
 		Setter: func(ctx pcommon.Map, val interface{}) {
-			ctx.Clear()
 			val.(pcommon.Map).CopyTo(ctx)
 		},
 	}
@@ -51,7 +50,6 @@ func Test_keepKeys(t *testing.T) {
 			target: target,
 			keys:   []string{"test"},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutString("test", "hello world")
 			},
 		},
@@ -60,7 +58,6 @@ func Test_keepKeys(t *testing.T) {
 			target: target,
 			keys:   []string{"test", "test2"},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutString("test", "hello world")
 				expectedMap.PutInt("test2", 3)
 			},
@@ -69,25 +66,19 @@ func Test_keepKeys(t *testing.T) {
 			name:   "keep none",
 			target: target,
 			keys:   []string{},
-			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-			},
+			want:   func(expectedMap pcommon.Map) {},
 		},
 		{
 			name:   "no match",
 			target: target,
 			keys:   []string{"no match"},
-			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-			},
+			want:   func(expectedMap pcommon.Map) {},
 		},
 		{
 			name:   "input is not a pcommon.Map",
 			target: target,
 			keys:   []string{"no match"},
-			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-			},
+			want:   func(expectedMap pcommon.Map) {},
 		},
 	}
 	for _, tt := range tests {

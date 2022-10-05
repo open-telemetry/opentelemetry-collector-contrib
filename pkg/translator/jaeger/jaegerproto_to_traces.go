@@ -150,7 +150,6 @@ func jProcessToInternalResource(process *model.Process, dest pcommon.Resource) {
 	}
 
 	attrs := dest.Attributes()
-	attrs.Clear()
 	if serviceName != "" {
 		attrs.EnsureCapacity(len(tags) + 1)
 		attrs.PutString(conventions.AttributeServiceName, serviceName)
@@ -400,7 +399,6 @@ func jLogsToSpanEvents(logs []model.Log, dest ptrace.SpanEventSlice) {
 		}
 
 		attrs := event.Attributes()
-		attrs.Clear()
 		attrs.EnsureCapacity(len(log.Fields))
 		jTagsToInternalAttributes(log.Fields, attrs)
 		if name, ok := attrs.Get(eventNameAttr); ok {

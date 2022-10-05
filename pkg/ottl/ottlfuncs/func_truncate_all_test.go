@@ -35,7 +35,6 @@ func Test_truncateAll(t *testing.T) {
 			return ctx
 		},
 		Setter: func(ctx pcommon.Map, val interface{}) {
-			ctx.Clear()
 			val.(pcommon.Map).CopyTo(ctx)
 		},
 	}
@@ -51,7 +50,6 @@ func Test_truncateAll(t *testing.T) {
 			target: target,
 			limit:  1,
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutString("test", "h")
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)
@@ -62,7 +60,6 @@ func Test_truncateAll(t *testing.T) {
 			target: target,
 			limit:  0,
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutString("test", "")
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)
@@ -73,7 +70,6 @@ func Test_truncateAll(t *testing.T) {
 			target: target,
 			limit:  100,
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutString("test", "hello world")
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)
@@ -84,7 +80,6 @@ func Test_truncateAll(t *testing.T) {
 			target: target,
 			limit:  11,
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutString("test", "hello world")
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)

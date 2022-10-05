@@ -47,7 +47,6 @@ func Test_deleteMatchingKeys(t *testing.T) {
 			target:  target,
 			pattern: "test.*",
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.EnsureCapacity(3)
 			},
 		},
@@ -56,7 +55,6 @@ func Test_deleteMatchingKeys(t *testing.T) {
 			target:  target,
 			pattern: "\\d$",
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutString("test", "hello world")
 			},
 		},
@@ -65,7 +63,6 @@ func Test_deleteMatchingKeys(t *testing.T) {
 			target:  target,
 			pattern: "not a matching pattern",
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutString("test", "hello world")
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)
