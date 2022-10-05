@@ -43,7 +43,8 @@ func NewFactory() component.ExporterFactory {
 		typeStr,
 		createDefaultConfig,
 		exporterhelper.WithTraces(f.createTracesExporter),
-		exporterhelper.WithLogs(f.createLogsExporter))
+		exporterhelper.WithLogs(f.createLogsExporter),
+		exporterhelper.WithMetrics(f.createMetricsExporter))
 }
 
 // Implements the interface from go.opentelemetry.io/collector/exporter/factory.go
@@ -88,6 +89,21 @@ func (f *factory) createLogsExporter(
 
 	tc := f.getTransportChannel(exporterConfig, set.Logger)
 	return newLogsExporter(exporterConfig, tc, set)
+}
+
+func (f *factory) createMetricsExporter(
+	ctx context.Context,
+	set component.ExporterCreateSettings,
+	cfg config.Exporter,
+) (component.MetricsExporter, error) {
+	exporterConfig, ok := cfg.(*Config)
+
+	if !ok {
+		return nil, errUnexpectedConfigurationType
+	}
+
+	tc := f.getTransportChannel(exporterConfig, set.Logger)
+	return newMetricsExporter(exporterConfig, tc, set)
 }
 
 // Configures the transport channel.

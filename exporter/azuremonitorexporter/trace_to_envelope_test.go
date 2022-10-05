@@ -570,7 +570,7 @@ func TestSanitize(t *testing.T) {
 }
 
 /*
-	These methods are for handling some common validations
+These methods are for handling some common validations
 */
 func commonEnvelopeValidations(
 	t *testing.T,
@@ -756,7 +756,7 @@ func assertAttributesCopiedToPropertiesOrMeasurements(
 }
 
 /*
-	The remainder of these methods are for building up test assets
+The remainder of these methods are for building up test assets
 */
 func getSpan(spanName string, spanKind pdata.SpanKind, initialAttributes map[string]pdata.AttributeValue) pdata.Span {
 	span := pdata.NewSpan()
