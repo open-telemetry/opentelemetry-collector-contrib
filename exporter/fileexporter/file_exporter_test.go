@@ -95,20 +95,33 @@ func TestFileTracesExporter(t *testing.T) {
 				unmarshaler: ptrace.NewProtoUnmarshaler(),
 			},
 		},
+		{
+			name: "Proto: compression configuration--rotation",
+			args: args{
+				conf: &Config{
+					Path:        tempFileName(t),
+					FormatType:  "proto",
+					Compression: compressionZSTD,
+					Rotation: &Rotation{
+						MaxMegabytes: 3,
+						MaxDays:      0,
+						MaxBackups:   defaultMaxBackups,
+						LocalTime:    false,
+					},
+				},
+				unmarshaler: ptrace.NewProtoUnmarshaler(),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			conf := tt.args.conf
+			writer, err := buildFileWriter(conf)
+			assert.NoError(t, err)
 			fe := &fileExporter{
-				path:       conf.Path,
-				formatType: conf.FormatType,
-				file: &lumberjack.Logger{
-					Filename:   conf.Path,
-					MaxSize:    conf.Rotation.MaxMegabytes,
-					MaxAge:     conf.Rotation.MaxDays,
-					MaxBackups: conf.Rotation.MaxBackups,
-					LocalTime:  conf.Rotation.LocalTime,
-				},
+				path:            conf.Path,
+				formatType:      conf.FormatType,
+				file:            writer,
 				tracesMarshaler: tracesMarshalers[conf.FormatType],
 				exporter:        buildExportFunc(conf),
 				compression:     conf.Compression,
@@ -216,20 +229,33 @@ func TestFileMetricsExporter(t *testing.T) {
 				unmarshaler: pmetric.NewProtoUnmarshaler(),
 			},
 		},
+		{
+			name: "Proto: compression configuration--rotation",
+			args: args{
+				conf: &Config{
+					Path:        tempFileName(t),
+					FormatType:  "proto",
+					Compression: compressionZSTD,
+					Rotation: &Rotation{
+						MaxMegabytes: 3,
+						MaxDays:      0,
+						MaxBackups:   defaultMaxBackups,
+						LocalTime:    false,
+					},
+				},
+				unmarshaler: pmetric.NewProtoUnmarshaler(),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			conf := tt.args.conf
+			writer, err := buildFileWriter(conf)
+			assert.NoError(t, err)
 			fe := &fileExporter{
-				path:       conf.Path,
-				formatType: conf.FormatType,
-				file: &lumberjack.Logger{
-					Filename:   conf.Path,
-					MaxSize:    conf.Rotation.MaxMegabytes,
-					MaxAge:     conf.Rotation.MaxDays,
-					MaxBackups: conf.Rotation.MaxBackups,
-					LocalTime:  conf.Rotation.LocalTime,
-				},
+				path:             conf.Path,
+				formatType:       conf.FormatType,
+				file:             writer,
 				metricsMarshaler: metricsMarshalers[conf.FormatType],
 				exporter:         buildExportFunc(conf),
 				compression:      conf.Compression,
@@ -339,20 +365,33 @@ func TestFileLogsExporter(t *testing.T) {
 				unmarshaler: plog.NewProtoUnmarshaler(),
 			},
 		},
+		{
+			name: "Proto: compression configuration--rotation",
+			args: args{
+				conf: &Config{
+					Path:        tempFileName(t),
+					FormatType:  "proto",
+					Compression: compressionZSTD,
+					Rotation: &Rotation{
+						MaxMegabytes: 3,
+						MaxDays:      0,
+						MaxBackups:   defaultMaxBackups,
+						LocalTime:    false,
+					},
+				},
+				unmarshaler: plog.NewProtoUnmarshaler(),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			conf := tt.args.conf
+			writer, err := buildFileWriter(conf)
+			assert.NoError(t, err)
 			fe := &fileExporter{
-				path:       conf.Path,
-				formatType: conf.FormatType,
-				file: &lumberjack.Logger{
-					Filename:   conf.Path,
-					MaxSize:    conf.Rotation.MaxMegabytes,
-					MaxAge:     conf.Rotation.MaxDays,
-					MaxBackups: conf.Rotation.MaxBackups,
-					LocalTime:  conf.Rotation.LocalTime,
-				},
+				path:          conf.Path,
+				formatType:    conf.FormatType,
+				file:          writer,
 				logsMarshaler: logsMarshalers[conf.FormatType],
 				exporter:      buildExportFunc(conf),
 				compression:   conf.Compression,
