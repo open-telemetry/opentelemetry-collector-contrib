@@ -35,6 +35,7 @@ type Reader struct {
 	*zap.SugaredLogger `json:"-"` // json tag excludes embedded fields from storage
 	*readerConfig
 	splitter *helper.Splitter
+	encoding helper.Encoding
 
 	Fingerprint    *Fingerprint
 	Offset         int64
@@ -78,7 +79,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			break
 		}
 
-		token, err := r.splitter.Encoding.Decode(scanner.Bytes())
+		token, err := r.encoding.Decode(scanner.Bytes())
 		if err != nil {
 			r.Errorw("decode: %w", zap.Error(err))
 		} else {

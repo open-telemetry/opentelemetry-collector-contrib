@@ -19,8 +19,8 @@ import "bufio"
 // SplitterConfig consolidates MultilineConfig and FlusherConfig
 type SplitterConfig struct {
 	EncodingConfig EncodingConfig  `mapstructure:",squash,omitempty"`
-	Multiline      MultilineConfig `mapstructure:"multiline,omitempty"`
 	Flusher        FlusherConfig   `mapstructure:",squash,omitempty"`
+	Multiline      MultilineConfig `mapstructure:"multiline,omitempty"`
 }
 
 // NewSplitterConfig returns default SplitterConfig
