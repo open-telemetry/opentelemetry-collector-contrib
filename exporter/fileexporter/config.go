@@ -102,17 +102,19 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	if !componentParser.IsSet(rotationFieldName) {
 		return nil
 	}
-	rotation := componentParser.Get(rotationFieldName)
-	if rotation == nil {
-		cfg.Rotation = &Rotation{MaxBackups: defaultMaxBackups}
-		return nil
-	}
-	rotationCfg, err := componentParser.Sub(rotationFieldName)
+	rotationConfmap, err := componentParser.Sub(rotationFieldName)
 	if err != nil {
-		return nil
+		return err
 	}
-	if !rotationCfg.IsSet(backupsFieldName) {
-		cfg.Rotation.MaxBackups = defaultMaxBackups
+	rotationCfg := newDefaultRotationConfig()
+	err = rotationConfmap.UnmarshalExact(rotationCfg)
+	if err != nil {
+		return err
 	}
+	cfg.Rotation = rotationCfg
 	return nil
+}
+
+func newDefaultRotationConfig() *Rotation {
+	return &Rotation{MaxBackups: defaultMaxBackups}
 }

@@ -38,7 +38,7 @@ The following settings are optional:
 
 ## File Rotation
 Telemetry data is exported to a single file by default.
-`fileexporter` only enables file rotation when the user specifies `rotation:` in the config.However, if specified, related default settings would apply.
+`fileexporter` only enables file rotation when the user specifies `rotation:` in the config. However, if specified, related default settings would apply.
 
 Telemetry is first written to a file that exactly matches the `path` setting. 
 When the file size exceeds `max_megabytes` or age exceeds `max_days`, the file will be rotated.
@@ -78,13 +78,12 @@ file/rotation_with_default_settings:
 file/rotation_with_custom_settings:
   path: ./foo
   rotation:
-    max_megabytes: 1234
-      max_megabytes: 10
-      max_days: 3
-      max_backups: 3
-      localtime: true
-    format: proto
-    compression: zstd
+    max_megabytes: 10
+    max_days: 3
+    max_backups: 3
+    localtime: true
+  format: proto
+  compression: zstd
 ```
 
 
