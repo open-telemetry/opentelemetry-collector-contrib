@@ -77,7 +77,7 @@ func (c *Config) validate() error {
 			// Non-histogram observer w/ histogram config
 			var empty protocol.HistogramConfig
 			if eachMap.Histogram != empty {
-				errs = multierr.Append(errs, fmt.Errorf("histogram configration requires observer_type: histogram"))
+				errs = multierr.Append(errs, fmt.Errorf("histogram configuration requires observer_type: histogram"))
 			}
 		}
 	}

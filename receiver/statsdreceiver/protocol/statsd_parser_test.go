@@ -19,8 +19,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
 
 	"github.com/lightstep/go-expohisto/mapping/logarithm"
 	"go.opentelemetry.io/collector/pdata/pmetric"

@@ -108,7 +108,7 @@ func TestCreateReceiverWithInvalidHistogramConfig(t *testing.T) {
 		consumertest.NewNop(),
 	)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "histogram configration requires observer_type: histogram")
+	assert.Contains(t, err.Error(), "histogram configuration requires observer_type: histogram")
 	assert.Nil(t, receiver)
 
 }

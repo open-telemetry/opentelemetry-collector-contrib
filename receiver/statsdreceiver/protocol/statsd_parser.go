@@ -21,14 +21,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lightstep/go-expohisto/structure"
+
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
-
-	// Note: the following import from otel-launcher-go is being replaced by
-	// an official copy of the same code in the otel-go repository.  This is
-	// external import of a critical data structure is temporary until
-	// https://github.com/open-telemetry/opentelemetry-go/pull/3022 merges.
-	"github.com/lightstep/go-expohisto/structure"
 )
 
 var (
