@@ -21,11 +21,16 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
+)
+
+const (
+	picosecondsInNanoseconds int64 = 1000
 )
 
 type mySQLScraper struct {
@@ -36,13 +41,13 @@ type mySQLScraper struct {
 }
 
 func newMySQLScraper(
-	logger *zap.Logger,
+	settings component.ReceiverCreateSettings,
 	config *Config,
 ) *mySQLScraper {
 	return &mySQLScraper{
-		logger: logger,
+		logger: settings.Logger,
 		config: config,
-		mb:     metadata.NewMetricsBuilder(config.Metrics),
+		mb:     metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
 	}
 }
 
@@ -68,16 +73,12 @@ func (m *mySQLScraper) shutdown(context.Context) error {
 }
 
 // scrape scrapes the mysql db metric stats, transforms them and labels them into a metric slices.
-func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
+func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	if m.sqlclient == nil {
-		return pdata.Metrics{}, errors.New("failed to connect to http client")
+		return pmetric.Metrics{}, errors.New("failed to connect to http client")
 	}
 
-	// metric initialization
-	md := pdata.NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otel/mysql")
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	// collect innodb metrics.
 	innodbStats, innoErr := m.sqlclient.getInnodbStats()
@@ -85,467 +86,309 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 		m.logger.Error("Failed to fetch InnoDB stats", zap.Error(innoErr))
 	}
 
-	var errors scrapererror.ScrapeErrors
+	errs := &scrapererror.ScrapeErrors{}
 	for k, v := range innodbStats {
 		if k != "buffer_pool_size" {
 			continue
 		}
-		if i, err := parseInt(v); err != nil {
-			errors.AddPartial(1, err)
-		} else {
-			m.mb.RecordMysqlBufferPoolLimitDataPoint(now, i)
-		}
+		addPartialIfError(errs, m.mb.RecordMysqlBufferPoolLimitDataPoint(now, v))
 	}
 
+	// collect io_waits metrics.
+	m.scrapeTableIoWaitsStats(now, errs)
+	m.scrapeIndexIoWaitsStats(now, errs)
+
 	// collect global status metrics.
+	m.scrapeGlobalStats(now, errs)
+
+	m.mb.EmitForResource(metadata.WithMysqlInstanceEndpoint(m.config.Endpoint))
+
+	return m.mb.Emit(), errs.Combine()
+}
+
+func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	globalStats, err := m.sqlclient.getGlobalStats()
 	if err != nil {
 		m.logger.Error("Failed to fetch global stats", zap.Error(err))
-		return pdata.Metrics{}, err
+		errs.AddPartial(66, err)
+		return
 	}
 
-	m.recordDataPages(now, globalStats, errors)
-	m.recordDataUsage(now, globalStats, errors)
+	m.recordDataPages(now, globalStats, errs)
+	m.recordDataUsage(now, globalStats, errs)
 
 	for k, v := range globalStats {
 		switch k {
 
 		// buffer_pool.pages
 		case "Innodb_buffer_pool_pages_data":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlBufferPoolPagesDataPoint(now, i, "data")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v,
+				metadata.AttributeBufferPoolPagesData))
 		case "Innodb_buffer_pool_pages_free":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlBufferPoolPagesDataPoint(now, i, "free")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v,
+				metadata.AttributeBufferPoolPagesFree))
 		case "Innodb_buffer_pool_pages_misc":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlBufferPoolPagesDataPoint(now, i, "misc")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v,
+				metadata.AttributeBufferPoolPagesMisc))
 
 		// buffer_pool.page_flushes
 		case "Innodb_buffer_pool_pages_flushed":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlBufferPoolPageFlushesDataPoint(now, i)
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolPageFlushesDataPoint(now, v))
 
 		// buffer_pool.operations
 		case "Innodb_buffer_pool_read_ahead_rnd":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, i, "read_ahead_rnd")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
+				metadata.AttributeBufferPoolOperationsReadAheadRnd))
 		case "Innodb_buffer_pool_read_ahead":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, i, "read_ahead")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
+				metadata.AttributeBufferPoolOperationsReadAhead))
 		case "Innodb_buffer_pool_read_ahead_evicted":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, i, "read_ahead_evicted")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
+				metadata.AttributeBufferPoolOperationsReadAheadEvicted))
 		case "Innodb_buffer_pool_read_requests":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, i, "read_requests")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
+				metadata.AttributeBufferPoolOperationsReadRequests))
 		case "Innodb_buffer_pool_reads":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, i, "reads")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
+				metadata.AttributeBufferPoolOperationsReads))
 		case "Innodb_buffer_pool_wait_free":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, i, "wait_free")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
+				metadata.AttributeBufferPoolOperationsWaitFree))
 		case "Innodb_buffer_pool_write_requests":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, i, "write_requests")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
+				metadata.AttributeBufferPoolOperationsWriteRequests))
 
 		// commands
 		case "Com_stmt_execute":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlCommandsDataPoint(now, i, "execute")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandExecute))
 		case "Com_stmt_close":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlCommandsDataPoint(now, i, "close")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandClose))
 		case "Com_stmt_fetch":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlCommandsDataPoint(now, i, "fetch")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandFetch))
 		case "Com_stmt_prepare":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlCommandsDataPoint(now, i, "prepare")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandPrepare))
 		case "Com_stmt_reset":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlCommandsDataPoint(now, i, "reset")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandReset))
 		case "Com_stmt_send_long_data":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlCommandsDataPoint(now, i, "send_long_data")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandSendLongData))
 
 		// handlers
 		case "Handler_commit":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlHandlersDataPoint(now, i, "commit")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerCommit))
 		case "Handler_delete":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlHandlersDataPoint(now, i, "delete")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerDelete))
 		case "Handler_discover":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlHandlersDataPoint(now, i, "discover")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerDiscover))
 		case "Handler_external_lock":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlHandlersDataPoint(now, i, "lock")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerExternalLock))
 		case "Handler_mrr_init":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlHandlersDataPoint(now, i, "mrr_init")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerMrrInit))
 		case "Handler_prepare":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlHandlersDataPoint(now, i, "prepare")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerPrepare))
 		case "Handler_read_first":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlHandlersDataPoint(now, i, "read_first")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerReadFirst))
 		case "Handler_read_key":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlHandlersDataPoint(now, i, "read_key")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerReadKey))
 		case "Handler_read_last":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlHandlersDataPoint(now, i, "read_last")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerReadLast))
 		case "Handler_read_next":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlHandlersDataPoint(now, i, "read_next")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerReadNext))
 		case "Handler_read_prev":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlHandlersDataPoint(now, i, "read_prev")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerReadPrev))
 		case "Handler_read_rnd":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlHandlersDataPoint(now, i, "read_rnd")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerReadRnd))
 		case "Handler_read_rnd_next":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlHandlersDataPoint(now, i, "read_rnd_next")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerReadRndNext))
 		case "Handler_rollback":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlHandlersDataPoint(now, i, "rollback")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerRollback))
 		case "Handler_savepoint":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlHandlersDataPoint(now, i, "savepoint")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerSavepoint))
 		case "Handler_savepoint_rollback":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlHandlersDataPoint(now, i, "savepoint_rollback")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerSavepointRollback))
 		case "Handler_update":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlHandlersDataPoint(now, i, "update")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerUpdate))
 		case "Handler_write":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlHandlersDataPoint(now, i, "write")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerWrite))
 
 		// double_writes
 		case "Innodb_dblwr_pages_written":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlDoubleWritesDataPoint(now, i, "written")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlDoubleWritesDataPoint(now, v, metadata.AttributeDoubleWritesPagesWritten))
 		case "Innodb_dblwr_writes":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlDoubleWritesDataPoint(now, i, "writes")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlDoubleWritesDataPoint(now, v, metadata.AttributeDoubleWritesWrites))
 
 		// log_operations
 		case "Innodb_log_waits":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlLogOperationsDataPoint(now, i, "waits")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlLogOperationsDataPoint(now, v, metadata.AttributeLogOperationsWaits))
 		case "Innodb_log_write_requests":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlLogOperationsDataPoint(now, i, "requests")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlLogOperationsDataPoint(now, v, metadata.AttributeLogOperationsWriteRequests))
 		case "Innodb_log_writes":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlLogOperationsDataPoint(now, i, "writes")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlLogOperationsDataPoint(now, v, metadata.AttributeLogOperationsWrites))
 
 		// operations
 		case "Innodb_data_fsyncs":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlOperationsDataPoint(now, i, "fsyncs")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlOperationsDataPoint(now, v, metadata.AttributeOperationsFsyncs))
 		case "Innodb_data_reads":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlOperationsDataPoint(now, i, "reads")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlOperationsDataPoint(now, v, metadata.AttributeOperationsReads))
 		case "Innodb_data_writes":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlOperationsDataPoint(now, i, "writes")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlOperationsDataPoint(now, v, metadata.AttributeOperationsWrites))
 
 		// page_operations
 		case "Innodb_pages_created":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlPageOperationsDataPoint(now, i, "created")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlPageOperationsDataPoint(now, v, metadata.AttributePageOperationsCreated))
 		case "Innodb_pages_read":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlPageOperationsDataPoint(now, i, "read")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlPageOperationsDataPoint(now, v,
+				metadata.AttributePageOperationsRead))
 		case "Innodb_pages_written":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlPageOperationsDataPoint(now, i, "written")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlPageOperationsDataPoint(now, v,
+				metadata.AttributePageOperationsWritten))
 
 		// row_locks
 		case "Innodb_row_lock_waits":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlRowLocksDataPoint(now, i, "waits")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlRowLocksDataPoint(now, v, metadata.AttributeRowLocksWaits))
 		case "Innodb_row_lock_time":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlRowLocksDataPoint(now, i, "time")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlRowLocksDataPoint(now, v, metadata.AttributeRowLocksTime))
 
 		// row_operations
 		case "Innodb_rows_deleted":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlRowOperationsDataPoint(now, i, "deleted")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlRowOperationsDataPoint(now, v, metadata.AttributeRowOperationsDeleted))
 		case "Innodb_rows_inserted":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlRowOperationsDataPoint(now, i, "inserted")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlRowOperationsDataPoint(now, v, metadata.AttributeRowOperationsInserted))
 		case "Innodb_rows_read":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlRowOperationsDataPoint(now, i, "read")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlRowOperationsDataPoint(now, v,
+				metadata.AttributeRowOperationsRead))
 		case "Innodb_rows_updated":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlRowOperationsDataPoint(now, i, "updated")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlRowOperationsDataPoint(now, v,
+				metadata.AttributeRowOperationsUpdated))
 
 		// locks
 		case "Table_locks_immediate":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlLocksDataPoint(now, i, "immediate")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlLocksDataPoint(now, v, metadata.AttributeLocksImmediate))
 		case "Table_locks_waited":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlLocksDataPoint(now, i, "waited")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlLocksDataPoint(now, v, metadata.AttributeLocksWaited))
 
 		// sorts
 		case "Sort_merge_passes":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlSortsDataPoint(now, i, "merge_passes")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlSortsDataPoint(now, v, metadata.AttributeSortsMergePasses))
 		case "Sort_range":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlSortsDataPoint(now, i, "range")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlSortsDataPoint(now, v, metadata.AttributeSortsRange))
 		case "Sort_rows":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlSortsDataPoint(now, i, "rows")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlSortsDataPoint(now, v, metadata.AttributeSortsRows))
 		case "Sort_scan":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlSortsDataPoint(now, i, "scan")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlSortsDataPoint(now, v, metadata.AttributeSortsScan))
 
 		// threads
 		case "Threads_cached":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlThreadsDataPoint(now, i, "cached")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlThreadsDataPoint(now, v, metadata.AttributeThreadsCached))
 		case "Threads_connected":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlThreadsDataPoint(now, i, "connected")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlThreadsDataPoint(now, v, metadata.AttributeThreadsConnected))
 		case "Threads_created":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlThreadsDataPoint(now, i, "created")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlThreadsDataPoint(now, v, metadata.AttributeThreadsCreated))
 		case "Threads_running":
-			if i, err := parseInt(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlThreadsDataPoint(now, i, "running")
-			}
+			addPartialIfError(errs, m.mb.RecordMysqlThreadsDataPoint(now, v, metadata.AttributeThreadsRunning))
 		}
 	}
-
-	m.mb.Emit(ilm.Metrics())
-	return md, errors.Combine()
 }
 
-func (m *mySQLScraper) recordDataPages(now pdata.Timestamp, globalStats map[string]string, errors scrapererror.ScrapeErrors) {
+func (m *mySQLScraper) scrapeTableIoWaitsStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	tableIoWaitsStats, err := m.sqlclient.getTableIoWaitsStats()
+	if err != nil {
+		m.logger.Error("Failed to fetch table io_waits stats", zap.Error(err))
+		errs.AddPartial(8, err)
+		return
+	}
+
+	for i := 0; i < len(tableIoWaitsStats); i++ {
+		s := tableIoWaitsStats[i]
+		// counts
+		m.mb.RecordMysqlTableIoWaitCountDataPoint(now, s.countDelete, metadata.AttributeIoWaitsOperationsDelete, s.name, s.schema)
+		m.mb.RecordMysqlTableIoWaitCountDataPoint(now, s.countFetch, metadata.AttributeIoWaitsOperationsFetch, s.name, s.schema)
+		m.mb.RecordMysqlTableIoWaitCountDataPoint(now, s.countInsert, metadata.AttributeIoWaitsOperationsInsert, s.name, s.schema)
+		m.mb.RecordMysqlTableIoWaitCountDataPoint(now, s.countUpdate, metadata.AttributeIoWaitsOperationsUpdate, s.name, s.schema)
+
+		// times
+		m.mb.RecordMysqlTableIoWaitTimeDataPoint(
+			now, s.timeDelete/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsDelete, s.name, s.schema,
+		)
+		m.mb.RecordMysqlTableIoWaitTimeDataPoint(
+			now, s.timeFetch/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsFetch, s.name, s.schema,
+		)
+		m.mb.RecordMysqlTableIoWaitTimeDataPoint(
+			now, s.timeInsert/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsInsert, s.name, s.schema,
+		)
+		m.mb.RecordMysqlTableIoWaitTimeDataPoint(
+			now, s.timeUpdate/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsUpdate, s.name, s.schema,
+		)
+	}
+}
+
+func (m *mySQLScraper) scrapeIndexIoWaitsStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	indexIoWaitsStats, err := m.sqlclient.getIndexIoWaitsStats()
+	if err != nil {
+		m.logger.Error("Failed to fetch index io_waits stats", zap.Error(err))
+		errs.AddPartial(8, err)
+		return
+	}
+
+	for i := 0; i < len(indexIoWaitsStats); i++ {
+		s := indexIoWaitsStats[i]
+		// counts
+		m.mb.RecordMysqlIndexIoWaitCountDataPoint(now, s.countDelete, metadata.AttributeIoWaitsOperationsDelete, s.name, s.schema, s.index)
+		m.mb.RecordMysqlIndexIoWaitCountDataPoint(now, s.countFetch, metadata.AttributeIoWaitsOperationsFetch, s.name, s.schema, s.index)
+		m.mb.RecordMysqlIndexIoWaitCountDataPoint(now, s.countInsert, metadata.AttributeIoWaitsOperationsInsert, s.name, s.schema, s.index)
+		m.mb.RecordMysqlIndexIoWaitCountDataPoint(now, s.countUpdate, metadata.AttributeIoWaitsOperationsUpdate, s.name, s.schema, s.index)
+
+		// times
+		m.mb.RecordMysqlIndexIoWaitTimeDataPoint(
+			now, s.timeDelete/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsDelete, s.name, s.schema, s.index,
+		)
+		m.mb.RecordMysqlIndexIoWaitTimeDataPoint(
+			now, s.timeFetch/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsFetch, s.name, s.schema, s.index,
+		)
+		m.mb.RecordMysqlIndexIoWaitTimeDataPoint(
+			now, s.timeInsert/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsInsert, s.name, s.schema, s.index,
+		)
+		m.mb.RecordMysqlIndexIoWaitTimeDataPoint(
+			now, s.timeUpdate/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsUpdate, s.name, s.schema, s.index,
+		)
+	}
+}
+
+func addPartialIfError(errors *scrapererror.ScrapeErrors, err error) {
+	if err != nil {
+		errors.AddPartial(1, err)
+	}
+}
+
+func (m *mySQLScraper) recordDataPages(now pcommon.Timestamp, globalStats map[string]string, errors *scrapererror.ScrapeErrors) {
 	dirty, err := parseInt(globalStats["Innodb_buffer_pool_pages_dirty"])
 	if err != nil {
 		errors.AddPartial(2, err) // we need dirty to calculate free, so 2 data points lost here
 		return
 	}
-	m.mb.RecordMysqlBufferPoolDataPagesDataPoint(now, dirty, "dirty")
+	m.mb.RecordMysqlBufferPoolDataPagesDataPoint(now, dirty, metadata.AttributeBufferPoolDataDirty)
 
 	data, err := parseInt(globalStats["Innodb_buffer_pool_pages_data"])
 	if err != nil {
 		errors.AddPartial(1, err)
 		return
 	}
-	m.mb.RecordMysqlBufferPoolDataPagesDataPoint(now, data-dirty, "clean")
+	m.mb.RecordMysqlBufferPoolDataPagesDataPoint(now, data-dirty, metadata.AttributeBufferPoolDataClean)
 }
 
-func (m *mySQLScraper) recordDataUsage(now pdata.Timestamp, globalStats map[string]string, errors scrapererror.ScrapeErrors) {
+func (m *mySQLScraper) recordDataUsage(now pcommon.Timestamp, globalStats map[string]string, errors *scrapererror.ScrapeErrors) {
 	dirty, err := parseInt(globalStats["Innodb_buffer_pool_bytes_dirty"])
 	if err != nil {
 		errors.AddPartial(2, err) // we need dirty to calculate free, so 2 data points lost here
 		return
 	}
-	m.mb.RecordMysqlBufferPoolUsageDataPoint(now, dirty, "dirty")
+	m.mb.RecordMysqlBufferPoolUsageDataPoint(now, dirty, metadata.AttributeBufferPoolDataDirty)
 
 	data, err := parseInt(globalStats["Innodb_buffer_pool_bytes_data"])
 	if err != nil {
 		errors.AddPartial(1, err)
 		return
 	}
-	m.mb.RecordMysqlBufferPoolUsageDataPoint(now, data-dirty, "clean")
+	m.mb.RecordMysqlBufferPoolUsageDataPoint(now, data-dirty, metadata.AttributeBufferPoolDataClean)
 }
 
 // parseInt converts string to int64.

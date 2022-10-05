@@ -90,7 +90,7 @@ type MetricDescriptor struct {
 
 // Validate filters out invalid metricDeclarations and metricDescriptors
 func (config *Config) Validate() error {
-	validDeclarations := []*MetricDeclaration{}
+	var validDeclarations []*MetricDeclaration
 	for _, declaration := range config.MetricDeclarations {
 		err := declaration.init(config.logger)
 		if err != nil {
@@ -101,7 +101,7 @@ func (config *Config) Validate() error {
 	}
 	config.MetricDeclarations = validDeclarations
 
-	validDescriptors := []MetricDescriptor{}
+	var validDescriptors []MetricDescriptor
 	for _, descriptor := range config.MetricDescriptors {
 		if descriptor.metricName == "" {
 			continue

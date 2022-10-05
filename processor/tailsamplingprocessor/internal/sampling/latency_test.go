@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,14 +19,15 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
 func TestEvaluate_Latency(t *testing.T) {
 	filter := NewLatency(zap.NewNop(), 5000)
 
-	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	now := time.Now()
 
 	cases := []struct {
@@ -86,21 +87,19 @@ type spanWithTimeAndDuration struct {
 }
 
 func newTraceWithSpans(spans []spanWithTimeAndDuration) *TraceData {
-	var traceBatches []pdata.Traces
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 
 	for _, s := range spans {
 		span := ils.Spans().AppendEmpty()
-		span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-		span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-		span.SetStartTimestamp(pdata.NewTimestampFromTime(s.StartTime))
-		span.SetEndTimestamp(pdata.NewTimestampFromTime(s.StartTime.Add(s.Duration)))
+		span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+		span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+		span.SetStartTimestamp(pcommon.NewTimestampFromTime(s.StartTime))
+		span.SetEndTimestamp(pcommon.NewTimestampFromTime(s.StartTime.Add(s.Duration)))
 	}
 
-	traceBatches = append(traceBatches, traces)
 	return &TraceData{
-		ReceivedBatches: traceBatches,
+		ReceivedBatches: traces,
 	}
 }

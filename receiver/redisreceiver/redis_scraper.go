@@ -17,11 +17,13 @@ package redisreceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v7"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
@@ -32,7 +34,7 @@ import (
 // and feeding them to a metricsConsumer.
 type redisScraper struct {
 	redisSvc *redisSvc
-	settings component.ReceiverCreateSettings
+	settings component.TelemetrySettings
 	mb       *metadata.MetricsBuilder
 	uptime   time.Duration
 }
@@ -56,8 +58,8 @@ func newRedisScraper(cfg *Config, settings component.ReceiverCreateSettings) (sc
 func newRedisScraperWithClient(client client, settings component.ReceiverCreateSettings, cfg *Config) (scraperhelper.Scraper, error) {
 	rs := &redisScraper{
 		redisSvc: newRedisSvc(client),
-		settings: settings,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
+		settings: settings.TelemetrySettings,
+		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
 	}
 	return scraperhelper.NewScraper(typeStr, rs.Scrape)
 }
@@ -67,38 +69,32 @@ func newRedisScraperWithClient(client client, settings component.ReceiverCreateS
 // defined at startup time. Then builds 'keyspace' metrics if there are any
 // keyspace lines returned by Redis. There should be one keyspace line per
 // active Redis database, of which there can be 16.
-func (rs *redisScraper) Scrape(context.Context) (pdata.Metrics, error) {
+func (rs *redisScraper) Scrape(context.Context) (pmetric.Metrics, error) {
 	inf, err := rs.redisSvc.info()
 	if err != nil {
-		return pdata.Metrics{}, err
+		return pmetric.Metrics{}, err
 	}
 
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 	currentUptime, err := inf.getUptimeInSeconds()
 	if err != nil {
-		return pdata.Metrics{}, err
+		return pmetric.Metrics{}, err
 	}
 
 	if rs.uptime == time.Duration(0) || rs.uptime > currentUptime {
-		rs.mb.Reset(metadata.WithStartTime(pdata.NewTimestampFromTime(now.AsTime().Add(-currentUptime))))
+		rs.mb.Reset(metadata.WithStartTime(pcommon.NewTimestampFromTime(now.AsTime().Add(-currentUptime))))
 	}
 	rs.uptime = currentUptime
 
-	pdm := pdata.NewMetrics()
-	rm := pdm.ResourceMetrics().AppendEmpty()
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/" + typeStr)
-
 	rs.recordCommonMetrics(now, inf)
 	rs.recordKeyspaceMetrics(now, inf)
-
-	rs.mb.Emit(ilm.Metrics())
-
-	return pdm, nil
+	rs.recordRoleMetrics(now, inf)
+	rs.recordCmdStatsMetrics(now, inf)
+	return rs.mb.Emit(metadata.WithRedisVersion(rs.getRedisVersion(inf))), nil
 }
 
 // recordCommonMetrics records metrics from Redis info key-value pairs.
-func (rs *redisScraper) recordCommonMetrics(ts pdata.Timestamp, inf info) {
+func (rs *redisScraper) recordCommonMetrics(ts pcommon.Timestamp, inf info) {
 	recorders := rs.dataPointRecorders()
 	for infoKey, infoVal := range inf {
 		recorder, ok := recorders[infoKey]
@@ -107,14 +103,14 @@ func (rs *redisScraper) recordCommonMetrics(ts pdata.Timestamp, inf info) {
 			continue
 		}
 		switch recordDataPoint := recorder.(type) {
-		case func(pdata.Timestamp, int64):
+		case func(pcommon.Timestamp, int64):
 			val, err := strconv.ParseInt(infoVal, 10, 64)
 			if err != nil {
 				rs.settings.Logger.Warn("failed to parse info int val", zap.String("key", infoKey),
 					zap.String("val", infoVal), zap.Error(err))
 			}
 			recordDataPoint(ts, val)
-		case func(pdata.Timestamp, float64):
+		case func(pcommon.Timestamp, float64):
 			val, err := strconv.ParseFloat(infoVal, 64)
 			if err != nil {
 				rs.settings.Logger.Warn("failed to parse info float val", zap.String("key", infoKey),
@@ -127,7 +123,7 @@ func (rs *redisScraper) recordCommonMetrics(ts pdata.Timestamp, inf info) {
 
 // recordKeyspaceMetrics records metrics from 'keyspace' Redis info key-value pairs,
 // e.g. "db0: keys=1,expires=2,avg_ttl=3".
-func (rs *redisScraper) recordKeyspaceMetrics(ts pdata.Timestamp, inf info) {
+func (rs *redisScraper) recordKeyspaceMetrics(ts pcommon.Timestamp, inf info) {
 	for db := 0; db < redisMaxDbs; db++ {
 		key := "db" + strconv.Itoa(db)
 		str, ok := inf[key]
@@ -143,5 +139,56 @@ func (rs *redisScraper) recordKeyspaceMetrics(ts pdata.Timestamp, inf info) {
 		rs.mb.RecordRedisDbKeysDataPoint(ts, int64(keyspace.keys), keyspace.db)
 		rs.mb.RecordRedisDbExpiresDataPoint(ts, int64(keyspace.expires), keyspace.db)
 		rs.mb.RecordRedisDbAvgTTLDataPoint(ts, int64(keyspace.avgTTL), keyspace.db)
+	}
+}
+
+// getRedisVersion retrieves version string from 'redis_version' Redis info key-value pairs
+// e.g. "redis_version:5.0.7"
+func (rs *redisScraper) getRedisVersion(inf info) string {
+	if str, ok := inf["redis_version"]; ok {
+		return str
+	}
+	return "unknown"
+}
+
+// recordRoleMetrics records metrics from 'role' Redis info key-value pairs
+// e.g. "role:master"
+func (rs *redisScraper) recordRoleMetrics(ts pcommon.Timestamp, inf info) {
+	if str, ok := inf["role"]; ok {
+		if str == "master" {
+			rs.mb.RecordRedisRoleDataPoint(ts, 1, metadata.AttributeRolePrimary)
+		} else {
+			rs.mb.RecordRedisRoleDataPoint(ts, 1, metadata.AttributeRoleReplica)
+		}
+	}
+}
+
+// recordCmdStatsMetrics records metrics from 'command_stats' Redis info key-value pairs
+// e.g. "cmdstat_mget:calls=1685,usec=6032,usec_per_call=3.58,rejected_calls=0,failed_calls=0"
+// but only calls and usec at the moment.
+func (rs *redisScraper) recordCmdStatsMetrics(ts pcommon.Timestamp, inf info) {
+	cmdPrefix := "cmdstat_"
+	for key, val := range inf {
+		if !strings.HasPrefix(key, cmdPrefix) {
+			continue
+		}
+
+		cmd := key[len(cmdPrefix):]
+		parts := strings.Split(strings.TrimSpace(val), ",")
+		for _, element := range parts {
+			subParts := strings.Split(element, "=")
+			if len(subParts) == 1 {
+				continue
+			}
+			parsed, err := strconv.ParseInt(subParts[1], 10, 64)
+			if err != nil { // skip bad items
+				continue
+			}
+			if subParts[0] == "calls" {
+				rs.mb.RecordRedisCmdCallsDataPoint(ts, parsed, cmd)
+			} else if subParts[0] == "usec" {
+				rs.mb.RecordRedisCmdUsecDataPoint(ts, parsed, cmd)
+			}
+		}
 	}
 }

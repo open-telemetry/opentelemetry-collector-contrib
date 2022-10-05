@@ -5,6 +5,7 @@ attributes:
     description: The ID (integer) of a topic
   partition:
     description: The number (integer) of the partition
+    type: int
   group:
     description: The ID (string) of a consumer group
 

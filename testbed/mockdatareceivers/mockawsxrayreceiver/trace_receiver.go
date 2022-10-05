@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -26,10 +26,9 @@ import (
 
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -50,7 +49,7 @@ func New(
 	params component.ReceiverCreateSettings,
 	config *Config) (*MockAwsXrayReceiver, error) {
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	ar := &MockAwsXrayReceiver{
@@ -69,7 +68,7 @@ func (ar *MockAwsXrayReceiver) Start(_ context.Context, host component.Host) err
 	// set up the listener
 	ln, err := net.Listen("tcp", ar.config.Endpoint)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %v", ar.config.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", ar.config.Endpoint, err)
 	}
 	ar.logger.Info(fmt.Sprintf("listen to address %s", ar.config.Endpoint))
 
@@ -100,19 +99,21 @@ func (ar *MockAwsXrayReceiver) handleRequest(req *http.Request) error {
 
 	obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: ar.config.ID(), Transport: transport})
 	ctx := obsrecv.StartTracesOp(req.Context())
-	body, err := ioutil.ReadAll(req.Body)
+	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	var result map[string]interface{}
 
-	json.Unmarshal(body, &result)
+	if err = json.Unmarshal(body, &result); err != nil {
+		log.Fatalln(err)
+	}
 
 	traces, _ := ToTraces(body)
 	sc := traces.SpanCount()
 
-	err = ar.nextConsumer.ConsumeTraces(ctx, *traces)
+	err = ar.nextConsumer.ConsumeTraces(ctx, traces)
 	obsrecv.EndTracesOp(ctx, typeStr, sc, err)
 	return err
 }
@@ -134,11 +135,11 @@ func (ar *MockAwsXrayReceiver) Shutdown(context.Context) error {
 	return ar.server.Close()
 }
 
-func ToTraces(rawSeg []byte) (*pdata.Traces, error) {
+func ToTraces(rawSeg []byte) (ptrace.Traces, error) {
 	var result map[string]interface{}
 	err := json.Unmarshal(rawSeg, &result)
 	if err != nil {
-		return nil, err
+		return ptrace.Traces{}, err
 	}
 
 	records, ok := result["TraceSegmentDocuments"].([]interface{})
@@ -146,14 +147,14 @@ func ToTraces(rawSeg []byte) (*pdata.Traces, error) {
 		panic("Not a slice")
 	}
 
-	traceData := pdata.NewTraces()
+	traceData := ptrace.NewTraces()
 	rspan := traceData.ResourceSpans().AppendEmpty()
-	ils := rspan.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rspan.ScopeSpans().AppendEmpty()
 	ils.Spans().EnsureCapacity(len(records))
 
 	for i := 0; i < len(records); i++ {
 		ils.Spans().AppendEmpty()
 	}
 
-	return &traceData, nil
+	return traceData, nil
 }

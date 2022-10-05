@@ -26,66 +26,249 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
 
-type testMetric struct {
+type testSumMetric struct {
 	metricNames  []string
 	metricValues [][]float64
 	isCumulative []bool
 }
 
+type testHistogramMetric struct {
+	metricNames   []string
+	metricCounts  [][]uint64
+	metricSums    [][]float64
+	metricBuckets [][][]uint64
+	isCumulative  []bool
+}
+
 type cumulativeToDeltaTest struct {
-	name       string
-	metrics    []string
-	inMetrics  pdata.Metrics
-	outMetrics pdata.Metrics
+	name                    string
+	include                 MatchMetrics
+	exclude                 MatchMetrics
+	inMetrics               pmetric.Metrics
+	outMetrics              pmetric.Metrics
+	histogramSupportEnabled bool
 }
 
 var (
 	testCases = []cumulativeToDeltaTest{
 		{
-			name:    "cumulative_to_delta_expect_same",
-			metrics: nil,
-			inMetrics: generateTestMetrics(testMetric{
+			name: "cumulative_to_delta_convert_nothing",
+			exclude: MatchMetrics{
+				Metrics: []string{".*"},
+				Config: filterset.Config{
+					MatchType:    "regexp",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestSumMetrics(testSumMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
 				isCumulative: []bool{true, true},
 			}),
-			outMetrics: generateTestMetrics(testMetric{
+			outMetrics: generateTestSumMetrics(testSumMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
 				isCumulative: []bool{true, true},
 			}),
 		},
 		{
-			name:    "cumulative_to_delta_one_positive",
-			metrics: []string{"metric_1"},
-			inMetrics: generateTestMetrics(testMetric{
+			name: "cumulative_to_delta_one_positive",
+			include: MatchMetrics{
+				Metrics: []string{"metric_1"},
+				Config: filterset.Config{
+					MatchType:    "strict",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestSumMetrics(testSumMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100, 200, 500}, {4}},
 				isCumulative: []bool{true, true},
 			}),
-			outMetrics: generateTestMetrics(testMetric{
+			outMetrics: generateTestSumMetrics(testSumMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100, 100, 300}, {4}},
 				isCumulative: []bool{false, true},
 			}),
 		},
 		{
-			name:    "cumulative_to_delta_nan_value",
-			metrics: []string{"metric_1"},
-			inMetrics: generateTestMetrics(testMetric{
+			name: "cumulative_to_delta_nan_value",
+			include: MatchMetrics{
+				Metrics: []string{"_1"},
+				Config: filterset.Config{
+					MatchType:    "regexp",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestSumMetrics(testSumMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100, 200, math.NaN()}, {4}},
 				isCumulative: []bool{true, true},
 			}),
-			outMetrics: generateTestMetrics(testMetric{
+			outMetrics: generateTestSumMetrics(testSumMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100, 100, math.NaN()}, {4}},
 				isCumulative: []bool{false, true},
 			}),
+		},
+		{
+			name: "cumulative_to_delta_exclude_precedence",
+			include: MatchMetrics{
+				Metrics: []string{".*"},
+				Config: filterset.Config{
+					MatchType:    "regexp",
+					RegexpConfig: nil,
+				},
+			},
+			exclude: MatchMetrics{
+				Metrics: []string{".*"},
+				Config: filterset.Config{
+					MatchType:    "regexp",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestSumMetrics(testSumMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100}, {4}},
+				isCumulative: []bool{true, true},
+			}),
+			outMetrics: generateTestSumMetrics(testSumMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100}, {4}},
+				isCumulative: []bool{true, true},
+			}),
+		},
+		{
+			name: "cumulative_to_delta_histogram_one_positive",
+			include: MatchMetrics{
+				Metrics: []string{"metric_1"},
+				Config: filterset.Config{
+					MatchType:    "strict",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricCounts: [][]uint64{{100, 200, 500}, {4}},
+				metricSums:   [][]float64{{100, 200, 500}, {4}},
+				metricBuckets: [][][]uint64{
+					{{50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					{{4, 4, 4}},
+				},
+				isCumulative: []bool{true, true},
+			}),
+			outMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricCounts: [][]uint64{{100, 100, 300}, {4}},
+				metricSums:   [][]float64{{100, 100, 300}, {4}},
+				metricBuckets: [][][]uint64{
+					{{50, 25, 25}, {50, 25, 25}, {150, 75, 75}},
+					{{4, 4, 4}},
+				},
+				isCumulative: []bool{false, true},
+			}),
+			histogramSupportEnabled: true,
+		},
+		{
+			name: "cumulative_to_delta_histogram_nan_sum",
+			include: MatchMetrics{
+				Metrics: []string{"metric_1"},
+				Config: filterset.Config{
+					MatchType:    "strict",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricCounts: [][]uint64{{100, 200, 500}, {4}},
+				metricSums:   [][]float64{{100, math.NaN(), 500}, {4}},
+				metricBuckets: [][][]uint64{
+					{{50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					{{4, 4, 4}},
+				},
+				isCumulative: []bool{true, true},
+			}),
+			outMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricCounts: [][]uint64{{100, 100, 300}, {4}},
+				metricSums:   [][]float64{{100, math.NaN(), 400}, {4}},
+				metricBuckets: [][][]uint64{
+					{{50, 25, 25}, {50, 25, 25}, {150, 75, 75}},
+					{{4, 4, 4}},
+				},
+				isCumulative: []bool{false, true},
+			}),
+			histogramSupportEnabled: true,
+		},
+		{
+			name: "cumulative_to_delta_histogram_one_positive_without_sums",
+			include: MatchMetrics{
+				Metrics: []string{"metric_1"},
+				Config: filterset.Config{
+					MatchType:    "strict",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricCounts: [][]uint64{{100, 200, 500}, {4}},
+				metricSums:   [][]float64{{}, {4}},
+				metricBuckets: [][][]uint64{
+					{{50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					{{4, 4, 4}},
+				},
+				isCumulative: []bool{true, true},
+			}),
+			outMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricCounts: [][]uint64{{100, 100, 300}, {4}},
+				metricSums:   [][]float64{{}, {4}},
+				metricBuckets: [][][]uint64{
+					{{50, 25, 25}, {50, 25, 25}, {150, 75, 75}},
+					{{4, 4, 4}},
+				},
+				isCumulative: []bool{false, true},
+			}),
+			histogramSupportEnabled: true,
+		},
+		{
+			name: "cumulative_to_delta_histogram_ignored_without_feature",
+			include: MatchMetrics{
+				Metrics: []string{"metric_1"},
+				Config: filterset.Config{
+					MatchType:    "strict",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricCounts: [][]uint64{{100, 200, 500}, {4}},
+				metricSums:   [][]float64{{100, 200, 500}, {4}},
+				metricBuckets: [][][]uint64{
+					{{50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					{{4, 4, 4}},
+				},
+				isCumulative: []bool{true, true},
+			}),
+			outMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricCounts: [][]uint64{{100, 200, 500}, {4}},
+				metricSums:   [][]float64{{100, 200, 500}, {4}},
+				metricBuckets: [][][]uint64{
+					{{50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					{{4, 4, 4}},
+				},
+				isCumulative: []bool{true, true},
+			}),
+			histogramSupportEnabled: false,
 		},
 	}
 )
@@ -93,11 +276,16 @@ var (
 func TestCumulativeToDeltaProcessor(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
+			registry := featuregate.GetRegistry()
+			require.NoError(t, registry.Apply(map[string]bool{
+				enableHistogramSupportGateID: test.histogramSupportEnabled,
+			}))
 			// next stores the results of the filter metric processor
 			next := new(consumertest.MetricsSink)
 			cfg := &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-				Metrics:           test.metrics,
+				Include:           test.include,
+				Exclude:           test.exclude,
 			}
 			factory := NewFactory()
 			mgp, err := factory.CreateMetricsProcessor(
@@ -121,8 +309,8 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			require.Equal(t, 1, len(got))
 			require.Equal(t, test.outMetrics.ResourceMetrics().Len(), got[0].ResourceMetrics().Len())
 
-			expectedMetrics := test.outMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-			actualMetrics := got[0].ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+			expectedMetrics := test.outMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+			actualMetrics := got[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 
 			require.Equal(t, expectedMetrics.Len(), actualMetrics.Len())
 
@@ -132,17 +320,17 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 
 				require.Equal(t, eM.Name(), aM.Name())
 
-				if eM.DataType() == pdata.MetricDataTypeGauge {
+				if eM.Type() == pmetric.MetricTypeGauge {
 					eDataPoints := eM.Gauge().DataPoints()
 					aDataPoints := aM.Gauge().DataPoints()
 					require.Equal(t, eDataPoints.Len(), aDataPoints.Len())
 
 					for j := 0; j < eDataPoints.Len(); j++ {
-						require.Equal(t, eDataPoints.At(j).DoubleVal(), aDataPoints.At(j).DoubleVal())
+						require.Equal(t, eDataPoints.At(j).DoubleValue(), aDataPoints.At(j).DoubleValue())
 					}
 				}
 
-				if eM.DataType() == pdata.MetricDataTypeSum {
+				if eM.Type() == pmetric.MetricTypeSum {
 					eDataPoints := eM.Sum().DataPoints()
 					aDataPoints := aM.Sum().DataPoints()
 
@@ -150,14 +338,32 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 					require.Equal(t, eM.Sum().AggregationTemporality(), aM.Sum().AggregationTemporality())
 
 					for j := 0; j < eDataPoints.Len(); j++ {
-						if math.IsNaN(eDataPoints.At(j).DoubleVal()) {
-							assert.True(t, math.IsNaN(aDataPoints.At(j).DoubleVal()))
+						if math.IsNaN(eDataPoints.At(j).DoubleValue()) {
+							assert.True(t, math.IsNaN(aDataPoints.At(j).DoubleValue()))
 						} else {
-							require.Equal(t, eDataPoints.At(j).DoubleVal(), aDataPoints.At(j).DoubleVal())
+							require.Equal(t, eDataPoints.At(j).DoubleValue(), aDataPoints.At(j).DoubleValue())
 						}
 					}
 				}
 
+				if eM.Type() == pmetric.MetricTypeHistogram {
+					eDataPoints := eM.Histogram().DataPoints()
+					aDataPoints := aM.Histogram().DataPoints()
+
+					require.Equal(t, eDataPoints.Len(), aDataPoints.Len())
+					require.Equal(t, eM.Histogram().AggregationTemporality(), aM.Histogram().AggregationTemporality())
+
+					for j := 0; j < eDataPoints.Len(); j++ {
+						require.Equal(t, eDataPoints.At(j).Count(), aDataPoints.At(j).Count())
+						require.Equal(t, eDataPoints.At(j).HasSum(), aDataPoints.At(j).HasSum())
+						if math.IsNaN(eDataPoints.At(j).Sum()) {
+							require.True(t, math.IsNaN(aDataPoints.At(j).Sum()))
+						} else {
+							require.Equal(t, eDataPoints.At(j).Sum(), aDataPoints.At(j).Sum())
+						}
+						require.Equal(t, eDataPoints.At(j).BucketCounts(), aDataPoints.At(j).BucketCounts())
+					}
+				}
 			}
 
 			require.NoError(t, mgp.Shutdown(ctx))
@@ -165,30 +371,61 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 	}
 }
 
-func generateTestMetrics(tm testMetric) pdata.Metrics {
-	md := pdata.NewMetrics()
+func generateTestSumMetrics(tm testSumMetric) pmetric.Metrics {
+	md := pmetric.NewMetrics()
 	now := time.Now()
 
 	rm := md.ResourceMetrics().AppendEmpty()
-	ms := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()
 		m.SetName(name)
-		m.SetDataType(pdata.MetricDataTypeSum)
-
-		sum := m.Sum()
+		sum := m.SetEmptySum()
 		sum.SetIsMonotonic(true)
 
 		if tm.isCumulative[i] {
-			sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+			sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		} else {
-			sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+			sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 		}
 
 		for _, value := range tm.metricValues[i] {
 			dp := m.Sum().DataPoints().AppendEmpty()
-			dp.SetTimestamp(pdata.NewTimestampFromTime(now.Add(10 * time.Second)))
-			dp.SetDoubleVal(value)
+			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(10 * time.Second)))
+			dp.SetDoubleValue(value)
+		}
+	}
+
+	return md
+}
+
+func generateTestHistogramMetrics(tm testHistogramMetric) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	now := time.Now()
+
+	rm := md.ResourceMetrics().AppendEmpty()
+	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
+	for i, name := range tm.metricNames {
+		m := ms.AppendEmpty()
+		m.SetName(name)
+		hist := m.SetEmptyHistogram()
+
+		if tm.isCumulative[i] {
+			hist.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		} else {
+			hist.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+		}
+
+		for index, count := range tm.metricCounts[i] {
+			dp := m.Histogram().DataPoints().AppendEmpty()
+			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(10 * time.Second)))
+			dp.SetCount(count)
+
+			sums := tm.metricSums[i]
+			if len(sums) > 0 {
+				dp.SetSum(sums[index])
+			}
+			dp.BucketCounts().FromRaw(tm.metricBuckets[i][index])
 		}
 	}
 
@@ -204,37 +441,35 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 		BuildInfo: component.BuildInfo{},
 	}
 	cfg := createDefaultConfig().(*Config)
-	cfg.Metrics = []string{""}
 	p, err := createMetricsProcessor(context.Background(), params, cfg, c)
 	if err != nil {
 		b.Fatal(err)
 	}
 
-	metrics := pdata.NewMetrics()
+	metrics := pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics().AppendEmpty()
 	r := rms.Resource()
-	r.Attributes().Insert("resource", pdata.NewAttributeValueBool(true))
-	ilms := rms.InstrumentationLibraryMetrics().AppendEmpty()
-	ilms.InstrumentationLibrary().SetName("test")
-	ilms.InstrumentationLibrary().SetVersion("0.1")
+	r.Attributes().PutBool("resource", true)
+	ilms := rms.ScopeMetrics().AppendEmpty()
+	ilms.Scope().SetName("test")
+	ilms.Scope().SetVersion("0.1")
 	m := ilms.Metrics().AppendEmpty()
-	m.SetDataType(pdata.MetricDataTypeSum)
-	m.Sum().SetIsMonotonic(true)
+	m.SetEmptySum().SetIsMonotonic(true)
 	dp := m.Sum().DataPoints().AppendEmpty()
-	dp.Attributes().Insert("tag", pdata.NewAttributeValueString("value"))
+	dp.Attributes().PutString("tag", "value")
 
 	reset := func() {
-		m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
-		dp.SetDoubleVal(100.0)
+		m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		dp.SetDoubleValue(100.0)
 	}
 
 	// Load initial value
 	reset()
-	p.ConsumeMetrics(context.Background(), metrics)
+	assert.NoError(b, p.ConsumeMetrics(context.Background(), metrics))
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		reset()
-		p.ConsumeMetrics(context.Background(), metrics)
+		assert.NoError(b, p.ConsumeMetrics(context.Background(), metrics))
 	}
 }

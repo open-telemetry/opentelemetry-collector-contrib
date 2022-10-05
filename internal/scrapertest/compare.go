@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,18 +18,20 @@ import (
 	"fmt"
 	"reflect"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 )
 
 // CompareOption is applied by the CompareMetricSlices function
 // to mutates an expected and/or actual result before comparing.
 type CompareOption interface {
-	apply(expected, actual pdata.Metrics)
+	apply(expected, actual pmetric.Metrics)
 }
 
-func CompareMetrics(expected, actual pdata.Metrics, options ...CompareOption) error {
-	expected, actual = expected.Clone(), actual.Clone()
+func CompareMetrics(expected, actual pmetric.Metrics, options ...CompareOption) error {
+	exp, act := pmetric.NewMetrics(), pmetric.NewMetrics()
+	expected.CopyTo(exp)
+	actual.CopyTo(act)
 
 	for _, option := range options {
 		option.apply(expected, actual)
@@ -37,13 +39,18 @@ func CompareMetrics(expected, actual pdata.Metrics, options ...CompareOption) er
 
 	expectedMetrics, actualMetrics := expected.ResourceMetrics(), actual.ResourceMetrics()
 	if expectedMetrics.Len() != actualMetrics.Len() {
-		return fmt.Errorf("number of resources does not match")
+		return fmt.Errorf("number of resources does not match expected: %d, actual: %d", expectedMetrics.Len(),
+			actualMetrics.Len())
 	}
+
+	// sort ResourceMetrics
+	expectedMetrics.Sort(sortResourceMetrics)
+	actualMetrics.Sort(sortResourceMetrics)
 
 	numResources := expectedMetrics.Len()
 
 	// Keep track of matching resources so that each can only be matched once
-	matchingResources := make(map[pdata.ResourceMetrics]pdata.ResourceMetrics, numResources)
+	matchingResources := make(map[pmetric.ResourceMetrics]pmetric.ResourceMetrics, numResources)
 
 	var errs error
 	for e := 0; e < numResources; e++ {
@@ -85,12 +92,13 @@ func CompareMetrics(expected, actual pdata.Metrics, options ...CompareOption) er
 	return errs
 }
 
-func CompareResourceMetrics(expected, actual pdata.ResourceMetrics) error {
-	eilms := expected.InstrumentationLibraryMetrics()
-	ailms := actual.InstrumentationLibraryMetrics()
+func CompareResourceMetrics(expected, actual pmetric.ResourceMetrics) error {
+	eilms := expected.ScopeMetrics()
+	ailms := actual.ScopeMetrics()
 
 	if eilms.Len() != ailms.Len() {
-		return fmt.Errorf("number of instrumentation libraries does not match")
+		return fmt.Errorf("number of instrumentation libraries does not match expected: %d, actual: %d", eilms.Len(),
+			ailms.Len())
 	}
 
 	eilms.Sort(sortInstrumentationLibrary)
@@ -98,7 +106,7 @@ func CompareResourceMetrics(expected, actual pdata.ResourceMetrics) error {
 
 	for i := 0; i < eilms.Len(); i++ {
 		eilm, ailm := eilms.At(i), ailms.At(i)
-		eil, ail := eilm.InstrumentationLibrary(), ailm.InstrumentationLibrary()
+		eil, ail := eilm.Scope(), ailm.Scope()
 
 		if eil.Name() != ail.Name() {
 			return fmt.Errorf("instrumentation library Name does not match expected: %s, actual: %s", eil.Name(), ail.Name())
@@ -117,10 +125,14 @@ func CompareResourceMetrics(expected, actual pdata.ResourceMetrics) error {
 // CompareMetricSlices compares each part of two given MetricSlices and returns
 // an error if they don't match. The error describes what didn't match. The
 // expected and actual values are clones before options are applied.
-func CompareMetricSlices(expected, actual pdata.MetricSlice) error {
+func CompareMetricSlices(expected, actual pmetric.MetricSlice) error {
 	if expected.Len() != actual.Len() {
-		return fmt.Errorf("metric slices not of same length")
+		return fmt.Errorf("number of metrics does not match expected: %d, actual: %d", expected.Len(), actual.Len())
 	}
+
+	// Sort MetricSlices
+	expected.Sort(sortMetricSlice)
+	actual.Sort(sortMetricSlice)
 
 	expectedByName, actualByName := metricsByName(expected), metricsByName(actual)
 
@@ -150,18 +162,18 @@ func CompareMetricSlices(expected, actual pdata.MetricSlice) error {
 		if actualMetric.Unit() != expectedMetric.Unit() {
 			return fmt.Errorf("metric Unit does not match expected: %s, actual: %s", expectedMetric.Unit(), actualMetric.Unit())
 		}
-		if actualMetric.DataType() != expectedMetric.DataType() {
-			return fmt.Errorf("metric DataType does not match expected: %s, actual: %s", expectedMetric.DataType(), actualMetric.DataType())
+		if actualMetric.Type() != expectedMetric.Type() {
+			return fmt.Errorf("metric DataType does not match expected: %s, actual: %s", expectedMetric.Type(), actualMetric.Type())
 		}
 
-		var expectedDataPoints pdata.NumberDataPointSlice
-		var actualDataPoints pdata.NumberDataPointSlice
+		var expectedDataPoints pmetric.NumberDataPointSlice
+		var actualDataPoints pmetric.NumberDataPointSlice
 
-		switch actualMetric.DataType() {
-		case pdata.MetricDataTypeGauge:
+		switch actualMetric.Type() {
+		case pmetric.MetricTypeGauge:
 			expectedDataPoints = expectedMetric.Gauge().DataPoints()
 			actualDataPoints = actualMetric.Gauge().DataPoints()
-		case pdata.MetricDataTypeSum:
+		case pmetric.MetricTypeSum:
 			if actualMetric.Sum().AggregationTemporality() != expectedMetric.Sum().AggregationTemporality() {
 				return fmt.Errorf("metric AggregationTemporality does not match expected: %s, actual: %s", expectedMetric.Sum().AggregationTemporality(), actualMetric.Sum().AggregationTemporality())
 			}
@@ -181,15 +193,15 @@ func CompareMetricSlices(expected, actual pdata.MetricSlice) error {
 
 // CompareNumberDataPointSlices compares each part of two given NumberDataPointSlices and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareNumberDataPointSlices(expected, actual pdata.NumberDataPointSlice) error {
+func CompareNumberDataPointSlices(expected, actual pmetric.NumberDataPointSlice) error {
 	if expected.Len() != actual.Len() {
-		return fmt.Errorf("length of datapoints don't match")
+		return fmt.Errorf("number of datapoints does not match expected: %d, actual: %d", expected.Len(), actual.Len())
 	}
 
 	numPoints := expected.Len()
 
 	// Keep track of matching data points so that each point can only be matched once
-	matchingDPS := make(map[pdata.NumberDataPoint]pdata.NumberDataPoint, numPoints)
+	matchingDPS := make(map[pmetric.NumberDataPoint]pmetric.NumberDataPoint, numPoints)
 
 	var errs error
 	for e := 0; e < numPoints; e++ {
@@ -232,24 +244,24 @@ func CompareNumberDataPointSlices(expected, actual pdata.NumberDataPointSlice) e
 
 // CompareNumberDataPoints compares each part of two given NumberDataPoints and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareNumberDataPoints(expected, actual pdata.NumberDataPoint) error {
+func CompareNumberDataPoints(expected, actual pmetric.NumberDataPoint) error {
 	if expected.ValueType() != actual.ValueType() {
 		return fmt.Errorf("metric datapoint types don't match: expected type: %s, actual type: %s", numberTypeToString(expected.ValueType()), numberTypeToString(actual.ValueType()))
 	}
-	if expected.IntVal() != actual.IntVal() {
-		return fmt.Errorf("metric datapoint IntVal doesn't match expected: %d, actual: %d", expected.IntVal(), actual.IntVal())
+	if expected.IntValue() != actual.IntValue() {
+		return fmt.Errorf("metric datapoint IntVal doesn't match expected: %d, actual: %d", expected.IntValue(), actual.IntValue())
 	}
-	if expected.DoubleVal() != actual.DoubleVal() {
-		return fmt.Errorf("metric datapoint DoubleVal doesn't match expected: %f, actual: %f", expected.DoubleVal(), actual.DoubleVal())
+	if expected.DoubleValue() != actual.DoubleValue() {
+		return fmt.Errorf("metric datapoint DoubleVal doesn't match expected: %f, actual: %f", expected.DoubleValue(), actual.DoubleValue())
 	}
 	return nil
 }
 
-func numberTypeToString(t pdata.MetricValueType) string {
+func numberTypeToString(t pmetric.NumberDataPointValueType) string {
 	switch t {
-	case pdata.MetricValueTypeInt:
+	case pmetric.NumberDataPointValueTypeInt:
 		return "int"
-	case pdata.MetricValueTypeDouble:
+	case pmetric.NumberDataPointValueTypeDouble:
 		return "double"
 	default:
 		return "none"

@@ -15,7 +15,6 @@
 package k8sclient
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -55,21 +54,21 @@ users:
 - name: foo-user
   user:
     exec:
-      apiVersion: client.authentication.k8s.io/v1alpha1
+      apiVersion: client.authentication.k8s.io/v1beta1
       args:
       - arg-1
       - arg-2
       command: foo-command
       provideClusterInfo: true
 `
-	tmpfile, err := ioutil.TempFile("", "kubeconfig")
+	tmpfile, err := os.CreateTemp("", "kubeconfig")
 	if err != nil {
 		t.Error(err)
 	}
-	if err := ioutil.WriteFile(tmpfile.Name(), []byte(content), 0600); err != nil {
+	if err := os.WriteFile(tmpfile.Name(), []byte(content), 0600); err != nil {
 		t.Error(err)
 	}
-	//overwrite the default kube config path
+	// overwrite the default kube config path
 	kubeConfigPath = tmpfile.Name()
 	return kubeConfigPath
 }

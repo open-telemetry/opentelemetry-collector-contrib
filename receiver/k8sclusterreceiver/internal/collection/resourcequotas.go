@@ -19,7 +19,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
@@ -46,7 +46,7 @@ var resourceQuotaUsedMetric = &metricspb.MetricDescriptor{
 }
 
 func getMetricsForResourceQuota(rq *corev1.ResourceQuota) []*resourceMetrics {
-	metrics := make([]*metricspb.Metric, 0)
+	var metrics []*metricspb.Metric
 
 	for _, t := range []struct {
 		metric *metricspb.MetricDescriptor
@@ -94,7 +94,6 @@ func getResourceForResourceQuota(rq *corev1.ResourceQuota) *resourcepb.Resource 
 			k8sKeyResourceQuotaUID:                string(rq.UID),
 			k8sKeyResourceQuotaName:               rq.Name,
 			conventions.AttributeK8SNamespaceName: rq.Namespace,
-			conventions.AttributeK8SClusterName:   rq.ClusterName,
 		},
 	}
 }

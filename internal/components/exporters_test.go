@@ -12,18 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
+//go:build !windows
+// +build !windows
+
 package components
 
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -34,31 +38,31 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
-	ddconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 	dtconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
@@ -87,9 +91,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "file",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["file"].CreateDefaultConfig().(*fileexporter.Config)
-				f := testutil.NewTemporaryFile(t)
-				assert.NoError(t, f.Close())
-				cfg.Path = f.Name()
+				cfg.Path = filepath.Join(t.TempDir(), "random.file")
 				return cfg
 			},
 		},
@@ -155,7 +157,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "parquet",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["parquet"].CreateDefaultConfig().(*parquetexporter.Config)
-				cfg.Path = testutil.NewTemporaryDirectory(t)
+				cfg.Path = t.TempDir()
 				return cfg
 			},
 		},
@@ -169,6 +171,14 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "prometheusremotewrite",
+		},
+		{
+			exporter: "pulsar",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["pulsar"].CreateDefaultConfig().(*pulsarexporter.Config)
+				cfg.Endpoint = "unknown:6650"
+				return cfg
+			},
 		},
 		{
 			exporter: "sapm",
@@ -214,14 +224,6 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
-			exporter: "awsprometheusremotewrite",
-			getConfigFn: func() config.Exporter {
-				cfg := expFactories["awsprometheusremotewrite"].CreateDefaultConfig().(*awsprometheusremotewriteexporter.Config)
-				cfg.HTTPClientSettings.Endpoint = "http://" + endpoint
-				return cfg
-			},
-		},
-		{
 			exporter: "alibabacloud_logservice",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["alibabacloud_logservice"].CreateDefaultConfig().(*alibabacloudlogserviceexporter.Config)
@@ -259,6 +261,17 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
+			exporter: "azuredataexplorer",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["azuredataexplorer"].CreateDefaultConfig().(*azuredataexplorerexporter.Config)
+				cfg.ClusterURI = "http://" + endpoint
+				cfg.ApplicationID = "otel-app-id"
+				cfg.ApplicationKey = "otel-app-key"
+				cfg.TenantID = "otel-tenant-id"
+				return cfg
+			},
+		},
+		{
 			exporter: "azuremonitor",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["azuremonitor"].CreateDefaultConfig().(*azuremonitorexporter.Config)
@@ -287,14 +300,14 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "coralogix",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["coralogix"].CreateDefaultConfig().(*coralogixexporter.Config)
-				cfg.Endpoint = endpoint
+				cfg.Traces.Endpoint = endpoint
 				return cfg
 			},
 		},
 		{
 			exporter: "datadog",
 			getConfigFn: func() config.Exporter {
-				cfg := expFactories["datadog"].CreateDefaultConfig().(*ddconf.Config)
+				cfg := expFactories["datadog"].CreateDefaultConfig().(*datadogexporter.Config)
 				cfg.API.Key = "cutedogsgotoheaven"
 				return cfg
 			},
@@ -309,14 +322,6 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
-			exporter: "elastic",
-			getConfigFn: func() config.Exporter {
-				cfg := expFactories["elastic"].CreateDefaultConfig().(*elasticexporter.Config)
-				cfg.APMServerURL = "http://" + endpoint
-				return cfg
-			},
-		},
-		{
 			exporter: "elasticsearch",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["elasticsearch"].CreateDefaultConfig().(*elasticsearchexporter.Config)
@@ -327,12 +332,10 @@ func TestDefaultExporters(t *testing.T) {
 		{
 			exporter: "f5cloud",
 			getConfigFn: func() config.Exporter {
-				f := testutil.NewTemporaryFile(t)
-
 				cfg := expFactories["f5cloud"].CreateDefaultConfig().(*f5cloudexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.Source = "magic-source"
-				cfg.AuthConfig.CredentialFile = f.Name()
+				cfg.AuthConfig.CredentialFile = filepath.Join(t.TempDir(), "random.file")
 
 				return cfg
 			},
@@ -342,13 +345,11 @@ func TestDefaultExporters(t *testing.T) {
 			skipLifecycle: true, // Requires credentials to be able to successfully load the exporter
 		},
 		{
-			exporter: "honeycomb",
-			getConfigFn: func() config.Exporter {
-				cfg := expFactories["honeycomb"].CreateDefaultConfig().(*honeycombexporter.Config)
-				cfg.APIURL = "http://" + endpoint
-				cfg.APIKey = "busybeesworking"
-				return cfg
-			},
+			exporter:      "googlemanagedprometheus",
+			skipLifecycle: true, // Requires credentials to be able to successfully load the exporter
+		},
+		{
+			exporter: "googlecloudpubsub",
 		},
 		{
 			exporter: "humio",
@@ -367,6 +368,15 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
+			exporter: "instana",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["instana"].CreateDefaultConfig().(*instanaexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				cfg.AgentKey = "Key1"
+				return cfg
+			},
+		},
+		{
 			exporter: "loadbalancing",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["loadbalancing"].CreateDefaultConfig().(*loadbalancingexporter.Config)
@@ -377,7 +387,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "logzio",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["logzio"].CreateDefaultConfig().(*logzioexporter.Config)
-				cfg.CustomEndpoint = "http://" + endpoint
+				cfg.Endpoint = "http://" + endpoint
 				return cfg
 			},
 		},
@@ -390,10 +400,10 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
-			exporter: "newrelic",
+			exporter: "mezmo",
 			getConfigFn: func() config.Exporter {
-				cfg := expFactories["newrelic"].CreateDefaultConfig().(*newrelicexporter.Config)
-				cfg.CommonConfig.HostOverride = "http://" + endpoint
+				cfg := expFactories["mezmo"].CreateDefaultConfig().(*mezmoexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
 				return cfg
 			},
 		},
@@ -410,10 +420,6 @@ func TestDefaultExporters(t *testing.T) {
 				cfg := expFactories["skywalking"].CreateDefaultConfig().(*skywalkingexporter.Config)
 				return cfg
 			},
-		},
-		{
-			exporter:      "stackdriver",
-			skipLifecycle: true, // Is a deprecated exporter that has moved to google cloud exporter
 		},
 		{
 			exporter: "sumologic",
@@ -490,7 +496,7 @@ func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, ge
 		var exps []component.Exporter
 		for _, createFn := range createFns {
 			exp, err := createFn(ctx, expCreateSettings, cfg)
-			if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
+			if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 				continue
 			}
 			require.NoError(t, err)

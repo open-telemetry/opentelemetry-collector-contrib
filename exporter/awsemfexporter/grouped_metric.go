@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
@@ -38,11 +38,7 @@ type metricInfo struct {
 }
 
 // addToGroupedMetric processes OT metrics and adds them into GroupedMetric buckets
-func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*groupedMetric, metadata cWMetricMetadata, patternReplaceSucceeded bool, logger *zap.Logger, descriptor map[string]MetricDescriptor, config *Config) error {
-	if pmd == nil {
-		return nil
-	}
-
+func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[interface{}]*groupedMetric, metadata cWMetricMetadata, patternReplaceSucceeded bool, logger *zap.Logger, descriptor map[string]MetricDescriptor, config *Config) error {
 	metricName := pmd.Name()
 	dps := getDataPoints(pmd, metadata, logger)
 	if dps == nil || dps.Len() == 0 {
@@ -135,7 +131,7 @@ type internalPodOwnersObj struct {
 }
 
 func addKubernetesWrapper(labels map[string]string) {
-	//fill in obj
+	// fill in obj
 	filledInObj := kubernetesObj{
 		ContainerName: mapGetHelper(labels, "container"),
 		Docker: &internalDockerObj{
@@ -156,7 +152,7 @@ func addKubernetesWrapper(labels map[string]string) {
 		ServiceName: mapGetHelper(labels, "Service"),
 	}
 
-	//handle nested empty object
+	// handle nested empty object
 	if filledInObj.Docker.ContainerID == "" {
 		filledInObj.Docker = nil
 	}
@@ -186,7 +182,7 @@ func groupedMetricKey(metadata groupedMetricMetadata, labels map[string]string) 
 	return aws.NewKey(metadata, labels)
 }
 
-func translateUnit(metric *pdata.Metric, descriptor map[string]MetricDescriptor) string {
+func translateUnit(metric pmetric.Metric, descriptor map[string]MetricDescriptor) string {
 	unit := metric.Unit()
 	if descriptor, exists := descriptor[metric.Name()]; exists {
 		if unit == "" || descriptor.overwrite {

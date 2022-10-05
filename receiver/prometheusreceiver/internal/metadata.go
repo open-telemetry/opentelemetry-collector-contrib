@@ -15,24 +15,9 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
 import (
-	"errors"
-	"sync"
-
-	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/textparse"
 	"github.com/prometheus/prometheus/scrape"
 )
-
-// MetadataCache is an adapter to prometheus' scrape.Target  and provide only the functionality which is needed
-type MetadataCache interface {
-	Metadata(metricName string) (scrape.MetricMetadata, bool)
-	SharedLabels() labels.Labels
-}
-
-type ScrapeManager interface {
-	TargetsAll() map[string][]*scrape.Target
-}
 
 type dataPoint struct {
 	value    float64
@@ -69,17 +54,17 @@ var internalMetricMetadata = map[string]*scrape.MetricMetadata{
 	},
 }
 
-func metadataForMetric(metricName string, mc MetadataCache) (*scrape.MetricMetadata, string) {
+func metadataForMetric(metricName string, mc scrape.MetricMetadataStore) (*scrape.MetricMetadata, string) {
 	if metadata, ok := internalMetricMetadata[metricName]; ok {
 		return metadata, metricName
 	}
-	if metadata, ok := mc.Metadata(metricName); ok {
+	if metadata, ok := mc.GetMetadata(metricName); ok {
 		return &metadata, metricName
 	}
 	// If we didn't find metadata with the original name,
 	// try with suffixes trimmed, in-case it is a "merged" metric type.
 	normalizedName := normalizeMetricName(metricName)
-	if metadata, ok := mc.Metadata(normalizedName); ok {
+	if metadata, ok := mc.GetMetadata(normalizedName); ok {
 		if metadata.Type == textparse.MetricTypeCounter {
 			return &metadata, metricName
 		}
@@ -90,54 +75,4 @@ func metadataForMetric(metricName string, mc MetadataCache) (*scrape.MetricMetad
 		Metric: metricName,
 		Type:   textparse.MetricTypeUnknown,
 	}, metricName
-}
-
-type metadataService struct {
-	sync.Mutex
-	stopped bool
-	sm      ScrapeManager
-}
-
-func (s *metadataService) Close() {
-	s.Lock()
-	s.stopped = true
-	s.Unlock()
-}
-
-func (s *metadataService) Get(job, instance string) (MetadataCache, error) {
-	s.Lock()
-	defer s.Unlock()
-
-	// If we're already stopped return early so that we don't call scrapeManager.TargetsAll()
-	// which will result in deadlock if scrapeManager is being stopped.
-	if s.stopped {
-		return nil, errAlreadyStopped
-	}
-
-	targetGroup, ok := s.sm.TargetsAll()[job]
-	if !ok {
-		return nil, errors.New("unable to find a target group with job=" + job)
-	}
-
-	// from the same targetGroup, instance is not going to be duplicated
-	for _, target := range targetGroup {
-		if target.Labels().Get(model.InstanceLabel) == instance {
-			return &mCache{target}, nil
-		}
-	}
-
-	return nil, errors.New("unable to find a target with job=" + job + ", and instance=" + instance)
-}
-
-// adapter to get metadata from scrape.Target
-type mCache struct {
-	t *scrape.Target
-}
-
-func (m *mCache) Metadata(metricName string) (scrape.MetricMetadata, bool) {
-	return m.t.Metadata(metricName)
-}
-
-func (m *mCache) SharedLabels() labels.Labels {
-	return m.t.DiscoveredLabels()
 }

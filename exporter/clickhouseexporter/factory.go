@@ -26,14 +26,16 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "clickhouse"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelAlpha
 )
 
 // NewFactory creates a factory for Elastic exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithLogs(createLogsExporter),
+		component.WithLogsExporter(createLogsExporter, stability),
 	)
 }
 
@@ -43,6 +45,7 @@ func createDefaultConfig() config.Exporter {
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 		QueueSettings:    QueueSettings{QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize},
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		LogsTableName:    "otel_logs",
 	}
 }
 
@@ -60,8 +63,9 @@ func createLogsExporter(
 	}
 
 	return exporterhelper.NewLogsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		exporter.pushLogsData,
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),

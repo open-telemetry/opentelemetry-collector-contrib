@@ -15,13 +15,12 @@
 package k8sattributesprocessor
 
 import (
-	"os"
 	"reflect"
 	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -33,7 +32,7 @@ func TestWithAPIConfig(t *testing.T) {
 	apiConfig := k8sconfig.APIConfig{AuthType: "test-auth-type"}
 	err := withAPIConfig(apiConfig)(p)
 	assert.Error(t, err)
-	assert.Equal(t, err.Error(), "invalid authType for kubernetes: test-auth-type")
+	assert.Equal(t, "invalid authType for kubernetes: test-auth-type", err.Error())
 
 	apiConfig = k8sconfig.APIConfig{AuthType: "kubeConfig"}
 	err = withAPIConfig(apiConfig)(p)
@@ -44,24 +43,22 @@ func TestWithAPIConfig(t *testing.T) {
 func TestWithFilterNamespace(t *testing.T) {
 	p := &kubernetesprocessor{}
 	assert.NoError(t, withFilterNamespace("testns")(p))
-	assert.Equal(t, p.filters.Namespace, "testns")
+	assert.Equal(t, "testns", p.filters.Namespace)
 }
 
 func TestWithFilterNode(t *testing.T) {
 	p := &kubernetesprocessor{}
 	assert.NoError(t, withFilterNode("testnode", "")(p))
-	assert.Equal(t, p.filters.Node, "testnode")
+	assert.Equal(t, "testnode", p.filters.Node)
 
 	p = &kubernetesprocessor{}
 	assert.NoError(t, withFilterNode("testnode", "NODE_NAME")(p))
-	assert.Equal(t, p.filters.Node, "")
+	assert.Equal(t, "", p.filters.Node)
 
-	os.Setenv("NODE_NAME", "nodefromenv")
+	t.Setenv("NODE_NAME", "nodefromenv")
 	p = &kubernetesprocessor{}
 	assert.NoError(t, withFilterNode("testnode", "NODE_NAME")(p))
-	assert.Equal(t, p.filters.Node, "nodefromenv")
-
-	os.Unsetenv("NODE_NAME")
+	assert.Equal(t, "nodefromenv", p.filters.Node)
 }
 
 func TestWithPassthrough(t *testing.T) {
@@ -80,7 +77,7 @@ func TestWithExtractAnnotations(t *testing.T) {
 		{
 			"empty",
 			[]FieldExtractConfig{},
-			[]kube.FieldExtractionRule{},
+			nil,
 			"",
 		},
 		{
@@ -146,7 +143,7 @@ func TestWithExtractAnnotations(t *testing.T) {
 			[]kube.FieldExtractionRule{
 				{
 					Name:     "tag1",
-					KeyRegex: regexp.MustCompile("key*"),
+					KeyRegex: regexp.MustCompile("^(?:key*)$"),
 					From:     kube.MetadataFromPod,
 				},
 			},
@@ -164,7 +161,7 @@ func TestWithExtractAnnotations(t *testing.T) {
 			[]kube.FieldExtractionRule{
 				{
 					Name:     "tag1",
-					KeyRegex: regexp.MustCompile("key*"),
+					KeyRegex: regexp.MustCompile("^(?:key*)$"),
 					From:     kube.MetadataFromNamespace,
 				},
 			},
@@ -180,13 +177,11 @@ func TestWithExtractAnnotations(t *testing.T) {
 				assert.NoError(t, err)
 			} else {
 				assert.Error(t, err)
-				assert.Equal(t, err.Error(), tt.wantError)
+				assert.Equal(t, tt.wantError, err.Error())
 				return
 			}
 			got := p.rules.Annotations
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("WithExtractAnnotations() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -201,7 +196,7 @@ func TestWithExtractLabels(t *testing.T) {
 		{
 			"empty",
 			[]FieldExtractConfig{},
-			[]kube.FieldExtractionRule{},
+			nil,
 			"",
 		},
 		{
@@ -265,7 +260,7 @@ func TestWithExtractLabels(t *testing.T) {
 			[]kube.FieldExtractionRule{
 				{
 					Name:     "tag1",
-					KeyRegex: regexp.MustCompile("key*"),
+					KeyRegex: regexp.MustCompile("^(?:key*)$"),
 					From:     kube.MetadataFromPod,
 				},
 			},
@@ -283,7 +278,7 @@ func TestWithExtractLabels(t *testing.T) {
 			[]kube.FieldExtractionRule{
 				{
 					Name:     "tag1",
-					KeyRegex: regexp.MustCompile("key*"),
+					KeyRegex: regexp.MustCompile("^(?:key*)$"),
 					From:     kube.MetadataFromNamespace,
 				},
 			},
@@ -299,7 +294,7 @@ func TestWithExtractLabels(t *testing.T) {
 				assert.NoError(t, err)
 			} else {
 				assert.Error(t, err)
-				assert.Equal(t, err.Error(), tt.wantError)
+				assert.Equal(t, tt.wantError, err.Error())
 				return
 			}
 			got := p.rules.Labels
@@ -318,18 +313,16 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.True(t, p.rules.PodUID)
 	assert.True(t, p.rules.StartTime)
 	assert.True(t, p.rules.Deployment)
-	assert.True(t, p.rules.Cluster)
 	assert.True(t, p.rules.Node)
 
 	p = &kubernetesprocessor{}
 	err := withExtractMetadata("randomfield")(p)
 	assert.Error(t, err)
-	assert.Equal(t, err.Error(), `"randomfield" is not a supported metadata field`)
+	assert.Equal(t, `"randomfield" is not a supported metadata field`, err.Error())
 
 	p = &kubernetesprocessor{}
 	assert.NoError(t, withExtractMetadata(conventions.AttributeK8SNamespaceName, conventions.AttributeK8SPodName, conventions.AttributeK8SPodUID)(p))
 	assert.True(t, p.rules.Namespace)
-	assert.False(t, p.rules.Cluster)
 	assert.True(t, p.rules.PodName)
 	assert.True(t, p.rules.PodUID)
 	assert.False(t, p.rules.StartTime)
@@ -347,7 +340,7 @@ func TestWithFilterLabels(t *testing.T) {
 		{
 			"empty",
 			[]FieldFilterConfig{},
-			[]kube.FieldFilter{},
+			nil,
 			"",
 		},
 		{
@@ -457,7 +450,7 @@ func TestWithFilterLabels(t *testing.T) {
 				assert.NoError(t, err)
 			} else {
 				assert.Error(t, err)
-				assert.Equal(t, err.Error(), tt.error)
+				assert.Equal(t, tt.error, err.Error())
 				return
 			}
 			got := p.filters.Labels
@@ -479,7 +472,7 @@ func TestWithFilterFields(t *testing.T) {
 		{
 			"empty",
 			[]FieldFilterConfig{},
-			[]kube.FieldFilter{},
+			nil,
 			"",
 		},
 		{
@@ -589,7 +582,7 @@ func TestWithFilterFields(t *testing.T) {
 				assert.NoError(t, err)
 			} else {
 				assert.Error(t, err)
-				assert.Equal(t, err.Error(), tt.error)
+				assert.Equal(t, tt.error, err.Error())
 				return
 			}
 			got := p.filters.Fields
@@ -656,7 +649,7 @@ func Test_extractFieldRules(t *testing.T) {
 					From:    kube.MetadataFromPod,
 				},
 			}},
-			[]kube.FieldExtractionRule{},
+			nil,
 			true,
 		},
 		{
@@ -669,23 +662,24 @@ func Test_extractFieldRules(t *testing.T) {
 					From:    kube.MetadataFromPod,
 				},
 			}},
-			[]kube.FieldExtractionRule{},
+			nil,
 			true,
 		},
 		{
-			"match-keyregex",
+			"keyregex-capture-group",
 			args{"labels", []FieldExtractConfig{
 				{
-					TagName:  "name",
-					KeyRegex: "key*",
+					TagName:  "$0-$1-$2",
+					KeyRegex: "(key)(.*)",
 					From:     kube.MetadataFromPod,
 				},
 			}},
 			[]kube.FieldExtractionRule{
 				{
-					Name:     "name",
-					KeyRegex: regexp.MustCompile("key*"),
-					From:     kube.MetadataFromPod,
+					Name:                 "$0-$1-$2",
+					KeyRegex:             regexp.MustCompile("^(?:(key)(.*))$"),
+					HasKeyRegexReference: true,
+					From:                 kube.MetadataFromPod,
 				},
 			},
 			false,
@@ -720,14 +714,81 @@ func TestWithExtractPodAssociation(t *testing.T) {
 			"basic",
 			[]PodAssociationConfig{
 				{
+					Sources: []PodAssociationSourceConfig{
+						{
+							From: "label",
+							Name: "ip",
+						},
+					},
+				},
+			},
+			[]kube.Association{
+				{
+					Sources: []kube.AssociationSource{
+						{
+							From: "label",
+							Name: "ip",
+						},
+					},
+				},
+			},
+		},
+		{
+			"deprecated",
+			[]PodAssociationConfig{
+				{
 					From: "label",
 					Name: "ip",
 				},
 			},
 			[]kube.Association{
 				{
-					From: "label",
+					Sources: []kube.AssociationSource{
+						{
+							From: "label",
+							Name: "ip",
+						},
+					},
+				},
+			},
+		},
+		{
+			"connection deprecated",
+			[]PodAssociationConfig{
+				{
+					From: "connection",
 					Name: "ip",
+				},
+			},
+			[]kube.Association{
+				{
+					Sources: []kube.AssociationSource{
+						{
+							From: "connection",
+						},
+					},
+				},
+			},
+		},
+		{
+			"connection",
+			[]PodAssociationConfig{
+				{
+					Sources: []PodAssociationSourceConfig{
+						{
+							From: "connection",
+							Name: "ip",
+						},
+					},
+				},
+			},
+			[]kube.Association{
+				{
+					Sources: []kube.AssociationSource{
+						{
+							From: "connection",
+						},
+					},
 				},
 			},
 		},
@@ -736,7 +797,7 @@ func TestWithExtractPodAssociation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &kubernetesprocessor{}
 			opt := withExtractPodAssociations(tt.args...)
-			opt(p)
+			assert.NoError(t, opt(p))
 			assert.Equal(t, tt.want, p.podAssociations)
 		})
 	}
@@ -778,7 +839,7 @@ func TestWithExcludes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &kubernetesprocessor{}
 			opt := withExcludes(tt.args)
-			opt(p)
+			assert.NoError(t, opt(p))
 			assert.Equal(t, tt.want, p.podIgnore)
 		})
 	}

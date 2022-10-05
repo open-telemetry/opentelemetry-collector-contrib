@@ -20,35 +20,33 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 var (
-	mockedConsumedResourceWithType = func() pdata.Metrics {
-		md := pdata.NewMetrics()
+	mockedConsumedResourceWithType = func() pmetric.Metrics {
+		md := pmetric.NewMetrics()
 		rm := md.ResourceMetrics().AppendEmpty()
-		rm.Resource().Attributes().UpsertString("opencensus.resourcetype", "host")
-		rm.Resource().Attributes().UpsertString("label-key", "label-value")
-		m := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+		rm.Resource().Attributes().PutString("opencensus.resourcetype", "host")
+		rm.Resource().Attributes().PutString("label-key", "label-value")
+		m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 		m.SetName("metric-name")
 		m.SetDescription("metric-description")
 		m.SetUnit("metric-unit")
-		m.SetDataType(pdata.MetricDataTypeGauge)
-		m.Gauge().DataPoints().AppendEmpty().SetIntVal(0)
+		m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(0)
 		return md
 	}()
 
-	mockedConsumedResourceEmpty = func() pdata.Metrics {
-		md := pdata.NewMetrics()
+	mockedConsumedResourceEmpty = func() pmetric.Metrics {
+		md := pmetric.NewMetrics()
 		rm := md.ResourceMetrics().AppendEmpty()
-		m := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 		m.SetName("metric-name")
 		m.SetDescription("metric-description")
 		m.SetUnit("metric-unit")
-		m.SetDataType(pdata.MetricDataTypeGauge)
-		m.Gauge().DataPoints().AppendEmpty().SetIntVal(0)
+		m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(0)
 		return md
 	}()
 )
@@ -56,8 +54,8 @@ var (
 type resourceProcessorTestCase struct {
 	name                    string
 	resourceProcessorConfig string
-	mockedConsumedMetrics   pdata.Metrics
-	expectedMetrics         pdata.Metrics
+	mockedConsumedMetrics   pmetric.Metrics
+	expectedMetrics         pmetric.Metrics
 }
 
 func getResourceProcessorTestCases() []resourceProcessorTestCase {
@@ -78,11 +76,11 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
       action: delete
 `,
 			mockedConsumedMetrics: mockedConsumedResourceWithType,
-			expectedMetrics: func() pdata.Metrics {
-				md := pdata.NewMetrics()
+			expectedMetrics: func() pmetric.Metrics {
+				md := pmetric.NewMetrics()
 				rm := md.ResourceMetrics().AppendEmpty()
-				rm.Resource().Attributes().UpsertString("resource-type", "host")
-				rm.Resource().Attributes().UpsertString("label-key", "new-label-value")
+				rm.Resource().Attributes().PutString("resource-type", "host")
+				rm.Resource().Attributes().PutString("label-key", "new-label-value")
 				return md
 			}(),
 		},
@@ -97,10 +95,10 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
 
 `,
 			mockedConsumedMetrics: mockedConsumedResourceEmpty,
-			expectedMetrics: func() pdata.Metrics {
-				md := pdata.NewMetrics()
+			expectedMetrics: func() pmetric.Metrics {
+				md := pmetric.NewMetrics()
 				rm := md.ResourceMetrics().AppendEmpty()
-				rm.Resource().Attributes().UpsertString("additional-label-key", "additional-label-value")
+				rm.Resource().Attributes().PutString("additional-label-key", "additional-label-value")
 				return md
 			}(),
 		},

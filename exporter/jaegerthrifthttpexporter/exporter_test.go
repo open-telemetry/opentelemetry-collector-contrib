@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 const testHTTPAddress = "http://a.example.com:123/at/some/path"
@@ -43,6 +43,6 @@ func TestNew(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 
-	err = got.ConsumeTraces(context.Background(), pdata.NewTraces())
+	err = got.ConsumeTraces(context.Background(), ptrace.NewTraces())
 	assert.NoError(t, err)
 }

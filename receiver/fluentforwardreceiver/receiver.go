@@ -88,6 +88,7 @@ func (r *fluentReceiver) Start(ctx context.Context, _ component.Host) error {
 }
 
 func (r *fluentReceiver) Shutdown(context.Context) error {
+	r.listener.Close()
 	r.cancel()
 	return nil
 }

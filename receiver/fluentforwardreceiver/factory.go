@@ -20,20 +20,21 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "fluentforward"
+	// The stability level of the receiver.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory return a new component.ReceiverFactory for fluentd forwarder.
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithLogs(createLogsReceiver))
+		component.WithLogsReceiver(createLogsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {

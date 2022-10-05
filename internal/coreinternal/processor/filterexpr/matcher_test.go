@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestCompileExprError(t *testing.T) {
@@ -30,78 +30,97 @@ func TestCompileExprError(t *testing.T) {
 func TestRunExprError(t *testing.T) {
 	matcher, err := NewMatcher("foo")
 	require.NoError(t, err)
-	matched, _ := matcher.match(&env{})
+	matched, _ := matcher.match(env{})
 	require.False(t, matched)
 }
 
 func TestUnknownDataType(t *testing.T) {
 	matcher, err := NewMatcher(`MetricName == 'my.metric'`)
 	require.NoError(t, err)
-	m := pdata.NewMetric()
+	m := pmetric.NewMetric()
 	m.SetName("my.metric")
-	m.SetDataType(-1)
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	assert.False(t, matched)
 }
 
-func TestEmptyGauge(t *testing.T) {
-	testEmptyValue(t, pdata.MetricDataTypeGauge)
-}
-
-func TestEmptySum(t *testing.T) {
-	testEmptyValue(t, pdata.MetricDataTypeSum)
-}
-
-func TestEmptyHistogram(t *testing.T) {
-	testEmptyValue(t, pdata.MetricDataTypeHistogram)
-}
-
-func testEmptyValue(t *testing.T, dataType pdata.MetricDataType) {
-	matcher, err := NewMatcher(`MetricName == 'my.metric'`)
+func TestDataTypeFilter(t *testing.T) {
+	matcher, err := NewMatcher(`MetricType == 'Sum'`)
 	require.NoError(t, err)
-	m := pdata.NewMetric()
-	m.SetName("my.metric")
-	m.SetDataType(dataType)
+
+	m := pmetric.NewMetric()
+
+	m.SetEmptyGauge().DataPoints().AppendEmpty()
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	assert.False(t, matched)
-}
 
-func TestGaugeEmptyDataPoint(t *testing.T) {
-	matcher, err := NewMatcher(`MetricName == 'my.metric'`)
-	require.NoError(t, err)
-	m := pdata.NewMetric()
-	m.SetName("my.metric")
-	m.SetDataType(pdata.MetricDataTypeGauge)
-	m.Gauge().DataPoints().AppendEmpty()
-	matched, err := matcher.MatchMetric(m)
+	m.SetEmptySum().DataPoints().AppendEmpty()
+	matched, err = matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	assert.True(t, matched)
 }
 
-func TestSumEmptyDataPoint(t *testing.T) {
-	matcher, err := NewMatcher(`MetricName == 'my.metric'`)
-	require.NoError(t, err)
-	m := pdata.NewMetric()
-	m.SetName("my.metric")
-	m.SetDataType(pdata.MetricDataTypeSum)
-	m.Sum().DataPoints().AppendEmpty()
-	matched, err := matcher.MatchMetric(m)
-	assert.NoError(t, err)
-	assert.True(t, matched)
+func TestGaugeMatch(t *testing.T) {
+	testMetricNameMatch(t, pmetric.MetricTypeGauge)
 }
 
-func TestHistogramEmptyDataPoint(t *testing.T) {
+func TestSumMatch(t *testing.T) {
+	testMetricNameMatch(t, pmetric.MetricTypeSum)
+}
+
+func TestHistogramMatch(t *testing.T) {
+	testMetricNameMatch(t, pmetric.MetricTypeHistogram)
+}
+
+func TestExponentialHistogramMatch(t *testing.T) {
+	testMetricNameMatch(t, pmetric.MetricTypeExponentialHistogram)
+}
+
+func TestSummaryMatch(t *testing.T) {
+	testMetricNameMatch(t, pmetric.MetricTypeSummary)
+}
+
+func testMetricNameMatch(t *testing.T, dataType pmetric.MetricType) {
 	matcher, err := NewMatcher(`MetricName == 'my.metric'`)
 	require.NoError(t, err)
-	m := pdata.NewMetric()
+	m := pmetric.NewMetric()
 	m.SetName("my.metric")
-	m.SetDataType(pdata.MetricDataTypeHistogram)
-	m.Histogram().DataPoints().AppendEmpty()
+
+	// Empty metric - no match.
+	switch dataType {
+	case pmetric.MetricTypeGauge:
+		m.SetEmptyGauge()
+	case pmetric.MetricTypeSum:
+		m.SetEmptySum()
+	case pmetric.MetricTypeHistogram:
+		m.SetEmptyHistogram()
+	case pmetric.MetricTypeExponentialHistogram:
+		m.SetEmptyExponentialHistogram()
+	case pmetric.MetricTypeSummary:
+		m.SetEmptySummary()
+	}
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
+	assert.False(t, matched)
+
+	// Metric with one data point - match.
+	switch dataType {
+	case pmetric.MetricTypeGauge:
+		m.Gauge().DataPoints().AppendEmpty()
+	case pmetric.MetricTypeSum:
+		m.Sum().DataPoints().AppendEmpty()
+	case pmetric.MetricTypeHistogram:
+		m.Histogram().DataPoints().AppendEmpty()
+	case pmetric.MetricTypeExponentialHistogram:
+		m.ExponentialHistogram().DataPoints().AppendEmpty()
+	case pmetric.MetricTypeSummary:
+		m.Summary().DataPoints().AppendEmpty()
+	}
+	matched, err = matcher.MatchMetric(m)
+	assert.NoError(t, err)
 	assert.True(t, matched)
+
 }
 
 func TestMatchIntGaugeDataPointByMetricAndSecondPointLabelValue(t *testing.T) {
@@ -109,13 +128,12 @@ func TestMatchIntGaugeDataPointByMetricAndSecondPointLabelValue(t *testing.T) {
 		`MetricName == 'my.metric' && Label("baz") == "glarch"`,
 	)
 	require.NoError(t, err)
-	m := pdata.NewMetric()
+	m := pmetric.NewMetric()
 	m.SetName("my.metric")
-	m.SetDataType(pdata.MetricDataTypeGauge)
-	dps := m.Gauge().DataPoints()
+	dps := m.SetEmptyGauge().DataPoints()
 
-	dps.AppendEmpty().Attributes().InsertString("foo", "bar")
-	dps.AppendEmpty().Attributes().InsertString("baz", "glarch")
+	dps.AppendEmpty().Attributes().PutString("foo", "bar")
+	dps.AppendEmpty().Attributes().PutString("baz", "glarch")
 
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
@@ -139,29 +157,28 @@ func TestNonMatchGaugeDataPointByMetricAndHasLabel(t *testing.T) {
 
 func TestMatchGaugeDataPointByMetricAndHasLabel(t *testing.T) {
 	expression := `MetricName == 'my.metric' && HasLabel("foo")`
-	assert.True(t, testMatchGauge(t, "my.metric", expression, map[string]pdata.AttributeValue{"foo": pdata.NewAttributeValueString("")}))
+	assert.True(t, testMatchGauge(t, "my.metric", expression, map[string]interface{}{"foo": ""}))
 }
 
 func TestMatchGaugeDataPointByMetricAndLabelValue(t *testing.T) {
 	expression := `MetricName == 'my.metric' && Label("foo") == "bar"`
-	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]pdata.AttributeValue{"foo": pdata.NewAttributeValueString("")}))
+	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]interface{}{"foo": ""}))
 }
 
 func TestNonMatchGaugeDataPointByMetricAndLabelValue(t *testing.T) {
 	expression := `MetricName == 'my.metric' && Label("foo") == "bar"`
-	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]pdata.AttributeValue{"foo": pdata.NewAttributeValueString("")}))
+	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]interface{}{"foo": ""}))
 }
 
-func testMatchGauge(t *testing.T, metricName, expression string, lbls map[string]pdata.AttributeValue) bool {
+func testMatchGauge(t *testing.T, metricName, expression string, lbls map[string]interface{}) bool {
 	matcher, err := NewMatcher(expression)
 	require.NoError(t, err)
-	m := pdata.NewMetric()
+	m := pmetric.NewMetric()
 	m.SetName(metricName)
-	m.SetDataType(pdata.MetricDataTypeGauge)
-	dps := m.Gauge().DataPoints()
+	dps := m.SetEmptyGauge().DataPoints()
 	pt := dps.AppendEmpty()
 	if lbls != nil {
-		pdata.NewAttributeMapFromMap(lbls).CopyTo(pt.Attributes())
+		pt.Attributes().FromRaw(lbls)
 	}
 	match, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
@@ -179,10 +196,9 @@ func TestNonMatchSumByMetricName(t *testing.T) {
 func matchSum(t *testing.T, metricName string) bool {
 	matcher, err := NewMatcher(`MetricName == 'my.metric'`)
 	require.NoError(t, err)
-	m := pdata.NewMetric()
+	m := pmetric.NewMetric()
 	m.SetName(metricName)
-	m.SetDataType(pdata.MetricDataTypeSum)
-	dps := m.Sum().DataPoints()
+	dps := m.SetEmptySum().DataPoints()
 	dps.AppendEmpty()
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
@@ -200,10 +216,9 @@ func TestNonMatchHistogramByMetricName(t *testing.T) {
 func matchHistogram(t *testing.T, metricName string) bool {
 	matcher, err := NewMatcher(`MetricName == 'my.metric'`)
 	require.NoError(t, err)
-	m := pdata.NewMetric()
+	m := pmetric.NewMetric()
 	m.SetName(metricName)
-	m.SetDataType(pdata.MetricDataTypeHistogram)
-	dps := m.Histogram().DataPoints()
+	dps := m.SetEmptyHistogram().DataPoints()
 	dps.AppendEmpty()
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)

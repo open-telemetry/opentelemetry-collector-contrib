@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,8 @@ import (
 	"time"
 
 	"github.com/mitchellh/hashstructure"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/filter"
@@ -32,9 +33,9 @@ const (
 )
 
 type MetricsDataPointKey struct {
-	MetricName     string
-	MetricUnit     string
-	MetricDataType MetricDataType
+	MetricName string
+	MetricUnit string
+	MetricType MetricType
 }
 
 type MetricsDataPoint struct {
@@ -57,27 +58,26 @@ type label struct {
 	Value interface{}
 }
 
-func (mdp *MetricsDataPoint) CopyTo(dataPoint pdata.NumberDataPoint) {
-	dataPoint.SetTimestamp(pdata.NewTimestampFromTime(mdp.timestamp))
+func (mdp *MetricsDataPoint) CopyTo(dataPoint pmetric.NumberDataPoint) {
+	dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(mdp.timestamp))
 
 	mdp.metricValue.SetValueTo(dataPoint)
 
 	attributes := dataPoint.Attributes()
-
-	for _, labelValue := range mdp.labelValues {
-		labelValue.SetValueTo(attributes)
+	attributes.EnsureCapacity(3 + len(mdp.labelValues))
+	attributes.PutString(projectIDLabelName, mdp.databaseID.ProjectID())
+	attributes.PutString(instanceIDLabelName, mdp.databaseID.InstanceID())
+	attributes.PutString(databaseLabelName, mdp.databaseID.DatabaseName())
+	for i := range mdp.labelValues {
+		mdp.labelValues[i].SetValueTo(attributes)
 	}
-
-	dataPoint.Attributes().InsertString(projectIDLabelName, mdp.databaseID.ProjectID())
-	dataPoint.Attributes().InsertString(instanceIDLabelName, mdp.databaseID.InstanceID())
-	dataPoint.Attributes().InsertString(databaseLabelName, mdp.databaseID.DatabaseName())
 }
 
 func (mdp *MetricsDataPoint) GroupingKey() MetricsDataPointKey {
 	return MetricsDataPointKey{
-		MetricName:     mdp.metricName,
-		MetricUnit:     mdp.metricValue.Metadata().Unit(),
-		MetricDataType: mdp.metricValue.Metadata().DataType(),
+		MetricName: mdp.metricName,
+		MetricUnit: mdp.metricValue.Metadata().Unit(),
+		MetricType: mdp.metricValue.Metadata().DataType(),
 	}
 }
 

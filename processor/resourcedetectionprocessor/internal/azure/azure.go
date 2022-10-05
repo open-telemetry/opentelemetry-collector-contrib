@@ -18,10 +18,11 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
@@ -34,21 +35,21 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is an Azure metadata detector
 type Detector struct {
-	provider Provider
+	provider azure.Provider
 	logger   *zap.Logger
 }
 
 // NewDetector creates a new Azure metadata detector
 func NewDetector(p component.ProcessorCreateSettings, cfg internal.DetectorConfig) (internal.Detector, error) {
 	return &Detector{
-		provider: NewProvider(),
+		provider: azure.NewProvider(),
 		logger:   p.Logger,
 	}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
-func (d *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
-	res := pdata.NewResource()
+func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+	res := pcommon.NewResource()
 	attrs := res.Attributes()
 
 	compute, err := d.provider.Metadata(ctx)
@@ -58,15 +59,18 @@ func (d *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaU
 		return res, "", nil
 	}
 
-	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
-	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureVM)
-	attrs.InsertString(conventions.AttributeHostName, compute.Name)
-	attrs.InsertString(conventions.AttributeCloudRegion, compute.Location)
-	attrs.InsertString(conventions.AttributeHostID, compute.VMID)
-	attrs.InsertString(conventions.AttributeCloudAccountID, compute.SubscriptionID)
-	attrs.InsertString("azure.vm.size", compute.VMSize)
-	attrs.InsertString("azure.vm.scaleset.name", compute.VMScaleSetName)
-	attrs.InsertString("azure.resourcegroup.name", compute.ResourceGroupName)
+	attrs.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+	attrs.PutString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureVM)
+	attrs.PutString(conventions.AttributeHostName, compute.Name)
+	attrs.PutString(conventions.AttributeCloudRegion, compute.Location)
+	attrs.PutString(conventions.AttributeHostID, compute.VMID)
+	attrs.PutString(conventions.AttributeCloudAccountID, compute.SubscriptionID)
+	// Also save compute.Name in "azure.vm.name" as host.id (AttributeHostName) is
+	// used by system detector.
+	attrs.PutString("azure.vm.name", compute.Name)
+	attrs.PutString("azure.vm.size", compute.VMSize)
+	attrs.PutString("azure.vm.scaleset.name", compute.VMScaleSetName)
+	attrs.PutString("azure.resourcegroup.name", compute.ResourceGroupName)
 
 	return res, conventions.SchemaURL, nil
 }

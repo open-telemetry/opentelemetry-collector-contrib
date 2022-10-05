@@ -27,15 +27,17 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "opencensus"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter),
-		exporterhelper.WithMetrics(createMetricsExporter))
+		component.WithTracesExporter(createTracesExporter, stability),
+		component.WithMetricsExporter(createMetricsExporter, stability))
 }
 
 func createDefaultConfig() config.Exporter {
@@ -58,8 +60,9 @@ func createTracesExporter(ctx context.Context, set component.ExporterCreateSetti
 	}
 
 	return exporterhelper.NewTracesExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		oce.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
@@ -76,8 +79,9 @@ func createMetricsExporter(ctx context.Context, set component.ExporterCreateSett
 	}
 
 	return exporterhelper.NewMetricsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		oce.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),

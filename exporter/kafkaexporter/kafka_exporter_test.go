@@ -25,8 +25,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -102,6 +103,9 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 		Metadata: Metadata{
 			Full: false,
 		},
+		Producer: Producer{
+			Compression: "none",
+		},
 	}
 	texp, err := newTracesExporter(c, componenttest.NewNopExporterCreateSettings(), tracesMarshalers())
 	assert.Error(t, err)
@@ -118,6 +122,19 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 
 }
 
+func TestNewExporter_err_compression(t *testing.T) {
+	c := Config{
+		Encoding: defaultEncoding,
+		Producer: Producer{
+			Compression: "idk",
+		},
+	}
+	texp, err := newTracesExporter(c, componenttest.NewNopExporterCreateSettings(), tracesMarshalers())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value idk")
+	assert.Nil(t, texp)
+}
+
 func TestTracesPusher(t *testing.T) {
 	c := sarama.NewConfig()
 	producer := mocks.NewSyncProducer(t, c)
@@ -125,7 +142,7 @@ func TestTracesPusher(t *testing.T) {
 
 	p := kafkaTracesProducer{
 		producer:  producer,
-		marshaler: newPdataTracesMarshaler(otlp.NewProtobufTracesMarshaler(), defaultEncoding),
+		marshaler: newPdataTracesMarshaler(ptrace.NewProtoMarshaler(), defaultEncoding),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -142,7 +159,7 @@ func TestTracesPusher_err(t *testing.T) {
 
 	p := kafkaTracesProducer{
 		producer:  producer,
-		marshaler: newPdataTracesMarshaler(otlp.NewProtobufTracesMarshaler(), defaultEncoding),
+		marshaler: newPdataTracesMarshaler(ptrace.NewProtoMarshaler(), defaultEncoding),
 		logger:    zap.NewNop(),
 	}
 	t.Cleanup(func() {
@@ -172,7 +189,7 @@ func TestMetricsDataPusher(t *testing.T) {
 
 	p := kafkaMetricsProducer{
 		producer:  producer,
-		marshaler: newPdataMetricsMarshaler(otlp.NewProtobufMetricsMarshaler(), defaultEncoding),
+		marshaler: newPdataMetricsMarshaler(pmetric.NewProtoMarshaler(), defaultEncoding),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -189,7 +206,7 @@ func TestMetricsDataPusher_err(t *testing.T) {
 
 	p := kafkaMetricsProducer{
 		producer:  producer,
-		marshaler: newPdataMetricsMarshaler(otlp.NewProtobufMetricsMarshaler(), defaultEncoding),
+		marshaler: newPdataMetricsMarshaler(pmetric.NewProtoMarshaler(), defaultEncoding),
 		logger:    zap.NewNop(),
 	}
 	t.Cleanup(func() {
@@ -219,7 +236,7 @@ func TestLogsDataPusher(t *testing.T) {
 
 	p := kafkaLogsProducer{
 		producer:  producer,
-		marshaler: newPdataLogsMarshaler(otlp.NewProtobufLogsMarshaler(), defaultEncoding),
+		marshaler: newPdataLogsMarshaler(plog.NewProtoMarshaler(), defaultEncoding),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -236,7 +253,7 @@ func TestLogsDataPusher_err(t *testing.T) {
 
 	p := kafkaLogsProducer{
 		producer:  producer,
-		marshaler: newPdataLogsMarshaler(otlp.NewProtobufLogsMarshaler(), defaultEncoding),
+		marshaler: newPdataLogsMarshaler(plog.NewProtoMarshaler(), defaultEncoding),
 		logger:    zap.NewNop(),
 	}
 	t.Cleanup(func() {
@@ -271,7 +288,7 @@ type logsErrorMarshaler struct {
 	err error
 }
 
-func (e metricsErrorMarshaler) Marshal(_ pdata.Metrics, _ string) ([]*sarama.ProducerMessage, error) {
+func (e metricsErrorMarshaler) Marshal(_ pmetric.Metrics, _ string) ([]*sarama.ProducerMessage, error) {
 	return nil, e.err
 }
 
@@ -281,7 +298,7 @@ func (e metricsErrorMarshaler) Encoding() string {
 
 var _ TracesMarshaler = (*tracesErrorMarshaler)(nil)
 
-func (e tracesErrorMarshaler) Marshal(_ pdata.Traces, _ string) ([]*sarama.ProducerMessage, error) {
+func (e tracesErrorMarshaler) Marshal(_ ptrace.Traces, _ string) ([]*sarama.ProducerMessage, error) {
 	return nil, e.err
 }
 
@@ -289,7 +306,7 @@ func (e tracesErrorMarshaler) Encoding() string {
 	panic("implement me")
 }
 
-func (e logsErrorMarshaler) Marshal(_ pdata.Logs, _ string) ([]*sarama.ProducerMessage, error) {
+func (e logsErrorMarshaler) Marshal(_ plog.Logs, _ string) ([]*sarama.ProducerMessage, error) {
 	return nil, e.err
 }
 

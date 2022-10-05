@@ -18,14 +18,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
@@ -42,12 +42,12 @@ var _ testbed.LogDataSender = (*FluentBitFileLogWriter)(nil)
 // NewFluentBitFileLogWriter creates a new data sender that will write log entries to a
 // file, to be tailed by FluentBit and sent to the collector.
 func NewFluentBitFileLogWriter(host string, port int) *FluentBitFileLogWriter {
-	file, err := ioutil.TempFile("", "perf-logs.json")
+	file, err := os.CreateTemp("", "perf-logs.json")
 	if err != nil {
 		panic("failed to create temp file")
 	}
 
-	parsersFile, err := ioutil.TempFile("", "parsers.json")
+	parsersFile, err := os.CreateTemp("", "parsers.json")
 	if err != nil {
 		panic("failed to create temp file")
 	}
@@ -91,10 +91,10 @@ func (f *FluentBitFileLogWriter) setupParsers() {
 	f.parsersFile.Close()
 }
 
-func (f *FluentBitFileLogWriter) ConsumeLogs(_ context.Context, logs pdata.Logs) error {
+func (f *FluentBitFileLogWriter) ConsumeLogs(_ context.Context, logs plog.Logs) error {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
-		for j := 0; j < logs.ResourceLogs().At(i).InstrumentationLibraryLogs().Len(); j++ {
-			ills := logs.ResourceLogs().At(i).InstrumentationLibraryLogs().At(j)
+		for j := 0; j < logs.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+			ills := logs.ResourceLogs().At(i).ScopeLogs().At(j)
 			for k := 0; k < ills.LogRecords().Len(); k++ {
 				_, err := f.file.Write(append(f.convertLogToJSON(ills.LogRecords().At(k)), '\n'))
 				if err != nil {
@@ -106,22 +106,22 @@ func (f *FluentBitFileLogWriter) ConsumeLogs(_ context.Context, logs pdata.Logs)
 	return nil
 }
 
-func (f *FluentBitFileLogWriter) convertLogToJSON(lr pdata.LogRecord) []byte {
+func (f *FluentBitFileLogWriter) convertLogToJSON(lr plog.LogRecord) []byte {
 	rec := map[string]string{
 		"time": time.Unix(0, int64(lr.Timestamp())).Format("02/01/2006:15:04:05Z"),
 	}
-	rec["log"] = lr.Body().StringVal()
+	rec["log"] = lr.Body().Str()
 
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch v.Type() {
-		case pdata.AttributeValueTypeString:
-			rec[k] = v.StringVal()
-		case pdata.AttributeValueTypeInt:
-			rec[k] = strconv.FormatInt(v.IntVal(), 10)
-		case pdata.AttributeValueTypeDouble:
-			rec[k] = strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64)
-		case pdata.AttributeValueTypeBool:
-			rec[k] = strconv.FormatBool(v.BoolVal())
+		case pcommon.ValueTypeStr:
+			rec[k] = v.Str()
+		case pcommon.ValueTypeInt:
+			rec[k] = strconv.FormatInt(v.Int(), 10)
+		case pcommon.ValueTypeDouble:
+			rec[k] = strconv.FormatFloat(v.Double(), 'f', -1, 64)
+		case pcommon.ValueTypeBool:
+			rec[k] = strconv.FormatBool(v.Bool())
 		default:
 			panic("missing case")
 		}

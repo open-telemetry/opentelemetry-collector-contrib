@@ -138,3 +138,10 @@ cluster_enabled:0
 # Keyspace
 db0:keys=1,expires=2,avg_ttl=3
 db1:keys=4,expires=5,avg_ttl=6
+
+# Commandstats
+cmdstat_ssubscribe:calls=0,usec=0,usec_per_call=0.00,rejected_calls=3,failed_calls=0
+cmdstat_zrem:calls=641,usec=1884,usec_per_call=2.94,rejected_calls=0,failed_calls=0
+cmdstat_incrbyfloat:calls=50340,usec=902409,usec_per_call=17.93,rejected_calls=0,failed_calls=0
+cmdstat_lrange:calls=12495,usec=48886,usec_per_call=3.91,rejected_calls=0,failed_calls=14
+cmdstat_mset:calls=4505,usec=65693,usec_per_call=14.58,rejected_calls=0,failed_calls=3

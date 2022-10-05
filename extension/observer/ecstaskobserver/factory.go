@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -36,12 +35,19 @@ func NewFactory() component.ExtensionFactory {
 	return component.NewExtensionFactory(
 		typeStr,
 		createDefaultConfig,
-		createExtension)
+		createExtension,
+		component.StabilityLevelUndefined,
+	)
 }
 
 func createDefaultConfig() config.Extension {
 	cfg := defaultConfig()
 	return &cfg
+}
+
+type extension struct {
+	component.StartFunc
+	component.ShutdownFunc
 }
 
 func createExtension(
@@ -68,11 +74,10 @@ func createExtension(
 		metadataProvider: metadataProvider,
 		telemetry:        params.TelemetrySettings,
 	}
-	e.Extension = componenthelper.New(componenthelper.WithShutdown(e.Shutdown))
-	e.EndpointsWatcher = &observer.EndpointsWatcher{
-		Endpointslister: e,
-		RefreshInterval: obsCfg.RefreshInterval,
+	e.Extension = extension{
+		ShutdownFunc: e.Shutdown,
 	}
+	e.EndpointsWatcher = observer.NewEndpointsWatcher(e, obsCfg.RefreshInterval, params.TelemetrySettings.Logger)
 
 	return e, nil
 }

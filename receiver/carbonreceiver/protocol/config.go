@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"sort"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 var (
@@ -71,7 +71,7 @@ type ParserConfig interface {
 // LoadParserConfig is used to load the parser configuration according to the
 // specified parser type. It expects the passed viper to be pointing at the level
 // of the Config reference.
-func LoadParserConfig(cp *config.Map, cfg *Config) error {
+func LoadParserConfig(cp *confmap.Conf, cfg *Config) error {
 	defaultCfgFn, ok := parserMap[cfg.Type]
 	if !ok {
 		return fmt.Errorf(

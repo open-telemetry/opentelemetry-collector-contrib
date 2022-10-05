@@ -20,24 +20,25 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "loadbalancing"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for the exporter.
 func NewFactory() component.ExporterFactory {
-	view.Register(MetricViews()...)
+	_ = view.Register(MetricViews()...)
 
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter),
-		exporterhelper.WithLogs(createLogExporter),
+		component.WithTracesExporter(createTracesExporter, stability),
+		component.WithLogsExporter(createLogsExporter, stability),
 	)
 }
 
@@ -57,6 +58,6 @@ func createTracesExporter(_ context.Context, params component.ExporterCreateSett
 	return newTracesExporter(params, cfg)
 }
 
-func createLogExporter(_ context.Context, params component.ExporterCreateSettings, cfg config.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(_ context.Context, params component.ExporterCreateSettings, cfg config.Exporter) (component.LogsExporter, error) {
 	return newLogsExporter(params, cfg)
 }

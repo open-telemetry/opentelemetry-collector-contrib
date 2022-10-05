@@ -16,35 +16,39 @@ package testutil
 
 import (
 	"net"
-	"os"
-	"strconv"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGetAvailableLocalAddress(t *testing.T) {
-	testEndpointAvailable(t, GetAvailableLocalAddress(t))
-}
+	addr := GetAvailableLocalAddress(t)
 
-func TestGetAvailablePort(t *testing.T) {
-	portStr := strconv.Itoa(int(GetAvailablePort(t)))
-	require.NotEqual(t, "", portStr)
-
-	testEndpointAvailable(t, "localhost:"+portStr)
-}
-
-func testEndpointAvailable(t *testing.T, endpoint string) {
 	// Endpoint should be free.
-	ln0, err := net.Listen("tcp", endpoint)
+	ln0, err := net.Listen("tcp", addr)
 	require.NoError(t, err)
 	require.NotNil(t, ln0)
-	defer ln0.Close()
+	t.Cleanup(func() {
+		require.NoError(t, ln0.Close())
+	})
 
-	// Ensure that the endpoint wasn't something like ":0" by checking that a
-	// second listener will fail.
-	ln1, err := net.Listen("tcp", endpoint)
+	// Ensure that the endpoint wasn't something like ":0" by checking that a second listener will fail.
+	ln1, err := net.Listen("tcp", addr)
+	require.Error(t, err)
+	require.Nil(t, ln1)
+}
+func TestGetAvailableLocalUDPAddress(t *testing.T) {
+	addr := GetAvailableLocalNetworkAddress(t, "udp")
+	// Endpoint should be free.
+	ln0, err := net.ListenPacket("udp", addr)
+	require.NoError(t, err)
+	require.NotNil(t, ln0)
+	t.Cleanup(func() {
+		require.NoError(t, ln0.Close())
+	})
+
+	// Ensure that the endpoint wasn't something like ":0" by checking that a second listener will fail.
+	ln1, err := net.ListenPacket("udp", addr)
 	require.Error(t, err)
 	require.Nil(t, ln1)
 }
@@ -69,39 +73,9 @@ Start Port    End Port
 
 * - Administered port exclusions.
 `
-	exclusions := createExclusionsList(exclusionsText, t)
+	exclusions := createExclusionsList(t, exclusionsText)
 	require.Equal(t, len(exclusions), 2)
 
-	emptyExclusions := createExclusionsList(emptyExclusionsText, t)
+	emptyExclusions := createExclusionsList(t, emptyExclusionsText)
 	require.Equal(t, len(emptyExclusions), 0)
-}
-
-func TestTemporaryFile(t *testing.T) {
-	var filename string
-
-	t.Run("scoped lifetime", func(t *testing.T) {
-		f := NewTemporaryFile(t)
-		filename = f.Name()
-
-		_, err := os.Stat(filename)
-		assert.ErrorIs(t, err, nil)
-	})
-
-	_, err := os.Stat(filename)
-	assert.ErrorIs(t, err, os.ErrNotExist)
-}
-
-func TestTemporaryDirectory(t *testing.T) {
-	var tmp string
-
-	t.Run("scoped lifetime", func(t *testing.T) {
-		tmp = NewTemporaryDirectory(t)
-
-		stat, err := os.Stat(tmp)
-		assert.NoError(t, err)
-		assert.True(t, stat.IsDir(), "Must have the directory permissions set")
-	})
-
-	_, err := os.Stat(tmp)
-	assert.ErrorIs(t, err, os.ErrNotExist)
 }

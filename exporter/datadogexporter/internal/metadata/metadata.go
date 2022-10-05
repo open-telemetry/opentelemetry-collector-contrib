@@ -22,18 +22,20 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes/azure"
+	ec2Attributes "github.com/DataDog/datadog-agent/pkg/otlp/model/attributes/ec2"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes/gcp"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/ec2"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/system"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/azure"
-	ec2Attributes "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/ec2"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/gcp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/gohai"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
@@ -58,6 +60,15 @@ type HostMetadata struct {
 
 	// Tags includes the host tags
 	Tags *HostTags `json:"host-tags"`
+
+	// Payload contains inventory of system information provided by gohai
+	// this is embedded because of special serialization requirements
+	// the field `gohai` is JSON-formatted string
+	gohai.Payload
+
+	// Processes contains the process payload devired by gohai
+	// Because of legacy reasons this is called resources in datadog intake
+	Processes *gohai.ProcessesPayload `json:"resources"`
 }
 
 // HostTags are the host tags.
@@ -88,52 +99,61 @@ type Meta struct {
 	SocketFqdn string `json:"socket-fqdn,omitempty"`
 
 	// HostAliases are other available host names
-	HostAliases []string `json:"host-aliases,omitempty"`
+	HostAliases []string `json:"host_aliases,omitempty"`
 }
 
 // metadataFromAttributes gets metadata info from attributes following
 // OpenTelemetry semantic conventions
-func metadataFromAttributes(attrs pdata.AttributeMap) *HostMetadata {
+func metadataFromAttributes(attrs pcommon.Map) *HostMetadata {
+	return metadataFromAttributesWithRegistry(featuregate.GetRegistry(), attrs)
+}
+
+// metadataFromAttributesWithRegistry passes a registry explicitly to allow easier unit testing.
+func metadataFromAttributesWithRegistry(registry *featuregate.Registry, attrs pcommon.Map) *HostMetadata {
 	hm := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
 
-	if hostname, ok := attributes.HostnameFromAttributes(attrs); ok {
-		hm.InternalHostname = hostname
-		hm.Meta.Hostname = hostname
+	var usePreviewHostnameLogic = registry.IsEnabled(HostnamePreviewFeatureGate)
+	if src, ok := attributes.SourceFromAttributes(attrs, usePreviewHostnameLogic); ok && src.Kind == source.HostnameKind {
+		hm.InternalHostname = src.Identifier
+		hm.Meta.Hostname = src.Identifier
 	}
 
 	// AWS EC2 resource metadata
 	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
-	if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAWS {
+	switch {
+	case ok && cloudProvider.Str() == conventions.AttributeCloudProviderAWS:
 		ec2HostInfo := ec2Attributes.HostInfoFromAttributes(attrs)
 		hm.Meta.InstanceID = ec2HostInfo.InstanceID
 		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
 		hm.Tags.OTel = append(hm.Tags.OTel, ec2HostInfo.EC2Tags...)
-	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderGCP {
-		gcpHostInfo := gcp.HostInfoFromAttributes(attrs)
+	case ok && cloudProvider.Str() == conventions.AttributeCloudProviderGCP:
+		gcpHostInfo := gcp.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
 		hm.Tags.GCP = gcpHostInfo.GCPTags
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, gcpHostInfo.HostAliases...)
-	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure {
-		azureHostInfo := azure.HostInfoFromAttributes(attrs)
+	case ok && cloudProvider.Str() == conventions.AttributeCloudProviderAzure:
+		azureHostInfo := azure.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, azureHostInfo.HostAliases...)
 	}
 
 	return hm
 }
 
-func fillHostMetadata(params component.ExporterCreateSettings, cfg *config.Config, hm *HostMetadata) {
+func fillHostMetadata(params component.ExporterCreateSettings, pcfg PusherConfig, p source.Provider, hm *HostMetadata) {
 	// Could not get hostname from attributes
 	if hm.InternalHostname == "" {
-		hostname := GetHost(params.Logger, cfg)
-		hm.InternalHostname = hostname
-		hm.Meta.Hostname = hostname
+		if src, err := p.Source(context.TODO()); err == nil && src.Kind == source.HostnameKind {
+			hm.InternalHostname = src.Identifier
+			hm.Meta.Hostname = src.Identifier
+		}
 	}
 
 	// This information always gets filled in here
 	// since it does not come from OTEL conventions
 	hm.Flavor = params.BuildInfo.Command
 	hm.Version = params.BuildInfo.Version
-	hm.Tags.OTel = append(hm.Tags.OTel, cfg.GetHostTags()...)
-
+	hm.Tags.OTel = append(hm.Tags.OTel, pcfg.ConfigTags...)
+	hm.Payload = gohai.NewPayload(params.Logger)
+	hm.Processes = gohai.NewProcessesPayload(hm.Meta.Hostname, params.Logger)
 	// EC2 data was not set from attributes
 	if hm.Meta.EC2Hostname == "" {
 		ec2HostInfo := ec2.GetHostInfo(params.Logger)
@@ -149,19 +169,19 @@ func fillHostMetadata(params component.ExporterCreateSettings, cfg *config.Confi
 	}
 }
 
-func pushMetadata(cfg *config.Config, params component.ExporterCreateSettings, metadata *HostMetadata) error {
+func pushMetadata(pcfg PusherConfig, params component.ExporterCreateSettings, metadata *HostMetadata) error {
 	if metadata.Meta.Hostname == "" {
 		// if the hostname is empty, don't send metadata; we don't need it.
 		params.Logger.Debug("Skipping host metadata since the hostname is empty")
 		return nil
 	}
 
-	path := cfg.Metrics.TCPAddr.Endpoint + "/intake"
+	path := pcfg.MetricsEndpoint + "/intake"
 	buf, _ := json.Marshal(metadata)
 	req, _ := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(buf))
-	utils.SetDDHeaders(req.Header, params.BuildInfo, cfg.API.Key)
+	utils.SetDDHeaders(req.Header, params.BuildInfo, pcfg.APIKey)
 	utils.SetExtraHeaders(req.Header, utils.JSONHeaders)
-	client := utils.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings)
+	client := utils.NewHTTPClient(pcfg.TimeoutSettings, pcfg.InsecureSkipVerify)
 	resp, err := client.Do(req)
 
 	if err != nil {
@@ -181,11 +201,11 @@ func pushMetadata(cfg *config.Config, params component.ExporterCreateSettings, m
 	return nil
 }
 
-func pushMetadataWithRetry(retrier *utils.Retrier, params component.ExporterCreateSettings, cfg *config.Config, hostMetadata *HostMetadata) {
+func pushMetadataWithRetry(retrier *utils.Retrier, params component.ExporterCreateSettings, pcfg PusherConfig, hostMetadata *HostMetadata) {
 	params.Logger.Debug("Sending host metadata payload", zap.Any("payload", hostMetadata))
 
 	err := retrier.DoWithRetries(context.Background(), func(context.Context) error {
-		return pushMetadata(cfg, params, hostMetadata)
+		return pushMetadata(pcfg, params, hostMetadata)
 	})
 
 	if err != nil {
@@ -197,12 +217,12 @@ func pushMetadataWithRetry(retrier *utils.Retrier, params component.ExporterCrea
 }
 
 // Pusher pushes host metadata payloads periodically to Datadog intake
-func Pusher(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config, attrs pdata.AttributeMap) {
+func Pusher(ctx context.Context, params component.ExporterCreateSettings, pcfg PusherConfig, p source.Provider, attrs pcommon.Map) {
 	// Push metadata every 30 minutes
 	ticker := time.NewTicker(30 * time.Minute)
 	defer ticker.Stop()
 	defer params.Logger.Debug("Shut down host metadata routine")
-	retrier := utils.NewRetrier(params.Logger, cfg.RetrySettings, scrub.NewScrubber())
+	retrier := utils.NewRetrier(params.Logger, pcfg.RetrySettings, scrub.NewScrubber())
 
 	// Get host metadata from resources and fill missing info using our exporter.
 	// Currently we only retrieve it once but still send the same payload
@@ -212,20 +232,20 @@ func Pusher(ctx context.Context, params component.ExporterCreateSettings, cfg *c
 	// do not change over time. If this ever changes `hostMetadata`
 	// *must* be deep copied before calling `fillHostMetadata`.
 	hostMetadata := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
-	if cfg.UseResourceMetadata {
+	if pcfg.UseResourceMetadata {
 		hostMetadata = metadataFromAttributes(attrs)
 	}
-	fillHostMetadata(params, cfg, hostMetadata)
+	fillHostMetadata(params, pcfg, p, hostMetadata)
 
 	// Run one first time at startup
-	pushMetadataWithRetry(retrier, params, cfg, hostMetadata)
+	pushMetadataWithRetry(retrier, params, pcfg, hostMetadata)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C: // Send host metadata
-			pushMetadataWithRetry(retrier, params, cfg, hostMetadata)
+			pushMetadataWithRetry(retrier, params, pcfg, hostMetadata)
 		}
 	}
 }

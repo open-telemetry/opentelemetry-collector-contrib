@@ -21,7 +21,8 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
@@ -41,9 +42,10 @@ type State struct {
 }
 
 type DeltaValue struct {
-	StartTimestamp pdata.Timestamp
+	StartTimestamp pcommon.Timestamp
 	FloatValue     float64
 	IntValue       int64
+	HistogramValue *HistogramPoint
 }
 
 func NewMetricTracker(ctx context.Context, logger *zap.Logger, maxStaleness time.Duration) *MetricTracker {
@@ -95,6 +97,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 				StartTimestamp: metricPoint.ObservedTimestamp,
 				FloatValue:     metricPoint.FloatValue,
 				IntValue:       metricPoint.IntValue,
+				HistogramValue: metricPoint.HistogramValue,
 			}
 			valid = true
 		}
@@ -108,35 +111,61 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 
 	out.StartTimestamp = state.PrevPoint.ObservedTimestamp
 
-	if metricID.IsFloatVal() {
-		value := metricPoint.FloatValue
-		prevValue := state.PrevPoint.FloatValue
-		delta := value - prevValue
-
-		// Detect reset on a monotonic counter
-		if metricID.MetricIsMonotonic && value < prevValue {
-			delta = value
+	switch metricID.MetricType {
+	case pmetric.MetricTypeHistogram:
+		value := metricPoint.HistogramValue
+		prevValue := state.PrevPoint.HistogramValue
+		if math.IsNaN(value.Sum) {
+			value.Sum = prevValue.Sum
 		}
 
-		out.FloatValue = delta
-	} else {
-		value := metricPoint.IntValue
-		prevValue := state.PrevPoint.IntValue
-		delta := value - prevValue
-
-		// Detect reset on a monotonic counter
-		if metricID.MetricIsMonotonic && value < prevValue {
-			delta = value
+		if len(value.Buckets) != len(prevValue.Buckets) {
+			valid = false
 		}
 
-		out.IntValue = delta
+		delta := value.Clone()
+
+		// Calculate deltas unless histogram count was reset
+		if valid && delta.Count >= prevValue.Count {
+			delta.Count -= prevValue.Count
+			delta.Sum -= prevValue.Sum
+			for index, prevBucket := range prevValue.Buckets {
+				delta.Buckets[index] -= prevBucket
+			}
+		}
+
+		out.HistogramValue = &delta
+	case pmetric.MetricTypeSum:
+		if metricID.IsFloatVal() {
+			value := metricPoint.FloatValue
+			prevValue := state.PrevPoint.FloatValue
+			delta := value - prevValue
+
+			// Detect reset on a monotonic counter
+			if metricID.MetricIsMonotonic && value < prevValue {
+				delta = value
+			}
+
+			out.FloatValue = delta
+		} else {
+			value := metricPoint.IntValue
+			prevValue := state.PrevPoint.IntValue
+			delta := value - prevValue
+
+			// Detect reset on a monotonic counter
+			if metricID.MetricIsMonotonic && value < prevValue {
+				delta = value
+			}
+
+			out.IntValue = delta
+		}
 	}
 
 	state.PrevPoint = metricPoint
 	return
 }
 
-func (t *MetricTracker) removeStale(staleBefore pdata.Timestamp) {
+func (t *MetricTracker) removeStale(staleBefore pcommon.Timestamp) {
 	t.states.Range(func(key, value interface{}) bool {
 		s := value.(*State)
 
@@ -164,12 +193,12 @@ func (t *MetricTracker) removeStale(staleBefore pdata.Timestamp) {
 	})
 }
 
-func (t *MetricTracker) sweeper(ctx context.Context, remove func(pdata.Timestamp)) {
+func (t *MetricTracker) sweeper(ctx context.Context, remove func(pcommon.Timestamp)) {
 	ticker := time.NewTicker(t.maxStaleness)
 	for {
 		select {
 		case currentTime := <-ticker.C:
-			staleBefore := pdata.NewTimestampFromTime(currentTime.Add(-t.maxStaleness))
+			staleBefore := pcommon.NewTimestampFromTime(currentTime.Add(-t.maxStaleness))
 			remove(staleBefore)
 		case <-ctx.Done():
 			ticker.Stop()

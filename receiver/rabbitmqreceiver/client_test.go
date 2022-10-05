@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -127,7 +127,8 @@ func TestGetQueuesDetails(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				// Setup test server
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.Write([]byte("{}"))
+					_, err := w.Write([]byte("{}"))
+					require.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -145,7 +146,8 @@ func TestGetQueuesDetails(t *testing.T) {
 
 				// Setup test server
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.Write(data)
+					_, err := w.Write(data)
+					require.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -182,7 +184,7 @@ func loadAPIResponseData(t *testing.T, fileName string) []byte {
 	t.Helper()
 	fullPath := filepath.Join("testdata", "apiresponses", fileName)
 
-	data, err := ioutil.ReadFile(fullPath)
+	data, err := os.ReadFile(fullPath)
 	require.NoError(t, err)
 
 	return data

@@ -24,6 +24,7 @@ import (
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"k8s.io/client-go/rest"
 
@@ -46,18 +47,35 @@ func new(params component.ReceiverCreateSettings, cfg *Config, consumer consumer
 func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.Host) error {
 	pFactory := prometheusreceiver.NewFactory()
 
-	pConfig, err := getPrometheusConfig(prw.config)
+	pConfig, err := getPrometheusConfigWrapper(prw.config, prw.params)
 	if err != nil {
-		return fmt.Errorf("failed to create prometheus receiver config: %v", err)
+		return fmt.Errorf("failed to create prometheus receiver config: %w", err)
 	}
 
 	pr, err := pFactory.CreateMetricsReceiver(ctx, prw.params, pConfig, prw.consumer)
 	if err != nil {
-		return fmt.Errorf("failed to create prometheus receiver: %v", err)
+		return fmt.Errorf("failed to create prometheus receiver: %w", err)
 	}
 
 	prw.prometheusRecever = pr
 	return prw.prometheusRecever.Start(ctx, host)
+}
+
+// Deprecated: [v0.55.0] Use getPrometheusConfig instead.
+func getPrometheusConfigWrapper(cfg *Config, params component.ReceiverCreateSettings) (*prometheusreceiver.Config, error) {
+	if cfg.TLSEnabled {
+		params.Logger.Warn("the `tls_config` and 'tls_enabled' settings are deprecated, please use `tls` instead")
+		cfg.HTTPClientSettings.TLSSetting = configtls.TLSClientSetting{
+			TLSSetting: configtls.TLSSetting{
+				CAFile:   cfg.TLSConfig.CAFile,
+				CertFile: cfg.TLSConfig.CertFile,
+				KeyFile:  cfg.TLSConfig.KeyFile,
+			},
+			Insecure:           false,
+			InsecureSkipVerify: cfg.TLSConfig.InsecureSkipVerify,
+		}
+	}
+	return getPrometheusConfig(cfg)
 }
 
 func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
@@ -78,17 +96,27 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 
 	scheme := "http"
 
-	if cfg.TLSEnabled {
+	tlsConfig, err := cfg.TLSSetting.LoadTLSConfig()
+	if err != nil {
+		return nil, fmt.Errorf("tls config is not valid: %w", err)
+	}
+	if tlsConfig != nil {
 		scheme = "https"
 		httpConfig.TLSConfig = configutil.TLSConfig{
-			CAFile:             cfg.TLSConfig.CAFile,
-			CertFile:           cfg.TLSConfig.CertFile,
-			KeyFile:            cfg.TLSConfig.KeyFile,
-			InsecureSkipVerify: cfg.TLSConfig.InsecureSkipVerify,
+			CAFile:             cfg.TLSSetting.CAFile,
+			CertFile:           cfg.TLSSetting.CertFile,
+			KeyFile:            cfg.TLSSetting.KeyFile,
+			InsecureSkipVerify: cfg.TLSSetting.InsecureSkipVerify,
 		}
 	}
 
 	httpConfig.BearerToken = configutil.Secret(bearerToken)
+
+	labels := make(model.LabelSet, len(cfg.Labels)+1)
+	for k, v := range cfg.Labels {
+		labels[model.LabelName(k)] = model.LabelValue(v)
+	}
+	labels[model.AddressLabel] = model.LabelValue(cfg.Endpoint)
 
 	scrapeConfig := &config.ScrapeConfig{
 		ScrapeInterval:  model.Duration(cfg.CollectionInterval),
@@ -102,7 +130,7 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 			&discovery.StaticConfig{
 				{
 					Targets: []model.LabelSet{
-						{model.AddressLabel: model.LabelValue(cfg.Endpoint)},
+						labels,
 					},
 				},
 			},

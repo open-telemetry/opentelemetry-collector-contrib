@@ -18,14 +18,16 @@ import (
 	"context"
 	"errors"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/kinesis"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/service/kinesis"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
@@ -45,25 +47,37 @@ var (
 	_ component.LogsExporter    = (*Exporter)(nil)
 )
 
-func createExporter(c config.Exporter, log *zap.Logger) (*Exporter, error) {
+func createExporter(ctx context.Context, c config.Exporter, log *zap.Logger) (*Exporter, error) {
 	conf, ok := c.(*Config)
 	if !ok || conf == nil {
 		return nil, errors.New("incorrect config provided")
 	}
-	sess, err := session.NewSession(aws.NewConfig().WithRegion(conf.AWS.Region))
+	awsconf, err := awsconfig.LoadDefaultConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var cfgs []*aws.Config
+	var kinesisOpts []func(*kinesis.Options)
 	if conf.AWS.Role != "" {
-		cfgs = append(cfgs, &aws.Config{Credentials: stscreds.NewCredentials(sess, conf.AWS.Role)})
-	}
-	if conf.AWS.KinesisEndpoint != "" {
-		cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(conf.AWS.KinesisEndpoint)})
+		kinesisOpts = append(kinesisOpts, func(o *kinesis.Options) {
+			o.Credentials = stscreds.NewAssumeRoleProvider(
+				sts.NewFromConfig(awsconf),
+				conf.AWS.Role,
+			)
+		})
 	}
 
-	producer, err := producer.NewBatcher(kinesis.New(sess, cfgs...), conf.AWS.StreamName,
+	if conf.AWS.KinesisEndpoint != "" {
+		kinesisOpts = append(kinesisOpts,
+			kinesis.WithEndpointResolver(
+				kinesis.EndpointResolverFromURL(conf.AWS.KinesisEndpoint),
+			),
+		)
+	}
+
+	producer, err := producer.NewBatcher(
+		kinesis.NewFromConfig(awsconf, kinesisOpts...),
+		conf.AWS.StreamName,
 		producer.WithLogger(log),
 	)
 	if err != nil {
@@ -115,7 +129,7 @@ func (e Exporter) Shutdown(context.Context) error {
 }
 
 // ConsumeTraces receives a span batch and exports it to AWS Kinesis
-func (e Exporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (e Exporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	bt, err := e.batcher.Traces(td)
 	if err != nil {
 		return err
@@ -123,7 +137,7 @@ func (e Exporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	return e.producer.Put(ctx, bt)
 }
 
-func (e Exporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+func (e Exporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	bt, err := e.batcher.Metrics(md)
 	if err != nil {
 		return err
@@ -131,7 +145,7 @@ func (e Exporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	return e.producer.Put(ctx, bt)
 }
 
-func (e Exporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+func (e Exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	bt, err := e.batcher.Logs(ld)
 	if err != nil {
 		return err

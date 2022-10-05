@@ -22,7 +22,11 @@ import (
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 // Test_validateMetrics checks validateMetrics return true if a type and temporality combination is valid, false
@@ -32,11 +36,11 @@ func Test_validateMetrics(t *testing.T) {
 	// define a single test
 	type combTest struct {
 		name   string
-		metric pdata.Metric
+		metric pmetric.Metric
 		want   bool
 	}
 
-	tests := []combTest{}
+	var tests []combTest
 
 	// append true cases
 	for k, validMetric := range validMetrics1 {
@@ -74,7 +78,7 @@ func Test_validateMetrics(t *testing.T) {
 // case.
 func Test_addSample(t *testing.T) {
 	type testCase struct {
-		metric pdata.Metric
+		metric pmetric.Metric
 		sample prompb.Sample
 		labels []prompb.Label
 	}
@@ -119,14 +123,14 @@ func Test_addSample(t *testing.T) {
 	}
 	t.Run("empty_case", func(t *testing.T) {
 		tsMap := map[string]*prompb.TimeSeries{}
-		addSample(tsMap, nil, nil, pdata.NewMetric())
+		addSample(tsMap, nil, nil, "")
 		assert.Exactly(t, tsMap, map[string]*prompb.TimeSeries{})
 	})
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			addSample(tt.orig, &tt.testCase[0].sample, tt.testCase[0].labels, tt.testCase[0].metric)
-			addSample(tt.orig, &tt.testCase[1].sample, tt.testCase[1].labels, tt.testCase[1].metric)
+			addSample(tt.orig, &tt.testCase[0].sample, tt.testCase[0].labels, tt.testCase[0].metric.Type().String())
+			addSample(tt.orig, &tt.testCase[1].sample, tt.testCase[1].labels, tt.testCase[1].metric.Type().String())
 			assert.Exactly(t, tt.want, tt.orig)
 		})
 	}
@@ -138,40 +142,40 @@ func Test_timeSeriesSignature(t *testing.T) {
 	tests := []struct {
 		name   string
 		lbs    []prompb.Label
-		metric pdata.Metric
+		metric pmetric.Metric
 		want   string
 	}{
 		{
 			"int64_signature",
 			promLbs1,
 			validMetrics1[validIntGauge],
-			validMetrics1[validIntGauge].DataType().String() + lb1Sig,
+			validMetrics1[validIntGauge].Type().String() + lb1Sig,
 		},
 		{
 			"histogram_signature",
 			promLbs2,
 			validMetrics1[validHistogram],
-			validMetrics1[validHistogram].DataType().String() + lb2Sig,
+			validMetrics1[validHistogram].Type().String() + lb2Sig,
 		},
 		{
 			"unordered_signature",
 			getPromLabels(label22, value22, label21, value21),
 			validMetrics1[validHistogram],
-			validMetrics1[validHistogram].DataType().String() + lb2Sig,
+			validMetrics1[validHistogram].Type().String() + lb2Sig,
 		},
 		// descriptor type cannot be nil, as checked by validateMetrics
 		{
 			"nil_case",
 			nil,
 			validMetrics1[validHistogram],
-			validMetrics1[validHistogram].DataType().String(),
+			validMetrics1[validHistogram].Type().String(),
 		},
 	}
 
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.EqualValues(t, tt.want, timeSeriesSignature(tt.metric, &tt.lbs))
+			assert.EqualValues(t, tt.want, timeSeriesSignature(tt.metric.Type().String(), &tt.lbs))
 		})
 	}
 }
@@ -181,15 +185,15 @@ func Test_timeSeriesSignature(t *testing.T) {
 func Test_createLabelSet(t *testing.T) {
 	tests := []struct {
 		name           string
-		resource       pdata.Resource
-		orig           pdata.AttributeMap
+		resource       pcommon.Resource
+		orig           pcommon.Map
 		externalLabels map[string]string
 		extras         []string
 		want           []prompb.Label
 	}{
 		{
 			"labels_clean",
-			getResource(),
+			pcommon.NewResource(),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32, value32},
@@ -197,15 +201,33 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"labels_with_resource",
-			getResource("job", "prometheus", "instance", "127.0.0.1:8080"),
+			func() pcommon.Resource {
+				res := pcommon.NewResource()
+				res.Attributes().PutString("service.name", "prometheus")
+				res.Attributes().PutString("service.instance.id", "127.0.0.1:8080")
+				return res
+			}(),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "job", "prometheus", "instance", "127.0.0.1:8080"),
 		},
 		{
+			"labels_with_nonstring_resource",
+			func() pcommon.Resource {
+				res := pcommon.NewResource()
+				res.Attributes().PutInt("service.name", 12345)
+				res.Attributes().PutBool("service.instance.id", true)
+				return res
+			}(),
+			lbs1,
+			map[string]string{},
+			[]string{label31, value31, label32, value32},
+			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "job", "12345", "instance", "true"),
+		},
+		{
 			"labels_duplicate_in_extras",
-			getResource(),
+			pcommon.NewResource(),
 			lbs1,
 			map[string]string{},
 			[]string{label11, value31},
@@ -213,7 +235,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"labels_dirty",
-			getResource(),
+			pcommon.NewResource(),
 			lbs1Dirty,
 			map[string]string{},
 			[]string{label31 + dirty1, value31, label32, value32},
@@ -221,15 +243,15 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"no_original_case",
-			getResource(),
-			pdata.NewAttributeMap(),
+			pcommon.NewResource(),
+			pcommon.NewMap(),
 			nil,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label31, value31, label32, value32),
 		},
 		{
 			"empty_extra_case",
-			getResource(),
+			pcommon.NewResource(),
 			lbs1,
 			map[string]string{},
 			[]string{"", ""},
@@ -237,7 +259,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"single_left_over_case",
-			getResource(),
+			pcommon.NewResource(),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32},
@@ -245,7 +267,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"valid_external_labels",
-			getResource(),
+			pcommon.NewResource(),
 			lbs1,
 			exlbs1,
 			[]string{label31, value31, label32, value32},
@@ -253,68 +275,33 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"overwritten_external_labels",
-			getResource(),
+			pcommon.NewResource(),
 			lbs1,
 			exlbs2,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
+		},
+		{
+			"colliding attributes",
+			pcommon.NewResource(),
+			lbsColliding,
+			nil,
+			[]string{label31, value31, label32, value32},
+			getPromLabels(collidingSanitized, value11+";"+value12, label31, value31, label32, value32),
+		},
+		{
+			"sanitize_labels_starts_with_underscore",
+			pcommon.NewResource(),
+			lbs3,
+			exlbs1,
+			[]string{label31, value31, label32, value32},
+			getPromLabels(label11, value11, label12, value12, "key"+label51, value51, label41, value41, label31, value31, label32, value32),
 		},
 	}
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, tt.extras...))
-		})
-	}
-}
-
-// Tes_getPromMetricName checks if OTLP metric names are converted to Cortex metric names correctly.
-// Test cases are empty namespace, monotonic metrics that require a total suffix, and metric names that contains
-// invalid characters.
-func Test_getPromMetricName(t *testing.T) {
-	tests := []struct {
-		name   string
-		metric pdata.Metric
-		ns     string
-		want   string
-	}{
-		{
-			"empty_case",
-			invalidMetrics[empty],
-			ns1,
-			"test_ns_",
-		},
-		{
-			"normal_case",
-			validMetrics1[validDoubleGauge],
-			ns1,
-			"test_ns_" + validDoubleGauge,
-		},
-		{
-			"empty_namespace",
-			validMetrics1[validDoubleGauge],
-			"",
-			validDoubleGauge,
-		},
-		{
-			// Ensure removed functionality stays removed.
-			// See https://github.com/open-telemetry/opentelemetry-collector/pull/2993 for context
-			"no_counter_suffix",
-			validMetrics1[validIntSum],
-			ns1,
-			"test_ns_" + validIntSum,
-		},
-		{
-			"dirty_string",
-			validMetrics2[validIntGaugeDirty],
-			"7" + ns1,
-			"key_7test_ns__" + validIntGauge + "_",
-		},
-	}
-	// run tests
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, getPromMetricName(tt.metric, tt.ns))
 		})
 	}
 }
@@ -397,31 +384,230 @@ func Test_getPromExemplars(t *testing.T) {
 	tnow := time.Now()
 	tests := []struct {
 		name      string
-		histogram *pdata.HistogramDataPoint
+		histogram pmetric.HistogramDataPoint
 		expected  []prompb.Exemplar
 	}{
 		{
 			"with_exemplars",
-			getHistogramDataPointWithExemplars(tnow, floatVal1, traceIDKey, traceIDValue1),
+			getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, label11, value11),
 			[]prompb.Exemplar{
 				{
 					Value:     floatVal1,
 					Timestamp: timestamp.FromTime(tnow),
-					Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
+					Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1), getLabel(spanIDKey, spanIDValue1), getLabel(label11, value11)},
+				},
+			},
+		},
+		{
+			"with_exemplars_without_trace_or_span",
+			getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", label11, value11),
+			[]prompb.Exemplar{
+				{
+					Value:     floatVal1,
+					Timestamp: timestamp.FromTime(tnow),
+					Labels:    []prompb.Label{getLabel(label11, value11)},
+				},
+			},
+		},
+		{
+			"too_many_runes_drops_labels",
+			getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", keyWith129Runes, ""),
+			[]prompb.Exemplar{
+				{
+					Value:     floatVal1,
+					Timestamp: timestamp.FromTime(tnow),
+				},
+			},
+		},
+		{
+			"runes_at_limit_bytes_over_keeps_labels",
+			getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", keyWith128Runes, ""),
+			[]prompb.Exemplar{
+				{
+					Value:     floatVal1,
+					Timestamp: timestamp.FromTime(tnow),
+					Labels:    []prompb.Label{getLabel(keyWith128Runes, "")},
+				},
+			},
+		},
+		{
+			"too_many_runes_with_exemplar_drops_attrs_keeps_exemplar",
+			getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, keyWith64Runes, ""),
+			[]prompb.Exemplar{
+				{
+					Value:     floatVal1,
+					Timestamp: timestamp.FromTime(tnow),
+					Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1), getLabel(spanIDKey, spanIDValue1)},
 				},
 			},
 		},
 		{
 			"without_exemplar",
-			getHistogramDataPoint(),
+			pmetric.NewHistogramDataPoint(),
 			nil,
 		},
 	}
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			requests := getPromExemplars(*tt.histogram)
+			requests := getPromExemplars(tt.histogram)
 			assert.Exactly(t, tt.expected, requests)
+		})
+	}
+}
+
+func TestAddResourceTargetInfo(t *testing.T) {
+	resourceAttrMap := map[string]interface{}{
+		conventions.AttributeServiceName:       "service-name",
+		conventions.AttributeServiceNamespace:  "service-namespace",
+		conventions.AttributeServiceInstanceID: "service-instance-id",
+	}
+	resourceWithServiceAttrs := pcommon.NewResource()
+	resourceWithServiceAttrs.Attributes().FromRaw(resourceAttrMap)
+	resourceWithServiceAttrs.Attributes().PutString("resource_attr", "resource-attr-val-1")
+	resourceWithOnlyServiceAttrs := pcommon.NewResource()
+	resourceWithOnlyServiceAttrs.Attributes().FromRaw(resourceAttrMap)
+	for _, tc := range []struct {
+		desc      string
+		resource  pcommon.Resource
+		settings  Settings
+		timestamp pcommon.Timestamp
+		expected  map[string]*prompb.TimeSeries
+	}{
+		{
+			desc:     "empty resource",
+			resource: pcommon.NewResource(),
+			expected: map[string]*prompb.TimeSeries{},
+		},
+		{
+			desc:     "disable target info metric",
+			resource: testdata.GenerateMetricsNoLibraries().ResourceMetrics().At(0).Resource(),
+			settings: Settings{DisableTargetInfo: true},
+			expected: map[string]*prompb.TimeSeries{},
+		},
+		{
+			desc:      "with resource",
+			resource:  testdata.GenerateMetricsNoLibraries().ResourceMetrics().At(0).Resource(),
+			timestamp: testdata.TestMetricStartTimestamp,
+			expected: map[string]*prompb.TimeSeries{
+				"info-__name__-target_info-resource_attr-resource-attr-val-1": {
+					Labels: []prompb.Label{
+						{
+							Name:  "__name__",
+							Value: "target_info",
+						},
+						{
+							Name:  "resource_attr",
+							Value: "resource-attr-val-1",
+						},
+					},
+					Samples: []prompb.Sample{
+						{
+							Value:     1,
+							Timestamp: 1581452772000,
+						},
+					},
+				},
+			},
+		},
+		{
+			desc:      "with resource, with namespace",
+			resource:  testdata.GenerateMetricsNoLibraries().ResourceMetrics().At(0).Resource(),
+			timestamp: testdata.TestMetricStartTimestamp,
+			settings:  Settings{Namespace: "foo"},
+			expected: map[string]*prompb.TimeSeries{
+				"info-__name__-foo_target_info-resource_attr-resource-attr-val-1": {
+					Labels: []prompb.Label{
+						{
+							Name:  "__name__",
+							Value: "foo_target_info",
+						},
+						{
+							Name:  "resource_attr",
+							Value: "resource-attr-val-1",
+						},
+					},
+					Samples: []prompb.Sample{
+						{
+							Value:     1,
+							Timestamp: 1581452772000,
+						},
+					},
+				},
+			},
+		},
+		{
+			desc:      "with resource, with service attributes",
+			resource:  resourceWithServiceAttrs,
+			timestamp: testdata.TestMetricStartTimestamp,
+			expected: map[string]*prompb.TimeSeries{
+				"info-__name__-target_info-instance-service-instance-id-job-service-namespace/service-name-resource_attr-resource-attr-val-1": {
+					Labels: []prompb.Label{
+						{
+							Name:  "__name__",
+							Value: "target_info",
+						},
+						{
+							Name:  "instance",
+							Value: "service-instance-id",
+						},
+						{
+							Name:  "job",
+							Value: "service-namespace/service-name",
+						},
+						{
+							Name:  "resource_attr",
+							Value: "resource-attr-val-1",
+						},
+					},
+					Samples: []prompb.Sample{
+						{
+							Value:     1,
+							Timestamp: 1581452772000,
+						},
+					},
+				},
+			},
+		},
+		{
+			desc:      "with resource, with only service attributes",
+			resource:  resourceWithOnlyServiceAttrs,
+			timestamp: testdata.TestMetricStartTimestamp,
+			expected:  map[string]*prompb.TimeSeries{},
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			tsMap := map[string]*prompb.TimeSeries{}
+			addResourceTargetInfo(tc.resource, tc.settings, tc.timestamp, tsMap)
+			assert.Exactly(t, tc.expected, tsMap)
+		})
+	}
+}
+
+func TestMostRecentTimestampInMetric(t *testing.T) {
+	laterTimestamp := pcommon.NewTimestampFromTime(testdata.TestMetricTime.Add(1 * time.Minute))
+	metricMultipleTimestamps := testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	// the first datapoint timestamp is at testdata.TestMetricTime
+	metricMultipleTimestamps.Sum().DataPoints().At(1).SetTimestamp(laterTimestamp)
+	for _, tc := range []struct {
+		desc     string
+		input    pmetric.Metric
+		expected pcommon.Timestamp
+	}{
+		{
+			desc:     "empty",
+			input:    pmetric.NewMetric(),
+			expected: pcommon.Timestamp(0),
+		},
+		{
+			desc:     "multiple timestamps",
+			input:    metricMultipleTimestamps,
+			expected: laterTimestamp,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			got := mostRecentTimestampInMetric(tc.input)
+			assert.Exactly(t, tc.expected, got)
 		})
 	}
 }

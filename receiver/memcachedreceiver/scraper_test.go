@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
@@ -30,7 +30,7 @@ import (
 func TestScraper(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	scraper := newMemcachedScraper(zap.NewNop(), cfg)
+	scraper := newMemcachedScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 	scraper.newClient = func(endpoint string, timeout time.Duration) (client, error) {
 		return &fakeClient{}, nil
 	}
@@ -39,6 +39,26 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "expected_metrics", "test_scraper", "expected.json")
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+}
+
+func TestScraperWithoutDirectionAttribute(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	scraper := newMemcachedScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+	scraper.emitMetricsWithDirectionAttribute = false
+	scraper.emitMetricsWithoutDirectionAttribute = true
+	scraper.newClient = func(endpoint string, timeout time.Duration) (client, error) {
+		return &fakeClient{}, nil
+	}
+
+	actualMetrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "expected_metrics", "test_scraper", "expected_without_direction.json")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 

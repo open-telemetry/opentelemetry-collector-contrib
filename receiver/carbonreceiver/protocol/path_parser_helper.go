@@ -26,7 +26,7 @@ import (
 // PathParser implements the code needed to handle only the <metric_path> part of
 // a Carbon metric line:
 //
-// 	<metric_path> <metric_value> <metric_timestamp>
+//	<metric_path> <metric_value> <metric_timestamp>
 //
 // See https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol,
 // for more information.
@@ -88,7 +88,8 @@ func NewParser(pathParser PathParser) (Parser, error) {
 // https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol.
 //
 // The expected line is a text line in the following format:
-// 	"<metric_path> <metric_value> <metric_timestamp>"
+//
+//	"<metric_path> <metric_value> <metric_timestamp>"
 //
 // The <metric_path> is where there are variations that require selection
 // of specialized parsers to handle them, but include the metric name and
@@ -111,12 +112,12 @@ func (pph *PathParserHelper) Parse(line string) (*metricspb.Metric, error) {
 	parsedPath := ParsedPath{}
 	err := pph.pathParser.ParsePath(path, &parsedPath)
 	if err != nil {
-		return nil, fmt.Errorf("invalid carbon metric [%s]: %v", line, err)
+		return nil, fmt.Errorf("invalid carbon metric [%s]: %w", line, err)
 	}
 
 	unixTime, err := strconv.ParseInt(timestampStr, 10, 64)
 	if err != nil {
-		return nil, fmt.Errorf("invalid carbon metric time [%s]: %v", line, err)
+		return nil, fmt.Errorf("invalid carbon metric time [%s]: %w", line, err)
 	}
 
 	var metricType metricspb.MetricDescriptor_Type
@@ -134,7 +135,7 @@ func (pph *PathParserHelper) Parse(line string) (*metricspb.Metric, error) {
 	} else {
 		dblVal, err := strconv.ParseFloat(valueStr, 64)
 		if err != nil {
-			return nil, fmt.Errorf("invalid carbon metric value [%s]: %v", line, err)
+			return nil, fmt.Errorf("invalid carbon metric value [%s]: %w", line, err)
 		}
 		if parsedPath.MetricType == CumulativeMetricType {
 			metricType = metricspb.MetricDescriptor_CUMULATIVE_DOUBLE

@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -195,7 +194,8 @@ func TestExtension(t *testing.T) {
 					w.Header().Set(k, v)
 				}
 				w.WriteHeader(test.expectedbackendStatusCode)
-				w.Write(test.expectedBackendResponseBody)
+				_, err := w.Write(test.expectedBackendResponseBody)
+				assert.NoError(t, err)
 			}))
 			defer backend.Close()
 
@@ -243,7 +243,10 @@ func TestExtension(t *testing.T) {
 				header := strings.ToLower(k)
 				if want, ok := test.expectedHeaders[header]; ok {
 					assert.Equal(t, want, got)
-				} else if k == "Content-Length" || k == "Content-Type" || k == "X-Content-Type-Options" || k == "Date" || k == "Via" {
+					continue
+				}
+
+				if k == "Content-Length" || k == "Content-Type" || k == "X-Content-Type-Options" || k == "Date" || k == "Via" {
 					// Content-Length, Content-Type, X-Content-Type-Options and Date are certain headers added by default.
 					// Assertion for Via is done above.
 					continue
@@ -258,7 +261,7 @@ func TestExtension(t *testing.T) {
 }
 
 func httpRequest(t *testing.T, args clientRequestArgs) *http.Request {
-	r, err := http.NewRequest(args.method, args.url, ioutil.NopCloser(strings.NewReader(args.body)))
+	r, err := http.NewRequest(args.method, args.url, io.NopCloser(strings.NewReader(args.body)))
 	require.NoError(t, err)
 
 	for k, v := range args.headers {
@@ -269,7 +272,7 @@ func httpRequest(t *testing.T, args clientRequestArgs) *http.Request {
 }
 
 func readBody(body io.ReadCloser) []byte {
-	out, _ := ioutil.ReadAll(body)
+	out, _ := io.ReadAll(body)
 	return out
 }
 

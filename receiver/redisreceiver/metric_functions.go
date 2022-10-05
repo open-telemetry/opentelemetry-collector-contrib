@@ -14,9 +14,7 @@
 
 package redisreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 
-import (
-	"go.opentelemetry.io/collector/model/pdata"
-)
+import "go.opentelemetry.io/collector/pdata/pcommon"
 
 // dataPointRecorders is called once at startup. Returns recorders for all metrics (except keyspace)
 // we want to extract from Redis INFO.
@@ -34,6 +32,7 @@ func (rs *redisScraper) dataPointRecorders() map[string]interface{} {
 		"keyspace_misses":                 rs.mb.RecordRedisKeyspaceMissesDataPoint,
 		"latest_fork_usec":                rs.mb.RecordRedisLatestForkDataPoint,
 		"master_repl_offset":              rs.mb.RecordRedisReplicationOffsetDataPoint,
+		"maxmemory":                       rs.mb.RecordRedisMaxmemoryDataPoint,
 		"mem_fragmentation_ratio":         rs.mb.RecordRedisMemoryFragmentationRatioDataPoint,
 		"rdb_changes_since_last_save":     rs.mb.RecordRedisRdbChangesSinceLastSaveDataPoint,
 		"rejected_connections":            rs.mb.RecordRedisConnectionsRejectedDataPoint,
@@ -53,14 +52,14 @@ func (rs *redisScraper) dataPointRecorders() map[string]interface{} {
 	}
 }
 
-func (rs *redisScraper) recordUsedCPUSys(now pdata.Timestamp, val float64) {
+func (rs *redisScraper) recordUsedCPUSys(now pcommon.Timestamp, val float64) {
 	rs.mb.RecordRedisCPUTimeDataPoint(now, val, "sys")
 }
 
-func (rs *redisScraper) recordUsedCPUSysChildren(now pdata.Timestamp, val float64) {
+func (rs *redisScraper) recordUsedCPUSysChildren(now pcommon.Timestamp, val float64) {
 	rs.mb.RecordRedisCPUTimeDataPoint(now, val, "children")
 }
 
-func (rs *redisScraper) recordUsedCPUSysUser(now pdata.Timestamp, val float64) {
+func (rs *redisScraper) recordUsedCPUSysUser(now pcommon.Timestamp, val float64) {
 	rs.mb.RecordRedisCPUTimeDataPoint(now, val, "user")
 }

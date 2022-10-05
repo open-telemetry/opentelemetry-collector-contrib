@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
-	typeStr = "googlecloudspanner"
+	typeStr   = "googlecloudspanner"
+	stability = component.StabilityLevelBeta
 
 	defaultCollectionInterval     = 60 * time.Second
 	defaultTopMetricsQueryMaxRows = 100
@@ -34,10 +34,10 @@ const (
 )
 
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver))
+		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {

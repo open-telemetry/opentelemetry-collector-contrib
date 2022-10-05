@@ -1,7 +1,0 @@
-# config file version
-apiVersion: 1
-
-datasources:
-  - name: Loki
-    type: loki
-    url: http://loki:3100

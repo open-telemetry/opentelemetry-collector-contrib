@@ -27,16 +27,18 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "cumulativetodelta"
+	// The stability level of the processor.
+	stability = component.StabilityLevelBeta
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Metrics Generation processor.
 func NewFactory() component.ProcessorFactory {
-	return processorhelper.NewFactory(
+	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithMetrics(createMetricsProcessor))
+		component.WithMetricsProcessor(createMetricsProcessor, stability))
 }
 
 func createDefaultConfig() config.Processor {
@@ -46,8 +48,8 @@ func createDefaultConfig() config.Processor {
 }
 
 func createMetricsProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
@@ -56,9 +58,11 @@ func createMetricsProcessor(
 		return nil, fmt.Errorf("configuration parsing error")
 	}
 
-	metricsProcessor := newCumulativeToDeltaProcessor(processorConfig, params.Logger)
+	metricsProcessor := newCumulativeToDeltaProcessor(processorConfig, set.Logger)
 
 	return processorhelper.NewMetricsProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		metricsProcessor.processMetrics,

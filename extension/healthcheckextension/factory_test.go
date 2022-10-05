@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -32,7 +32,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
 		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-		TCPAddr: confignet.TCPAddr{
+		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -47,7 +47,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 
 func TestFactory_CreateExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.TCPAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	ext, err := createExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
 	require.NoError(t, err)

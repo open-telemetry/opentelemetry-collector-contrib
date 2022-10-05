@@ -12,14 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package ecsinfo
 
 import (
 	"bytes"
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -44,12 +46,12 @@ func TestECSInstanceInfo(t *testing.T) {
 	instanceReadyC := make(chan bool)
 	hostIPProvider := &MockHostInfo{}
 
-	data, err := ioutil.ReadFile("./test/ecsinfo/clusterinfo")
+	data, err := os.ReadFile("./test/ecsinfo/clusterinfo")
 	respBody := string(data)
 
 	httpResponse := &http.Response{
 		StatusCode:    200,
-		Body:          ioutil.NopCloser(bytes.NewBufferString(respBody)),
+		Body:          io.NopCloser(bytes.NewBufferString(respBody)),
 		Header:        make(http.Header),
 		ContentLength: 5 * 1024,
 	}
@@ -76,7 +78,7 @@ func TestECSInstanceInfo(t *testing.T) {
 	httpResponse = &http.Response{
 		Status:        "Bad Request",
 		StatusCode:    400,
-		Body:          ioutil.NopCloser(bytes.NewBufferString(respBody)),
+		Body:          io.NopCloser(bytes.NewBufferString(respBody)),
 		Header:        make(http.Header),
 		ContentLength: 5 * 1024,
 	}

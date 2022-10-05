@@ -20,6 +20,7 @@ package podmanreceiver
 import (
 	"context"
 	"errors"
+	"net/url"
 	"testing"
 	"time"
 
@@ -28,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 )
@@ -67,47 +68,59 @@ func TestScraperLoop(t *testing.T) {
 	consumer := make(mockConsumer)
 
 	r, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumer, client.factory)
-	assert.NotNil(t, r)
 	require.NoError(t, err)
+	assert.NotNil(t, r)
 
 	go func() {
 		client <- containerStatsReport{
 			Stats: []containerStats{{
 				ContainerID: "c1",
 			}},
-			Error: "",
+			Error: containerStatsReportError{},
 		}
 	}()
 
-	r.Start(context.Background(), componenttest.NewNopHost())
+	assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 
 	md := <-consumer
 	assert.Equal(t, md.ResourceMetrics().Len(), 1)
 
-	r.Shutdown(context.Background())
+	assert.NoError(t, r.Shutdown(context.Background()))
 }
 
 type mockClient chan containerStatsReport
 
-func (c mockClient) factory(logger *zap.Logger, cfg *Config) (client, error) {
+func (c mockClient) factory(logger *zap.Logger, cfg *Config) (PodmanClient, error) {
 	return c, nil
 }
 
-func (c mockClient) stats() ([]containerStats, error) {
+func (c mockClient) stats(context.Context, url.Values) ([]containerStats, error) {
 	report := <-c
-	if report.Error != "" {
-		return nil, errors.New(report.Error)
+	if report.Error.Message != "" {
+		return nil, errors.New(report.Error.Message)
 	}
 	return report.Stats, nil
 }
 
-type mockConsumer chan pdata.Metrics
+func (c mockClient) ping(context.Context) error {
+	return nil
+}
+
+type mockConsumer chan pmetric.Metrics
+
+func (c mockClient) list(context.Context, url.Values) ([]container, error) {
+	return []container{{ID: "c1"}}, nil
+}
+
+func (c mockClient) events(context.Context, url.Values) (<-chan event, <-chan error) {
+	return nil, nil
+}
 
 func (m mockConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 
-func (m mockConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+func (m mockConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	m <- md
 	return nil
 }

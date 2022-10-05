@@ -15,12 +15,17 @@
 package testutils // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 
 import (
+	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 var (
@@ -37,20 +42,52 @@ type DatadogServer struct {
 }
 
 // DatadogServerMock mocks a Datadog backend server
-func DatadogServerMock() *DatadogServer {
+func DatadogServerMock(overwriteHandlerFuncs ...OverwriteHandleFunc) *DatadogServer {
 	metadataChan := make(chan []byte)
-	handler := http.NewServeMux()
-	handler.HandleFunc("/api/v1/validate", validateAPIKeyEndpoint)
-	handler.HandleFunc("/api/v1/series", metricsEndpoint)
-	handler.HandleFunc("/intake", newMetadataEndpoint(metadataChan))
-	handler.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+	mux := http.NewServeMux()
 
-	srv := httptest.NewServer(handler)
+	handlers := map[string]http.HandlerFunc{
+		"/api/v1/validate": validateAPIKeyEndpoint,
+		"/api/v1/series":   metricsEndpoint,
+		"/intake":          newMetadataEndpoint(metadataChan),
+		"/":                func(w http.ResponseWriter, r *http.Request) {},
+	}
+	for _, f := range overwriteHandlerFuncs {
+		p, hf := f()
+		handlers[p] = hf
+	}
+	for pattern, handler := range handlers {
+		mux.HandleFunc(pattern, handler)
+	}
+
+	srv := httptest.NewServer(mux)
 
 	return &DatadogServer{
 		srv,
 		metadataChan,
 	}
+}
+
+// OverwriteHandleFuncs allows to overwrite the default handler functions
+type OverwriteHandleFunc func() (string, http.HandlerFunc)
+
+// HTTPRequestRecorder records a HTTP request.
+type HTTPRequestRecorder struct {
+	Pattern  string
+	Header   http.Header
+	ByteBody []byte
+}
+
+func (rec *HTTPRequestRecorder) HandlerFunc() (string, http.HandlerFunc) {
+	return rec.Pattern, func(w http.ResponseWriter, r *http.Request) {
+		rec.Header = r.Header
+		rec.ByteBody, _ = io.ReadAll(r.Body)
+	}
+}
+
+// ValidateAPIKeyEndpointInvalid returns a handler function that returns an invalid API key response
+func ValidateAPIKeyEndpointInvalid() (string, http.HandlerFunc) {
+	return "/api/v1/validate", validateAPIKeyEndpointInvalid
 }
 
 type validateAPIKeyResponse struct {
@@ -62,7 +99,21 @@ func validateAPIKeyEndpoint(w http.ResponseWriter, r *http.Request) {
 	resJSON, _ := json.Marshal(res)
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(resJSON)
+	_, err := w.Write(resJSON)
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func validateAPIKeyEndpointInvalid(w http.ResponseWriter, r *http.Request) {
+	res := validateAPIKeyResponse{Valid: false}
+	resJSON, _ := json.Marshal(res)
+
+	w.Header().Set("Content-Type", "application/json")
+	_, err := w.Write(resJSON)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 type metricsResponse struct {
@@ -75,43 +126,83 @@ func metricsEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
-	w.Write(resJSON)
+	_, err := w.Write(resJSON)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 func newMetadataEndpoint(c chan []byte) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		body, _ := ioutil.ReadAll(r.Body)
+		body, _ := io.ReadAll(r.Body)
 		c <- body
 	}
 }
 
-func fillAttributeMap(attrs pdata.AttributeMap, mp map[string]string) {
-	attrs.Clear()
+func fillAttributeMap(attrs pcommon.Map, mp map[string]string) {
 	attrs.EnsureCapacity(len(mp))
 	for k, v := range mp {
-		attrs.Insert(k, pdata.NewAttributeValueString(v))
+		attrs.PutString(k, v)
 	}
 }
 
 // NewAttributeMap creates a new attribute map (string only)
 // from a Go map
-func NewAttributeMap(mp map[string]string) pdata.AttributeMap {
-	attrs := pdata.NewAttributeMap()
+func NewAttributeMap(mp map[string]string) pcommon.Map {
+	attrs := pcommon.NewMap()
 	fillAttributeMap(attrs, mp)
 	return attrs
 }
 
-func newMetricsWithAttributeMap(mp map[string]string) pdata.Metrics {
-	md := pdata.NewMetrics()
+// TestGauge holds the definition of a basic gauge.
+type TestGauge struct {
+	Name       string
+	DataPoints []DataPoint
+}
+
+// DataPoint specifies a DoubleVal data point and its attributes.
+type DataPoint struct {
+	Value      float64
+	Attributes map[string]string
+}
+
+// NewGaugeMetrics creates a set of pmetric.Metrics containing all the specified
+// test gauges.
+func NewGaugeMetrics(tgs []TestGauge) pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
+	all := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+	for _, tg := range tgs {
+		m := all.AppendEmpty()
+		m.SetName(tg.Name)
+		g := m.SetEmptyGauge()
+		for _, dp := range tg.DataPoints {
+			d := g.DataPoints().AppendEmpty()
+			d.SetDoubleValue(dp.Value)
+			fillAttributeMap(d.Attributes(), dp.Attributes)
+		}
+	}
+	return metrics
+}
+
+func newMetricsWithAttributeMap(mp map[string]string) pmetric.Metrics {
+	md := pmetric.NewMetrics()
 	fillAttributeMap(md.ResourceMetrics().AppendEmpty().Resource().Attributes(), mp)
 	return md
 }
 
-func newTracesWithAttributeMap(mp map[string]string) pdata.Traces {
-	traces := pdata.NewTraces()
+func newTracesWithAttributeMap(mp map[string]string) ptrace.Traces {
+	traces := ptrace.NewTraces()
 	resourceSpans := traces.ResourceSpans()
 	rs := resourceSpans.AppendEmpty()
 	fillAttributeMap(rs.Resource().Attributes(), mp)
-	rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	return traces
+}
+
+type MockSourceProvider struct {
+	Src source.Source
+}
+
+func (s *MockSourceProvider) Source(ctx context.Context) (source.Source, error) {
+	return s.Src, nil
 }

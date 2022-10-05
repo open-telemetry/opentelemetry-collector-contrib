@@ -20,39 +20,36 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 func TestCauseWithExceptions(t *testing.T) {
 	errorMsg := "this is a test"
 	attributeMap := make(map[string]interface{})
 
-	span := constructExceptionServerSpan(attributeMap, pdata.StatusCodeError)
+	span := constructExceptionServerSpan(attributeMap, ptrace.StatusCodeError)
 	span.Status().SetMessage(errorMsg)
 
 	event1 := span.Events().AppendEmpty()
 	event1.SetName(ExceptionEventName)
-	attributes := pdata.NewAttributeMap()
-	attributes.InsertString(conventions.AttributeExceptionType, "java.lang.IllegalStateException")
-	attributes.InsertString(conventions.AttributeExceptionMessage, "bad state")
-	attributes.InsertString(conventions.AttributeExceptionStacktrace, `java.lang.IllegalStateException: state is not legal
+	event1.Attributes().PutString(conventions.AttributeExceptionType, "java.lang.IllegalStateException")
+	event1.Attributes().PutString(conventions.AttributeExceptionMessage, "bad state")
+	event1.Attributes().PutString(conventions.AttributeExceptionStacktrace, `java.lang.IllegalStateException: state is not legal
 	at io.opentelemetry.sdk.trace.RecordEventsReadableSpanTest.recordException(RecordEventsReadableSpanTest.java:626)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 Caused by: java.lang.IllegalArgumentException: bad argument`)
-	attributes.CopyTo(event1.Attributes())
 
 	event2 := span.Events().AppendEmpty()
 	event2.SetName(ExceptionEventName)
-	attributes = pdata.NewAttributeMap()
-	attributes.InsertString(conventions.AttributeExceptionType, "EmptyError")
-	attributes.CopyTo(event2.Attributes())
+	event2.Attributes().PutString(conventions.AttributeExceptionType, "EmptyError")
 
 	filtered, _ := makeHTTP(span)
 
-	res := pdata.NewResource()
-	res.Attributes().InsertString(conventions.AttributeTelemetrySDKLanguage, "java")
+	res := pcommon.NewResource()
+	res.Attributes().PutString(conventions.AttributeTelemetrySDKLanguage, "java")
 	isError, isFault, isThrottle, filteredResult, cause := makeCause(span, filtered, res)
 
 	assert.True(t, isFault)
@@ -72,17 +69,96 @@ Caused by: java.lang.IllegalArgumentException: bad argument`)
 	assert.Empty(t, cause.Exceptions[2].Message)
 }
 
+func TestCauseExceptionWithoutError(t *testing.T) {
+	var nonErrorStatusCodes = []ptrace.StatusCode{ptrace.StatusCodeUnset, ptrace.StatusCodeOk}
+
+	for _, element := range nonErrorStatusCodes {
+		ExceptionWithoutErrorHelper(t, element)
+	}
+}
+
+func ExceptionWithoutErrorHelper(t *testing.T, statusCode ptrace.StatusCode) {
+	errorMsg := "this is a test"
+
+	var exceptionStack = `java.lang.IllegalStateException: state is not legal
+	at io.opentelemetry.sdk.trace.RecordEventsReadableSpanTest.recordException(RecordEventsReadableSpanTest.java:626)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+Caused by: java.lang.IllegalArgumentException: bad argument`
+
+	attributeMap := make(map[string]interface{})
+
+	span := constructExceptionServerSpan(attributeMap, statusCode)
+	span.Status().SetMessage(errorMsg)
+
+	event1 := span.Events().AppendEmpty()
+	event1.SetName(ExceptionEventName)
+	event1.Attributes().PutString(conventions.AttributeExceptionType, "java.lang.IllegalStateException")
+	event1.Attributes().PutString(conventions.AttributeExceptionMessage, "bad state")
+	event1.Attributes().PutString(conventions.AttributeExceptionStacktrace, exceptionStack)
+
+	filtered, _ := makeHTTP(span)
+
+	res := pcommon.NewResource()
+	res.Attributes().PutString(conventions.AttributeTelemetrySDKLanguage, "java")
+	isError, isFault, isThrottle, filteredResult, cause := makeCause(span, filtered, res)
+
+	assert.False(t, isFault)
+	assert.False(t, isError)
+	assert.False(t, isThrottle)
+	assert.Equal(t, filtered, filteredResult)
+	assert.NotNil(t, cause)
+	assert.Len(t, cause.Exceptions, 2)
+	assert.NotEmpty(t, cause.Exceptions[0].ID)
+	assert.Equal(t, "java.lang.IllegalStateException", *cause.Exceptions[0].Type)
+	assert.Equal(t, "bad state", *cause.Exceptions[0].Message)
+	assert.Len(t, cause.Exceptions[0].Stack, 3)
+}
+
+func TestEventWithoutExceptionWithoutError(t *testing.T) {
+	var nonErrorStatusCodes = []ptrace.StatusCode{ptrace.StatusCodeUnset, ptrace.StatusCodeOk}
+
+	for _, element := range nonErrorStatusCodes {
+		EventWithoutExceptionWithoutErrorHelper(t, element)
+	}
+}
+
+func EventWithoutExceptionWithoutErrorHelper(t *testing.T, statusCode ptrace.StatusCode) {
+	errorMsg := "this is a test"
+
+	attributeMap := make(map[string]interface{})
+
+	span := constructExceptionServerSpan(attributeMap, statusCode)
+	span.Status().SetMessage(errorMsg)
+
+	event1 := span.Events().AppendEmpty()
+	event1.SetName("NotException")
+	event1.Attributes().PutString(conventions.AttributeHTTPMethod, "Post")
+
+	filtered, _ := makeHTTP(span)
+
+	res := pcommon.NewResource()
+	res.Attributes().PutString(conventions.AttributeTelemetrySDKLanguage, "java")
+	isError, isFault, isThrottle, filteredResult, cause := makeCause(span, filtered, res)
+
+	assert.False(t, isFault)
+	assert.False(t, isError)
+	assert.False(t, isThrottle)
+	assert.Equal(t, filtered, filteredResult)
+	assert.Nil(t, cause)
+}
+
 func TestCauseWithStatusMessage(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]interface{})
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 500
-	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
+	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeError)
 	span.Status().SetMessage(errorMsg)
 	filtered, _ := makeHTTP(span)
 
-	res := pdata.NewResource()
+	res := pcommon.NewResource()
 	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
 
 	assert.True(t, isFault)
@@ -106,10 +182,10 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 500
 	attributes["http.status_text"] = errorMsg
-	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
+	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeError)
 	filtered, _ := makeHTTP(span)
 
-	res := pdata.NewResource()
+	res := pcommon.NewResource()
 	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
 
 	assert.True(t, isFault)
@@ -134,13 +210,13 @@ func TestCauseWithZeroStatusMessage(t *testing.T) {
 	attributes[conventions.AttributeHTTPStatusCode] = 500
 	attributes["http.status_text"] = errorMsg
 
-	span := constructExceptionServerSpan(attributes, pdata.StatusCodeUnset)
+	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeUnset)
 	filtered, _ := makeHTTP(span)
 	// Status is used to determine whether an error or not.
 	// This span illustrates incorrect instrumentation,
 	// marking a success status with an error http status code, and status wins.
 	// We do not expect to see such spans in practice.
-	res := pdata.NewResource()
+	res := pcommon.NewResource()
 	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
 
 	assert.False(t, isError)
@@ -158,10 +234,10 @@ func TestCauseWithClientErrorMessage(t *testing.T) {
 	attributes[conventions.AttributeHTTPStatusCode] = 499
 	attributes["http.status_text"] = errorMsg
 
-	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
+	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeError)
 	filtered, _ := makeHTTP(span)
 
-	res := pdata.NewResource()
+	res := pcommon.NewResource()
 	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
 
 	assert.True(t, isError)
@@ -179,10 +255,10 @@ func TestCauseWithThrottled(t *testing.T) {
 	attributes[conventions.AttributeHTTPStatusCode] = 429
 	attributes["http.status_text"] = errorMsg
 
-	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
+	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeError)
 	filtered, _ := makeHTTP(span)
 
-	res := pdata.NewResource()
+	res := pcommon.NewResource()
 	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
 
 	assert.True(t, isError)
@@ -192,21 +268,21 @@ func TestCauseWithThrottled(t *testing.T) {
 	assert.NotNil(t, cause)
 }
 
-func constructExceptionServerSpan(attributes map[string]interface{}, statuscode pdata.StatusCode) pdata.Span {
+func constructExceptionServerSpan(attributes map[string]interface{}, statuscode ptrace.StatusCode) ptrace.Span {
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
 
-	span := pdata.NewSpan()
+	span := ptrace.NewSpan()
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/widgets")
-	span.SetKind(pdata.SpanKindServer)
-	span.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
-	span.SetEndTimestamp(pdata.NewTimestampFromTime(endTime))
+	span.SetKind(ptrace.SpanKindServer)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 
-	status := pdata.NewSpanStatus()
+	status := ptrace.NewSpanStatus()
 	status.SetCode(statuscode)
 	status.CopyTo(span.Status())
 

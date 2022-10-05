@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ func (c *Config) ClientOptions() *options.ClientOptions {
 	}
 
 	tlsConfig, err := c.LoadTLSConfig()
-	if err != nil && tlsConfig != nil {
+	if err == nil && tlsConfig != nil {
 		clientOptions.SetTLSConfig(tlsConfig)
 	}
 
@@ -95,7 +95,7 @@ func (c *Config) ClientOptions() *options.ClientOptions {
 }
 
 func (c *Config) hostlist() []string {
-	hosts := []string{}
+	var hosts []string
 	for _, ep := range c.Hosts {
 		hosts = append(hosts, ep.Endpoint)
 	}

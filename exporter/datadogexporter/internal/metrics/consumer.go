@@ -17,11 +17,11 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 	"github.com/DataDog/datadog-agent/pkg/quantile"
 	"go.opentelemetry.io/collector/component"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/sketches"
 )
 
@@ -46,8 +46,8 @@ func NewConsumer() *Consumer {
 }
 
 // toDataType maps translator datatypes to zorkian's datatypes.
-func (c *Consumer) toDataType(dt translator.MetricDataType) (out MetricDataType) {
-	out = MetricDataType("unknown")
+func (c *Consumer) toDataType(dt translator.MetricDataType) (out MetricType) {
+	out = MetricType("unknown")
 
 	switch dt {
 	case translator.Count:
@@ -79,41 +79,46 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 }
 
 // All gets all metrics (consumed metrics and running metrics).
-func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo) ([]datadog.Metric, sketches.SketchSeriesList) {
+func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string) ([]datadog.Metric, sketches.SketchSeriesList) {
 	series := c.ms
 	series = append(series, c.runningMetrics(timestamp, buildInfo)...)
+	if len(tags) == 0 {
+		return series, c.sl
+	}
+	for i := 0; i < len(series); i++ {
+		series[i].Tags = append(series[i].Tags, tags...)
+	}
+	for i := 0; i < len(c.sl); i++ {
+		c.sl[i].Tags = append(c.sl[i].Tags, tags...)
+	}
 	return series, c.sl
 }
 
 // ConsumeTimeSeries implements the translator.Consumer interface.
 func (c *Consumer) ConsumeTimeSeries(
 	_ context.Context,
-	name string,
+	dims *translator.Dimensions,
 	typ translator.MetricDataType,
 	timestamp uint64,
 	value float64,
-	tags []string,
-	host string,
 ) {
 	dt := c.toDataType(typ)
-	met := NewMetric(name, dt, timestamp, value, tags)
-	met.SetHost(host)
+	met := NewMetric(dims.Name(), dt, timestamp, value, dims.Tags())
+	met.SetHost(dims.Host())
 	c.ms = append(c.ms, met)
 }
 
 // ConsumeSketch implements the translator.Consumer interface.
 func (c *Consumer) ConsumeSketch(
 	_ context.Context,
-	name string,
+	dims *translator.Dimensions,
 	timestamp uint64,
 	sketch *quantile.Sketch,
-	tags []string,
-	host string,
 ) {
 	c.sl = append(c.sl, sketches.SketchSeries{
-		Name:     name,
-		Tags:     tags,
-		Host:     host,
+		Name:     dims.Name(),
+		Tags:     dims.Tags(),
+		Host:     dims.Host(),
 		Interval: 1,
 		Points: []sketches.SketchPoint{{
 			Ts:     int64(timestamp / 1e9),

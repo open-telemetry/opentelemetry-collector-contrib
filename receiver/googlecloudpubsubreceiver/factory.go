@@ -19,37 +19,33 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 const (
-	typeStr         = "googlecloudpubsub"
-	reportTransport = "pubsub"
+	typeStr              = "googlecloudpubsub"
+	stability            = component.StabilityLevelBeta
+	reportTransport      = "pubsub"
+	reportFormatProtobuf = "protobuf"
 )
 
 func NewFactory() component.ReceiverFactory {
 	f := &pubsubReceiverFactory{
 		receivers: make(map[*Config]*pubsubReceiver),
 	}
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		f.CreateDefaultConfig,
-		receiverhelper.WithTraces(f.CreateTracesReceiver),
-		receiverhelper.WithMetrics(f.CreateMetricsReceiver),
-		receiverhelper.WithLogs(f.CreateLogsReceiver),
+		component.WithTracesReceiver(f.CreateTracesReceiver, stability),
+		component.WithMetricsReceiver(f.CreateMetricsReceiver, stability),
+		component.WithLogsReceiver(f.CreateLogsReceiver, stability),
 	)
 }
 
 type pubsubReceiverFactory struct {
 	receivers map[*Config]*pubsubReceiver
-}
-
-func (factory *pubsubReceiverFactory) Type() config.Type {
-	return typeStr
 }
 
 func (factory *pubsubReceiverFactory) CreateDefaultConfig() config.Receiver {
@@ -85,7 +81,7 @@ func (factory *pubsubReceiverFactory) CreateTracesReceiver(
 	consumer consumer.Traces) (component.TracesReceiver, error) {
 
 	if consumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 	err := cfg.(*Config).validateForTrace()
 	if err != nil {
@@ -103,7 +99,7 @@ func (factory *pubsubReceiverFactory) CreateMetricsReceiver(
 	consumer consumer.Metrics) (component.MetricsReceiver, error) {
 
 	if consumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 	err := cfg.(*Config).validateForMetric()
 	if err != nil {
@@ -121,7 +117,7 @@ func (factory *pubsubReceiverFactory) CreateLogsReceiver(
 	consumer consumer.Logs) (component.LogsReceiver, error) {
 
 	if consumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 	err := cfg.(*Config).validateForLog()
 	if err != nil {

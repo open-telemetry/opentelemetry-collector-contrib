@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,8 +18,9 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 const (
@@ -44,7 +45,7 @@ type resourceAttributes struct {
 // The resourceMetricsBuilder is used to aggregate metrics for the
 // same resourceAttributes.
 type resourceMetricsBuilder struct {
-	resourceAttributes `mapstructure:",squash"`
+	rms pmetric.MetricSlice
 	// metricBuilders is the map of metrics within the same
 	// resource group.
 	metricBuilders map[string]*metricBuilder
@@ -52,10 +53,12 @@ type resourceMetricsBuilder struct {
 
 // newResourceMetricsBuilder creates a resourceMetricsBuilder with the
 // resourceAttributes.
-func newResourceMetricsBuilder(attrs resourceAttributes) *resourceMetricsBuilder {
+func newResourceMetricsBuilder(md pmetric.Metrics, attrs resourceAttributes) *resourceMetricsBuilder {
+	rms := md.ResourceMetrics().AppendEmpty()
+	attrs.setAttributes(rms.Resource())
 	return &resourceMetricsBuilder{
-		resourceAttributes: attrs,
-		metricBuilders:     make(map[string]*metricBuilder),
+		rms:            rms.ScopeMetrics().AppendEmpty().Metrics(),
+		metricBuilders: make(map[string]*metricBuilder),
 	}
 }
 
@@ -64,40 +67,30 @@ func newResourceMetricsBuilder(attrs resourceAttributes) *resourceMetricsBuilder
 func (rmb *resourceMetricsBuilder) AddMetric(metric cWMetric) {
 	mb, ok := rmb.metricBuilders[metric.MetricName]
 	if !ok {
-		mb = newMetricBuilder(metric.MetricName, metric.Unit)
+		mb = newMetricBuilder(rmb.rms, metric.MetricName, metric.Unit)
 		rmb.metricBuilders[metric.MetricName] = mb
 	}
 	mb.AddDataPoint(metric)
 }
 
-// Build updates the passed in pdata.ResourceMetrics with the metrics in
-// the builder.
-func (rmb *resourceMetricsBuilder) Build(rm pdata.ResourceMetrics) {
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	rmb.setAttributes(rm.Resource())
-	for _, mb := range rmb.metricBuilders {
-		mb.Build(ilm.Metrics().AppendEmpty())
-	}
-}
-
-// setAttributes creates a pdata.Resource from the fields in the resourceMetricsBuilder.
-func (rmb *resourceMetricsBuilder) setAttributes(resource pdata.Resource) {
+// setAttributes creates a pcommon.Resource from the fields in the resourceMetricsBuilder.
+func (rmb *resourceAttributes) setAttributes(resource pcommon.Resource) {
 	attributes := resource.Attributes()
-	attributes.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attributes.InsertString(conventions.AttributeCloudAccountID, rmb.accountID)
-	attributes.InsertString(conventions.AttributeCloudRegion, rmb.region)
-	serviceNamespace, serviceName := rmb.toServiceAttributes(rmb.namespace)
+	attributes.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attributes.PutString(conventions.AttributeCloudAccountID, rmb.accountID)
+	attributes.PutString(conventions.AttributeCloudRegion, rmb.region)
+	serviceNamespace, serviceName := toServiceAttributes(rmb.namespace)
 	if serviceNamespace != "" {
-		attributes.InsertString(conventions.AttributeServiceNamespace, serviceNamespace)
+		attributes.PutString(conventions.AttributeServiceNamespace, serviceNamespace)
 	}
-	attributes.InsertString(conventions.AttributeServiceName, serviceName)
-	attributes.InsertString(attributeAWSCloudWatchMetricStreamName, rmb.metricStreamName)
+	attributes.PutString(conventions.AttributeServiceName, serviceName)
+	attributes.PutString(attributeAWSCloudWatchMetricStreamName, rmb.metricStreamName)
 }
 
 // toServiceAttributes splits the CloudWatch namespace into service namespace/name
 // if prepended by AWS/. Otherwise, it returns the CloudWatch namespace as the
 // service name with an empty service namespace
-func (rmb *resourceMetricsBuilder) toServiceAttributes(namespace string) (serviceNamespace, serviceName string) {
+func toServiceAttributes(namespace string) (serviceNamespace, serviceName string) {
 	index := strings.Index(namespace, namespaceDelimiter)
 	if index != -1 && strings.EqualFold(namespace[:index], conventions.AttributeCloudProviderAWS) {
 		return namespace[:index], namespace[index+1:]
@@ -118,24 +111,20 @@ type dataPointKey struct {
 // The metricBuilder aggregates metrics of the same name and unit
 // into data points.
 type metricBuilder struct {
-	// name is the metric name.
-	name string
-	// unit is the metric unit.
-	unit string
-	// dataPoints is the slice of summary data points
-	// for the metric.
-	dataPoints pdata.SummaryDataPointSlice
+	metric pmetric.Metric
 	// seen is the set of added data point keys.
 	seen map[dataPointKey]bool
 }
 
 // newMetricBuilder creates a metricBuilder with the name and unit.
-func newMetricBuilder(name, unit string) *metricBuilder {
+func newMetricBuilder(rms pmetric.MetricSlice, name, unit string) *metricBuilder {
+	m := rms.AppendEmpty()
+	m.SetName(name)
+	m.SetUnit(unit)
+	m.SetEmptySummary()
 	return &metricBuilder{
-		name:       name,
-		unit:       unit,
-		dataPoints: pdata.NewSummaryDataPointSlice(),
-		seen:       make(map[dataPointKey]bool),
+		metric: m,
+		seen:   make(map[dataPointKey]bool),
 	}
 }
 
@@ -147,23 +136,14 @@ func (mb *metricBuilder) AddDataPoint(metric cWMetric) {
 		dimensions: fmt.Sprint(metric.Dimensions),
 	}
 	if _, ok := mb.seen[key]; !ok {
-		mb.toDataPoint(mb.dataPoints.AppendEmpty(), metric)
+		mb.toDataPoint(mb.metric.Summary().DataPoints().AppendEmpty(), metric)
 		mb.seen[key] = true
 	}
 }
 
-// Build builds the pdata.Metric with the data points that were added
-// with AddDataPoint.
-func (mb *metricBuilder) Build(metric pdata.Metric) {
-	metric.SetName(mb.name)
-	metric.SetUnit(mb.unit)
-	metric.SetDataType(pdata.MetricDataTypeSummary)
-	mb.dataPoints.MoveAndAppendTo(metric.Summary().DataPoints())
-}
-
 // toDataPoint converts a cWMetric into a pdata datapoint and attaches the
 // dimensions as attributes.
-func (mb *metricBuilder) toDataPoint(dp pdata.SummaryDataPoint, metric cWMetric) {
+func (mb *metricBuilder) toDataPoint(dp pmetric.SummaryDataPoint, metric cWMetric) {
 	dp.SetCount(uint64(metric.Value.Count))
 	dp.SetSum(metric.Value.Sum)
 	qv := dp.QuantileValues()
@@ -173,9 +153,9 @@ func (mb *metricBuilder) toDataPoint(dp pdata.SummaryDataPoint, metric cWMetric)
 	max := qv.AppendEmpty()
 	max.SetQuantile(1)
 	max.SetValue(metric.Value.Max)
-	dp.SetTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(metric.Timestamp)))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(metric.Timestamp)))
 	for k, v := range metric.Dimensions {
-		dp.Attributes().InsertString(ToSemConvAttributeKey(k), v)
+		dp.Attributes().PutString(ToSemConvAttributeKey(k), v)
 	}
 }
 

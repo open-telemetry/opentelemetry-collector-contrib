@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import (
 	"sort"
 	"strings"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type newLabelValueFunction func(m LabelValueMetadata, value interface{}) LabelValue
@@ -33,7 +33,7 @@ type LabelValueMetadata interface {
 type LabelValue interface {
 	Metadata() LabelValueMetadata
 	Value() interface{}
-	SetValueTo(attributes pdata.AttributeMap)
+	SetValueTo(attributes pcommon.Map)
 }
 
 type queryLabelValueMetadata struct {
@@ -102,8 +102,8 @@ func (v stringLabelValue) Value() interface{} {
 	return v.value
 }
 
-func (v stringLabelValue) SetValueTo(attributes pdata.AttributeMap) {
-	attributes.InsertString(v.metadata.Name(), v.value)
+func (v stringLabelValue) SetValueTo(attributes pcommon.Map) {
+	attributes.PutString(v.metadata.Name(), v.value)
 }
 
 func newStringLabelValue(metadata LabelValueMetadata, valueHolder interface{}) LabelValue {
@@ -121,8 +121,8 @@ func (v int64LabelValue) Value() interface{} {
 	return v.value
 }
 
-func (v int64LabelValue) SetValueTo(attributes pdata.AttributeMap) {
-	attributes.InsertInt(v.metadata.Name(), v.value)
+func (v int64LabelValue) SetValueTo(attributes pcommon.Map) {
+	attributes.PutInt(v.metadata.Name(), v.value)
 }
 
 func newInt64LabelValue(metadata LabelValueMetadata, valueHolder interface{}) LabelValue {
@@ -140,8 +140,8 @@ func (v boolLabelValue) Value() interface{} {
 	return v.value
 }
 
-func (v boolLabelValue) SetValueTo(attributes pdata.AttributeMap) {
-	attributes.InsertBool(v.metadata.Name(), v.value)
+func (v boolLabelValue) SetValueTo(attributes pcommon.Map) {
+	attributes.PutBool(v.metadata.Name(), v.value)
 }
 
 func newBoolLabelValue(metadata LabelValueMetadata, valueHolder interface{}) LabelValue {
@@ -159,8 +159,8 @@ func (v stringSliceLabelValue) Value() interface{} {
 	return v.value
 }
 
-func (v stringSliceLabelValue) SetValueTo(attributes pdata.AttributeMap) {
-	attributes.InsertString(v.metadata.Name(), v.value)
+func (v stringSliceLabelValue) SetValueTo(attributes pcommon.Map) {
+	attributes.PutString(v.metadata.Name(), v.value)
 }
 
 func newStringSliceLabelValue(metadata LabelValueMetadata, valueHolder interface{}) LabelValue {
@@ -184,8 +184,8 @@ func (v byteSliceLabelValue) Value() interface{} {
 	return v.value
 }
 
-func (v byteSliceLabelValue) SetValueTo(attributes pdata.AttributeMap) {
-	attributes.InsertString(v.metadata.Name(), v.value)
+func (v byteSliceLabelValue) SetValueTo(attributes pcommon.Map) {
+	attributes.PutString(v.metadata.Name(), v.value)
 }
 
 func newByteSliceLabelValue(metadata LabelValueMetadata, valueHolder interface{}) LabelValue {
@@ -203,8 +203,8 @@ func (v lockRequestSliceLabelValue) Value() interface{} {
 	return v.value
 }
 
-func (v lockRequestSliceLabelValue) SetValueTo(attributes pdata.AttributeMap) {
-	attributes.InsertString(v.metadata.Name(), v.value)
+func (v lockRequestSliceLabelValue) SetValueTo(attributes pcommon.Map) {
+	attributes.PutString(v.metadata.Name(), v.value)
 }
 
 type lockRequest struct {

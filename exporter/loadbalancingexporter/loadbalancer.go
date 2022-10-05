@@ -23,7 +23,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
@@ -42,7 +41,7 @@ type componentFactory func(ctx context.Context, endpoint string) (component.Expo
 
 type loadBalancer interface {
 	component.Component
-	Endpoint(traceID pdata.TraceID) string
+	Endpoint(identifier []byte) string
 	Exporter(endpoint string) (component.Exporter, error)
 }
 
@@ -80,7 +79,7 @@ func newLoadBalancer(params component.ExporterCreateSettings, cfg config.Exporte
 		dnsLogger := params.Logger.With(zap.String("resolver", "dns"))
 
 		var err error
-		res, err = newDNSResolver(dnsLogger, oCfg.Resolver.DNS.Hostname, oCfg.Resolver.DNS.Port)
+		res, err = newDNSResolver(dnsLogger, oCfg.Resolver.DNS.Hostname, oCfg.Resolver.DNS.Port, oCfg.Resolver.DNS.Interval, oCfg.Resolver.DNS.Timeout)
 		if err != nil {
 			return nil, err
 		}
@@ -150,9 +149,13 @@ func endpointWithPort(endpoint string) string {
 }
 
 func (lb *loadBalancerImp) removeExtraExporters(ctx context.Context, endpoints []string) {
+	endpointsWithPort := make([]string, len(endpoints))
+	for i, e := range endpoints {
+		endpointsWithPort[i] = endpointWithPort(e)
+	}
 	for existing := range lb.exporters {
-		if !endpointFound(existing, endpoints) {
-			lb.exporters[existing].Shutdown(ctx)
+		if !endpointFound(existing, endpointsWithPort) {
+			_ = lb.exporters[existing].Shutdown(ctx)
 			delete(lb.exporters, existing)
 		}
 	}
@@ -173,11 +176,11 @@ func (lb *loadBalancerImp) Shutdown(context.Context) error {
 	return nil
 }
 
-func (lb *loadBalancerImp) Endpoint(traceID pdata.TraceID) string {
+func (lb *loadBalancerImp) Endpoint(identifier []byte) string {
 	lb.updateLock.RLock()
 	defer lb.updateLock.RUnlock()
 
-	return lb.ring.endpointFor(traceID)
+	return lb.ring.endpointFor(identifier)
 }
 
 func (lb *loadBalancerImp) Exporter(endpoint string) (component.Exporter, error) {
@@ -185,7 +188,7 @@ func (lb *loadBalancerImp) Exporter(endpoint string) (component.Exporter, error)
 	// data loss because the latest batches sent to outdated backend will never find their way out.
 	// for details: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1690
 	lb.updateLock.RLock()
-	exp, found := lb.exporters[endpoint]
+	exp, found := lb.exporters[endpointWithPort(endpoint)]
 	lb.updateLock.RUnlock()
 	if !found {
 		// something is really wrong... how come we couldn't find the exporter??

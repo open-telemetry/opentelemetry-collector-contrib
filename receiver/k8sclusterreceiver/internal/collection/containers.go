@@ -19,7 +19,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
@@ -89,7 +89,7 @@ func boolToInt64(b bool) int64 {
 // getSpecMetricsForContainer metricizes values from the container spec.
 // This includes values like resource requests and limits.
 func getSpecMetricsForContainer(c corev1.Container) []*metricspb.Metric {
-	metrics := make([]*metricspb.Metric, 0)
+	var metrics []*metricspb.Metric
 
 	for _, t := range []struct {
 		typ         string
@@ -110,20 +110,22 @@ func getSpecMetricsForContainer(c corev1.Container) []*metricspb.Metric {
 		},
 	} {
 		for k, v := range t.rl {
-			val := v.Value()
+			val := utils.GetInt64TimeSeries(v.Value())
+			valType := metricspb.MetricDescriptor_GAUGE_INT64
 			if k == corev1.ResourceCPU {
-				val = v.MilliValue()
+				// cpu metrics must be of the double type to adhere to opentelemetry system.cpu metric specifications
+				valType = metricspb.MetricDescriptor_GAUGE_DOUBLE
+				val = utils.GetDoubleTimeSeries(float64(v.MilliValue()) / 1000.0)
 			}
-
 			metrics = append(metrics,
 				&metricspb.Metric{
 					MetricDescriptor: &metricspb.MetricDescriptor{
 						Name:        fmt.Sprintf("k8s.container.%s_%s", k, t.typ),
 						Description: t.description,
-						Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+						Type:        valType,
 					},
 					Timeseries: []*metricspb.TimeSeries{
-						utils.GetInt64TimeSeries(val),
+						val,
 					},
 				},
 			)

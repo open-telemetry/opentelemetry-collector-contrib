@@ -18,50 +18,67 @@ import (
 	"context"
 	"math"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
 
+const enableHistogramSupportGateID = "processor.cumulativetodeltaprocessor.EnableHistogramSupport"
+
+var enableHistogramSupportGate = featuregate.Gate{
+	ID:          enableHistogramSupportGateID,
+	Enabled:     false,
+	Description: "wip",
+}
+
+func init() {
+	featuregate.GetRegistry().MustRegister(enableHistogramSupportGate)
+}
+
 type cumulativeToDeltaProcessor struct {
-	metrics         map[string]struct{}
-	logger          *zap.Logger
-	deltaCalculator *tracking.MetricTracker
-	cancelFunc      context.CancelFunc
+	includeFS               filterset.FilterSet
+	excludeFS               filterset.FilterSet
+	logger                  *zap.Logger
+	deltaCalculator         *tracking.MetricTracker
+	cancelFunc              context.CancelFunc
+	histogramSupportEnabled bool
 }
 
 func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulativeToDeltaProcessor {
 	ctx, cancel := context.WithCancel(context.Background())
 	p := &cumulativeToDeltaProcessor{
-		logger:          logger,
-		deltaCalculator: tracking.NewMetricTracker(ctx, logger, config.MaxStaleness),
-		cancelFunc:      cancel,
+		logger:                  logger,
+		deltaCalculator:         tracking.NewMetricTracker(ctx, logger, config.MaxStaleness),
+		cancelFunc:              cancel,
+		histogramSupportEnabled: featuregate.GetRegistry().IsEnabled(enableHistogramSupportGateID),
 	}
-	if len(config.Metrics) > 0 {
-		p.metrics = make(map[string]struct{}, len(config.Metrics))
-		for _, m := range config.Metrics {
-			p.metrics[m] = struct{}{}
-		}
+	if len(config.Include.Metrics) > 0 {
+		p.includeFS, _ = filterset.CreateFilterSet(config.Include.Metrics, &config.Include.Config)
+	}
+	if len(config.Exclude.Metrics) > 0 {
+		p.excludeFS, _ = filterset.CreateFilterSet(config.Exclude.Metrics, &config.Exclude.Config)
 	}
 	return p
 }
 
 // processMetrics implements the ProcessMetricsFunc type.
-func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	resourceMetricsSlice := md.ResourceMetrics()
-	resourceMetricsSlice.RemoveIf(func(rm pdata.ResourceMetrics) bool {
-		ilms := rm.InstrumentationLibraryMetrics()
-		ilms.RemoveIf(func(ilm pdata.InstrumentationLibraryMetrics) bool {
+	resourceMetricsSlice.RemoveIf(func(rm pmetric.ResourceMetrics) bool {
+		ilms := rm.ScopeMetrics()
+		ilms.RemoveIf(func(ilm pmetric.ScopeMetrics) bool {
 			ms := ilm.Metrics()
-			ms.RemoveIf(func(m pdata.Metric) bool {
-				if _, ok := ctdp.metrics[m.Name()]; !ok {
+			ms.RemoveIf(func(m pmetric.Metric) bool {
+				if !ctdp.shouldConvertMetric(m.Name()) {
 					return false
 				}
-				switch m.DataType() {
-				case pdata.MetricDataTypeSum:
+				switch m.Type() {
+				case pmetric.MetricTypeSum:
 					ms := m.Sum()
-					if ms.AggregationTemporality() != pdata.MetricAggregationTemporalityCumulative {
+					if ms.AggregationTemporality() != pmetric.MetricAggregationTemporalityCumulative {
 						return false
 					}
 
@@ -72,14 +89,42 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 
 					baseIdentity := tracking.MetricIdentity{
 						Resource:               rm.Resource(),
-						InstrumentationLibrary: ilm.InstrumentationLibrary(),
-						MetricDataType:         m.DataType(),
+						InstrumentationLibrary: ilm.Scope(),
+						MetricType:             m.Type(),
 						MetricName:             m.Name(),
 						MetricUnit:             m.Unit(),
 						MetricIsMonotonic:      ms.IsMonotonic(),
 					}
 					ctdp.convertDataPoints(ms.DataPoints(), baseIdentity)
-					ms.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+					ms.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+					return ms.DataPoints().Len() == 0
+				case pmetric.MetricTypeHistogram:
+					if !ctdp.histogramSupportEnabled {
+						return false
+					}
+
+					ms := m.Histogram()
+					if ms.AggregationTemporality() != pmetric.MetricAggregationTemporalityCumulative {
+						return false
+					}
+
+					if ms.DataPoints().Len() == 0 {
+						return false
+					}
+
+					baseIdentity := tracking.MetricIdentity{
+						Resource:               rm.Resource(),
+						InstrumentationLibrary: ilm.Scope(),
+						MetricType:             m.Type(),
+						MetricName:             m.Name(),
+						MetricUnit:             m.Unit(),
+						MetricIsMonotonic:      true,
+						MetricValueType:        pmetric.NumberDataPointValueTypeInt,
+					}
+
+					ctdp.convertHistogramDataPoints(ms.DataPoints(), baseIdentity)
+
+					ms.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 					return ms.DataPoints().Len() == 0
 				default:
 					return false
@@ -87,7 +132,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 			})
 			return ilm.Metrics().Len() == 0
 		})
-		return rm.InstrumentationLibraryMetrics().Len() == 0
+		return rm.ScopeMetrics().Len() == 0
 	})
 	return md, nil
 }
@@ -97,10 +142,15 @@ func (ctdp *cumulativeToDeltaProcessor) shutdown(context.Context) error {
 	return nil
 }
 
+func (ctdp *cumulativeToDeltaProcessor) shouldConvertMetric(metricName string) bool {
+	return (ctdp.includeFS == nil || ctdp.includeFS.Matches(metricName)) &&
+		(ctdp.excludeFS == nil || !ctdp.excludeFS.Matches(metricName))
+}
+
 func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseIdentity tracking.MetricIdentity) {
-	switch dps := in.(type) {
-	case pdata.NumberDataPointSlice:
-		dps.RemoveIf(func(dp pdata.NumberDataPoint) bool {
+
+	if dps, ok := in.(pmetric.NumberDataPointSlice); ok {
+		dps.RemoveIf(func(dp pmetric.NumberDataPoint) bool {
 			id := baseIdentity
 			id.StartTimestamp = dp.StartTimestamp()
 			id.Attributes = dp.Attributes()
@@ -110,12 +160,12 @@ func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseId
 			}
 			if id.IsFloatVal() {
 				// Do not attempt to transform NaN values
-				if math.IsNaN(dp.DoubleVal()) {
+				if math.IsNaN(dp.DoubleValue()) {
 					return false
 				}
-				point.FloatValue = dp.DoubleVal()
+				point.FloatValue = dp.DoubleValue()
 			} else {
-				point.IntValue = dp.IntVal()
+				point.IntValue = dp.IntValue()
 			}
 			trackingPoint := tracking.MetricPoint{
 				Identity: id,
@@ -131,11 +181,49 @@ func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseId
 			}
 			dp.SetStartTimestamp(delta.StartTimestamp)
 			if id.IsFloatVal() {
-				dp.SetDoubleVal(delta.FloatValue)
+				dp.SetDoubleValue(delta.FloatValue)
 			} else {
-				dp.SetIntVal(delta.IntValue)
+				dp.SetIntValue(delta.IntValue)
 			}
 			return false
+		})
+	}
+}
+
+func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in interface{}, baseIdentity tracking.MetricIdentity) {
+
+	if dps, ok := in.(pmetric.HistogramDataPointSlice); ok {
+		dps.RemoveIf(func(dp pmetric.HistogramDataPoint) bool {
+			id := baseIdentity
+			id.StartTimestamp = dp.StartTimestamp()
+			id.Attributes = dp.Attributes()
+
+			point := tracking.ValuePoint{
+				ObservedTimestamp: dp.Timestamp(),
+				HistogramValue: &tracking.HistogramPoint{
+					Count:   dp.Count(),
+					Sum:     dp.Sum(),
+					Buckets: dp.BucketCounts().AsRaw(),
+				},
+			}
+
+			trackingPoint := tracking.MetricPoint{
+				Identity: id,
+				Value:    point,
+			}
+			delta, valid := ctdp.deltaCalculator.Convert(trackingPoint)
+
+			if valid {
+				dp.SetStartTimestamp(delta.StartTimestamp)
+				dp.SetCount(delta.HistogramValue.Count)
+				if dp.HasSum() && !math.IsNaN(dp.Sum()) {
+					dp.SetSum(delta.HistogramValue.Sum)
+				}
+				dp.BucketCounts().FromRaw(delta.HistogramValue.Buckets)
+				return false
+			}
+
+			return !valid
 		})
 	}
 }

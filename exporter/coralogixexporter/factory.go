@@ -19,41 +19,137 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // NewFactory by Coralogix
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
-		typestr,
+	return component.NewExporterFactory(
+		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter),
+		component.WithTracesExporter(createTraceExporter, stability),
+		component.WithMetricsExporter(createMetricsExporter, stability),
+		component.WithLogsExporter(createLogsExporter, component.StabilityLevelAlpha),
 	)
 }
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typestr)),
-		QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
-		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
-		GRPCClientSettings: configgrpc.GRPCClientSettings{Endpoint: "https://"},
-		PrivateKey:         "",
-		AppName:            "",
-		SubSystem:          "",
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
+		// Traces GRPC client
+		Traces: configgrpc.GRPCClientSettings{
+			Endpoint: "https://",
+			Headers:  map[string]string{},
+		},
+		Metrics: configgrpc.GRPCClientSettings{
+			Endpoint: "https://",
+			Headers:  map[string]string{},
+			// Default to gzip compression
+			Compression:     configcompression.Gzip,
+			WriteBufferSize: 512 * 1024,
+		},
+		Logs: configgrpc.GRPCClientSettings{
+			Endpoint: "https://",
+			Headers:  map[string]string{},
+		},
+		PrivateKey: "",
+		AppName:    "",
 	}
 }
 
-func createTraceExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
+func createTraceExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
 	cfg := config.(*Config)
-	exporter := newCoralogixExporter(cfg, set)
+
+	// Use deprecated jaeger endpoint if it's not empty
+	if !isEmpty(cfg.Endpoint) {
+		set.Logger.Warn("endpoint field is deprecated.Please use the new `traces.endpoint` field with OpenTelemtry endpoint.")
+
+		exporter, err := newCoralogixExporter(cfg, set)
+		if err != nil {
+			return nil, err
+		}
+
+		return exporterhelper.NewTracesExporter(
+			ctx,
+			set,
+			config,
+			exporter.tracesPusher,
+			exporterhelper.WithQueue(cfg.QueueSettings),
+			exporterhelper.WithRetry(cfg.RetrySettings),
+			exporterhelper.WithTimeout(cfg.TimeoutSettings),
+			exporterhelper.WithStart(exporter.client.startConnection),
+		)
+	}
+
+	exporter, err := newTracesExporter(cfg, set)
+	if err != nil {
+		return nil, err
+	}
 
 	return exporterhelper.NewTracesExporter(
-		config,
+		ctx,
 		set,
-		exporter.tracesPusher,
-		exporterhelper.WithQueue(cfg.QueueSettings),
+		config,
+		exporter.pushTraces,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
-		exporterhelper.WithStart(exporter.client.startConnection),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithStart(exporter.start),
+		exporterhelper.WithShutdown(exporter.shutdown),
+	)
+}
+
+func createMetricsExporter(
+	ctx context.Context,
+	set component.ExporterCreateSettings,
+	cfg config.Exporter,
+) (component.MetricsExporter, error) {
+	oce, err := newMetricsExporter(cfg, set)
+	if err != nil {
+		return nil, err
+	}
+	oCfg := cfg.(*Config)
+	return exporterhelper.NewMetricsExporter(
+		ctx,
+		set,
+		cfg,
+		oce.pushMetrics,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
+		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithStart(oce.start),
+		exporterhelper.WithShutdown(oce.shutdown),
+	)
+}
+
+func createLogsExporter(
+	ctx context.Context,
+	set component.ExporterCreateSettings,
+	cfg config.Exporter,
+) (component.LogsExporter, error) {
+	oce, err := newLogsExporter(cfg, set)
+	if err != nil {
+		return nil, err
+	}
+	oCfg := cfg.(*Config)
+	return exporterhelper.NewLogsExporter(
+		ctx,
+		set,
+		cfg,
+		oce.pushLogs,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
+		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithStart(oce.start),
+		exporterhelper.WithShutdown(oce.shutdown),
 	)
 }

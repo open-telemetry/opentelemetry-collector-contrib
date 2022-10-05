@@ -23,11 +23,11 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
-	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -61,11 +61,11 @@ loop:
 	return dims
 }
 
-func makeHandler(dimCh chan<- dim, forcedResp *atomic.Value) http.HandlerFunc {
+func makeHandler(dimCh chan<- dim, forcedResp *atomic.Int32) http.HandlerFunc {
 	forcedResp.Store(200)
 
 	return func(rw http.ResponseWriter, r *http.Request) {
-		forcedRespInt := forcedResp.Load().(int)
+		forcedRespInt := int(forcedResp.Load())
 		if forcedRespInt != 200 {
 			rw.WriteHeader(forcedRespInt)
 			return
@@ -98,11 +98,11 @@ func makeHandler(dimCh chan<- dim, forcedResp *atomic.Value) http.HandlerFunc {
 	}
 }
 
-func setup(t *testing.T) (*DimensionClient, chan dim, *atomic.Value, context.CancelFunc) {
+func setup(t *testing.T) (*DimensionClient, chan dim, *atomic.Int32, context.CancelFunc) {
 	dimCh := make(chan dim)
 
-	var forcedResp atomic.Value
-	server := httptest.NewServer(makeHandler(dimCh, &forcedResp))
+	forcedResp := atomic.NewInt32(0)
+	server := httptest.NewServer(makeHandler(dimCh, forcedResp))
 
 	serverURL, err := url.Parse(server.URL)
 	require.NoError(t, err, "failed to get server URL", err)
@@ -122,7 +122,7 @@ func setup(t *testing.T) (*DimensionClient, chan dim, *atomic.Value, context.Can
 	})
 	client.Start()
 
-	return client, dimCh, &forcedResp, cancel
+	return client, dimCh, forcedResp, cancel
 }
 
 func TestDimensionClient(t *testing.T) {
@@ -354,16 +354,6 @@ func TestFlappyUpdates(t *testing.T) {
 			Properties: map[string]*string{"index": newString("4")},
 		},
 	}, dims)
-
-	// Give it enough time to run the counter updates which happen after the
-	// request is completed.
-	time.Sleep(1 * time.Second)
-
-	require.Equal(t, int64(8), atomic.LoadInt64(&client.TotalFlappyUpdates))
-	require.Equal(t, int64(0), atomic.LoadInt64(&client.DimensionsCurrentlyDelayed))
-	require.Equal(t, int64(2), atomic.LoadInt64(&client.requestSender.TotalRequestsStarted))
-	require.Equal(t, int64(2), atomic.LoadInt64(&client.requestSender.TotalRequestsCompleted))
-	require.Equal(t, int64(0), atomic.LoadInt64(&client.requestSender.TotalRequestsFailed))
 }
 
 func TestInvalidUpdatesNotSent(t *testing.T) {
@@ -394,7 +384,6 @@ func TestInvalidUpdatesNotSent(t *testing.T) {
 
 	dims := waitForDims(dimCh, 2, 3)
 	require.Len(t, dims, 0)
-	require.Equal(t, int64(0), atomic.LoadInt64(&client.TotalInvalidDimensions))
 }
 
 func newString(s string) *string {

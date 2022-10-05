@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
@@ -43,7 +43,7 @@ import (
 func newTracesExporter(cfg *Config, set component.ExporterCreateSettings) (component.TracesExporter, error) {
 	s := newProtoGRPCSender(cfg, set.TelemetrySettings)
 	return exporterhelper.NewTracesExporter(
-		cfg, set, s.pushTraces,
+		context.TODO(), set, cfg, s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(s.start),
 		exporterhelper.WithShutdown(s.shutdown),
@@ -92,7 +92,7 @@ type stateReporter interface {
 
 func (s *protoGRPCSender) pushTraces(
 	ctx context.Context,
-	td pdata.Traces,
+	td ptrace.Traces,
 ) error {
 
 	batches, err := jaeger.ProtoFromTraces(td)
@@ -181,8 +181,7 @@ func (s *protoGRPCSender) propagateStateChange(st connectivity.State) {
 }
 
 func (s *protoGRPCSender) onStateChange(st connectivity.State) {
-	mCtx, _ := tag.New(context.Background(), tag.Upsert(tag.MustNewKey("exporter_name"), s.name))
-	stats.Record(mCtx, mLastConnectionState.M(int64(st)))
+	_ = stats.RecordWithTags(context.Background(), []tag.Mutator{tag.Upsert(tag.MustNewKey("exporter_name"), s.name)}, mLastConnectionState.M(int64(st)))
 	s.settings.Logger.Info("State of the connection with the Jaeger Collector backend", zap.Stringer("state", st))
 }
 

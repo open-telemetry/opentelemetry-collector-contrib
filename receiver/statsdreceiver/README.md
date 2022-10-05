@@ -1,12 +1,14 @@
 # StatsD Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 StatsD receiver for ingesting StatsD messages(https://github.com/statsd/statsd/blob/master/docs/metric_types.md) into the OpenTelemetry Collector.
 
-Supported pipeline types: metrics
-
 Use case: it does not support horizontal pool of collectors. Desired work case is that customers use the receiver as an agent with a single input at the same time.
-
-> :construction: This receiver is currently in **BETA**.
 
 ## Configuration
 
@@ -141,3 +143,8 @@ service:
 A simple way to send a metric to `localhost:8125`:
 
 `echo "test.metric:42|c|#myKey:myVal" | nc -w 1 -u localhost 8125`
+
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+

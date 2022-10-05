@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 )
@@ -32,14 +32,17 @@ type logNameTest struct {
 	name   string
 	inc    *LogMatchProperties
 	exc    *LogMatchProperties
-	inLogs pdata.Logs
+	inLogs plog.Logs
 	outLN  [][]string // output Log names per Resource
 }
 
 type logWithResource struct {
 	logNames           []string
-	resourceAttributes map[string]pdata.AttributeValue
-	recordAttributes   map[string]pdata.AttributeValue
+	resourceAttributes map[string]interface{}
+	recordAttributes   map[string]interface{}
+	severityText       string
+	body               string
+	severityNumber     plog.SeverityNumber
 }
 
 var (
@@ -51,10 +54,10 @@ var (
 	inLogForResourceTest = []logWithResource{
 		{
 			logNames: []string{"log1", "log2"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val1"),
-				"attr2": pdata.NewAttributeValueString("attr2/val2"),
-				"attr3": pdata.NewAttributeValueString("attr3/val3"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val1",
+				"attr2": "attr2/val2",
+				"attr3": "attr3/val3",
 			},
 		},
 	}
@@ -62,14 +65,14 @@ var (
 	inLogForTwoResource = []logWithResource{
 		{
 			logNames: []string{"log1", "log2"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val1"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val1",
 			},
 		},
 		{
 			logNames: []string{"log3", "log4"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val2"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val2",
 			},
 		},
 	}
@@ -77,49 +80,49 @@ var (
 	inLogForTwoResourceWithRecordAttributes = []logWithResource{
 		{
 			logNames: []string{"log1", "log2"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val1"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val1",
 			},
-			recordAttributes: map[string]pdata.AttributeValue{
-				"rec": pdata.NewAttributeValueString("rec/val1"),
+			recordAttributes: map[string]interface{}{
+				"rec": "rec/val1",
 			},
 		},
 		{
 			logNames: []string{"log3", "log4"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val2"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val2",
 			},
-			recordAttributes: map[string]pdata.AttributeValue{
-				"rec": pdata.NewAttributeValueString("rec/val2"),
+			recordAttributes: map[string]interface{}{
+				"rec": "rec/val2",
 			},
 		},
 	}
 	inLogForThreeResourceWithRecordAttributes = []logWithResource{
 		{
 			logNames: []string{"log1", "log2"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val1"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val1",
 			},
-			recordAttributes: map[string]pdata.AttributeValue{
-				"rec": pdata.NewAttributeValueString("rec/val1"),
+			recordAttributes: map[string]interface{}{
+				"rec": "rec/val1",
 			},
 		},
 		{
 			logNames: []string{"log3", "log4"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val2"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val2",
 			},
-			recordAttributes: map[string]pdata.AttributeValue{
-				"rec": pdata.NewAttributeValueString("rec/val2"),
+			recordAttributes: map[string]interface{}{
+				"rec": "rec/val2",
 			},
 		},
 		{
 			logNames: []string{"log5"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val5"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val5",
 			},
-			recordAttributes: map[string]pdata.AttributeValue{
-				"rec": pdata.NewAttributeValueString("rec/val5"),
+			recordAttributes: map[string]interface{}{
+				"rec": "rec/val5",
 			},
 		},
 	}
@@ -127,27 +130,84 @@ var (
 	inLogForFourResource = []logWithResource{
 		{
 			logNames: []string{"log1"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr": pdata.NewAttributeValueString("attr/val1"),
+			resourceAttributes: map[string]interface{}{
+				"attr": "attr/val1",
 			},
 		},
 		{
 			logNames: []string{"log2"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr": pdata.NewAttributeValueString("attr/val2"),
+			resourceAttributes: map[string]interface{}{
+				"attr": "attr/val2",
 			},
 		},
 		{
 			logNames: []string{"log3"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr": pdata.NewAttributeValueString("attr/val3"),
+			resourceAttributes: map[string]interface{}{
+				"attr": "attr/val3",
 			},
 		},
 		{
 			logNames: []string{"log4"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr": pdata.NewAttributeValueString("attr/val4"),
+			resourceAttributes: map[string]interface{}{
+				"attr": "attr/val4",
 			},
+		},
+	}
+
+	inLogForSeverityText = []logWithResource{
+		{
+			logNames:     []string{"log1"},
+			severityText: "DEBUG",
+		},
+		{
+			logNames:     []string{"log2"},
+			severityText: "DEBUG2",
+		},
+		{
+			logNames:     []string{"log3"},
+			severityText: "INFO",
+		},
+		{
+			logNames:     []string{"log4"},
+			severityText: "WARN",
+		},
+	}
+
+	inLogForBody = []logWithResource{
+		{
+			logNames: []string{"log1"},
+			body:     "This is a log body",
+		},
+		{
+			logNames: []string{"log2"},
+			body:     "This is also a log body",
+		},
+		{
+			logNames: []string{"log3"},
+			body:     "test1",
+		},
+		{
+			logNames: []string{"log4"},
+			body:     "test2",
+		},
+	}
+
+	inLogForSeverityNumber = []logWithResource{
+		{
+			logNames:       []string{"log1"},
+			severityNumber: plog.SeverityNumberDebug,
+		},
+		{
+			logNames:       []string{"log2"},
+			severityNumber: plog.SeverityNumberInfo,
+		},
+		{
+			logNames:       []string{"log3"},
+			severityNumber: plog.SeverityNumberError,
+		},
+		{
+			logNames:       []string{"log4"},
+			severityNumber: plog.SeverityNumberUndefined,
 		},
 	}
 
@@ -332,6 +392,185 @@ var (
 				{"log5"},
 			},
 		},
+		{
+			name: "includeRecordSeverityStrict",
+			inc: &LogMatchProperties{
+				LogMatchType:  Strict,
+				SeverityTexts: []string{"INFO", "DEBUG2"},
+			},
+			inLogs: testResourceLogs(inLogForSeverityText),
+			outLN: [][]string{
+				{"log2"},
+				{"log3"},
+			},
+		},
+		{
+			name: "includeRecordSeverityRegexp",
+			inc: &LogMatchProperties{
+				LogMatchType:  Regexp,
+				SeverityTexts: []string{"DEBUG[1-4]?"},
+			},
+			inLogs: testResourceLogs(inLogForSeverityText),
+			outLN: [][]string{
+				{"log1"},
+				{"log2"},
+			},
+		},
+		{
+			name: "excludeRecordSeverityStrict",
+			exc: &LogMatchProperties{
+				LogMatchType:  Strict,
+				SeverityTexts: []string{"INFO", "DEBUG"},
+			},
+			inLogs: testResourceLogs(inLogForSeverityText),
+			outLN: [][]string{
+				{"log2"},
+				{"log4"},
+			},
+		},
+		{
+			name: "excludeRecordSeverityRegexp",
+			exc: &LogMatchProperties{
+				LogMatchType:  Regexp,
+				SeverityTexts: []string{"^[DI]"},
+			},
+			inLogs: testResourceLogs(inLogForSeverityText),
+			outLN: [][]string{
+				{"log4"},
+			},
+		},
+		{
+			name: "includeRecordBodyStrict",
+			inc: &LogMatchProperties{
+				LogMatchType: Strict,
+				LogBodies:    []string{"test1", "test2", "no match"},
+			},
+			inLogs: testResourceLogs(inLogForBody),
+			outLN: [][]string{
+				{"log3"},
+				{"log4"},
+			},
+		},
+		{
+			name: "includeRecordBodyRegexp",
+			inc: &LogMatchProperties{
+				LogMatchType: Regexp,
+				LogBodies:    []string{"^This"},
+			},
+			inLogs: testResourceLogs(inLogForBody),
+			outLN: [][]string{
+				{"log1"},
+				{"log2"},
+			},
+		},
+		{
+			name: "excludeRecordBodyStrict",
+			exc: &LogMatchProperties{
+				LogMatchType: Strict,
+				LogBodies:    []string{"test1", "test2", "no match"},
+			},
+			inLogs: testResourceLogs(inLogForBody),
+			outLN: [][]string{
+				{"log1"},
+				{"log2"},
+			},
+		},
+		{
+			name: "excludeRecordBodyRegexp",
+			exc: &LogMatchProperties{
+				LogMatchType: Regexp,
+				LogBodies:    []string{"^This"},
+			},
+			inLogs: testResourceLogs(inLogForBody),
+			outLN: [][]string{
+				{"log3"},
+				{"log4"},
+			},
+		},
+		{
+			name: "includeMinSeverityINFO",
+			inc: &LogMatchProperties{
+				LogMatchType: Regexp,
+				SeverityNumberProperties: &LogSeverityNumberMatchProperties{
+					Min: logSeverity("INFO"),
+				},
+			},
+			inLogs: testResourceLogs(inLogForSeverityNumber),
+			outLN: [][]string{
+				{"log2"},
+				{"log3"},
+			},
+		},
+		{
+			name: "includeMinSeverityDEBUG",
+			inc: &LogMatchProperties{
+				LogMatchType: Regexp,
+				SeverityNumberProperties: &LogSeverityNumberMatchProperties{
+					Min: logSeverity("DEBUG"),
+				},
+			},
+			inLogs: testResourceLogs(inLogForSeverityNumber),
+			outLN: [][]string{
+				{"log1"},
+				{"log2"},
+				{"log3"},
+			},
+		},
+		{
+			name: "includeMinSeverityFATAL+undefined",
+			inc: &LogMatchProperties{
+				LogMatchType: Regexp,
+				SeverityNumberProperties: &LogSeverityNumberMatchProperties{
+					Min:            logSeverity("FATAL"),
+					MatchUndefined: true,
+				},
+			},
+			inLogs: testResourceLogs(inLogForSeverityNumber),
+			outLN: [][]string{
+				{"log4"},
+			},
+		},
+		{
+			name: "excludeMinSeverityINFO",
+			exc: &LogMatchProperties{
+				LogMatchType: Regexp,
+				SeverityNumberProperties: &LogSeverityNumberMatchProperties{
+					Min: logSeverity("INFO"),
+				},
+			},
+			inLogs: testResourceLogs(inLogForSeverityNumber),
+			outLN: [][]string{
+				{"log1"},
+				{"log4"},
+			},
+		},
+		{
+			name: "excludeMinSeverityTRACE",
+			exc: &LogMatchProperties{
+				LogMatchType: Regexp,
+				SeverityNumberProperties: &LogSeverityNumberMatchProperties{
+					Min: logSeverity("TRACE"),
+				},
+			},
+			inLogs: testResourceLogs(inLogForSeverityNumber),
+			outLN: [][]string{
+				{"log4"},
+			},
+		},
+		{
+			name: "excludeMinSeverityINFO+undefined",
+			exc: &LogMatchProperties{
+				LogMatchType: Regexp,
+				SeverityNumberProperties: &LogSeverityNumberMatchProperties{
+					Min:            logSeverity("INFO"),
+					MatchUndefined: true,
+				},
+			},
+			inLogs: testResourceLogs(inLogForSeverityNumber),
+			outLN: [][]string{
+				{"log1"},
+			},
+		},
 	}
 )
 
@@ -371,10 +610,12 @@ func TestFilterLogProcessor(t *testing.T) {
 			assert.Equal(t, len(test.outLN), rLogs.Len())
 
 			for i, wantOut := range test.outLN {
-				gotLogs := rLogs.At(i).InstrumentationLibraryLogs().At(0).LogRecords()
+				gotLogs := rLogs.At(i).ScopeLogs().At(0).LogRecords()
 				assert.Equal(t, len(wantOut), gotLogs.Len())
 				for idx := range wantOut {
-					assert.Equal(t, wantOut[idx], gotLogs.At(idx).Name())
+					val, ok := gotLogs.At(idx).Attributes().Get("name")
+					require.True(t, ok)
+					assert.Equal(t, wantOut[idx], val.AsString())
 				}
 			}
 			assert.NoError(t, flp.Shutdown(ctx))
@@ -382,56 +623,57 @@ func TestFilterLogProcessor(t *testing.T) {
 	}
 }
 
-func testResourceLogs(lwrs []logWithResource) pdata.Logs {
-	ld := pdata.NewLogs()
+func testResourceLogs(lwrs []logWithResource) plog.Logs {
+	ld := plog.NewLogs()
 
 	for i, lwr := range lwrs {
 		rl := ld.ResourceLogs().AppendEmpty()
 
-		// Add resource level attribtues
-		pdata.NewAttributeMapFromMap(lwr.resourceAttributes).CopyTo(rl.Resource().Attributes())
-		ls := rl.InstrumentationLibraryLogs().AppendEmpty().LogRecords()
+		// Add resource level attributes
+		rl.Resource().Attributes().FromRaw(lwr.resourceAttributes)
+		ls := rl.ScopeLogs().AppendEmpty().LogRecords()
 		for _, name := range lwr.logNames {
 			l := ls.AppendEmpty()
-			l.SetName(name)
-
-			// Add record level attribtues
-			for k := 0; k < ls.Len(); k++ {
-				pdata.NewAttributeMapFromMap(lwrs[i].recordAttributes).CopyTo(ls.At(k).Attributes())
-			}
+			// Add record level attributes
+			l.Attributes().FromRaw(lwrs[i].recordAttributes)
+			l.Attributes().PutString("name", name)
+			// Set body & severity fields
+			l.Body().SetStr(lwr.body)
+			l.SetSeverityText(lwr.severityText)
+			l.SetSeverityNumber(lwr.severityNumber)
 		}
 	}
 	return ld
 }
 
 func TestNilResourceLogs(t *testing.T) {
-	logs := pdata.NewLogs()
+	logs := plog.NewLogs()
 	rls := logs.ResourceLogs()
 	rls.AppendEmpty()
 	requireNotPanicsLogs(t, logs)
 }
 
 func TestNilILL(t *testing.T) {
-	logs := pdata.NewLogs()
+	logs := plog.NewLogs()
 	rls := logs.ResourceLogs()
 	rl := rls.AppendEmpty()
-	ills := rl.InstrumentationLibraryLogs()
+	ills := rl.ScopeLogs()
 	ills.AppendEmpty()
 	requireNotPanicsLogs(t, logs)
 }
 
 func TestNilLog(t *testing.T) {
-	logs := pdata.NewLogs()
+	logs := plog.NewLogs()
 	rls := logs.ResourceLogs()
 	rl := rls.AppendEmpty()
-	ills := rl.InstrumentationLibraryLogs()
-	ill := ills.AppendEmpty()
-	ls := ill.LogRecords()
+	ills := rl.ScopeLogs()
+	sl := ills.AppendEmpty()
+	ls := sl.LogRecords()
 	ls.AppendEmpty()
 	requireNotPanicsLogs(t, logs)
 }
 
-func requireNotPanicsLogs(t *testing.T, logs pdata.Logs) {
+func requireNotPanicsLogs(t *testing.T, logs plog.Logs) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	pcfg := cfg.(*Config)

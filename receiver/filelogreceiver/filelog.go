@@ -15,20 +15,22 @@
 package filelogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 
 import (
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/input/file"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"gopkg.in/yaml.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
 )
 
-const typeStr = "filelog"
+const (
+	typeStr   = "filelog"
+	stability = component.StabilityLevelAlpha
+)
 
 // NewFactory creates a factory for filelog receiver
 func NewFactory() component.ReceiverFactory {
-	return stanza.NewFactory(ReceiverType{})
+	return adapter.NewFactory(ReceiverType{}, stability)
 }
 
 // ReceiverType implements stanza.LogReceiverType
@@ -46,33 +48,27 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 }
 func createDefaultConfig() *FileLogConfig {
 	return &FileLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
-			Converter:        stanza.ConverterConfig{},
+			Operators:        []operator.Config{},
+			Converter:        adapter.ConverterConfig{},
 		},
-		Input: stanza.InputConfig{},
+		InputConfig: *file.NewConfig(),
 	}
 }
 
 // BaseConfig gets the base config from config, for now
-func (f ReceiverType) BaseConfig(cfg config.Receiver) stanza.BaseConfig {
+func (f ReceiverType) BaseConfig(cfg config.Receiver) adapter.BaseConfig {
 	return cfg.(*FileLogConfig).BaseConfig
 }
 
 // FileLogConfig defines configuration for the filelog receiver
 type FileLogConfig struct {
-	stanza.BaseConfig `mapstructure:",squash"`
-	Input             stanza.InputConfig `mapstructure:",remain"`
+	InputConfig        file.Config `mapstructure:",squash"`
+	adapter.BaseConfig `mapstructure:",squash"`
 }
 
-// DecodeInputConfig unmarshals the input operator
-func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
-	logConfig := cfg.(*FileLogConfig)
-	yamlBytes, _ := yaml.Marshal(logConfig.Input)
-	inputCfg := file.NewInputConfig("file_input")
-	if err := yaml.Unmarshal(yamlBytes, &inputCfg); err != nil {
-		return nil, err
-	}
-	return &operator.Config{Builder: inputCfg}, nil
+// InputConfig unmarshals the input operator
+func (f ReceiverType) InputConfig(cfg config.Receiver) operator.Config {
+	return operator.NewConfig(&cfg.(*FileLogConfig).InputConfig)
 }

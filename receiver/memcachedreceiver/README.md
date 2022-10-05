@@ -1,11 +1,15 @@
 # Memcached Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 This receiver can fetch stats from a Memcached instance using the [stats
 command](https://github.com/memcached/memcached/wiki/Commands#statistics). A
 detailed description of all the stats available is at
 https://github.com/memcached/memcached/blob/master/doc/protocol.txt#L1159.
-
-> :construction: This receiver is currently in **BETA**.
 
 ## Details
 
@@ -37,3 +41,22 @@ receivers:
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+## Metrics
+
+Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
+
+### Feature gate configurations
+
+#### Transition from metrics with "direction" attribute
+
+The proposal to change metrics from being reported with a `direction` attribute has been reverted in the specification. As a result, the
+following feature gates will be removed in v0.62.0:
+
+- **receiver.memcachedreceiver.emitMetricsWithoutDirectionAttribute**
+- **receiver.memcachedreceiver.emitMetricsWithDirectionAttribute**
+
+For additional information, see https://github.com/open-telemetry/opentelemetry-specification/issues/2726.
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

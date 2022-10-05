@@ -27,7 +27,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -64,8 +65,6 @@ func newCwLogsPusher(expConfig *Config, params component.ExporterCreateSettings)
 		return nil, err
 	}
 
-	expConfig.Validate()
-
 	pusher := cwlogs.NewPusher(aws.String(expConfig.LogGroupName), aws.String(expConfig.LogStreamName), *awsConfig.MaxRetries, *svcStructuredLog, params.Logger)
 
 	logsExporter := &exporter{
@@ -86,8 +85,9 @@ func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSe
 		return nil, err
 	}
 	return exporterhelper.NewLogsExporter(
-		config,
+		context.TODO(),
 		params,
+		config,
 		logsExporter.ConsumeLogs,
 		exporterhelper.WithQueue(expConfig.enforcedQueueSettings()),
 		exporterhelper.WithRetry(expConfig.RetrySettings),
@@ -95,7 +95,7 @@ func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSe
 
 }
 
-func (e *exporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	cwLogsPusher := e.pusher
 	logEvents, _ := logsToCWLogs(e.logger, ld)
 	if len(logEvents) == 0 {
@@ -137,24 +137,24 @@ func (e *exporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func logsToCWLogs(logger *zap.Logger, ld pdata.Logs) ([]*cloudwatchlogs.InputLogEvent, int) {
+func logsToCWLogs(logger *zap.Logger, ld plog.Logs) ([]*cloudwatchlogs.InputLogEvent, int) {
 	n := ld.ResourceLogs().Len()
 	if n == 0 {
 		return []*cloudwatchlogs.InputLogEvent{}, 0
 	}
 
 	var dropped int
-	out := make([]*cloudwatchlogs.InputLogEvent, 0) // TODO(jbd): set a better capacity
+	var out []*cloudwatchlogs.InputLogEvent
 
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
 		resourceAttrs := attrsValue(rl.Resource().Attributes())
 
-		ills := rl.InstrumentationLibraryLogs()
-		for j := 0; j < ills.Len(); j++ {
-			ils := ills.At(j)
-			logs := ils.LogRecords()
+		sls := rl.ScopeLogs()
+		for j := 0; j < sls.Len(); j++ {
+			sl := sls.At(j)
+			logs := sl.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
 				event, err := logToCWLog(resourceAttrs, log)
@@ -182,7 +182,7 @@ type cwLogBody struct {
 	Resource               map[string]interface{} `json:"resource,omitempty"`
 }
 
-func logToCWLog(resourceAttrs map[string]interface{}, log pdata.LogRecord) (*cloudwatchlogs.InputLogEvent, error) {
+func logToCWLog(resourceAttrs map[string]interface{}, log plog.LogRecord) (*cloudwatchlogs.InputLogEvent, error) {
 	// TODO(jbd): Benchmark and improve the allocations.
 	// Evaluate go.elastic.co/fastjson as a replacement for encoding/json.
 	body := cwLogBody{
@@ -190,7 +190,7 @@ func logToCWLog(resourceAttrs map[string]interface{}, log pdata.LogRecord) (*clo
 		SeverityNumber:         int32(log.SeverityNumber()),
 		SeverityText:           log.SeverityText(),
 		DroppedAttributesCount: log.DroppedAttributesCount(),
-		Flags:                  log.Flags(),
+		Flags:                  uint32(log.Flags()),
 	}
 	if traceID := log.TraceID(); !traceID.IsEmpty() {
 		body.TraceID = traceID.HexString()
@@ -211,43 +211,43 @@ func logToCWLog(resourceAttrs map[string]interface{}, log pdata.LogRecord) (*clo
 	}, nil
 }
 
-func attrsValue(attrs pdata.AttributeMap) map[string]interface{} {
+func attrsValue(attrs pcommon.Map) map[string]interface{} {
 	if attrs.Len() == 0 {
 		return nil
 	}
 	out := make(map[string]interface{}, attrs.Len())
-	attrs.Range(func(k string, v pdata.AttributeValue) bool {
+	attrs.Range(func(k string, v pcommon.Value) bool {
 		out[k] = attrValue(v)
 		return true
 	})
 	return out
 }
 
-func attrValue(value pdata.AttributeValue) interface{} {
+func attrValue(value pcommon.Value) interface{} {
 	switch value.Type() {
-	case pdata.AttributeValueTypeInt:
-		return value.IntVal()
-	case pdata.AttributeValueTypeBool:
-		return value.BoolVal()
-	case pdata.AttributeValueTypeDouble:
-		return value.DoubleVal()
-	case pdata.AttributeValueTypeString:
-		return value.StringVal()
-	case pdata.AttributeValueTypeMap:
+	case pcommon.ValueTypeInt:
+		return value.Int()
+	case pcommon.ValueTypeBool:
+		return value.Bool()
+	case pcommon.ValueTypeDouble:
+		return value.Double()
+	case pcommon.ValueTypeStr:
+		return value.Str()
+	case pcommon.ValueTypeMap:
 		values := map[string]interface{}{}
-		value.MapVal().Range(func(k string, v pdata.AttributeValue) bool {
+		value.Map().Range(func(k string, v pcommon.Value) bool {
 			values[k] = attrValue(v)
 			return true
 		})
 		return values
-	case pdata.AttributeValueTypeArray:
-		arrayVal := value.SliceVal()
+	case pcommon.ValueTypeSlice:
+		arrayVal := value.Slice()
 		values := make([]interface{}, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {
 			values[i] = attrValue(arrayVal.At(i))
 		}
 		return values
-	case pdata.AttributeValueTypeEmpty:
+	case pcommon.ValueTypeEmpty:
 		return nil
 	default:
 		return nil

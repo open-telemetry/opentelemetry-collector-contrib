@@ -24,8 +24,8 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -144,18 +144,18 @@ func TestAddToGroupedMetric(t *testing.T) {
 				},
 				Metrics: tc.metric,
 			}
-			// Retrieve *pdata.Metric
+			// Retrieve pmetric.Metric
 			rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
 			rms := rm.ResourceMetrics()
 			assert.Equal(t, 1, rms.Len())
-			ilms := rms.At(0).InstrumentationLibraryMetrics()
+			ilms := rms.At(0).ScopeMetrics()
 			assert.Equal(t, 1, ilms.Len())
 			metrics := ilms.At(0).Metrics()
 			assert.Equal(t, len(tc.metric), metrics.Len())
 
 			for i := 0; i < metrics.Len(); i++ {
-				metric := metrics.At(i)
-				addToGroupedMetric(&metric, groupedMetrics, metadata, true, zap.NewNop(), nil, nil)
+				err := addToGroupedMetric(metrics.At(i), groupedMetrics, metadata, true, zap.NewNop(), nil, nil)
+				assert.Nil(t, err)
 			}
 
 			expectedLabels := map[string]string{
@@ -197,13 +197,13 @@ func TestAddToGroupedMetric(t *testing.T) {
 		oc.Metrics = append(oc.Metrics, generateTestSummary("summary")...)
 		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
 		rms := rm.ResourceMetrics()
-		ilms := rms.At(0).InstrumentationLibraryMetrics()
+		ilms := rms.At(0).ScopeMetrics()
 		metrics := ilms.At(0).Metrics()
 		assert.Equal(t, 9, metrics.Len())
 
 		for i := 0; i < metrics.Len(); i++ {
-			metric := metrics.At(i)
-			addToGroupedMetric(&metric, groupedMetrics, metadata, true, logger, nil, nil)
+			err := addToGroupedMetric(metrics.At(i), groupedMetrics, metadata, true, logger, nil, nil)
+			assert.Nil(t, err)
 		}
 
 		assert.Equal(t, 1, len(groupedMetrics))
@@ -260,30 +260,32 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
 		rms := rm.ResourceMetrics()
-		ilms := rms.At(0).InstrumentationLibraryMetrics()
+		ilms := rms.At(0).ScopeMetrics()
 		metrics := ilms.At(0).Metrics()
 		assert.Equal(t, 4, metrics.Len())
 
 		for i := 0; i < metrics.Len(); i++ {
-			metric := metrics.At(i)
-			addToGroupedMetric(&metric, groupedMetrics, metadata, true, logger, nil, nil)
+			err := addToGroupedMetric(metrics.At(i), groupedMetrics, metadata, true, logger, nil, nil)
+			assert.Nil(t, err)
 		}
 
 		assert.Equal(t, 3, len(groupedMetrics))
 		for _, group := range groupedMetrics {
 			for metricName := range group.metrics {
-				if metricName == "int-gauge" || metricName == "int-sum" {
+				switch metricName {
+				case "int-gauge", "int-sum":
 					assert.Equal(t, 2, len(group.metrics))
 					assert.Equal(t, int64(1608068109347), group.metadata.timestampMs)
-				} else if metricName == "summary" {
+				case "summary":
 					assert.Equal(t, 1, len(group.metrics))
 					assert.Equal(t, int64(1608068110347), group.metadata.timestampMs)
-				} else {
+				default:
 					// double-gauge should use the default timestamp
 					assert.Equal(t, 1, len(group.metrics))
 					assert.Equal(t, "double-gauge", metricName)
 					assert.Equal(t, timestamp, group.metadata.timestampMs)
 				}
+
 			}
 			expectedLabels := map[string]string{
 				oTellibDimensionKey: "cloudwatch-otel",
@@ -301,7 +303,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			},
 		}
 		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
-		ilms := rm.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
+		ilms := rm.ResourceMetrics().At(0).ScopeMetrics()
 		metric := ilms.At(0).Metrics().At(0)
 
 		metricMetadata1 := cWMetricMetadata{
@@ -313,7 +315,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 			},
 			instrumentationLibraryName: instrumentationLibName,
 		}
-		addToGroupedMetric(&metric, groupedMetrics, metricMetadata1, true, logger, nil, nil)
+		err := addToGroupedMetric(metric, groupedMetrics, metricMetadata1, true, logger, nil, nil)
+		assert.Nil(t, err)
 
 		metricMetadata2 := cWMetricMetadata{
 			groupedMetricMetadata: groupedMetricMetadata{
@@ -324,7 +327,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 			},
 			instrumentationLibraryName: instrumentationLibName,
 		}
-		addToGroupedMetric(&metric, groupedMetrics, metricMetadata2, true, logger, nil, nil)
+		err = addToGroupedMetric(metric, groupedMetrics, metricMetadata2, true, logger, nil, nil)
+		assert.Nil(t, err)
 
 		assert.Equal(t, 2, len(groupedMetrics))
 		seenLogGroup1 := false
@@ -370,7 +374,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		}
 		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
 		rms := rm.ResourceMetrics()
-		ilms := rms.At(0).InstrumentationLibraryMetrics()
+		ilms := rms.At(0).ScopeMetrics()
 		metrics := ilms.At(0).Metrics()
 		assert.Equal(t, 2, metrics.Len())
 
@@ -378,8 +382,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 		obsLogger := zap.New(obs)
 
 		for i := 0; i < metrics.Len(); i++ {
-			metric := metrics.At(i)
-			addToGroupedMetric(&metric, groupedMetrics, metadata, true, obsLogger, nil, nil)
+			err := addToGroupedMetric(metrics.At(i), groupedMetrics, metadata, true, obsLogger, nil, nil)
+			assert.Nil(t, err)
 		}
 		assert.Equal(t, 1, len(groupedMetrics))
 
@@ -403,16 +407,16 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 	t.Run("Unhandled metric type", func(t *testing.T) {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		md := pdata.NewMetrics()
+		md := pmetric.NewMetrics()
 		rms := md.ResourceMetrics()
-		metric := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric := rms.AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 		metric.SetName("foo")
 		metric.SetUnit("Count")
-		metric.SetDataType(pdata.MetricDataTypeNone)
 
 		obs, logs := observer.New(zap.WarnLevel)
 		obsLogger := zap.New(obs)
-		addToGroupedMetric(&metric, groupedMetrics, metadata, true, obsLogger, nil, nil)
+		err := addToGroupedMetric(metric, groupedMetrics, metadata, true, obsLogger, nil, nil)
+		assert.Nil(t, err)
 		assert.Equal(t, 0, len(groupedMetrics))
 
 		// Test output warning logs
@@ -428,12 +432,6 @@ func TestAddToGroupedMetric(t *testing.T) {
 		}
 		assert.Equal(t, 1, logs.Len())
 		assert.Equal(t, expectedLogs, logs.AllUntimed())
-	})
-
-	t.Run("Nil metric", func(t *testing.T) {
-		groupedMetrics := make(map[interface{}]*groupedMetric)
-		addToGroupedMetric(nil, groupedMetrics, metadata, true, logger, nil, nil)
-		assert.Equal(t, 0, len(groupedMetrics))
 	})
 
 }
@@ -481,7 +479,7 @@ func BenchmarkAddToGroupedMetric(b *testing.B) {
 	oc.Metrics = append(oc.Metrics, generateTestDoubleSum("double-sum")...)
 	oc.Metrics = append(oc.Metrics, generateTestSummary("summary")...)
 	rms := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics()
-	metrics := rms.At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics := rms.At(0).ScopeMetrics().At(0).Metrics()
 	numMetrics := metrics.Len()
 
 	metadata := cWMetricMetadata{
@@ -500,14 +498,14 @@ func BenchmarkAddToGroupedMetric(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
 		for i := 0; i < numMetrics; i++ {
-			metric := metrics.At(i)
-			addToGroupedMetric(&metric, groupedMetrics, metadata, true, logger, nil, nil)
+			err := addToGroupedMetric(metrics.At(i), groupedMetrics, metadata, true, logger, nil, nil)
+			assert.Nil(b, err)
 		}
 	}
 }
 
 func TestTranslateUnit(t *testing.T) {
-	metric := pdata.NewMetric()
+	metric := pmetric.NewMetric()
 	metric.SetName("writeIfNotExist")
 
 	translator := &metricTranslator{
@@ -537,12 +535,12 @@ func TestTranslateUnit(t *testing.T) {
 		t.Run(input, func(tt *testing.T) {
 			metric.SetUnit(input)
 
-			v := translateUnit(&metric, translator.metricDescriptor)
+			v := translateUnit(metric, translator.metricDescriptor)
 			assert.Equal(t, output, v)
 		})
 	}
 
 	metric.SetName("forceOverwrite")
-	v := translateUnit(&metric, translator.metricDescriptor)
+	v := translateUnit(metric, translator.metricDescriptor)
 	assert.Equal(t, "Count", v)
 }

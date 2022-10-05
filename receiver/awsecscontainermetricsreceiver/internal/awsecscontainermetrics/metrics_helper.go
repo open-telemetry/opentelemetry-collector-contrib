@@ -123,7 +123,7 @@ func extractStorageUsage(stats *DiskStats) (uint64, uint64) {
 		case "Write":
 			writeBytes = *blockStat.Value
 		default:
-			//ignoring "Async", "Total", "Sum", etc
+			// ignoring "Async", "Total", "Sum", etc
 			continue
 		}
 	}

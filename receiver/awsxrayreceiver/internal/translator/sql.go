@@ -18,13 +18,13 @@ import (
 	"fmt"
 	"regexp"
 
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func addSQLToSpan(sql *awsxray.SQLData, attrs *pdata.AttributeMap) error {
+func addSQLToSpan(sql *awsxray.SQLData, attrs pcommon.Map) error {
 	if sql == nil {
 		return nil
 	}
@@ -35,8 +35,8 @@ func addSQLToSpan(sql *awsxray.SQLData, attrs *pdata.AttributeMap) error {
 		if err != nil {
 			return err
 		}
-		attrs.UpsertString(conventions.AttributeDBConnectionString, dbURL)
-		attrs.UpsertString(conventions.AttributeDBName, dbName)
+		attrs.PutString(conventions.AttributeDBConnectionString, dbURL)
+		attrs.PutString(conventions.AttributeDBName, dbName)
 	}
 	// not handling sql.ConnectionString for now because the X-Ray exporter
 	// does not support it

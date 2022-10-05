@@ -18,8 +18,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -27,28 +28,28 @@ import (
 
 func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 	logger := zap.NewNop()
-	ts := pdata.Timestamp(123)
+	ts := pcommon.Timestamp(123)
 
 	tests := []struct {
 		name             string
-		logRecordFn      func() pdata.LogRecord
-		logResourceFn    func() pdata.Resource
+		logRecordFn      func() plog.LogRecord
+		logResourceFn    func() pcommon.Resource
 		configDataFn     func() *Config
 		wantSplunkEvents []*splunk.Event
 	}{
 		{
 			name: "valid",
-			logRecordFn: func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
-				logRecord.Body().SetStringVal("mylog")
-				logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
-				logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-				logRecord.Attributes().InsertString("custom", "custom")
+			logRecordFn: func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
+				logRecord.Body().SetStr("mylog")
+				logRecord.Attributes().PutString(splunk.DefaultSourceLabel, "myapp")
+				logRecord.Attributes().PutString(splunk.DefaultSourceTypeLabel, "myapp-type")
+				logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
+				logRecord.Attributes().PutString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
-			logResourceFn: pdata.NewResource,
+			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
 				config.Source = "source"
@@ -62,18 +63,17 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 		},
 		{
 			name: "with_name",
-			logRecordFn: func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
-				logRecord.SetName("my very own name")
-				logRecord.Body().SetStringVal("mylog")
-				logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
-				logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-				logRecord.Attributes().InsertString("custom", "custom")
+			logRecordFn: func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
+				logRecord.Body().SetStr("mylog")
+				logRecord.Attributes().PutString(splunk.DefaultSourceLabel, "myapp")
+				logRecord.Attributes().PutString(splunk.DefaultSourceTypeLabel, "myapp-type")
+				logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
+				logRecord.Attributes().PutString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
-			logResourceFn: pdata.NewResource,
+			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
 				config.Source = "source"
@@ -81,20 +81,20 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				return config
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "otel.log.name": "my very own name"},
+				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom"},
 					"myhost", "myapp", "myapp-type"),
 			},
 		},
 		{
 			name: "with_hec_token",
-			logRecordFn: func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
-				logRecord.Body().SetStringVal("mylog")
-				logRecord.Attributes().InsertString(splunk.HecTokenLabel, "mytoken")
+			logRecordFn: func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
+				logRecord.Body().SetStr("mylog")
+				logRecord.Attributes().PutString(splunk.HecTokenLabel, "mytoken")
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
-			logResourceFn: pdata.NewResource,
+			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
 				config.Source = "source"
@@ -108,17 +108,17 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 		},
 		{
 			name: "non-string attribute",
-			logRecordFn: func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
-				logRecord.Body().SetStringVal("mylog")
-				logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
-				logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-				logRecord.Attributes().InsertDouble("foo", 123)
+			logRecordFn: func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
+				logRecord.Body().SetStr("mylog")
+				logRecord.Attributes().PutString(splunk.DefaultSourceLabel, "myapp")
+				logRecord.Attributes().PutString(splunk.DefaultSourceTypeLabel, "myapp-type")
+				logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
+				logRecord.Attributes().PutDouble("foo", 123)
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
-			logResourceFn: pdata.NewResource,
+			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
 				config.Source = "source"
@@ -131,14 +131,14 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 		},
 		{
 			name: "with_config",
-			logRecordFn: func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
-				logRecord.Body().SetStringVal("mylog")
-				logRecord.Attributes().InsertString("custom", "custom")
+			logRecordFn: func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
+				logRecord.Body().SetStr("mylog")
+				logRecord.Attributes().PutString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
-			logResourceFn: pdata.NewResource,
+			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
 				config.Source = "source"
@@ -151,20 +151,20 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 		},
 		{
 			name: "with_custom_mapping",
-			logRecordFn: func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
-				logRecord.Body().SetStringVal("mylog")
-				logRecord.Attributes().InsertString("custom", "custom")
-				logRecord.Attributes().InsertString("mysource", "mysource")
-				logRecord.Attributes().InsertString("mysourcetype", "mysourcetype")
-				logRecord.Attributes().InsertString("myindex", "myindex")
-				logRecord.Attributes().InsertString("myhost", "myhost")
+			logRecordFn: func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
+				logRecord.Body().SetStr("mylog")
+				logRecord.Attributes().PutString("custom", "custom")
+				logRecord.Attributes().PutString("mysource", "mysource")
+				logRecord.Attributes().PutString("mysourcetype", "mysourcetype")
+				logRecord.Attributes().PutString("myindex", "myindex")
+				logRecord.Attributes().PutString("myhost", "myhost")
 				logRecord.SetSeverityText("DEBUG")
-				logRecord.SetSeverityNumber(pdata.SeverityNumberDEBUG)
+				logRecord.SetSeverityNumber(plog.SeverityNumberDebug)
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
-			logResourceFn: pdata.NewResource,
+			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				return &Config{
 					HecToOtelAttrs: splunk.HecToOtelAttrs{
@@ -181,7 +181,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			},
 			wantSplunkEvents: []*splunk.Event{
 				func() *splunk.Event {
-					event := commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "myseverity": "DEBUG", "myseveritynum": pdata.SeverityNumber(5)}, "myhost", "mysource", "mysourcetype")
+					event := commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "myseverity": "DEBUG", "myseveritynum": plog.SeverityNumber(5)}, "myhost", "mysource", "mysourcetype")
 					event.Index = "myindex"
 					return event
 				}(),
@@ -189,11 +189,11 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 		},
 		{
 			name: "log_is_empty",
-			logRecordFn: func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
+			logRecordFn: func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
 				return logRecord
 			},
-			logResourceFn: pdata.NewResource,
+			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
 				config.Source = "source"
@@ -206,13 +206,13 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 		},
 		{
 			name: "with span and trace id",
-			logRecordFn: func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
-				logRecord.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 50}))
-				logRecord.SetTraceID(pdata.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100}))
+			logRecordFn: func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
+				logRecord.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 50})
+				logRecord.SetTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100})
 				return logRecord
 			},
-			logResourceFn: pdata.NewResource,
+			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
 				config.Source = "source"
@@ -228,17 +228,17 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 		},
 		{
 			name: "with double body",
-			logRecordFn: func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
-				logRecord.Body().SetDoubleVal(42)
-				logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
-				logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-				logRecord.Attributes().InsertString("custom", "custom")
+			logRecordFn: func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
+				logRecord.Body().SetDouble(42)
+				logRecord.Attributes().PutString(splunk.DefaultSourceLabel, "myapp")
+				logRecord.Attributes().PutString(splunk.DefaultSourceTypeLabel, "myapp-type")
+				logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
+				logRecord.Attributes().PutString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
-			logResourceFn: pdata.NewResource,
+			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
 				config.Source = "source"
@@ -251,17 +251,17 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 		},
 		{
 			name: "with int body",
-			logRecordFn: func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
-				logRecord.Body().SetIntVal(42)
-				logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
-				logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-				logRecord.Attributes().InsertString("custom", "custom")
+			logRecordFn: func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
+				logRecord.Body().SetInt(42)
+				logRecord.Attributes().PutString(splunk.DefaultSourceLabel, "myapp")
+				logRecord.Attributes().PutString(splunk.DefaultSourceTypeLabel, "myapp-type")
+				logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
+				logRecord.Attributes().PutString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
-			logResourceFn: pdata.NewResource,
+			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
 				config.Source = "source"
@@ -274,17 +274,17 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 		},
 		{
 			name: "with bool body",
-			logRecordFn: func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
-				logRecord.Body().SetBoolVal(true)
-				logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
-				logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-				logRecord.Attributes().InsertString("custom", "custom")
+			logRecordFn: func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
+				logRecord.Body().SetBool(true)
+				logRecord.Attributes().PutString(splunk.DefaultSourceLabel, "myapp")
+				logRecord.Attributes().PutString(splunk.DefaultSourceTypeLabel, "myapp-type")
+				logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
+				logRecord.Attributes().PutString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
-			logResourceFn: pdata.NewResource,
+			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
 				config.Source = "source"
@@ -297,21 +297,21 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 		},
 		{
 			name: "with map body",
-			logRecordFn: func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
-				attVal := pdata.NewAttributeValueMap()
-				attMap := attVal.MapVal()
-				attMap.InsertDouble("23", 45)
-				attMap.InsertString("foo", "bar")
+			logRecordFn: func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
+				attVal := pcommon.NewValueMap()
+				attMap := attVal.Map()
+				attMap.PutDouble("23", 45)
+				attMap.PutString("foo", "bar")
 				attVal.CopyTo(logRecord.Body())
-				logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
-				logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-				logRecord.Attributes().InsertString("custom", "custom")
+				logRecord.Attributes().PutString(splunk.DefaultSourceLabel, "myapp")
+				logRecord.Attributes().PutString(splunk.DefaultSourceTypeLabel, "myapp-type")
+				logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
+				logRecord.Attributes().PutString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
-			logResourceFn: pdata.NewResource,
+			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
 				config.Source = "source"
@@ -326,16 +326,16 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 		},
 		{
 			name: "with nil body",
-			logRecordFn: func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
-				logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
-				logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-				logRecord.Attributes().InsertString("custom", "custom")
+			logRecordFn: func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
+				logRecord.Attributes().PutString(splunk.DefaultSourceLabel, "myapp")
+				logRecord.Attributes().PutString(splunk.DefaultSourceTypeLabel, "myapp-type")
+				logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
+				logRecord.Attributes().PutString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
-			logResourceFn: pdata.NewResource,
+			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
 				config.Source = "source"
@@ -349,20 +349,20 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 		},
 		{
 			name: "with array body",
-			logRecordFn: func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
-				attVal := pdata.NewAttributeValueArray()
-				attArray := attVal.SliceVal()
-				attArray.AppendEmpty().SetStringVal("foo")
+			logRecordFn: func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
+				attVal := pcommon.NewValueSlice()
+				attArray := attVal.Slice()
+				attArray.AppendEmpty().SetStr("foo")
 				attVal.CopyTo(logRecord.Body())
-				logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
-				logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-				logRecord.Attributes().InsertString("custom", "custom")
+				logRecord.Attributes().PutString(splunk.DefaultSourceLabel, "myapp")
+				logRecord.Attributes().PutString(splunk.DefaultSourceTypeLabel, "myapp-type")
+				logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
+				logRecord.Attributes().PutString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
-			logResourceFn: pdata.NewResource,
+			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
 				config.Source = "source"
@@ -376,19 +376,19 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 		},
 		{
 			name: "log resource attribute",
-			logRecordFn: func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
-				logRecord.Body().SetStringVal("mylog")
+			logRecordFn: func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
+				logRecord.Body().SetStr("mylog")
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
-			logResourceFn: func() pdata.Resource {
-				resource := pdata.NewResource()
-				resource.Attributes().InsertString("resourceAttr1", "some_string")
-				resource.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type-from-resource-attr")
-				resource.Attributes().InsertString(splunk.DefaultIndexLabel, "index-resource")
-				resource.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp-resource")
-				resource.Attributes().InsertString(conventions.AttributeHostName, "myhost-resource")
+			logResourceFn: func() pcommon.Resource {
+				resource := pcommon.NewResource()
+				resource.Attributes().PutString("resourceAttr1", "some_string")
+				resource.Attributes().PutString(splunk.DefaultSourceTypeLabel, "myapp-type-from-resource-attr")
+				resource.Attributes().PutString(splunk.DefaultIndexLabel, "index-resource")
+				resource.Attributes().PutString(splunk.DefaultSourceLabel, "myapp-resource")
+				resource.Attributes().PutString(conventions.AttributeHostName, "myhost-resource")
 				return resource
 			},
 			configDataFn: func() *Config {
@@ -406,19 +406,19 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 		},
 		{
 			name: "with severity",
-			logRecordFn: func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
-				logRecord.Body().SetStringVal("mylog")
-				logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
-				logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-				logRecord.Attributes().InsertString("custom", "custom")
+			logRecordFn: func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
+				logRecord.Body().SetStr("mylog")
+				logRecord.Attributes().PutString(splunk.DefaultSourceLabel, "myapp")
+				logRecord.Attributes().PutString(splunk.DefaultSourceTypeLabel, "myapp-type")
+				logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
+				logRecord.Attributes().PutString("custom", "custom")
 				logRecord.SetSeverityText("DEBUG")
-				logRecord.SetSeverityNumber(pdata.SeverityNumberDEBUG)
+				logRecord.SetSeverityNumber(plog.SeverityNumberDebug)
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
-			logResourceFn: pdata.NewResource,
+			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
 				config.Source = "source"
@@ -426,7 +426,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				return config
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "otel.log.severity.number": pdata.SeverityNumberDEBUG, "otel.log.severity.text": "DEBUG"},
+				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "otel.log.severity.number": plog.SeverityNumberDebug, "otel.log.severity.text": "DEBUG"},
 					"myhost", "myapp", "myapp-type"),
 			},
 		},
@@ -444,7 +444,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 
 func commonLogSplunkEvent(
 	event interface{},
-	ts pdata.Timestamp,
+	ts pcommon.Timestamp,
 	fields map[string]interface{},
 	host string,
 	source string,
@@ -461,7 +461,7 @@ func commonLogSplunkEvent(
 }
 
 func Test_emptyLogRecord(t *testing.T) {
-	event := mapLogRecordToSplunkEvent(pdata.NewResource(), pdata.NewLogRecord(), &Config{}, zap.NewNop())
+	event := mapLogRecordToSplunkEvent(pcommon.NewResource(), plog.NewLogRecord(), &Config{}, zap.NewNop())
 	assert.Nil(t, event.Time)
 	assert.Equal(t, event.Host, "unknown")
 	assert.Zero(t, event.Source)

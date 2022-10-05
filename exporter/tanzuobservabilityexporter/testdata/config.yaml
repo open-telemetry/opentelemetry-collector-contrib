@@ -10,6 +10,8 @@ exporters:
       endpoint: "http://localhost:40001"
     metrics:
       endpoint: "http://localhost:2916"
+      resource_attributes:
+        enabled: true
     retry_on_failure:
       enabled: true
       initial_interval: 10s

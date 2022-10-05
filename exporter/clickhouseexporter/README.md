@@ -1,8 +1,11 @@
 # ClickHouse Exporter
 
-**Status: experimental**
 
-Supported pipeline types: logs.
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [alpha]    |
+| Supported pipeline types | logs      |
+| Distributions            | [contrib] |
 
 This exporter supports sending OpenTelemetry logs to [ClickHouse](https://clickhouse.com/). It will also support spans and metrics in the future.
 > ClickHouse is an open-source, high performance columnar OLAP database management system for real-time analytics using SQL.
@@ -22,20 +25,72 @@ Support time-series graph, table and logs.
 
 2. Analyze logs via powerful clickhouse SQL.
 
+- Get log severity count time series.
 ```clickhouse
-/* get error count about my service last 1 hour.*/
-SELECT count(*)
-FROM logs
-WHERE SeverityText="ERROR" AND timestamp >= NOW() - INTERVAL 1 HOUR;
-/* find error log.*/
-SELECT * 
-FROM logs 
-WHERE SeverityText="ERROR" AND timestamp >= NOW() - INTERVAL 1 HOUR;
-/* find log with specific attribute .*/
-SELECT Body
-FROM logs 
-WHERE Attributes.value[indexOf(Attributes.key, 'http.method')] = 'post' AND timestamp >= NOW() - INTERVAL 1 HOUR;
+SELECT toDateTime(toStartOfInterval(Timestamp, INTERVAL 60 second)) as time, SeverityText, count() as count
+FROM otel_logs
+WHERE time >= NOW() - INTERVAL 1 HOUR
+GROUP BY SeverityText, time
+ORDER BY time;
 ```
+- Find any log.
+```clickhouse
+SELECT Timestamp as log_time, Body
+FROM otel_logs 
+WHERE Timestamp >= NOW() - INTERVAL 1 HOUR
+Limit 100;
+```
+- Find log with specific service.
+```clickhouse
+SELECT Timestamp as log_time, Body
+FROM otel_logs 
+WHERE ServiceName = 'clickhouse-exporter' AND Timestamp >= NOW() - INTERVAL 1 HOUR
+Limit 100;
+```
+- Find log with specific attribute.
+```clickhouse
+SELECT Timestamp as log_time, Body
+FROM otel_logs 
+WHERE LogAttributes['container_name'] = '/example_flog_1' AND Timestamp >= NOW() - INTERVAL 1 HOUR
+Limit 100;
+```
+- Find log with body contain string token.
+```clickhouse
+SELECT Timestamp as log_time, Body
+FROM otel_logs 
+WHERE hasToken(Body, 'http') AND Timestamp >= NOW() - INTERVAL 1 HOUR
+Limit 100;
+```
+- Find log with body contain string.
+```clickhouse
+SELECT Timestamp as log_time, Body
+FROM otel_logs 
+WHERE Body like '%http%' AND Timestamp >= NOW() - INTERVAL 1 HOUR
+Limit 100;
+```
+- Find log with body regexp match string.
+```clickhouse
+SELECT Timestamp as log_time, Body
+FROM otel_logs 
+WHERE match(Body, 'http') AND Timestamp >= NOW() - INTERVAL 1 HOUR
+Limit 100;
+```
+- Find log with body json extract.
+```clickhouse
+SELECT Timestamp as log_time, Body
+FROM otel_logs 
+WHERE JSONExtractFloat(Body, 'bytes')>1000 AND Timestamp >= NOW() - INTERVAL 1 HOUR
+Limit 100;
+```
+
+## Performance Guide
+
+A single clickhouse instance with 32 CPU cores and 128 GB RAM can handle around 20 TB (20 Billion) logs per day, 
+the data compression ratio is 7 ~ 11, the compressed data store in disk is 1.8 TB ~ 2.85 TB,
+add more clickhouse node to cluster can increase linearly.
+
+The otel-collector with `otlp receiver/batch processor/clickhouse tcp exporter` can process 
+around 40k/s logs entry per CPU cores, add more collector node can increase linearly.
 
 ## Configuration options
 
@@ -47,7 +102,8 @@ The following settings are required:
 
 The following settings can be optionally configured:
 
-- `ttl_days` (default=0): The data time-to-live in days, 0 means no ttl.
+- `ttl_days` (defaul t= 0): The data time-to-live in days, 0 means no ttl.
+- `logs_table_name` (default = otel_logs): The table name for logs.
 - `timeout` (default = 5s): The timeout for every attempt to send data to the backend.
 - `sending_queue`
   - `queue_size` (default = 5000): Maximum number of batches kept in memory before dropping data.
@@ -64,10 +120,11 @@ receivers:
   examplereceiver:
 processors:
   batch:
-    timeout: 10s
+    timeout: 5s
+    send_batch_size: 100000
 exporters:
   clickhouse:
-    dsn: tcp://127.0.0.1:9000?database=default
+    dsn: tcp://127.0.0.1:9000/default
     ttl_days: 3
     timeout: 5s
     retry_on_failure:
@@ -86,29 +143,31 @@ service:
 ## Schema
 
 ```clickhouse
-CREATE TABLE IF NOT EXISTS logs (
-     timestamp DateTime CODEC(Delta, ZSTD(1)),
-     TraceId String CODEC(ZSTD(1)),
-     SpanId String CODEC(ZSTD(1)),
-     TraceFlags Int64,
-     SeverityText LowCardinality(String) CODEC(ZSTD(1)),
-     SeverityNumber Int64,
-     Name LowCardinality(String) CODEC(ZSTD(1)),
-     Body String CODEC(ZSTD(1)),
-     Attributes Nested
-     (
-         key LowCardinality(String),
-         value String
-     ) CODEC(ZSTD(1)),
-     Resource Nested
-     (
-         key LowCardinality(String),
-         value String
-     ) CODEC(ZSTD(1)),
-     INDEX idx_attr_keys Attributes.key TYPE bloom_filter(0.01) GRANULARITY 64,
-     INDEX idx_res_keys Resource.key TYPE bloom_filter(0.01) GRANULARITY 64
-) ENGINE MergeTree()
-TTL timestamp + INTERVAL 3 DAY
-PARTITION BY toDate(timestamp)
-ORDER BY (Name, -toUnixTimestamp(timestamp))
+CREATE TABLE otel_logs
+(
+    `Timestamp` DateTime64(9) CODEC(Delta, ZSTD(1)),
+    `TraceId` String CODEC(ZSTD(1)),
+    `SpanId` String CODEC(ZSTD(1)),
+    `TraceFlags` UInt32 CODEC(ZSTD(1)),
+    `SeverityText` LowCardinality(String) CODEC(ZSTD(1)),
+    `SeverityNumber` Int32 CODEC(ZSTD(1)),
+    `ServiceName` LowCardinality(String) CODEC(ZSTD(1)),
+    `Body` String CODEC(ZSTD(1)),
+    `ResourceAttributes` Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    `LogAttributes` Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    INDEX idx_trace_id TraceId TYPE bloom_filter(0.001) GRANULARITY 1,
+    INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+    INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+    INDEX idx_log_attr_key mapKeys(LogAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+    INDEX idx_log_attr_value mapValues(LogAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+    INDEX idx_body Body TYPE tokenbf_v1(32768, 3, 0) GRANULARITY 1
+)
+    ENGINE = MergeTree
+        PARTITION BY toDate(Timestamp)
+        ORDER BY (ServiceName, SeverityText, toUnixTimestamp(Timestamp), TraceId)
+        TTL toDateTime(Timestamp) + toIntervalDay(3)
+        SETTINGS index_granularity = 8192, ttl_only_drop_parts = 1;
 ```
+
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

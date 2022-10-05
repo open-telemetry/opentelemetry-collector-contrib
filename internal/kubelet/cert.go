@@ -18,7 +18,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"runtime"
 )
 
@@ -37,7 +37,7 @@ func systemCertPoolPlusPath(certPath string) (*x509.CertPool, error) {
 }
 
 func certPoolPlusPath(certPool *x509.CertPool, certPath string) (*x509.CertPool, error) {
-	certBytes, err := ioutil.ReadFile(certPath)
+	certBytes, err := os.ReadFile(certPath)
 	if err != nil {
 		return nil, fmt.Errorf("cert path %s could not be read: %w", certPath, err)
 	}

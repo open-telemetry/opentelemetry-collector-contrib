@@ -16,7 +16,6 @@ package filestorage
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -53,9 +52,8 @@ func TestFactory(t *testing.T) {
 		{
 			name: "Default",
 			config: func() *Config {
-				tempDir, _ := ioutil.TempDir("", "")
 				return &Config{
-					Directory:  tempDir,
+					Directory:  t.TempDir(),
 					Compaction: &CompactionConfig{},
 				}
 			}(),

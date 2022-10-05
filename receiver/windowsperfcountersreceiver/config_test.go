@@ -22,118 +22,220 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
+)
+
+const (
+	negativeCollectionIntervalErr = "collection_interval must be a positive duration"
+	noPerfCountersErr             = "must specify at least one perf counter"
+	noObjectNameErr               = "must specify object name for all perf counters"
+	noCountersErr                 = `perf counter for object "%s" does not specify any counters`
+	emptyInstanceErr              = `perf counter for object "%s" includes an empty instance`
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	t.Parallel()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	assert.Equal(t, len(cfg.Receivers), 2)
-
-	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
-	defaultConfigSingleObject := factory.CreateDefaultConfig()
-	defaultConfigSingleObject.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []string{"counter"}}}
-
-	assert.Equal(t, defaultConfigSingleObject, r0)
-
-	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
-	expectedConfig := &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "customname")),
-			CollectionInterval: 30 * time.Second,
+	counterConfig := CounterConfig{
+		Name: "counter1",
+		MetricRep: MetricRep{
+			Name: "metric",
 		},
-		PerfCounters: []PerfCounterConfig{
-			{
-				Object:   "object1",
-				Counters: []string{"counter1"},
-			},
-			{
-				Object:   "object2",
-				Counters: []string{"counter1", "counter2"},
-			},
+	}
+	singleObject := createDefaultConfig()
+	singleObject.(*Config).PerfCounters = []ObjectConfig{{Object: "object", Counters: []CounterConfig{counterConfig}}}
+	singleObject.(*Config).MetricMetaData = map[string]MetricConfig{
+		"metric": {
+			Description: "desc",
+			Unit:        "1",
+			Gauge:       GaugeMetric{},
 		},
 	}
 
-	assert.Equal(t, expectedConfig, r1)
-}
-
-func TestLoadConfig_Error(t *testing.T) {
-	type testCase struct {
-		name        string
-		cfgFile     string
+	tests := []struct {
+		id          config.ComponentID
+		expected    config.Receiver
 		expectedErr string
-	}
-
-	const (
-		errorPrefix                   = "receiver \"windowsperfcounters\" has invalid configuration"
-		negativeCollectionIntervalErr = "collection_interval must be a positive duration"
-		noPerfCountersErr             = "must specify at least one perf counter"
-		noObjectNameErr               = "must specify object name for all perf counters"
-		noCountersErr                 = `perf counter for object "%s" does not specify any counters`
-		emptyInstanceErr              = `perf counter for object "%s" includes an empty instance`
-	)
-
-	testCases := []testCase{
+	}{
 		{
-			name:        "NegativeCollectionInterval",
-			cfgFile:     "config-negative-collection-interval.yaml",
-			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, negativeCollectionIntervalErr),
+			id:       config.NewComponentIDWithName(typeStr, ""),
+			expected: singleObject,
 		},
 		{
-			name:        "NoPerfCounters",
-			cfgFile:     "config-noperfcounters.yaml",
-			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, noPerfCountersErr),
+			id: config.NewComponentIDWithName(typeStr, "customname"),
+			expected: &Config{
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+					CollectionInterval: 30 * time.Second,
+				},
+				PerfCounters: []ObjectConfig{
+					{
+						Object:   "object1",
+						Counters: []CounterConfig{counterConfig},
+					},
+					{
+						Object: "object2",
+						Counters: []CounterConfig{
+							counterConfig,
+							{
+								Name: "counter2",
+								MetricRep: MetricRep{
+									Name: "metric2",
+								},
+							},
+						},
+					},
+				},
+				MetricMetaData: map[string]MetricConfig{
+					"metric": {
+						Description: "desc",
+						Unit:        "1",
+						Gauge:       GaugeMetric{},
+					},
+					"metric2": {
+						Description: "desc",
+						Unit:        "1",
+						Gauge:       GaugeMetric{},
+					},
+				},
+			},
 		},
 		{
-			name:        "NoObjectName",
-			cfgFile:     "config-noobjectname.yaml",
-			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, noObjectNameErr),
+			id: config.NewComponentIDWithName(typeStr, "nometrics"),
+			expected: &Config{
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+					CollectionInterval: 60 * time.Second,
+				},
+				PerfCounters: []ObjectConfig{
+					{
+						Object:   "object",
+						Counters: []CounterConfig{{Name: "counter1"}},
+					},
+				},
+			},
 		},
 		{
-			name:        "NoCounters",
-			cfgFile:     "config-nocounters.yaml",
-			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(noCountersErr, "object")),
+			id: config.NewComponentIDWithName(typeStr, "nometricspecified"),
+			expected: &Config{
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+					CollectionInterval: 60 * time.Second,
+				},
+				PerfCounters: []ObjectConfig{
+					{
+						Object:   "object",
+						Counters: []CounterConfig{{Name: "counter1"}},
+					},
+				},
+				MetricMetaData: map[string]MetricConfig{
+					"metric": {
+						Description: "desc",
+						Unit:        "1",
+						Gauge:       GaugeMetric{},
+					},
+				},
+			},
 		},
 		{
-			name:        "EmptyInstance",
-			cfgFile:     "config-emptyinstance.yaml",
-			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(emptyInstanceErr, "object")),
+			id: config.NewComponentIDWithName(typeStr, "summetric"),
+			expected: &Config{
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+					CollectionInterval: 60 * time.Second,
+				},
+				PerfCounters: []ObjectConfig{
+					{
+						Object:   "object",
+						Counters: []CounterConfig{{Name: "counter1", MetricRep: MetricRep{Name: "metric"}}},
+					},
+				},
+				MetricMetaData: map[string]MetricConfig{
+					"metric": {
+						Description: "desc",
+						Unit:        "1",
+						Sum: SumMetric{
+							Aggregation: "cumulative",
+							Monotonic:   false,
+						},
+					},
+				},
+			},
 		},
 		{
-			name:    "AllErrors",
-			cfgFile: "config-allerrors.yaml",
+			id: config.NewComponentIDWithName(typeStr, "unspecifiedmetrictype"),
+			expected: &Config{
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+					CollectionInterval: 60 * time.Second,
+				},
+				PerfCounters: []ObjectConfig{
+					{
+						Object:   "object",
+						Counters: []CounterConfig{{Name: "counter1", MetricRep: MetricRep{Name: "metric"}}},
+					},
+				},
+				MetricMetaData: map[string]MetricConfig{
+					"metric": {
+						Description: "desc",
+						Unit:        "1",
+						Gauge:       GaugeMetric{},
+					},
+				},
+			},
+		},
+		{
+			id:          config.NewComponentIDWithName(typeStr, "negative-collection-interval"),
+			expectedErr: negativeCollectionIntervalErr,
+		},
+		{
+			id:          config.NewComponentIDWithName(typeStr, "noperfcounters"),
+			expectedErr: noPerfCountersErr,
+		},
+		{
+			id:          config.NewComponentIDWithName(typeStr, "noobjectname"),
+			expectedErr: noObjectNameErr,
+		},
+		{
+			id:          config.NewComponentIDWithName(typeStr, "nocounters"),
+			expectedErr: fmt.Sprintf(noCountersErr, "object"),
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "allerrors"),
 			expectedErr: fmt.Sprintf(
-				"%s: %s; %s; %s; %s",
-				errorPrefix,
+				"%s; %s; %s; %s",
 				negativeCollectionIntervalErr,
-				fmt.Sprintf(emptyInstanceErr, "object"),
 				fmt.Sprintf(noCountersErr, "object"),
+				fmt.Sprintf(emptyInstanceErr, "object"),
 				noObjectNameErr,
 			),
 		},
+		{
+			id:          config.NewComponentIDWithName(typeStr, "emptyinstance"),
+			expectedErr: fmt.Sprintf(emptyInstanceErr, "object"),
+		},
 	}
 
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			factories, err := componenttest.NopFactories()
-			require.NoError(t, err)
-
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
 			factory := NewFactory()
-			factories.Receivers[typeStr] = factory
-			_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.cfgFile), factories)
+			cfg := factory.CreateDefaultConfig()
 
-			require.EqualError(t, err, test.expectedErr)
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+
+			if tt.expectedErr != "" {
+				assert.Equal(t, cfg.Validate().Error(), tt.expectedErr)
+				return
+			}
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }

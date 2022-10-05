@@ -17,7 +17,6 @@ package filestorage
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
@@ -55,6 +54,10 @@ func TestExtensionIntegrity(t *testing.T) {
 	for _, c := range components {
 		client, err := se.GetClient(ctx, c.kind, c.name, "")
 		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, client.Close(ctx))
+		})
+
 		clients[c.name] = client
 	}
 
@@ -116,6 +119,9 @@ func TestClientHandlesSimpleCases(t *testing.T) {
 
 	myBytes := []byte("value")
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(ctx))
+	})
 
 	// Set the data
 	err = client.Set(ctx, "key", myBytes)
@@ -156,6 +162,9 @@ func TestTwoClientsWithDifferentNames(t *testing.T) {
 		"foo",
 	)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client1.Close(ctx))
+	})
 
 	client2, err := se.GetClient(
 		ctx,
@@ -164,6 +173,9 @@ func TestTwoClientsWithDifferentNames(t *testing.T) {
 		"bar",
 	)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client2.Close(ctx))
+	})
 
 	myBytes1 := []byte("value1")
 	myBytes2 := []byte("value2")
@@ -188,8 +200,7 @@ func TestTwoClientsWithDifferentNames(t *testing.T) {
 func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
 	ctx := context.Background()
 
-	tempDir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
+	tempDir := t.TempDir()
 
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
@@ -217,12 +228,9 @@ func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
 }
 
 func newTestExtension(t *testing.T) storage.Extension {
-	tempDir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
-
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Directory = tempDir
+	cfg.Directory = t.TempDir()
 
 	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
 	require.NoError(t, err)
@@ -240,8 +248,7 @@ func newTestEntity(name string) config.ComponentID {
 func TestCompaction(t *testing.T) {
 	ctx := context.Background()
 
-	tempDir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
+	tempDir := t.TempDir()
 
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
@@ -259,10 +266,12 @@ func TestCompaction(t *testing.T) {
 		newTestEntity("my_component"),
 		"",
 	)
-
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(ctx))
+	})
 
-	files, err := ioutil.ReadDir(tempDir)
+	files, err := os.ReadDir(tempDir)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(files))
 
@@ -270,57 +279,55 @@ func TestCompaction(t *testing.T) {
 	path := filepath.Join(tempDir, file.Name())
 	stats, err := os.Stat(path)
 	require.NoError(t, err)
-	newStats := stats
 
 	var key string
 	i := 0
 
-	// add data until database file changes size (we are checking compacted size)
-	for newStats.Size() <= stats.Size() {
+	// magic numbers giving enough data to force bbolt to allocate a new page
+	// see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/9004 for some discussion
+	numEntries := 50
+	entrySize := 512
+	entry := make([]byte, entrySize)
+
+	// add the data to the db
+	for i = 0; i < numEntries; i++ {
 		key = fmt.Sprintf("key_%d", i)
-		err = client.Set(ctx, key, []byte(key))
+		err = client.Set(ctx, key, entry)
 		require.NoError(t, err)
-
-		// compact before checking size
-		c, fok := client.(*fileStorageClient)
-		require.True(t, fok)
-		client, err = c.Compact(ctx, tempDir, cfg.Timeout, 1)
-		require.NoError(t, err)
-
-		// check size after compaction
-		newStats, err = os.Stat(path)
-		require.NoError(t, err)
-		i++
 	}
 
-	stats = newStats
-
-	// compact again just in case
+	// compact the db
 	c, ok := client.(*fileStorageClient)
 	require.True(t, ok)
-	client, err = c.Compact(ctx, tempDir, cfg.Timeout, 1)
+	err = c.Compact(tempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(ctx))
+	})
 
 	// check size after compaction
-	newStats, err = os.Stat(path)
+	newStats, err := os.Stat(path)
 	require.NoError(t, err)
-	require.Equal(t, stats.Size(), newStats.Size())
+	require.Less(t, stats.Size(), newStats.Size())
 
 	// remove data from database
-	for i = i - 1; i >= 0; i-- {
+	for i = 0; i < numEntries; i++ {
 		key = fmt.Sprintf("key_%d", i)
-		// Set the data
-		err = client.Delete(ctx, key)
+		err = c.Delete(ctx, key)
 		require.NoError(t, err)
 	}
 
 	// compact after data removal
 	c, ok = client.(*fileStorageClient)
 	require.True(t, ok)
-	_, err = c.Compact(ctx, tempDir, cfg.Timeout, 1)
+	err = c.Compact(tempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(ctx))
+	})
 
 	// check size
+	stats = newStats
 	newStats, err = os.Stat(path)
 	require.NoError(t, err)
 	require.Less(t, newStats.Size(), stats.Size())
@@ -331,8 +338,7 @@ func TestCompaction(t *testing.T) {
 func TestCompactionRemoveTemp(t *testing.T) {
 	ctx := context.Background()
 
-	tempDir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
+	tempDir := t.TempDir()
 
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
@@ -350,11 +356,13 @@ func TestCompactionRemoveTemp(t *testing.T) {
 		newTestEntity("my_component"),
 		"",
 	)
-
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(ctx))
+	})
 
 	// check if only db exists in tempDir
-	files, err := ioutil.ReadDir(tempDir)
+	files, err := os.ReadDir(tempDir)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(files))
 	fileName := files[0].Name()
@@ -362,26 +370,31 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	// perform compaction in the same directory
 	c, ok := client.(*fileStorageClient)
 	require.True(t, ok)
-	client, err = c.Compact(ctx, tempDir, cfg.Timeout, 1)
+	err = c.Compact(tempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(ctx))
+	})
 
 	// check if only db exists in tempDir
-	files, err = ioutil.ReadDir(tempDir)
+	files, err = os.ReadDir(tempDir)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(files))
 	require.Equal(t, fileName, files[0].Name())
 
 	// perform compaction in different directory
-	emptyTempDir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
+	emptyTempDir := t.TempDir()
 
 	c, ok = client.(*fileStorageClient)
 	require.True(t, ok)
-	_, err = c.Compact(ctx, emptyTempDir, cfg.Timeout, 1)
+	err = c.Compact(emptyTempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(ctx))
+	})
 
 	// check if emptyTempDir is empty after compaction
-	files, err = ioutil.ReadDir(emptyTempDir)
+	files, err = os.ReadDir(emptyTempDir)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(files))
 }

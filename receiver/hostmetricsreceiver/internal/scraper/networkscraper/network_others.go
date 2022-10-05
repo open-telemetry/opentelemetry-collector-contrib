@@ -31,3 +31,7 @@ var allTCPStates = []string{
 	"SYN_RECEIVED",
 	"TIME_WAIT",
 }
+
+func (s *scraper) recordNetworkConntrackMetrics() error {
+	return nil
+}

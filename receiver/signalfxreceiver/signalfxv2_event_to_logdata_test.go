@@ -22,7 +22,8 @@ import (
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 func TestSignalFxV2EventsToLogData(t *testing.T) {
@@ -48,26 +49,24 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 		}
 	}
 
-	buildDefaultLogs := func() pdata.LogRecordSlice {
-		logSlice := pdata.NewLogRecordSlice()
+	buildDefaultLogs := func() plog.LogRecordSlice {
+		logSlice := plog.NewLogRecordSlice()
 		l := logSlice.AppendEmpty()
-		l.SetTimestamp(pdata.NewTimestampFromTime(now.Truncate(time.Millisecond)))
+		l.SetTimestamp(pcommon.NewTimestampFromTime(now.Truncate(time.Millisecond)))
 		attrs := l.Attributes()
-		attrs.InsertString("com.splunk.signalfx.event_type", "shutdown")
-		attrs.InsertString("k0", "v0")
-		attrs.InsertString("k1", "v1")
-		attrs.InsertString("k2", "v2")
+		attrs.PutString("com.splunk.signalfx.event_type", "shutdown")
+		attrs.PutString("k0", "v0")
+		attrs.PutString("k1", "v1")
+		attrs.PutString("k2", "v2")
+		attrs.PutInt("com.splunk.signalfx.event_category", int64(sfxpb.EventCategory_USER_DEFINED))
 
-		propMapVal := pdata.NewAttributeValueMap()
-		propMap := propMapVal.MapVal()
-		propMap.InsertString("env", "prod")
-		propMap.InsertBool("isActive", true)
-		propMap.InsertInt("rack", 5)
-		propMap.InsertDouble("temp", 40.5)
-		propMap.InsertNull("nullProp")
+		propMap := attrs.PutEmptyMap("com.splunk.signalfx.event_properties")
+		propMap.PutString("env", "prod")
+		propMap.PutBool("isActive", true)
+		propMap.PutInt("rack", 5)
+		propMap.PutDouble("temp", 40.5)
+		propMap.PutEmpty("nullProp")
 		propMap.Sort()
-		attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
-		attrs.Insert("com.splunk.signalfx.event_category", pdata.NewAttributeValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
 
 		l.Attributes().Sort()
 		return logSlice
@@ -76,7 +75,7 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 	tests := []struct {
 		name      string
 		sfxEvents []*sfxpb.Event
-		expected  pdata.LogRecordSlice
+		expected  plog.LogRecordSlice
 	}{
 		{
 			name:      "default",
@@ -90,9 +89,9 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 				e.Category = nil
 				return []*sfxpb.Event{e}
 			}(),
-			expected: func() pdata.LogRecordSlice {
+			expected: func() plog.LogRecordSlice {
 				lrs := buildDefaultLogs()
-				lrs.At(0).Attributes().Upsert("com.splunk.signalfx.event_category", pdata.NewAttributeValueEmpty())
+				lrs.At(0).Attributes().PutEmpty("com.splunk.signalfx.event_category")
 				return lrs
 			}(),
 		},
@@ -100,7 +99,7 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			lrs := pdata.NewLogRecordSlice()
+			lrs := plog.NewLogRecordSlice()
 			signalFxV2EventsToLogRecords(tt.sfxEvents, lrs)
 			for i := 0; i < lrs.Len(); i++ {
 				lrs.At(i).Attributes().Sort()

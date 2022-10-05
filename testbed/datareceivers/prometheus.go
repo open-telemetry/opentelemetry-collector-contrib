@@ -67,7 +67,7 @@ func (dr *prometheusDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, 
 	if err != nil {
 		return err
 	}
-	return dr.receiver.Start(context.Background(), dr)
+	return dr.receiver.Start(context.Background(), componenttest.NewNopHost())
 }
 
 func (dr *prometheusDataReceiver) Stop() error {

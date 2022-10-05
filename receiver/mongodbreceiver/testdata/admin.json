@@ -1,4 +1,15 @@
 {
+	"network": {
+        "bytesIn": {
+            "$numberLong": "3056"
+        },
+        "bytesOut": {
+            "$numberLong": "5393"
+        },
+        "numRequests": {
+            "$numberLong": "20"
+        }
+    },
 	"asserts": {
 		"msg": {
 			"$numberInt": "0"
@@ -298,10 +309,41 @@
 			"$numberInt": "0"
 		}
 	},
+	"metrics": {
+		"cursor": {
+            "timedOut": {
+                "$numberLong": "0"
+            },
+            "open": {
+                "pinned": {
+                    "$numberLong": "0"
+                },
+                "total": {
+                    "$numberLong": "0"
+                },
+                "noTimeout": {
+                    "$numberLong": "0"
+                }
+            }
+        }
+	},
+	"process": "mongod",
+	"storageEngine": {
+		"name": "wiredTiger",
+		"persistent": true,
+		"readOnly": false,
+		"supportsCommittedReads": true,
+		"supportsSnapshotReadConcern": true
+	},
 	"wiredTiger": {
 		"cache": {
 			"pages read into cache": 14,
 			"pages requested from the cache": 215
+		},
+		"session": {
+			"open session count": {
+				"$numberInt": "19"
+			}
 		}
 	},
 	"version": "4.0.25"

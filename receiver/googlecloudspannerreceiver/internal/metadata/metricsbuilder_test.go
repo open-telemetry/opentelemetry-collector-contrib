@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/filter"
 )
@@ -84,13 +85,13 @@ func TestNewMetricsFromDataPointBuilder(t *testing.T) {
 
 func TestMetricsFromDataPointBuilder_Build(t *testing.T) {
 	testCases := map[string]struct {
-		metricsDataType pdata.MetricDataType
+		metricsDataType pmetric.MetricType
 		expectedError   error
 	}{
-		"Gauge":                      {pdata.MetricDataTypeGauge, nil},
-		"Sum":                        {pdata.MetricDataTypeSum, nil},
-		"Gauge with filtering error": {pdata.MetricDataTypeGauge, errors.New("filtering error")},
-		"Sum with filtering error":   {pdata.MetricDataTypeSum, errors.New("filtering error")},
+		"Gauge":                      {pmetric.MetricTypeGauge, nil},
+		"Sum":                        {pmetric.MetricTypeSum, nil},
+		"Gauge with filtering error": {pmetric.MetricTypeGauge, errors.New("filtering error")},
+		"Sum with filtering error":   {pmetric.MetricTypeSum, errors.New("filtering error")},
 	}
 
 	for name, testCase := range testCases {
@@ -100,7 +101,7 @@ func TestMetricsFromDataPointBuilder_Build(t *testing.T) {
 	}
 }
 
-func testMetricsFromDataPointBuilderBuild(t *testing.T, metricDataType pdata.MetricDataType, expectedError error) {
+func testMetricsFromDataPointBuilderBuild(t *testing.T, metricDataType pmetric.MetricType, expectedError error) {
 	filterResolver := &mockItemFilterResolver{}
 	dataForTesting := generateTestData(metricDataType)
 	builder := &metricsFromDataPointBuilder{filterResolver: filterResolver}
@@ -129,29 +130,29 @@ func testMetricsFromDataPointBuilderBuild(t *testing.T, metricDataType pdata.Met
 
 	assert.Equal(t, len(dataForTesting.dataPoints), metric.DataPointCount())
 	assert.Equal(t, len(dataForTesting.expectedGroups), metric.MetricCount())
-	assert.Equal(t, 1, metric.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len())
-	assert.Equal(t, len(dataForTesting.expectedGroups), metric.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
-	require.Equal(t, instrumentationLibraryName, metric.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).InstrumentationLibrary().Name())
+	assert.Equal(t, 1, metric.ResourceMetrics().At(0).ScopeMetrics().Len())
+	assert.Equal(t, len(dataForTesting.expectedGroups), metric.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	require.Equal(t, instrumentationLibraryName, metric.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Name())
 
 	for i := 0; i < len(dataForTesting.expectedGroups); i++ {
-		ilMetric := metric.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(i)
+		ilMetric := metric.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(i)
 		expectedGroupingKey := expectedGroupingKeysByMetricName[ilMetric.Name()]
 		expectedDataPoints := dataForTesting.expectedGroups[expectedGroupingKey]
 
 		for dataPointIndex, expectedDataPoint := range expectedDataPoints {
 			assert.Equal(t, expectedDataPoint.metricName, ilMetric.Name())
 			assert.Equal(t, expectedDataPoint.metricValue.Metadata().Unit(), ilMetric.Unit())
-			assert.Equal(t, expectedDataPoint.metricValue.Metadata().DataType().MetricDataType(), ilMetric.DataType())
+			assert.Equal(t, expectedDataPoint.metricValue.Metadata().DataType().MetricType(), ilMetric.Type())
 
-			var dataPoint pdata.NumberDataPoint
+			var dataPoint pmetric.NumberDataPoint
 
-			if metricDataType == pdata.MetricDataTypeGauge {
+			if metricDataType == pmetric.MetricTypeGauge {
 				assert.NotNil(t, ilMetric.Gauge())
 				assert.Equal(t, len(expectedDataPoints), ilMetric.Gauge().DataPoints().Len())
 				dataPoint = ilMetric.Gauge().DataPoints().At(dataPointIndex)
 			} else {
 				assert.NotNil(t, ilMetric.Sum())
-				assert.Equal(t, pdata.MetricAggregationTemporalityDelta, ilMetric.Sum().AggregationTemporality())
+				assert.Equal(t, pmetric.MetricAggregationTemporalityDelta, ilMetric.Sum().AggregationTemporality())
 				assert.True(t, ilMetric.Sum().IsMonotonic())
 				assert.Equal(t, len(expectedDataPoints), ilMetric.Sum().DataPoints().Len())
 				dataPoint = ilMetric.Sum().DataPoints().At(dataPointIndex)
@@ -159,7 +160,7 @@ func testMetricsFromDataPointBuilderBuild(t *testing.T, metricDataType pdata.Met
 
 			assertMetricValue(t, expectedDataPoint.metricValue, dataPoint)
 
-			assert.Equal(t, pdata.NewTimestampFromTime(expectedDataPoint.timestamp), dataPoint.Timestamp())
+			assert.Equal(t, pcommon.NewTimestampFromTime(expectedDataPoint.timestamp), dataPoint.Timestamp())
 			// Adding +3 here because we'll always have 3 labels added for each metric: project_id, instance_id, database
 			assert.Equal(t, 3+len(expectedDataPoint.labelValues), dataPoint.Attributes().Len())
 
@@ -292,7 +293,7 @@ func TestMetricsFromDataPointBuilder_Shutdown(t *testing.T) {
 	}
 }
 
-func generateTestData(metricDataType pdata.MetricDataType) testData {
+func generateTestData(metricDataType pmetric.MetricType) testData {
 	timestamp1 := time.Now().UTC()
 	timestamp2 := timestamp1.Add(time.Minute)
 	labelValues := allPossibleLabelValues()
@@ -311,14 +312,14 @@ func generateTestData(metricDataType pdata.MetricDataType) testData {
 
 	expectedGroupingKeys := []MetricsDataPointKey{
 		{
-			MetricName:     metricName1,
-			MetricDataType: metricValues[0].Metadata().DataType(),
-			MetricUnit:     metricValues[0].Metadata().Unit(),
+			MetricName: metricName1,
+			MetricType: metricValues[0].Metadata().DataType(),
+			MetricUnit: metricValues[0].Metadata().Unit(),
 		},
 		{
-			MetricName:     metricName2,
-			MetricDataType: metricValues[0].Metadata().DataType(),
-			MetricUnit:     metricValues[0].Metadata().Unit(),
+			MetricName: metricName2,
+			MetricType: metricValues[0].Metadata().DataType(),
+			MetricUnit: metricValues[0].Metadata().Unit(),
 		},
 	}
 

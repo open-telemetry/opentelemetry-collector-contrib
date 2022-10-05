@@ -15,9 +15,12 @@
 package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 )
 
 // Config defines configuration for k8s attributes processor.
@@ -50,7 +53,17 @@ type Config struct {
 }
 
 func (cfg *Config) Validate() error {
-	return cfg.APIConfig.Validate()
+	if err := cfg.APIConfig.Validate(); err != nil {
+		return err
+	}
+
+	for _, assoc := range cfg.Association {
+		if len(assoc.Sources) > kube.PodIdentifierMaxLength {
+			return fmt.Errorf("too many association sources. limit is %v", kube.PodIdentifierMaxLength)
+		}
+	}
+
+	return nil
 }
 
 // ExtractConfig section allows specifying extraction rules to extract
@@ -60,8 +73,12 @@ type ExtractConfig struct {
 	// The field accepts a list of strings.
 	//
 	// Metadata fields supported right now are,
-	//   k8s.pod.name, k8s.pod.uid, k8s.deployment.name, k8s.cluster.name,
-	//   k8s.node.name, k8s.namespace.name and k8s.pod.start_time
+	//   k8s.pod.name, k8s.pod.uid, k8s.deployment.name,
+	//   k8s.node.name, k8s.namespace.name, k8s.pod.start_time,
+	//   k8s.replicaset.name, k8s.replicaset.uid,
+	//   k8s.daemonset.name, k8s.daemonset.uid,
+	//   k8s.job.name, k8s.job.uid, k8s.cronjob.name,
+	//   k8s.statefulset.name, k8s.statefulset.uid
 	//
 	// Specifying anything other than these values will result in an error.
 	// By default all of the fields are extracted and added to spans and metrics.
@@ -73,7 +90,7 @@ type ExtractConfig struct {
 	// documentation for more details.
 	Annotations []FieldExtractConfig `mapstructure:"annotations"`
 
-	// Annotations allows extracting data from pod labels and record it
+	// Labels allows extracting data from pod labels and record it
 	// as resource attributes.
 	// It is a list of FieldExtractConfig type. See FieldExtractConfig
 	// documentation for more details.
@@ -82,38 +99,60 @@ type ExtractConfig struct {
 
 // FieldExtractConfig allows specifying an extraction rule to extract a value from exactly one field.
 //
-// The field accepts a list FilterExtractConfig map. The map accepts three keys
-//     tag_name, key and regex
+// The field accepts a list FilterExtractConfig map. The map accepts several keys
 //
-// - tag_name represents the name of the tag that will be added to the span.
-//   When not specified a default tag name will be used of the format:
-//       k8s.pod.annotations.<annotation key>
-//       k8s.pod.labels.<label key>
-//   For example, if tag_name is not specified and the key is git_sha,
-//   then the attribute name will be `k8s.pod.annotations.git_sha`.
+//		from, tag_name, key, key_regex and regex
+//
+//	  - tag_name represents the name of the tag that will be added to the span.
+//	    When not specified a default tag name will be used of the format:
+//	    k8s.pod.annotations.<annotation key>
+//	    k8s.pod.labels.<label key>
+//	    For example, if tag_name is not specified and the key is git_sha,
+//	    then the attribute name will be `k8s.pod.annotations.git_sha`.
+//	    When key_regex is present, tag_name supports back reference to both named capturing and positioned capturing.
+//	    For example, if your pod spec contains the following labels,
+//
+//	    app.kubernetes.io/component: mysql
+//	    app.kubernetes.io/version: 5.7.21
+//
+//	    and you'd like to add tags for all labels with prefix app.kubernetes.io/ and also trim the prefix,
+//	    then you can specify the following extraction rules:
+//
+//	    processors:
+//	    k8sattributes:
+//	    extract:
+//	    labels:
+//
+//	  - tag_name: $$1
+//	    key_regex: kubernetes.io/(.*)
+//
+//	    this will add the `component` and `version` tags to the spans or metrics.
 //
 // - key represents the annotation name. This must exactly match an annotation name.
 //
-// - regex is an optional field used to extract a sub-string from a complex field value.
-//   The supplied regular expression must contain one named parameter with the string "value"
-//   as the name. For example, if your pod spec contains the following annotation,
+//   - regex is an optional field used to extract a sub-string from a complex field value.
+//     The supplied regular expression must contain one named parameter with the string "value"
+//     as the name. For example, if your pod spec contains the following annotation,
 //
-//		kubernetes.io/change-cause: 2019-08-28T18:34:33Z APP_NAME=my-app GIT_SHA=58a1e39 CI_BUILD=4120
+//     kubernetes.io/change-cause: 2019-08-28T18:34:33Z APP_NAME=my-app GIT_SHA=58a1e39 CI_BUILD=4120
 //
-//   and you'd like to extract the GIT_SHA and the CI_BUILD values as tags, then you must
-//   specify the following two extraction rules:
+//     and you'd like to extract the GIT_SHA and the CI_BUILD values as tags, then you must
+//     specify the following two extraction rules:
 //
-//   procesors:
-//     k8s-tagger:
-//       annotations:
-//         - name: git.sha
-//           key: kubernetes.io/change-cause
-//           regex: GIT_SHA=(?P<value>\w+)
-//         - name: ci.build
-//	         key: kubernetes.io/change-cause
-//           regex: JENKINS=(?P<value>[\w]+)
+//     processors:
+//     k8sattributes:
+//     extract:
+//     annotations:
 //
-//   this will add the `git.sha` and `ci.build` tags to the spans or metrics.
+//   - tag_name: git.sha
+//     key: kubernetes.io/change-cause
+//     regex: GIT_SHA=(?P<value>\w+)
+//
+//   - tag_name: ci.build
+//     key: kubernetes.io/change-cause
+//     regex: JENKINS=(?P<value>[\w]+)
+//
+//     this will add the `git.sha` and `ci.build` tags to the spans or metrics.
 type FieldExtractConfig struct {
 	TagName string `mapstructure:"tag_name"`
 	Key     string `mapstructure:"key"`
@@ -196,13 +235,21 @@ type FieldFilterConfig struct {
 // PodAssociationConfig contain single rule how to associate Pod metadata
 // with logs, spans and metrics
 type PodAssociationConfig struct {
+	// Deprecated: Sources should be used to provide From and Name.
+	// If this is set, From and Name are going to be used as Sources' ones
 	// From represents the source of the association.
-	// Allowed values are "connection" and "labels".
+	// Allowed values are "connection" and "resource_attribute".
 	From string `mapstructure:"from"`
 
+	// Deprecated: Sources should be used to provide From and Name.
+	// If this is set, From and Name are going to be used as Sources' ones
 	// Name represents extracted key name.
 	// e.g. ip, pod_uid, k8s.pod.ip
 	Name string `mapstructure:"name"`
+
+	// List of pod association sources which should be taken
+	// to identify pod
+	Sources []PodAssociationSourceConfig `mapstructure:"sources"`
 }
 
 // ExcludeConfig represent a list of Pods to exclude
@@ -212,5 +259,15 @@ type ExcludeConfig struct {
 
 // ExcludePodConfig represent a Pod name to ignore
 type ExcludePodConfig struct {
+	Name string `mapstructure:"name"`
+}
+
+type PodAssociationSourceConfig struct {
+	// From represents the source of the association.
+	// Allowed values are "connection" and "resource_attribute".
+	From string `mapstructure:"from"`
+
+	// Name represents extracted key name.
+	// e.g. ip, pod_uid, k8s.pod.ip
 	Name string `mapstructure:"name"`
 }

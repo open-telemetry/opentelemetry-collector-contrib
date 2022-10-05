@@ -60,7 +60,7 @@ func TestJobClient_JobToCronJob(t *testing.T) {
 	for i := range jobArray {
 		jobs[i] = jobArray[i]
 	}
-	client.store.Replace(jobs, "")
+	assert.NoError(t, client.store.Replace(jobs, ""))
 
 	expectedMap := map[string]string{
 		"job-7f8459d648": "cronjobA",

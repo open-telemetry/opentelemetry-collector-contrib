@@ -16,15 +16,16 @@ package dockerstatsreceiver
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
 	dtypes "github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
@@ -52,56 +53,54 @@ type Value struct {
 }
 
 func metricsData(
-	ts pdata.Timestamp,
+	ts pcommon.Timestamp,
 	resourceLabels map[string]string,
 	metrics ...Metric,
-) pdata.Metrics {
+) pmetric.ResourceMetrics {
 	rLabels := mergeMaps(defaultLabels(), resourceLabels)
-	md := pdata.NewMetrics()
-	rs := md.ResourceMetrics().AppendEmpty()
+	rs := pmetric.NewResourceMetrics()
 	rs.SetSchemaUrl(conventions.SchemaURL)
 	rsAttr := rs.Resource().Attributes()
 	for k, v := range rLabels {
-		rsAttr.UpsertString(k, v)
+		rsAttr.PutString(k, v)
 	}
 	rsAttr.Sort()
 
-	mdMetrics := rs.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+	mdMetrics := rs.ScopeMetrics().AppendEmpty().Metrics()
 	mdMetrics.EnsureCapacity(len(metrics))
 	for _, m := range metrics {
 		mdMetric := mdMetrics.AppendEmpty()
 		mdMetric.SetName(m.name)
 		mdMetric.SetUnit(m.unit)
 
-		var dps pdata.NumberDataPointSlice
+		var dps pmetric.NumberDataPointSlice
 		switch m.mtype {
 		case MetricTypeCumulative:
-			mdMetric.SetDataType(pdata.MetricDataTypeSum)
-			mdMetric.Sum().SetIsMonotonic(true)
-			mdMetric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+			mdMetric.SetEmptySum().SetIsMonotonic(true)
+			mdMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 			dps = mdMetric.Sum().DataPoints()
 		case MetricTypeGauge, MetricTypeDoubleGauge:
-			mdMetric.SetDataType(pdata.MetricDataTypeGauge)
-			dps = mdMetric.Gauge().DataPoints()
+			dps = mdMetric.SetEmptyGauge().DataPoints()
 		}
 
 		for _, v := range m.values {
 			dp := dps.AppendEmpty()
 			dp.SetTimestamp(ts)
 			if m.mtype == MetricTypeDoubleGauge {
-				dp.SetDoubleVal(v.doubleValue)
+				dp.SetDoubleValue(v.doubleValue)
 			} else {
-				dp.SetIntVal(v.value)
+				dp.SetIntValue(v.value)
 			}
 			populateAttributes(dp.Attributes(), m.labelKeys, v.labelValues)
 		}
 	}
 
-	return md
+	return rs
 }
 
 func defaultLabels() map[string]string {
 	return map[string]string{
+		"container.runtime":    "docker",
 		"container.hostname":   "abcdef012345",
 		"container.id":         "a2596076ca048f02bcd16a8acd12a7ea2d3bc430d1cde095357239dd3925a4c3",
 		"container.image.name": "myImage",
@@ -190,12 +189,12 @@ func mergeMaps(maps ...map[string]string) map[string]string {
 
 func assertMetricsDataEqual(
 	t *testing.T,
-	now pdata.Timestamp,
+	now pcommon.Timestamp,
 	expected []Metric,
 	labels map[string]string,
-	actual pdata.Metrics,
+	actual pmetric.ResourceMetrics,
 ) {
-	actual.ResourceMetrics().At(0).Resource().Attributes().Sort()
+	actual.Resource().Attributes().Sort()
 	assert.Equal(t, metricsData(now, labels, expected...), actual)
 }
 
@@ -211,7 +210,7 @@ func TestZeroValueStats(t *testing.T) {
 	containers := containerJSON(t)
 	config := &Config{}
 
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 	md := ContainerStatsToMetrics(now, stats, containers, config)
 
 	metrics := []Metric{
@@ -232,7 +231,7 @@ func TestZeroValueStats(t *testing.T) {
 }
 
 func statsJSON(t *testing.T) *dtypes.StatsJSON {
-	statsRaw, err := ioutil.ReadFile(filepath.Join("testdata", "stats.json"))
+	statsRaw, err := os.ReadFile(filepath.Join("testdata", "stats.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -246,7 +245,7 @@ func statsJSON(t *testing.T) *dtypes.StatsJSON {
 }
 
 func containerJSON(t *testing.T) docker.Container {
-	containerRaw, err := ioutil.ReadFile(filepath.Join("testdata", "container.json"))
+	containerRaw, err := os.ReadFile(filepath.Join("testdata", "container.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -267,7 +266,7 @@ func TestStatsToDefaultMetrics(t *testing.T) {
 	containers := containerJSON(t)
 	config := &Config{}
 
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 	md := ContainerStatsToMetrics(now, stats, containers, config)
 
 	assertMetricsDataEqual(t, now, defaultMetrics(), nil, md)
@@ -280,7 +279,7 @@ func TestStatsToAllMetrics(t *testing.T) {
 		ProvidePerCoreCPUMetrics: true,
 	}
 
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 	md := ContainerStatsToMetrics(now, stats, containers, config)
 
 	metrics := []Metric{
@@ -379,7 +378,7 @@ func TestEnvVarToMetricLabels(t *testing.T) {
 		},
 	}
 
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 	md := ContainerStatsToMetrics(now, stats, containers, config)
 
 	expectedLabels := map[string]string{
@@ -400,7 +399,7 @@ func TestContainerLabelToMetricLabels(t *testing.T) {
 		},
 	}
 
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 	md := ContainerStatsToMetrics(now, stats, containers, config)
 
 	expectedLabels := map[string]string{

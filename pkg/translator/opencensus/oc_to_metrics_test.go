@@ -22,7 +22,7 @@ import (
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
@@ -31,12 +31,12 @@ func TestOCToMetrics(t *testing.T) {
 	tests := []struct {
 		name     string
 		oc       *agentmetricspb.ExportMetricsServiceRequest
-		internal pdata.Metrics
+		internal pmetric.Metrics
 	}{
 		{
 			name:     "empty",
 			oc:       &agentmetricspb.ExportMetricsServiceRequest{},
-			internal: pdata.NewMetrics(),
+			internal: pmetric.NewMetrics(),
 		},
 
 		{
@@ -139,10 +139,10 @@ func TestOCToMetrics(t *testing.T) {
 
 func TestOCToMetrics_ResourceInMetric(t *testing.T) {
 	internal := testdata.GenerateMetricsOneMetric()
-	want := pdata.NewMetrics()
-	internal.Clone().ResourceMetrics().MoveAndAppendTo(want.ResourceMetrics())
-	internal.Clone().ResourceMetrics().MoveAndAppendTo(want.ResourceMetrics())
-	want.ResourceMetrics().At(1).Resource().Attributes().UpsertString("resource-attr", "another-value")
+	want := pmetric.NewMetrics()
+	internal.CopyTo(want)
+	want.ResourceMetrics().At(0).CopyTo(want.ResourceMetrics().AppendEmpty())
+	want.ResourceMetrics().At(1).Resource().Attributes().PutString("resource-attr", "another-value")
 	oc := generateOCTestDataMetricsOneMetric()
 	oc2 := generateOCTestDataMetricsOneMetric()
 	oc.Metrics = append(oc.Metrics, oc2.Metrics...)
@@ -154,8 +154,8 @@ func TestOCToMetrics_ResourceInMetric(t *testing.T) {
 
 func TestOCToMetrics_ResourceInMetricOnly(t *testing.T) {
 	internal := testdata.GenerateMetricsOneMetric()
-	want := pdata.NewMetrics()
-	internal.Clone().ResourceMetrics().MoveAndAppendTo(want.ResourceMetrics())
+	want := pmetric.NewMetrics()
+	internal.CopyTo(want)
 	oc := generateOCTestDataMetricsOneMetric()
 	// Move resource to metric level.
 	// We shouldn't have a "combined" resource after conversion

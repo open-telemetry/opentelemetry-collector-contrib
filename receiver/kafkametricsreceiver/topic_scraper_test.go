@@ -23,9 +23,7 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestTopicShutdown(t *testing.T) {
@@ -36,9 +34,9 @@ func TestTopicShutdown(t *testing.T) {
 		On("Close").Return(nil).
 		On("Closed").Return(false)
 	scraper := brokerScraper{
-		client: client,
-		logger: zap.NewNop(),
-		config: Config{},
+		client:   client,
+		settings: componenttest.NewNopReceiverCreateSettings(),
+		config:   Config{},
 	}
 	_ = scraper.shutdown(context.Background())
 	client.AssertExpectations(t)
@@ -50,9 +48,9 @@ func TestTopicShutdown_closed(t *testing.T) {
 	client.Mock.
 		On("Closed").Return(true)
 	scraper := topicScraper{
-		client: client,
-		logger: zap.NewNop(),
-		config: Config{},
+		client:   client,
+		settings: componenttest.NewNopReceiverCreateSettings(),
+		config:   Config{},
 	}
 	_ = scraper.shutdown(context.Background())
 	client.AssertExpectations(t)
@@ -66,27 +64,39 @@ func TestTopicScraper_Name(t *testing.T) {
 func TestTopicScraper_createsScraper(t *testing.T) {
 	sc := sarama.NewConfig()
 	newSaramaClient = mockNewSaramaClient
-	ms, err := createTopicsScraper(context.Background(), Config{}, sc, zap.NewNop())
+	ms, err := createTopicsScraper(context.Background(), Config{}, sc, componenttest.NewNopReceiverCreateSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, ms)
 }
 
-func TestTopicScraper_startScraperHandlesError(t *testing.T) {
+func TestTopicScraper_ScrapeHandlesError(t *testing.T) {
 	newSaramaClient = func(addrs []string, conf *sarama.Config) (sarama.Client, error) {
 		return nil, fmt.Errorf("no scraper here")
 	}
 	sc := sarama.NewConfig()
-	ms, err := createTopicsScraper(context.Background(), Config{}, sc, zap.NewNop())
+	ms, err := createTopicsScraper(context.Background(), Config{}, sc, componenttest.NewNopReceiverCreateSettings())
 	assert.NotNil(t, ms)
 	assert.Nil(t, err)
-	err = ms.Start(context.Background(), nil)
+	_, err = ms.Scrape(context.Background())
 	assert.Error(t, err)
+}
+
+func TestTopicScraper_ShutdownHandlesNilClient(t *testing.T) {
+	newSaramaClient = func(addrs []string, conf *sarama.Config) (sarama.Client, error) {
+		return nil, fmt.Errorf("no scraper here")
+	}
+	sc := sarama.NewConfig()
+	ms, err := createTopicsScraper(context.Background(), Config{}, sc, componenttest.NewNopReceiverCreateSettings())
+	assert.NotNil(t, ms)
+	assert.Nil(t, err)
+	err = ms.Shutdown(context.Background())
+	assert.NoError(t, err)
 }
 
 func TestTopicScraper_startScraperCreatesClient(t *testing.T) {
 	newSaramaClient = mockNewSaramaClient
 	sc := sarama.NewConfig()
-	ms, err := createTopicsScraper(context.Background(), Config{}, sc, zap.NewNop())
+	ms, err := createTopicsScraper(context.Background(), Config{}, sc, componenttest.NewNopReceiverCreateSettings())
 	assert.NotNil(t, ms)
 	assert.NoError(t, err)
 	err = ms.Start(context.Background(), nil)
@@ -98,7 +108,7 @@ func TestTopicScraper_createScraperHandles_invalid_topicMatch(t *testing.T) {
 	sc := sarama.NewConfig()
 	ms, err := createTopicsScraper(context.Background(), Config{
 		TopicMatch: "[",
-	}, sc, zap.NewNop())
+	}, sc, componenttest.NewNopReceiverCreateSettings())
 	assert.Error(t, err)
 	assert.Nil(t, ms)
 }
@@ -111,28 +121,30 @@ func TestTopicScraper_scrapes(t *testing.T) {
 	match := regexp.MustCompile(config.TopicMatch)
 	scraper := topicScraper{
 		client:      client,
-		logger:      zap.NewNop(),
+		settings:    componenttest.NewNopReceiverCreateSettings(),
+		config:      *config,
 		topicFilter: match,
 	}
+	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 	md, err := scraper.scrape(context.Background())
 	assert.NoError(t, err)
 	require.Equal(t, 1, md.ResourceMetrics().Len())
-	require.Equal(t, 1, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len())
-	ms := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
+	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	for i := 0; i < ms.Len(); i++ {
 		m := ms.At(i)
 		dp := m.Gauge().DataPoints().At(0)
 		switch m.Name() {
-		case metadata.M.KafkaTopicPartitions.Name():
-			assert.Equal(t, dp.IntVal(), int64(len(testPartitions)))
-		case metadata.M.KafkaPartitionCurrentOffset.Name():
-			assert.Equal(t, dp.IntVal(), testOffset)
-		case metadata.M.KafkaPartitionOldestOffset.Name():
-			assert.Equal(t, dp.IntVal(), testOffset)
-		case metadata.M.KafkaPartitionReplicas.Name():
-			assert.Equal(t, dp.IntVal(), int64(len(testReplicas)))
-		case metadata.M.KafkaPartitionReplicasInSync.Name():
-			assert.Equal(t, dp.IntVal(), int64(len(testReplicas)))
+		case "kafka.topic.partitions":
+			assert.Equal(t, dp.IntValue(), int64(len(testPartitions)))
+		case "kafka.partition.current_offset":
+			assert.Equal(t, dp.IntValue(), testOffset)
+		case "kafka.partition.oldest_offset":
+			assert.Equal(t, dp.IntValue(), testOffset)
+		case "kafka.partition.replicas":
+			assert.Equal(t, dp.IntValue(), int64(len(testReplicas)))
+		case "kafka.partition.replicas_in_sync":
+			assert.Equal(t, dp.IntValue(), int64(len(testReplicas)))
 		}
 	}
 }
@@ -144,7 +156,7 @@ func TestTopicScraper_scrape_handlesTopicError(t *testing.T) {
 	match := regexp.MustCompile(config.TopicMatch)
 	scraper := topicScraper{
 		client:      client,
-		logger:      zap.NewNop(),
+		settings:    componenttest.NewNopReceiverCreateSettings(),
 		topicFilter: match,
 	}
 	_, err := scraper.scrape(context.Background())
@@ -158,9 +170,10 @@ func TestTopicScraper_scrape_handlesPartitionError(t *testing.T) {
 	match := regexp.MustCompile(config.TopicMatch)
 	scraper := topicScraper{
 		client:      client,
-		logger:      zap.NewNop(),
+		settings:    componenttest.NewNopReceiverCreateSettings(),
 		topicFilter: match,
 	}
+	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 	_, err := scraper.scrape(context.Background())
 	assert.Error(t, err)
 }
@@ -175,9 +188,10 @@ func TestTopicScraper_scrape_handlesPartialScrapeErrors(t *testing.T) {
 	match := regexp.MustCompile(config.TopicMatch)
 	scraper := topicScraper{
 		client:      client,
-		logger:      zap.NewNop(),
+		settings:    componenttest.NewNopReceiverCreateSettings(),
 		topicFilter: match,
 	}
+	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 	_, err := scraper.scrape(context.Background())
 	assert.Error(t, err)
 }

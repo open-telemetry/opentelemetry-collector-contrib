@@ -17,7 +17,7 @@ package awsxray
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -637,7 +637,7 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		content, err := ioutil.ReadFile(tc.samplePath)
+		content, err := os.ReadFile(tc.samplePath)
 		assert.NoError(t, err, fmt.Sprintf("[%s] can not read raw segment", tc.testCase))
 
 		assert.True(t, len(content) > 0, fmt.Sprintf("[%s] content length is 0", tc.testCase))

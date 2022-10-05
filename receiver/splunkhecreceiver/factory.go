@@ -21,8 +21,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -33,6 +32,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "splunk_hec"
+	// The stability level of the receiver.
+	stability = component.StabilityLevelBeta
 
 	// Default endpoints to bind to.
 	defaultEndpoint = ":8088"
@@ -40,11 +41,11 @@ const (
 
 // NewFactory creates a factory for Splunk HEC receiver.
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver),
-		receiverhelper.WithLogs(createLogsReceiver))
+		component.WithMetricsReceiver(createMetricsReceiver, stability),
+		component.WithLogsReceiver(createLogsReceiver, stability))
 }
 
 // CreateDefaultConfig creates the default configuration for Splunk HEC receiver.

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,49 +23,104 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
 const (
-	typeStr = "transform"
+	typeStr   = "transform"
+	stability = component.StabilityLevelAlpha
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 func NewFactory() component.ProcessorFactory {
-	return processorhelper.NewFactory(
+	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTracesProcessor),
+		component.WithLogsProcessor(createLogsProcessor, stability),
+		component.WithTracesProcessor(createTracesProcessor, stability),
+		component.WithMetricsProcessor(createMetricsProcessor, stability),
 	)
 }
 
 func createDefaultConfig() config.Processor {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		Traces: TracesConfig{
-			Queries: []string{},
-
-			functions: traces.DefaultFunctions(),
+		OTTLConfig: OTTLConfig{
+			Logs: SignalConfig{
+				Statements: []string{},
+			},
+			Traces: SignalConfig{
+				Statements: []string{},
+			},
+			Metrics: SignalConfig{
+				Statements: []string{},
+			},
 		},
 	}
 }
 
+func createLogsProcessor(
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
+	cfg config.Processor,
+	nextConsumer consumer.Logs,
+) (component.LogsProcessor, error) {
+	oCfg := cfg.(*Config)
+
+	proc, err := logs.NewProcessor(oCfg.Logs.Statements, logs.Functions(), set.TelemetrySettings)
+	if err != nil {
+		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
+	}
+	return processorhelper.NewLogsProcessor(
+		ctx,
+		set,
+		cfg,
+		nextConsumer,
+		proc.ProcessLogs,
+		processorhelper.WithCapabilities(processorCapabilities))
+}
+
 func createTracesProcessor(
-	_ context.Context,
-	settings component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	proc, err := traces.NewProcessor(oCfg.Traces.Queries, oCfg.Traces.functions, settings)
+	proc, err := traces.NewProcessor(oCfg.Traces.Statements, traces.Functions(), set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
 	return processorhelper.NewTracesProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		proc.ProcessTraces,
+		processorhelper.WithCapabilities(processorCapabilities))
+}
+
+func createMetricsProcessor(
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
+	cfg config.Processor,
+	nextConsumer consumer.Metrics,
+) (component.MetricsProcessor, error) {
+	oCfg := cfg.(*Config)
+
+	proc, err := metrics.NewProcessor(oCfg.Metrics.Statements, metrics.Functions(), set.TelemetrySettings)
+	if err != nil {
+		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
+	}
+	return processorhelper.NewMetricsProcessor(
+		ctx,
+		set,
+		cfg,
+		nextConsumer,
+		proc.ProcessMetrics,
 		processorhelper.WithCapabilities(processorCapabilities))
 }

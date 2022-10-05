@@ -18,49 +18,50 @@ import (
 	"context"
 	"testing"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 )
 
 type testProvider string
 
-func (t testProvider) Hostname(context.Context) (string, error) {
-	return string(t), nil
+func (t testProvider) Source(context.Context) (source.Source, error) {
+	return source.Source{Kind: source.HostnameKind, Identifier: string(t)}, nil
 }
 
 func newTranslator(t *testing.T, logger *zap.Logger) *translator.Translator {
 	tr, err := translator.New(logger,
 		translator.WithHistogramMode(translator.HistogramModeDistributions),
 		translator.WithNumberMode(translator.NumberModeCumulativeToDelta),
-		translator.WithFallbackHostnameProvider(testProvider("fallbackHostname")),
+		translator.WithFallbackSourceProvider(testProvider("fallbackHostname")),
 	)
 	require.NoError(t, err)
 	return tr
 }
 
 func TestRunningMetrics(t *testing.T) {
-	ms := pdata.NewMetrics()
+	ms := pmetric.NewMetrics()
 	rms := ms.ResourceMetrics()
 
 	rm := rms.AppendEmpty()
 	resAttrs := rm.Resource().Attributes()
-	resAttrs.Insert(attributes.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-1"))
+	resAttrs.PutString(attributes.AttributeDatadogHostname, "resource-hostname-1")
 
 	rm = rms.AppendEmpty()
 	resAttrs = rm.Resource().Attributes()
-	resAttrs.Insert(attributes.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-1"))
+	resAttrs.PutString(attributes.AttributeDatadogHostname, "resource-hostname-1")
 
 	rm = rms.AppendEmpty()
 	resAttrs = rm.Resource().Attributes()
-	resAttrs.Insert(attributes.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-2"))
+	resAttrs.PutString(attributes.AttributeDatadogHostname, "resource-hostname-2")
 
 	rms.AppendEmpty()
 
@@ -69,9 +70,9 @@ func TestRunningMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	consumer := NewConsumer()
-	tr.MapMetrics(ctx, ms, consumer)
+	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
 
-	runningHostnames := []string{}
+	var runningHostnames []string
 	for _, metric := range consumer.runningMetrics(0, component.BuildInfo{}) {
 		if metric.Host != nil {
 			runningHostnames = append(runningHostnames, *metric.Host)
@@ -86,7 +87,7 @@ func TestRunningMetrics(t *testing.T) {
 }
 
 func TestTagsMetrics(t *testing.T) {
-	ms := pdata.NewMetrics()
+	ms := pmetric.NewMetrics()
 	rms := ms.ResourceMetrics()
 
 	rm := rms.AppendEmpty()
@@ -98,26 +99,26 @@ func TestTagsMetrics(t *testing.T) {
 		conventions.AttributeAWSECSLaunchtype:   conventions.AttributeAWSECSLaunchtypeFargate,
 	})
 	baseAttrs.CopyTo(rm.Resource().Attributes())
-	rm.Resource().Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "task-arn-1")
+	rm.Resource().Attributes().PutString(conventions.AttributeAWSECSTaskARN, "task-arn-1")
 
 	rm = rms.AppendEmpty()
 	baseAttrs.CopyTo(rm.Resource().Attributes())
-	rm.Resource().Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "task-arn-2")
+	rm.Resource().Attributes().PutString(conventions.AttributeAWSECSTaskARN, "task-arn-2")
 
 	rm = rms.AppendEmpty()
 	baseAttrs.CopyTo(rm.Resource().Attributes())
-	rm.Resource().Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "task-arn-3")
+	rm.Resource().Attributes().PutString(conventions.AttributeAWSECSTaskARN, "task-arn-3")
 
 	logger, _ := zap.NewProduction()
 	tr := newTranslator(t, logger)
 
 	ctx := context.Background()
 	consumer := NewConsumer()
-	tr.MapMetrics(ctx, ms, consumer)
+	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
 
 	runningMetrics := consumer.runningMetrics(0, component.BuildInfo{})
-	runningTags := []string{}
-	runningHostnames := []string{}
+	var runningTags []string
+	var runningHostnames []string
 	for _, metric := range runningMetrics {
 		runningTags = append(runningTags, metric.Tags...)
 		if metric.Host != nil {

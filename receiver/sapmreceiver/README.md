@@ -1,11 +1,15 @@
 # SAPM Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | traces    |
+| Distributions            | [contrib] |
+
 The SAPM receiver builds on the Jaeger proto. This allows the collector to
 receive traces from other collectors or the SignalFx Smart Agent. SAPM proto
 and some useful related utilities can be found
 [here](https://github.com/signalfx/sapm-proto/).
-
-Supported pipeline types: traces
 
 ## Configuration
 
@@ -41,3 +45,6 @@ receivers:
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

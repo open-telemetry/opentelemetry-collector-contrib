@@ -36,3 +36,15 @@ func TestUtilWithEmptyString(t *testing.T) {
 
 	assert.Nil(t, res)
 }
+
+func TestStringOrEmptyWithNormalString(t *testing.T) {
+	res := StringOrEmpty(&testString)
+
+	assert.Equal(t, testString, res)
+}
+
+func TestStringOrEmptyWithNil(t *testing.T) {
+	res := StringOrEmpty(nil)
+
+	assert.Equal(t, emptyString, res)
+}

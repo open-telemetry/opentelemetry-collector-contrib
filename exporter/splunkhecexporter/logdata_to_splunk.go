@@ -17,7 +17,8 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -31,7 +32,7 @@ const (
 	traceIDFieldKey = "trace_id"
 )
 
-func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {
+func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {
 	host := unknownHostName
 	source := config.Source
 	sourcetype := config.SourceType
@@ -41,12 +42,8 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 	sourceTypeKey := config.HecToOtelAttrs.SourceType
 	indexKey := config.HecToOtelAttrs.Index
 	hostKey := config.HecToOtelAttrs.Host
-	nameKey := config.HecFields.Name
 	severityTextKey := config.HecFields.SeverityText
 	severityNumberKey := config.HecFields.SeverityNumber
-	if lr.Name() != "" {
-		fields[nameKey] = lr.Name()
-	}
 	if spanID := lr.SpanID().HexString(); spanID != "" {
 		fields[spanIDFieldKey] = spanID
 	}
@@ -56,20 +53,20 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 	if lr.SeverityText() != "" {
 		fields[severityTextKey] = lr.SeverityText()
 	}
-	if lr.SeverityNumber() != pdata.SeverityNumberUNDEFINED {
+	if lr.SeverityNumber() != plog.SeverityNumberUndefined {
 		fields[severityNumberKey] = lr.SeverityNumber()
 	}
 
-	res.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	res.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch k {
 		case hostKey:
-			host = v.StringVal()
+			host = v.Str()
 		case sourceKey:
-			source = v.StringVal()
+			source = v.Str()
 		case sourceTypeKey:
-			sourcetype = v.StringVal()
+			sourcetype = v.Str()
 		case indexKey:
-			index = v.StringVal()
+			index = v.Str()
 		case splunk.HecTokenLabel:
 			// ignore
 		default:
@@ -77,16 +74,16 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 		}
 		return true
 	})
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch k {
 		case hostKey:
-			host = v.StringVal()
+			host = v.Str()
 		case sourceKey:
-			source = v.StringVal()
+			source = v.Str()
 		case sourceTypeKey:
-			sourcetype = v.StringVal()
+			sourcetype = v.Str()
 		case indexKey:
-			index = v.StringVal()
+			index = v.Str()
 		case splunk.HecTokenLabel:
 			// ignore
 		default:
@@ -107,31 +104,31 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 	}
 }
 
-func convertAttributeValue(value pdata.AttributeValue, logger *zap.Logger) interface{} {
+func convertAttributeValue(value pcommon.Value, logger *zap.Logger) interface{} {
 	switch value.Type() {
-	case pdata.AttributeValueTypeInt:
-		return value.IntVal()
-	case pdata.AttributeValueTypeBool:
-		return value.BoolVal()
-	case pdata.AttributeValueTypeDouble:
-		return value.DoubleVal()
-	case pdata.AttributeValueTypeString:
-		return value.StringVal()
-	case pdata.AttributeValueTypeMap:
+	case pcommon.ValueTypeInt:
+		return value.Int()
+	case pcommon.ValueTypeBool:
+		return value.Bool()
+	case pcommon.ValueTypeDouble:
+		return value.Double()
+	case pcommon.ValueTypeStr:
+		return value.Str()
+	case pcommon.ValueTypeMap:
 		values := map[string]interface{}{}
-		value.MapVal().Range(func(k string, v pdata.AttributeValue) bool {
+		value.Map().Range(func(k string, v pcommon.Value) bool {
 			values[k] = convertAttributeValue(v, logger)
 			return true
 		})
 		return values
-	case pdata.AttributeValueTypeArray:
-		arrayVal := value.SliceVal()
+	case pcommon.ValueTypeSlice:
+		arrayVal := value.Slice()
 		values := make([]interface{}, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {
 			values[i] = convertAttributeValue(arrayVal.At(i), logger)
 		}
 		return values
-	case pdata.AttributeValueTypeEmpty:
+	case pcommon.ValueTypeEmpty:
 		return nil
 	default:
 		logger.Debug("Unhandled value type", zap.String("type", value.Type().String()))
@@ -140,7 +137,7 @@ func convertAttributeValue(value pdata.AttributeValue, logger *zap.Logger) inter
 }
 
 // nanoTimestampToEpochMilliseconds transforms nanoseconds into <sec>.<ms>. For example, 1433188255.500 indicates 1433188255 seconds and 500 milliseconds after epoch.
-func nanoTimestampToEpochMilliseconds(ts pdata.Timestamp) *float64 {
+func nanoTimestampToEpochMilliseconds(ts pcommon.Timestamp) *float64 {
 	duration := time.Duration(ts)
 	if duration == 0 {
 		// some telemetry sources send data with timestamps set to 0 by design, as their original target destinations

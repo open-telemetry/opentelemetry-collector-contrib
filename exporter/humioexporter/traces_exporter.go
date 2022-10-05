@@ -21,8 +21,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 // HumioLink represents a relation between two spans
@@ -85,7 +86,7 @@ func newTracesExporterWithClientGetter(cfg *Config, settings component.Telemetry
 	}
 }
 
-func (e *humioTracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
+func (e *humioTracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
 	e.wg.Add(1)
 	defer e.wg.Done()
 
@@ -114,9 +115,9 @@ func (e *humioTracesExporter) pushTraceData(ctx context.Context, td pdata.Traces
 	return conversionErr
 }
 
-func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStructuredEvents, error) {
+func (e *humioTracesExporter) tracesToHumioEvents(td ptrace.Traces) ([]*HumioStructuredEvents, error) {
 	organizer := newTagOrganizer(e.cfg.Tag, tagFromSpan)
-	var droppedTraces []pdata.ResourceSpans
+	var droppedTraces []ptrace.ResourceSpans
 
 	resSpans := td.ResourceSpans()
 	for i := 0; i < resSpans.Len(); i++ {
@@ -129,10 +130,10 @@ func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStru
 			continue
 		}
 
-		instSpans := resSpan.InstrumentationLibrarySpans()
+		instSpans := resSpan.ScopeSpans()
 		for j := 0; j < instSpans.Len(); j++ {
 			instSpan := instSpans.At(j)
-			lib := instSpan.InstrumentationLibrary()
+			lib := instSpan.Scope()
 
 			otelSpans := instSpan.Spans()
 			for k := 0; k < otelSpans.Len(); k++ {
@@ -145,7 +146,7 @@ func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStru
 	results := organizer.asEvents()
 
 	if len(droppedTraces) > 0 {
-		dropped := pdata.NewTraces()
+		dropped := ptrace.NewTraces()
 		for _, t := range droppedTraces {
 			tgt := dropped.ResourceSpans().AppendEmpty()
 			t.CopyTo(tgt)
@@ -160,7 +161,7 @@ func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStru
 	return results, nil
 }
 
-func (e *humioTracesExporter) spanToHumioEvent(span pdata.Span, inst pdata.InstrumentationLibrary, res pdata.Resource) *HumioStructuredEvent {
+func (e *humioTracesExporter) spanToHumioEvent(span ptrace.Span, inst pcommon.InstrumentationScope, res pcommon.Resource) *HumioStructuredEvent {
 	attr := toHumioAttributes(span.Attributes(), res.Attributes())
 	if instName := inst.Name(); instName != "" {
 		attr[conventions.OtelLibraryName] = instName
@@ -173,7 +174,7 @@ func (e *humioTracesExporter) spanToHumioEvent(span pdata.Span, inst pdata.Instr
 	if sName, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
 		// No need to store the service name in two places
 		delete(attr, conventions.AttributeServiceName)
-		serviceName = sName.StringVal()
+		serviceName = sName.Str()
 	}
 
 	return &HumioStructuredEvent{
@@ -196,23 +197,23 @@ func (e *humioTracesExporter) spanToHumioEvent(span pdata.Span, inst pdata.Instr
 	}
 }
 
-func toHumioLinks(pLinks pdata.SpanLinkSlice) []*HumioLink {
+func toHumioLinks(pLinks ptrace.SpanLinkSlice) []*HumioLink {
 	links := make([]*HumioLink, 0, pLinks.Len())
 	for i := 0; i < pLinks.Len(); i++ {
 		link := pLinks.At(i)
 		links = append(links, &HumioLink{
 			TraceID:    link.TraceID().HexString(),
 			SpanID:     link.SpanID().HexString(),
-			TraceState: string(link.TraceState()),
+			TraceState: link.TraceState().AsRaw(),
 		})
 	}
 	return links
 }
 
-func toHumioAttributes(attrMaps ...pdata.AttributeMap) map[string]interface{} {
+func toHumioAttributes(attrMaps ...pcommon.Map) map[string]interface{} {
 	attr := make(map[string]interface{})
 	for _, attrMap := range attrMaps {
-		attrMap.Range(func(k string, v pdata.AttributeValue) bool {
+		attrMap.Range(func(k string, v pcommon.Value) bool {
 			attr[k] = toHumioAttributeValue(v)
 			return true
 		})
@@ -220,20 +221,20 @@ func toHumioAttributes(attrMaps ...pdata.AttributeMap) map[string]interface{} {
 	return attr
 }
 
-func toHumioAttributeValue(rawVal pdata.AttributeValue) interface{} {
+func toHumioAttributeValue(rawVal pcommon.Value) interface{} {
 	switch rawVal.Type() {
-	case pdata.AttributeValueTypeString:
-		return rawVal.StringVal()
-	case pdata.AttributeValueTypeInt:
-		return rawVal.IntVal()
-	case pdata.AttributeValueTypeDouble:
-		return rawVal.DoubleVal()
-	case pdata.AttributeValueTypeBool:
-		return rawVal.BoolVal()
-	case pdata.AttributeValueTypeMap:
-		return toHumioAttributes(rawVal.MapVal())
-	case pdata.AttributeValueTypeArray:
-		arrVal := rawVal.SliceVal()
+	case pcommon.ValueTypeStr:
+		return rawVal.Str()
+	case pcommon.ValueTypeInt:
+		return rawVal.Int()
+	case pcommon.ValueTypeDouble:
+		return rawVal.Double()
+	case pcommon.ValueTypeBool:
+		return rawVal.Bool()
+	case pcommon.ValueTypeMap:
+		return toHumioAttributes(rawVal.Map())
+	case pcommon.ValueTypeSlice:
+		arrVal := rawVal.Slice()
 		arr := make([]interface{}, 0, arrVal.Len())
 		for i := 0; i < arrVal.Len(); i++ {
 			arr = append(arr, toHumioAttributeValue(arrVal.At(i)))

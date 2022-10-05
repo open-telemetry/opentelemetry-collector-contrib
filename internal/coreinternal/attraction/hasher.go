@@ -21,7 +21,7 @@ import (
 	"encoding/hex"
 	"math"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 const (
@@ -38,35 +38,35 @@ var (
 // hashed version of the attribute. In practice, this would mostly be used
 // for string attributes but we support all types for completeness/correctness
 // and eliminate any surprises.
-func sha1Hasher(attr pdata.AttributeValue) {
+func sha1Hasher(attr pcommon.Value) {
 	var val []byte
 	switch attr.Type() {
-	case pdata.AttributeValueTypeString:
-		val = []byte(attr.StringVal())
-	case pdata.AttributeValueTypeBool:
-		if attr.BoolVal() {
+	case pcommon.ValueTypeStr:
+		val = []byte(attr.Str())
+	case pcommon.ValueTypeBool:
+		if attr.Bool() {
 			val = byteTrue[:]
 		} else {
 			val = byteFalse[:]
 		}
-	case pdata.AttributeValueTypeInt:
+	case pcommon.ValueTypeInt:
 		val = make([]byte, int64ByteSize)
-		binary.LittleEndian.PutUint64(val, uint64(attr.IntVal()))
-	case pdata.AttributeValueTypeDouble:
+		binary.LittleEndian.PutUint64(val, uint64(attr.Int()))
+	case pcommon.ValueTypeDouble:
 		val = make([]byte, float64ByteSize)
-		binary.LittleEndian.PutUint64(val, math.Float64bits(attr.DoubleVal()))
+		binary.LittleEndian.PutUint64(val, math.Float64bits(attr.Double()))
 	}
 
 	var hashed string
 	if len(val) > 0 {
 		// #nosec
 		h := sha1.New()
-		h.Write(val) // nolint: errcheck
+		_, _ = h.Write(val)
 		val = h.Sum(nil)
 		hashedBytes := make([]byte, hex.EncodedLen(len(val)))
 		hex.Encode(hashedBytes, val)
 		hashed = string(hashedBytes)
 	}
 
-	attr.SetStringVal(hashed)
+	attr.SetStr(hashed)
 }

@@ -56,7 +56,7 @@ func (sr *SFxMetricsDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, 
 		return err
 	}
 
-	return sr.receiver.Start(context.Background(), sr)
+	return sr.receiver.Start(context.Background(), componenttest.NewNopHost())
 }
 
 // Stop the receiver.

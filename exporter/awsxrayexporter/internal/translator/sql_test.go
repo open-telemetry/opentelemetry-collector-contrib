@@ -19,19 +19,19 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 func TestClientSpanWithStatementAttribute(t *testing.T) {
-	attributes := make(map[string]pdata.AttributeValue)
-	attributes[conventions.AttributeDBSystem] = pdata.NewAttributeValueString("mysql")
-	attributes[conventions.AttributeDBName] = pdata.NewAttributeValueString("customers")
-	attributes[conventions.AttributeDBStatement] = pdata.NewAttributeValueString("SELECT * FROM user WHERE user_id = ?")
-	attributes[conventions.AttributeDBUser] = pdata.NewAttributeValueString("readonly_user")
-	attributes[conventions.AttributeDBConnectionString] = pdata.NewAttributeValueString("mysql://db.example.com:3306")
-	attributes[conventions.AttributeNetPeerName] = pdata.NewAttributeValueString("db.example.com")
-	attributes[conventions.AttributeNetPeerPort] = pdata.NewAttributeValueString("3306")
+	attributes := make(map[string]pcommon.Value)
+	attributes[conventions.AttributeDBSystem] = pcommon.NewValueStr("mysql")
+	attributes[conventions.AttributeDBName] = pcommon.NewValueStr("customers")
+	attributes[conventions.AttributeDBStatement] = pcommon.NewValueStr("SELECT * FROM user WHERE user_id = ?")
+	attributes[conventions.AttributeDBUser] = pcommon.NewValueStr("readonly_user")
+	attributes[conventions.AttributeDBConnectionString] = pcommon.NewValueStr("mysql://db.example.com:3306")
+	attributes[conventions.AttributeNetPeerName] = pcommon.NewValueStr("db.example.com")
+	attributes[conventions.AttributeNetPeerPort] = pcommon.NewValueStr("3306")
 
 	filtered, sqlData := makeSQL(attributes)
 
@@ -48,14 +48,14 @@ func TestClientSpanWithStatementAttribute(t *testing.T) {
 }
 
 func TestClientSpanWithNonSQLDatabase(t *testing.T) {
-	attributes := make(map[string]pdata.AttributeValue)
-	attributes[conventions.AttributeDBSystem] = pdata.NewAttributeValueString("redis")
-	attributes[conventions.AttributeDBName] = pdata.NewAttributeValueString("0")
-	attributes[conventions.AttributeDBStatement] = pdata.NewAttributeValueString("SET key value")
-	attributes[conventions.AttributeDBUser] = pdata.NewAttributeValueString("readonly_user")
-	attributes[conventions.AttributeDBConnectionString] = pdata.NewAttributeValueString("redis://db.example.com:3306")
-	attributes[conventions.AttributeNetPeerName] = pdata.NewAttributeValueString("db.example.com")
-	attributes[conventions.AttributeNetPeerPort] = pdata.NewAttributeValueString("3306")
+	attributes := make(map[string]pcommon.Value)
+	attributes[conventions.AttributeDBSystem] = pcommon.NewValueStr("redis")
+	attributes[conventions.AttributeDBName] = pcommon.NewValueStr("0")
+	attributes[conventions.AttributeDBStatement] = pcommon.NewValueStr("SET key value")
+	attributes[conventions.AttributeDBUser] = pcommon.NewValueStr("readonly_user")
+	attributes[conventions.AttributeDBConnectionString] = pcommon.NewValueStr("redis://db.example.com:3306")
+	attributes[conventions.AttributeNetPeerName] = pcommon.NewValueStr("db.example.com")
+	attributes[conventions.AttributeNetPeerPort] = pcommon.NewValueStr("3306")
 
 	filtered, sqlData := makeSQL(attributes)
 	assert.Nil(t, sqlData)
@@ -63,14 +63,14 @@ func TestClientSpanWithNonSQLDatabase(t *testing.T) {
 }
 
 func TestClientSpanWithoutDBurlAttribute(t *testing.T) {
-	attributes := make(map[string]pdata.AttributeValue)
-	attributes[conventions.AttributeDBSystem] = pdata.NewAttributeValueString("postgresql")
-	attributes[conventions.AttributeDBName] = pdata.NewAttributeValueString("customers")
-	attributes[conventions.AttributeDBStatement] = pdata.NewAttributeValueString("SELECT * FROM user WHERE user_id = ?")
-	attributes[conventions.AttributeDBUser] = pdata.NewAttributeValueString("readonly_user")
-	attributes[conventions.AttributeDBConnectionString] = pdata.NewAttributeValueString("")
-	attributes[conventions.AttributeNetPeerName] = pdata.NewAttributeValueString("db.example.com")
-	attributes[conventions.AttributeNetPeerPort] = pdata.NewAttributeValueString("3306")
+	attributes := make(map[string]pcommon.Value)
+	attributes[conventions.AttributeDBSystem] = pcommon.NewValueStr("postgresql")
+	attributes[conventions.AttributeDBName] = pcommon.NewValueStr("customers")
+	attributes[conventions.AttributeDBStatement] = pcommon.NewValueStr("SELECT * FROM user WHERE user_id = ?")
+	attributes[conventions.AttributeDBUser] = pcommon.NewValueStr("readonly_user")
+	attributes[conventions.AttributeDBConnectionString] = pcommon.NewValueStr("")
+	attributes[conventions.AttributeNetPeerName] = pcommon.NewValueStr("db.example.com")
+	attributes[conventions.AttributeNetPeerPort] = pcommon.NewValueStr("3306")
 	filtered, sqlData := makeSQL(attributes)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, sqlData)

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package ecsinfo // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/ecsInfo"
 
 import (
@@ -19,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 )
@@ -97,9 +97,9 @@ func request(ctx context.Context, endpoint string, client doer) ([]byte, error) 
 		reader = resp.Body
 	}
 
-	body, err := ioutil.ReadAll(reader)
+	body, err := io.ReadAll(reader)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read response body from %s, error: %v", endpoint, err)
+		return nil, fmt.Errorf("unable to read response body from %s, error: %w", endpoint, err)
 	}
 
 	if len(body) == maxHTTPResponseLength {

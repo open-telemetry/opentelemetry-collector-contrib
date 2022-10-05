@@ -16,7 +16,6 @@ package groupbyattrsprocessor // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"go.opencensus.io/stats/view"
@@ -30,11 +29,12 @@ import (
 const (
 	// typeStr is the value of "type" for this processor in the configuration.
 	typeStr config.Type = "groupbyattrs"
+	// The stability level of the processor.
+	stability = component.StabilityLevelBeta
 )
 
 var (
-	errAtLeastOneAttributeNeeded = fmt.Errorf("option 'groupByKeys' must include at least one non-empty attribute name")
-	consumerCapabilities         = consumer.Capabilities{MutatesData: true}
+	consumerCapabilities = consumer.Capabilities{MutatesData: true}
 )
 
 var once sync.Once
@@ -46,12 +46,12 @@ func NewFactory() component.ProcessorFactory {
 		_ = view.Register(MetricViews()...)
 	})
 
-	return processorhelper.NewFactory(
+	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTracesProcessor),
-		processorhelper.WithLogs(createLogsProcessor),
-		processorhelper.WithMetrics(createMetricsProcessor))
+		component.WithTracesProcessor(createTracesProcessor, stability),
+		component.WithLogsProcessor(createLogsProcessor, stability),
+		component.WithMetricsProcessor(createMetricsProcessor, stability))
 }
 
 // createDefaultConfig creates the default configuration for the processor.
@@ -62,7 +62,7 @@ func createDefaultConfig() config.Processor {
 	}
 }
 
-func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) (*groupByAttrsProcessor, error) {
+func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) *groupByAttrsProcessor {
 	var nonEmptyAttributes []string
 	presentAttributes := make(map[string]struct{})
 
@@ -78,27 +78,22 @@ func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) (*grou
 		}
 	}
 
-	if len(nonEmptyAttributes) == 0 {
-		return nil, errAtLeastOneAttributeNeeded
-	}
-
-	return &groupByAttrsProcessor{logger: logger, groupByKeys: nonEmptyAttributes}, nil
+	return &groupByAttrsProcessor{logger: logger, groupByKeys: nonEmptyAttributes}
 }
 
 // createTracesProcessor creates a trace processor based on this config.
 func createTracesProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 
 	oCfg := cfg.(*Config)
-	gap, err := createGroupByAttrsProcessor(params.Logger, oCfg.GroupByKeys)
-	if err != nil {
-		return nil, err
-	}
+	gap := createGroupByAttrsProcessor(set.Logger, oCfg.GroupByKeys)
 
 	return processorhelper.NewTracesProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		gap.processTraces,
@@ -107,18 +102,17 @@ func createTracesProcessor(
 
 // createLogsProcessor creates a logs processor based on this config.
 func createLogsProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 
 	oCfg := cfg.(*Config)
-	gap, err := createGroupByAttrsProcessor(params.Logger, oCfg.GroupByKeys)
-	if err != nil {
-		return nil, err
-	}
+	gap := createGroupByAttrsProcessor(set.Logger, oCfg.GroupByKeys)
 
 	return processorhelper.NewLogsProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		gap.processLogs,
@@ -127,18 +121,17 @@ func createLogsProcessor(
 
 // createMetricsProcessor creates a metrics processor based on this config.
 func createMetricsProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
 
 	oCfg := cfg.(*Config)
-	gap, err := createGroupByAttrsProcessor(params.Logger, oCfg.GroupByKeys)
-	if err != nil {
-		return nil, err
-	}
+	gap := createGroupByAttrsProcessor(set.Logger, oCfg.GroupByKeys)
 
 	return processorhelper.NewMetricsProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		gap.processMetrics,

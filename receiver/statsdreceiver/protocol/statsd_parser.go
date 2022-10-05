@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -64,10 +64,10 @@ type TimerHistogramMapping struct {
 
 // StatsDParser supports the Parse method for parsing StatsD messages with Tags.
 type StatsDParser struct {
-	gauges                 map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics
-	counters               map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics
+	gauges                 map[statsDMetricDescription]pmetric.ScopeMetrics
+	counters               map[statsDMetricDescription]pmetric.ScopeMetrics
 	summaries              map[statsDMetricDescription]summaryMetric
-	timersAndDistributions []pdata.InstrumentationLibraryMetrics
+	timersAndDistributions []pmetric.ScopeMetrics
 	enableMetricType       bool
 	isMonotonicCounter     bool
 	observeTimer           ObserverType
@@ -115,9 +115,8 @@ func (t MetricType) FullName() TypeName {
 
 func (p *StatsDParser) Initialize(enableMetricType bool, isMonotonicCounter bool, sendTimerHistogram []TimerHistogramMapping) error {
 	p.lastIntervalTime = timeNowFunc()
-	p.gauges = make(map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics)
-	p.counters = make(map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics)
-	p.timersAndDistributions = make([]pdata.InstrumentationLibraryMetrics, 0)
+	p.gauges = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
+	p.counters = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
 	p.summaries = make(map[statsDMetricDescription]summaryMetric)
 
 	p.observeHistogram = DefaultObserverType
@@ -137,20 +136,20 @@ func (p *StatsDParser) Initialize(enableMetricType bool, isMonotonicCounter bool
 }
 
 // GetMetrics gets the metrics preparing for flushing and reset the state.
-func (p *StatsDParser) GetMetrics() pdata.Metrics {
-	metrics := pdata.NewMetrics()
+func (p *StatsDParser) GetMetrics() pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
 	rm := metrics.ResourceMetrics().AppendEmpty()
 
 	for _, metric := range p.gauges {
-		metric.CopyTo(rm.InstrumentationLibraryMetrics().AppendEmpty())
+		metric.CopyTo(rm.ScopeMetrics().AppendEmpty())
 	}
 
 	for _, metric := range p.counters {
-		metric.CopyTo(rm.InstrumentationLibraryMetrics().AppendEmpty())
+		metric.CopyTo(rm.ScopeMetrics().AppendEmpty())
 	}
 
 	for _, metric := range p.timersAndDistributions {
-		metric.CopyTo(rm.InstrumentationLibraryMetrics().AppendEmpty())
+		metric.CopyTo(rm.ScopeMetrics().AppendEmpty())
 	}
 
 	for desc, summaryMetric := range p.summaries {
@@ -160,21 +159,18 @@ func (p *StatsDParser) GetMetrics() pdata.Metrics {
 			p.lastIntervalTime,
 			timeNowFunc(),
 			statsDDefaultPercentiles,
-			rm.InstrumentationLibraryMetrics().AppendEmpty(),
+			rm.ScopeMetrics().AppendEmpty(),
 		)
 	}
 
-	p.lastIntervalTime = timeNowFunc()
-	p.gauges = make(map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics)
-	p.counters = make(map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics)
-	p.timersAndDistributions = make([]pdata.InstrumentationLibraryMetrics, 0)
+	p.gauges = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
+	p.counters = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
+	p.timersAndDistributions = nil
 	p.summaries = make(map[statsDMetricDescription]summaryMetric)
 	return metrics
 }
 
-var timeNowFunc = func() time.Time {
-	return time.Now()
-}
+var timeNowFunc = time.Now
 
 func (p *StatsDParser) observerTypeFor(t MetricType) ObserverType {
 	switch t {
@@ -200,7 +196,7 @@ func (p *StatsDParser) Aggregate(line string) error {
 		} else {
 			if parsedMetric.addition {
 				point := p.gauges[parsedMetric.description].Metrics().At(0).Gauge().DataPoints().At(0)
-				point.SetDoubleVal(point.DoubleVal() + parsedMetric.gaugeValue())
+				point.SetDoubleValue(point.DoubleValue() + parsedMetric.gaugeValue())
 			} else {
 				p.gauges[parsedMetric.description] = buildGaugeMetric(parsedMetric, timeNowFunc())
 			}
@@ -209,10 +205,12 @@ func (p *StatsDParser) Aggregate(line string) error {
 	case CounterType:
 		_, ok := p.counters[parsedMetric.description]
 		if !ok {
-			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter, timeNowFunc(), p.lastIntervalTime)
+			timeNow := timeNowFunc()
+			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter, timeNow, p.lastIntervalTime)
+			p.lastIntervalTime = timeNow
 		} else {
 			point := p.counters[parsedMetric.description].Metrics().At(0).Sum().DataPoints().At(0)
-			point.SetIntVal(point.IntVal() + parsedMetric.counterValue())
+			point.SetIntValue(point.IntValue() + parsedMetric.counterValue())
 		}
 
 	case TimingType, HistogramType:
@@ -278,7 +276,8 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 	var kvs []attribute.KeyValue
 
 	for _, part := range additionalParts {
-		if strings.HasPrefix(part, "@") {
+		switch {
+		case strings.HasPrefix(part, "@"):
 			sampleRateStr := strings.TrimPrefix(part, "@")
 
 			f, err := strconv.ParseFloat(sampleRateStr, 64)
@@ -287,20 +286,21 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 			}
 
 			result.sampleRate = f
-		} else if strings.HasPrefix(part, "#") {
+		case strings.HasPrefix(part, "#"):
 			tagsStr := strings.TrimPrefix(part, "#")
 
 			tagSets := strings.Split(tagsStr, ",")
 
 			for _, tagSet := range tagSets {
-				tagParts := strings.Split(tagSet, ":")
+				tagParts := strings.SplitN(tagSet, ":", 2)
 				if len(tagParts) != 2 {
 					return result, fmt.Errorf("invalid tag format: %s", tagParts)
 				}
-				kvs = append(kvs, attribute.String(tagParts[0], tagParts[1]))
+				k := tagParts[0]
+				v := tagParts[1]
+				kvs = append(kvs, attribute.String(k, v))
 			}
-
-		} else {
+		default:
 			return result, fmt.Errorf("unrecognized message part: %s", part)
 		}
 	}

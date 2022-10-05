@@ -1,16 +1,16 @@
-//Copyright  OpenTelemetry Authors
+// Copyright  OpenTelemetry Authors
 //
-//Licensed under the Apache License, Version 2.0 (the "License");
-//you may not use this file except in compliance with the License.
-//You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-//Unless required by applicable law or agreed to in writing, software
-//distributed under the License is distributed on an "AS IS" BASIS,
-//WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//See the License for the specific language governing permissions and
-//limitations under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package ecsinfo
 
@@ -99,7 +99,7 @@ func TestNewECSInfo(t *testing.T) {
 	taskinfoCreatorOpt := func(ei *EcsInfo) {
 		ei.ecsTaskInfoCreator = func(context.Context, hostIPProvider, time.Duration, *zap.Logger, doer,
 			chan bool) ecsTaskInfoProvider {
-			tasks := []ECSTask{}
+			var tasks []ECSTask
 			return &MockTaskInfo{
 				tasks:            tasks,
 				runningTaskCount: int64(2),
@@ -118,7 +118,7 @@ func TestNewECSInfo(t *testing.T) {
 	}
 	hostIPProvider := &FakehostInfo{}
 
-	ecsinfo, _ := NewECSInfo(time.Minute, hostIPProvider, componenttest.NewNopTelemetrySettings(), containerInstanceInfoCreatorOpt, taskinfoCreatorOpt, cgroupScannerCreatorOpt)
+	ecsinfo, _ := NewECSInfo(time.Minute, hostIPProvider, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), containerInstanceInfoCreatorOpt, taskinfoCreatorOpt, cgroupScannerCreatorOpt)
 	assert.NotNil(t, ecsinfo)
 
 	<-ecsinfo.taskInfoTestReadyC

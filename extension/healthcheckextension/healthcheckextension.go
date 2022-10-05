@@ -17,9 +17,8 @@ package healthcheckextension // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"errors"
-	"net"
+	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/jaegertracing/jaeger/pkg/healthcheck"
@@ -32,9 +31,10 @@ type healthCheckExtension struct {
 	config   Config
 	logger   *zap.Logger
 	state    *healthcheck.HealthCheck
-	server   http.Server
+	server   *http.Server
 	stopCh   chan struct{}
 	exporter *healthCheckExporter
+	settings component.TelemetrySettings
 }
 
 var _ component.PipelineWatcher = (*healthCheckExtension)(nil)
@@ -42,19 +42,12 @@ var _ component.PipelineWatcher = (*healthCheckExtension)(nil)
 func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) error {
 
 	hc.logger.Info("Starting health_check extension", zap.Any("config", hc.config))
-
-	// Initialize listener
-	var (
-		ln  net.Listener
-		err error
-	)
-	if hc.config.Port != 0 && hc.config.TCPAddr.Endpoint == defaultEndpoint {
-		hc.logger.Warn("`Port` is deprecated, use `Endpoint` instead")
-		portStr := ":" + strconv.Itoa(int(hc.config.Port))
-		ln, err = net.Listen("tcp", portStr)
-	} else {
-		ln, err = hc.config.TCPAddr.Listen()
+	ln, err := hc.config.ToListener()
+	if err != nil {
+		return fmt.Errorf("failed to bind to address %s: %w", hc.config.Endpoint, err)
 	}
+
+	hc.server, err = hc.config.ToServer(host, hc.settings, nil)
 	if err != nil {
 		return err
 	}
@@ -131,6 +124,9 @@ func (hc *healthCheckExtension) check() bool {
 }
 
 func (hc *healthCheckExtension) Shutdown(context.Context) error {
+	if hc.server == nil {
+		return nil
+	}
 	err := hc.server.Close()
 	if hc.stopCh != nil {
 		<-hc.stopCh
@@ -148,15 +144,15 @@ func (hc *healthCheckExtension) NotReady() error {
 	return nil
 }
 
-func newServer(config Config, logger *zap.Logger) *healthCheckExtension {
+func newServer(config Config, settings component.TelemetrySettings) *healthCheckExtension {
 	hc := &healthCheckExtension{
-		config: config,
-		logger: logger,
-		state:  healthcheck.New(),
-		server: http.Server{},
+		config:   config,
+		logger:   settings.Logger,
+		state:    healthcheck.New(),
+		settings: settings,
 	}
 
-	hc.state.SetLogger(logger)
+	hc.state.SetLogger(settings.Logger)
 
 	return hc
 }

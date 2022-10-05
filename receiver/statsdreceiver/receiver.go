@@ -23,9 +23,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/transport"
@@ -52,7 +51,7 @@ func New(
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	if config.NetAddr.Endpoint == "" {
@@ -90,7 +89,10 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, r.cancel = context.WithCancel(ctx)
 	var transferChan = make(chan string, 10)
 	ticker := time.NewTicker(r.config.AggregationInterval)
-	r.parser.Initialize(r.config.EnableMetricType, r.config.IsMonotonicCounter, r.config.TimerHistogramMapping)
+	err := r.parser.Initialize(r.config.EnableMetricType, r.config.IsMonotonicCounter, r.config.TimerHistogramMapping)
+	if err != nil {
+		return err
+	}
 	go func() {
 		if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter, transferChan); err != nil {
 			if !errors.Is(err, net.ErrClosed) {
@@ -103,11 +105,11 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 			select {
 			case <-ticker.C:
 				metrics := r.parser.GetMetrics()
-				if metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len() > 0 {
+				if metrics.ResourceMetrics().At(0).ScopeMetrics().Len() > 0 {
 					r.Flush(ctx, metrics, r.nextConsumer)
 				}
 			case rawMetric := <-transferChan:
-				r.parser.Aggregate(rawMetric)
+				_ = r.parser.Aggregate(rawMetric)
 			case <-ctx.Done():
 				ticker.Stop()
 				return
@@ -125,7 +127,7 @@ func (r *statsdReceiver) Shutdown(context.Context) error {
 	return err
 }
 
-func (r *statsdReceiver) Flush(ctx context.Context, metrics pdata.Metrics, nextConsumer consumer.Metrics) error {
+func (r *statsdReceiver) Flush(ctx context.Context, metrics pmetric.Metrics, nextConsumer consumer.Metrics) error {
 	error := nextConsumer.ConsumeMetrics(ctx, metrics)
 	if error != nil {
 		return error

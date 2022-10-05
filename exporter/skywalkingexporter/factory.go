@@ -27,15 +27,17 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "skywalking"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for Skywalking exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithLogs(createLogsExporter),
-		exporterhelper.WithMetrics(createMetricsExporter))
+		component.WithLogsExporter(createLogsExporter, stability),
+		component.WithMetricsExporter(createMetricsExporter, stability))
 }
 
 func createDefaultConfig() config.Exporter {
@@ -61,8 +63,9 @@ func createLogsExporter(
 	oCfg := cfg.(*Config)
 	oce := newLogsExporter(ctx, oCfg, set.TelemetrySettings)
 	return exporterhelper.NewLogsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
@@ -77,8 +80,9 @@ func createMetricsExporter(ctx context.Context, set component.ExporterCreateSett
 	oCfg := cfg.(*Config)
 	oce := newMetricsExporter(ctx, oCfg, set.TelemetrySettings)
 	return exporterhelper.NewMetricsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		oce.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),

@@ -26,11 +26,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
@@ -60,7 +60,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		factory.CreateDefaultConfig(),
 		nil,
 	)
-	require.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
+	require.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
 	require.Nil(t, traceReceiver)
 }
 
@@ -142,7 +142,7 @@ func tlsConfig() *Config {
 
 func TestCustomUnmarshaller(t *testing.T) {
 	type args struct {
-		componentParser *config.Map
+		componentParser *confmap.Conf
 		intoCfg         *Config
 	}
 	tests := []struct {
@@ -160,14 +160,14 @@ func TestCustomUnmarshaller(t *testing.T) {
 		{
 			name: "Fail initial unmarshal",
 			args: args{
-				componentParser: config.NewMap(),
+				componentParser: confmap.New(),
 			},
 			wantErr: true,
 		},
 		{
 			name: "metric_group unset",
 			args: args{
-				componentParser: config.NewMap(),
+				componentParser: confmap.New(),
 				intoCfg:         &Config{},
 			},
 			result: &Config{
@@ -177,7 +177,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 		{
 			name: "fail to unmarshall metric_groups",
 			args: args{
-				componentParser: config.NewMap(),
+				componentParser: confmap.New(),
 				intoCfg:         &Config{},
 			},
 			mockUnmarshallFailure: true,
@@ -186,7 +186,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 		{
 			name: "successfully override metric_group",
 			args: args{
-				componentParser: config.NewMap(),
+				componentParser: confmap.New(),
 				intoCfg: &Config{
 					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 						CollectionInterval: 10 * time.Second,
@@ -209,14 +209,14 @@ func TestCustomUnmarshaller(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.mockUnmarshallFailure {
 				// some arbitrary failure.
-				tt.args.componentParser.Set(metricGroupsConfig, map[string]string{"foo": "bar"})
+				err := tt.args.componentParser.Merge(confmap.NewFromStringMap(map[string]interface{}{metricGroupsConfig: map[string]string{"foo": "bar"}}))
+				require.NoError(t, err)
 			}
 
 			// Mock some config overrides.
 			if tt.configOverride != nil {
-				for k, v := range tt.configOverride {
-					tt.args.componentParser.Set(k, v)
-				}
+				err := tt.args.componentParser.Merge(confmap.NewFromStringMap(tt.configOverride))
+				require.NoError(t, err)
 			}
 
 			if err := tt.args.intoCfg.Unmarshal(tt.args.componentParser); (err != nil) != tt.wantErr {

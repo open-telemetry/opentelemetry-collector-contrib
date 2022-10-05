@@ -16,6 +16,7 @@ package awsxrayexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"errors"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/xray"
@@ -23,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
@@ -47,9 +48,10 @@ func newTracesExporter(
 	}
 	xrayClient := newXRay(logger, awsConfig, set.BuildInfo, session)
 	return exporterhelper.NewTracesExporter(
-		config,
+		context.TODO(),
 		set,
-		func(ctx context.Context, td pdata.Traces) error {
+		config,
+		func(ctx context.Context, td ptrace.Traces) error {
 			var err error
 			logger.Debug("TracesExporter", typeLog, nameLog, zap.Int("#spans", td.SpanCount()))
 
@@ -67,7 +69,7 @@ func newTracesExporter(
 				output, localErr := xrayClient.PutTraceSegments(&input)
 				if localErr != nil {
 					logger.Debug("response error", zap.Error(localErr))
-					err = wrapErrorIfBadRequest(&localErr) // record error
+					err = wrapErrorIfBadRequest(localErr) // record error
 				}
 				if output != nil {
 					logger.Debug("response: " + output.String())
@@ -85,13 +87,13 @@ func newTracesExporter(
 	)
 }
 
-func extractResourceSpans(config config.Exporter, logger *zap.Logger, td pdata.Traces) []*string {
+func extractResourceSpans(config config.Exporter, logger *zap.Logger, td ptrace.Traces) []*string {
 	documents := make([]*string, 0, td.SpanCount())
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		resource := rspans.Resource()
-		for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
-			spans := rspans.InstrumentationLibrarySpans().At(j).Spans()
+		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
+			spans := rspans.ScopeSpans().At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
 				document, localErr := translator.MakeSegmentDocumentString(spans.At(k), resource,
 					config.(*Config).IndexedAttributes, config.(*Config).IndexAllAttributes)
@@ -106,10 +108,10 @@ func extractResourceSpans(config config.Exporter, logger *zap.Logger, td pdata.T
 	return documents
 }
 
-func wrapErrorIfBadRequest(err *error) error {
-	_, ok := (*err).(awserr.RequestFailure)
-	if ok && (*err).(awserr.RequestFailure).StatusCode() < 500 {
-		return consumererror.NewPermanent(*err)
+func wrapErrorIfBadRequest(err error) error {
+	var rfErr awserr.RequestFailure
+	if errors.As(err, &rfErr) && rfErr.StatusCode() < 500 {
+		return consumererror.NewPermanent(err)
 	}
-	return *err
+	return err
 }

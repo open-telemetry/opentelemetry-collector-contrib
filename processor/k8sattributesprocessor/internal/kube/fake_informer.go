@@ -51,6 +51,10 @@ func (f *FakeInformer) AddEventHandler(handler cache.ResourceEventHandler) {}
 func (f *FakeInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, period time.Duration) {
 }
 
+func (f *FakeInformer) SetTransform(handler cache.TransformFunc) error {
+	return nil
+}
+
 func (f *FakeInformer) GetStore() cache.Store {
 	return cache.NewStore(func(obj interface{}) (string, error) { return "", nil })
 }
@@ -129,6 +133,10 @@ func NewNoOpInformer(
 func (f *NoOpInformer) AddEventHandler(handler cache.ResourceEventHandler) {}
 
 func (f *NoOpInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, period time.Duration) {
+}
+
+func (f *NoOpInformer) SetTransform(handler cache.TransformFunc) error {
+	return nil
 }
 
 func (f *NoOpInformer) GetStore() cache.Store {

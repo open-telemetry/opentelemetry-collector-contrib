@@ -20,23 +20,24 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "routing"
+	// The stability level of the processor.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for the routing processor.
 func NewFactory() component.ProcessorFactory {
-	return processorhelper.NewFactory(
+	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTracesProcessor),
-		processorhelper.WithMetrics(createMetricsProcessor),
-		processorhelper.WithLogs(createLogsProcessor),
+		component.WithTracesProcessor(createTracesProcessor, stability),
+		component.WithMetricsProcessor(createMetricsProcessor, stability),
+		component.WithLogsProcessor(createLogsProcessor, stability),
 	)
 }
 
@@ -49,17 +50,17 @@ func createDefaultConfig() config.Processor {
 
 func createTracesProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 	warnIfNotLastInPipeline(nextConsumer, params.Logger)
-	return newProcessor(params.Logger, cfg), nil
+	return newTracesProcessor(params.TelemetrySettings, cfg), nil
 }
 
 func createMetricsProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
 	warnIfNotLastInPipeline(nextConsumer, params.Logger)
-	return newProcessor(params.Logger, cfg), nil
+	return newMetricProcessor(params.TelemetrySettings, cfg), nil
 }
 
 func createLogsProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 	warnIfNotLastInPipeline(nextConsumer, params.Logger)
-	return newProcessor(params.Logger, cfg), nil
+	return newLogProcessor(params.TelemetrySettings, cfg), nil
 }
 
 func warnIfNotLastInPipeline(nextConsumer interface{}, logger *zap.Logger) {

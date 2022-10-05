@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,22 +14,22 @@
 
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 
-import "go.opentelemetry.io/collector/model/pdata"
+import "go.opentelemetry.io/collector/pdata/pmetric"
 
-type MetricDataType interface {
-	MetricDataType() pdata.MetricDataType
-	AggregationTemporality() pdata.MetricAggregationTemporality
+type MetricType interface {
+	MetricType() pmetric.MetricType
+	AggregationTemporality() pmetric.MetricAggregationTemporality
 	IsMonotonic() bool
 }
 
 type metricValueDataType struct {
-	dataType               pdata.MetricDataType
-	aggregationTemporality pdata.MetricAggregationTemporality
+	dataType               pmetric.MetricType
+	aggregationTemporality pmetric.MetricAggregationTemporality
 	isMonotonic            bool
 }
 
-func NewMetricDataType(dataType pdata.MetricDataType, aggregationTemporality pdata.MetricAggregationTemporality,
-	isMonotonic bool) MetricDataType {
+func NewMetricType(dataType pmetric.MetricType, aggregationTemporality pmetric.MetricAggregationTemporality,
+	isMonotonic bool) MetricType {
 	return metricValueDataType{
 		dataType:               dataType,
 		aggregationTemporality: aggregationTemporality,
@@ -37,11 +37,11 @@ func NewMetricDataType(dataType pdata.MetricDataType, aggregationTemporality pda
 	}
 }
 
-func (metricValueDataType metricValueDataType) MetricDataType() pdata.MetricDataType {
+func (metricValueDataType metricValueDataType) MetricType() pmetric.MetricType {
 	return metricValueDataType.dataType
 }
 
-func (metricValueDataType metricValueDataType) AggregationTemporality() pdata.MetricAggregationTemporality {
+func (metricValueDataType metricValueDataType) AggregationTemporality() pmetric.MetricAggregationTemporality {
 	return metricValueDataType.aggregationTemporality
 }
 

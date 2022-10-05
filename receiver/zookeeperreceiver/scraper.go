@@ -24,7 +24,10 @@ import (
 	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
@@ -33,8 +36,37 @@ import (
 var zookeeperFormatRE = regexp.MustCompile(`(^zk_\w+)\s+([\w\.\-]+)`)
 
 const (
-	mntrCommand = "mntr"
+	mntrCommand                                       = "mntr"
+	emitMetricsWithDirectionAttributeFeatureGateID    = "receiver.zookeeperreceiver.emitMetricsWithDirectionAttribute"
+	emitMetricsWithoutDirectionAttributeFeatureGateID = "receiver.zookeeperreceiver.emitMetricsWithoutDirectionAttribute"
 )
+
+var (
+	emitMetricsWithDirectionAttributeFeatureGate = featuregate.Gate{
+		ID:      emitMetricsWithDirectionAttributeFeatureGateID,
+		Enabled: true,
+		Description: "Some zookeeper metrics reported are transitioning from being reported with a direction " +
+			"attribute to being reported with the direction included in the metric name to adhere to the " +
+			"OpenTelemetry specification. This feature gate controls emitting the old metrics with the direction " +
+			"attribute. For more details, see: " +
+			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/zookeeperreceiver/README.md#feature-gate-configurations",
+	}
+
+	emitMetricsWithoutDirectionAttributeFeatureGate = featuregate.Gate{
+		ID:      emitMetricsWithoutDirectionAttributeFeatureGateID,
+		Enabled: false,
+		Description: "Some zookeeper metrics reported are transitioning from being reported with a direction " +
+			"attribute to being reported with the direction included in the metric name to adhere to the " +
+			"OpenTelemetry specification. This feature gate controls emitting the new metrics without the direction " +
+			"attribute. For more details, see: " +
+			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/zookeeperreceiver/README.md#feature-gate-configurations",
+	}
+)
+
+func init() {
+	featuregate.GetRegistry().MustRegister(emitMetricsWithDirectionAttributeFeatureGate)
+	featuregate.GetRegistry().MustRegister(emitMetricsWithoutDirectionAttributeFeatureGate)
+}
 
 type zookeeperMetricsScraper struct {
 	logger *zap.Logger
@@ -46,13 +78,23 @@ type zookeeperMetricsScraper struct {
 	closeConnection       func(net.Conn) error
 	setConnectionDeadline func(net.Conn, time.Time) error
 	sendCmd               func(net.Conn, string) (*bufio.Scanner, error)
+
+	// Feature gates while transitioning to metrics without a direction attribute
+	emitMetricsWithDirectionAttribute    bool
+	emitMetricsWithoutDirectionAttribute bool
 }
 
 func (z *zookeeperMetricsScraper) Name() string {
 	return typeStr
 }
 
-func newZookeeperMetricsScraper(logger *zap.Logger, config *Config) (*zookeeperMetricsScraper, error) {
+func logDeprecatedFeatureGateForDirection(log *zap.Logger, gate featuregate.Gate) {
+	log.Warn("WARNING: The " + gate.ID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
+		"the direction attribute has been reverted in the specification. See https://github.com/open-telemetry/opentelemetry-specification/issues/2726 " +
+		"for additional details.")
+}
+
+func newZookeeperMetricsScraper(settings component.ReceiverCreateSettings, config *Config) (*zookeeperMetricsScraper, error) {
 	_, _, err := net.SplitHostPort(config.TCPAddr.Endpoint)
 	if err != nil {
 		return nil, err
@@ -62,14 +104,26 @@ func newZookeeperMetricsScraper(logger *zap.Logger, config *Config) (*zookeeperM
 		return nil, errors.New("timeout must be a positive duration")
 	}
 
-	return &zookeeperMetricsScraper{
-		logger:                logger,
-		config:                config,
-		mb:                    metadata.NewMetricsBuilder(config.Metrics),
-		closeConnection:       closeConnection,
-		setConnectionDeadline: setConnectionDeadline,
-		sendCmd:               sendCmd,
-	}, nil
+	z := &zookeeperMetricsScraper{
+		logger:                               settings.Logger,
+		config:                               config,
+		mb:                                   metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		closeConnection:                      closeConnection,
+		setConnectionDeadline:                setConnectionDeadline,
+		sendCmd:                              sendCmd,
+		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(emitMetricsWithDirectionAttributeFeatureGateID),
+		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(emitMetricsWithoutDirectionAttributeFeatureGateID),
+	}
+
+	if !z.emitMetricsWithDirectionAttribute {
+		logDeprecatedFeatureGateForDirection(z.logger, emitMetricsWithDirectionAttributeFeatureGate)
+	}
+
+	if z.emitMetricsWithoutDirectionAttribute {
+		logDeprecatedFeatureGateForDirection(z.logger, emitMetricsWithoutDirectionAttributeFeatureGate)
+	}
+
+	return z, nil
 }
 
 func (z *zookeeperMetricsScraper) shutdown(_ context.Context) error {
@@ -80,7 +134,7 @@ func (z *zookeeperMetricsScraper) shutdown(_ context.Context) error {
 	return nil
 }
 
-func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
+func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var ctxWithTimeout context.Context
 	ctxWithTimeout, z.cancel = context.WithTimeout(ctx, z.config.Timeout)
 
@@ -90,7 +144,7 @@ func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.Metrics, er
 			zap.String("endpoint", z.config.Endpoint),
 			zap.Error(err),
 		)
-		return pdata.NewMetrics(), err
+		return pmetric.NewMetrics(), err
 	}
 	defer func() {
 		if closeErr := z.closeConnection(conn); closeErr != nil {
@@ -108,27 +162,19 @@ func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.Metrics, er
 	return z.getResourceMetrics(conn)
 }
 
-func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Metrics, error) {
+func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pmetric.Metrics, error) {
 	scanner, err := z.sendCmd(conn, mntrCommand)
 	if err != nil {
 		z.logger.Error("failed to send command",
 			zap.Error(err),
 			zap.String("command", mntrCommand),
 		)
-		return pdata.NewMetrics(), err
+		return pmetric.NewMetrics(), err
 	}
 
-	md := pdata.NewMetrics()
-	z.appendMetrics(scanner, md.ResourceMetrics())
-	return md, nil
-}
-
-func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdata.ResourceMetricsSlice) {
-	creator := newMetricCreator(z.mb)
-	now := pdata.NewTimestampFromTime(time.Now())
-	rm := pdata.NewResourceMetrics()
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/zookeeper")
+	creator := newMetricCreator(z.mb, z.emitMetricsWithDirectionAttribute, z.emitMetricsWithoutDirectionAttribute)
+	now := pcommon.NewTimestampFromTime(time.Now())
+	resourceOpts := make([]metadata.ResourceMetricsOption, 0, 2)
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := zookeeperFormatRE.FindStringSubmatch(line)
@@ -144,10 +190,10 @@ func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdat
 		metricValue := parts[2]
 		switch metricKey {
 		case zkVersionKey:
-			rm.Resource().Attributes().UpsertString(metadata.Attributes.ZkVersion, metricValue)
+			resourceOpts = append(resourceOpts, metadata.WithZkVersion(metricValue))
 			continue
 		case serverStateKey:
-			rm.Resource().Attributes().UpsertString(metadata.Attributes.ServerState, metricValue)
+			resourceOpts = append(resourceOpts, metadata.WithServerState(metricValue))
 			continue
 		default:
 			// Skip metric if there is no descriptor associated with it.
@@ -171,10 +217,7 @@ func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdat
 	// Generate computed metrics
 	creator.generateComputedMetrics(z.logger, now)
 
-	z.mb.Emit(ilm.Metrics())
-	if ilm.Metrics().Len() > 0 {
-		rm.CopyTo(rms.AppendEmpty())
-	}
+	return z.mb.Emit(resourceOpts...), nil
 }
 
 func closeConnection(conn net.Conn) error {

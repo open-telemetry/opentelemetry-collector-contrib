@@ -19,12 +19,12 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestToTime(t *testing.T) {
 	// 61 seconds after the Unix epoch of 1970-01-01T00:00:00Z
-	input := pdata.Timestamp(60000000001)
+	input := pcommon.Timestamp(60000000001)
 	output := toTime(input)
 
 	assert.NotNil(t, output)

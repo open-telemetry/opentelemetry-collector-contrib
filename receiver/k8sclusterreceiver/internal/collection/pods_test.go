@@ -34,7 +34,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
-func TestPodAndContainerMetrics(t *testing.T) {
+func TestPodAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	pod := newPodWithContainer(
 		"1",
 		podSpecWithContainer("container-name"),
@@ -56,11 +56,10 @@ func TestPodAndContainerMetrics(t *testing.T) {
 			"k8s.pod.name":       "test-pod-1",
 			"k8s.node.name":      "test-node",
 			"k8s.namespace.name": "test-namespace",
-			"k8s.cluster.name":   "test-cluster",
 		},
 	)
 
-	testutils.AssertMetrics(t, rm.Metrics[0], "k8s.pod.phase",
+	testutils.AssertMetricsInt(t, rm.Metrics[0], "k8s.pod.phase",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 
 	rm = rms[1]
@@ -76,30 +75,28 @@ func TestPodAndContainerMetrics(t *testing.T) {
 			"k8s.pod.name":         "test-pod-1",
 			"k8s.node.name":        "test-node",
 			"k8s.namespace.name":   "test-namespace",
-			"k8s.cluster.name":     "test-cluster",
 		},
 	)
 
-	testutils.AssertMetrics(t, rm.Metrics[0], "k8s.container.restarts",
+	testutils.AssertMetricsInt(t, rm.Metrics[0], "k8s.container.restarts",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 
-	testutils.AssertMetrics(t, rm.Metrics[1], "k8s.container.ready",
+	testutils.AssertMetricsInt(t, rm.Metrics[1], "k8s.container.ready",
 		metricspb.MetricDescriptor_GAUGE_INT64, 1)
 
-	testutils.AssertMetrics(t, rm.Metrics[2], "k8s.container.cpu_request",
-		metricspb.MetricDescriptor_GAUGE_INT64, 10000)
+	testutils.AssertMetricsDouble(t, rm.Metrics[2], "k8s.container.cpu_request",
+		metricspb.MetricDescriptor_GAUGE_DOUBLE, 10.0)
 
-	testutils.AssertMetrics(t, rm.Metrics[3], "k8s.container.cpu_limit",
-		metricspb.MetricDescriptor_GAUGE_INT64, 20000)
+	testutils.AssertMetricsDouble(t, rm.Metrics[3], "k8s.container.cpu_limit",
+		metricspb.MetricDescriptor_GAUGE_DOUBLE, 20.0)
 }
 
 func newPodWithContainer(id string, spec *corev1.PodSpec, status *corev1.PodStatus) *corev1.Pod {
 	return &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-pod-" + id,
-			Namespace:   "test-namespace",
-			UID:         types.UID("test-pod-" + id + "-uid"),
-			ClusterName: "test-cluster",
+			Name:      "test-pod-" + id,
+			Namespace: "test-namespace",
+			UID:       types.UID("test-pod-" + id + "-uid"),
 			Labels: map[string]string{
 				"foo":  "bar",
 				"foo1": "",

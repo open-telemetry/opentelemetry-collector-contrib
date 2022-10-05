@@ -15,7 +15,7 @@
 package redisreceiver
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -45,7 +45,7 @@ func (fakeClient) retrieveInfo() (string, error) {
 }
 
 func readFile(fname string) (string, error) {
-	file, err := ioutil.ReadFile(filepath.Join("testdata", fname+".txt"))
+	file, err := os.ReadFile(filepath.Join("testdata", fname+".txt"))
 	if err != nil {
 		return "", err
 	}

@@ -18,7 +18,8 @@ import (
 	"fmt"
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -26,8 +27,8 @@ import (
 
 func LogRecordSliceToSignalFxV2(
 	logger *zap.Logger,
-	logs pdata.LogRecordSlice,
-	resourceAttrs pdata.AttributeMap,
+	logs plog.LogRecordSlice,
+	resourceAttrs pcommon.Map,
 ) ([]*sfxpb.Event, int) {
 	events := make([]*sfxpb.Event, 0, logs.Len())
 	numDroppedLogRecords := 0
@@ -45,7 +46,7 @@ func LogRecordSliceToSignalFxV2(
 	return events, numDroppedLogRecords
 }
 
-func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logger *zap.Logger) (*sfxpb.Event, bool) {
+func convertLogRecord(lr plog.LogRecord, resourceAttrs pcommon.Map, logger *zap.Logger) (*sfxpb.Event, bool) {
 	attrs := lr.Attributes()
 
 	categoryVal, ok := attrs.Get(splunk.SFxEventCategoryKey)
@@ -55,13 +56,13 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logg
 
 	var event sfxpb.Event
 
-	if categoryVal.Type() == pdata.AttributeValueTypeInt {
-		asCat := sfxpb.EventCategory(categoryVal.IntVal())
+	if categoryVal.Type() == pcommon.ValueTypeInt {
+		asCat := sfxpb.EventCategory(categoryVal.Int())
 		event.Category = &asCat
 	}
 
-	if mapVal, ok := attrs.Get(splunk.SFxEventPropertiesKey); ok && mapVal.Type() == pdata.AttributeValueTypeMap {
-		mapVal.MapVal().Range(func(k string, v pdata.AttributeValue) bool {
+	if mapVal, ok := attrs.Get(splunk.SFxEventPropertiesKey); ok && mapVal.Type() == pcommon.ValueTypeMap {
+		mapVal.Map().Range(func(k string, v pcommon.Value) bool {
 			val, err := attributeValToPropertyVal(v)
 			if err != nil {
 				logger.Debug("Failed to convert log record property value to SignalFx property value", zap.Error(err), zap.String("key", k))
@@ -78,16 +79,16 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logg
 
 	// keep a record of Resource attributes to add as dimensions
 	// so as not to modify LogRecord attributes
-	resourceAttrsForDimensions := pdata.NewAttributeMap()
-	resourceAttrs.Range(func(k string, v pdata.AttributeValue) bool {
+	resourceAttrsForDimensions := pcommon.NewMap()
+	resourceAttrs.Range(func(k string, v pcommon.Value) bool {
 		// LogRecord attribute takes priority
 		if _, ok := attrs.Get(k); !ok {
-			resourceAttrsForDimensions.Insert(k, v)
+			v.CopyTo(resourceAttrsForDimensions.PutEmpty(k))
 		}
 		return true
 	})
 
-	addDimension := func(k string, v pdata.AttributeValue) bool {
+	addDimension := func(k string, v pcommon.Value) bool {
 		// Skip internal attributes
 		switch k {
 		case splunk.SFxEventCategoryKey:
@@ -95,20 +96,20 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logg
 		case splunk.SFxEventPropertiesKey:
 			return true
 		case splunk.SFxEventType:
-			if v.Type() == pdata.AttributeValueTypeString {
-				event.EventType = v.StringVal()
+			if v.Type() == pcommon.ValueTypeStr {
+				event.EventType = v.Str()
 			}
 			return true
 		}
 
-		if v.Type() != pdata.AttributeValueTypeString {
+		if v.Type() != pcommon.ValueTypeStr {
 			logger.Debug("Failed to convert log record or resource attribute value to SignalFx property value, key is not a string", zap.String("key", k))
 			return true
 		}
 
 		event.Dimensions = append(event.Dimensions, &sfxpb.Dimension{
 			Key:   k,
-			Value: v.StringVal(),
+			Value: v.Str(),
 		})
 		return true
 	}
@@ -120,23 +121,29 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logg
 	// SignalFx event timestamps.
 	event.Timestamp = int64(lr.Timestamp()) / 1e6
 
+	// EventType is a required field, if not set sfx event ingest will drop it
+	if event.EventType == "" {
+		logger.Debug("EventType is not set; setting it to unknown")
+		event.EventType = "unknown"
+	}
+
 	return &event, true
 }
 
-func attributeValToPropertyVal(v pdata.AttributeValue) (*sfxpb.PropertyValue, error) {
+func attributeValToPropertyVal(v pcommon.Value) (*sfxpb.PropertyValue, error) {
 	var val sfxpb.PropertyValue
 	switch v.Type() {
-	case pdata.AttributeValueTypeInt:
-		asInt := v.IntVal()
+	case pcommon.ValueTypeInt:
+		asInt := v.Int()
 		val.IntValue = &asInt
-	case pdata.AttributeValueTypeBool:
-		asBool := v.BoolVal()
+	case pcommon.ValueTypeBool:
+		asBool := v.Bool()
 		val.BoolValue = &asBool
-	case pdata.AttributeValueTypeDouble:
-		asDouble := v.DoubleVal()
+	case pcommon.ValueTypeDouble:
+		asDouble := v.Double()
 		val.DoubleValue = &asDouble
-	case pdata.AttributeValueTypeString:
-		asString := v.StringVal()
+	case pcommon.ValueTypeStr:
+		asString := v.Str()
 		val.StrValue = &asString
 	default:
 		return nil, fmt.Errorf("attribute value type %q not supported in SignalFx events", v.Type().String())

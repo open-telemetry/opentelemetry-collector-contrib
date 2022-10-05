@@ -26,8 +26,9 @@ import (
 	"time"
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
@@ -41,9 +42,9 @@ type ToTranslator struct {
 	ParseStringTags bool
 }
 
-// ToTraces translates Zipkin v2 spans into pdata.Traces.
-func (t ToTranslator) ToTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Traces, error) {
-	traceData := pdata.NewTraces()
+// ToTraces translates Zipkin v2 spans into ptrace.Traces.
+func (t ToTranslator) ToTraces(zipkinSpans []*zipkinmodel.SpanModel) (ptrace.Traces, error) {
+	traceData := ptrace.NewTraces()
 	if len(zipkinSpans) == 0 {
 		return traceData, nil
 	}
@@ -54,9 +55,9 @@ func (t ToTranslator) ToTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Trac
 	prevServiceName := ""
 	prevInstrLibName := ""
 	ilsIsNew := true
-	var curRscSpans pdata.ResourceSpans
-	var curILSpans pdata.InstrumentationLibrarySpans
-	var curSpans pdata.SpanSlice
+	var curRscSpans ptrace.ResourceSpans
+	var curILSpans ptrace.ScopeSpans
+	var curSpans ptrace.SpanSlice
 	for _, zspan := range zipkinSpans {
 		if zspan == nil {
 			continue
@@ -73,9 +74,9 @@ func (t ToTranslator) ToTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Trac
 		instrLibName := extractInstrumentationLibrary(zspan)
 		if instrLibName != prevInstrLibName || ilsIsNew {
 			prevInstrLibName = instrLibName
-			curILSpans = curRscSpans.InstrumentationLibrarySpans().AppendEmpty()
+			curILSpans = curRscSpans.ScopeSpans().AppendEmpty()
 			ilsIsNew = false
-			populateILFromZipkinSpan(tags, instrLibName, curILSpans.InstrumentationLibrary())
+			populateILFromZipkinSpan(tags, instrLibName, curILSpans.Scope())
 			curSpans = curILSpans.Spans()
 		}
 		err := zSpanToInternal(zspan, tags, curSpans.AppendEmpty(), t.ParseStringTags)
@@ -122,11 +123,11 @@ func (b byOTLPTypes) Swap(i, j int) {
 	b[i], b[j] = b[j], b[i]
 }
 
-func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest pdata.Span, parseStringTags bool) error {
+func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest ptrace.Span, parseStringTags bool) error {
 	dest.SetTraceID(idutils.UInt64ToTraceID(zspan.TraceID.High, zspan.TraceID.Low))
 	dest.SetSpanID(idutils.UInt64ToSpanID(uint64(zspan.ID)))
 	if value, ok := tags[tracetranslator.TagW3CTraceState]; ok {
-		dest.SetTraceState(pdata.TraceState(value))
+		dest.TraceState().FromRaw(value)
 		delete(tags, tracetranslator.TagW3CTraceState)
 	}
 	parentID := zspan.ParentID
@@ -143,7 +144,6 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 	}
 
 	attrs := dest.Attributes()
-	attrs.Clear()
 	attrs.EnsureCapacity(len(tags))
 	if err := zTagsToInternalAttrs(zspan, tags, attrs, parseStringTags); err != nil {
 		return err
@@ -155,9 +155,9 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 	return err
 }
 
-func populateSpanStatus(tags map[string]string, status pdata.SpanStatus) {
+func populateSpanStatus(tags map[string]string, status ptrace.SpanStatus) {
 	if value, ok := tags[conventions.OtelStatusCode]; ok {
-		status.SetCode(pdata.StatusCode(statusCodeValue[value]))
+		status.SetCode(ptrace.StatusCode(statusCodeValue[value]))
 		delete(tags, conventions.OtelStatusCode)
 		if value, ok := tags[conventions.OtelStatusDescription]; ok {
 			status.SetMessage(value)
@@ -167,34 +167,34 @@ func populateSpanStatus(tags map[string]string, status pdata.SpanStatus) {
 
 	if val, ok := tags[tracetranslator.TagError]; ok {
 		if val == "true" {
-			status.SetCode(pdata.StatusCodeError)
+			status.SetCode(ptrace.StatusCodeError)
 			delete(tags, tracetranslator.TagError)
 		}
 	}
 }
 
-func zipkinKindToSpanKind(kind zipkinmodel.Kind, tags map[string]string) pdata.SpanKind {
+func zipkinKindToSpanKind(kind zipkinmodel.Kind, tags map[string]string) ptrace.SpanKind {
 	switch kind {
 	case zipkinmodel.Client:
-		return pdata.SpanKindClient
+		return ptrace.SpanKindClient
 	case zipkinmodel.Server:
-		return pdata.SpanKindServer
+		return ptrace.SpanKindServer
 	case zipkinmodel.Producer:
-		return pdata.SpanKindProducer
+		return ptrace.SpanKindProducer
 	case zipkinmodel.Consumer:
-		return pdata.SpanKindConsumer
+		return ptrace.SpanKindConsumer
 	default:
 		if value, ok := tags[tracetranslator.TagSpanKind]; ok {
 			delete(tags, tracetranslator.TagSpanKind)
 			if value == "internal" {
-				return pdata.SpanKindInternal
+				return ptrace.SpanKindInternal
 			}
 		}
-		return pdata.SpanKindUnspecified
+		return ptrace.SpanKindUnspecified
 	}
 }
 
-func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
+func zTagsToSpanLinks(tags map[string]string, dest ptrace.SpanLinkSlice) error {
 	for i := 0; i < 128; i++ {
 		key := fmt.Sprintf("otlp.link.%d", i)
 		val, ok := tags[key]
@@ -216,7 +216,7 @@ func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
 		if errTrace != nil {
 			return errTrace
 		}
-		link.SetTraceID(pdata.NewTraceID(rawTrace))
+		link.SetTraceID(rawTrace)
 
 		// Convert span id.
 		rawSpan := [8]byte{}
@@ -224,9 +224,9 @@ func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
 		if errSpan != nil {
 			return errSpan
 		}
-		link.SetSpanID(pdata.NewSpanID(rawSpan))
+		link.SetSpanID(rawSpan)
 
-		link.SetTraceState(pdata.TraceState(parts[2]))
+		link.TraceState().FromRaw(parts[2])
 
 		var jsonStr string
 		if partCnt == 5 {
@@ -252,11 +252,11 @@ func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
 	return nil
 }
 
-func populateSpanEvents(zspan *zipkinmodel.SpanModel, events pdata.SpanEventSlice) error {
+func populateSpanEvents(zspan *zipkinmodel.SpanModel, events ptrace.SpanEventSlice) error {
 	events.EnsureCapacity(len(zspan.Annotations))
 	for _, anno := range zspan.Annotations {
 		event := events.AppendEmpty()
-		event.SetTimestamp(pdata.NewTimestampFromTime(anno.Timestamp))
+		event.SetTimestamp(pcommon.NewTimestampFromTime(anno.Timestamp))
 
 		parts := strings.Split(anno.Value, "|")
 		partCnt := len(parts)
@@ -289,54 +289,54 @@ func populateSpanEvents(zspan *zipkinmodel.SpanModel, events pdata.SpanEventSlic
 	return nil
 }
 
-func jsonMapToAttributeMap(attrs map[string]interface{}, dest pdata.AttributeMap) error {
+func jsonMapToAttributeMap(attrs map[string]interface{}, dest pcommon.Map) error {
 	for key, val := range attrs {
 		if s, ok := val.(string); ok {
-			dest.InsertString(key, s)
+			dest.PutString(key, s)
 		} else if d, ok := val.(float64); ok {
 			if math.Mod(d, 1.0) == 0.0 {
-				dest.InsertInt(key, int64(d))
+				dest.PutInt(key, int64(d))
 			} else {
-				dest.InsertDouble(key, d)
+				dest.PutDouble(key, d)
 			}
 		} else if b, ok := val.(bool); ok {
-			dest.InsertBool(key, b)
+			dest.PutBool(key, b)
 		}
 	}
 	return nil
 }
 
-func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, dest pdata.AttributeMap, parseStringTags bool) error {
+func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, dest pcommon.Map, parseStringTags bool) error {
 	parseErr := tagsToAttributeMap(tags, dest, parseStringTags)
 	if zspan.LocalEndpoint != nil {
 		if zspan.LocalEndpoint.IPv4 != nil {
-			dest.InsertString(conventions.AttributeNetHostIP, zspan.LocalEndpoint.IPv4.String())
+			dest.PutString(conventions.AttributeNetHostIP, zspan.LocalEndpoint.IPv4.String())
 		}
 		if zspan.LocalEndpoint.IPv6 != nil {
-			dest.InsertString(conventions.AttributeNetHostIP, zspan.LocalEndpoint.IPv6.String())
+			dest.PutString(conventions.AttributeNetHostIP, zspan.LocalEndpoint.IPv6.String())
 		}
 		if zspan.LocalEndpoint.Port > 0 {
-			dest.UpsertInt(conventions.AttributeNetHostPort, int64(zspan.LocalEndpoint.Port))
+			dest.PutInt(conventions.AttributeNetHostPort, int64(zspan.LocalEndpoint.Port))
 		}
 	}
 	if zspan.RemoteEndpoint != nil {
 		if zspan.RemoteEndpoint.ServiceName != "" {
-			dest.InsertString(conventions.AttributePeerService, zspan.RemoteEndpoint.ServiceName)
+			dest.PutString(conventions.AttributePeerService, zspan.RemoteEndpoint.ServiceName)
 		}
 		if zspan.RemoteEndpoint.IPv4 != nil {
-			dest.InsertString(conventions.AttributeNetPeerIP, zspan.RemoteEndpoint.IPv4.String())
+			dest.PutString(conventions.AttributeNetPeerIP, zspan.RemoteEndpoint.IPv4.String())
 		}
 		if zspan.RemoteEndpoint.IPv6 != nil {
-			dest.InsertString(conventions.AttributeNetPeerIP, zspan.RemoteEndpoint.IPv6.String())
+			dest.PutString(conventions.AttributeNetPeerIP, zspan.RemoteEndpoint.IPv6.String())
 		}
 		if zspan.RemoteEndpoint.Port > 0 {
-			dest.UpsertInt(conventions.AttributeNetPeerPort, int64(zspan.RemoteEndpoint.Port))
+			dest.PutInt(conventions.AttributeNetPeerPort, int64(zspan.RemoteEndpoint.Port))
 		}
 	}
 	return parseErr
 }
 
-func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap, parseStringTags bool) error {
+func tagsToAttributeMap(tags map[string]string, dest pcommon.Map, parseStringTags bool) error {
 	var parseErr error
 	for key, val := range tags {
 		if _, ok := nonSpanAttributes[key]; ok {
@@ -345,40 +345,40 @@ func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap, parseSt
 
 		if parseStringTags {
 			switch zipkin.DetermineValueType(val) {
-			case pdata.AttributeValueTypeInt:
+			case pcommon.ValueTypeInt:
 				iValue, _ := strconv.ParseInt(val, 10, 64)
-				dest.UpsertInt(key, iValue)
-			case pdata.AttributeValueTypeDouble:
+				dest.PutInt(key, iValue)
+			case pcommon.ValueTypeDouble:
 				fValue, _ := strconv.ParseFloat(val, 64)
-				dest.UpsertDouble(key, fValue)
-			case pdata.AttributeValueTypeBool:
+				dest.PutDouble(key, fValue)
+			case pcommon.ValueTypeBool:
 				bValue, _ := strconv.ParseBool(val)
-				dest.UpsertBool(key, bValue)
+				dest.PutBool(key, bValue)
 			default:
-				dest.UpsertString(key, val)
+				dest.PutString(key, val)
 			}
 		} else {
-			dest.UpsertString(key, val)
+			dest.PutString(key, val)
 		}
 	}
 	return parseErr
 }
 
-func populateResourceFromZipkinSpan(tags map[string]string, localServiceName string, resource pdata.Resource) {
+func populateResourceFromZipkinSpan(tags map[string]string, localServiceName string, resource pcommon.Resource) {
 	if localServiceName == tracetranslator.ResourceNoServiceName {
 		return
 	}
 
 	if len(tags) == 0 {
-		resource.Attributes().InsertString(conventions.AttributeServiceName, localServiceName)
+		resource.Attributes().PutString(conventions.AttributeServiceName, localServiceName)
 		return
 	}
 
 	snSource := tags[zipkin.TagServiceNameSource]
 	if snSource == "" {
-		resource.Attributes().InsertString(conventions.AttributeServiceName, localServiceName)
+		resource.Attributes().PutString(conventions.AttributeServiceName, localServiceName)
 	} else {
-		resource.Attributes().InsertString(snSource, localServiceName)
+		resource.Attributes().PutString(snSource, localServiceName)
 	}
 	delete(tags, zipkin.TagServiceNameSource)
 
@@ -387,13 +387,13 @@ func populateResourceFromZipkinSpan(tags map[string]string, localServiceName str
 			continue
 		}
 		if value, ok := tags[key]; ok {
-			resource.Attributes().UpsertString(key, value)
+			resource.Attributes().PutString(key, value)
 			delete(tags, key)
 		}
 	}
 }
 
-func populateILFromZipkinSpan(tags map[string]string, instrLibName string, library pdata.InstrumentationLibrary) {
+func populateILFromZipkinSpan(tags map[string]string, instrLibName string, library pcommon.InstrumentationScope) {
 	if instrLibName == "" {
 		return
 	}
@@ -429,27 +429,27 @@ func extractInstrumentationLibrary(zspan *zipkinmodel.SpanModel) string {
 	return zspan.Tags[conventions.OtelLibraryName]
 }
 
-func setTimestampsV2(zspan *zipkinmodel.SpanModel, dest pdata.Span, destAttrs pdata.AttributeMap) {
+func setTimestampsV2(zspan *zipkinmodel.SpanModel, dest ptrace.Span, destAttrs pcommon.Map) {
 	// zipkin allows timestamp to be unset, but otel span expects startTimestamp to have a value.
 	// unset gets converted to zero on the zspan object during json deserialization because
 	// time.Time (the type of Timestamp field) cannot be nil.  If timestamp is zero, the
 	// conversion from this internal format back to zipkin format in zipkin exporter fails.
 	// Instead, set to *unix* time zero, and convert back in traces_to_zipkinv2.go
 	if zspan.Timestamp.IsZero() {
-		unixTimeZero := pdata.NewTimestampFromTime(time.Unix(0, 0))
-		zeroPlusDuration := pdata.NewTimestampFromTime(time.Unix(0, 0).Add(zspan.Duration))
+		unixTimeZero := pcommon.NewTimestampFromTime(time.Unix(0, 0))
+		zeroPlusDuration := pcommon.NewTimestampFromTime(time.Unix(0, 0).Add(zspan.Duration))
 		dest.SetStartTimestamp(unixTimeZero)
 		dest.SetEndTimestamp(zeroPlusDuration)
 
-		destAttrs.InsertBool(zipkin.StartTimeAbsent, true)
+		destAttrs.PutBool(zipkin.StartTimeAbsent, true)
 	} else {
-		dest.SetStartTimestamp(pdata.NewTimestampFromTime(zspan.Timestamp))
-		dest.SetEndTimestamp(pdata.NewTimestampFromTime(zspan.Timestamp.Add(zspan.Duration)))
+		dest.SetStartTimestamp(pcommon.NewTimestampFromTime(zspan.Timestamp))
+		dest.SetEndTimestamp(pcommon.NewTimestampFromTime(zspan.Timestamp.Add(zspan.Duration)))
 	}
 }
 
 // unmarshalJSON inflates trace id from hex string, possibly enclosed in quotes.
-// TODO: Find a way to avoid this duplicate code. Consider to expose this in model/pdata.
+// TODO: Find a way to avoid this duplicate code. Consider to expose this in pdata.
 func unmarshalJSON(dst []byte, src []byte) error {
 	if l := len(src); l >= 2 && src[0] == '"' && src[l-1] == '"' {
 		src = src[1 : l-1]
@@ -470,7 +470,7 @@ func unmarshalJSON(dst []byte, src []byte) error {
 	return nil
 }
 
-// TODO: Find a way to avoid this duplicate code. Consider to expose this in model/pdata.
+// TODO: Find a way to avoid this duplicate code. Consider to expose this in pdata.
 var statusCodeValue = map[string]int32{
 	"STATUS_CODE_UNSET": 0,
 	"STATUS_CODE_OK":    1,

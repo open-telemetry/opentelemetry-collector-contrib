@@ -15,12 +15,12 @@
 package protocol // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // Parser is something that can map input StatsD strings to OTLP Metric representations.
 type Parser interface {
 	Initialize(enableMetricType bool, isMonotonicCounter bool, sendTimerHistogram []TimerHistogramMapping) error
-	GetMetrics() pdata.Metrics
+	GetMetrics() pmetric.Metrics
 	Aggregate(line string) error
 }

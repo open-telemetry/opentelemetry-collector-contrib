@@ -17,15 +17,16 @@ package alibabacloudlogserviceexporter
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"reflect"
 	"sort"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 type logKeyValuePair struct {
@@ -73,7 +74,7 @@ func TestTraceDataToLogService(t *testing.T) {
 }
 
 func loadFromJSON(file string, obj interface{}) error {
-	blob, err := ioutil.ReadFile(file)
+	blob, err := os.ReadFile(file)
 	if err == nil {
 		err = json.Unmarshal(blob, obj)
 	}
@@ -81,35 +82,35 @@ func loadFromJSON(file string, obj interface{}) error {
 	return err
 }
 
-func constructSpanData() pdata.Traces {
-	traces := pdata.NewTraces()
+func constructSpanData() ptrace.Traces {
+	traces := ptrace.NewTraces()
 	traces.ResourceSpans().EnsureCapacity(1)
 	rspans := traces.ResourceSpans().AppendEmpty()
 	fillResource(rspans.Resource())
-	rspans.InstrumentationLibrarySpans().EnsureCapacity(1)
-	ispans := rspans.InstrumentationLibrarySpans().AppendEmpty()
-	ispans.InstrumentationLibrary().SetName("golang-sls-exporter")
-	ispans.InstrumentationLibrary().SetVersion("v0.1.0")
+	rspans.ScopeSpans().EnsureCapacity(1)
+	ispans := rspans.ScopeSpans().AppendEmpty()
+	ispans.Scope().SetName("golang-sls-exporter")
+	ispans.Scope().SetVersion("v0.1.0")
 	ispans.Spans().EnsureCapacity(2)
 	fillHTTPClientSpan(ispans.Spans().AppendEmpty())
 	fillHTTPServerSpan(ispans.Spans().AppendEmpty())
 	return traces
 }
 
-func fillResource(resource pdata.Resource) {
+func fillResource(resource pcommon.Resource) {
 	attrs := resource.Attributes()
-	attrs.InsertString(conventions.AttributeServiceName, "signup_aggregator")
-	attrs.InsertString(conventions.AttributeHostName, "xxx.et15")
-	attrs.InsertString(conventions.AttributeContainerName, "signup_aggregator")
-	attrs.InsertString(conventions.AttributeContainerImageName, "otel/signupaggregator")
-	attrs.InsertString(conventions.AttributeContainerImageTag, "v1")
-	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.InsertString(conventions.AttributeCloudAccountID, "999999998")
-	attrs.InsertString(conventions.AttributeCloudRegion, "us-west-2")
-	attrs.InsertString(conventions.AttributeCloudAvailabilityZone, "us-west-1b")
+	attrs.PutString(conventions.AttributeServiceName, "signup_aggregator")
+	attrs.PutString(conventions.AttributeHostName, "xxx.et15")
+	attrs.PutString(conventions.AttributeContainerName, "signup_aggregator")
+	attrs.PutString(conventions.AttributeContainerImageName, "otel/signupaggregator")
+	attrs.PutString(conventions.AttributeContainerImageTag, "v1")
+	attrs.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.PutString(conventions.AttributeCloudAccountID, "999999998")
+	attrs.PutString(conventions.AttributeCloudRegion, "us-west-2")
+	attrs.PutString(conventions.AttributeCloudAvailabilityZone, "us-west-1b")
 }
 
-func fillHTTPClientSpan(span pdata.Span) {
+func fillHTTPClientSpan(span ptrace.Span) {
 	attributes := make(map[string]interface{})
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
@@ -122,26 +123,26 @@ func fillHTTPClientSpan(span pdata.Span) {
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
-	span.SetKind(pdata.SpanKindClient)
-	span.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
-	span.SetEndTimestamp(pdata.NewTimestampFromTime(endTime))
-	span.SetTraceState("x:y")
+	span.SetKind(ptrace.SpanKindClient)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
+	span.TraceState().FromRaw("x:y")
 
 	event := span.Events().AppendEmpty()
 	event.SetName("event")
 	event.SetTimestamp(1024)
-	event.Attributes().InsertString("key", "value")
+	event.Attributes().PutString("key", "value")
 
 	link := span.Links().AppendEmpty()
-	link.SetTraceState("link:state")
-	link.Attributes().InsertString("link", "true")
+	link.TraceState().FromRaw("link:state")
+	link.Attributes().PutString("link", "true")
 
 	status := span.Status()
 	status.SetCode(1)
 	status.SetMessage("OK")
 }
 
-func fillHTTPServerSpan(span pdata.Span) {
+func fillHTTPServerSpan(span ptrace.Span) {
 	attributes := make(map[string]interface{})
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
@@ -155,50 +156,50 @@ func fillHTTPServerSpan(span pdata.Span) {
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
-	span.SetKind(pdata.SpanKindServer)
-	span.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
-	span.SetEndTimestamp(pdata.NewTimestampFromTime(endTime))
+	span.SetKind(ptrace.SpanKindServer)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 
 	status := span.Status()
 	status.SetCode(2)
 	status.SetMessage("something error")
 }
 
-func constructSpanAttributes(attributes map[string]interface{}) pdata.AttributeMap {
-	attrs := pdata.NewAttributeMap()
+func constructSpanAttributes(attributes map[string]interface{}) pcommon.Map {
+	attrs := pcommon.NewMap()
 	for key, value := range attributes {
 		if cast, ok := value.(int); ok {
-			attrs.InsertInt(key, int64(cast))
+			attrs.PutInt(key, int64(cast))
 		} else if cast, ok := value.(int64); ok {
-			attrs.InsertInt(key, cast)
+			attrs.PutInt(key, cast)
 		} else {
-			attrs.InsertString(key, fmt.Sprintf("%v", value))
+			attrs.PutString(key, fmt.Sprintf("%v", value))
 		}
 	}
 	return attrs
 }
 
-func newTraceID() pdata.TraceID {
+func newTraceID() pcommon.TraceID {
 	r := [16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F}
-	return pdata.NewTraceID(r)
+	return pcommon.TraceID(r)
 }
 
-func newSegmentID() pdata.SpanID {
+func newSegmentID() pcommon.SpanID {
 	r := [8]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x64, 0x7D, 0x98}
-	return pdata.NewSpanID(r)
+	return pcommon.SpanID(r)
 }
 
 func TestSpanKindToShortString(t *testing.T) {
-	assert.Equal(t, spanKindToShortString(pdata.SpanKindConsumer), "consumer")
-	assert.Equal(t, spanKindToShortString(pdata.SpanKindProducer), "producer")
-	assert.Equal(t, spanKindToShortString(pdata.SpanKindClient), "client")
-	assert.Equal(t, spanKindToShortString(pdata.SpanKindServer), "server")
-	assert.Equal(t, spanKindToShortString(pdata.SpanKindInternal), "internal")
-	assert.Equal(t, spanKindToShortString(pdata.SpanKindUnspecified), "")
+	assert.Equal(t, spanKindToShortString(ptrace.SpanKindConsumer), "consumer")
+	assert.Equal(t, spanKindToShortString(ptrace.SpanKindProducer), "producer")
+	assert.Equal(t, spanKindToShortString(ptrace.SpanKindClient), "client")
+	assert.Equal(t, spanKindToShortString(ptrace.SpanKindServer), "server")
+	assert.Equal(t, spanKindToShortString(ptrace.SpanKindInternal), "internal")
+	assert.Equal(t, spanKindToShortString(ptrace.SpanKindUnspecified), "")
 }
 
 func TestStatusCodeToShortString(t *testing.T) {
-	assert.Equal(t, statusCodeToShortString(pdata.StatusCodeOk), "OK")
-	assert.Equal(t, statusCodeToShortString(pdata.StatusCodeError), "ERROR")
-	assert.Equal(t, statusCodeToShortString(pdata.StatusCodeUnset), "UNSET")
+	assert.Equal(t, statusCodeToShortString(ptrace.StatusCodeOk), "OK")
+	assert.Equal(t, statusCodeToShortString(ptrace.StatusCodeError), "ERROR")
+	assert.Equal(t, statusCodeToShortString(ptrace.StatusCodeUnset), "UNSET")
 }

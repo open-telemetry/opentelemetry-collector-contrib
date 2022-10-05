@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"net/http"
 	"net/url"
@@ -33,9 +32,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 )
 
@@ -43,16 +43,19 @@ const maxBatchByteSize = 3000000
 
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type prwExporter struct {
-	namespace       string
-	externalLabels  map[string]string
-	endpointURL     *url.URL
-	client          *http.Client
-	wg              *sync.WaitGroup
-	closeChan       chan struct{}
-	concurrency     int
-	userAgentHeader string
-	clientSettings  *confighttp.HTTPClientSettings
-	settings        component.TelemetrySettings
+	namespace         string
+	externalLabels    map[string]string
+	endpointURL       *url.URL
+	client            *http.Client
+	wg                *sync.WaitGroup
+	closeChan         chan struct{}
+	concurrency       int
+	userAgentHeader   string
+	clientSettings    *confighttp.HTTPClientSettings
+	settings          component.TelemetrySettings
+	disableTargetInfo bool
+
+	wal *prweWAL
 }
 
 // newPRWExporter initializes a new prwExporter instance and sets fields accordingly.
@@ -69,37 +72,62 @@ func newPRWExporter(cfg *Config, set component.ExporterCreateSettings) (*prwExpo
 
 	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(set.BuildInfo.Description), " ", "-"), set.BuildInfo.Version)
 
-	return &prwExporter{
-		namespace:       cfg.Namespace,
-		externalLabels:  sanitizedLabels,
-		endpointURL:     endpointURL,
-		wg:              new(sync.WaitGroup),
-		closeChan:       make(chan struct{}),
-		userAgentHeader: userAgentHeader,
-		concurrency:     cfg.RemoteWriteQueue.NumConsumers,
-		clientSettings:  &cfg.HTTPClientSettings,
-		settings:        set.TelemetrySettings,
-	}, nil
+	prwe := &prwExporter{
+		namespace:         cfg.Namespace,
+		externalLabels:    sanitizedLabels,
+		endpointURL:       endpointURL,
+		wg:                new(sync.WaitGroup),
+		closeChan:         make(chan struct{}),
+		userAgentHeader:   userAgentHeader,
+		concurrency:       cfg.RemoteWriteQueue.NumConsumers,
+		clientSettings:    &cfg.HTTPClientSettings,
+		settings:          set.TelemetrySettings,
+		disableTargetInfo: !cfg.TargetInfo.Enabled,
+	}
+	if cfg.WAL == nil {
+		return prwe, nil
+	}
+
+	prwe.wal, err = newWAL(cfg.WAL, prwe.export)
+	if err != nil {
+		return nil, err
+	}
+	return prwe, nil
 }
 
 // Start creates the prometheus client
-func (prwe *prwExporter) Start(_ context.Context, host component.Host) (err error) {
-	prwe.client, err = prwe.clientSettings.ToClient(host.GetExtensions(), prwe.settings)
-	return err
+func (prwe *prwExporter) Start(ctx context.Context, host component.Host) (err error) {
+	prwe.client, err = prwe.clientSettings.ToClient(host, prwe.settings)
+	if err != nil {
+		return err
+	}
+	return prwe.turnOnWALIfEnabled(contextWithLogger(ctx, prwe.settings.Logger.Named("prw.wal")))
+}
+
+func (prwe *prwExporter) shutdownWALIfEnabled() error {
+	if !prwe.walEnabled() {
+		return nil
+	}
+	return prwe.wal.stop()
 }
 
 // Shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations
 // to finish before returning
 func (prwe *prwExporter) Shutdown(context.Context) error {
-	close(prwe.closeChan)
+	select {
+	case <-prwe.closeChan:
+	default:
+		close(prwe.closeChan)
+	}
+	err := prwe.shutdownWALIfEnabled()
 	prwe.wg.Wait()
-	return nil
+	return err
 }
 
 // PushMetrics converts metrics to Prometheus remote write TimeSeries and send to remote endpoint. It maintain a map of
 // TimeSeries, validates and handles each individual metric, adding the converted TimeSeries to the map, and finally
 // exports the map.
-func (prwe *prwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) error {
+func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) error {
 	prwe.wg.Add(1)
 	defer prwe.wg.Done()
 
@@ -107,12 +135,12 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 	case <-prwe.closeChan:
 		return errors.New("shutdown has been called")
 	default:
-		tsMap, err := prometheusremotewrite.FromMetrics(md, prometheusremotewrite.Settings{Namespace: prwe.namespace, ExternalLabels: prwe.externalLabels})
+		tsMap, err := prometheusremotewrite.FromMetrics(md, prometheusremotewrite.Settings{Namespace: prwe.namespace, ExternalLabels: prwe.externalLabels, DisableTargetInfo: prwe.disableTargetInfo})
 		if err != nil {
 			err = consumererror.NewPermanent(err)
 		}
 		// Call export even if a conversion error, since there may be points that were successfully converted.
-		return multierr.Combine(err, prwe.export(ctx, tsMap))
+		return multierr.Combine(err, prwe.handleExport(ctx, tsMap))
 	}
 }
 
@@ -122,36 +150,38 @@ func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 		if key == "" || value == "" {
 			return nil, fmt.Errorf("prometheus remote write: external labels configuration contains an empty key or value")
 		}
-
-		// Sanitize label keys to meet Prometheus Requirements
-		// if sanitizeLabel is enabled, invoke sanitizeLabels else sanitize
-		if len(key) > 2 && key[:2] == "__" {
-			if cfg.sanitizeLabel {
-				key = "__" + sanitizeLabels(key[2:])
-			} else {
-				key = "__" + sanitize(key[2:])
-			}
-		} else {
-			if cfg.sanitizeLabel {
-				key = sanitizeLabels(key)
-			} else {
-				key = sanitize(key)
-			}
-		}
-		sanitizedLabels[key] = value
+		sanitizedLabels[prometheustranslator.NormalizeLabel(key)] = value
 	}
 
 	return sanitizedLabels, nil
 }
 
-// export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
-func (prwe *prwExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
+func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
+	// There are no metrics to export, so return.
+	if len(tsMap) == 0 {
+		return nil
+	}
+
 	// Calls the helper function to convert and batch the TsMap to the desired format
 	requests, err := batchTimeSeries(tsMap, maxBatchByteSize)
 	if err != nil {
 		return err
 	}
+	if !prwe.walEnabled() {
+		// Perform a direct export otherwise.
+		return prwe.export(ctx, requests)
+	}
 
+	// Otherwise the WAL is enabled, and just persist the requests to the WAL
+	// and they'll be exported in another goroutine to the RemoteWrite endpoint.
+	if err = prwe.wal.persistToWAL(requests); err != nil {
+		return consumererror.NewPermanent(err)
+	}
+	return nil
+}
+
+// export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
+func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteRequest) error {
 	input := make(chan *prompb.WriteRequest, len(requests))
 	for _, request := range requests {
 		input <- request
@@ -170,11 +200,20 @@ func (prwe *prwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	for i := 0; i < concurrencyLimit; i++ {
 		go func() {
 			defer wg.Done()
-			for request := range input {
-				if errExecute := prwe.execute(ctx, request); errExecute != nil {
-					mu.Lock()
-					errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
-					mu.Unlock()
+			for {
+				select {
+				case <-ctx.Done(): // Check firstly to ensure that the context wasn't cancelled.
+					return
+
+				case request, ok := <-input:
+					if !ok {
+						return
+					}
+					if errExecute := prwe.execute(ctx, request); errExecute != nil {
+						mu.Lock()
+						errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
+						mu.Unlock()
+					}
 				}
 			}
 		}()
@@ -219,10 +258,24 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return nil
 	}
-	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, 256))
-	rerr := fmt.Errorf("remote write returned HTTP status %v; err = %v: %s", resp.Status, err, body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 256))
+	rerr := fmt.Errorf("remote write returned HTTP status %v; err = %w: %s", resp.Status, err, body)
 	if resp.StatusCode >= 500 && resp.StatusCode < 600 {
 		return rerr
 	}
 	return consumererror.NewPermanent(rerr)
+}
+
+func (prwe *prwExporter) walEnabled() bool { return prwe.wal != nil }
+
+func (prwe *prwExporter) turnOnWALIfEnabled(ctx context.Context) error {
+	if !prwe.walEnabled() {
+		return nil
+	}
+	cancelCtx, cancel := context.WithCancel(ctx)
+	go func() {
+		<-prwe.closeChan
+		cancel()
+	}()
+	return prwe.wal.run(cancelCtx)
 }

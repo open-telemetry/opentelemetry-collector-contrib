@@ -23,12 +23,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 const (
 	// typeStr is the value of "type" for this processor in the configuration.
 	typeStr config.Type = "groupbytrace"
+	// The stability level of the processor.
+	stability = component.StabilityLevelBeta
 
 	defaultWaitDuration   = time.Second
 	defaultNumTraces      = 1_000_000
@@ -47,10 +48,10 @@ func NewFactory() component.ProcessorFactory {
 	// TODO: find a more appropriate way to get this done, as we are swallowing the error here
 	_ = view.Register(MetricViews()...)
 
-	return processorhelper.NewFactory(
+	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTracesProcessor))
+		component.WithTracesProcessor(createTracesProcessor, stability))
 }
 
 // createDefaultConfig creates the default configuration for the processor.

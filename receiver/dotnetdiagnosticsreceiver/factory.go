@@ -25,19 +25,21 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/network"
 )
 
-const typeStr = "dotnet_diagnostics"
+const (
+	typeStr   = "dotnet_diagnostics"
+	stability = component.StabilityLevelAlpha
+)
 
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver),
+		component.WithMetricsReceiver(createMetricsReceiver, stability),
 	)
 }
 

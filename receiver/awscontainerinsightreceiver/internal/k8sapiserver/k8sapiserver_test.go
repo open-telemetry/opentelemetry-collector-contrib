@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package k8sapiserver
 
 import (
@@ -22,7 +23,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -114,30 +115,30 @@ func (m *mockEventBroadcaster) NewRecorder(scheme *runtime.Scheme, source v1.Eve
 	return record.NewFakeRecorder(100)
 }
 
-func getStringAttrVal(m pdata.Metrics, key string) string {
+func getStringAttrVal(m pmetric.Metrics, key string) string {
 	rm := m.ResourceMetrics().At(0)
 	attributes := rm.Resource().Attributes()
 	if attributeValue, ok := attributes.Get(key); ok {
-		return attributeValue.StringVal()
+		return attributeValue.Str()
 	}
 	return ""
 }
 
-func assertMetricValueEqual(t *testing.T, m pdata.Metrics, metricName string, expected int64) {
+func assertMetricValueEqual(t *testing.T, m pmetric.Metrics, metricName string, expected int64) {
 	rm := m.ResourceMetrics().At(0)
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 
 	for j := 0; j < ilms.Len(); j++ {
 		metricSlice := ilms.At(j).Metrics()
 		for i := 0; i < metricSlice.Len(); i++ {
 			metric := metricSlice.At(i)
 			if metric.Name() == metricName {
-				if metric.DataType() == pdata.MetricDataTypeGauge {
+				if metric.Type() == pmetric.MetricTypeGauge {
 					switch metric.Gauge().DataPoints().At(0).ValueType() {
-					case pdata.MetricValueTypeDouble:
-						assert.Equal(t, expected, metric.Gauge().DataPoints().At(0).DoubleVal())
-					case pdata.MetricValueTypeInt:
-						assert.Equal(t, expected, metric.Gauge().DataPoints().At(0).IntVal())
+					case pmetric.NumberDataPointValueTypeDouble:
+						assert.Equal(t, expected, metric.Gauge().DataPoints().At(0).DoubleValue())
+					case pmetric.NumberDataPointValueTypeInt:
+						assert.Equal(t, expected, metric.Gauge().DataPoints().At(0).IntValue())
 					}
 
 					return
@@ -185,10 +186,8 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 		k.isLeadingC = make(chan bool)
 	}
 
-	originalHostName := os.Getenv("HOST_NAME")
-	originalNamespace := os.Getenv("K8S_NAMESPACE")
-	os.Setenv("HOST_NAME", hostName)
-	os.Setenv("K8S_NAMESPACE", "namespace")
+	t.Setenv("HOST_NAME", hostName)
+	t.Setenv("K8S_NAMESPACE", "namespace")
 	k8sAPIServer, err := New(MockClusterNameProvicer{}, zap.NewNop(), k8sClientOption,
 		leadingOption, broadcasterOption, isLeadingCOption)
 
@@ -237,9 +236,6 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 	}
 
 	k8sAPIServer.Shutdown()
-	// restore env variables
-	os.Setenv("HOST_NAME", originalHostName)
-	os.Setenv("K8S_NAMESPACE", originalNamespace)
 }
 
 func TestK8sAPIServer_init(t *testing.T) {
@@ -249,13 +245,9 @@ func TestK8sAPIServer_init(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.True(t, strings.HasPrefix(err.Error(), "environment variable HOST_NAME is not set"))
 
-	originalHostName := os.Getenv("HOST_NAME")
-	os.Setenv("HOST_NAME", "hostname")
+	t.Setenv("HOST_NAME", "hostname")
 
 	err = k8sAPIServer.init()
 	assert.NotNil(t, err)
 	assert.True(t, strings.HasPrefix(err.Error(), "environment variable K8S_NAMESPACE is not set"))
-
-	// restore env variables
-	os.Setenv("HOST_NAME", originalHostName)
 }

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 )
@@ -78,6 +78,6 @@ func assertMetricsMetadata(t *testing.T, expectedName string, metricsMetadata *m
 	assert.Equal(t, "metric_name", metricsMetadata.QueryMetricValuesMetadata[0].Name())
 	assert.Equal(t, "METRIC_NAME", metricsMetadata.QueryMetricValuesMetadata[0].ColumnName())
 	assert.Equal(t, "metric_unit", metricsMetadata.QueryMetricValuesMetadata[0].Unit())
-	assert.Equal(t, pdata.MetricDataTypeGauge, metricsMetadata.QueryMetricValuesMetadata[0].DataType().MetricDataType())
+	assert.Equal(t, pmetric.MetricTypeGauge, metricsMetadata.QueryMetricValuesMetadata[0].DataType().MetricType())
 	assert.Equal(t, metadata.IntValueType, metricsMetadata.QueryMetricValuesMetadata[0].ValueType())
 }

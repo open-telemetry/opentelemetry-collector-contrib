@@ -22,7 +22,8 @@ import (
 	"unicode"
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -47,6 +48,7 @@ type MetricsConverter struct {
 	metricTranslator   *MetricTranslator
 	filterSet          *dpfilters.FilterSet
 	datapointValidator *datapointValidator
+	translator         *signalfx.FromTranslator
 }
 
 // NewMetricsConverter creates a MetricsConverter from the passed in logger and
@@ -67,13 +69,14 @@ func NewMetricsConverter(
 		metricTranslator:   t,
 		filterSet:          fs,
 		datapointValidator: newDatapointValidator(logger, nonAlphanumericDimChars),
+		translator:         &signalfx.FromTranslator{},
 	}, nil
 }
 
 // MetricsToSignalFxV2 converts the passed in MetricsData to SFx datapoints,
 // returning those datapoints and the number of time series that had to be
 // dropped because of errors or warnings.
-func (c *MetricsConverter) MetricsToSignalFxV2(md pdata.Metrics) []*sfxpb.DataPoint {
+func (c *MetricsConverter) MetricsToSignalFxV2(md pmetric.Metrics) []*sfxpb.DataPoint {
 	var sfxDataPoints []*sfxpb.DataPoint
 
 	rms := md.ResourceMetrics()
@@ -81,13 +84,17 @@ func (c *MetricsConverter) MetricsToSignalFxV2(md pdata.Metrics) []*sfxpb.DataPo
 		rm := rms.At(i)
 		extraDimensions := resourceToDimensions(rm.Resource())
 
-		for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
-			ilm := rm.InstrumentationLibraryMetrics().At(j)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			ilm := rm.ScopeMetrics().At(j)
+			var initialDps []*sfxpb.DataPoint
+
 			for k := 0; k < ilm.Metrics().Len(); k++ {
-				dps := signalfx.FromMetric(ilm.Metrics().At(k), extraDimensions)
-				dps = c.translateAndFilter(dps)
-				sfxDataPoints = append(sfxDataPoints, dps...)
+				dps := c.translator.FromMetric(ilm.Metrics().At(k), extraDimensions)
+				initialDps = append(initialDps, dps...)
 			}
+
+			// Translate and filter all metrics within the current ScopeMetric
+			sfxDataPoints = append(sfxDataPoints, c.translateAndFilter(initialDps)...)
 		}
 	}
 
@@ -128,7 +135,7 @@ func filterKeyChars(str string, nonAlphanumericDimChars string) string {
 // resourceToDimensions will return a set of dimension from the
 // resource attributes, including a cloud host id (AWSUniqueId, gcp_id, etc.)
 // if it can be constructed from the provided metadata.
-func resourceToDimensions(res pdata.Resource) []*sfxpb.Dimension {
+func resourceToDimensions(res pcommon.Resource) []*sfxpb.Dimension {
 	var dims []*sfxpb.Dimension
 
 	if hostID, ok := splunk.ResourceToHostID(res); ok && hostID.Key != splunk.HostIDKeyHost {
@@ -138,7 +145,7 @@ func resourceToDimensions(res pdata.Resource) []*sfxpb.Dimension {
 		})
 	}
 
-	res.Attributes().Range(func(k string, val pdata.AttributeValue) bool {
+	res.Attributes().Range(func(k string, val pcommon.Value) bool {
 		// Never send the SignalFX token
 		if k == splunk.SFxAccessTokenLabel {
 			return true
@@ -167,6 +174,7 @@ const (
 	maxMetricNameLength     = 256
 	maxDimensionNameLength  = 128
 	maxDimensionValueLength = 256
+	maxNumberOfDimensions   = 36
 )
 
 var (
@@ -176,6 +184,8 @@ var (
 		"dimension name longer than %d characters", maxDimensionNameLength)
 	invalidDimensionValueReason = fmt.Sprintf(
 		"dimension value longer than %d characters", maxDimensionValueLength)
+	invalidNumberOfDimensions = fmt.Sprintf(
+		"number of dimensions is larger than %d", maxNumberOfDimensions)
 )
 
 type datapointValidator struct {
@@ -184,16 +194,16 @@ type datapointValidator struct {
 }
 
 func newDatapointValidator(logger *zap.Logger, nonAlphanumericDimChars string) *datapointValidator {
-	return &datapointValidator{logger: createSampledLogger(logger), nonAlphanumericDimChars: nonAlphanumericDimChars}
+	return &datapointValidator{logger: CreateSampledLogger(logger), nonAlphanumericDimChars: nonAlphanumericDimChars}
 }
 
 // sanitizeDataPoints sanitizes datapoints prior to dispatching them to the backend.
 // Datapoints that do not conform to the requirements are removed. This method drops
-// datapoints with metric name greater than 256 characters.
+// datapoints with metric name greater than 256 characters and number of dimensions greater than 36.
 func (dpv *datapointValidator) sanitizeDataPoints(dps []*sfxpb.DataPoint) []*sfxpb.DataPoint {
 	resultDatapointsLen := 0
 	for dpIndex, dp := range dps {
-		if dpv.isValidMetricName(dp.Metric) {
+		if dpv.isValidMetricName(dp.Metric) && dpv.isValidNumberOfDimension(dp) {
 			dp.Dimensions = dpv.sanitizeDimensions(dp.Dimensions)
 			if resultDatapointsLen < dpIndex {
 				dps[resultDatapointsLen] = dp
@@ -227,10 +237,22 @@ func (dpv *datapointValidator) sanitizeDimensions(dimensions []*sfxpb.Dimension)
 
 func (dpv *datapointValidator) isValidMetricName(name string) bool {
 	if len(name) > maxMetricNameLength {
-		dpv.logger.Warn("dropping datapoint",
+		dpv.logger.Debug("dropping datapoint",
 			zap.String("reason", invalidMetricNameReason),
 			zap.String("metric_name", name),
 			zap.Int("metric_name_length", len(name)),
+		)
+		return false
+	}
+	return true
+}
+
+func (dpv *datapointValidator) isValidNumberOfDimension(dp *sfxpb.DataPoint) bool {
+	if len(dp.Dimensions) > maxNumberOfDimensions {
+		dpv.logger.Debug("dropping datapoint",
+			zap.String("reason", invalidNumberOfDimensions),
+			zap.String("datapoint", DatapointToString(dp)),
+			zap.Int("number_of_dimensions", len(dp.Dimensions)),
 		)
 		return false
 	}
@@ -243,7 +265,7 @@ func (dpv *datapointValidator) isValidDimension(dimension *sfxpb.Dimension) bool
 
 func (dpv *datapointValidator) isValidDimensionName(name string) bool {
 	if len(name) > maxDimensionNameLength {
-		dpv.logger.Warn("dropping dimension",
+		dpv.logger.Debug("dropping dimension",
 			zap.String("reason", invalidDimensionNameReason),
 			zap.String("dimension_name", name),
 			zap.Int("dimension_name_length", len(name)),
@@ -255,7 +277,7 @@ func (dpv *datapointValidator) isValidDimensionName(name string) bool {
 
 func (dpv *datapointValidator) isValidDimensionValue(value, name string) bool {
 	if len(value) > maxDimensionValueLength {
-		dpv.logger.Warn("dropping dimension",
+		dpv.logger.Debug("dropping dimension",
 			zap.String("dimension_name", name),
 			zap.String("reason", invalidDimensionValueReason),
 			zap.String("dimension_value", value),
@@ -266,8 +288,8 @@ func (dpv *datapointValidator) isValidDimensionValue(value, name string) bool {
 	return true
 }
 
-// Copied from https://github.com/open-telemetry/opentelemetry-collector/blob/v0.26.0/exporter/exporterhelper/queued_retry.go#L108
-func createSampledLogger(logger *zap.Logger) *zap.Logger {
+// CreateSampledLogger was copied from https://github.com/open-telemetry/opentelemetry-collector/blob/v0.26.0/exporter/exporterhelper/queued_retry.go#L108
+func CreateSampledLogger(logger *zap.Logger) *zap.Logger {
 	if logger.Core().Enabled(zapcore.DebugLevel) {
 		// Debugging is enabled. Don't do any sampling.
 		return logger
@@ -294,7 +316,7 @@ func DatapointToString(dp *sfxpb.DataPoint) string {
 
 	var dimsStr string
 	for _, dim := range dp.Dimensions {
-		dimsStr = dimsStr + dim.String()
+		dimsStr += dim.String()
 	}
 
 	return fmt.Sprintf("%s: %s (%s) %s\n%s", dp.Metric, dp.Value.String(), dpTypeToString(*dp.MetricType), tsStr, dimsStr)

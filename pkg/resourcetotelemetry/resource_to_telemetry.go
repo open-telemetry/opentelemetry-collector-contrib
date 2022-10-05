@@ -19,15 +19,17 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // Settings defines configuration for converting resource attributes to telemetry attributes.
 // When used, it must be embedded in the exporter configuration:
-// type Config struct {
-//   // ...
-//   resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
-// }
+//
+//	type Config struct {
+//	  // ...
+//	  resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
+//	}
 type Settings struct {
 	// Enabled indicates whether to convert resource attributes to telemetry attributes. Default is `false`.
 	Enabled bool `mapstructure:"enabled"`
@@ -37,7 +39,7 @@ type wrapperMetricsExporter struct {
 	component.MetricsExporter
 }
 
-func (wme *wrapperMetricsExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+func (wme *wrapperMetricsExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	return wme.MetricsExporter.ConsumeMetrics(ctx, convertToMetricsAttributes(md))
 }
 
@@ -55,19 +57,19 @@ func WrapMetricsExporter(set Settings, exporter component.MetricsExporter) compo
 	return &wrapperMetricsExporter{MetricsExporter: exporter}
 }
 
-func convertToMetricsAttributes(md pdata.Metrics) pdata.Metrics {
-	cloneMd := md.Clone()
+func convertToMetricsAttributes(md pmetric.Metrics) pmetric.Metrics {
+	cloneMd := pmetric.NewMetrics()
+	md.CopyTo(cloneMd)
 	rms := cloneMd.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		resource := rms.At(i).Resource()
 
-		ilms := rms.At(i).InstrumentationLibraryMetrics()
+		ilms := rms.At(i).ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
 			metricSlice := ilm.Metrics()
 			for k := 0; k < metricSlice.Len(); k++ {
-				metric := metricSlice.At(k)
-				addAttributesToMetric(&metric, resource.Attributes())
+				addAttributesToMetric(metricSlice.At(k), resource.Attributes())
 			}
 		}
 	}
@@ -75,48 +77,48 @@ func convertToMetricsAttributes(md pdata.Metrics) pdata.Metrics {
 }
 
 // addAttributesToMetric adds additional labels to the given metric
-func addAttributesToMetric(metric *pdata.Metric, labelMap pdata.AttributeMap) {
-	switch metric.DataType() {
-	case pdata.MetricDataTypeGauge:
+func addAttributesToMetric(metric pmetric.Metric, labelMap pcommon.Map) {
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		addAttributesToNumberDataPoints(metric.Gauge().DataPoints(), labelMap)
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		addAttributesToNumberDataPoints(metric.Sum().DataPoints(), labelMap)
-	case pdata.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		addAttributesToHistogramDataPoints(metric.Histogram().DataPoints(), labelMap)
-	case pdata.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		addAttributesToSummaryDataPoints(metric.Summary().DataPoints(), labelMap)
-	case pdata.MetricDataTypeExponentialHistogram:
+	case pmetric.MetricTypeExponentialHistogram:
 		addAttributesToExponentialHistogramDataPoints(metric.ExponentialHistogram().DataPoints(), labelMap)
 	}
 }
 
-func addAttributesToNumberDataPoints(ps pdata.NumberDataPointSlice, newAttributeMap pdata.AttributeMap) {
+func addAttributesToNumberDataPoints(ps pmetric.NumberDataPointSlice, newAttributeMap pcommon.Map) {
 	for i := 0; i < ps.Len(); i++ {
 		joinAttributeMaps(newAttributeMap, ps.At(i).Attributes())
 	}
 }
 
-func addAttributesToHistogramDataPoints(ps pdata.HistogramDataPointSlice, newAttributeMap pdata.AttributeMap) {
+func addAttributesToHistogramDataPoints(ps pmetric.HistogramDataPointSlice, newAttributeMap pcommon.Map) {
 	for i := 0; i < ps.Len(); i++ {
 		joinAttributeMaps(newAttributeMap, ps.At(i).Attributes())
 	}
 }
 
-func addAttributesToSummaryDataPoints(ps pdata.SummaryDataPointSlice, newAttributeMap pdata.AttributeMap) {
+func addAttributesToSummaryDataPoints(ps pmetric.SummaryDataPointSlice, newAttributeMap pcommon.Map) {
 	for i := 0; i < ps.Len(); i++ {
 		joinAttributeMaps(newAttributeMap, ps.At(i).Attributes())
 	}
 }
 
-func addAttributesToExponentialHistogramDataPoints(ps pdata.ExponentialHistogramDataPointSlice, newAttributeMap pdata.AttributeMap) {
+func addAttributesToExponentialHistogramDataPoints(ps pmetric.ExponentialHistogramDataPointSlice, newAttributeMap pcommon.Map) {
 	for i := 0; i < ps.Len(); i++ {
 		joinAttributeMaps(newAttributeMap, ps.At(i).Attributes())
 	}
 }
 
-func joinAttributeMaps(from, to pdata.AttributeMap) {
-	from.Range(func(k string, v pdata.AttributeValue) bool {
-		to.Upsert(k, v)
+func joinAttributeMaps(from, to pcommon.Map) {
+	from.Range(func(k string, v pcommon.Value) bool {
+		v.CopyTo(to.PutEmpty(k))
 		return true
 	})
 }

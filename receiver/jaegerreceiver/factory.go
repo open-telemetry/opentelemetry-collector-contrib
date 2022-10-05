@@ -18,9 +18,6 @@ package jaegerreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
-	"fmt"
-	"net"
-	"strconv"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -28,11 +25,11 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 const (
-	typeStr = "jaeger"
+	typeStr   = "jaeger"
+	stability = component.StabilityLevelBeta
 
 	// Protocol values.
 	protoGRPC          = "grpc"
@@ -41,19 +38,18 @@ const (
 	protoThriftCompact = "thrift_compact"
 
 	// Default endpoints to bind to.
-	defaultGRPCBindEndpoint            = "0.0.0.0:14250"
-	defaultHTTPBindEndpoint            = "0.0.0.0:14268"
-	defaultThriftCompactBindEndpoint   = "0.0.0.0:6831"
-	defaultThriftBinaryBindEndpoint    = "0.0.0.0:6832"
-	defaultAgentRemoteSamplingHTTPPort = 5778
+	defaultGRPCBindEndpoint          = "0.0.0.0:14250"
+	defaultHTTPBindEndpoint          = "0.0.0.0:14268"
+	defaultThriftCompactBindEndpoint = "0.0.0.0:6831"
+	defaultThriftBinaryBindEndpoint  = "0.0.0.0:6832"
 )
 
 // NewFactory creates a new Jaeger receiver factory.
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithTraces(createTracesReceiver))
+		component.WithTracesReceiver(createTracesReceiver, stability))
 }
 
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
@@ -95,66 +91,25 @@ func createTracesReceiver(
 	// Error handling for the conversion is done in the Validate function from the Config object itself.
 
 	rCfg := cfg.(*Config)
-	remoteSamplingConfig := rCfg.RemoteSampling
 
 	var config configuration
 	// Set ports
 	if rCfg.Protocols.GRPC != nil {
 		config.CollectorGRPCServerSettings = *rCfg.Protocols.GRPC
-		config.CollectorGRPCPort, _ = extractPortFromEndpoint(rCfg.Protocols.GRPC.NetAddr.Endpoint)
 	}
 
 	if rCfg.Protocols.ThriftHTTP != nil {
-		config.CollectorHTTPPort, _ = extractPortFromEndpoint(rCfg.Protocols.ThriftHTTP.Endpoint)
 		config.CollectorHTTPSettings = *rCfg.ThriftHTTP
 	}
 
 	if rCfg.Protocols.ThriftBinary != nil {
-		config.AgentBinaryThriftConfig = rCfg.ThriftBinary.ServerConfigUDP
-		config.AgentBinaryThriftPort, _ = extractPortFromEndpoint(rCfg.Protocols.ThriftBinary.Endpoint)
+		config.AgentBinaryThrift = *rCfg.ThriftBinary
 	}
 
 	if rCfg.Protocols.ThriftCompact != nil {
-		config.AgentCompactThriftConfig = rCfg.ThriftCompact.ServerConfigUDP
-		config.AgentCompactThriftPort, _ = extractPortFromEndpoint(rCfg.Protocols.ThriftCompact.Endpoint)
-	}
-
-	if remoteSamplingConfig != nil {
-		config.RemoteSamplingClientSettings = remoteSamplingConfig.GRPCClientSettings
-		if len(config.RemoteSamplingClientSettings.Endpoint) == 0 {
-			config.RemoteSamplingClientSettings.Endpoint = defaultGRPCBindEndpoint
-		}
-
-		if len(remoteSamplingConfig.HostEndpoint) == 0 {
-			config.AgentHTTPPort = defaultAgentRemoteSamplingHTTPPort
-		} else {
-			config.AgentHTTPPort, _ = extractPortFromEndpoint(remoteSamplingConfig.HostEndpoint)
-		}
-
-		// strategies are served over grpc so if grpc is not enabled and strategies are present return an error
-		if len(remoteSamplingConfig.StrategyFile) != 0 {
-			config.RemoteSamplingStrategyFile = remoteSamplingConfig.StrategyFile
-			config.RemoteSamplingStrategyFileReloadInterval = remoteSamplingConfig.StrategyFileReloadInterval
-		}
+		config.AgentCompactThrift = *rCfg.ThriftCompact
 	}
 
 	// Create the receiver.
 	return newJaegerReceiver(rCfg.ID(), &config, nextConsumer, set), nil
-}
-
-// extract the port number from string in "address:port" format. If the
-// port number cannot be extracted returns an error.
-func extractPortFromEndpoint(endpoint string) (int, error) {
-	_, portStr, err := net.SplitHostPort(endpoint)
-	if err != nil {
-		return 0, fmt.Errorf("endpoint is not formatted correctly: %s", err.Error())
-	}
-	port, err := strconv.ParseInt(portStr, 10, 0)
-	if err != nil {
-		return 0, fmt.Errorf("endpoint port is not a number: %s", err.Error())
-	}
-	if port < 1 || port > 65535 {
-		return 0, fmt.Errorf("port number must be between 1 and 65535")
-	}
-	return int(port), nil
 }

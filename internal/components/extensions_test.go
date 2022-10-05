@@ -12,10 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
+//go:build !windows
+// +build !windows
+
 package components
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -31,12 +37,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -58,7 +66,7 @@ func TestDefaultExtensions(t *testing.T) {
 			extension: "health_check",
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["health_check"].CreateDefaultConfig().(*healthcheckextension.Config)
-				cfg.TCPAddr.Endpoint = endpoint
+				cfg.Endpoint = endpoint
 				return cfg
 			},
 		},
@@ -67,6 +75,13 @@ func TestDefaultExtensions(t *testing.T) {
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["pprof"].CreateDefaultConfig().(*pprofextension.Config)
 				cfg.TCPAddr.Endpoint = endpoint
+				return cfg
+			},
+		},
+		{
+			extension: "sigv4auth",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["sigv4auth"].CreateDefaultConfig().(*sigv4authextension.Config)
 				return cfg
 			},
 		},
@@ -82,10 +97,12 @@ func TestDefaultExtensions(t *testing.T) {
 			extension: "basicauth",
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["basicauth"].CreateDefaultConfig().(*basicauthextension.Config)
-				f := testutil.NewTemporaryFile(t)
-				f.WriteString("username:password")
-				cfg.Htpasswd = basicauthextension.HtpasswdSettings{
-					File:   f.Name(),
+				// No need to clean up, t.TempDir will be deleted entirely.
+				fileName := filepath.Join(t.TempDir(), "random.file")
+				require.NoError(t, os.WriteFile(fileName, []byte("username:password"), 0600))
+
+				cfg.Htpasswd = &basicauthextension.HtpasswdSettings{
+					File:   fileName,
 					Inline: "username:password",
 				}
 				return cfg
@@ -172,8 +189,7 @@ func TestDefaultExtensions(t *testing.T) {
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["db_storage"].CreateDefaultConfig().(*dbstorage.Config)
 				cfg.DriverName = "sqlite3"
-				tempFolder := testutil.NewTemporaryDirectory(t)
-				cfg.DataSource = tempFolder + "/foo.db"
+				cfg.DataSource = filepath.Join(t.TempDir(), "foo.db")
 				return cfg
 			},
 		},
@@ -181,7 +197,7 @@ func TestDefaultExtensions(t *testing.T) {
 			extension: "file_storage",
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["file_storage"].CreateDefaultConfig().(*filestorage.Config)
-				cfg.Directory = testutil.NewTemporaryDirectory(t)
+				cfg.Directory = t.TempDir()
 				return cfg
 			},
 		},
@@ -195,6 +211,13 @@ func TestDefaultExtensions(t *testing.T) {
 		{
 			extension:     "k8s_observer",
 			skipLifecycle: true, // Requires a K8s api to interfact with and validate
+		},
+		{
+			extension: "headers_setter",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["headers_setter"].CreateDefaultConfig().(*headerssetterextension.Config)
+				return cfg
+			},
 		},
 	}
 

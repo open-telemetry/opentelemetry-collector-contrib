@@ -16,8 +16,6 @@ package awsutil
 
 import (
 	"errors"
-	"os"
-	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -69,9 +67,7 @@ func TestRegionEnv(t *testing.T) {
 	logger := zap.NewNop()
 	sessionCfg := CreateDefaultSessionConfig()
 	region := "us-east-1"
-	env := stashEnv()
-	defer popEnv(env)
-	os.Setenv("AWS_REGION", region)
+	t.Setenv("AWS_REGION", region)
 
 	var m = &mockConn{}
 	var expectedSession *session.Session
@@ -88,9 +84,7 @@ func TestGetAWSConfigSessionWithSessionErr(t *testing.T) {
 	sessionCfg := CreateDefaultSessionConfig()
 	sessionCfg.Region = ""
 	sessionCfg.NoVerifySSL = false
-	env := stashEnv()
-	defer popEnv(env)
-	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
+	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	m := new(mockConn)
 	m.On("getEC2Region", nil).Return("").Once()
 	var expectedSession *session.Session
@@ -122,10 +116,8 @@ func TestNewAWSSessionWithErr(t *testing.T) {
 	logger := zap.NewNop()
 	roleArn := "fake_arn"
 	region := "fake_region"
-	env := stashEnv()
-	defer popEnv(env)
-	os.Setenv("AWS_EC2_METADATA_DISABLED", "true")
-	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
+	t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
+	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	conn := &Conn{}
 	se, err := conn.newAWSSession(logger, roleArn, region)
 	assert.NotNil(t, err)
@@ -134,8 +126,8 @@ func TestNewAWSSessionWithErr(t *testing.T) {
 	se, err = conn.newAWSSession(logger, roleArn, region)
 	assert.NotNil(t, err)
 	assert.Nil(t, se)
-	os.Setenv("AWS_SDK_LOAD_CONFIG", "true")
-	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "regional")
+	t.Setenv("AWS_SDK_LOAD_CONFIG", "true")
+	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "regional")
 	se, _ = session.NewSession(&aws.Config{
 		Region: aws.String("us-east-1"),
 	})
@@ -160,9 +152,7 @@ func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
 
 func TestGetDefaultSession(t *testing.T) {
 	logger := zap.NewNop()
-	env := stashEnv()
-	defer popEnv(env)
-	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
+	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	_, err := GetDefaultSession(logger)
 	assert.NotNil(t, err)
 }
@@ -173,25 +163,7 @@ func TestGetSTSCreds(t *testing.T) {
 	roleArn := ""
 	_, err := getSTSCreds(logger, region, roleArn)
 	assert.Nil(t, err)
-	env := stashEnv()
-	defer popEnv(env)
-	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
+	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	_, err = getSTSCreds(logger, region, roleArn)
 	assert.NotNil(t, err)
-}
-
-func stashEnv() []string {
-	env := os.Environ()
-	os.Clearenv()
-
-	return env
-}
-
-func popEnv(env []string) {
-	os.Clearenv()
-
-	for _, e := range env {
-		p := strings.SplitN(e, "=", 2)
-		os.Setenv(p[0], p[1])
-	}
 }

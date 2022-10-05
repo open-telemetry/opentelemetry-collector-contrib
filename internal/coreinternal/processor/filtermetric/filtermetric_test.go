@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
@@ -42,8 +42,8 @@ var (
 	}
 )
 
-func createMetric(name string) pdata.Metric {
-	metric := pdata.NewMetric()
+func createMetric(name string) pmetric.Metric {
+	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	return metric
 }
@@ -52,7 +52,7 @@ func TestMatcherMatches(t *testing.T) {
 	tests := []struct {
 		name        string
 		cfg         *MatchProperties
-		metric      pdata.Metric
+		metric      pmetric.Metric
 		shouldMatch bool
 	}{
 		{

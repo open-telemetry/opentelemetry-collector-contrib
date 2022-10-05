@@ -14,27 +14,25 @@
 
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/translator"
 
-import (
-	"go.opentelemetry.io/collector/model/pdata"
-)
+import "go.opentelemetry.io/collector/pdata/pcommon"
 
-func addAnnotations(annos map[string]interface{}, attrs *pdata.AttributeMap) {
+func addAnnotations(annos map[string]interface{}, attrs pcommon.Map) {
 	for k, v := range annos {
 		switch t := v.(type) {
 		case int:
-			attrs.UpsertInt(k, int64(t))
+			attrs.PutInt(k, int64(t))
 		case int32:
-			attrs.UpsertInt(k, int64(t))
+			attrs.PutInt(k, int64(t))
 		case int64:
-			attrs.UpsertInt(k, t)
+			attrs.PutInt(k, t)
 		case string:
-			attrs.UpsertString(k, t)
+			attrs.PutString(k, t)
 		case bool:
-			attrs.UpsertBool(k, t)
+			attrs.PutBool(k, t)
 		case float32:
-			attrs.UpsertDouble(k, float64(t))
+			attrs.PutDouble(k, float64(t))
 		case float64:
-			attrs.UpsertDouble(k, t)
+			attrs.PutDouble(k, t)
 		default:
 		}
 	}

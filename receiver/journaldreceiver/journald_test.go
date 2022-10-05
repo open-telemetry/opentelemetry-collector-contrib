@@ -26,58 +26,59 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/service/servicetest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/journald"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, len(cfg.Receivers), 1)
+	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
 
-	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewComponentID("journald")])
+	assert.Equal(t, testdataConfigYaml(), cfg)
 }
 
-func TestDecodeInputConfigFailure(t *testing.T) {
+func TestInputConfigFailure(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	factory := NewFactory()
 	badCfg := &JournaldConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
+			Operators:        []operator.Config{},
 		},
-		Input: stanza.InputConfig{
-			"units":     map[string]interface{}{},
-			"priority":  "info",
-			"directory": "/run/log/journal",
-		},
+		InputConfig: func() journald.Config {
+			c := journald.NewConfig()
+			c.StartAt = "middle"
+			return *c
+		}(),
 	}
 	receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), badCfg, sink)
 	require.Error(t, err, "receiver creation should fail if input config isn't valid")
 	require.Nil(t, receiver, "receiver creation should fail if input config isn't valid")
 }
 
-func testdataConfigYamlAsMap() *JournaldConfig {
+func testdataConfigYaml() *JournaldConfig {
 	return &JournaldConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
+			Operators:        []operator.Config{},
 		},
-		Input: stanza.InputConfig{
-			"units": []interface{}{
-				"ssh",
-			},
-			"directory": "/run/log/journal",
-			"priority":  "info",
-		},
+		InputConfig: func() journald.Config {
+			c := journald.NewConfig()
+			c.Units = []string{"ssh"}
+			c.Priority = "info"
+			dir := "/run/log/journal"
+			c.Directory = &dir
+			return *c
+		}(),
 	}
 }

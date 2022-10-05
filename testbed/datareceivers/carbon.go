@@ -61,7 +61,7 @@ func (cr *CarbonDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ co
 		return err
 	}
 
-	return cr.receiver.Start(context.Background(), cr)
+	return cr.receiver.Start(context.Background(), componenttest.NewNopHost())
 }
 
 // Stop the receiver.

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
@@ -50,9 +50,10 @@ func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
 }
 
 // Unmarshal deserializes the records into cWMetrics and uses the
-// resourceMetricsBuilder to group them into a single pdata.Metrics.
+// resourceMetricsBuilder to group them into a single pmetric.Metrics.
 // Skips invalid cWMetrics received in the record and
-func (u Unmarshaler) Unmarshal(records [][]byte) (pdata.Metrics, error) {
+func (u Unmarshaler) Unmarshal(records [][]byte) (pmetric.Metrics, error) {
+	md := pmetric.NewMetrics()
 	builders := make(map[resourceAttributes]*resourceMetricsBuilder)
 	for recordIndex, record := range records {
 		// Multiple metrics in each record separated by newline character
@@ -85,7 +86,7 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (pdata.Metrics, error) {
 				}
 				mb, ok := builders[attrs]
 				if !ok {
-					mb = newResourceMetricsBuilder(attrs)
+					mb = newResourceMetricsBuilder(md, attrs)
 					builders[attrs] = mb
 				}
 				mb.AddMetric(metric)
@@ -94,12 +95,7 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (pdata.Metrics, error) {
 	}
 
 	if len(builders) == 0 {
-		return pdata.NewMetrics(), errInvalidRecords
-	}
-
-	md := pdata.NewMetrics()
-	for _, builder := range builders {
-		builder.Build(md.ResourceMetrics().AppendEmpty())
+		return pmetric.NewMetrics(), errInvalidRecords
 	}
 
 	return md, nil

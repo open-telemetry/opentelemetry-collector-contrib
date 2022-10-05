@@ -58,10 +58,14 @@ func (obs *observerHandler) shutdown() error {
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf("shutdown on %d receivers failed: %v", len(errs), multierr.Combine(errs...))
+		return fmt.Errorf("shutdown on %d receivers failed: %w", len(errs), multierr.Combine(errs...))
 	}
 
 	return nil
+}
+
+func (obs *observerHandler) ID() observer.NotifyID {
+	return observer.NotifyID(obs.config.ID().String())
 }
 
 // OnAdd responds to endpoint add notifications.
@@ -111,10 +115,21 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 				continue
 			}
 
+			resAttrs := map[string]string{}
+			for k, v := range template.ResourceAttributes {
+				strVal, ok := v.(string)
+				if !ok {
+					obs.logger.Info(fmt.Sprintf("ignoring unsupported `resource_attributes` %q value %v", k, v))
+					continue
+				}
+				resAttrs[k] = strVal
+			}
+
 			// Adds default and/or configured resource attributes (e.g. k8s.pod.uid) to resources
 			// as telemetry is emitted.
 			resourceEnhancer, err := newResourceEnhancer(
 				obs.config.ResourceAttributes,
+				resAttrs,
 				env,
 				e,
 				obs.nextConsumer,
@@ -127,8 +142,9 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 
 			rcvr, err := obs.runner.start(
 				receiverConfig{
-					id:     template.id,
-					config: resolvedConfig,
+					id:         template.id,
+					config:     resolvedConfig,
+					endpointID: e.ID,
 				},
 				resolvedDiscoveredConfig,
 				resourceEnhancer,

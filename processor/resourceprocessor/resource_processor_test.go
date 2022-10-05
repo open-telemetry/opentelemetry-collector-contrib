@@ -23,7 +23,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -170,40 +172,40 @@ func TestResourceProcessorError(t *testing.T) {
 	require.Nil(t, rlp)
 }
 
-func generateTraceData(attributes map[string]string) pdata.Traces {
+func generateTraceData(attributes map[string]string) ptrace.Traces {
 	td := testdata.GenerateTracesOneSpanNoResource()
 	if attributes == nil {
 		return td
 	}
 	resource := td.ResourceSpans().At(0).Resource()
 	for k, v := range attributes {
-		resource.Attributes().InsertString(k, v)
+		resource.Attributes().PutString(k, v)
 	}
 	resource.Attributes().Sort()
 	return td
 }
 
-func generateMetricData(attributes map[string]string) pdata.Metrics {
+func generateMetricData(attributes map[string]string) pmetric.Metrics {
 	md := testdata.GenerateMetricsOneMetricNoResource()
 	if attributes == nil {
 		return md
 	}
 	resource := md.ResourceMetrics().At(0).Resource()
 	for k, v := range attributes {
-		resource.Attributes().InsertString(k, v)
+		resource.Attributes().PutString(k, v)
 	}
 	resource.Attributes().Sort()
 	return md
 }
 
-func generateLogData(attributes map[string]string) pdata.Logs {
+func generateLogData(attributes map[string]string) plog.Logs {
 	ld := testdata.GenerateLogsOneLogRecordNoResource()
 	if attributes == nil {
 		return ld
 	}
 	resource := ld.ResourceLogs().At(0).Resource()
 	for k, v := range attributes {
-		resource.Attributes().InsertString(k, v)
+		resource.Attributes().PutString(k, v)
 	}
 	resource.Attributes().Sort()
 	return ld

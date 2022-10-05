@@ -19,11 +19,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestSpanShimList(t *testing.T) {
-	spans := pdata.NewResourceSpansSlice()
+	spans := ptrace.NewResourceSpansSlice()
 	spans.EnsureCapacity(2)
 	s1 := spans.AppendEmpty()
 	s2 := spans.AppendEmpty()
@@ -34,16 +34,16 @@ func TestSpanShimList(t *testing.T) {
 }
 
 func TestSpanShimList_Empty(t *testing.T) {
-	spans := pdata.NewResourceSpansSlice()
+	spans := ptrace.NewResourceSpansSlice()
 	wrapped := spanListWrap{spans}
 	assert.Equal(t, 0, wrapped.Len())
 }
 
 func TestSpanShim_Service(t *testing.T) {
-	span := pdata.NewResourceSpans()
+	span := ptrace.NewResourceSpans()
 	res := span.Resource()
 	attr := res.Attributes()
-	attr.InsertString("service.name", "shopping-cart")
+	attr.PutString("service.name", "shopping-cart")
 
 	wrapped := spanWrap{span}
 
@@ -54,10 +54,10 @@ func TestSpanShim_Service(t *testing.T) {
 }
 
 func TestSpanShim_Environment(t *testing.T) {
-	span := pdata.NewResourceSpans()
+	span := ptrace.NewResourceSpans()
 	res := span.Resource()
 	attr := res.Attributes()
-	attr.InsertString("deployment.environment", "prod")
+	attr.PutString("deployment.environment", "prod")
 
 	wrapped := spanWrap{span}
 
@@ -68,10 +68,10 @@ func TestSpanShim_Environment(t *testing.T) {
 }
 
 func TestSpanShim_SignalfxEnvironment(t *testing.T) {
-	span := pdata.NewResourceSpans()
+	span := ptrace.NewResourceSpans()
 	res := span.Resource()
 	attr := res.Attributes()
-	attr.InsertString("environment", "prod")
+	attr.PutString("environment", "prod")
 
 	wrapped := spanWrap{span}
 
@@ -82,7 +82,7 @@ func TestSpanShim_SignalfxEnvironment(t *testing.T) {
 }
 
 func TestSpanShim_Missing(t *testing.T) {
-	span := pdata.NewResourceSpans()
+	span := ptrace.NewResourceSpans()
 	wrapped := spanWrap{span}
 
 	_, ok := wrapped.Environment()
@@ -92,7 +92,7 @@ func TestSpanShim_Missing(t *testing.T) {
 }
 
 func TestSpanShim_ResourceNil(t *testing.T) {
-	span := pdata.NewResourceSpans()
+	span := ptrace.NewResourceSpans()
 
 	wrapped := spanWrap{span}
 
@@ -107,10 +107,10 @@ func TestSpanShim_ResourceNil(t *testing.T) {
 }
 
 func TestSpanShim_Tags(t *testing.T) {
-	span := pdata.NewResourceSpans()
+	span := ptrace.NewResourceSpans()
 	res := span.Resource()
 	attr := res.Attributes()
-	attr.InsertString("tag1", "tag1val")
+	attr.PutString("tag1", "tag1val")
 
 	wrapped := spanWrap{span}
 

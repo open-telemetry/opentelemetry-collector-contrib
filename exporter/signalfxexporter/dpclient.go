@@ -19,7 +19,6 @@ import (
 	"compress/gzip"
 	"context"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
@@ -28,8 +27,7 @@ import (
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
@@ -43,7 +41,7 @@ type sfxClientBase struct {
 	zippers   sync.Pool
 }
 
-var metricsMarshaler = otlp.NewJSONMetricsMarshaler()
+var metricsMarshaler = pmetric.NewJSONMarshaler()
 
 // avoid attempting to compress things that fit into a single ethernet frame
 func (s *sfxClientBase) getReader(b []byte) (io.Reader, bool, error) {
@@ -75,7 +73,7 @@ type sfxDPClient struct {
 
 func (s *sfxDPClient) pushMetricsData(
 	ctx context.Context,
-	md pdata.Metrics,
+	md pmetric.Metrics,
 ) (droppedDataPoints int, err error) {
 	rms := md.ResourceMetrics()
 	if rms.Len() == 0 {
@@ -91,7 +89,7 @@ func (s *sfxDPClient) pushMetricsData(
 		}
 	}
 
-	// All metrics in the pdata.Metrics will have the same access token because of the BatchPerResourceMetrics.
+	// All metrics in the pmetric.Metrics will have the same access token because of the BatchPerResourceMetrics.
 	metricToken := s.retrieveAccessToken(rms.At(0))
 
 	sfxDataPoints := s.converter.MetricsToSignalFxV2(md)
@@ -138,8 +136,10 @@ func (s *sfxDPClient) pushMetricsDataForToken(ctx context.Context, sfxDataPoints
 		return len(sfxDataPoints), err
 	}
 
-	io.Copy(ioutil.Discard, resp.Body)
-	resp.Body.Close()
+	defer func() {
+		_, _ = io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	err = splunk.HandleHTTPCode(resp)
 	if err != nil {
@@ -180,7 +180,7 @@ func (s *sfxDPClient) encodeBody(dps []*sfxpb.DataPoint) (bodyReader io.Reader, 
 	return s.getReader(body)
 }
 
-func (s *sfxDPClient) retrieveAccessToken(md pdata.ResourceMetrics) string {
+func (s *sfxDPClient) retrieveAccessToken(md pmetric.ResourceMetrics) string {
 	if !s.accessTokenPassthrough {
 		// Nothing to do if token is pass through not configured or resource is nil.
 		return ""
@@ -188,7 +188,7 @@ func (s *sfxDPClient) retrieveAccessToken(md pdata.ResourceMetrics) string {
 
 	attrs := md.Resource().Attributes()
 	if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok {
-		return accessToken.StringVal()
+		return accessToken.Str()
 	}
 	return ""
 }

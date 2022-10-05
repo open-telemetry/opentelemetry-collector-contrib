@@ -41,7 +41,7 @@ type PlaintextPathParser struct{}
 // description of the full line). The metric path is expected to be in the
 // following format:
 //
-// 	<metric_name>[;tag0;...;tagN]
+//	<metric_name>[;tag0;...;tagN]
 //
 // <metric_name> is the name of the metric and terminates either at the first ';'
 // or at the end of the path.

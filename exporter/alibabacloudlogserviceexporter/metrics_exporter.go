@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
@@ -37,8 +37,9 @@ func newMetricsExporter(set component.ExporterCreateSettings, cfg config.Exporte
 	}
 
 	return exporterhelper.NewMetricsExporter(
-		cfg,
+		context.TODO(),
 		set,
+		cfg,
 		l.pushMetricsData)
 }
 
@@ -49,7 +50,7 @@ type logServiceMetricsSender struct {
 
 func (s *logServiceMetricsSender) pushMetricsData(
 	_ context.Context,
-	md pdata.Metrics,
+	md pmetric.Metrics,
 ) error {
 	var err error
 	logs := metricsDataToLogServiceData(s.logger, md)

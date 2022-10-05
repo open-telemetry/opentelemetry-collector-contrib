@@ -25,7 +25,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
@@ -55,8 +56,8 @@ func (p *mockPusher) ForceFlush() error {
 func TestLogToCWLog(t *testing.T) {
 	tests := []struct {
 		name     string
-		resource pdata.Resource
-		log      pdata.LogRecord
+		resource pcommon.Resource
+		log      plog.LogRecord
 		want     *cloudwatchlogs.InputLogEvent
 		wantErr  bool
 	}{
@@ -66,16 +67,16 @@ func TestLogToCWLog(t *testing.T) {
 			log:      testLogRecord(),
 			want: &cloudwatchlogs.InputLogEvent{
 				Timestamp: aws.Int64(1609719139),
-				Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":255,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"},"resource":{"host":"abc123","node":5}}`),
+				Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":1,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"},"resource":{"host":"abc123","node":5}}`),
 			},
 		},
 		{
 			name:     "no resource",
-			resource: pdata.NewResource(),
+			resource: pcommon.NewResource(),
 			log:      testLogRecord(),
 			want: &cloudwatchlogs.InputLogEvent{
 				Timestamp: aws.Int64(1609719139),
-				Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":255,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"}}`),
+				Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":1,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"}}`),
 			},
 		},
 		{
@@ -108,90 +109,86 @@ func BenchmarkLogToCWLog(b *testing.B) {
 	resource := testResource()
 	log := testLogRecord()
 	for i := 0; i < b.N; i++ {
-		logToCWLog(attrsValue(resource.Attributes()), log)
+		_, err := logToCWLog(attrsValue(resource.Attributes()), log)
+		if err != nil {
+			b.Errorf("logToCWLog() failed %v", err)
+			return
+		}
 	}
 }
 
-func testResource() pdata.Resource {
-	resource := pdata.NewResource()
-	resource.Attributes().InsertString("host", "abc123")
-	resource.Attributes().InsertInt("node", 5)
+func testResource() pcommon.Resource {
+	resource := pcommon.NewResource()
+	resource.Attributes().PutString("host", "abc123")
+	resource.Attributes().PutInt("node", 5)
 	return resource
 }
 
-func testLogRecord() pdata.LogRecord {
-	record := pdata.NewLogRecord()
+func testLogRecord() plog.LogRecord {
+	record := plog.NewLogRecord()
 	record.SetSeverityNumber(5)
 	record.SetSeverityText("debug")
 	record.SetDroppedAttributesCount(4)
-	record.Body().SetStringVal("hello world")
-	record.Attributes().InsertInt("key1", 1)
-	record.Attributes().InsertString("key2", "attr2")
-	record.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-	record.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-	record.SetFlags(255)
+	record.Body().SetStr("hello world")
+	record.Attributes().PutInt("key1", 1)
+	record.Attributes().PutString("key2", "attr2")
+	record.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	record.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	record.SetFlags(plog.DefaultLogRecordFlags.WithIsSampled(true))
 	record.SetTimestamp(1609719139000000)
 	return record
 }
 
-func testLogRecordWithoutTrace() pdata.LogRecord {
-	record := pdata.NewLogRecord()
+func testLogRecordWithoutTrace() plog.LogRecord {
+	record := plog.NewLogRecord()
 	record.SetSeverityNumber(5)
 	record.SetSeverityText("debug")
 	record.SetDroppedAttributesCount(4)
-	record.Body().SetStringVal("hello world")
-	record.Attributes().InsertInt("key1", 1)
-	record.Attributes().InsertString("key2", "attr2")
+	record.Body().SetStr("hello world")
+	record.Attributes().PutInt("key1", 1)
+	record.Attributes().PutString("key2", "attr2")
 	record.SetTimestamp(1609719139000000)
 	return record
 }
 
 func TestAttrValue(t *testing.T) {
 	tests := []struct {
-		name    string
-		builder func() pdata.AttributeValue
-		want    interface{}
+		name  string
+		value pcommon.Value
+		want  interface{}
 	}{
 		{
-			name: "null",
-			builder: func() pdata.AttributeValue {
-				return pdata.NewAttributeValueEmpty()
-			},
-			want: nil,
+			name:  "null",
+			value: pcommon.NewValueEmpty(),
+			want:  nil,
 		},
 		{
-			name: "bool",
-			builder: func() pdata.AttributeValue {
-				return pdata.NewAttributeValueBool(true)
-			},
-			want: true,
+			name:  "bool",
+			value: pcommon.NewValueBool(true),
+			want:  true,
 		},
 		{
-			name: "int",
-			builder: func() pdata.AttributeValue {
-				return pdata.NewAttributeValueInt(5)
-			},
-			want: int64(5),
+			name:  "int",
+			value: pcommon.NewValueInt(5),
+			want:  int64(5),
 		},
 		{
-			name: "double",
-			builder: func() pdata.AttributeValue {
-				return pdata.NewAttributeValueDouble(6.7)
-			},
-			want: float64(6.7),
+			name:  "double",
+			value: pcommon.NewValueDouble(6.7),
+			want:  float64(6.7),
 		},
 		{
 			name: "map",
-			builder: func() pdata.AttributeValue {
-				mAttr := pdata.NewAttributeValueMap()
-				m := mAttr.MapVal()
-				m.InsertString("key1", "value1")
-				m.InsertNull("key2")
-				m.InsertBool("key3", true)
-				m.InsertInt("key4", 4)
-				m.InsertDouble("key5", 5.6)
+			value: func() pcommon.Value {
+				mAttr := pcommon.NewValueMap()
+				m := mAttr.Map()
+				m.PutString("key1", "value1")
+				m.PutEmpty("key2")
+				m.PutBool("key3", true)
+				m.PutInt("key4", 4)
+				m.PutDouble("key5", 5.6)
 				return mAttr
-			},
+			}(),
 			want: map[string]interface{}{
 				"key1": "value1",
 				"key2": nil,
@@ -202,27 +199,27 @@ func TestAttrValue(t *testing.T) {
 		},
 		{
 			name: "array",
-			builder: func() pdata.AttributeValue {
-				arrAttr := pdata.NewAttributeValueArray()
-				arr := arrAttr.SliceVal()
-				for _, av := range []pdata.AttributeValue{
-					pdata.NewAttributeValueDouble(1.2),
-					pdata.NewAttributeValueDouble(1.6),
-					pdata.NewAttributeValueBool(true),
-					pdata.NewAttributeValueString("hello"),
-					pdata.NewAttributeValueEmpty(),
+			value: func() pcommon.Value {
+				arrAttr := pcommon.NewValueSlice()
+				arr := arrAttr.Slice()
+				for _, av := range []pcommon.Value{
+					pcommon.NewValueDouble(1.2),
+					pcommon.NewValueDouble(1.6),
+					pcommon.NewValueBool(true),
+					pcommon.NewValueStr("hello"),
+					pcommon.NewValueEmpty(),
 				} {
 					tgt := arr.AppendEmpty()
 					av.CopyTo(tgt)
 				}
 				return arrAttr
-			},
+			}(),
 			want: []interface{}{1.2, 1.6, true, "hello", nil},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := attrValue(tt.builder())
+			got := attrValue(tt.value)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -240,10 +237,10 @@ func TestConsumeLogs(t *testing.T) {
 	exp, err := newCwLogsPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
-	ld := pdata.NewLogs()
+	ld := plog.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
-	r.Resource().Attributes().UpsertString("hello", "test")
-	logRecords := r.InstrumentationLibraryLogs().AppendEmpty().LogRecords()
+	r.Resource().Attributes().PutString("hello", "test")
+	logRecords := r.ScopeLogs().AppendEmpty().LogRecords()
 	logRecords.EnsureCapacity(5)
 	logRecords.AppendEmpty()
 	assert.Equal(t, 1, ld.LogRecordCount())

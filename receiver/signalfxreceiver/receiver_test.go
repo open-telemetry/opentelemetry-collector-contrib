@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -35,14 +34,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -64,7 +63,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			args: args{
 				config: *defaultConfig,
 			},
-			wantStartErr: componenterror.ErrNilNextConsumer,
+			wantStartErr: component.ErrNilNextConsumer,
 		},
 		{
 			name: "default_endpoint",
@@ -98,8 +97,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 }
 
 func Test_signalfxeceiver_EndToEnd(t *testing.T) {
-	port := testutil.GetAvailablePort(t)
-	addr := fmt.Sprintf("localhost:%d", port)
+	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
 	sink := new(consumertest.MetricsSink)
@@ -107,54 +105,53 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	r.RegisterMetricsConsumer(sink)
 
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 	runtime.Gosched()
-	defer r.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, r.Shutdown(context.Background()))
+	}()
 
 	unixSecs := int64(1574092046)
 	unixNSecs := int64(11 * time.Millisecond)
-	ts := pdata.NewTimestampFromTime(time.Unix(unixSecs, unixNSecs))
+	ts := pcommon.NewTimestampFromTime(time.Unix(unixSecs, unixNSecs))
 
 	const doubleVal = 1234.5678
 	const int64Val = int64(123)
 
-	want := pdata.NewMetrics()
-	ilm := want.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+	want := pmetric.NewMetrics()
+	ilm := want.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 
 	{
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("gauge_double_with_dims")
-		m.SetDataType(pdata.MetricDataTypeGauge)
-		doublePt := m.Gauge().DataPoints().AppendEmpty()
+		doublePt := m.SetEmptyGauge().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(ts)
-		doublePt.SetDoubleVal(doubleVal)
+		doublePt.SetDoubleValue(doubleVal)
 	}
 	{
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("gauge_int_with_dims")
-		m.SetDataType(pdata.MetricDataTypeGauge)
-		int64Pt := m.Gauge().DataPoints().AppendEmpty()
+		int64Pt := m.SetEmptyGauge().DataPoints().AppendEmpty()
 		int64Pt.SetTimestamp(ts)
-		int64Pt.SetIntVal(int64Val)
+		int64Pt.SetIntValue(int64Val)
 	}
 	{
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("cumulative_double_with_dims")
-		m.SetDataType(pdata.MetricDataTypeSum)
-		m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		m.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		m.Sum().SetIsMonotonic(true)
 		doublePt := m.Sum().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(ts)
-		doublePt.SetDoubleVal(doubleVal)
+		doublePt.SetDoubleValue(doubleVal)
 	}
 	{
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("cumulative_int_with_dims")
-		m.SetDataType(pdata.MetricDataTypeSum)
-		m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		m.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		m.Sum().SetIsMonotonic(true)
 		int64Pt := m.Sum().DataPoints().AppendEmpty()
 		int64Pt.SetTimestamp(ts)
-		int64Pt.SetIntVal(int64Val)
+		int64Pt.SetIntValue(int64Val)
 	}
 
 	expCfg := &signalfxexporter.Config{
@@ -170,14 +167,16 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Eventually(t, func() bool {
-		conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
+		conn, err := net.Dial("tcp", addr)
 		if err == nil && conn != nil {
 			conn.Close()
 			return true
 		}
 		return false
 	}, 10*time.Second, 5*time.Millisecond, "failed to wait for the port to be open")
-	defer exp.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, exp.Shutdown(context.Background()))
+	}()
 	require.NoError(t, exp.ConsumeMetrics(context.Background(), want))
 
 	mds := sink.AllMetrics()
@@ -351,7 +350,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 			rcv.handleDatapointReq(w, tt.req)
 
 			resp := w.Result()
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 
 			var bodyStr string
@@ -526,7 +525,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 			rcv.handleEventReq(w, tt.req)
 
 			resp := w.Result()
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 
 			var bodyStr string
@@ -550,7 +549,9 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	r := newReceiver(componenttest.NewNopReceiverCreateSettings(), *cfg)
 	r.RegisterMetricsConsumer(sink)
-	defer r.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, r.Shutdown(context.Background()))
+	}()
 
 	mh := newAssertNoErrorHost(t)
 	require.NoError(t, r.Start(context.Background(), mh), "should not have failed to start metric reception")
@@ -561,19 +562,18 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 
 	msec := time.Now().Unix() * 1e3
 
-	want := pdata.NewMetrics()
-	m := want.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	want := pmetric.NewMetrics()
+	m := want.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 
-	m.SetDataType(pdata.MetricDataTypeGauge)
 	m.SetName("single")
-	dps := m.Gauge().DataPoints()
+	dps := m.SetEmptyGauge().DataPoints()
 	dp := dps.AppendEmpty()
-	dp.SetTimestamp(pdata.Timestamp(msec * 1e6))
-	dp.SetIntVal(13)
+	dp.SetTimestamp(pcommon.Timestamp(msec * 1e6))
+	dp.SetIntValue(13)
 
-	dp.Attributes().InsertString("k0", "v0")
-	dp.Attributes().InsertString("k1", "v1")
-	dp.Attributes().InsertString("k2", "v2")
+	dp.Attributes().PutString("k0", "v0")
+	dp.Attributes().PutString("k1", "v1")
+	dp.Attributes().PutString("k2", "v2")
 	dp.Attributes().Sort()
 
 	t.Log("Sending SignalFx metric data Request")
@@ -667,7 +667,7 @@ func Test_sfxReceiver_DatapointAccessTokenPassthrough(t *testing.T) {
 			rcv.handleDatapointReq(w, req)
 
 			resp := w.Result()
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 
 			var bodyStr string
@@ -681,7 +681,7 @@ func Test_sfxReceiver_DatapointAccessTokenPassthrough(t *testing.T) {
 			resource := mds[0].ResourceMetrics().At(0).Resource()
 			tokenLabel := ""
 			if label, ok := resource.Attributes().Get("com.splunk.signalfx.access_token"); ok {
-				tokenLabel = label.StringVal()
+				tokenLabel = label.Str()
 			}
 
 			if tt.passthrough {
@@ -744,7 +744,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 			rcv.handleEventReq(w, req)
 
 			resp := w.Result()
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 
 			var bodyStr string
@@ -758,7 +758,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 
 			tokenLabel := ""
 			if accessTokenAttr, ok := got[0].ResourceLogs().At(0).Resource().Attributes().Get("com.splunk.signalfx.access_token"); ok {
-				tokenLabel = accessTokenAttr.StringVal()
+				tokenLabel = accessTokenAttr.Str()
 			}
 
 			if tt.passthrough {

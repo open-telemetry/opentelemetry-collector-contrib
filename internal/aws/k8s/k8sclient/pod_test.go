@@ -173,12 +173,18 @@ var podArray = []interface{}{
 	},
 }
 
+// workaround to avoid "unused" lint errors which test is skipped
+var skip = func(t *testing.T, why string) {
+	t.Skip(why)
+}
+
 func TestPodClient_NamespaceToRunningPodNum(t *testing.T) {
+	skip(t, "Flaky test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11078")
 	setOption := podSyncCheckerOption(&mockReflectorSyncChecker{})
 
 	fakeClientSet := fake.NewSimpleClientset()
 	client := newPodClient(fakeClientSet, zap.NewNop(), setOption)
-	client.store.Replace(podArray, "")
+	assert.NoError(t, client.store.Replace(podArray, ""))
 	client.refresh()
 
 	expectedMap := map[string]int{

@@ -1,5 +1,10 @@
 name: mysqlreceiver
 
+resource_attributes:
+  mysql.instance.endpoint:
+    description: Endpoint of the MySQL instance.
+    type: string
+
 attributes:
   buffer_pool_pages:
     value: kind
@@ -57,6 +62,19 @@ attributes:
     value: kind
     description: The thread count type.
     enum: [cached, connected, created, running]
+  schema:
+    value: schema
+    description: The schema of the object.
+  io_waits_operations:
+    value: operation
+    description: The io_waits operation type.
+    enum: [delete, fetch, insert, update]
+  table_name:
+    value: table
+    description: Table name for event or process.
+  index_name:
+    value: index
+    description: The name of the index.
 
 metrics:
   mysql.buffer_pool.pages:
@@ -65,6 +83,7 @@ metrics:
     unit: 1
     sum:
       value_type: int
+      input_type: string
       monotonic: false
       aggregation: cumulative
     attributes: [buffer_pool_pages]
@@ -83,6 +102,7 @@ metrics:
     unit: 1
     sum:
       value_type: int
+      input_type: string
       monotonic: true
       aggregation: cumulative
   mysql.buffer_pool.operations:
@@ -91,6 +111,7 @@ metrics:
     unit: 1
     sum:
       value_type: int
+      input_type: string
       monotonic: true
       aggregation: cumulative
     attributes: [buffer_pool_operations]
@@ -100,6 +121,7 @@ metrics:
     unit: By
     sum:
       value_type: int
+      input_type: string
       monotonic: false
       aggregation: cumulative
   mysql.buffer_pool.usage:
@@ -117,6 +139,7 @@ metrics:
     unit: 1
     sum:
       value_type: int
+      input_type: string
       monotonic: true
       aggregation: cumulative
     attributes: [command]
@@ -126,6 +149,7 @@ metrics:
     unit: 1
     sum:
       value_type: int
+      input_type: string
       monotonic: true
       aggregation: cumulative
     attributes: [handler]
@@ -135,51 +159,93 @@ metrics:
     unit: 1
     sum:
       value_type: int
+      input_type: string
       monotonic: true
       aggregation: cumulative
     attributes: [double_writes]
   mysql.log_operations:
     enabled: true
-    description: The number of InndoDB log operations.
+    description: The number of InnoDB log operations.
     unit: 1
     sum:
       value_type: int
+      input_type: string
       monotonic: true
       aggregation: cumulative
     attributes: [log_operations]
   mysql.operations:
     enabled: true
-    description: The number of InndoDB operations.
+    description: The number of InnoDB operations.
     unit: 1
     sum:
       value_type: int
+      input_type: string
       monotonic: true
       aggregation: cumulative
     attributes: [operations]
   mysql.page_operations:
     enabled: true
-    description: The number of InndoDB page operations.
+    description: The number of InnoDB page operations.
+    unit: 1
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+    attributes: [page_operations]
+  mysql.table.io.wait.count:
+    enabled: true
+    description: The total count of I/O wait events for a table.
     unit: 1
     sum:
       value_type: int
       monotonic: true
       aggregation: cumulative
-    attributes: [page_operations]
-  mysql.row_locks:
+    attributes: [io_waits_operations, table_name, schema]
+  mysql.table.io.wait.time:
     enabled: true
-    description: The number of InndoDB row locks.
+    description: The total time of I/O wait events for a table.
+    unit: ns
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: [io_waits_operations, table_name, schema]
+  mysql.index.io.wait.count:
+    enabled: true
+    description: The total count of I/O wait events for an index.
     unit: 1
     sum:
       value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: [io_waits_operations, table_name, schema, index_name]
+  mysql.index.io.wait.time:
+    enabled: true
+    description: The total time of I/O wait events for an index.
+    unit: ns
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: [io_waits_operations, table_name, schema, index_name]
+  mysql.row_locks:
+    enabled: true
+    description: The number of InnoDB row locks.
+    unit: 1
+    sum:
+      value_type: int
+      input_type: string
       monotonic: true
       aggregation: cumulative
     attributes: [row_locks]
   mysql.row_operations:
     enabled: true
-    description: The number of InndoDB row operations.
+    description: The number of InnoDB row operations.
     unit: 1
     sum:
       value_type: int
+      input_type: string
       monotonic: true
       aggregation: cumulative
     attributes: [row_operations]
@@ -189,6 +255,7 @@ metrics:
     unit: 1
     sum:
       value_type: int
+      input_type: string
       monotonic: true
       aggregation: cumulative
     attributes: [locks]
@@ -198,6 +265,7 @@ metrics:
     unit: 1
     sum:
       value_type: int
+      input_type: string
       monotonic: true
       aggregation: cumulative
     attributes: [sorts]
@@ -207,6 +275,7 @@ metrics:
     unit: 1
     sum:
       value_type: int
+      input_type: string
       monotonic: false
       aggregation: cumulative
     attributes: [threads]

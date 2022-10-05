@@ -43,5 +43,78 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
 			Path:             "./filename.json",
+			Rotation: &Rotation{
+				MaxMegabytes: 10,
+				MaxDays:      3,
+				MaxBackups:   3,
+				LocalTime:    true,
+			},
+			FormatType: formatTypeJSON,
 		})
+	e2 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "3")]
+	assert.Equal(t, e2,
+		&Config{
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "3")),
+			Path:             "./filename",
+			Rotation: &Rotation{
+				MaxMegabytes: 10,
+				MaxDays:      3,
+				MaxBackups:   3,
+				LocalTime:    true,
+			},
+			FormatType:  formatTypeProto,
+			Compression: compressionZSTD,
+		})
+	e3 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "no_rotation")]
+	assert.Equal(t, e3,
+		&Config{
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "no_rotation")),
+			Path:             "./foo",
+			FormatType:       formatTypeJSON,
+		})
+	e4 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "rotation_with_default_settings")]
+	assert.Equal(t, e4,
+		&Config{
+			ExporterSettings: config.NewExporterSettings(
+				config.NewComponentIDWithName(typeStr, "rotation_with_default_settings")),
+			Path:       "./foo",
+			FormatType: formatTypeJSON,
+			Rotation: &Rotation{
+				MaxBackups: defaultMaxBackups,
+			},
+		})
+	e5 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "rotation_with_custom_settings")]
+	assert.Equal(t, e5,
+		&Config{
+			ExporterSettings: config.NewExporterSettings(
+				config.NewComponentIDWithName(typeStr, "rotation_with_custom_settings")),
+			Path: "./foo",
+			Rotation: &Rotation{
+				MaxMegabytes: 1234,
+				MaxBackups:   defaultMaxBackups,
+			},
+			FormatType: formatTypeJSON,
+		})
+}
+
+func TestLoadConfigFormatError(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-format-error.yaml"), factories)
+	require.EqualError(t, err, "exporter \"file\" has invalid configuration: format type is not supported")
+	require.NotNil(t, cfg)
+}
+
+func TestLoadConfiCompressionError(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-compression-error.yaml"), factories)
+	require.EqualError(t, err, "exporter \"file\" has invalid configuration: compression is not supported")
+	require.NotNil(t, cfg)
 }

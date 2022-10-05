@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 // This file implements factory for awsxray receiver.
@@ -28,6 +27,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "mock_receiver"
+	// stability level of test component
+	stability = component.StabilityLevelInDevelopment
 
 	// Default endpoints to bind to.
 	defaultEndpoint = ":7276"
@@ -35,10 +36,10 @@ const (
 
 // NewFactory creates a factory for SAPM receiver.
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithTraces(createTracesReceiver))
+		component.WithTracesReceiver(createTracesReceiver, stability))
 }
 
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.

@@ -25,6 +25,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "parquet"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelInDevelopment
 )
 
 type Config struct {
@@ -34,12 +36,12 @@ type Config struct {
 
 // NewFactory creates a factory for the Parquet exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter),
-		exporterhelper.WithMetrics(createMetricsExporter),
-		exporterhelper.WithLogs(createLogsExporter))
+		component.WithTracesExporter(createTracesExporter, stability),
+		component.WithMetricsExporter(createMetricsExporter, stability),
+		component.WithLogsExporter(createLogsExporter, stability))
 }
 
 func createDefaultConfig() config.Exporter {
@@ -49,14 +51,15 @@ func createDefaultConfig() config.Exporter {
 }
 
 func createTracesExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	fe := &parquetExporter{path: cfg.(*Config).Path}
 	return exporterhelper.NewTracesExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		fe.consumeTraces,
 		exporterhelper.WithStart(fe.start),
 		exporterhelper.WithShutdown(fe.shutdown),
@@ -64,14 +67,15 @@ func createTracesExporter(
 }
 
 func createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	fe := &parquetExporter{path: cfg.(*Config).Path}
 	return exporterhelper.NewMetricsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		fe.consumeMetrics,
 		exporterhelper.WithStart(fe.start),
 		exporterhelper.WithShutdown(fe.shutdown),
@@ -79,14 +83,15 @@ func createMetricsExporter(
 }
 
 func createLogsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	fe := &parquetExporter{path: cfg.(*Config).Path}
 	return exporterhelper.NewLogsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		fe.consumeLogs,
 		exporterhelper.WithStart(fe.start),
 		exporterhelper.WithShutdown(fe.shutdown),

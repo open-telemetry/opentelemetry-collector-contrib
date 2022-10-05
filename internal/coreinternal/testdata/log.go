@@ -17,112 +17,98 @@ package testdata
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 var (
 	TestLogTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestLogTimestamp = pdata.NewTimestampFromTime(TestLogTime)
+	TestLogTimestamp = pcommon.NewTimestampFromTime(TestLogTime)
 )
 
-func GenerateLogsOneEmptyResourceLogs() pdata.Logs {
-	ld := pdata.NewLogs()
+func GenerateLogsOneEmptyResourceLogs() plog.Logs {
+	ld := plog.NewLogs()
 	ld.ResourceLogs().AppendEmpty()
 	return ld
 }
 
-func GenerateLogsNoLogRecords() pdata.Logs {
+func GenerateLogsNoLogRecords() plog.Logs {
 	ld := GenerateLogsOneEmptyResourceLogs()
 	initResource1(ld.ResourceLogs().At(0).Resource())
 	return ld
 }
 
-func GenerateLogsOneEmptyLogRecord() pdata.Logs {
+func GenerateLogsOneEmptyLogRecord() plog.Logs {
 	ld := GenerateLogsNoLogRecords()
 	rs0 := ld.ResourceLogs().At(0)
-	rs0.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
+	rs0.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	return ld
 }
 
-func GenerateLogsOneLogRecordNoResource() pdata.Logs {
+func GenerateLogsOneLogRecordNoResource() plog.Logs {
 	ld := GenerateLogsOneEmptyResourceLogs()
 	rs0 := ld.ResourceLogs().At(0)
-	fillLogOne(rs0.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty())
+	fillLogOne(rs0.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty())
 	return ld
 }
 
-func GenerateLogsOneLogRecord() pdata.Logs {
+func GenerateLogsOneLogRecord() plog.Logs {
 	ld := GenerateLogsOneEmptyLogRecord()
-	fillLogOne(ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0))
+	fillLogOne(ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0))
 	return ld
 }
 
-func GenerateLogsTwoLogRecordsSameResource() pdata.Logs {
+func GenerateLogsTwoLogRecordsSameResource() plog.Logs {
 	ld := GenerateLogsOneEmptyLogRecord()
-	logs := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords()
+	logs := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	fillLogOne(logs.At(0))
 	fillLogTwo(logs.AppendEmpty())
 	return ld
 }
 
-func GenerateLogsTwoLogRecordsSameResourceOneDifferent() pdata.Logs {
-	ld := pdata.NewLogs()
-	rl0 := ld.ResourceLogs().AppendEmpty()
-	initResource1(rl0.Resource())
-	logs := rl0.InstrumentationLibraryLogs().AppendEmpty().LogRecords()
-	fillLogOne(logs.AppendEmpty())
-	fillLogTwo(logs.AppendEmpty())
-	rl1 := ld.ResourceLogs().AppendEmpty()
-	initResource2(rl1.Resource())
-	fillLogThree(rl1.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty())
-	return ld
-}
-func fillLogOne(log pdata.LogRecord) {
-	log.SetName("logA")
+func fillLogOne(log plog.LogRecord) {
 	log.SetTimestamp(TestLogTimestamp)
 	log.SetDroppedAttributesCount(1)
-	log.SetSeverityNumber(pdata.SeverityNumberINFO)
+	log.SetSeverityNumber(plog.SeverityNumberInfo)
 	log.SetSeverityText("Info")
-	log.SetSpanID(pdata.NewSpanID([8]byte{0x01, 0x02, 0x04, 0x08}))
-	log.SetTraceID(pdata.NewTraceID([16]byte{0x08, 0x04, 0x02, 0x01}))
+	log.SetSpanID([8]byte{0x01, 0x02, 0x04, 0x08})
+	log.SetTraceID([16]byte{0x08, 0x04, 0x02, 0x01})
 
 	attrs := log.Attributes()
-	attrs.InsertString("app", "server")
-	attrs.InsertInt("instance_num", 1)
+	attrs.PutString("app", "server")
+	attrs.PutInt("instance_num", 1)
 
-	log.Body().SetStringVal("This is a log message")
+	log.Body().SetStr("This is a log message")
 }
 
-func fillLogTwo(log pdata.LogRecord) {
-	log.SetName("logB")
+func fillLogTwo(log plog.LogRecord) {
 	log.SetTimestamp(TestLogTimestamp)
 	log.SetDroppedAttributesCount(1)
-	log.SetSeverityNumber(pdata.SeverityNumberINFO)
+	log.SetSeverityNumber(plog.SeverityNumberInfo)
 	log.SetSeverityText("Info")
 
 	attrs := log.Attributes()
-	attrs.InsertString("customer", "acme")
-	attrs.InsertString("env", "dev")
+	attrs.PutString("customer", "acme")
+	attrs.PutString("env", "dev")
 
-	log.Body().SetStringVal("something happened")
+	log.Body().SetStr("something happened")
 }
 
-func fillLogThree(log pdata.LogRecord) {
-	log.SetName("logC")
+func fillLogThree(log plog.LogRecord) {
 	log.SetTimestamp(TestLogTimestamp)
 	log.SetDroppedAttributesCount(1)
-	log.SetSeverityNumber(pdata.SeverityNumberWARN)
+	log.SetSeverityNumber(plog.SeverityNumberWarn)
 	log.SetSeverityText("Warning")
 
-	log.Body().SetStringVal("something else happened")
+	log.Body().SetStr("something else happened")
 }
 
-func GenerateLogsManyLogRecordsSameResource(count int) pdata.Logs {
+func GenerateLogsManyLogRecordsSameResource(count int) plog.Logs {
 	ld := GenerateLogsOneEmptyLogRecord()
-	logs := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords()
+	logs := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	logs.EnsureCapacity(count)
 	for i := 0; i < count; i++ {
-		var l pdata.LogRecord
+		var l plog.LogRecord
 		if i < logs.Len() {
 			l = logs.At(i)
 		} else {

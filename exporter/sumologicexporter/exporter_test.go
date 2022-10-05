@@ -27,12 +27,12 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-func LogRecordsToLogs(records []pdata.LogRecord) pdata.Logs {
-	logs := pdata.NewLogs()
-	logsSlice := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords()
+func LogRecordsToLogs(records []plog.LogRecord) plog.Logs {
+	logs := plog.NewLogs()
+	logsSlice := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 	for _, record := range records {
 		tgt := logsSlice.AppendEmpty()
 		record.CopyTo(tgt)
@@ -99,9 +99,9 @@ func TestResourceMerge(t *testing.T) {
 	test.exp.filter = f
 
 	logs := LogRecordsToLogs(exampleLog())
-	logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Attributes().InsertString("key1", "original_value")
-	logs.ResourceLogs().At(0).Resource().Attributes().InsertString("key1", "overwrite_value")
-	logs.ResourceLogs().At(0).Resource().Attributes().InsertString("key2", "additional_value")
+	logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("key1", "original_value")
+	logs.ResourceLogs().At(0).Resource().Attributes().PutString("key1", "overwrite_value")
+	logs.ResourceLogs().At(0).Resource().Attributes().PutString("key2", "additional_value")
 
 	err = test.exp.pushLogsData(context.Background(), logs)
 	assert.NoError(t, err)
@@ -392,8 +392,8 @@ gauge_metric_name{foo="bar",key2="value2",remote_name="156955",url="http://anoth
 		exampleIntGaugeMetric(),
 	}
 
-	records[0].attributes.InsertString("key1", "value1")
-	records[1].attributes.InsertString("key2", "value2")
+	records[0].attributes.PutString("key1", "value1")
+	records[1].attributes.PutString("key2", "value2")
 
 	metrics := metricPairToMetrics(records)
 	expected := metricPairToMetrics(records[:1])

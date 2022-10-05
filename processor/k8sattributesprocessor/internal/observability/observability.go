@@ -25,7 +25,7 @@ import (
 // mechanism should be used by the collector to discover views from all components
 
 func init() {
-	view.Register(
+	_ = view.Register(
 		viewPodsUpdated,
 		viewPodsAdded,
 		viewPodsDeleted,

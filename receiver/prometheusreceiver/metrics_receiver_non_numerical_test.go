@@ -21,7 +21,8 @@ import (
 
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 var staleNaNsPage1 = `
@@ -58,7 +59,7 @@ var (
 
 // TestStaleNaNs validates that staleness marker gets generated when the timeseries is no longer present
 func TestStaleNaNs(t *testing.T) {
-	mockResponses := make([]mockPrometheusResponse, 0)
+	var mockResponses []mockPrometheusResponse
 	for i := 0; i < totalScrapes; i++ {
 		if i%2 == 0 {
 			mockResponses = append(mockResponses, mockPrometheusResponse{
@@ -83,28 +84,28 @@ func TestStaleNaNs(t *testing.T) {
 	testComponent(t, targets, false, "")
 }
 
-func verifyStaleNaNs(t *testing.T, td *testData, resourceMetrics []*pdata.ResourceMetrics) {
+func verifyStaleNaNs(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumTotalScrapeResults(t, td, resourceMetrics)
-	metrics1 := resourceMetrics[0].InstrumentationLibraryMetrics().At(0).Metrics()
-	ts1 := getTS(metrics1)
+	metrics1 := resourceMetrics[0].ScopeMetrics().At(0).Metrics()
+	ts := getTS(metrics1)
 	for i := 0; i < totalScrapes; i++ {
 		if i%2 == 0 {
-			verifyStaleNaNPage1SuccessfulScrape(t, td, resourceMetrics[i], &ts1, i+1)
+			verifyStaleNaNsSuccessfulScrape(t, td, resourceMetrics[i], ts, i+1)
 		} else {
-			verifyStaleNanPage1FirstFailedScrape(t, td, resourceMetrics[i], &ts1, i+1)
+			verifyStaleNaNsFailedScrape(t, td, resourceMetrics[i], ts, i+1)
 		}
 	}
 }
 
-func verifyStaleNaNPage1SuccessfulScrape(t *testing.T, td *testData, resourceMetric *pdata.ResourceMetrics, startTimestamp *pdata.Timestamp, iteration int) {
+func verifyStaleNaNsSuccessfulScrape(t *testing.T, td *testData, resourceMetric pmetric.ResourceMetrics, startTimestamp pcommon.Timestamp, iteration int) {
 	// m1 has 4 metrics + 5 internal scraper metrics
 	assert.Equal(t, 9, metricsCount(resourceMetric))
 	wantAttributes := td.attributes // should want attribute be part of complete target or each scrape?
-	metrics1 := resourceMetric.InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics1 := resourceMetric.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",
-			compareMetricType(pdata.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -114,11 +115,11 @@ func verifyStaleNaNPage1SuccessfulScrape(t *testing.T, td *testData, resourceMet
 				},
 			}),
 		assertMetricPresent("http_requests_total",
-			compareMetricType(pdata.MetricDataTypeSum),
+			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
-						compareStartTimestamp(*startTimestamp),
+						compareStartTimestamp(startTimestamp),
 						compareTimestamp(ts1),
 						compareDoubleValue(100),
 						compareAttributes(map[string]string{"method": "post", "code": "200"}),
@@ -126,7 +127,7 @@ func verifyStaleNaNPage1SuccessfulScrape(t *testing.T, td *testData, resourceMet
 				},
 				{
 					numberPointComparator: []numberPointComparator{
-						compareStartTimestamp(*startTimestamp),
+						compareStartTimestamp(startTimestamp),
 						compareTimestamp(ts1),
 						compareDoubleValue(5),
 						compareAttributes(map[string]string{"method": "post", "code": "400"}),
@@ -134,26 +135,22 @@ func verifyStaleNaNPage1SuccessfulScrape(t *testing.T, td *testData, resourceMet
 				},
 			}),
 		assertMetricPresent("http_request_duration_seconds",
-			compareMetricType(pdata.MetricDataTypeHistogram),
+			compareMetricType(pmetric.MetricTypeHistogram),
 			[]dataPointExpectation{
 				{
 					histogramPointComparator: []histogramPointComparator{
-						// TODO: #6360 Prometheus Receiver Issue- start_timestamp are incorrect
-						// for Summary and Histogram metrics after a failed scrape
-						//compareHistogramStartTimestamp(*startTimestamp),
+						compareHistogramStartTimestamp(startTimestamp),
 						compareHistogramTimestamp(ts1),
 						compareHistogram(2500, 5000, []uint64{1000, 500, 500, 500}),
 					},
 				},
 			}),
 		assertMetricPresent("rpc_duration_seconds",
-			compareMetricType(pdata.MetricDataTypeSummary),
+			compareMetricType(pmetric.MetricTypeSummary),
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
-						// TODO: #6360 Prometheus Receiver Issue- start_timestamp are incorrect
-						// for Summary and Histogram metrics after a failed scrape
-						//compareSummaryStartTimestamp(*startTimestamp),
+						compareSummaryStartTimestamp(startTimestamp),
 						compareSummaryTimestamp(ts1),
 						compareSummary(1000, 5000, [][]float64{{0.01, 1}, {0.9, 5}, {0.99, 8}}),
 					},
@@ -163,18 +160,18 @@ func verifyStaleNaNPage1SuccessfulScrape(t *testing.T, td *testData, resourceMet
 	doCompare(t, fmt.Sprintf("validScrape-scrape-%d", iteration), wantAttributes, resourceMetric, e1)
 }
 
-func verifyStaleNanPage1FirstFailedScrape(t *testing.T, td *testData, resourceMetric *pdata.ResourceMetrics, startTimestamp *pdata.Timestamp, iteration int) {
+func verifyStaleNaNsFailedScrape(t *testing.T, td *testData, resourceMetric pmetric.ResourceMetrics, startTimestamp pcommon.Timestamp, iteration int) {
 	// m1 has 4 metrics + 5 internal scraper metrics
 	assert.Equal(t, 9, metricsCount(resourceMetric))
 	wantAttributes := td.attributes
 	allMetrics := getMetrics(resourceMetric)
 	assertUp(t, 0, allMetrics)
 
-	metrics1 := resourceMetric.InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics1 := resourceMetric.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",
-			compareMetricType(pdata.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -184,40 +181,40 @@ func verifyStaleNanPage1FirstFailedScrape(t *testing.T, td *testData, resourceMe
 				},
 			}),
 		assertMetricPresent("http_requests_total",
-			compareMetricType(pdata.MetricDataTypeSum),
+			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
-						compareStartTimestamp(*startTimestamp),
+						compareStartTimestamp(startTimestamp),
 						compareTimestamp(ts1),
 						assertNumberPointFlagNoRecordedValue(),
 					},
 				},
 				{
 					numberPointComparator: []numberPointComparator{
-						compareStartTimestamp(*startTimestamp),
+						compareStartTimestamp(startTimestamp),
 						compareTimestamp(ts1),
 						assertNumberPointFlagNoRecordedValue(),
 					},
 				},
 			}),
 		assertMetricPresent("http_request_duration_seconds",
-			compareMetricType(pdata.MetricDataTypeHistogram),
+			compareMetricType(pmetric.MetricTypeHistogram),
 			[]dataPointExpectation{
 				{
 					histogramPointComparator: []histogramPointComparator{
-						compareHistogramStartTimestamp(*startTimestamp),
+						compareHistogramStartTimestamp(startTimestamp),
 						compareHistogramTimestamp(ts1),
 						assertHistogramPointFlagNoRecordedValue(),
 					},
 				},
 			}),
 		assertMetricPresent("rpc_duration_seconds",
-			compareMetricType(pdata.MetricDataTypeSummary),
+			compareMetricType(pmetric.MetricTypeSummary),
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
-						compareSummaryStartTimestamp(*startTimestamp),
+						compareSummaryStartTimestamp(startTimestamp),
 						compareSummaryTimestamp(ts1),
 						assertSummaryPointFlagNoRecordedValue(),
 					},
@@ -235,7 +232,7 @@ var normalNaNsPage1 = `
 go_threads NaN
 
 # HELP redis_connected_clients Redis connected clients
-redis_connected_clients{name="rough-snowflake-web",port="6380"} NaN 
+redis_connected_clients{name="rough-snowflake-web",port="6380"} NaN
 
 # HELP rpc_duration_seconds A summary of the RPC duration in seconds.
 # TYPE rpc_duration_seconds summary
@@ -261,7 +258,7 @@ func TestNormalNaNs(t *testing.T) {
 	testComponent(t, targets, false, "")
 }
 
-func verifyNormalNaNs(t *testing.T, td *testData, resourceMetrics []*pdata.ResourceMetrics) {
+func verifyNormalNaNs(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 
@@ -270,11 +267,11 @@ func verifyNormalNaNs(t *testing.T, td *testData, resourceMetrics []*pdata.Resou
 
 	wantAttributes := td.attributes
 
-	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",
-			compareMetricType(pdata.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -284,7 +281,7 @@ func verifyNormalNaNs(t *testing.T, td *testData, resourceMetrics []*pdata.Resou
 				},
 			}),
 		assertMetricPresent("redis_connected_clients",
-			compareMetricType(pdata.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -295,7 +292,7 @@ func verifyNormalNaNs(t *testing.T, td *testData, resourceMetrics []*pdata.Resou
 				},
 			}),
 		assertMetricPresent("rpc_duration_seconds",
-			compareMetricType(pdata.MetricDataTypeSummary),
+			compareMetricType(pmetric.MetricTypeSummary),
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
@@ -345,7 +342,7 @@ func TestInfValues(t *testing.T) {
 	testComponent(t, targets, false, "")
 }
 
-func verifyInfValues(t *testing.T, td *testData, resourceMetrics []*pdata.ResourceMetrics) {
+func verifyInfValues(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 
@@ -354,11 +351,11 @@ func verifyInfValues(t *testing.T, td *testData, resourceMetrics []*pdata.Resour
 
 	wantAttributes := td.attributes
 
-	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",
-			compareMetricType(pdata.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -368,7 +365,7 @@ func verifyInfValues(t *testing.T, td *testData, resourceMetrics []*pdata.Resour
 				},
 			}),
 		assertMetricPresent("redis_connected_clients",
-			compareMetricType(pdata.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -379,7 +376,7 @@ func verifyInfValues(t *testing.T, td *testData, resourceMetrics []*pdata.Resour
 				},
 			}),
 		assertMetricPresent("http_requests_total",
-			compareMetricType(pdata.MetricDataTypeSum),
+			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -391,7 +388,7 @@ func verifyInfValues(t *testing.T, td *testData, resourceMetrics []*pdata.Resour
 				},
 			}),
 		assertMetricPresent("rpc_duration_seconds",
-			compareMetricType(pdata.MetricDataTypeSummary),
+			compareMetricType(pmetric.MetricTypeSummary),
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{

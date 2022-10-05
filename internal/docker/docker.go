@@ -17,6 +17,7 @@ package docker // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -55,11 +56,13 @@ type Client struct {
 	logger               *zap.Logger
 }
 
-func NewDockerClient(config *Config, logger *zap.Logger) (*Client, error) {
+func NewDockerClient(config *Config, logger *zap.Logger, opts ...docker.Opt) (*Client, error) {
 	client, err := docker.NewClientWithOpts(
-		docker.WithHost(config.Endpoint),
-		docker.WithVersion(fmt.Sprintf("v%v", config.DockerAPIVersion)),
-		docker.WithHTTPHeaders(map[string]string{"User-Agent": userAgent}),
+		append([]docker.Opt{
+			docker.WithHost(config.Endpoint),
+			docker.WithVersion(fmt.Sprintf("v%v", config.DockerAPIVersion)),
+			docker.WithHTTPHeaders(map[string]string{"User-Agent": userAgent}),
+		}, opts...)...,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("could not create docker client: %w", err)
@@ -188,7 +191,7 @@ func (dc *Client) toStatsJSON(
 	containerStats.Body.Close()
 	if err != nil {
 		// EOF means there aren't any containerStats, perhaps because the container has been removed.
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			// It isn't indicative of actual error.
 			return nil, err
 		}
@@ -215,6 +218,7 @@ func (dc *Client) ContainerEventLoop(ctx context.Context) {
 		{Key: "event", Value: "destroy"},
 		{Key: "event", Value: "die"},
 		{Key: "event", Value: "pause"},
+		{Key: "event", Value: "rename"},
 		{Key: "event", Value: "stop"},
 		{Key: "event", Value: "start"},
 		{Key: "event", Value: "unpause"},

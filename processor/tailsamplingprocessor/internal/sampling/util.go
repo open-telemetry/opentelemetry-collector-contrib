@@ -14,29 +14,28 @@
 
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
-import "go.opentelemetry.io/collector/model/pdata"
+import (
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+)
 
 // hasResourceOrSpanWithCondition iterates through all the resources and instrumentation library spans until any
 // callback returns true.
 func hasResourceOrSpanWithCondition(
-	batches []pdata.Traces,
-	shouldSampleResource func(resource pdata.Resource) bool,
-	shouldSampleSpan func(span pdata.Span) bool,
+	td ptrace.Traces,
+	shouldSampleResource func(resource pcommon.Resource) bool,
+	shouldSampleSpan func(span ptrace.Span) bool,
 ) Decision {
-	for _, batch := range batches {
-		rspans := batch.ResourceSpans()
+	for i := 0; i < td.ResourceSpans().Len(); i++ {
+		rs := td.ResourceSpans().At(i)
 
-		for i := 0; i < rspans.Len(); i++ {
-			rs := rspans.At(i)
+		resource := rs.Resource()
+		if shouldSampleResource(resource) {
+			return Sampled
+		}
 
-			resource := rs.Resource()
-			if shouldSampleResource(resource) {
-				return Sampled
-			}
-
-			if hasInstrumentationLibrarySpanWithCondition(rs.InstrumentationLibrarySpans(), shouldSampleSpan) {
-				return Sampled
-			}
+		if hasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSampleSpan) {
+			return Sampled
 		}
 	}
 	return NotSampled
@@ -45,46 +44,38 @@ func hasResourceOrSpanWithCondition(
 // invertHasResourceOrSpanWithCondition iterates through all the resources and instrumentation library spans until any
 // callback returns false.
 func invertHasResourceOrSpanWithCondition(
-	batches []pdata.Traces,
-	shouldSampleResource func(resource pdata.Resource) bool,
-	shouldSampleSpan func(span pdata.Span) bool,
+	td ptrace.Traces,
+	shouldSampleResource func(resource pcommon.Resource) bool,
+	shouldSampleSpan func(span ptrace.Span) bool,
 ) Decision {
-	for _, batch := range batches {
-		rspans := batch.ResourceSpans()
+	for i := 0; i < td.ResourceSpans().Len(); i++ {
+		rs := td.ResourceSpans().At(i)
 
-		for i := 0; i < rspans.Len(); i++ {
-			rs := rspans.At(i)
+		resource := rs.Resource()
+		if !shouldSampleResource(resource) {
+			return InvertNotSampled
+		}
 
-			resource := rs.Resource()
-			if !shouldSampleResource(resource) {
-				return InvertNotSampled
-			}
-
-			if !invertHasInstrumentationLibrarySpanWithCondition(rs.InstrumentationLibrarySpans(), shouldSampleSpan) {
-				return InvertNotSampled
-			}
+		if !invertHasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSampleSpan) {
+			return InvertNotSampled
 		}
 	}
 	return InvertSampled
 }
 
 // hasSpanWithCondition iterates through all the instrumentation library spans until any callback returns true.
-func hasSpanWithCondition(batches []pdata.Traces, shouldSample func(span pdata.Span) bool) Decision {
-	for _, batch := range batches {
-		rspans := batch.ResourceSpans()
+func hasSpanWithCondition(td ptrace.Traces, shouldSample func(span ptrace.Span) bool) Decision {
+	for i := 0; i < td.ResourceSpans().Len(); i++ {
+		rs := td.ResourceSpans().At(i)
 
-		for i := 0; i < rspans.Len(); i++ {
-			rs := rspans.At(i)
-
-			if hasInstrumentationLibrarySpanWithCondition(rs.InstrumentationLibrarySpans(), shouldSample) {
-				return Sampled
-			}
+		if hasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSample) {
+			return Sampled
 		}
 	}
 	return NotSampled
 }
 
-func hasInstrumentationLibrarySpanWithCondition(ilss pdata.InstrumentationLibrarySpansSlice, check func(span pdata.Span) bool) bool {
+func hasInstrumentationLibrarySpanWithCondition(ilss ptrace.ScopeSpansSlice, check func(span ptrace.Span) bool) bool {
 	for i := 0; i < ilss.Len(); i++ {
 		ils := ilss.At(i)
 
@@ -99,7 +90,7 @@ func hasInstrumentationLibrarySpanWithCondition(ilss pdata.InstrumentationLibrar
 	return false
 }
 
-func invertHasInstrumentationLibrarySpanWithCondition(ilss pdata.InstrumentationLibrarySpansSlice, check func(span pdata.Span) bool) bool {
+func invertHasInstrumentationLibrarySpanWithCondition(ilss ptrace.ScopeSpansSlice, check func(span ptrace.Span) bool) bool {
 	for i := 0; i < ilss.Len(); i++ {
 		ils := ilss.At(i)
 

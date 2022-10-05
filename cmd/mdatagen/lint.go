@@ -30,7 +30,7 @@ func formatIdentifier(s string, exported bool) (string, error) {
 	// Convert various characters to . for strings.Title to operate on.
 	replace := strings.NewReplacer("_", ".", "-", ".", "<", ".", ">", ".", "/", ".", ":", ".")
 	str := replace.Replace(s)
-	str = strings.Title(str)
+	str = strings.Title(str) // nolint SA1019
 	str = strings.ReplaceAll(str, ".", "")
 
 	var word string

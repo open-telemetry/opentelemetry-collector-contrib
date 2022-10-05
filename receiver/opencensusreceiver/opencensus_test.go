@@ -19,9 +19,9 @@ package opencensusreceiver
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -44,8 +44,9 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -78,7 +79,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	url := fmt.Sprintf("http://%s/v1/trace", addr)
 
 	// Verify that CORS is not enabled by default, but that it gives a method not allowed error.
-	verifyCorsResp(t, url, "origin.com", http.StatusMethodNotAllowed, false)
+	verifyCorsResp(t, url, "origin.com", http.StatusNotImplemented, false)
 
 	traceJSON := []byte(`
     {
@@ -106,24 +107,14 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	resp, err := client.Do(req)
 	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
 
-	respBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Errorf("Error reading response from trace grpc-gateway, %v", err)
-	}
+	respBytes, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
 	respStr := string(respBytes)
 
-	err = resp.Body.Close()
-	if err != nil {
-		t.Errorf("Error closing response body, %v", err)
-	}
+	require.NoError(t, resp.Body.Close())
 
-	if resp.StatusCode != 200 {
-		t.Errorf("Unexpected status from trace grpc-gateway: %v", resp.StatusCode)
-	}
-
-	if respStr != "" {
-		t.Errorf("Got unexpected response from trace grpc-gateway: %v", respStr)
-	}
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Empty(t, respStr)
 
 	got := sink.AllTraces()
 	require.Len(t, got, 1)
@@ -219,9 +210,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 		t.Errorf("Error closing OPTIONS response body, %v", err)
 	}
 
-	if resp.StatusCode != wantStatus {
-		t.Errorf("Unexpected status from OPTIONS: %v", resp.StatusCode)
-	}
+	assert.Equal(t, wantStatus, resp.StatusCode)
 
 	gotAllowOrigin := resp.Header.Get("Access-Control-Allow-Origin")
 	gotAllowMethods := resp.Header.Get("Access-Control-Allow-Methods")
@@ -233,12 +222,8 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 		wantAllowMethods = "POST"
 	}
 
-	if gotAllowOrigin != wantAllowOrigin {
-		t.Errorf("Unexpected Access-Control-Allow-Origin: %v", gotAllowOrigin)
-	}
-	if gotAllowMethods != wantAllowMethods {
-		t.Errorf("Unexpected Access-Control-Allow-Methods: %v", gotAllowMethods)
-	}
+	assert.Equal(t, wantAllowOrigin, gotAllowOrigin)
+	assert.Equal(t, wantAllowMethods, gotAllowMethods)
 }
 
 func TestStopWithoutStartNeverCrashes(t *testing.T) {
@@ -280,7 +265,7 @@ func TestStartWithoutConsumersShouldFail(t *testing.T) {
 }
 
 func tempSocketName(t *testing.T) string {
-	tmpfile, err := ioutil.TempFile("", "sock")
+	tmpfile, err := os.CreateTemp("", "sock")
 	require.NoError(t, err)
 	require.NoError(t, tmpfile.Close())
 	socket := tmpfile.Name()
@@ -402,7 +387,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 		if err == nil {
 			for {
 				if _, err = stream.Recv(); err != nil {
-					if err == io.EOF {
+					if errors.Is(err, io.EOF) {
 						err = nil
 					}
 					break
@@ -430,12 +415,14 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
 				testTel, err := obsreporttest.SetupTelemetry()
 				require.NoError(t, err)
-				defer testTel.Shutdown(context.Background())
+				defer func() {
+					require.NoError(t, testTel.Shutdown(context.Background()))
+				}()
 
 				sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
 				var opts []ocOption
-				ocr, err := newOpenCensusReceiver(exporter.receiverID, "tcp", addr, nil, nil, componenttest.NewNopReceiverCreateSettings(), opts...)
+				ocr, err := newOpenCensusReceiver(exporter.receiverID, "tcp", addr, nil, nil, testTel.ToReceiverCreateSettings(), opts...)
 				require.Nil(t, err)
 				require.NotNil(t, ocr)
 
@@ -551,7 +538,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 		if err == nil {
 			for {
 				if _, err = stream.Recv(); err != nil {
-					if err == io.EOF {
+					if errors.Is(err, io.EOF) {
 						err = nil
 					}
 					break
@@ -579,12 +566,14 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
 				testTel, err := obsreporttest.SetupTelemetry()
 				require.NoError(t, err)
-				defer testTel.Shutdown(context.Background())
+				defer func() {
+					require.NoError(t, testTel.Shutdown(context.Background()))
+				}()
 
 				sink := &errOrSinkConsumer{MetricsSink: new(consumertest.MetricsSink)}
 
 				var opts []ocOption
-				ocr, err := newOpenCensusReceiver(exporter.receiverID, "tcp", addr, nil, nil, componenttest.NewNopReceiverCreateSettings(), opts...)
+				ocr, err := newOpenCensusReceiver(exporter.receiverID, "tcp", addr, nil, nil, testTel.ToReceiverCreateSettings(), opts...)
 				require.Nil(t, err)
 				require.NotNil(t, ocr)
 
@@ -662,7 +651,7 @@ func (esc *errOrSinkConsumer) Capabilities() consumer.Capabilities {
 }
 
 // ConsumeTraces stores traces to this sink.
-func (esc *errOrSinkConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (esc *errOrSinkConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	esc.mu.Lock()
 	defer esc.mu.Unlock()
 
@@ -674,7 +663,7 @@ func (esc *errOrSinkConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces
 }
 
 // ConsumeMetrics stores metrics to this sink.
-func (esc *errOrSinkConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+func (esc *errOrSinkConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	esc.mu.Lock()
 	defer esc.mu.Unlock()
 

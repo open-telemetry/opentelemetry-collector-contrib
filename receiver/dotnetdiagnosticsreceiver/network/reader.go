@@ -270,7 +270,7 @@ func (r *posReader) Position() int {
 // the current 4-byte alignment. This is to prevent integer overflow during
 // long-running usage.
 func (r *posReader) Reset() {
-	r.pos = r.pos % 4
+	r.pos %= 4
 }
 
 func (r *posReader) Flush() {

@@ -1,6 +1,11 @@
 # Metrics Transform Processor
 
-Supported pipeline types: metrics
+
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
 
 ## Description
 
@@ -283,7 +288,7 @@ operations:
 # Web Service (*)/Total Delete Requests     iis.requests{http_method=delete}
 # Web Service (*)/Total Get Requests     >  iis.requests{http_method=get}
 # Web Service (*)/Total Post Requests       iis.requests{http_method=post}
-metric_names: ^Web Service \(\*\)/Total (?P<http_method>.*) Requests$
+include: ^Web Service \(\*\)/Total (?P<http_method>.*) Requests$
 match_type: regexp
 action: combine
 new_name: iis.requests
@@ -311,3 +316,32 @@ operations:
   action: group
   group_resource_labels: {"resouce.type": "container", "source": "kubelet"}
 ```
+
+### Metric Transform Processor vs. [Attributes Processor for Metrics](../attributesprocessor)
+
+Regarding metric support, these two processors have overlapping functionality. They can both do simple modifications
+of metric attribute key-value pairs. As a general rule the attributes processor has more attribute related
+functionality, while the metrics transform processor can do much more data manipulation. The attributes processor
+is preferred when the only needed functionality is overlapping, as it natively uses the official OpenTelemetry
+data model. However, if the metric transform processor is already in use or its extra functionality is necessary,
+there's no need to migrate away from it.
+
+Shared functionality
+* Add attributes
+* Update values of attributes
+
+Attribute processor specific functionality
+* delete
+* hash
+* extract
+
+Metric transform processor specific functionality
+* Rename metrics
+* Delete data points
+* Toggle data type
+* Scale value
+* Aggregate across label sets
+* Aggregate across label values
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

@@ -20,7 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sync"
 
@@ -37,7 +37,7 @@ import (
 
 var gzipWriterPool = &sync.Pool{
 	New: func() interface{} {
-		return gzip.NewWriter(ioutil.Discard)
+		return gzip.NewWriter(io.Discard)
 	},
 }
 
@@ -80,7 +80,7 @@ func (sr *sapmReceiver) handleRequest(req *http.Request) error {
 			for i := 0; i < rSpans.Len(); i++ {
 				rSpan := rSpans.At(i)
 				attrs := rSpan.Resource().Attributes()
-				attrs.UpsertString(splunk.SFxAccessTokenLabel, accessToken)
+				attrs.PutString(splunk.SFxAccessTokenLabel, accessToken)
 			}
 		}
 	}
@@ -88,7 +88,7 @@ func (sr *sapmReceiver) handleRequest(req *http.Request) error {
 	// pass the trace data to the next consumer
 	err = sr.nextConsumer.ConsumeTraces(ctx, td)
 	if err != nil {
-		err = fmt.Errorf("error passing trace data to next consumer: %v", err.Error())
+		err = fmt.Errorf("error passing trace data to next consumer: %w", err)
 	}
 
 	sr.obsrecv.EndTracesOp(ctx, "protobuf", td.SpanCount(), err)
@@ -119,7 +119,10 @@ func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Reques
 	// write the response if client does not accept gzip encoding
 	if req.Header.Get(sapmprotocol.AcceptEncodingHeaderName) != sapmprotocol.GZipEncodingHeaderValue {
 		// write the response bytes
-		rw.Write(respBytes)
+		_, err = rw.Write(respBytes)
+		if err != nil {
+			rw.WriteHeader(http.StatusBadRequest)
+		}
 		return
 	}
 
@@ -150,11 +153,18 @@ func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Reques
 
 	// write the successfully gzipped payload
 	rw.Header().Set(sapmprotocol.ContentEncodingHeaderName, sapmprotocol.GZipEncodingHeaderValue)
-	rw.Write(gzipBuffer.Bytes())
+	_, err = rw.Write(gzipBuffer.Bytes())
+	if err != nil {
+		rw.WriteHeader(http.StatusBadRequest)
+	}
 }
 
 // Start starts the sapmReceiver's server.
 func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
+	// server.Handler will be nil on initial call, otherwise noop.
+	if sr.server != nil && sr.server.Handler != nil {
+		return nil
+	}
 	// set up the listener
 	ln, err := sr.config.HTTPServerSettings.ToListener()
 	if err != nil {

@@ -19,7 +19,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -38,18 +39,17 @@ func TestBuildCounterMetric(t *testing.T) {
 	}
 	isMonotonicCounter := false
 	metric := buildCounterMetric(parsedMetric, isMonotonicCounter, timeNow, lastUpdateInterval)
-	expectedMetrics := pdata.NewInstrumentationLibraryMetrics()
+	expectedMetrics := pmetric.NewScopeMetrics()
 	expectedMetric := expectedMetrics.Metrics().AppendEmpty()
 	expectedMetric.SetName("testCounter")
 	expectedMetric.SetUnit("meter")
-	expectedMetric.SetDataType(pdata.MetricDataTypeSum)
-	expectedMetric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+	expectedMetric.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 	expectedMetric.Sum().SetIsMonotonic(isMonotonicCounter)
 	dp := expectedMetric.Sum().DataPoints().AppendEmpty()
-	dp.SetIntVal(32)
-	dp.SetStartTimestamp(pdata.NewTimestampFromTime(lastUpdateInterval))
-	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
-	dp.Attributes().InsertString("mykey", "myvalue")
+	dp.SetIntValue(32)
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(lastUpdateInterval))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
+	dp.Attributes().PutString("mykey", "myvalue")
 	assert.Equal(t, metric, expectedMetrics)
 }
 
@@ -68,16 +68,15 @@ func TestBuildGaugeMetric(t *testing.T) {
 		unit:        "meter",
 	}
 	metric := buildGaugeMetric(parsedMetric, timeNow)
-	expectedMetrics := pdata.NewInstrumentationLibraryMetrics()
+	expectedMetrics := pmetric.NewScopeMetrics()
 	expectedMetric := expectedMetrics.Metrics().AppendEmpty()
 	expectedMetric.SetName("testGauge")
 	expectedMetric.SetUnit("meter")
-	expectedMetric.SetDataType(pdata.MetricDataTypeGauge)
-	dp := expectedMetric.Gauge().DataPoints().AppendEmpty()
-	dp.SetDoubleVal(32.3)
-	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
-	dp.Attributes().InsertString("mykey", "myvalue")
-	dp.Attributes().InsertString("mykey2", "myvalue2")
+	dp := expectedMetric.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetDoubleValue(32.3)
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
+	dp.Attributes().PutString("mykey", "myvalue")
+	dp.Attributes().PutString("mykey2", "myvalue2")
 	assert.Equal(t, metric, expectedMetrics)
 }
 
@@ -100,20 +99,19 @@ func TestBuildSummaryMetricUnsampled(t *testing.T) {
 		attrs:      attrs,
 	}
 
-	metric := pdata.NewInstrumentationLibraryMetrics()
+	metric := pmetric.NewScopeMetrics()
 	buildSummaryMetric(desc, unsampledMetric, timeNow.Add(-time.Minute), timeNow, statsDDefaultPercentiles, metric)
 
-	expectedMetric := pdata.NewInstrumentationLibraryMetrics()
+	expectedMetric := pmetric.NewScopeMetrics()
 	m := expectedMetric.Metrics().AppendEmpty()
 	m.SetName("testSummary")
-	m.SetDataType(pdata.MetricDataTypeSummary)
-	dp := m.Summary().DataPoints().AppendEmpty()
+	dp := m.SetEmptySummary().DataPoints().AppendEmpty()
 	dp.SetSum(21)
 	dp.SetCount(6)
-	dp.SetStartTimestamp(pdata.NewTimestampFromTime(timeNow.Add(-time.Minute)))
-	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(timeNow.Add(-time.Minute)))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	for _, kv := range desc.attrs.ToSlice() {
-		dp.Attributes().InsertString(string(kv.Key), kv.Value.AsString())
+		dp.Attributes().PutString(string(kv.Key), kv.Value.AsString())
 	}
 	quantile := []float64{0, 10, 50, 90, 95, 100}
 	value := []float64{1, 1, 3, 6, 6, 6}
@@ -181,22 +179,21 @@ func TestBuildSummaryMetricSampled(t *testing.T) {
 			attrs:      attrs,
 		}
 
-		metric := pdata.NewInstrumentationLibraryMetrics()
+		metric := pmetric.NewScopeMetrics()
 		buildSummaryMetric(desc, sampledMetric, timeNow.Add(-time.Minute), timeNow, test.percentiles, metric)
 
-		expectedMetric := pdata.NewInstrumentationLibraryMetrics()
+		expectedMetric := pmetric.NewScopeMetrics()
 		m := expectedMetric.Metrics().AppendEmpty()
 		m.SetName("testSummary")
-		m.SetDataType(pdata.MetricDataTypeSummary)
-		dp := m.Summary().DataPoints().AppendEmpty()
+		dp := m.SetEmptySummary().DataPoints().AppendEmpty()
 
 		dp.SetSum(test.sum)
 		dp.SetCount(test.count)
 
-		dp.SetStartTimestamp(pdata.NewTimestampFromTime(timeNow.Add(-time.Minute)))
-		dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(timeNow.Add(-time.Minute)))
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 		for _, kv := range desc.attrs.ToSlice() {
-			dp.Attributes().InsertString(string(kv.Key), kv.Value.AsString())
+			dp.Attributes().PutString(string(kv.Key), kv.Value.AsString())
 		}
 		for i := range test.percentiles {
 			eachQuantile := dp.QuantileValues().AppendEmpty()

@@ -19,20 +19,22 @@ import (
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/process"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
 // processMetadata stores process related metadata along
 // with the process handle, and provides a function to
-// initialize a pdata.Resource with the metadata
+// initialize a pcommon.Resource with the metadata
 
 type processMetadata struct {
 	pid        int32
+	parentPid  int32
 	executable *executableMetadata
 	command    *commandMetadata
 	username   string
 	handle     processHandle
+	createTime int64
 }
 
 type executableMetadata struct {
@@ -46,25 +48,28 @@ type commandMetadata struct {
 	commandLineSlice []string
 }
 
-func (m *processMetadata) initializeResource(resource pdata.Resource) {
-	attr := resource.Attributes()
-	attr.EnsureCapacity(6)
-	attr.InsertInt(conventions.AttributeProcessPID, int64(m.pid))
-	attr.InsertString(conventions.AttributeProcessExecutableName, m.executable.name)
-	attr.InsertString(conventions.AttributeProcessExecutablePath, m.executable.path)
+func (m *processMetadata) resourceOptions() []metadata.ResourceMetricsOption {
+	opts := make([]metadata.ResourceMetricsOption, 0, 6)
+	opts = append(opts,
+		metadata.WithProcessPid(int64(m.pid)),
+		metadata.WithProcessParentPid(int64(m.parentPid)),
+		metadata.WithProcessExecutableName(m.executable.name),
+		metadata.WithProcessExecutablePath(m.executable.path),
+	)
 	if m.command != nil {
-		attr.InsertString(conventions.AttributeProcessCommand, m.command.command)
+		opts = append(opts, metadata.WithProcessCommand(m.command.command))
 		if m.command.commandLineSlice != nil {
 			// TODO insert slice here once this is supported by the data model
 			// (see https://github.com/open-telemetry/opentelemetry-collector/pull/1142)
-			attr.InsertString(conventions.AttributeProcessCommandLine, strings.Join(m.command.commandLineSlice, " "))
+			opts = append(opts, metadata.WithProcessCommandLine(strings.Join(m.command.commandLineSlice, " ")))
 		} else {
-			attr.InsertString(conventions.AttributeProcessCommandLine, m.command.commandLine)
+			opts = append(opts, metadata.WithProcessCommandLine(m.command.commandLine))
 		}
 	}
 	if m.username != "" {
-		attr.InsertString(conventions.AttributeProcessOwner, m.username)
+		opts = append(opts, metadata.WithProcessOwner(m.username))
 	}
+	return opts
 }
 
 // processHandles provides a wrapper around []*process.Process
@@ -85,6 +90,9 @@ type processHandle interface {
 	Times() (*cpu.TimesStat, error)
 	MemoryInfo() (*process.MemoryInfoStat, error)
 	IOCounters() (*process.IOCountersStat, error)
+	NumThreads() (int32, error)
+	CreateTime() (int64, error)
+	Parent() (*process.Process, error)
 }
 
 type gopsProcessHandles struct {
@@ -110,4 +118,24 @@ func getProcessHandlesInternal() (processHandles, error) {
 	}
 
 	return &gopsProcessHandles{handles: processes}, nil
+}
+
+func parentPid(handle processHandle, pid int32) (int32, error) {
+	// special case for pid 0
+	if pid == 0 {
+		return 0, nil
+	}
+	parent, err := handle.Parent()
+
+	if err != nil {
+		// return pid of -1 along with error for all other problems retrieving parent pid
+		return -1, err
+	}
+
+	// if a process does not have a parent return 0
+	if parent == nil {
+		return 0, nil
+	}
+
+	return parent.Pid, nil
 }

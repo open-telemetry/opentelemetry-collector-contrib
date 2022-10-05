@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package metadataparser // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 )
@@ -44,39 +44,39 @@ type MetricType struct {
 	Monotonic   bool            `yaml:"monotonic"`
 }
 
-func (metricType MetricType) dataType() (pdata.MetricDataType, error) {
-	var dataType pdata.MetricDataType
+func (metricType MetricType) dataType() (pmetric.MetricType, error) {
+	var dataType pmetric.MetricType
 
 	switch metricType.DataType {
 	case GaugeMetricDataType:
-		dataType = pdata.MetricDataTypeGauge
+		dataType = pmetric.MetricTypeGauge
 	case SumMetricDataType:
-		dataType = pdata.MetricDataTypeSum
+		dataType = pmetric.MetricTypeSum
 	default:
-		return pdata.MetricDataTypeNone, errors.New("invalid data type received")
+		return pmetric.MetricTypeNone, errors.New("invalid data type received")
 	}
 
 	return dataType, nil
 }
 
-func (metricType MetricType) aggregationTemporality() (pdata.MetricAggregationTemporality, error) {
-	var aggregationTemporality pdata.MetricAggregationTemporality
+func (metricType MetricType) aggregationTemporality() (pmetric.MetricAggregationTemporality, error) {
+	var aggregationTemporality pmetric.MetricAggregationTemporality
 
 	switch metricType.Aggregation {
 	case DeltaAggregationType:
-		aggregationTemporality = pdata.MetricAggregationTemporalityDelta
+		aggregationTemporality = pmetric.MetricAggregationTemporalityDelta
 	case CumulativeAggregationType:
-		aggregationTemporality = pdata.MetricAggregationTemporalityCumulative
+		aggregationTemporality = pmetric.MetricAggregationTemporalityCumulative
 	case "":
-		aggregationTemporality = pdata.MetricAggregationTemporalityUnspecified
+		aggregationTemporality = pmetric.MetricAggregationTemporalityUnspecified
 	default:
-		return pdata.MetricAggregationTemporalityUnspecified, errors.New("invalid aggregation temporality received")
+		return pmetric.MetricAggregationTemporalityUnspecified, errors.New("invalid aggregation temporality received")
 	}
 
 	return aggregationTemporality, nil
 }
 
-func (metricType MetricType) toMetricDataType() (metadata.MetricDataType, error) {
+func (metricType MetricType) toMetricType() (metadata.MetricType, error) {
 	dataType, err := metricType.dataType()
 	if err != nil {
 		return nil, err
@@ -87,5 +87,5 @@ func (metricType MetricType) toMetricDataType() (metadata.MetricDataType, error)
 		return nil, err
 	}
 
-	return metadata.NewMetricDataType(dataType, aggregationTemporality, metricType.Monotonic), nil
+	return metadata.NewMetricType(dataType, aggregationTemporality, metricType.Monotonic), nil
 }

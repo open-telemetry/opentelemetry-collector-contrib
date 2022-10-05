@@ -21,23 +21,23 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 // This file implements factory for Zipkin receiver.
 
 const (
-	typeStr = "zipkin"
+	typeStr   = "zipkin"
+	stability = component.StabilityLevelBeta
 
 	defaultBindEndpoint = "0.0.0.0:9411"
 )
 
 // NewFactory creates a new Zipkin receiver factory
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithTraces(createTracesReceiver),
+		component.WithTracesReceiver(createTracesReceiver, stability),
 	)
 }
 

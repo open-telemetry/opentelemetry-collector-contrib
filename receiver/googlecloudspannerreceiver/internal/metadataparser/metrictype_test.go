@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,18 +19,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestDataType(t *testing.T) {
 	testCases := map[string]struct {
 		dataType         MetricDataType
-		expectedDataType pdata.MetricDataType
+		expectedDataType pmetric.MetricType
 		expectError      bool
 	}{
-		"Gauge":   {GaugeMetricDataType, pdata.MetricDataTypeGauge, false},
-		"Sum":     {SumMetricDataType, pdata.MetricDataTypeSum, false},
-		"Invalid": {UnknownMetricDataType, pdata.MetricDataTypeNone, true},
+		"Gauge":   {GaugeMetricDataType, pmetric.MetricTypeGauge, false},
+		"Sum":     {SumMetricDataType, pmetric.MetricTypeSum, false},
+		"Invalid": {UnknownMetricDataType, pmetric.MetricTypeNone, true},
 	}
 
 	for name, testCase := range testCases {
@@ -55,13 +55,13 @@ func TestDataType(t *testing.T) {
 func TestAggregationTemporality(t *testing.T) {
 	testCases := map[string]struct {
 		aggregationTemporality         AggregationType
-		expectedAggregationTemporality pdata.MetricAggregationTemporality
+		expectedAggregationTemporality pmetric.MetricAggregationTemporality
 		expectError                    bool
 	}{
-		"Cumulative": {CumulativeAggregationType, pdata.MetricAggregationTemporalityCumulative, false},
-		"Delta":      {DeltaAggregationType, pdata.MetricAggregationTemporalityDelta, false},
-		"Empty":      {"", pdata.MetricAggregationTemporalityUnspecified, false},
-		"Invalid":    {UnknownAggregationType, pdata.MetricAggregationTemporalityUnspecified, true},
+		"Cumulative": {CumulativeAggregationType, pmetric.MetricAggregationTemporalityCumulative, false},
+		"Delta":      {DeltaAggregationType, pmetric.MetricAggregationTemporalityDelta, false},
+		"Empty":      {"", pmetric.MetricAggregationTemporalityUnspecified, false},
+		"Invalid":    {UnknownAggregationType, pmetric.MetricAggregationTemporalityUnspecified, true},
 	}
 
 	for name, testCase := range testCases {
@@ -83,18 +83,18 @@ func TestAggregationTemporality(t *testing.T) {
 	}
 }
 
-func TestToMetricDataType(t *testing.T) {
+func TestToMetricType(t *testing.T) {
 	testCases := map[string]struct {
 		dataType                       MetricDataType
 		aggregationTemporality         AggregationType
-		expectedDataType               pdata.MetricDataType
-		expectedAggregationTemporality pdata.MetricAggregationTemporality
+		expectedDataType               pmetric.MetricType
+		expectedAggregationTemporality pmetric.MetricAggregationTemporality
 		isMonotonic                    bool
 		expectError                    bool
 	}{
-		"Happy path":          {GaugeMetricDataType, CumulativeAggregationType, pdata.MetricDataTypeGauge, pdata.MetricAggregationTemporalityCumulative, true, false},
-		"Invalid data type":   {"invalid", CumulativeAggregationType, pdata.MetricDataTypeNone, pdata.MetricAggregationTemporalityCumulative, true, true},
-		"Invalid aggregation": {GaugeMetricDataType, "invalid", pdata.MetricDataTypeGauge, pdata.MetricAggregationTemporalityUnspecified, true, true},
+		"Happy path":          {GaugeMetricDataType, CumulativeAggregationType, pmetric.MetricTypeGauge, pmetric.MetricAggregationTemporalityCumulative, true, false},
+		"Invalid data type":   {"invalid", CumulativeAggregationType, pmetric.MetricTypeNone, pmetric.MetricAggregationTemporalityCumulative, true, true},
+		"Invalid aggregation": {GaugeMetricDataType, "invalid", pmetric.MetricTypeGauge, pmetric.MetricAggregationTemporalityUnspecified, true, true},
 	}
 
 	for name, testCase := range testCases {
@@ -105,7 +105,7 @@ func TestToMetricDataType(t *testing.T) {
 				Monotonic:   testCase.isMonotonic,
 			}
 
-			metricDataType, err := metricType.toMetricDataType()
+			metricDataType, err := metricType.toMetricType()
 
 			if testCase.expectError {
 				require.Error(t, err)
@@ -113,7 +113,7 @@ func TestToMetricDataType(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, metricDataType)
-				assert.Equal(t, testCase.expectedDataType, metricDataType.MetricDataType())
+				assert.Equal(t, testCase.expectedDataType, metricDataType.MetricType())
 				assert.Equal(t, testCase.expectedAggregationTemporality, metricDataType.AggregationTemporality())
 				assert.Equal(t, testCase.isMonotonic, metricDataType.IsMonotonic())
 			}

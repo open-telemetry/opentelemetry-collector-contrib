@@ -19,7 +19,7 @@ import (
 	"math"
 	"math/big"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
 
@@ -51,11 +51,10 @@ func NewProbabilisticSampler(logger *zap.Logger, hashSalt string, samplingPercen
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (s *probabilisticSampler) Evaluate(traceID pdata.TraceID, _ *TraceData) (Decision, error) {
+func (s *probabilisticSampler) Evaluate(traceID pcommon.TraceID, _ *TraceData) (Decision, error) {
 	s.logger.Debug("Evaluating spans in probabilistic filter")
 
-	traceIDBytes := traceID.Bytes()
-	if hashTraceID(s.hashSalt, traceIDBytes[:]) <= s.threshold {
+	if hashTraceID(s.hashSalt, traceID[:]) <= s.threshold {
 		return Sampled, nil
 	}
 

@@ -17,12 +17,14 @@ package diskscraper
 import (
 	"context"
 	"errors"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -37,7 +39,13 @@ func TestScrape(t *testing.T) {
 		newErrRegex       string
 		initializationErr string
 		expectMetrics     int
-		expectedStartTime pdata.Timestamp
+		expectedStartTime pcommon.Timestamp
+		mutateScraper     func(*scraper)
+	}
+
+	metricsWithDirection := 3
+	if runtime.GOOS == "linux" {
+		metricsWithDirection++
 	}
 
 	testCases := []testCase{
@@ -45,6 +53,15 @@ func TestScrape(t *testing.T) {
 			name:          "Standard",
 			config:        Config{Metrics: metadata.DefaultMetricsSettings()},
 			expectMetrics: metricsLen,
+		},
+		{
+			name:          "With direction removed",
+			config:        Config{Metrics: metadata.DefaultMetricsSettings()},
+			expectMetrics: metricsLen + metricsWithDirection,
+			mutateScraper: func(s *scraper) {
+				s.emitMetricsWithDirectionAttribute = false
+				s.emitMetricsWithoutDirectionAttribute = true
+			},
 		},
 		{
 			name:              "Validate Start Time",
@@ -97,7 +114,10 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newDiskScraper(context.Background(), &test.config)
+			scraper, err := newDiskScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &test.config)
+			if test.mutateScraper != nil {
+				test.mutateScraper(scraper)
+			}
 			if test.newErrRegex != "" {
 				require.Error(t, err)
 				require.Regexp(t, test.newErrRegex, err)
@@ -120,7 +140,11 @@ func TestScrape(t *testing.T) {
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
 			assert.Equal(t, test.expectMetrics, md.MetricCount())
-			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+			if md.ResourceMetrics().Len() == 0 {
+				return
+			}
+
+			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			assert.Equal(t, test.expectMetrics, metrics.Len())
 
 			reportedMetricsCount := map[string]int{}
@@ -129,17 +153,33 @@ func TestScrape(t *testing.T) {
 				reportedMetricsCount[metric.Name()]++
 				switch metric.Name() {
 				case "system.disk.io":
-					assertInt64DiskMetricValid(t, metric, test.expectedStartTime)
+					assertInt64DiskMetricValid(t, metric, true, test.expectedStartTime)
+				case "system.disk.io.read":
+					assertInt64DiskMetricValid(t, metric, false, test.expectedStartTime)
+				case "system.disk.io.write":
+					assertInt64DiskMetricValid(t, metric, false, test.expectedStartTime)
 				case "system.disk.io_time":
 					assertDoubleDiskMetricValid(t, metric, false, test.expectedStartTime)
 				case "system.disk.operation_time":
 					assertDoubleDiskMetricValid(t, metric, true, test.expectedStartTime)
+				case "system.disk.operation_time.read":
+					assertDoubleDiskMetricValid(t, metric, false, test.expectedStartTime)
+				case "system.disk.operation_time.write":
+					assertDoubleDiskMetricValid(t, metric, false, test.expectedStartTime)
 				case "system.disk.operations":
-					assertInt64DiskMetricValid(t, metric, test.expectedStartTime)
+					assertInt64DiskMetricValid(t, metric, true, test.expectedStartTime)
+				case "system.disk.operations.read":
+					assertInt64DiskMetricValid(t, metric, false, test.expectedStartTime)
+				case "system.disk.operations.write":
+					assertInt64DiskMetricValid(t, metric, false, test.expectedStartTime)
 				case "system.disk.weighted.io.time":
 					assertDoubleDiskMetricValid(t, metric, false, test.expectedStartTime)
 				case "system.disk.merged":
-					assertInt64DiskMetricValid(t, metric, test.expectedStartTime)
+					assertInt64DiskMetricValid(t, metric, true, test.expectedStartTime)
+				case "system.disk.merged.read":
+					assertInt64DiskMetricValid(t, metric, false, test.expectedStartTime)
+				case "system.disk.merged.write":
+					assertInt64DiskMetricValid(t, metric, false, test.expectedStartTime)
 				case "system.disk.pending_operations":
 					assertDiskPendingOperationsMetricValid(t, metric)
 				case "system.disk.weighted_io_time":
@@ -157,19 +197,27 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertInt64DiskMetricValid(t *testing.T, metric pdata.Metric, startTime pdata.Timestamp) {
+func assertInt64DiskMetricValid(t *testing.T, metric pmetric.Metric, expectDirectionLabels bool, startTime pcommon.Timestamp) {
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
 
-	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
+	expectedDataPointsLen := 2
+	if !expectDirectionLabels {
+		expectedDataPointsLen = 1
+	}
+	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), expectedDataPointsLen)
 
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Read))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Write))
+	if expectDirectionLabels {
+		internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction",
+			pcommon.NewValueStr(metadata.AttributeDirectionRead.String()))
+		internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction",
+			pcommon.NewValueStr(metadata.AttributeDirectionWrite.String()))
+	}
 }
 
-func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectDirectionLabels bool, startTime pdata.Timestamp) {
+func assertDoubleDiskMetricValid(t *testing.T, metric pmetric.Metric, expectDirectionLabels bool, startTime pcommon.Timestamp) {
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
@@ -182,12 +230,14 @@ func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectDirect
 
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
 	if expectDirectionLabels {
-		internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Read))
-		internal.AssertSumMetricHasAttributeValue(t, metric, metric.Sum().DataPoints().Len()-1, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Write))
+		internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction",
+			pcommon.NewValueStr(metadata.AttributeDirectionRead.String()))
+		internal.AssertSumMetricHasAttributeValue(t, metric, metric.Sum().DataPoints().Len()-1, "direction",
+			pcommon.NewValueStr(metadata.AttributeDirectionWrite.String()))
 	}
 }
 
-func assertDiskPendingOperationsMetricValid(t *testing.T, metric pdata.Metric) {
+func assertDiskPendingOperationsMetricValid(t *testing.T, metric pmetric.Metric) {
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 1)
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
 }

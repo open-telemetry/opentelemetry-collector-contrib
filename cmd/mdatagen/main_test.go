@@ -15,7 +15,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -26,6 +25,16 @@ import (
 const (
 	validMetadata = `
 name: metricreceiver
+attributes:
+  cpu_type:
+    value: type
+    description: The type of CPU consumption
+    enum:
+    - user
+    - io_wait
+    - system
+  host:
+    description: The type of CPU consumption
 metrics:
   system.cpu.time:
     enabled: true
@@ -35,63 +44,60 @@ metrics:
     sum:
       aggregation: cumulative
       value_type: double
-    attributes: []
+    attributes: [host, cpu_type]
 `
 )
 
 func Test_runContents(t *testing.T) {
 	type args struct {
-		yml       string
-		useExpGen bool
+		yml string
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    string
-		wantErr string
+		name                  string
+		args                  args
+		expectedDocumentation string
+		want                  string
+		wantErr               bool
 	}{
 		{
-			name: "valid metadata",
-			args: args{validMetadata, false},
-			want: "",
-		},
-		{
-			name: "valid metadata v2",
-			args: args{validMetadata, true},
-			want: "",
+			name:                  "valid metadata",
+			args:                  args{validMetadata},
+			expectedDocumentation: "testdata/documentation.md",
+			want:                  "",
 		},
 		{
 			name:    "invalid yaml",
-			args:    args{"invalid", false},
+			args:    args{"invalid"},
 			want:    "",
-			wantErr: "cannot unmarshal",
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpdir, err := ioutil.TempDir("", "metadata-test-*")
-			require.NoError(t, err)
-			t.Cleanup(func() {
-				require.NoError(t, os.RemoveAll(tmpdir))
-			})
+			tmpdir := t.TempDir()
 
 			metadataFile := filepath.Join(tmpdir, "metadata.yaml")
-			require.NoError(t, ioutil.WriteFile(metadataFile, []byte(tt.args.yml), 0600))
+			require.NoError(t, os.WriteFile(metadataFile, []byte(tt.args.yml), 0600))
 
-			err = run(metadataFile, tt.args.useExpGen)
+			err := run(metadataFile)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
 
-			if tt.wantErr != "" {
-				require.Regexp(t, tt.wantErr, err)
-			} else {
+			require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_metrics.go"))
+
+			actualDocumentation := filepath.Join(tmpdir, "documentation.md")
+			require.FileExists(t, actualDocumentation)
+			if tt.expectedDocumentation != "" {
+				expectedFileBytes, err := os.ReadFile(tt.expectedDocumentation)
 				require.NoError(t, err)
 
-				genFilePath := filepath.Join(tmpdir, "internal/metadata/generated_metrics.go")
-				if tt.args.useExpGen {
-					genFilePath = filepath.Join(tmpdir, "internal/metadata/generated_metrics_v2.go")
-				}
-				require.FileExists(t, genFilePath)
+				actualFileBytes, err := os.ReadFile(actualDocumentation)
+				require.NoError(t, err)
 
-				require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
+				require.Equal(t, expectedFileBytes, actualFileBytes)
 			}
 		})
 	}
@@ -119,7 +125,7 @@ func Test_run(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := run(tt.args.ymlPath, false); (err != nil) != tt.wantErr {
+			if err := run(tt.args.ymlPath); (err != nil) != tt.wantErr {
 				t.Errorf("run() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

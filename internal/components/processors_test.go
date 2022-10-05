@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
+//go:build !windows
+// +build !windows
+
 package components
 
 import (
@@ -23,7 +27,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -42,8 +45,9 @@ func TestDefaultProcessors(t *testing.T) {
 	procFactories := allFactories.Processors
 
 	tests := []struct {
-		processor   config.Type
-		getConfigFn getProcessorConfigFn
+		processor     config.Type
+		getConfigFn   getProcessorConfigFn
+		skipLifecycle bool
 	}{
 		{
 			processor: "attributes",
@@ -59,7 +63,20 @@ func TestDefaultProcessors(t *testing.T) {
 			processor: "batch",
 		},
 		{
+			processor: "deltatorate",
+		},
+		{
 			processor: "filter",
+		},
+		{
+			processor: "groupbyattrs",
+		},
+		{
+			processor: "groupbytrace",
+		},
+		{
+			processor:     "k8sattributes",
+			skipLifecycle: true, // Requires a k8s API to communicate with
 		},
 		{
 			processor: "memory_limiter",
@@ -71,7 +88,16 @@ func TestDefaultProcessors(t *testing.T) {
 			},
 		},
 		{
+			processor: "metricstransform",
+		},
+		{
+			processor: "experimental_metricsgeneration",
+		},
+		{
 			processor: "probabilistic_sampler",
+		},
+		{
+			processor: "resourcedetection",
 		},
 		{
 			processor: "resource",
@@ -84,6 +110,10 @@ func TestDefaultProcessors(t *testing.T) {
 			},
 		},
 		{
+			processor:     "routing",
+			skipLifecycle: true, // Requires external exporters to be configured to route data
+		},
+		{
 			processor: "span",
 			getConfigFn: func() config.Processor {
 				cfg := procFactories["span"].CreateDefaultConfig().(*spanprocessor.Config)
@@ -91,9 +121,22 @@ func TestDefaultProcessors(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			processor:     "spanmetrics",
+			skipLifecycle: true, // Requires a running exporter to convert data to/from
+		},
+		{
+			processor: "cumulativetodelta",
+		},
+		{
+			processor: "tail_sampling",
+		},
+		{
+			processor: "transform",
+		},
 	}
 
-	assert.Equal(t, len(tests)+11 /* not tested */, len(procFactories))
+	assert.Len(t, tests, len(procFactories), "All processors MUST be added to lifecycle tests")
 	for _, tt := range tests {
 		t.Run(string(tt.processor), func(t *testing.T) {
 			factory, ok := procFactories[tt.processor]
@@ -101,6 +144,10 @@ func TestDefaultProcessors(t *testing.T) {
 			assert.Equal(t, tt.processor, factory.Type())
 			assert.EqualValues(t, config.NewComponentID(tt.processor), factory.CreateDefaultConfig().ID())
 
+			if tt.skipLifecycle {
+				t.Skip("Skipping lifecycle processor check for:", tt.processor)
+				return
+			}
 			verifyProcessorLifecycle(t, factory, tt.getConfigFn)
 		})
 	}
@@ -131,7 +178,7 @@ func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, 
 
 	for _, createFn := range createFns {
 		firstExp, err := createFn(ctx, processorCreationSet, getConfigFn())
-		if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
+		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 			continue
 		}
 		require.NoError(t, err)

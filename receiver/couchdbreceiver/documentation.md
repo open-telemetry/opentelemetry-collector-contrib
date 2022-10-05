@@ -26,12 +26,17 @@ metrics:
     enabled: <true|false>
 ```
 
-## Attributes
+## Resource attributes
 
-| Name | Description |
-| ---- | ----------- |
-| couchdb.node.name | The name of the node. |
-| http.method | An HTTP request method. |
-| http.status_code | An HTTP status code. |
-| operation | The operation type. |
-| view | The view type. |
+| Name | Description | Type |
+| ---- | ----------- | ---- |
+| couchdb.node.name | The name of the node. | String |
+
+## Metric attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| http.method | An HTTP request method. | COPY, DELETE, GET, HEAD, OPTIONS, POST, PUT |
+| http.status_code | An HTTP status code. |  |
+| operation | The operation type. | writes, reads |
+| view | The view type. | temporary_view_reads, view_reads |

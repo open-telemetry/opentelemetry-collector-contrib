@@ -24,7 +24,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -36,39 +37,39 @@ import (
 const filteredMetric = "p0_metric_1"
 const filteredAttrKey = "pt-label-key-1"
 
-var filteredAttrVal = pdata.NewAttributeValueString("pt-label-val-1")
+var filteredAttrVal = pcommon.NewValueStr("pt-label-val-1")
 
 func TestExprError(t *testing.T) {
-	testMatchError(t, pdata.MetricDataTypeGauge, pdata.MetricValueTypeInt)
-	testMatchError(t, pdata.MetricDataTypeGauge, pdata.MetricValueTypeDouble)
-	testMatchError(t, pdata.MetricDataTypeSum, pdata.MetricValueTypeInt)
-	testMatchError(t, pdata.MetricDataTypeSum, pdata.MetricValueTypeDouble)
-	testMatchError(t, pdata.MetricDataTypeHistogram, pdata.MetricValueTypeNone)
+	testMatchError(t, pmetric.MetricTypeGauge, pmetric.NumberDataPointValueTypeInt)
+	testMatchError(t, pmetric.MetricTypeGauge, pmetric.NumberDataPointValueTypeDouble)
+	testMatchError(t, pmetric.MetricTypeSum, pmetric.NumberDataPointValueTypeInt)
+	testMatchError(t, pmetric.MetricTypeSum, pmetric.NumberDataPointValueTypeDouble)
+	testMatchError(t, pmetric.MetricTypeHistogram, pmetric.NumberDataPointValueTypeNone)
 }
 
-func testMatchError(t *testing.T, mdType pdata.MetricDataType, mvType pdata.MetricValueType) {
+func testMatchError(t *testing.T, mdType pmetric.MetricType, mvType pmetric.NumberDataPointValueType) {
 	// the "foo" expr expression will cause expr Run() to return an error
 	proc, next, logs := testProcessor(t, nil, []string{"foo"})
 	pdm := testData("", 1, mdType, mvType)
 	err := proc.ConsumeMetrics(context.Background(), pdm)
 	assert.NoError(t, err)
 	// assert that metrics not be filtered as a result
-	assert.Equal(t, []pdata.Metrics{pdm}, next.AllMetrics())
+	assert.Equal(t, []pmetric.Metrics{pdm}, next.AllMetrics())
 	assert.Equal(t, 1, logs.Len())
 	assert.Equal(t, "shouldKeepMetric failed", logs.All()[0].Message)
 }
 
 func TestExprProcessor(t *testing.T) {
-	testFilter(t, pdata.MetricDataTypeGauge, pdata.MetricValueTypeInt)
-	testFilter(t, pdata.MetricDataTypeGauge, pdata.MetricValueTypeDouble)
-	testFilter(t, pdata.MetricDataTypeSum, pdata.MetricValueTypeInt)
-	testFilter(t, pdata.MetricDataTypeSum, pdata.MetricValueTypeDouble)
-	testFilter(t, pdata.MetricDataTypeHistogram, pdata.MetricValueTypeNone)
+	testFilter(t, pmetric.MetricTypeGauge, pmetric.NumberDataPointValueTypeInt)
+	testFilter(t, pmetric.MetricTypeGauge, pmetric.NumberDataPointValueTypeDouble)
+	testFilter(t, pmetric.MetricTypeSum, pmetric.NumberDataPointValueTypeInt)
+	testFilter(t, pmetric.MetricTypeSum, pmetric.NumberDataPointValueTypeDouble)
+	testFilter(t, pmetric.MetricTypeHistogram, pmetric.NumberDataPointValueTypeNone)
 }
 
-func testFilter(t *testing.T, mdType pdata.MetricDataType, mvType pdata.MetricValueType) {
+func testFilter(t *testing.T, mdType pmetric.MetricType, mvType pmetric.NumberDataPointValueType) {
 	format := "MetricName == '%s' && Label('%s') == '%s'"
-	q := fmt.Sprintf(format, filteredMetric, filteredAttrKey, filteredAttrVal.StringVal())
+	q := fmt.Sprintf(format, filteredMetric, filteredAttrKey, filteredAttrVal.Str())
 
 	mds := testDataSlice(2, mdType, mvType)
 	totMetricCount := 0
@@ -83,26 +84,26 @@ func testFilter(t *testing.T, mdType pdata.MetricDataType, mvType pdata.MetricVa
 		rmsSlice := metrics.ResourceMetrics()
 		for i := 0; i < rmsSlice.Len(); i++ {
 			rms := rmsSlice.At(i)
-			ilms := rms.InstrumentationLibraryMetrics()
+			ilms := rms.ScopeMetrics()
 			for j := 0; j < ilms.Len(); j++ {
 				ilm := ilms.At(j)
 				metricSlice := ilm.Metrics()
 				for k := 0; k < metricSlice.Len(); k++ {
 					metric := metricSlice.At(k)
 					if metric.Name() == filteredMetric {
-						dt := metric.DataType()
+						dt := metric.Type()
 						switch dt {
-						case pdata.MetricDataTypeGauge:
+						case pmetric.MetricTypeGauge:
 							pts := metric.Gauge().DataPoints()
 							for l := 0; l < pts.Len(); l++ {
 								assertFiltered(t, pts.At(l).Attributes())
 							}
-						case pdata.MetricDataTypeSum:
+						case pmetric.MetricTypeSum:
 							pts := metric.Sum().DataPoints()
 							for l := 0; l < pts.Len(); l++ {
 								assertFiltered(t, pts.At(l).Attributes())
 							}
-						case pdata.MetricDataTypeHistogram:
+						case pmetric.MetricTypeHistogram:
 							pts := metric.Histogram().DataPoints()
 							for l := 0; l < pts.Len(); l++ {
 								assertFiltered(t, pts.At(l).Attributes())
@@ -116,8 +117,8 @@ func testFilter(t *testing.T, mdType pdata.MetricDataType, mvType pdata.MetricVa
 	assert.Equal(t, expectedMetricCount, filteredMetricCount)
 }
 
-func assertFiltered(t *testing.T, lm pdata.AttributeMap) {
-	lm.Range(func(k string, v pdata.AttributeValue) bool {
+func assertFiltered(t *testing.T, lm pcommon.Map) {
+	lm.Range(func(k string, v pcommon.Value) bool {
 		if k == filteredAttrKey && v.Equal(filteredAttrVal) {
 			assert.Fail(t, "found metric that should have been filtered out")
 			return false
@@ -126,7 +127,7 @@ func assertFiltered(t *testing.T, lm pdata.AttributeMap) {
 	})
 }
 
-func filterMetrics(t *testing.T, include []string, exclude []string, mds []pdata.Metrics) []pdata.Metrics {
+func filterMetrics(t *testing.T, include []string, exclude []string, mds []pmetric.Metrics) []pmetric.Metrics {
 	proc, next, _ := testProcessor(t, include, exclude)
 	for _, md := range mds {
 		err := proc.ConsumeMetrics(context.Background(), md)
@@ -175,15 +176,15 @@ func exprConfig(factory component.ProcessorFactory, include []string, exclude []
 	return cfg
 }
 
-func testDataSlice(size int, mdType pdata.MetricDataType, mvType pdata.MetricValueType) []pdata.Metrics {
-	var out []pdata.Metrics
+func testDataSlice(size int, mdType pmetric.MetricType, mvType pmetric.NumberDataPointValueType) []pmetric.Metrics {
+	var out []pmetric.Metrics
 	for i := 0; i < 16; i++ {
 		out = append(out, testData(fmt.Sprintf("p%d_", i), size, mdType, mvType))
 	}
 	return out
 }
 
-func testData(prefix string, size int, mdType pdata.MetricDataType, mvType pdata.MetricValueType) pdata.Metrics {
+func testData(prefix string, size int, mdType pmetric.MetricType, mvType pmetric.NumberDataPointValueType) pmetric.Metrics {
 	c := goldendataset.MetricsCfg{
 		MetricDescriptorType: mdType,
 		MetricValueType:      mvType,

@@ -29,18 +29,20 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "resource"
+	// The stability level of the processor.
+	stability = component.StabilityLevelBeta
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Resource processor.
 func NewFactory() component.ProcessorFactory {
-	return processorhelper.NewFactory(
+	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTracesProcessor),
-		processorhelper.WithMetrics(createMetricsProcessor),
-		processorhelper.WithLogs(createLogsProcessor))
+		component.WithTracesProcessor(createTracesProcessor, stability),
+		component.WithMetricsProcessor(createMetricsProcessor, stability),
+		component.WithLogsProcessor(createLogsProcessor, stability))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.
@@ -51,16 +53,18 @@ func createDefaultConfig() config.Processor {
 }
 
 func createTracesProcessor(
-	_ context.Context,
-	_ component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 	attrProc, err := createAttrProcessor(cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
-	proc := &resourceProcessor{attrProc: attrProc}
+	proc := &resourceProcessor{logger: set.Logger, attrProc: attrProc}
 	return processorhelper.NewTracesProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		proc.processTraces,
@@ -68,16 +72,18 @@ func createTracesProcessor(
 }
 
 func createMetricsProcessor(
-	_ context.Context,
-	_ component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
 	attrProc, err := createAttrProcessor(cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
-	proc := &resourceProcessor{attrProc: attrProc}
+	proc := &resourceProcessor{logger: set.Logger, attrProc: attrProc}
 	return processorhelper.NewMetricsProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		proc.processMetrics,
@@ -85,16 +91,18 @@ func createMetricsProcessor(
 }
 
 func createLogsProcessor(
-	_ context.Context,
-	_ component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 	attrProc, err := createAttrProcessor(cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
-	proc := &resourceProcessor{attrProc: attrProc}
+	proc := &resourceProcessor{logger: set.Logger, attrProc: attrProc}
 	return processorhelper.NewLogsProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		proc.processLogs,

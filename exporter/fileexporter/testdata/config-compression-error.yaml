@@ -1,0 +1,20 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  file:
+    path: ./filename.log
+    compression: gzip
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [file]
+    metrics:
+      receivers: [nop]
+      exporters: [file]

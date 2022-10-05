@@ -21,12 +21,9 @@ import (
 	"sync"
 	"time"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
-
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // newCarbonExporter returns a new Carbon exporter.
@@ -47,8 +44,9 @@ func newCarbonExporter(cfg *Config, set component.ExporterCreateSettings) (compo
 	}
 
 	return exporterhelper.NewMetricsExporter(
-		cfg,
+		context.TODO(),
 		set,
+		cfg,
 		sender.pushMetricsData,
 		exporterhelper.WithShutdown(sender.Shutdown))
 }
@@ -60,15 +58,8 @@ type carbonSender struct {
 	connPool *connPool
 }
 
-func (cs *carbonSender) pushMetricsData(_ context.Context, md pdata.Metrics) error {
-	rms := md.ResourceMetrics()
-	mds := make([]*agentmetricspb.ExportMetricsServiceRequest, 0, rms.Len())
-	for i := 0; i < rms.Len(); i++ {
-		emsr := &agentmetricspb.ExportMetricsServiceRequest{}
-		emsr.Node, emsr.Resource, emsr.Metrics = internaldata.ResourceMetricsToOC(rms.At(i))
-		mds = append(mds, emsr)
-	}
-	lines, _, _ := metricDataToPlaintext(mds)
+func (cs *carbonSender) pushMetricsData(_ context.Context, md pmetric.Metrics) error {
+	lines := metricDataToPlaintext(md)
 
 	if _, err := cs.connPool.Write([]byte(lines)); err != nil {
 		// Use the sum of converted and dropped since the write failed for all.
@@ -119,10 +110,8 @@ func (cp *connPool) Write(bytes []byte) (int, error) {
 			cp.mtx.Lock()
 			cp.conns = append(cp.conns, conn)
 			cp.mtx.Unlock()
-		} else {
-			if conn != nil {
-				conn.Close()
-			}
+		} else if conn != nil {
+			conn.Close()
 		}
 	}()
 

@@ -23,8 +23,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.8.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -143,7 +144,7 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	attributes[conventions.AttributeHTTPUserAgent] = userAgent
 	attributes[conventions.AttributeEnduserID] = enduser
 	resource := constructDefaultResource()
-	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, errorMessage, attributes)
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, errorMessage, attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
 	timeEvents.CopyTo(span.Events())
 
@@ -170,7 +171,7 @@ func TestServerSpanWithThrottle(t *testing.T) {
 	attributes[conventions.AttributeHTTPUserAgent] = userAgent
 	attributes[conventions.AttributeEnduserID] = enduser
 	resource := constructDefaultResource()
-	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, errorMessage, attributes)
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, errorMessage, attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
 	timeEvents.CopyTo(span.Events())
 
@@ -186,9 +187,9 @@ func TestServerSpanWithThrottle(t *testing.T) {
 
 func TestServerSpanNoParentId(t *testing.T) {
 	spanName := "/api/locations"
-	parentSpanID := pdata.InvalidSpanID()
+	parentSpanID := pcommon.NewSpanIDEmpty()
 	resource := constructDefaultResource()
-	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeOk, "OK", nil)
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", nil)
 
 	segment, _ := MakeSegment(span, resource, nil, false)
 
@@ -196,15 +197,15 @@ func TestServerSpanNoParentId(t *testing.T) {
 }
 
 func TestSpanNoParentId(t *testing.T) {
-	span := pdata.NewSpan()
+	span := ptrace.NewSpan()
 	span.SetName("my-topic send")
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
-	span.SetParentSpanID(pdata.InvalidSpanID())
-	span.SetKind(pdata.SpanKindProducer)
-	span.SetStartTimestamp(pdata.NewTimestampFromTime(time.Now()))
-	span.SetEndTimestamp(pdata.NewTimestampFromTime(time.Now().Add(10)))
-	resource := pdata.NewResource()
+	span.SetParentSpanID(pcommon.NewSpanIDEmpty())
+	span.SetKind(ptrace.SpanKindProducer)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(10)))
+	resource := pcommon.NewResource()
 	segment, _ := MakeSegment(span, resource, nil, false)
 
 	assert.Empty(t, segment.ParentID)
@@ -212,15 +213,15 @@ func TestSpanNoParentId(t *testing.T) {
 }
 
 func TestSpanWithNoStatus(t *testing.T) {
-	span := pdata.NewSpan()
+	span := ptrace.NewSpan()
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
-	span.SetKind(pdata.SpanKindServer)
-	span.SetStartTimestamp(pdata.NewTimestampFromTime(time.Now()))
-	span.SetEndTimestamp(pdata.NewTimestampFromTime(time.Now().Add(10)))
+	span.SetKind(ptrace.SpanKindServer)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(10)))
 
-	resource := pdata.NewResource()
+	resource := pcommon.NewResource()
 	segment, _ := MakeSegment(span, resource, nil, false)
 	assert.NotNil(t, segment)
 }
@@ -239,7 +240,7 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	attributes[conventions.AttributeNetPeerPort] = "3306"
 	attributes["enterprise.app.id"] = enterpriseAppID
 	resource := constructDefaultResource()
-	span := constructClientSpan(parentSpanID, spanName, pdata.StatusCodeUnset, "OK", attributes)
+	span := constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeUnset, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, nil, false)
 
@@ -263,7 +264,6 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	}
 	jsonStr := w.String()
 	testWriters.release(w)
-	fmt.Println(jsonStr)
 	assert.True(t, strings.Contains(jsonStr, spanName))
 	assert.True(t, strings.Contains(jsonStr, enterpriseAppID))
 }
@@ -280,7 +280,7 @@ func TestClientSpanWithHttpHost(t *testing.T) {
 	attributes[conventions.AttributeHTTPHost] = "foo.com"
 	attributes[conventions.AttributeNetPeerName] = "bar.com"
 	resource := constructDefaultResource()
-	span := constructClientSpan(parentSpanID, spanName, pdata.StatusCodeUnset, "OK", attributes)
+	span := constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeUnset, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, nil, false)
 
@@ -299,7 +299,7 @@ func TestClientSpanWithoutHttpHost(t *testing.T) {
 	attributes[conventions.AttributeHTTPTarget] = "/"
 	attributes[conventions.AttributeNetPeerName] = "bar.com"
 	resource := constructDefaultResource()
-	span := constructClientSpan(parentSpanID, spanName, pdata.StatusCodeUnset, "OK", attributes)
+	span := constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeUnset, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, nil, false)
 
@@ -319,7 +319,7 @@ func TestClientSpanWithRpcHost(t *testing.T) {
 	attributes[conventions.AttributeRPCService] = "com.foo.AnimalService"
 	attributes[conventions.AttributeNetPeerName] = "bar.com"
 	resource := constructDefaultResource()
-	span := constructClientSpan(parentSpanID, spanName, pdata.StatusCodeUnset, "OK", attributes)
+	span := constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeUnset, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, nil, false)
 
@@ -336,12 +336,12 @@ func TestSpanWithInvalidTraceId(t *testing.T) {
 	attributes[conventions.AttributeNetPeerPort] = "9443"
 	attributes[conventions.AttributeHTTPTarget] = spanName
 	resource := constructDefaultResource()
-	span := constructClientSpan(pdata.InvalidSpanID(), spanName, pdata.StatusCodeUnset, "OK", attributes)
+	span := constructClientSpan(pcommon.NewSpanIDEmpty(), spanName, ptrace.StatusCodeUnset, "OK", attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
 	timeEvents.CopyTo(span.Events())
-	traceID := span.TraceID().Bytes()
+	traceID := span.TraceID()
 	traceID[0] = 0x11
-	span.SetTraceID(pdata.NewTraceID(traceID))
+	span.SetTraceID(traceID)
 
 	_, err := MakeSegmentDocumentString(span, resource, nil, false)
 
@@ -353,10 +353,10 @@ func TestSpanWithExpiredTraceId(t *testing.T) {
 	const maxAge = 60 * 60 * 24 * 30
 	ExpiredEpoch := time.Now().Unix() - maxAge - 1
 
-	tempTraceID := newTraceID().Bytes()
+	tempTraceID := newTraceID()
 	binary.BigEndian.PutUint32(tempTraceID[0:4], uint32(ExpiredEpoch))
 
-	_, err := convertToAmazonTraceID(pdata.NewTraceID(tempTraceID))
+	_, err := convertToAmazonTraceID(tempTraceID)
 	assert.NotNil(t, err)
 }
 
@@ -386,10 +386,10 @@ func TestServerSpanWithNilAttributes(t *testing.T) {
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
 	resource := constructDefaultResource()
-	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
 	timeEvents.CopyTo(span.Events())
-	pdata.NewAttributeMap().CopyTo(span.Attributes())
+	pcommon.NewMap().CopyTo(span.Attributes())
 
 	segment, _ := MakeSegment(span, resource, nil, false)
 
@@ -406,7 +406,7 @@ func TestSpanWithAttributesDefaultNotIndexed(t *testing.T) {
 	attributes["attr1@1"] = "val1"
 	attributes["attr2@2"] = "val2"
 	resource := constructDefaultResource()
-	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, nil, false)
 
@@ -433,7 +433,7 @@ func TestSpanWithResourceNotStoredIfSubsegment(t *testing.T) {
 	attributes["attr1@1"] = "val1"
 	attributes["attr2@2"] = "val2"
 	resource := constructDefaultResource()
-	span := constructClientSpan(parentSpanID, spanName, pdata.StatusCodeError, "ERROR", attributes)
+	span := constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeError, "ERROR", attributes)
 
 	segment, _ := MakeSegment(span, resource, nil, false)
 
@@ -456,7 +456,7 @@ func TestSpanWithAttributesPartlyIndexed(t *testing.T) {
 	attributes["attr1@1"] = "val1"
 	attributes["attr2@2"] = "val2"
 	resource := constructDefaultResource()
-	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{"attr1@1", "not_exist"}, false)
 
@@ -473,7 +473,7 @@ func TestSpanWithAttributesAllIndexed(t *testing.T) {
 	attributes["attr1@1"] = "val1"
 	attributes["attr2@2"] = "val2"
 	resource := constructDefaultResource()
-	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeOk, "OK", attributes)
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{"attr1@1", "not_exist"}, true)
 
@@ -487,7 +487,7 @@ func TestResourceAttributesCanBeIndexed(t *testing.T) {
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
 	resource := constructDefaultResource()
-	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{
 		"otel.resource.string.key",
@@ -519,7 +519,7 @@ func TestResourceAttributesNotIndexedIfSubsegment(t *testing.T) {
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
 	resource := constructDefaultResource()
-	span := constructClientSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
+	span := constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{
 		"otel.resource.string.key",
@@ -539,12 +539,11 @@ func TestOriginNotAws(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
-	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
-	attrs.InsertString(conventions.AttributeHostID, "instance-123")
-	attrs.CopyTo(resource.Attributes())
-	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
+	resource := pcommon.NewResource()
+	attrs := resource.Attributes()
+	attrs.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
+	attrs.PutString(conventions.AttributeHostID, "instance-123")
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false)
 
@@ -556,13 +555,12 @@ func TestOriginEc2(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
-	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEC2)
-	attrs.InsertString(conventions.AttributeHostID, "instance-123")
-	attrs.CopyTo(resource.Attributes())
-	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
+	resource := pcommon.NewResource()
+	attrs := resource.Attributes()
+	attrs.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.PutString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEC2)
+	attrs.PutString(conventions.AttributeHostID, "instance-123")
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false)
 
@@ -574,14 +572,13 @@ func TestOriginEcs(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
-	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
-	attrs.InsertString(conventions.AttributeHostID, "instance-123")
-	attrs.InsertString(conventions.AttributeContainerName, "container-123")
-	attrs.CopyTo(resource.Attributes())
-	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
+	resource := pcommon.NewResource()
+	attrs := resource.Attributes()
+	attrs.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.PutString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
+	attrs.PutString(conventions.AttributeHostID, "instance-123")
+	attrs.PutString(conventions.AttributeContainerName, "container-123")
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false)
 
@@ -593,15 +590,14 @@ func TestOriginEcsEc2(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
-	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
-	attrs.InsertString(conventions.AttributeAWSECSLaunchtype, conventions.AttributeAWSECSLaunchtypeEC2)
-	attrs.InsertString(conventions.AttributeHostID, "instance-123")
-	attrs.InsertString(conventions.AttributeContainerName, "container-123")
-	attrs.CopyTo(resource.Attributes())
-	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
+	resource := pcommon.NewResource()
+	attrs := resource.Attributes()
+	attrs.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.PutString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
+	attrs.PutString(conventions.AttributeAWSECSLaunchtype, conventions.AttributeAWSECSLaunchtypeEC2)
+	attrs.PutString(conventions.AttributeHostID, "instance-123")
+	attrs.PutString(conventions.AttributeContainerName, "container-123")
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false)
 
@@ -613,15 +609,14 @@ func TestOriginEcsFargate(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
-	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
-	attrs.InsertString(conventions.AttributeAWSECSLaunchtype, conventions.AttributeAWSECSLaunchtypeFargate)
-	attrs.InsertString(conventions.AttributeHostID, "instance-123")
-	attrs.InsertString(conventions.AttributeContainerName, "container-123")
-	attrs.CopyTo(resource.Attributes())
-	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
+	resource := pcommon.NewResource()
+	attrs := resource.Attributes()
+	attrs.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.PutString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
+	attrs.PutString(conventions.AttributeAWSECSLaunchtype, conventions.AttributeAWSECSLaunchtypeFargate)
+	attrs.PutString(conventions.AttributeHostID, "instance-123")
+	attrs.PutString(conventions.AttributeContainerName, "container-123")
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false)
 
@@ -633,15 +628,14 @@ func TestOriginEb(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
-	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSElasticBeanstalk)
-	attrs.InsertString(conventions.AttributeHostID, "instance-123")
-	attrs.InsertString(conventions.AttributeContainerName, "container-123")
-	attrs.InsertString(conventions.AttributeServiceInstanceID, "service-123")
-	attrs.CopyTo(resource.Attributes())
-	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
+	resource := pcommon.NewResource()
+	attrs := resource.Attributes()
+	attrs.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.PutString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSElasticBeanstalk)
+	attrs.PutString(conventions.AttributeHostID, "instance-123")
+	attrs.PutString(conventions.AttributeContainerName, "container-123")
+	attrs.PutString(conventions.AttributeServiceInstanceID, "service-123")
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false)
 
@@ -656,24 +650,23 @@ func TestOriginEks(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
-	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEKS)
-	attrs.InsertString(conventions.AttributeCloudAccountID, "123456789")
-	attrs.InsertString(conventions.AttributeCloudAvailabilityZone, "us-east-1c")
-	attrs.InsertString(conventions.AttributeContainerImageName, "otel/signupaggregator")
-	attrs.InsertString(conventions.AttributeContainerImageTag, "v1")
-	attrs.InsertString(conventions.AttributeK8SClusterName, "production")
-	attrs.InsertString(conventions.AttributeK8SNamespaceName, "default")
-	attrs.InsertString(conventions.AttributeK8SDeploymentName, "signup_aggregator")
-	attrs.InsertString(conventions.AttributeK8SPodName, "my-deployment-65dcf7d447-ddjnl")
-	attrs.InsertString(conventions.AttributeContainerName, containerName)
-	attrs.InsertString(conventions.AttributeContainerID, containerID)
-	attrs.InsertString(conventions.AttributeHostID, instanceID)
-	attrs.InsertString(conventions.AttributeHostType, "m5.xlarge")
-	attrs.CopyTo(resource.Attributes())
-	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
+	resource := pcommon.NewResource()
+	attrs := resource.Attributes()
+	attrs.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.PutString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEKS)
+	attrs.PutString(conventions.AttributeCloudAccountID, "123456789")
+	attrs.PutString(conventions.AttributeCloudAvailabilityZone, "us-east-1c")
+	attrs.PutString(conventions.AttributeContainerImageName, "otel/signupaggregator")
+	attrs.PutString(conventions.AttributeContainerImageTag, "v1")
+	attrs.PutString(conventions.AttributeK8SClusterName, "production")
+	attrs.PutString(conventions.AttributeK8SNamespaceName, "default")
+	attrs.PutString(conventions.AttributeK8SDeploymentName, "signup_aggregator")
+	attrs.PutString(conventions.AttributeK8SPodName, "my-deployment-65dcf7d447-ddjnl")
+	attrs.PutString(conventions.AttributeContainerName, containerName)
+	attrs.PutString(conventions.AttributeContainerID, containerID)
+	attrs.PutString(conventions.AttributeHostID, instanceID)
+	attrs.PutString(conventions.AttributeHostType, "m5.xlarge")
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false)
 
@@ -685,12 +678,11 @@ func TestOriginAppRunner(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
-	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSAppRunner)
-	attrs.CopyTo(resource.Attributes())
-	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
+	resource := pcommon.NewResource()
+	attrs := resource.Attributes()
+	attrs.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.PutString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSAppRunner)
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false)
 
@@ -702,11 +694,10 @@ func TestOriginBlank(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
-	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.CopyTo(resource.Attributes())
-	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
+	resource := pcommon.NewResource()
+	attrs := resource.Attributes()
+	attrs.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false)
 
@@ -718,16 +709,15 @@ func TestOriginPrefersInfraService(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
-	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEC2)
-	attrs.InsertString(conventions.AttributeK8SClusterName, "cluster-123")
-	attrs.InsertString(conventions.AttributeHostID, "instance-123")
-	attrs.InsertString(conventions.AttributeContainerName, "container-123")
-	attrs.InsertString(conventions.AttributeServiceInstanceID, "service-123")
-	attrs.CopyTo(resource.Attributes())
-	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
+	resource := pcommon.NewResource()
+	attrs := resource.Attributes()
+	attrs.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.PutString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEC2)
+	attrs.PutString(conventions.AttributeK8SClusterName, "cluster-123")
+	attrs.PutString(conventions.AttributeHostID, "instance-123")
+	attrs.PutString(conventions.AttributeContainerName, "container-123")
+	attrs.PutString(conventions.AttributeServiceInstanceID, "service-123")
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false)
 
@@ -739,28 +729,25 @@ func TestFilteredAttributesMetadata(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
-	resource := pdata.NewResource()
+	resource := pcommon.NewResource()
 
-	attrs := pdata.NewAttributeMap()
-	attrs.InsertString("string_value", "value")
-	attrs.InsertInt("int_value", 123)
-	attrs.InsertDouble("float_value", 456.78)
-	attrs.InsertBool("bool_value", false)
-	attrs.InsertNull("null_value")
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
-	arrayValue := pdata.NewAttributeValueArray()
-	arrayValue.SliceVal().AppendEmpty().SetIntVal(12)
-	arrayValue.SliceVal().AppendEmpty().SetIntVal(34)
-	arrayValue.SliceVal().AppendEmpty().SetIntVal(56)
-	attrs.Insert("array_value", arrayValue)
+	attrs := span.Attributes()
+	attrs.PutString("string_value", "value")
+	attrs.PutInt("int_value", 123)
+	attrs.PutDouble("float_value", 456.78)
+	attrs.PutBool("bool_value", false)
+	attrs.PutEmpty("null_value")
 
-	mapValue := pdata.NewAttributeValueMap()
-	mapValue.MapVal().InsertDouble("value1", -987.65)
-	mapValue.MapVal().InsertBool("value2", true)
-	attrs.Insert("map_value", mapValue)
+	arrayValue := attrs.PutEmptySlice("array_value")
+	arrayValue.AppendEmpty().SetInt(12)
+	arrayValue.AppendEmpty().SetInt(34)
+	arrayValue.AppendEmpty().SetInt(56)
 
-	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
-	attrs.CopyTo(span.Attributes())
+	mapValue := attrs.PutEmptyMap("map_value")
+	mapValue.PutDouble("value1", -987.65)
+	mapValue.PutBool("value2", true)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false)
 
@@ -777,7 +764,7 @@ func TestFilteredAttributesMetadata(t *testing.T) {
 	}, segment.Metadata["default"]["map_value"])
 }
 
-func constructClientSpan(parentSpanID pdata.SpanID, name string, code pdata.StatusCode, message string, attributes map[string]interface{}) pdata.Span {
+func constructClientSpan(parentSpanID pcommon.SpanID, name string, code ptrace.StatusCode, message string, attributes map[string]interface{}) ptrace.Span {
 	var (
 		traceID        = newTraceID()
 		spanID         = newSegmentID()
@@ -786,16 +773,16 @@ func constructClientSpan(parentSpanID pdata.SpanID, name string, code pdata.Stat
 		spanAttributes = constructSpanAttributes(attributes)
 	)
 
-	span := pdata.NewSpan()
+	span := ptrace.NewSpan()
 	span.SetTraceID(traceID)
 	span.SetSpanID(spanID)
 	span.SetParentSpanID(parentSpanID)
 	span.SetName(name)
-	span.SetKind(pdata.SpanKindClient)
-	span.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
-	span.SetEndTimestamp(pdata.NewTimestampFromTime(endTime))
+	span.SetKind(ptrace.SpanKindClient)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 
-	status := pdata.NewSpanStatus()
+	status := ptrace.NewSpanStatus()
 	status.SetCode(code)
 	status.SetMessage(message)
 	status.CopyTo(span.Status())
@@ -804,7 +791,7 @@ func constructClientSpan(parentSpanID pdata.SpanID, name string, code pdata.Stat
 	return span
 }
 
-func constructServerSpan(parentSpanID pdata.SpanID, name string, code pdata.StatusCode, message string, attributes map[string]interface{}) pdata.Span {
+func constructServerSpan(parentSpanID pcommon.SpanID, name string, code ptrace.StatusCode, message string, attributes map[string]interface{}) ptrace.Span {
 	var (
 		traceID        = newTraceID()
 		spanID         = newSegmentID()
@@ -813,16 +800,16 @@ func constructServerSpan(parentSpanID pdata.SpanID, name string, code pdata.Stat
 		spanAttributes = constructSpanAttributes(attributes)
 	)
 
-	span := pdata.NewSpan()
+	span := ptrace.NewSpan()
 	span.SetTraceID(traceID)
 	span.SetSpanID(spanID)
 	span.SetParentSpanID(parentSpanID)
 	span.SetName(name)
-	span.SetKind(pdata.SpanKindServer)
-	span.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
-	span.SetEndTimestamp(pdata.NewTimestampFromTime(endTime))
+	span.SetKind(ptrace.SpanKindServer)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 
-	status := pdata.NewSpanStatus()
+	status := ptrace.NewSpanStatus()
 	status.SetCode(code)
 	status.SetMessage(message)
 	status.CopyTo(span.Status())
@@ -831,91 +818,84 @@ func constructServerSpan(parentSpanID pdata.SpanID, name string, code pdata.Stat
 	return span
 }
 
-func constructSpanAttributes(attributes map[string]interface{}) pdata.AttributeMap {
-	attrs := pdata.NewAttributeMap()
+func constructSpanAttributes(attributes map[string]interface{}) pcommon.Map {
+	attrs := pcommon.NewMap()
 	for key, value := range attributes {
 		if cast, ok := value.(int); ok {
-			attrs.InsertInt(key, int64(cast))
+			attrs.PutInt(key, int64(cast))
 		} else if cast, ok := value.(int64); ok {
-			attrs.InsertInt(key, cast)
+			attrs.PutInt(key, cast)
 		} else {
-			attrs.InsertString(key, fmt.Sprintf("%v", value))
+			attrs.PutString(key, fmt.Sprintf("%v", value))
 		}
 	}
 	return attrs
 }
 
-func constructDefaultResource() pdata.Resource {
-	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(conventions.AttributeServiceName, "signup_aggregator")
-	attrs.InsertString(conventions.AttributeServiceVersion, "semver:1.1.4")
-	attrs.InsertString(conventions.AttributeContainerName, "signup_aggregator")
-	attrs.InsertString(conventions.AttributeContainerImageName, "otel/signupaggregator")
-	attrs.InsertString(conventions.AttributeContainerImageTag, "v1")
-	attrs.InsertString(conventions.AttributeK8SClusterName, "production")
-	attrs.InsertString(conventions.AttributeK8SNamespaceName, "default")
-	attrs.InsertString(conventions.AttributeK8SDeploymentName, "signup_aggregator")
-	attrs.InsertString(conventions.AttributeK8SPodName, "signup_aggregator-x82ufje83")
-	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.InsertString(conventions.AttributeCloudAccountID, "123456789")
-	attrs.InsertString(conventions.AttributeCloudRegion, "us-east-1")
-	attrs.InsertString(conventions.AttributeCloudAvailabilityZone, "us-east-1c")
-	attrs.InsertString(resourceStringKey, "string")
-	attrs.InsertInt(resourceIntKey, 10)
-	attrs.InsertDouble(resourceDoubleKey, 5.0)
-	attrs.InsertBool(resourceBoolKey, true)
+func constructDefaultResource() pcommon.Resource {
+	resource := pcommon.NewResource()
+	attrs := resource.Attributes()
+	attrs.PutString(conventions.AttributeServiceName, "signup_aggregator")
+	attrs.PutString(conventions.AttributeServiceVersion, "semver:1.1.4")
+	attrs.PutString(conventions.AttributeContainerName, "signup_aggregator")
+	attrs.PutString(conventions.AttributeContainerImageName, "otel/signupaggregator")
+	attrs.PutString(conventions.AttributeContainerImageTag, "v1")
+	attrs.PutString(conventions.AttributeK8SClusterName, "production")
+	attrs.PutString(conventions.AttributeK8SNamespaceName, "default")
+	attrs.PutString(conventions.AttributeK8SDeploymentName, "signup_aggregator")
+	attrs.PutString(conventions.AttributeK8SPodName, "signup_aggregator-x82ufje83")
+	attrs.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.PutString(conventions.AttributeCloudAccountID, "123456789")
+	attrs.PutString(conventions.AttributeCloudRegion, "us-east-1")
+	attrs.PutString(conventions.AttributeCloudAvailabilityZone, "us-east-1c")
+	attrs.PutString(resourceStringKey, "string")
+	attrs.PutInt(resourceIntKey, 10)
+	attrs.PutDouble(resourceDoubleKey, 5.0)
+	attrs.PutBool(resourceBoolKey, true)
 
-	resourceMapVal := pdata.NewAttributeValueMap()
-	resourceMap := resourceMapVal.MapVal()
-	resourceMap.InsertInt("key1", 1)
-	resourceMap.InsertString("key2", "value")
-	attrs.Insert(resourceMapKey, resourceMapVal)
+	resourceMap := attrs.PutEmptyMap(resourceMapKey)
+	resourceMap.PutInt("key1", 1)
+	resourceMap.PutString("key2", "value")
 
-	resourceArrayVal := pdata.NewAttributeValueArray()
-	resourceArray := resourceArrayVal.SliceVal()
-	resourceArray.AppendEmpty().SetStringVal("foo")
-	resourceArray.AppendEmpty().SetStringVal("bar")
-	attrs.Insert(resourceArrayKey, resourceArrayVal)
-	attrs.CopyTo(resource.Attributes())
+	resourceArray := attrs.PutEmptySlice(resourceArrayKey)
+	resourceArray.AppendEmpty().SetStr("foo")
+	resourceArray.AppendEmpty().SetStr("bar")
 	return resource
 }
 
-func constructTimedEventsWithReceivedMessageEvent(tm pdata.Timestamp) pdata.SpanEventSlice {
-	eventAttr := pdata.NewAttributeMap()
-	eventAttr.InsertString("message.type", "RECEIVED")
-	eventAttr.InsertInt(conventions.AttributeMessagingMessageID, 1)
-	eventAttr.InsertInt(conventions.AttributeMessagingMessagePayloadCompressedSizeBytes, 6478)
-	eventAttr.InsertInt(conventions.AttributeMessagingMessagePayloadSizeBytes, 12452)
+func constructTimedEventsWithReceivedMessageEvent(tm pcommon.Timestamp) ptrace.SpanEventSlice {
+	events := ptrace.NewSpanEventSlice()
+	event := events.AppendEmpty()
 
-	event := pdata.NewSpanEvent()
+	eventAttr := event.Attributes()
+	eventAttr.PutString("message.type", "RECEIVED")
+	eventAttr.PutInt(conventions.AttributeMessagingMessageID, 1)
+	eventAttr.PutInt(conventions.AttributeMessagingMessagePayloadCompressedSizeBytes, 6478)
+	eventAttr.PutInt(conventions.AttributeMessagingMessagePayloadSizeBytes, 12452)
+
 	event.SetTimestamp(tm)
-	eventAttr.CopyTo(event.Attributes())
 	event.SetDroppedAttributesCount(0)
 
-	events := pdata.NewSpanEventSlice()
-	event.CopyTo(events.AppendEmpty())
 	return events
 }
 
-func constructTimedEventsWithSentMessageEvent(tm pdata.Timestamp) pdata.SpanEventSlice {
-	eventAttr := pdata.NewAttributeMap()
-	eventAttr.InsertString("message.type", "SENT")
-	eventAttr.InsertInt(conventions.AttributeMessagingMessageID, 1)
-	eventAttr.InsertInt(conventions.AttributeMessagingMessagePayloadSizeBytes, 7480)
+func constructTimedEventsWithSentMessageEvent(tm pcommon.Timestamp) ptrace.SpanEventSlice {
+	events := ptrace.NewSpanEventSlice()
+	event := events.AppendEmpty()
 
-	event := pdata.NewSpanEvent()
+	eventAttr := event.Attributes()
+	eventAttr.PutString("message.type", "SENT")
+	eventAttr.PutInt(conventions.AttributeMessagingMessageID, 1)
+	eventAttr.PutInt(conventions.AttributeMessagingMessagePayloadSizeBytes, 7480)
+
 	event.SetTimestamp(tm)
-	eventAttr.CopyTo(event.Attributes())
 	event.SetDroppedAttributesCount(0)
 
-	events := pdata.NewSpanEventSlice()
-	event.CopyTo(events.AppendEmpty())
 	return events
 }
 
 // newTraceID generates a new valid X-Ray TraceID
-func newTraceID() pdata.TraceID {
+func newTraceID() pcommon.TraceID {
 	var r [16]byte
 	epoch := time.Now().Unix()
 	binary.BigEndian.PutUint32(r[0:4], uint32(epoch))
@@ -923,5 +903,5 @@ func newTraceID() pdata.TraceID {
 	if err != nil {
 		panic(err)
 	}
-	return pdata.NewTraceID(r)
+	return r
 }

@@ -20,15 +20,17 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 // This file implements factory for prometheus_simple receiver
 const (
 	// The value of "type" key in configuration.
 	typeStr = "prometheus_simple"
+	// The stability level of the receiver.
+	stability = component.StabilityLevelBeta
 
 	defaultEndpoint    = "localhost:9090"
 	defaultMetricsPath = "/metrics"
@@ -38,17 +40,20 @@ var defaultCollectionInterval = 10 * time.Second
 
 // NewFactory creates a factory for "Simple" Prometheus receiver.
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver))
+		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		TCPAddr: confignet.TCPAddr{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: defaultEndpoint,
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
+			},
 		},
 		MetricsPath:        defaultMetricsPath,
 		CollectionInterval: defaultCollectionInterval,

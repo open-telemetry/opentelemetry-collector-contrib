@@ -7,28 +7,22 @@ processors:
 exporters:
   datadog/api:
     hostname: customhostname
-    env: prod
-    service: myservice
-    version: myversion
-
-    tags:
-      - example:tag
-
     api:
       key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
       site: datadoghq.eu
+      fail_on_invalid_key: true
 
     traces:
-      sample_rate: 1
+      span_name_remappings:
+        "old_name1": "new_name1"
+        "old_name2": "new_name2"
+      span_name_as_resource_name: true
 
   datadog/api2:
     hostname: customhostname
-    env: prod
-    service: myservice
-    version: myversion
 
-    tags:
-      - example:tag
+    host_metadata:
+      tags: [example:tag]
 
     api:
       key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
@@ -36,33 +30,32 @@ exporters:
 
     metrics:
       endpoint: https://api.datadoghq.test
-      report_quantiles: false
 
     traces:
-      sample_rate: 1
+      span_name_remappings:
+        "old_name3": "new_name3"
+        "old_name4": "new_name4"
       endpoint: https://trace.agent.datadoghq.test
+
+    logs:
+      endpoint: https://http-intake.logs.datadoghq.test
 
   datadog/default:
     api:
       key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-
-  datadog/default2:
-
-  datadog/invalid:
-    metrics:
-      endpoint: "invalid:"
-    
-    traces:
-      endpoint: "invalid:"
 
 service:
   pipelines:
     metrics:
       receivers: [nop]
       processors: [nop]
-      exporters: [datadog/api, datadog/invalid]
+      exporters: [datadog/api]
 
     traces:
       receivers: [nop]
       processors: [nop]
-      exporters: [datadog/api, datadog/invalid]
+      exporters: [datadog/api]
+    logs:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [datadog/api]

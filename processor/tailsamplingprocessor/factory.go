@@ -24,12 +24,13 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 const (
 	// The value of "type" Tail Sampling in configuration.
 	typeStr = "tail_sampling"
+	// The stability level of the processor.
+	stability = component.StabilityLevelBeta
 )
 
 var onceMetrics sync.Once
@@ -41,10 +42,10 @@ func NewFactory() component.ProcessorFactory {
 		_ = view.Register(SamplingProcessorMetricViews(configtelemetry.LevelNormal)...)
 	})
 
-	return processorhelper.NewFactory(
+	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTracesProcessor))
+		component.WithTracesProcessor(createTracesProcessor, stability))
 }
 
 func createDefaultConfig() config.Processor {

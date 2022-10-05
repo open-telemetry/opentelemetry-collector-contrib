@@ -27,11 +27,12 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 // Helper method to handle boilerplate of loading configuration from file
-func loadConfig(t *testing.T, file string) (*config.Config, error) {
+func loadConfig(t *testing.T, file string) (*service.Config, error) {
 	// Initialize exporter factory
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
@@ -309,7 +310,7 @@ func TestValidate(t *testing.T) {
 }
 
 func TestSanitizeValid(t *testing.T) {
-	//Arrange
+	// Arrange
 	cfg := &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -338,7 +339,7 @@ func TestSanitizeValid(t *testing.T) {
 }
 
 func TestSanitizeCustomHeaders(t *testing.T) {
-	//Arrange
+	// Arrange
 	cfg := &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -364,7 +365,7 @@ func TestSanitizeCustomHeaders(t *testing.T) {
 }
 
 func TestSanitizeNoCompression(t *testing.T) {
-	//Arrange
+	// Arrange
 	cfg := &Config{
 		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
 		DisableCompression: true,

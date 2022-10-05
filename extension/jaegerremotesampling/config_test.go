@@ -17,44 +17,106 @@ package jaegerremotesampling
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	ext0 := cfg.Extensions[config.NewComponentID(typeStr)]
-	assert.Equal(t,
-		&Config{
-			ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-			GRPCClientSettings: configgrpc.GRPCClientSettings{
-				Endpoint: "jaeger-collector:14250",
+	tests := []struct {
+		id       config.ComponentID
+		expected config.Extension
+	}{
+		{
+			id: config.NewComponentID(typeStr),
+			expected: &Config{
+				ExtensionSettings:  config.NewExtensionSettings(config.NewComponentID(typeStr)),
+				HTTPServerSettings: &confighttp.HTTPServerSettings{Endpoint: ":5778"},
+				GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{
+					Endpoint:  ":14250",
+					Transport: "tcp",
+				}},
+				Source: Source{
+					Remote: &configgrpc.GRPCClientSettings{
+						Endpoint: "jaeger-collector:14250",
+					},
+				},
 			},
 		},
-		ext0)
-
-	ext1 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "1")]
-	assert.Equal(t,
-		&Config{
-			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
-			StrategyFile:      "/etc/otel/sampling_strategies.json",
+		{
+			id: config.NewComponentIDWithName(typeStr, "1"),
+			expected: &Config{
+				ExtensionSettings:  config.NewExtensionSettings(config.NewComponentID(typeStr)),
+				HTTPServerSettings: &confighttp.HTTPServerSettings{Endpoint: ":5778"},
+				GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{
+					Endpoint:  ":14250",
+					Transport: "tcp",
+				}},
+				Source: Source{
+					ReloadInterval: time.Second,
+					File:           "/etc/otelcol/sampling_strategies.json",
+				},
+			},
 		},
-		ext1)
+	}
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+			require.NoError(t, err)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalExtension(sub, cfg))
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
 
-	assert.Equal(t, 1, len(cfg.Service.Extensions))
-	assert.Equal(t, config.NewComponentIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
+func TestValidate(t *testing.T) {
+
+	testCases := []struct {
+		desc     string
+		cfg      Config
+		expected error
+	}{
+		{
+			desc:     "no receiving protocols",
+			cfg:      Config{},
+			expected: errAtLeastOneProtocol,
+		},
+		{
+			desc: "no sources",
+			cfg: Config{
+				GRPCServerSettings: &configgrpc.GRPCServerSettings{},
+			},
+			expected: errNoSources,
+		},
+		{
+			desc: "too many sources",
+			cfg: Config{
+				GRPCServerSettings: &configgrpc.GRPCServerSettings{},
+				Source: Source{
+					Remote: &configgrpc.GRPCClientSettings{},
+					File:   "/tmp/some-file",
+				},
+			},
+			expected: errTooManySources,
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			res := tC.cfg.Validate()
+			assert.Equal(t, tC.expected, res)
+		})
+	}
 }

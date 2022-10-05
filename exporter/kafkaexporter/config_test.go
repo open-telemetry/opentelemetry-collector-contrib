@@ -15,6 +15,7 @@
 package kafkaexporter
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -74,6 +75,66 @@ func TestLoadConfig(t *testing.T) {
 		Producer: Producer{
 			MaxMessageBytes: 10000000,
 			RequiredAcks:    sarama.WaitForAll,
+			Compression:     "none",
 		},
 	}, c)
+}
+
+func TestValidate_err_compression(t *testing.T) {
+	config := &Config{
+		Producer: Producer{
+			Compression: "idk",
+		},
+	}
+
+	err := config.Validate()
+	assert.Error(t, err)
+	assert.Equal(t, err.Error(), "producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value idk")
+}
+
+func Test_saramaProducerCompressionCodec(t *testing.T) {
+	tests := map[string]struct {
+		compression         string
+		expectedCompression sarama.CompressionCodec
+		expectedError       error
+	}{
+		"none": {
+			compression:         "none",
+			expectedCompression: sarama.CompressionNone,
+			expectedError:       nil,
+		},
+		"gzip": {
+			compression:         "gzip",
+			expectedCompression: sarama.CompressionGZIP,
+			expectedError:       nil,
+		},
+		"snappy": {
+			compression:         "snappy",
+			expectedCompression: sarama.CompressionSnappy,
+			expectedError:       nil,
+		},
+		"lz4": {
+			compression:         "lz4",
+			expectedCompression: sarama.CompressionLZ4,
+			expectedError:       nil,
+		},
+		"zstd": {
+			compression:         "zstd",
+			expectedCompression: sarama.CompressionZSTD,
+			expectedError:       nil,
+		},
+		"unknown": {
+			compression:         "unknown",
+			expectedCompression: sarama.CompressionNone,
+			expectedError:       fmt.Errorf("producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value unknown"),
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			c, err := saramaProducerCompressionCodec(test.compression)
+			assert.Equal(t, c, test.expectedCompression)
+			assert.Equal(t, err, test.expectedError)
+		})
+	}
 }

@@ -1,0 +1,33 @@
+exporters:
+  pulsar:
+    topic: spans
+    endpoint: pulsar://localhost:6650
+    encoding: otlp-spans
+    tls_trust_certs_file_path: ca.pem
+    auth:
+      tls:
+        cert_file: cert.pem
+        key_file: key.pem
+    timeout: 20s
+    sending_queue:
+      enabled: true
+      num_consumers: 2
+      queue_size: 10
+    retry_on_failure:
+      enabled: true
+      initial_interval: 10s
+      max_interval: 60s
+      max_elapsed_time: 10m
+
+processors:
+  nop:
+
+receivers:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [pulsar]

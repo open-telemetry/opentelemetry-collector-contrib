@@ -20,31 +20,47 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
-func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
-	require.NoError(t, err)
+func TestLoadingConfig(t *testing.T) {
+	t.Parallel()
 
-	err = configtest.CheckConfigStruct(factory.CreateDefaultConfig())
-	require.NoError(t, err)
+	tests := []struct {
+		id       config.ComponentID
+		expected config.Processor
+	}{
+		{
+			id: config.NewComponentIDWithName(typeStr, "grouping"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				GroupByKeys:       []string{"key1", "key2"},
+			},
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "compaction"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				GroupByKeys:       []string{},
+			},
+		},
+	}
 
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+			require.NoError(t, err)
 
-	require.Nil(t, err)
-	require.NotNil(t, cfg)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
 
-	conf := cfg.Processors[config.NewComponentIDWithName(typeStr, "custom")]
-	assert.Equal(t, conf,
-		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "custom")),
-			GroupByKeys:       []string{"key1", "key2"},
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
+	}
 }

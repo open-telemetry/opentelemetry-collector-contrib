@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -54,7 +53,7 @@ func TestSubprocessIntegration(t *testing.T) {
 
 func (suite *SubprocessIntegrationSuite) SetupSuite() {
 	t := suite.T()
-	scriptFile, err := ioutil.TempFile("", "subproc")
+	scriptFile, err := os.CreateTemp("", "subproc")
 	require.NoError(t, err)
 
 	_, err = scriptFile.Write([]byte(scriptContents))

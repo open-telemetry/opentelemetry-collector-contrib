@@ -25,23 +25,26 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.uber.org/atomic"
-	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 )
 
 func TestReceiver(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
-	client := fake.NewSimpleClientset()
+	client := newFakeClientWithAllResources()
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
@@ -81,14 +84,16 @@ func TestReceiver(t *testing.T) {
 	}, 10*time.Second, 100*time.Millisecond,
 		"updated metrics not collected")
 
-	r.Shutdown(ctx)
+	require.NoError(t, r.Shutdown(ctx))
 }
 
 func TestReceiverTimesOutAfterStartup(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
-	client := fake.NewSimpleClientset()
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
+	client := newFakeClientWithAllResources()
 
 	// Mock initial cache sync timing out, using a small timeout.
 	r := setupReceiver(client, nil, consumertest.NewNop(), 1*time.Millisecond, tt)
@@ -106,9 +111,11 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 func TestReceiverWithManyResources(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
-	client := fake.NewSimpleClientset()
+	client := newFakeClientWithAllResources()
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
@@ -129,7 +136,7 @@ func TestReceiverWithManyResources(t *testing.T) {
 	}, 10*time.Second, 100*time.Millisecond,
 		"metrics not collected")
 
-	r.Shutdown(ctx)
+	require.NoError(t, r.Shutdown(ctx))
 }
 
 var numCalls *atomic.Int32
@@ -142,9 +149,11 @@ var consumeMetadataInvocation = func() {
 func TestReceiverWithMetadata(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
-	client := fake.NewSimpleClientset()
+	client := newFakeClientWithAllResources()
 	next := &mockExporterWithK8sMetadata{MetricsSink: new(consumertest.MetricsSink)}
 	numCalls = atomic.NewInt32(0)
 
@@ -175,7 +184,7 @@ func TestReceiverWithMetadata(t *testing.T) {
 	}, 10*time.Second, 100*time.Millisecond,
 		"metadata not collected")
 
-	r.Shutdown(ctx)
+	require.NoError(t, r.Shutdown(ctx))
 }
 
 func getUpdatedPod(pod *corev1.Pod) interface{} {
@@ -203,7 +212,6 @@ func setupReceiver(
 		distribution = distributionOpenShift
 	}
 
-	logger := zap.NewNop()
 	config := &Config{
 		CollectionInterval:         1 * time.Second,
 		NodeConditionTypesToReport: []string{"Ready"},
@@ -211,18 +219,62 @@ func setupReceiver(
 		Distribution:               distribution,
 	}
 
-	rw := newResourceWatcher(logger, client, osQuotaClient, config.NodeConditionTypesToReport, config.AllocatableTypesToReport, initialSyncTimeout)
-	rw.dataCollector.SetupMetadataStore(&corev1.Service{}, &testutils.MockStore{})
+	r, _ := newReceiver(context.Background(), tt.ToReceiverCreateSettings(), config, consumer)
+	kr := r.(*kubernetesReceiver)
+	kr.resourceWatcher.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
+		return client, nil
+	}
+	kr.resourceWatcher.makeOpenShiftQuotaClient = func(_ k8sconfig.APIConfig) (quotaclientset.Interface, error) {
+		return osQuotaClient, nil
+	}
+	kr.resourceWatcher.initialTimeout = initialSyncTimeout
+	return kr
+}
 
-	return &kubernetesReceiver{
-		resourceWatcher: rw,
-		settings:        tt.ToReceiverCreateSettings(),
-		config:          config,
-		consumer:        consumer,
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
-			Transport:              "http",
-			ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
-		}),
+func newFakeClientWithAllResources() *fake.Clientset {
+	client := fake.NewSimpleClientset()
+	client.Resources = []*v1.APIResourceList{
+		{
+			GroupVersion: "v1",
+			APIResources: []v1.APIResource{
+				gvkToAPIResource(gvk.Pod),
+				gvkToAPIResource(gvk.Node),
+				gvkToAPIResource(gvk.Namespace),
+				gvkToAPIResource(gvk.ReplicationController),
+				gvkToAPIResource(gvk.ResourceQuota),
+				gvkToAPIResource(gvk.Service),
+			},
+		},
+		{
+			GroupVersion: "apps/v1",
+			APIResources: []v1.APIResource{
+				gvkToAPIResource(gvk.DaemonSet),
+				gvkToAPIResource(gvk.Deployment),
+				gvkToAPIResource(gvk.ReplicaSet),
+				gvkToAPIResource(gvk.StatefulSet),
+			},
+		},
+		{
+			GroupVersion: "batch/v1",
+			APIResources: []v1.APIResource{
+				gvkToAPIResource(gvk.Job),
+				gvkToAPIResource(gvk.CronJob),
+			},
+		},
+		{
+			GroupVersion: "autoscaling/v2beta2",
+			APIResources: []v1.APIResource{
+				gvkToAPIResource(gvk.HorizontalPodAutoscaler),
+			},
+		},
+	}
+	return client
+}
+
+func gvkToAPIResource(gvk schema.GroupVersionKind) v1.APIResource {
+	return v1.APIResource{
+		Group:   gvk.Group,
+		Version: gvk.Version,
+		Kind:    gvk.Kind,
 	}
 }

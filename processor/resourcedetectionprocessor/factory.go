@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
@@ -33,15 +34,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/gce"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/gke"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "resourcedetection"
+	// The stability level of the processor.
+	stability = component.StabilityLevelBeta
 )
 
 var consumerCapabilities = consumer.Capabilities{MutatesData: true}
@@ -61,13 +64,16 @@ func NewFactory() component.ProcessorFactory {
 		aks.TypeStr:              aks.NewDetector,
 		azure.TypeStr:            azure.NewDetector,
 		consul.TypeStr:           consul.NewDetector,
+		docker.TypeStr:           docker.NewDetector,
 		ec2.TypeStr:              ec2.NewDetector,
 		ecs.TypeStr:              ecs.NewDetector,
 		eks.TypeStr:              eks.NewDetector,
 		elasticbeanstalk.TypeStr: elasticbeanstalk.NewDetector,
 		env.TypeStr:              env.NewDetector,
-		gce.TypeStr:              gce.NewDetector,
-		gke.TypeStr:              gke.NewDetector,
+		gcp.TypeStr:              gcp.NewDetector,
+		// TODO(#10348): Remove GKE and GCE after the v0.54.0 release.
+		gcp.DeprecatedGKETypeStr: gcp.NewDetector,
+		gcp.DeprecatedGCETypeStr: gcp.NewDetector,
 		system.TypeStr:           system.NewDetector,
 	})
 
@@ -76,12 +82,12 @@ func NewFactory() component.ProcessorFactory {
 		providers:               map[config.ComponentID]*internal.ResourceProvider{},
 	}
 
-	return processorhelper.NewFactory(
+	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(f.createTracesProcessor),
-		processorhelper.WithMetrics(f.createMetricsProcessor),
-		processorhelper.WithLogs(f.createLogsProcessor))
+		component.WithTracesProcessor(f.createTracesProcessor, stability),
+		component.WithMetricsProcessor(f.createMetricsProcessor, stability),
+		component.WithLogsProcessor(f.createLogsProcessor, stability))
 }
 
 // Type gets the type of the Option config created by this factory.
@@ -91,27 +97,36 @@ func (*factory) Type() config.Type {
 
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		Detectors:         []string{env.TypeStr},
-		Timeout:           5 * time.Second,
-		Override:          true,
+		ProcessorSettings:  config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		Detectors:          []string{env.TypeStr},
+		HTTPClientSettings: defaultHTTPClientSettings(),
+		Override:           true,
+		Attributes:         nil,
 		// TODO: Once issue(https://github.com/open-telemetry/opentelemetry-collector/issues/4001) gets resolved,
 		// 		 Set the default value of 'hostname_source' here instead of 'system' detector
 	}
 }
 
+func defaultHTTPClientSettings() confighttp.HTTPClientSettings {
+	httpClientSettings := confighttp.NewDefaultHTTPClientSettings()
+	httpClientSettings.Timeout = 5 * time.Second
+	return httpClientSettings
+}
+
 func (f *factory) createTracesProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
-	rdp, err := f.getResourceDetectionProcessor(params, cfg)
+	rdp, err := f.getResourceDetectionProcessor(set, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	return processorhelper.NewTracesProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		rdp.processTraces,
@@ -120,17 +135,19 @@ func (f *factory) createTracesProcessor(
 }
 
 func (f *factory) createMetricsProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
-	rdp, err := f.getResourceDetectionProcessor(params, cfg)
+	rdp, err := f.getResourceDetectionProcessor(set, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	return processorhelper.NewMetricsProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		rdp.processMetrics,
@@ -139,17 +156,19 @@ func (f *factory) createMetricsProcessor(
 }
 
 func (f *factory) createLogsProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
-	rdp, err := f.getResourceDetectionProcessor(params, cfg)
+	rdp, err := f.getResourceDetectionProcessor(set, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	return processorhelper.NewLogsProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		rdp.processLogs,
@@ -163,14 +182,16 @@ func (f *factory) getResourceDetectionProcessor(
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	provider, err := f.getResourceProvider(params, cfg.ID(), oCfg.Timeout, oCfg.Detectors, oCfg.DetectorConfig)
+	provider, err := f.getResourceProvider(params, cfg.ID(), oCfg.HTTPClientSettings.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.Attributes)
 	if err != nil {
 		return nil, err
 	}
 
 	return &resourceDetectionProcessor{
-		provider: provider,
-		override: oCfg.Override,
+		provider:           provider,
+		override:           oCfg.Override,
+		httpClientSettings: oCfg.HTTPClientSettings,
+		telemetrySettings:  params.TelemetrySettings,
 	}, nil
 }
 
@@ -180,6 +201,7 @@ func (f *factory) getResourceProvider(
 	timeout time.Duration,
 	configuredDetectors []string,
 	detectorConfigs DetectorConfig,
+	attributes []string,
 ) (*internal.ResourceProvider, error) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
@@ -188,12 +210,15 @@ func (f *factory) getResourceProvider(
 		return provider, nil
 	}
 
+	// TODO(#10348): Remove this after the v0.54.0 release.
+	configuredDetectors = gcp.DeduplicateDetectors(params, configuredDetectors)
+
 	detectorTypes := make([]internal.DetectorType, 0, len(configuredDetectors))
 	for _, key := range configuredDetectors {
 		detectorTypes = append(detectorTypes, internal.DetectorType(strings.TrimSpace(key)))
 	}
 
-	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, timeout, &detectorConfigs, detectorTypes...)
+	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, timeout, attributes, &detectorConfigs, detectorTypes...)
 	if err != nil {
 		return nil, err
 	}

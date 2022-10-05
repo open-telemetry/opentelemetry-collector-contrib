@@ -21,7 +21,8 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/client"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterhelper"
 )
@@ -29,7 +30,7 @@ import (
 // Settings specifies the processor settings.
 type Settings struct {
 	// Actions specifies the list of attributes to act on.
-	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT}.
+	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT, CONVERT}.
 	// This is a required field.
 	Actions []ActionKeyValue `mapstructure:"actions"`
 }
@@ -64,6 +65,11 @@ type ActionKeyValue struct {
 	// If the key has multiple values the values will be joined with `;` separator.
 	FromContext string `mapstructure:"from_context"`
 
+	// ConvertedType specifies the target type of an attribute to be converted
+	// If the key doesn't exist, no action is performed.
+	// If the value cannot be converted, the original value will be left as-is
+	ConvertedType string `mapstructure:"converted_type"`
+
 	// Action specifies the type of action to perform.
 	// The set of values are {INSERT, UPDATE, UPSERT, DELETE, HASH}.
 	// Both lower case and upper case are supported.
@@ -85,6 +91,7 @@ type ActionKeyValue struct {
 	// EXTRACT - Extracts values using a regular expression rule from the input
 	//           'key' to target keys specified in the 'rule'. If a target key
 	//           already exists, it will be overridden.
+	// CONVERT  - converts the type of an existing attribute, if convertable
 	// This is a required field.
 	Action Action `mapstructure:"action"`
 }
@@ -124,22 +131,28 @@ const (
 	UPSERT Action = "upsert"
 
 	// DELETE deletes the attribute. If the key doesn't exist, no action is performed.
+	// Supports pattern which is matched against attribute key.
 	DELETE Action = "delete"
 
 	// HASH calculates the SHA-1 hash of an existing value and overwrites the
 	// value with it's SHA-1 hash result.
+	// Supports pattern which is matched against attribute key.
 	HASH Action = "hash"
 
 	// EXTRACT extracts values using a regular expression rule from the input
 	// 'key' to target keys specified in the 'rule'. If a target key already
 	// exists, it will be overridden.
 	EXTRACT Action = "extract"
+
+	// CONVERT converts the type of an existing attribute, if convertable
+	CONVERT Action = "convert"
 )
 
 type attributeAction struct {
 	Key           string
 	FromAttribute string
 	FromContext   string
+	ConvertedType string
 	// Compiled regex if provided
 	Regex *regexp.Regexp
 	// Attribute names extracted from the regexp's subexpressions.
@@ -151,7 +164,7 @@ type attributeAction struct {
 	// The reason is attributes processor will most likely be commonly used
 	// and could impact performance.
 	Action         Action
-	AttributeValue *pdata.AttributeValue
+	AttributeValue *pcommon.Value
 }
 
 // AttrProc is an attribute processor.
@@ -165,13 +178,22 @@ type AttrProc struct {
 func NewAttrProc(settings *Settings) (*AttrProc, error) {
 	var attributeActions []attributeAction
 	for i, a := range settings.Actions {
-		// `key` is a required field
-		if a.Key == "" {
-			return nil, fmt.Errorf("error creating AttrProc due to missing required field \"key\" at the %d-th actions", i)
-		}
-
 		// Convert `action` to lowercase for comparison.
 		a.Action = Action(strings.ToLower(string(a.Action)))
+
+		switch a.Action {
+		case DELETE, HASH:
+			// requires `key` and/or `pattern`
+			if a.Key == "" && a.RegexPattern == "" {
+				return nil, fmt.Errorf("error creating AttrProc due to missing required field (at least one of \"key\" and \"pattern\" have to be used) at the %d-th actions", i)
+			}
+		default:
+			// `key` is a required field
+			if a.Key == "" {
+				return nil, fmt.Errorf("error creating AttrProc due to missing required field \"key\" at the %d-th actions", i)
+			}
+		}
+
 		action := attributeAction{
 			Key:    a.Key,
 			Action: a.Action,
@@ -190,7 +212,9 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 			}
 			if a.RegexPattern != "" {
 				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use the \"pattern\" field. This must not be specified for %d-th action", a.Action, i)
-
+			}
+			if a.ConvertedType != "" {
+				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use the \"converted_type\" field. This must not be specified for %d-th action", a.Action, i)
 			}
 			// Convert the raw value from the configuration to the internal trace representation of the value.
 			if a.Value != nil {
@@ -204,8 +228,19 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 				action.FromContext = a.FromContext
 			}
 		case HASH, DELETE:
-			if valueSourceCount > 0 || a.RegexPattern != "" {
-				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use value sources or \"pattern\" field. These must not be specified for %d-th action", a.Action, i)
+			if a.Value != nil || a.FromAttribute != "" {
+				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use \"value\" or \"from_attribute\" field. These must not be specified for %d-th action", a.Action, i)
+			}
+
+			if a.RegexPattern != "" {
+				re, err := regexp.Compile(a.RegexPattern)
+				if err != nil {
+					return nil, fmt.Errorf("error creating AttrProc. Field \"pattern\" has invalid pattern: \"%s\" to be set at the %d-th actions", a.RegexPattern, i)
+				}
+				action.Regex = re
+			}
+			if a.ConvertedType != "" {
+				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use the \"converted_type\" field. This must not be specified for %d-th action", a.Action, i)
 			}
 		case EXTRACT:
 			if valueSourceCount > 0 {
@@ -213,7 +248,9 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 			}
 			if a.RegexPattern == "" {
 				return nil, fmt.Errorf("error creating AttrProc due to missing required field \"pattern\" for action \"%s\" at the %d-th action", a.Action, i)
-
+			}
+			if a.ConvertedType != "" {
+				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use the \"converted_type\" field. This must not be specified for %d-th action", a.Action, i)
 			}
 			re, err := regexp.Compile(a.RegexPattern)
 			if err != nil {
@@ -231,6 +268,20 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 			}
 			action.Regex = re
 			action.AttrNames = attrNames
+		case CONVERT:
+			if valueSourceCount > 0 || a.RegexPattern != "" {
+				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use value sources or \"pattern\" field. These must not be specified for %d-th action", a.Action, i)
+			}
+			switch a.ConvertedType {
+			case stringConversionTarget:
+			case intConversionTarget:
+			case doubleConversionTarget:
+			case "":
+				return nil, fmt.Errorf("error creating AttrProc due to missing required field \"converted_type\" for action \"%s\" at the %d-th action", a.Action, i)
+			default:
+				return nil, fmt.Errorf("error creating AttrProc due to invalid value \"%s\" in field \"converted_type\" for action \"%s\" at the %d-th action", a.ConvertedType, a.Action, i)
+			}
+			action.ConvertedType = a.ConvertedType
 		default:
 			return nil, fmt.Errorf("error creating AttrProc due to unsupported action %q at the %d-th actions", a.Action, i)
 		}
@@ -241,7 +292,7 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 }
 
 // Process applies the AttrProc to an attribute map.
-func (ap *AttrProc) Process(ctx context.Context, attrs pdata.AttributeMap) {
+func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcommon.Map) {
 	for _, action := range ap.actions {
 		// TODO https://go.opentelemetry.io/collector/issues/296
 		// Do benchmark testing between having action be of type string vs integer.
@@ -249,45 +300,98 @@ func (ap *AttrProc) Process(ctx context.Context, attrs pdata.AttributeMap) {
 		// and could impact performance.
 		switch action.Action {
 		case DELETE:
-			attrs.Delete(action.Key)
+			attrs.Remove(action.Key)
+
+			for _, k := range getMatchingKeys(action.Regex, attrs) {
+				attrs.Remove(k)
+			}
 		case INSERT:
 			av, found := getSourceAttributeValue(ctx, action, attrs)
 			if !found {
 				continue
 			}
-			attrs.Insert(action.Key, av)
+			if _, found = attrs.Get(action.Key); found {
+				continue
+			}
+			av.CopyTo(attrs.PutEmpty(action.Key))
 		case UPDATE:
 			av, found := getSourceAttributeValue(ctx, action, attrs)
 			if !found {
 				continue
 			}
-			attrs.Update(action.Key, av)
+			val, found := attrs.Get(action.Key)
+			if !found {
+				continue
+			}
+			av.CopyTo(val)
 		case UPSERT:
 			av, found := getSourceAttributeValue(ctx, action, attrs)
 			if !found {
 				continue
 			}
-			attrs.Upsert(action.Key, av)
+			val, found := attrs.Get(action.Key)
+			if found {
+				av.CopyTo(val)
+			} else {
+				av.CopyTo(attrs.PutEmpty(action.Key))
+			}
 		case HASH:
-			hashAttribute(action, attrs)
+			hashAttribute(action.Key, attrs)
+
+			for _, k := range getMatchingKeys(action.Regex, attrs) {
+				hashAttribute(k, attrs)
+			}
 		case EXTRACT:
 			extractAttributes(action, attrs)
+		case CONVERT:
+			convertAttribute(logger, action, attrs)
 		}
 	}
 }
 
-func getAttributeValueFromContext(ctx context.Context, key string) (pdata.AttributeValue, bool) {
-	ci := client.FromContext(ctx)
-	vals := ci.Metadata.Get(key)
+func getAttributeValueFromContext(ctx context.Context, key string) (pcommon.Value, bool) {
+	const (
+		metadataPrefix = "metadata."
+		authPrefix     = "auth."
+	)
 
-	if len(vals) == 0 {
-		return pdata.AttributeValue{}, false
+	ci := client.FromContext(ctx)
+	var vals []string
+
+	switch {
+	case strings.HasPrefix(key, metadataPrefix):
+		mdKey := strings.TrimPrefix(key, metadataPrefix)
+		vals = ci.Metadata.Get(mdKey)
+	case strings.HasPrefix(key, authPrefix):
+		if ci.Auth == nil {
+			return pcommon.Value{}, false
+		}
+
+		attrName := strings.TrimPrefix(key, authPrefix)
+		attr := ci.Auth.GetAttribute(attrName)
+
+		switch a := attr.(type) {
+		case string:
+			return pcommon.NewValueStr(a), true
+		case []string:
+			vals = a
+		default:
+			// TODO: Warn about unexpected attribute types.
+			return pcommon.Value{}, false
+		}
+	default:
+		// Fallback to metadata for backwards compatibility.
+		vals = ci.Metadata.Get(key)
 	}
 
-	return pdata.NewAttributeValueString(strings.Join(vals, ";")), true
+	if len(vals) == 0 {
+		return pcommon.Value{}, false
+	}
+
+	return pcommon.NewValueStr(strings.Join(vals, ";")), true
 }
 
-func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs pdata.AttributeMap) (pdata.AttributeValue, bool) {
+func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs pcommon.Map) (pcommon.Value, bool) {
 	// Set the key with a value from the configuration.
 	if action.AttributeValue != nil {
 		return *action.AttributeValue, true
@@ -300,23 +404,29 @@ func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs 
 	return attrs.Get(action.FromAttribute)
 }
 
-func hashAttribute(action attributeAction, attrs pdata.AttributeMap) {
-	if value, exists := attrs.Get(action.Key); exists {
+func hashAttribute(key string, attrs pcommon.Map) {
+	if value, exists := attrs.Get(key); exists {
 		sha1Hasher(value)
 	}
 }
 
-func extractAttributes(action attributeAction, attrs pdata.AttributeMap) {
+func convertAttribute(logger *zap.Logger, action attributeAction, attrs pcommon.Map) {
+	if value, exists := attrs.Get(action.Key); exists {
+		convertValue(logger, action.Key, action.ConvertedType, value)
+	}
+}
+
+func extractAttributes(action attributeAction, attrs pcommon.Map) {
 	value, found := attrs.Get(action.Key)
 
 	// Extracting values only functions on strings.
-	if !found || value.Type() != pdata.AttributeValueTypeString {
+	if !found || value.Type() != pcommon.ValueTypeStr {
 		return
 	}
 
 	// Note: The number of matches will always be equal to number of
 	// subexpressions.
-	matches := action.Regex.FindStringSubmatch(value.StringVal())
+	matches := action.Regex.FindStringSubmatch(value.Str())
 	if matches == nil {
 		return
 	}
@@ -324,6 +434,22 @@ func extractAttributes(action attributeAction, attrs pdata.AttributeMap) {
 	// Start from index 1, which is the first submatch (index 0 is the entire
 	// match).
 	for i := 1; i < len(matches); i++ {
-		attrs.UpsertString(action.AttrNames[i], matches[i])
+		attrs.PutString(action.AttrNames[i], matches[i])
 	}
+}
+
+func getMatchingKeys(regexp *regexp.Regexp, attrs pcommon.Map) []string {
+	var keys []string
+
+	if regexp == nil {
+		return keys
+	}
+
+	attrs.Range(func(k string, v pcommon.Value) bool {
+		if regexp.MatchString(k) {
+			keys = append(keys, k)
+		}
+		return true
+	})
+	return keys
 }

@@ -20,17 +20,47 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+	t.Parallel()
 
-	factories.Processors[typeStr] = NewFactory()
+	tests := []struct {
+		id       config.ComponentID
+		expected config.Processor
+	}{
+		{
+			id: config.NewComponentIDWithName(typeStr, ""),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				AllowAllKeys:      false,
+				AllowedKeys:       []string{"description", "group", "id", "name"},
+				BlockedValues:     []string{"4[0-9]{12}(?:[0-9]{3})?", "(5[1-5][0-9]{14})"},
+				Summary:           debug,
+			},
+		},
+		{
+			id:       config.NewComponentIDWithName(typeStr, "empty"),
+			expected: createDefaultConfig(),
+		},
+	}
 
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+			require.NoError(t, err)
+
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }

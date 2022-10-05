@@ -2,29 +2,37 @@ name: "CodeQL Analysis"
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   CodeQL-Build:
     runs-on: ubuntu-latest
+    env:
+      # Force CodeQL to run the extraction on the files compiled by our custom
+      # build command, as opposed to letting the autobuilder figure it out.
+      # See: https://github.com/github/codeql-action/issues/1101#issuecomment-1157729589
+      CODEQL_EXTRACTOR_GO_BUILD_TRACING: 'on'
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
-        
+        uses: actions/checkout@v3
+
       - name: Set up Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
-          go-version: 1.17
+          go-version: 1.19
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v1
+        uses: github/codeql-action/init@v2
         with:
           languages: go
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v1
+      - name: Build Artifact
+        run: |
+          make otelcontribcol
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v1
+        uses: github/codeql-action/analyze@v2
+        timeout-minutes: 60
+

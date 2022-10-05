@@ -19,8 +19,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -42,21 +43,21 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		{
 			name:        "empty_property",
 			property:    filterconfig.MatchProperties{},
-			errorString: "at least one of \"services\", \"span_names\", \"attributes\", \"libraries\" or \"resources\" field must be specified",
+			errorString: filterconfig.ErrMissingRequiredField.Error(),
 		},
 		{
 			name: "empty_service_span_names_and_attributes",
 			property: filterconfig.MatchProperties{
 				Services: []string{},
 			},
-			errorString: "at least one of \"services\", \"span_names\", \"attributes\", \"libraries\" or \"resources\" field must be specified",
+			errorString: filterconfig.ErrMissingRequiredField.Error(),
 		},
 		{
 			name: "log_properties",
 			property: filterconfig.MatchProperties{
-				LogNames: []string{"log"},
+				LogBodies: []string{"log"},
 			},
-			errorString: "log_names should not be specified for trace spans",
+			errorString: "log_bodies should not be specified for trace spans",
 		},
 		{
 			name: "invalid_match_type",
@@ -88,6 +89,17 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 				SpanNames: []string{"["},
 			},
 			errorString: "error creating span name filters: error parsing regexp: missing closing ]: `[`",
+		},
+		{
+			name: "invalid_strict_span_kind_match",
+			property: filterconfig.MatchProperties{
+				Config: *createConfig(filterset.Strict),
+				SpanKinds: []string{
+					"test_invalid_span_kind",
+				},
+				Attributes: []filterconfig.Attribute{},
+			},
+			errorString: "span_kinds string must match one of the standard span kinds when match_type=strict: [     SPAN_KIND_CLIENT SPAN_KIND_CONSUMER SPAN_KIND_INTERNAL SPAN_KIND_PRODUCER SPAN_KIND_SERVER]",
 		},
 	}
 	for _, tc := range testcases {
@@ -143,12 +155,28 @@ func TestSpan_Matching_False(t *testing.T) {
 				Attributes: []filterconfig.Attribute{},
 			},
 		},
+		{
+			name: "span_kind_doesnt_match_regexp",
+			properties: &filterconfig.MatchProperties{
+				Config:     *createConfig(filterset.Regexp),
+				Attributes: []filterconfig.Attribute{},
+				SpanKinds:  []string{ptrace.SpanKindProducer.String()},
+			},
+		},
+		{
+			name: "span_kind_doesnt_match_strict",
+			properties: &filterconfig.MatchProperties{
+				Config:     *createConfig(filterset.Strict),
+				Attributes: []filterconfig.Attribute{},
+				SpanKinds:  []string{ptrace.SpanKindProducer.String()},
+			},
+		},
 	}
 
-	span := pdata.NewSpan()
+	span := ptrace.NewSpan()
 	span.SetName("spanName")
-	library := pdata.NewInstrumentationLibrary()
-	resource := pdata.NewResource()
+	library := pcommon.NewInstrumentationScope()
+	resource := pcommon.NewResource()
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -171,8 +199,8 @@ func TestSpan_MissingServiceName(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, mp)
 
-	emptySpan := pdata.NewSpan()
-	assert.False(t, mp.MatchSpan(emptySpan, pdata.NewResource(), pdata.NewInstrumentationLibrary()))
+	emptySpan := ptrace.NewSpan()
+	assert.False(t, mp.MatchSpan(emptySpan, pcommon.NewResource(), pcommon.NewInstrumentationScope()))
 }
 
 func TestSpan_Matching_True(t *testing.T) {
@@ -217,21 +245,43 @@ func TestSpan_Matching_True(t *testing.T) {
 				Attributes: []filterconfig.Attribute{},
 			},
 		},
+		{
+			name: "span_kind_match_strict",
+			properties: &filterconfig.MatchProperties{
+				Config: *createConfig(filterset.Strict),
+				SpanKinds: []string{
+					ptrace.SpanKindClient.String(),
+				},
+				Attributes: []filterconfig.Attribute{},
+			},
+		},
+		{
+			name: "span_kind_match_regexp",
+			properties: &filterconfig.MatchProperties{
+				Config: *createConfig(filterset.Regexp),
+				SpanKinds: []string{
+					"CLIENT",
+				},
+				Attributes: []filterconfig.Attribute{},
+			},
+		},
 	}
 
-	span := pdata.NewSpan()
+	span := ptrace.NewSpan()
 	span.SetName("spanName")
-	span.Attributes().InsertString("keyString", "arithmetic")
-	span.Attributes().InsertInt("keyInt", 123)
-	span.Attributes().InsertDouble("keyDouble", 3245.6)
-	span.Attributes().InsertBool("keyBool", true)
-	span.Attributes().InsertString("keyExists", "present")
+
+	span.Attributes().PutString("keyString", "arithmetic")
+	span.Attributes().PutInt("keyInt", 123)
+	span.Attributes().PutDouble("keyDouble", 3245.6)
+	span.Attributes().PutBool("keyBool", true)
+	span.Attributes().PutString("keyExists", "present")
+	span.SetKind(ptrace.SpanKindClient)
 	assert.NotNil(t, span)
 
-	resource := pdata.NewResource()
-	resource.Attributes().InsertString(conventions.AttributeServiceName, "svcA")
+	resource := pcommon.NewResource()
+	resource.Attributes().PutString(conventions.AttributeServiceName, "svcA")
 
-	library := pdata.NewInstrumentationLibrary()
+	library := pcommon.NewInstrumentationScope()
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -246,12 +296,12 @@ func TestSpan_Matching_True(t *testing.T) {
 
 func TestServiceNameForResource(t *testing.T) {
 	td := testdata.GenerateTracesOneSpanNoResource()
-	require.Equal(t, serviceNameForResource(td.ResourceSpans().At(0).Resource()), "<nil-service-name>")
+	name := serviceNameForResource(td.ResourceSpans().At(0).Resource())
+	require.Equal(t, name, "<nil-service-name>")
 
 	td = testdata.GenerateTracesOneSpan()
 	resource := td.ResourceSpans().At(0).Resource()
-	require.Equal(t, serviceNameForResource(resource), "<nil-service-name>")
+	name = serviceNameForResource(resource)
+	require.Equal(t, name, "<nil-service-name>")
 
-	resource.Attributes().InsertString(conventions.AttributeServiceName, "test-service")
-	require.Equal(t, serviceNameForResource(resource), "test-service")
 }

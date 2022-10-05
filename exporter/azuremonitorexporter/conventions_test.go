@@ -18,37 +18,37 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 func TestHTTPAttributeMapping(t *testing.T) {
-	httpAttributeValues := map[string]pdata.AttributeValue{
-		conventions.AttributeHTTPMethod: pdata.NewAttributeValueString(conventions.AttributeHTTPMethod),
-		conventions.AttributeHTTPURL:    pdata.NewAttributeValueString(conventions.AttributeHTTPURL),
-		conventions.AttributeHTTPTarget: pdata.NewAttributeValueString(conventions.AttributeHTTPTarget),
-		conventions.AttributeHTTPHost:   pdata.NewAttributeValueString(conventions.AttributeHTTPHost),
-		conventions.AttributeHTTPScheme: pdata.NewAttributeValueString(conventions.AttributeHTTPScheme),
+	httpAttributeValues := map[string]interface{}{
+		conventions.AttributeHTTPMethod: conventions.AttributeHTTPMethod,
+		conventions.AttributeHTTPURL:    conventions.AttributeHTTPURL,
+		conventions.AttributeHTTPTarget: conventions.AttributeHTTPTarget,
+		conventions.AttributeHTTPHost:   conventions.AttributeHTTPHost,
+		conventions.AttributeHTTPScheme: conventions.AttributeHTTPScheme,
 
 		// Exercise the INT or STRING logic
-		conventions.AttributeHTTPStatusCode:                        pdata.NewAttributeValueString("200"),
-		"http.status_text":                                         pdata.NewAttributeValueString("http.status_text"),
-		conventions.AttributeHTTPFlavor:                            pdata.NewAttributeValueString(conventions.AttributeHTTPFlavor),
-		conventions.AttributeHTTPUserAgent:                         pdata.NewAttributeValueString(conventions.AttributeHTTPUserAgent),
-		conventions.AttributeHTTPRequestContentLength:              pdata.NewAttributeValueInt(1),
-		conventions.AttributeHTTPRequestContentLengthUncompressed:  pdata.NewAttributeValueInt(2),
-		conventions.AttributeHTTPResponseContentLength:             pdata.NewAttributeValueInt(3),
-		conventions.AttributeHTTPResponseContentLengthUncompressed: pdata.NewAttributeValueInt(4),
+		conventions.AttributeHTTPStatusCode:                        "200",
+		"http.status_text":                                         "http.status_text",
+		conventions.AttributeHTTPFlavor:                            conventions.AttributeHTTPFlavor,
+		conventions.AttributeHTTPUserAgent:                         conventions.AttributeHTTPUserAgent,
+		conventions.AttributeHTTPRequestContentLength:              1,
+		conventions.AttributeHTTPRequestContentLengthUncompressed:  2,
+		conventions.AttributeHTTPResponseContentLength:             3,
+		conventions.AttributeHTTPResponseContentLengthUncompressed: 4,
 
-		conventions.AttributeHTTPRoute:      pdata.NewAttributeValueString(conventions.AttributeHTTPRoute),
-		conventions.AttributeHTTPServerName: pdata.NewAttributeValueString(conventions.AttributeHTTPServerName),
-		conventions.AttributeHTTPClientIP:   pdata.NewAttributeValueString(conventions.AttributeHTTPClientIP),
+		conventions.AttributeHTTPRoute:      conventions.AttributeHTTPRoute,
+		conventions.AttributeHTTPServerName: conventions.AttributeHTTPServerName,
+		conventions.AttributeHTTPClientIP:   conventions.AttributeHTTPClientIP,
 	}
 
-	attributeMap := pdata.NewAttributeMapFromMap(httpAttributeValues)
+	attributeMap := pcommon.NewMap()
+	attributeMap.FromRaw(httpAttributeValues)
 
-	// Add all the network attributes
-	appendToAttributeMap(attributeMap, getNetworkAttributes())
+	addNetworkAttributes(attributeMap)
 
 	httpAttributes := &HTTPAttributes{}
 	attributeMap.Range(httpAttributes.MapAttribute)
@@ -74,16 +74,16 @@ func TestHTTPAttributeMapping(t *testing.T) {
 }
 
 func TestRPCPAttributeMapping(t *testing.T) {
-	rpcAttributeValues := map[string]pdata.AttributeValue{
-		conventions.AttributeRPCSystem:  pdata.NewAttributeValueString(conventions.AttributeRPCSystem),
-		conventions.AttributeRPCService: pdata.NewAttributeValueString(conventions.AttributeRPCService),
-		conventions.AttributeRPCMethod:  pdata.NewAttributeValueString(conventions.AttributeRPCMethod),
+	rpcAttributeValues := map[string]interface{}{
+		conventions.AttributeRPCSystem:  conventions.AttributeRPCSystem,
+		conventions.AttributeRPCService: conventions.AttributeRPCService,
+		conventions.AttributeRPCMethod:  conventions.AttributeRPCMethod,
 	}
 
-	attributeMap := pdata.NewAttributeMapFromMap(rpcAttributeValues)
+	attributeMap := pcommon.NewMap()
+	attributeMap.FromRaw(rpcAttributeValues)
 
-	// Add all the network attributes
-	appendToAttributeMap(attributeMap, getNetworkAttributes())
+	addNetworkAttributes(attributeMap)
 
 	rpcAttributes := &RPCAttributes{}
 	attributeMap.Range(rpcAttributes.MapAttribute)
@@ -96,24 +96,24 @@ func TestRPCPAttributeMapping(t *testing.T) {
 }
 
 func TestDatabaseAttributeMapping(t *testing.T) {
-	databaseAttributeValues := map[string]pdata.AttributeValue{
-		conventions.AttributeDBSystem:              pdata.NewAttributeValueString(conventions.AttributeDBSystem),
-		conventions.AttributeDBConnectionString:    pdata.NewAttributeValueString(conventions.AttributeDBConnectionString),
-		conventions.AttributeDBUser:                pdata.NewAttributeValueString(conventions.AttributeDBUser),
-		conventions.AttributeDBStatement:           pdata.NewAttributeValueString(conventions.AttributeDBStatement),
-		conventions.AttributeDBOperation:           pdata.NewAttributeValueString(conventions.AttributeDBOperation),
-		conventions.AttributeDBMSSQLInstanceName:   pdata.NewAttributeValueString(conventions.AttributeDBMSSQLInstanceName),
-		conventions.AttributeDBJDBCDriverClassname: pdata.NewAttributeValueString(conventions.AttributeDBJDBCDriverClassname),
-		conventions.AttributeDBCassandraKeyspace:   pdata.NewAttributeValueString(conventions.AttributeDBCassandraKeyspace),
-		conventions.AttributeDBHBaseNamespace:      pdata.NewAttributeValueString(conventions.AttributeDBHBaseNamespace),
-		conventions.AttributeDBRedisDBIndex:        pdata.NewAttributeValueString(conventions.AttributeDBRedisDBIndex),
-		conventions.AttributeDBMongoDBCollection:   pdata.NewAttributeValueString(conventions.AttributeDBMongoDBCollection),
+	databaseAttributeValues := map[string]interface{}{
+		conventions.AttributeDBSystem:              conventions.AttributeDBSystem,
+		conventions.AttributeDBConnectionString:    conventions.AttributeDBConnectionString,
+		conventions.AttributeDBUser:                conventions.AttributeDBUser,
+		conventions.AttributeDBStatement:           conventions.AttributeDBStatement,
+		conventions.AttributeDBOperation:           conventions.AttributeDBOperation,
+		conventions.AttributeDBMSSQLInstanceName:   conventions.AttributeDBMSSQLInstanceName,
+		conventions.AttributeDBJDBCDriverClassname: conventions.AttributeDBJDBCDriverClassname,
+		conventions.AttributeDBCassandraKeyspace:   conventions.AttributeDBCassandraKeyspace,
+		conventions.AttributeDBHBaseNamespace:      conventions.AttributeDBHBaseNamespace,
+		conventions.AttributeDBRedisDBIndex:        conventions.AttributeDBRedisDBIndex,
+		conventions.AttributeDBMongoDBCollection:   conventions.AttributeDBMongoDBCollection,
 	}
 
-	attributeMap := pdata.NewAttributeMapFromMap(databaseAttributeValues)
+	attributeMap := pcommon.NewMap()
+	attributeMap.FromRaw(databaseAttributeValues)
 
-	// Add all the network attributes
-	appendToAttributeMap(attributeMap, getNetworkAttributes())
+	addNetworkAttributes(attributeMap)
 
 	databaseAttributes := &DatabaseAttributes{}
 	attributeMap.Range(databaseAttributes.MapAttribute)
@@ -132,25 +132,25 @@ func TestDatabaseAttributeMapping(t *testing.T) {
 }
 
 func TestMessagingAttributeMapping(t *testing.T) {
-	messagingAttributeValues := map[string]pdata.AttributeValue{
-		conventions.AttributeMessagingSystem:                            pdata.NewAttributeValueString(conventions.AttributeMessagingSystem),
-		conventions.AttributeMessagingDestination:                       pdata.NewAttributeValueString(conventions.AttributeMessagingDestination),
-		conventions.AttributeMessagingDestinationKind:                   pdata.NewAttributeValueString(conventions.AttributeMessagingDestinationKind),
-		conventions.AttributeMessagingTempDestination:                   pdata.NewAttributeValueString(conventions.AttributeMessagingTempDestination),
-		conventions.AttributeMessagingProtocol:                          pdata.NewAttributeValueString(conventions.AttributeMessagingProtocol),
-		conventions.AttributeMessagingProtocolVersion:                   pdata.NewAttributeValueString(conventions.AttributeMessagingProtocolVersion),
-		conventions.AttributeMessagingURL:                               pdata.NewAttributeValueString(conventions.AttributeMessagingURL),
-		conventions.AttributeMessagingMessageID:                         pdata.NewAttributeValueString(conventions.AttributeMessagingMessageID),
-		conventions.AttributeMessagingConversationID:                    pdata.NewAttributeValueString(conventions.AttributeMessagingConversationID),
-		conventions.AttributeMessagingMessagePayloadSizeBytes:           pdata.NewAttributeValueInt(1),
-		conventions.AttributeMessagingMessagePayloadCompressedSizeBytes: pdata.NewAttributeValueInt(2),
-		conventions.AttributeMessagingOperation:                         pdata.NewAttributeValueString(conventions.AttributeMessagingOperation),
+	messagingAttributeValues := map[string]interface{}{
+		conventions.AttributeMessagingSystem:                            conventions.AttributeMessagingSystem,
+		conventions.AttributeMessagingDestination:                       conventions.AttributeMessagingDestination,
+		conventions.AttributeMessagingDestinationKind:                   conventions.AttributeMessagingDestinationKind,
+		conventions.AttributeMessagingTempDestination:                   conventions.AttributeMessagingTempDestination,
+		conventions.AttributeMessagingProtocol:                          conventions.AttributeMessagingProtocol,
+		conventions.AttributeMessagingProtocolVersion:                   conventions.AttributeMessagingProtocolVersion,
+		conventions.AttributeMessagingURL:                               conventions.AttributeMessagingURL,
+		conventions.AttributeMessagingMessageID:                         conventions.AttributeMessagingMessageID,
+		conventions.AttributeMessagingConversationID:                    conventions.AttributeMessagingConversationID,
+		conventions.AttributeMessagingMessagePayloadSizeBytes:           1,
+		conventions.AttributeMessagingMessagePayloadCompressedSizeBytes: 2,
+		conventions.AttributeMessagingOperation:                         conventions.AttributeMessagingOperation,
 	}
 
-	attributeMap := pdata.NewAttributeMapFromMap(messagingAttributeValues)
+	attributeMap := pcommon.NewMap()
+	attributeMap.FromRaw(messagingAttributeValues)
 
-	// Add all the network attributes
-	appendToAttributeMap(attributeMap, getNetworkAttributes())
+	addNetworkAttributes(attributeMap)
 
 	messagingAttributes := &MessagingAttributes{}
 	attributeMap.Range(messagingAttributes.MapAttribute)
@@ -172,12 +172,8 @@ func TestMessagingAttributeMapping(t *testing.T) {
 
 // Tests what happens when an attribute that should be an int is not
 func TestAttributeMappingWithSomeBadValues(t *testing.T) {
-	// Try this out with any attribute struct with an int value
-	values := map[string]pdata.AttributeValue{
-		conventions.AttributeNetPeerPort: pdata.NewAttributeValueString("xx"),
-	}
-
-	attributeMap := pdata.NewAttributeMapFromMap(values)
+	attributeMap := pcommon.NewMap()
+	attributeMap.PutString(conventions.AttributeNetPeerPort, "xx")
 
 	attrs := &NetworkAttributes{}
 	attributeMap.Range(attrs.MapAttribute)
@@ -186,16 +182,14 @@ func TestAttributeMappingWithSomeBadValues(t *testing.T) {
 	assert.Equal(t, int64(0), attrs.NetPeerPort)
 }
 
-func getNetworkAttributes() map[string]pdata.AttributeValue {
-	return map[string]pdata.AttributeValue{
-		conventions.AttributeNetTransport: pdata.NewAttributeValueString(conventions.AttributeNetTransport),
-		conventions.AttributeNetPeerIP:    pdata.NewAttributeValueString(conventions.AttributeNetPeerIP),
-		conventions.AttributeNetPeerPort:  pdata.NewAttributeValueInt(1),
-		conventions.AttributeNetPeerName:  pdata.NewAttributeValueString(conventions.AttributeNetPeerName),
-		conventions.AttributeNetHostIP:    pdata.NewAttributeValueString(conventions.AttributeNetHostIP),
-		conventions.AttributeNetHostPort:  pdata.NewAttributeValueInt(2),
-		conventions.AttributeNetHostName:  pdata.NewAttributeValueString(conventions.AttributeNetHostName),
-	}
+func addNetworkAttributes(m pcommon.Map) {
+	m.PutString(conventions.AttributeNetTransport, conventions.AttributeNetTransport)
+	m.PutString(conventions.AttributeNetPeerIP, conventions.AttributeNetPeerIP)
+	m.PutInt(conventions.AttributeNetPeerPort, 1)
+	m.PutString(conventions.AttributeNetPeerName, conventions.AttributeNetPeerName)
+	m.PutString(conventions.AttributeNetHostIP, conventions.AttributeNetHostIP)
+	m.PutInt(conventions.AttributeNetHostPort, 2)
+	m.PutString(conventions.AttributeNetHostName, conventions.AttributeNetHostName)
 }
 
 func networkAttributesValidations(t *testing.T, networkAttributes NetworkAttributes) {

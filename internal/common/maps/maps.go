@@ -14,6 +14,19 @@
 
 package maps // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 
+// MergeRawMaps merges n maps with a later map's keys overriding earlier maps.
+func MergeRawMaps(maps ...map[string]interface{}) map[string]interface{} {
+	ret := map[string]interface{}{}
+
+	for _, m := range maps {
+		for k, v := range m {
+			ret[k] = v
+		}
+	}
+
+	return ret
+}
+
 // MergeStringMaps merges n maps with a later map's keys overriding earlier maps.
 func MergeStringMaps(maps ...map[string]string) map[string]string {
 	ret := map[string]string{}
@@ -25,6 +38,15 @@ func MergeStringMaps(maps ...map[string]string) map[string]string {
 	}
 
 	return ret
+}
+
+// CloneRawMap makes a shallow copy of a map[string]interface{}.
+func CloneRawMap(m map[string]interface{}) map[string]interface{} {
+	m2 := make(map[string]interface{}, len(m))
+	for k, v := range m {
+		m2[k] = v
+	}
+	return m2
 }
 
 // CloneStringMap makes a shallow copy of a map[string]string.

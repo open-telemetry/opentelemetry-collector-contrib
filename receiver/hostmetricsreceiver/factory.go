@@ -21,10 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerhelper"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
@@ -45,6 +42,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "hostmetrics"
+	// The stability level of the host metrics receiver.
+	stability = component.StabilityLevelBeta
 )
 
 var (
@@ -63,10 +62,10 @@ var (
 
 // NewFactory creates a new factory for host metrics receiver.
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver))
+		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
 func getScraperFactory(key string) (internal.ScraperFactory, bool) {
@@ -91,12 +90,7 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	oCfg := cfg.(*Config)
 
-	addScraperOptions, err := createAddScraperOptions(ctx, set.Logger, oCfg, scraperFactories)
-	if err != nil {
-		return nil, err
-	}
-
-	schemaURLSetterConsumer, err := wrapBySchemaURLSetterConsumer(consumer)
+	addScraperOptions, err := createAddScraperOptions(ctx, set, oCfg, scraperFactories)
 	if err != nil {
 		return nil, err
 	}
@@ -104,42 +98,27 @@ func createMetricsReceiver(
 	return scraperhelper.NewScraperControllerReceiver(
 		&oCfg.ScraperControllerSettings,
 		set,
-		schemaURLSetterConsumer,
+		consumer,
 		addScraperOptions...,
 	)
 }
 
-// This function wraps the consumer and returns a new consumer such that the schema URL
-// of all metrics that pass through the new consumer is set correctly.
-func wrapBySchemaURLSetterConsumer(consumer consumer.Metrics) (consumer.Metrics, error) {
-	return consumerhelper.NewMetrics(func(ctx context.Context, md pdata.Metrics) error {
-		rms := md.ResourceMetrics()
-		for i := 0; i < rms.Len(); i++ {
-			rm := rms.At(i)
-			if rm.SchemaUrl() == "" {
-				// If no specific SchemaURL is set we assume all collected host metrics
-				// confirm to our default SchemaURL. The assumption here is that
-				// the code that produces these metrics uses semantic conventions
-				// defined in package "conventions".
-				rm.SetSchemaUrl(conventions.SchemaURL)
-			}
-			// Else if the SchemaURL is set we assume the producer of the metric knows
-			// what it does. We won't touch it.
-		}
-		return consumer.ConsumeMetrics(ctx, md)
-	})
+func logDeprecatedFeatureGateForDirection(log *zap.Logger, gateID string) {
+	log.Warn("WARNING: The " + gateID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
+		"the direction attribute has been reverted in the specification. See https://github.com/open-telemetry/opentelemetry-specification/issues/2726 " +
+		"for additional details.")
 }
 
 func createAddScraperOptions(
 	ctx context.Context,
-	logger *zap.Logger,
+	set component.ReceiverCreateSettings,
 	config *Config,
 	factories map[string]internal.ScraperFactory,
 ) ([]scraperhelper.ScraperControllerOption, error) {
 	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(config.Scrapers))
 
 	for key, cfg := range config.Scrapers {
-		hostMetricsScraper, ok, err := createHostMetricsScraper(ctx, logger, key, cfg, factories)
+		hostMetricsScraper, ok, err := createHostMetricsScraper(ctx, set, key, cfg, factories)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create scraper for key %q: %w", key, err)
 		}
@@ -152,10 +131,17 @@ func createAddScraperOptions(
 		return nil, fmt.Errorf("host metrics scraper factory not found for key: %q", key)
 	}
 
+	if !featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithDirectionAttributeFeatureGateID) {
+		logDeprecatedFeatureGateForDirection(set.Logger, internal.EmitMetricsWithDirectionAttributeFeatureGateID)
+	}
+	if featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithoutDirectionAttributeFeatureGateID) {
+		logDeprecatedFeatureGateForDirection(set.Logger, internal.EmitMetricsWithoutDirectionAttributeFeatureGateID)
+	}
+
 	return scraperControllerOptions, nil
 }
 
-func createHostMetricsScraper(ctx context.Context, logger *zap.Logger, key string, cfg internal.Config, factories map[string]internal.ScraperFactory) (scraper scraperhelper.Scraper, ok bool, err error) {
+func createHostMetricsScraper(ctx context.Context, set component.ReceiverCreateSettings, key string, cfg internal.Config, factories map[string]internal.ScraperFactory) (scraper scraperhelper.Scraper, ok bool, err error) {
 	factory := factories[key]
 	if factory == nil {
 		ok = false
@@ -163,6 +149,6 @@ func createHostMetricsScraper(ctx context.Context, logger *zap.Logger, key strin
 	}
 
 	ok = true
-	scraper, err = factory.CreateMetricsScraper(ctx, logger, cfg)
+	scraper, err = factory.CreateMetricsScraper(ctx, set, cfg)
 	return
 }

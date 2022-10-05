@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
@@ -62,8 +62,8 @@ func newMetricsBuilder(throwErrorOnShutdown bool) metadata.MetricsBuilder {
 	}
 }
 
-func (b *metricsBuilder) Build([]*metadata.MetricsDataPoint) (pdata.Metrics, error) {
-	return pdata.Metrics{}, nil
+func (b *metricsBuilder) Build([]*metadata.MetricsDataPoint) (pmetric.Metrics, error) {
+	return pmetric.Metrics{}, nil
 }
 
 func (b *metricsBuilder) Shutdown() error {

@@ -1,13 +1,17 @@
 # Kubernetes Cluster Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 The Kubernetes Cluster receiver collects cluster-level metrics from the Kubernetes
 API server. It uses the K8s API to listen for updates. A single instance of this
 receiver can be used to monitor a cluster.
 
 Currently this receiver supports authentication via service accounts only. See [example](#example)
 for more information.
-
-> :construction: This receiver is currently in **BETA**.
 
 ## Configuration
 
@@ -93,7 +97,7 @@ type MetadataDelta struct {
 }
 ```
 
-See [here](collection/metadata.go) for details about the above types.
+See [here](internal/collection/metadata.go) for details about the above types.
 
 ## Example
 
@@ -155,7 +159,7 @@ Use the below commands to create a `ClusterRole` with required permissions and a
 
 ```bash
 <<EOF | kubectl apply -f -
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: otelcontribcol
@@ -223,7 +227,7 @@ EOF
 
 ```bash
 <<EOF | kubectl apply -f -
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: otelcontribcol
@@ -302,3 +306,6 @@ Add the following rules to your ClusterRole:
   - list
   - watch
 ```
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

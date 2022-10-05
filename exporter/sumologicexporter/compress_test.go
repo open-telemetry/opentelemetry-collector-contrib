@@ -19,7 +19,6 @@ import (
 	"compress/gzip"
 	"errors"
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -99,7 +98,7 @@ func decodeGzip(t *testing.T, data io.Reader) string {
 	require.NoError(t, err)
 
 	var buf []byte
-	buf, err = ioutil.ReadAll(r)
+	buf, err = io.ReadAll(r)
 	require.NoError(t, err)
 
 	return string(buf)
@@ -123,7 +122,7 @@ func decodeDeflate(t *testing.T, data io.Reader) string {
 	r := flate.NewReader(data)
 
 	var buf []byte
-	buf, err := ioutil.ReadAll(r)
+	buf, err := io.ReadAll(r)
 	require.NoError(t, err)
 
 	return string(buf)

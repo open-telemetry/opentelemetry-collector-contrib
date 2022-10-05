@@ -22,11 +22,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 )
@@ -66,7 +68,7 @@ func TestNewTracesProcessor(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newTracesProcessor(tt.nextConsumer, tt.cfg)
+			got, err := newTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.cfg, tt.nextConsumer)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -142,7 +144,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
-			tsp, err := newTracesProcessor(sink, tt.cfg)
+			tsp, err := newTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.cfg, sink)
 			if err != nil {
 				t.Errorf("error when creating tracesamplerprocessor: %v", err)
 				return
@@ -203,7 +205,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
-			tsp, err := newTracesProcessor(sink, tt.cfg)
+			tsp, err := newTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.cfg, sink)
 			if err != nil {
 				t.Errorf("error when creating tracesamplerprocessor: %v", err)
 				return
@@ -221,15 +223,15 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 
 // Test_tracesamplerprocessor_SpanSamplingPriority checks if handling of "sampling.priority" is correct.
 func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
-	singleSpanWithAttrib := func(key string, attribValue pdata.AttributeValue) pdata.Traces {
-		traces := pdata.NewTraces()
-		initSpanWithAttributes(key, attribValue, traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty())
+	singleSpanWithAttrib := func(key string, attribValue pcommon.Value) ptrace.Traces {
+		traces := ptrace.NewTraces()
+		initSpanWithAttribute(key, attribValue, traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty())
 		return traces
 	}
 	tests := []struct {
 		name    string
 		cfg     *Config
-		td      pdata.Traces
+		td      ptrace.Traces
 		sampled bool
 	}{
 		{
@@ -240,7 +242,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pdata.NewAttributeValueInt(2)),
+				pcommon.NewValueInt(2)),
 			sampled: true,
 		},
 		{
@@ -251,7 +253,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pdata.NewAttributeValueDouble(1)),
+				pcommon.NewValueDouble(1)),
 			sampled: true,
 		},
 		{
@@ -262,7 +264,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pdata.NewAttributeValueString("1")),
+				pcommon.NewValueStr("1")),
 			sampled: true,
 		},
 		{
@@ -273,7 +275,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pdata.NewAttributeValueInt(0)),
+				pcommon.NewValueInt(0)),
 		},
 		{
 			name: "must_not_sample_double",
@@ -283,7 +285,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pdata.NewAttributeValueDouble(0)),
+				pcommon.NewValueDouble(0)),
 		},
 		{
 			name: "must_not_sample_string",
@@ -293,7 +295,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pdata.NewAttributeValueString("0")),
+				pcommon.NewValueStr("0")),
 		},
 		{
 			name: "defer_sample_expect_not_sampled",
@@ -303,7 +305,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"no.sampling.priority",
-				pdata.NewAttributeValueInt(2)),
+				pcommon.NewValueInt(2)),
 		},
 		{
 			name: "defer_sample_expect_sampled",
@@ -313,14 +315,14 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"no.sampling.priority",
-				pdata.NewAttributeValueInt(2)),
+				pcommon.NewValueInt(2)),
 			sampled: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
-			tsp, err := newTracesProcessor(sink, tt.cfg)
+			tsp, err := newTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.cfg, sink)
 			require.NoError(t, err)
 
 			err = tsp.ConsumeTraces(context.Background(), tt.td)
@@ -343,72 +345,72 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 func Test_parseSpanSamplingPriority(t *testing.T) {
 	tests := []struct {
 		name string
-		span pdata.Span
+		span ptrace.Span
 		want samplingPriority
 	}{
 		{
 			name: "nil_span",
-			span: pdata.NewSpan(),
+			span: ptrace.NewSpan(),
 			want: deferDecision,
 		},
 		{
 			name: "nil_attributes",
-			span: pdata.NewSpan(),
+			span: ptrace.NewSpan(),
 			want: deferDecision,
 		},
 		{
 			name: "no_sampling_priority",
-			span: getSpanWithAttributes("key", pdata.NewAttributeValueBool(true)),
+			span: getSpanWithAttributes("key", pcommon.NewValueBool(true)),
 			want: deferDecision,
 		},
 		{
 			name: "sampling_priority_int_zero",
-			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueInt(0)),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueInt(0)),
 			want: doNotSampleSpan,
 		},
 		{
 			name: "sampling_priority_int_gt_zero",
-			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueInt(1)),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueInt(1)),
 			want: mustSampleSpan,
 		},
 		{
 			name: "sampling_priority_int_lt_zero",
-			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueInt(-1)),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueInt(-1)),
 			want: deferDecision,
 		},
 		{
 			name: "sampling_priority_double_zero",
-			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueDouble(0)),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueDouble(0)),
 			want: doNotSampleSpan,
 		},
 		{
 			name: "sampling_priority_double_gt_zero",
-			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueDouble(1)),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueDouble(1)),
 			want: mustSampleSpan,
 		},
 		{
 			name: "sampling_priority_double_lt_zero",
-			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueDouble(-1)),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueDouble(-1)),
 			want: deferDecision,
 		},
 		{
 			name: "sampling_priority_string_zero",
-			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueString("0.0")),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueStr("0.0")),
 			want: doNotSampleSpan,
 		},
 		{
 			name: "sampling_priority_string_gt_zero",
-			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueString("0.5")),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueStr("0.5")),
 			want: mustSampleSpan,
 		},
 		{
 			name: "sampling_priority_string_lt_zero",
-			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueString("-0.5")),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueStr("-0.5")),
 			want: deferDecision,
 		},
 		{
 			name: "sampling_priority_string_NaN",
-			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueString("NaN")),
+			span: getSpanWithAttributes("sampling.priority", pcommon.NewValueStr("NaN")),
 			want: deferDecision,
 		},
 	}
@@ -419,15 +421,15 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 	}
 }
 
-func getSpanWithAttributes(key string, value pdata.AttributeValue) pdata.Span {
-	span := pdata.NewSpan()
-	initSpanWithAttributes(key, value, span)
+func getSpanWithAttributes(key string, value pcommon.Value) ptrace.Span {
+	span := ptrace.NewSpan()
+	initSpanWithAttribute(key, value, span)
 	return span
 }
 
-func initSpanWithAttributes(key string, value pdata.AttributeValue, dest pdata.Span) {
+func initSpanWithAttribute(key string, value pcommon.Value, dest ptrace.Span) {
 	dest.SetName("spanName")
-	pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{key: value}).CopyTo(dest.Attributes())
+	value.CopyTo(dest.Attributes().PutEmpty(key))
 }
 
 // Test_hash ensures that the hash function supports different key lengths even if in
@@ -437,7 +439,7 @@ func Test_hash(t *testing.T) {
 	// collisions, but, of course it is possible that they happen, a different random source
 	// should avoid that.
 	r := rand.New(rand.NewSource(1))
-	fullKey := idutils.UInt64ToTraceID(r.Uint64(), r.Uint64()).Bytes()
+	fullKey := idutils.UInt64ToTraceID(r.Uint64(), r.Uint64())
 	seen := make(map[uint32]bool)
 	for i := 1; i <= len(fullKey); i++ {
 		key := fullKey[:i]
@@ -447,32 +449,30 @@ func Test_hash(t *testing.T) {
 	}
 }
 
-// genRandomTestData generates a slice of pdata.Traces with the numBatches elements which one with
+// genRandomTestData generates a slice of ptrace.Traces with the numBatches elements which one with
 // numTracesPerBatch spans (ie.: each span has a different trace ID). All spans belong to the specified
 // serviceName.
-func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, resourceSpanCount int) (tdd []pdata.Traces) {
+func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, resourceSpanCount int) (tdd []ptrace.Traces) {
 	r := rand.New(rand.NewSource(1))
-	var traceBatches []pdata.Traces
+	var traceBatches []ptrace.Traces
 	for i := 0; i < numBatches; i++ {
-		traces := pdata.NewTraces()
+		traces := ptrace.NewTraces()
 		traces.ResourceSpans().EnsureCapacity(resourceSpanCount)
 		for j := 0; j < resourceSpanCount; j++ {
 			rs := traces.ResourceSpans().AppendEmpty()
-			rs.Resource().Attributes().InsertString("service.name", serviceName)
-			rs.Resource().Attributes().InsertBool("bool", true)
-			rs.Resource().Attributes().InsertString("string", "yes")
-			rs.Resource().Attributes().InsertInt("int64", 10000000)
-			ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+			rs.Resource().Attributes().PutString("service.name", serviceName)
+			rs.Resource().Attributes().PutBool("bool", true)
+			rs.Resource().Attributes().PutString("string", "yes")
+			rs.Resource().Attributes().PutInt("int64", 10000000)
+			ils := rs.ScopeSpans().AppendEmpty()
 			ils.Spans().EnsureCapacity(numTracesPerBatch)
 
 			for k := 0; k < numTracesPerBatch; k++ {
 				span := ils.Spans().AppendEmpty()
 				span.SetTraceID(idutils.UInt64ToTraceID(r.Uint64(), r.Uint64()))
 				span.SetSpanID(idutils.UInt64ToSpanID(r.Uint64()))
-				attributes := make(map[string]pdata.AttributeValue)
-				attributes[conventions.AttributeHTTPStatusCode] = pdata.NewAttributeValueInt(404)
-				attributes["http.status_text"] = pdata.NewAttributeValueString("Not Found")
-				pdata.NewAttributeMapFromMap(attributes).CopyTo(span.Attributes())
+				span.Attributes().PutInt(conventions.AttributeHTTPStatusCode, 404)
+				span.Attributes().PutString("http.status_text", "Not Found")
 			}
 		}
 		traceBatches = append(traceBatches, traces)
@@ -483,22 +483,22 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 
 // assertSampledData checks for no repeated traceIDs and counts the number of spans on the sampled data for
 // the given service.
-func assertSampledData(t *testing.T, sampled []pdata.Traces, serviceName string) (traceIDs map[[16]byte]bool, spanCount int) {
+func assertSampledData(t *testing.T, sampled []ptrace.Traces, serviceName string) (traceIDs map[[16]byte]bool, spanCount int) {
 	traceIDs = make(map[[16]byte]bool)
 	for _, td := range sampled {
 		rspans := td.ResourceSpans()
 		for i := 0; i < rspans.Len(); i++ {
 			rspan := rspans.At(i)
-			ilss := rspan.InstrumentationLibrarySpans()
+			ilss := rspan.ScopeSpans()
 			for j := 0; j < ilss.Len(); j++ {
 				ils := ilss.At(j)
-				if svcNameAttr, _ := rspan.Resource().Attributes().Get("service.name"); svcNameAttr.StringVal() != serviceName {
+				if svcNameAttr, _ := rspan.Resource().Attributes().Get("service.name"); svcNameAttr.Str() != serviceName {
 					continue
 				}
 				for k := 0; k < ils.Spans().Len(); k++ {
 					spanCount++
 					span := ils.Spans().At(k)
-					key := span.TraceID().Bytes()
+					key := span.TraceID()
 					if traceIDs[key] {
 						t.Errorf("same traceID used more than once %q", key)
 						return

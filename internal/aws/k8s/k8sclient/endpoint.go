@@ -68,7 +68,7 @@ type epClient struct {
 
 	mu                      sync.RWMutex
 	podKeyToServiceNamesMap map[string][]string
-	serviceToPodNumMap      map[Service]int //only running pods will show behind endpoints
+	serviceToPodNumMap      map[Service]int // only running pods will show behind endpoints
 }
 
 func (c *epClient) PodKeyToServiceNames() map[string][]string {
@@ -95,7 +95,7 @@ func (c *epClient) refresh() {
 
 	objsList := c.store.List()
 
-	tmpMap := make(map[string]map[string]struct{}) //pod key to service names
+	tmpMap := make(map[string]map[string]struct{}) // pod key to service names
 	serviceToPodNumMapNew := make(map[Service]int)
 
 	for _, obj := range objsList {

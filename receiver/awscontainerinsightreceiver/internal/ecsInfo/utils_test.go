@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 
@@ -66,7 +66,7 @@ func TestRequestSuccessWithKnownLength(t *testing.T) {
 	respBody := "body"
 	response := &http.Response{
 		StatusCode:    200,
-		Body:          ioutil.NopCloser(bytes.NewBufferString(respBody)),
+		Body:          io.NopCloser(bytes.NewBufferString(respBody)),
 		Header:        make(http.Header),
 		ContentLength: 5 * 1024,
 	}
@@ -91,7 +91,7 @@ func TestRequestSuccessWithUnknownLength(t *testing.T) {
 	respBody := "body"
 	response := &http.Response{
 		StatusCode:    200,
-		Body:          ioutil.NopCloser(bytes.NewBufferString(respBody)),
+		Body:          io.NopCloser(bytes.NewBufferString(respBody)),
 		Header:        make(http.Header),
 		ContentLength: -1,
 	}
@@ -117,7 +117,7 @@ func TestRequestWithFailedStatus(t *testing.T) {
 	response := &http.Response{
 		Status:        "Bad Request",
 		StatusCode:    400,
-		Body:          ioutil.NopCloser(bytes.NewBufferString(respBody)),
+		Body:          io.NopCloser(bytes.NewBufferString(respBody)),
 		Header:        make(http.Header),
 		ContentLength: 5 * 1024,
 	}
@@ -142,7 +142,7 @@ func TestRequestWithLargeContentLength(t *testing.T) {
 	respBody := "body"
 	response := &http.Response{
 		StatusCode:    200,
-		Body:          ioutil.NopCloser(bytes.NewBufferString(respBody)),
+		Body:          io.NopCloser(bytes.NewBufferString(respBody)),
 		Header:        make(http.Header),
 		ContentLength: 5 * 1024 * 1024,
 	}

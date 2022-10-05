@@ -16,15 +16,21 @@ package routingprocessor
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.uber.org/zap"
 )
 
 func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
@@ -125,7 +131,8 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 		},
 	}
 	mp := &mockProcessor{}
-	next, err := processorhelper.NewTracesProcessor(cfg, consumertest.NewNop(), mp.processTraces)
+
+	next, err := processorhelper.NewTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop(), mp.processTraces)
 	require.NoError(t, err)
 
 	// test
@@ -134,6 +141,65 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	// verify
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
+}
+
+func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T) {
+	// prepare
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	processorFactory := NewFactory()
+	factories.Processors[typeStr] = processorFactory
+
+	otlpExporterFactory := otlpexporter.NewFactory()
+	factories.Exporters["otlp"] = otlpExporterFactory
+
+	otlpConfig := &otlpexporter.Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID("otlp")),
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
+			Endpoint: "example.com:1234",
+		},
+	}
+
+	otlpTracesExporter, err := otlpExporterFactory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), otlpConfig)
+	require.NoError(t, err)
+
+	otlpMetricsExporter, err := otlpExporterFactory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), otlpConfig)
+	require.NoError(t, err)
+
+	host := &mockHost{
+		Host: componenttest.NewNopHost(),
+		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
+			return map[config.DataType]map[config.ComponentID]component.Exporter{
+				config.TracesDataType: {
+					config.NewComponentID("otlp/traces"): otlpTracesExporter,
+				},
+				config.MetricsDataType: {
+					config.NewComponentID("otlp/metrics"): otlpMetricsExporter,
+				},
+			}
+		},
+	}
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	for k := range cm.ToStringMap() {
+		// Check if all processor variations that are defined in test config can be actually created
+		t.Run(k, func(t *testing.T) {
+			cfg := factories.Processors[typeStr].CreateDefaultConfig()
+
+			sub, err := cm.Sub(k)
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+
+			exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, cfg)
+			err = exp.Start(context.Background(), host)
+			// assert that no error is thrown due to multiple pipelines and exporters not using the routing processor
+			assert.NoError(t, err)
+			assert.NoError(t, exp.Shutdown(context.Background()))
+		})
+	}
 }
 
 func TestShutdown(t *testing.T) {
@@ -165,6 +231,23 @@ func TestShutdown(t *testing.T) {
 
 type mockProcessor struct{}
 
-func (mp *mockProcessor) processTraces(context.Context, pdata.Traces) (pdata.Traces, error) {
-	return pdata.NewTraces(), nil
+func (mp *mockProcessor) processTraces(context.Context, ptrace.Traces) (ptrace.Traces, error) {
+	return ptrace.NewTraces(), nil
+}
+
+type mockHost struct {
+	component.Host
+	GetExportersFunc func() map[config.DataType]map[config.ComponentID]component.Exporter
+}
+
+func (m *mockHost) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
+	if m.GetExportersFunc != nil {
+		return m.GetExportersFunc()
+	}
+	return m.Host.GetExporters()
+}
+
+type mockComponent struct {
+	component.StartFunc
+	component.ShutdownFunc
 }

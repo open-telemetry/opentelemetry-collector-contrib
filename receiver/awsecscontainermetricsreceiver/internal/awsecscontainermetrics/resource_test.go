@@ -18,8 +18,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
@@ -76,7 +76,7 @@ func TestContainerResourceForStoppedContainer(t *testing.T) {
 	attrMap := r.Attributes()
 	getExitCodeAd, found := attrMap.Get(attributeContainerExitCode)
 	require.EqualValues(t, true, found)
-	require.EqualValues(t, 2, getExitCodeAd.IntVal())
+	require.EqualValues(t, 2, getExitCodeAd.Int())
 	require.EqualValues(t, 11, attrMap.Len())
 	expected := map[string]string{
 		conventions.AttributeContainerName:      "container-1",
@@ -169,12 +169,12 @@ func TestTaskResourceWithClusterARN(t *testing.T) {
 	verifyAttributeMap(t, expected, attrMap)
 }
 
-func verifyAttributeMap(t *testing.T, expected map[string]string, found pdata.AttributeMap) {
+func verifyAttributeMap(t *testing.T, expected map[string]string, found pcommon.Map) {
 	for key, val := range expected {
 		attributeVal, found := found.Get(key)
 		require.EqualValues(t, true, found)
 
-		require.EqualValues(t, val, attributeVal.StringVal())
+		require.EqualValues(t, val, attributeVal.Str())
 	}
 }
 

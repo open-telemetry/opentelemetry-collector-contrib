@@ -26,28 +26,42 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
 	factories, _ := componenttest.NopFactories()
 	factory := NewFactory()
-	factories.Exporters[typestr] = factory
-	// t.Log("new exporter " + typestr)
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("example", "config.yaml"), factories)
+	factories.Exporters[typeStr] = factory
+
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, err)
-	apiConfig := cfg.Exporters[config.NewComponentID(typestr)].(*Config)
+
+	apiConfig := cfg.Exporters[config.NewComponentID(typeStr)].(*Config)
 	err = apiConfig.Validate()
 	require.NoError(t, err)
+
 	assert.Equal(t, apiConfig, &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID("coralogix")),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		PrivateKey:       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 		AppName:          "APP_NAME",
-		SubSystem:        "SUBSYSTEM_NAME",
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		// Deprecated: [v0.47.0] SubSystem will remove in the next version
+		SubSystem:       "SUBSYSTEM_NAME",
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		Metrics: configgrpc.GRPCClientSettings{
+			Endpoint:        "https://",
+			Compression:     "gzip",
+			WriteBufferSize: 512 * 1024,
+			Headers:         map[string]string{},
+		},
+		Logs: configgrpc.GRPCClientSettings{
+			Endpoint: "https://",
+			Headers:  map[string]string{},
+		},
+		Traces: configgrpc.GRPCClientSettings{
 			Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 			Compression: "",
 			TLSSetting: configtls.TLSClientSetting{
@@ -59,23 +73,190 @@ func TestLoadConfig(t *testing.T) {
 			ReadBufferSize:  0,
 			WriteBufferSize: 0,
 			WaitForReady:    false,
-			Headers:         map[string]string{"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "appName": "APP_NAME", "subsystemName": "SUBSYSTEM_NAME"},
+			Headers:         map[string]string{},
 			BalancerName:    "",
+		},
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
+			Endpoint:    "",
+			Compression: "",
+			TLSSetting: configtls.TLSClientSetting{
+				TLSSetting:         configtls.TLSSetting{},
+				Insecure:           false,
+				InsecureSkipVerify: false,
+				ServerName:         "",
+			},
+			ReadBufferSize:  0,
+			WriteBufferSize: 0,
+			WaitForReady:    false,
+			Headers: map[string]string{
+				"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				"appName":      "APP_NAME",
+			},
+			BalancerName: "",
 		},
 	})
 }
 
-func TestExporter(t *testing.T) {
+func TestLoadConfigAll(t *testing.T) {
 	factories, _ := componenttest.NopFactories()
 	factory := NewFactory()
-	factories.Exporters[typestr] = factory
-	cfg, _ := servicetest.LoadConfigAndValidate(filepath.Join("example", "config.yaml"), factories)
-	apiConfig := cfg.Exporters[config.NewComponentID(typestr)].(*Config)
+	factories.Exporters[typeStr] = factory
+
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-all.yaml"), factories)
+	require.NoError(t, err)
+
+	apiConfig := cfg.Exporters[config.NewComponentID(typeStr)].(*Config)
+	err = apiConfig.Validate()
+	require.NoError(t, err)
+
+	assert.Equal(t, apiConfig, &Config{
+		ExporterSettings:    config.NewExporterSettings(config.NewComponentID("coralogix")),
+		QueueSettings:       exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:       exporterhelper.NewDefaultRetrySettings(),
+		PrivateKey:          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+		AppNameAttributes:   []string{"service.namespace"},
+		SubSystemAttributes: []string{"service.name"},
+		AppName:             "APP_NAME",
+		SubSystem:           "SUBSYSTEM_NAME",
+		TimeoutSettings:     exporterhelper.NewDefaultTimeoutSettings(),
+		Metrics: configgrpc.GRPCClientSettings{
+			Endpoint:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+			Compression:     "gzip",
+			WriteBufferSize: 512 * 1024,
+			Headers:         map[string]string{},
+		},
+		Logs: configgrpc.GRPCClientSettings{
+			Endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+			Headers:  map[string]string{},
+		},
+		Traces: configgrpc.GRPCClientSettings{
+			Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+			Compression: "",
+			TLSSetting: configtls.TLSClientSetting{
+				TLSSetting:         configtls.TLSSetting{},
+				Insecure:           false,
+				InsecureSkipVerify: false,
+				ServerName:         "",
+			},
+			ReadBufferSize:  0,
+			WriteBufferSize: 0,
+			WaitForReady:    false,
+			Headers:         map[string]string{},
+			BalancerName:    "",
+		},
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
+			Endpoint:    "",
+			Compression: "",
+			TLSSetting: configtls.TLSClientSetting{
+				TLSSetting:         configtls.TLSSetting{},
+				Insecure:           false,
+				InsecureSkipVerify: false,
+				ServerName:         "",
+			},
+			ReadBufferSize:  0,
+			WriteBufferSize: 0,
+			WaitForReady:    false,
+			Headers: map[string]string{
+				"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				"appName":      "APP_NAME",
+			},
+			BalancerName: "",
+		},
+	})
+}
+
+func TestLoadConfigA(t *testing.T) {
+	factories, _ := componenttest.NopFactories()
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-all.yaml"), factories)
+	require.NoError(t, err)
+
+	apiConfig := cfg.Exporters[config.NewComponentID(typeStr)].(*Config)
+	err = apiConfig.Validate()
+	require.NoError(t, err)
+
+	assert.Equal(t, apiConfig, &Config{
+		ExporterSettings:    config.NewExporterSettings(config.NewComponentID("coralogix")),
+		QueueSettings:       exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:       exporterhelper.NewDefaultRetrySettings(),
+		PrivateKey:          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+		AppNameAttributes:   []string{"service.namespace"},
+		SubSystemAttributes: []string{"service.name"},
+		AppName:             "APP_NAME",
+		SubSystem:           "SUBSYSTEM_NAME",
+		TimeoutSettings:     exporterhelper.NewDefaultTimeoutSettings(),
+		Metrics: configgrpc.GRPCClientSettings{
+			Endpoint:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+			Compression:     "gzip",
+			WriteBufferSize: 512 * 1024,
+			Headers:         map[string]string{},
+		},
+		Logs: configgrpc.GRPCClientSettings{
+			Endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+			Headers:  map[string]string{},
+		},
+		Traces: configgrpc.GRPCClientSettings{
+			Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+			Compression: "",
+			TLSSetting: configtls.TLSClientSetting{
+				TLSSetting:         configtls.TLSSetting{},
+				Insecure:           false,
+				InsecureSkipVerify: false,
+				ServerName:         "",
+			},
+			ReadBufferSize:  0,
+			WriteBufferSize: 0,
+			WaitForReady:    false,
+			Headers:         map[string]string{},
+			BalancerName:    "",
+		},
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
+			Endpoint:    "",
+			Compression: "",
+			TLSSetting: configtls.TLSClientSetting{
+				TLSSetting:         configtls.TLSSetting{},
+				Insecure:           false,
+				InsecureSkipVerify: false,
+				ServerName:         "",
+			},
+			ReadBufferSize:  0,
+			WriteBufferSize: 0,
+			WaitForReady:    false,
+			Headers: map[string]string{
+				"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				"appName":      "APP_NAME",
+			},
+			BalancerName: "",
+		},
+	})
+}
+
+func TestTraceExporter(t *testing.T) {
+	factories, _ := componenttest.NopFactories()
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, _ := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	apiConfig := cfg.Exporters[config.NewComponentID(typeStr)].(*Config)
 	params := componenttest.NewNopExporterCreateSettings()
-	te := newCoralogixExporter(apiConfig, params)
-	te.client.startConnection(context.Background(), componenttest.NewNopHost())
+	te, err := newTracesExporter(apiConfig, params)
+	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
-	td := pdata.NewTraces()
-	err := te.tracesPusher(context.Background(), td)
-	assert.Nil(t, err)
+	assert.NoError(t, te.start(context.Background(), componenttest.NewNopHost()))
+}
+
+func TestJaegerBasedTraceExporter(t *testing.T) {
+	factories, _ := componenttest.NopFactories()
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, _ := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-trace.yaml"), factories)
+	apiConfig := cfg.Exporters[config.NewComponentID(typeStr)].(*Config)
+	params := componenttest.NewNopExporterCreateSettings()
+	te, err := newCoralogixExporter(apiConfig, params)
+	assert.NoError(t, err)
+	assert.NotNil(t, te, "failed to create trace exporter")
+	assert.NoError(t, te.client.startConnection(context.Background(), componenttest.NewNopHost()))
+	td := ptrace.NewTraces()
+	assert.NoError(t, te.tracesPusher(context.Background(), td))
 }

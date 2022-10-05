@@ -1,11 +1,15 @@
 # Podman Stats Receiver
 
+| Status                   |                   |
+| ------------------------ |-------------------|
+| Stability                | [in development]  |
+| Supported pipeline types | metrics           |
+| Distributions            | [contrib]         |
+
 The Podman Stats receiver queries the Podman service API to fetch stats for all running containers 
 on a configured interval.  These stats are for container
 resource usage of cpu, memory, network, and the
 [blkio controller](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
-
-Supported pipeline types: metrics
 
 > :information_source: Requires Podman API version 3.3.1+ and Windows is not supported.
 
@@ -19,6 +23,7 @@ The following settings are required:
 The following settings are optional:
 
 - `collection_interval` (default = `10s`): The interval at which to gather container stats.
+- `timeout` (default = `5s`): The maximum amount of time to wait for Podman API responses.
 
 Example:
 
@@ -26,6 +31,7 @@ Example:
 receivers:
   podman_stats:
     endpoint: unix://run/podman/podman.sock
+    timeout: 10s
     collection_interval: 10s
 ```
 
@@ -82,3 +88,6 @@ Recommended build tags to use when including this receiver in your build:
 - `containers_image_openpgp`
 - `exclude_graphdriver_btrfs`
 - `exclude_graphdriver_devicemapper`
+
+[in development]: https://github.com/open-telemetry/opentelemetry-collector#in-development
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

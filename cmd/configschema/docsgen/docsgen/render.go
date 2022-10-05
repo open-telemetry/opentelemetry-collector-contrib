@@ -17,17 +17,20 @@ package docsgen // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"bytes"
 	"fmt"
-	"strings"
 	"text/template"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 )
 
 func renderHeader(typ, group, doc string) []byte {
+	caser := cases.Title(language.English)
 	return []byte(fmt.Sprintf(
-		"# %q %s Reference\n\n%s\n\n",
-		typ,
-		strings.Title(group),
+		"# %s %s Reference\n\n%s\n\n",
+		caser.String(typ),
+		caser.String(group),
 		doc,
 	))
 }

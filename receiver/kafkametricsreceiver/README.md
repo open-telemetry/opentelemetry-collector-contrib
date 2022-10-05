@@ -1,5 +1,11 @@
 # Kafka Metrics Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 Kafka metrics receiver collects kafka metrics (brokers, topics, partitions, consumer groups) from kafka server,
 converting into otlp.
 
@@ -82,3 +88,6 @@ receivers:
         key_file: key.pem
     collection_interval: 5s
 ```
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

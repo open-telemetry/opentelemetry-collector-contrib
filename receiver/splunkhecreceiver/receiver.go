@@ -20,7 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -31,8 +31,9 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -171,6 +172,11 @@ func newLogsReceiver(
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
 func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
+	// server.Handler will be nil on initial call, otherwise noop.
+	if r.server != nil && r.server.Handler != nil {
+		return nil
+	}
+
 	var ln net.Listener
 	// set up the listener
 	ln, err := r.config.HTTPServerSettings.ToListener()
@@ -240,7 +246,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 
 		if err != nil {
 			r.failRequest(ctx, resp, http.StatusBadRequest, errGzipReaderRespBody, 0, err)
-			_, _ = ioutil.ReadAll(req.Body)
+			_, _ = io.ReadAll(req.Body)
 			_ = req.Body.Close()
 			return
 		}
@@ -250,28 +256,28 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 
 	sc := bufio.NewScanner(bodyReader)
 
-	ld := pdata.NewLogs()
+	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	resourceCustomizer := r.createResourceCustomizer(req)
 	if resourceCustomizer != nil {
 		resourceCustomizer(rl.Resource())
 	}
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
 
 	for sc.Scan() {
-		logRecord := ill.LogRecords().AppendEmpty()
+		logRecord := sl.LogRecords().AppendEmpty()
 		logLine := sc.Text()
-		logRecord.Body().SetStringVal(logLine)
+		logRecord.Body().SetStr(logLine)
 	}
 	consumerErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 
 	_ = bodyReader.Close()
 
 	if consumerErr != nil {
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, ill.LogRecords().Len(), consumerErr)
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, sl.LogRecords().Len(), consumerErr)
 	} else {
-		resp.WriteHeader(http.StatusAccepted)
-		r.obsrecv.EndLogsOp(ctx, typeStr, ill.LogRecords().Len(), nil)
+		resp.WriteHeader(http.StatusOK)
+		r.obsrecv.EndLogsOp(ctx, typeStr, sl.LogRecords().Len(), nil)
 	}
 }
 
@@ -307,7 +313,9 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	}
 
 	if req.ContentLength == 0 {
-		resp.Write(okRespBody)
+		if _, err := resp.Write(okRespBody); err != nil {
+			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, 0, err)
+		}
 		return
 	}
 
@@ -351,8 +359,11 @@ func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Ev
 	if decodeErr != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), decodeErr)
 	} else {
-		resp.WriteHeader(http.StatusAccepted)
-		resp.Write(okRespBody)
+		resp.WriteHeader(http.StatusOK)
+		_, err := resp.Write(okRespBody)
+		if err != nil {
+			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), err)
+		}
 	}
 }
 
@@ -369,18 +380,20 @@ func (r *splunkReceiver) consumeLogs(ctx context.Context, events []*splunk.Event
 	if decodeErr != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), decodeErr)
 	} else {
-		resp.WriteHeader(http.StatusAccepted)
-		resp.Write(okRespBody)
+		resp.WriteHeader(http.StatusOK)
+		if _, err := resp.Write(okRespBody); err != nil {
+			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), err)
+		}
 	}
 }
 
-func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resource pdata.Resource) {
+func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resource pcommon.Resource) {
 	if r.config.AccessTokenPassthrough {
 		accessToken := req.Header.Get("Authorization")
 		if strings.HasPrefix(accessToken, splunk.HECTokenHeader+" ") {
 			accessTokenValue := accessToken[len(splunk.HECTokenHeader)+1:]
-			return func(resource pdata.Resource) {
-				resource.Attributes().InsertString(splunk.HecTokenLabel, accessTokenValue)
+			return func(resource pcommon.Resource) {
+				resource.Attributes().PutString(splunk.HecTokenLabel, accessTokenValue)
 			}
 		}
 	}

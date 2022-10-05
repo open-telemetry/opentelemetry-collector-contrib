@@ -15,6 +15,7 @@
 package kube // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 
 import (
+	"fmt"
 	"regexp"
 	"time"
 
@@ -34,11 +35,57 @@ const (
 	// MetadataFromPod is used to specify to extract metadata/labels/annotations from pod
 	MetadataFromPod = "pod"
 	// MetadataFromNamespace is used to specify to extract metadata/labels/annotations from namespace
-	MetadataFromNamespace = "namespace"
+	MetadataFromNamespace  = "namespace"
+	PodIdentifierMaxLength = 4
+
+	ResourceSource   = "resource_attribute"
+	ConnectionSource = "connection"
+	K8sIPLabelName   = "k8s.pod.ip"
 )
 
-// PodIdentifier is a custom type to represent IP Address or Pod UID
-type PodIdentifier string
+// PodIdentifierAttribute represents AssociationSource with matching value for pod
+type PodIdentifierAttribute struct {
+	Source AssociationSource
+	Value  string
+}
+
+// PodIdentifier is a custom type to represent Pod identification
+type PodIdentifier [PodIdentifierMaxLength]PodIdentifierAttribute
+
+// IsNotEmpty checks if PodIdentifier is empty or not
+func (p *PodIdentifier) IsNotEmpty() bool {
+	return p[0].Source.From != ""
+}
+
+// PodIdentifierAttributeFromSource builds PodIdentifierAttribute using AssociationSource and value
+func PodIdentifierAttributeFromSource(source AssociationSource, value string) PodIdentifierAttribute {
+	return PodIdentifierAttribute{
+		Source: source,
+		Value:  value,
+	}
+}
+
+// PodIdentifierAttributeFromSource builds PodIdentifierAttribute for connection with given value
+func PodIdentifierAttributeFromConnection(value string) PodIdentifierAttribute {
+	return PodIdentifierAttributeFromSource(
+		AssociationSource{
+			From: ConnectionSource,
+			Name: "",
+		},
+		value,
+	)
+}
+
+// PodIdentifierAttributeFromSource builds PodIdentifierAttribute for given resource_attribute name and value
+func PodIdentifierAttributeFromResourceAttribute(key string, value string) PodIdentifierAttribute {
+	return PodIdentifierAttributeFromSource(
+		AssociationSource{
+			From: ResourceSource,
+			Name: key,
+		},
+		value,
+	)
+}
 
 var (
 	// TODO: move these to config with default values
@@ -63,13 +110,14 @@ type APIClientsetProvider func(config k8sconfig.APIConfig) (kubernetes.Interface
 
 // Pod represents a kubernetes pod.
 type Pod struct {
-	Name       string
-	Address    string
-	PodUID     string
-	Attributes map[string]string
-	StartTime  *metav1.Time
-	Ignore     bool
-	Namespace  string
+	Name        string
+	Address     string
+	PodUID      string
+	Attributes  map[string]string
+	StartTime   *metav1.Time
+	Ignore      bool
+	Namespace   string
+	HostNetwork bool
 
 	// Containers is a map of container name to Container struct.
 	Containers map[string]*Container
@@ -135,12 +183,20 @@ type FieldFilter struct {
 // ExtractionRules is used to specify the information that needs to be extracted
 // from pods and added to the spans as tags.
 type ExtractionRules struct {
+	CronJobName        bool
 	Deployment         bool
+	DaemonSetUID       bool
+	DaemonSetName      bool
+	JobUID             bool
+	JobName            bool
 	Namespace          bool
 	PodName            bool
 	PodUID             bool
+	ReplicaSetID       bool
+	ReplicaSetName     bool
+	StatefulSetUID     bool
+	StatefulSetName    bool
 	Node               bool
-	Cluster            bool
 	StartTime          bool
 	ContainerID        bool
 	ContainerImageName bool
@@ -157,8 +213,9 @@ type FieldExtractionRule struct {
 	Name string
 	// Key is used to lookup k8s pod fields.
 	Key string
-	// KeyRegex is a regular expression used to extract a Key that matches the regex.
-	KeyRegex *regexp.Regexp
+	// KeyRegex is a regular expression(full length match) used to extract a Key that matches the regex.
+	KeyRegex             *regexp.Regexp
+	HasKeyRegexReference bool
 	// Regex is a regular expression used to extract a sub-part of a field value.
 	// Full value is extracted when no regexp is provided.
 	Regex *regexp.Regexp
@@ -169,6 +226,52 @@ type FieldExtractionRule struct {
 	From string
 }
 
+func (r *FieldExtractionRule) extractFromPodMetadata(metadata map[string]string, tags map[string]string, formatter string) {
+	// By default if the From field is not set for labels and annotations we want to extract them from pod
+	if r.From == MetadataFromPod || r.From == "" {
+		r.extractFromMetadata(metadata, tags, formatter)
+	}
+}
+
+func (r *FieldExtractionRule) extractFromNamespaceMetadata(metadata map[string]string, tags map[string]string, formatter string) {
+	if r.From == MetadataFromNamespace {
+		r.extractFromMetadata(metadata, tags, formatter)
+	}
+}
+
+func (r *FieldExtractionRule) extractFromMetadata(metadata map[string]string, tags map[string]string, formatter string) {
+	if r.KeyRegex != nil {
+		for k, v := range metadata {
+			if r.KeyRegex.MatchString(k) && v != "" {
+				var name string
+				if r.HasKeyRegexReference {
+					var result []byte
+					name = string(r.KeyRegex.ExpandString(result, r.Name, k, r.KeyRegex.FindStringSubmatchIndex(k)))
+				} else {
+					name = fmt.Sprintf(formatter, k)
+				}
+				tags[name] = v
+			}
+		}
+	} else if v, ok := metadata[r.Key]; ok {
+		tags[r.Name] = r.extractField(v)
+	}
+}
+
+func (r *FieldExtractionRule) extractField(v string) string {
+	// Check if a subset of the field should be extracted with a regular expression
+	// instead of the whole field.
+	if r.Regex == nil {
+		return v
+	}
+
+	matches := r.Regex.FindStringSubmatch(v)
+	if len(matches) == 2 {
+		return matches[1]
+	}
+	return ""
+}
+
 // Associations represent a list of rules for Pod metadata associations with resources
 type Associations struct {
 	Associations []Association
@@ -176,8 +279,8 @@ type Associations struct {
 
 // Association represents one association rule
 type Association struct {
-	From string
-	Name string
+	Name    string
+	Sources []AssociationSource
 }
 
 // Excludes represent a list of Pods to ignore
@@ -188,4 +291,9 @@ type Excludes struct {
 // ExcludePods represent a Pod name to ignore
 type ExcludePods struct {
 	Name *regexp.Regexp
+}
+
+type AssociationSource struct {
+	From string
+	Name string
 }

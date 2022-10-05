@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,61 +21,64 @@ import (
 
 	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
 type brokerScraper struct {
 	client       sarama.Client
-	logger       *zap.Logger
+	settings     component.ReceiverCreateSettings
 	config       Config
 	saramaConfig *sarama.Config
+	mb           *metadata.MetricsBuilder
 }
 
 func (s *brokerScraper) Name() string {
 	return brokersScraperName
 }
 
-func (s *brokerScraper) start(context.Context, component.Host) error {
-	client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
-	if err != nil {
-		return fmt.Errorf("failed to create client while starting brokers scraper: %w", err)
-	}
-	s.client = client
+func (s *brokerScraper) start(_ context.Context, _ component.Host) error {
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo)
 	return nil
 }
 
 func (s *brokerScraper) shutdown(context.Context) error {
-	if !s.client.Closed() {
+	if s.client != nil && !s.client.Closed() {
 		return s.client.Close()
 	}
 	return nil
 }
 
-func (s *brokerScraper) scrape(context.Context) (pdata.Metrics, error) {
+func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
+	if s.client == nil {
+		client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
+		if err != nil {
+			return pmetric.Metrics{}, fmt.Errorf("failed to create client in brokers scraper: %w", err)
+		}
+		s.client = client
+	}
+
 	brokers := s.client.Brokers()
 
-	md := pdata.NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(instrumentationLibName)
-	addIntGauge(ilm.Metrics(), metadata.M.KafkaBrokers.Name(), pdata.NewTimestampFromTime(time.Now()), pdata.NewAttributeMap(), int64(len(brokers)))
+	s.mb.RecordKafkaBrokersDataPoint(pcommon.NewTimestampFromTime(time.Now()), int64(len(brokers)))
 
-	return md, nil
+	return s.mb.Emit(), nil
 }
 
-func createBrokerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.Scraper, error) {
+func createBrokerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config,
+	settings component.ReceiverCreateSettings) (scraperhelper.Scraper, error) {
 	s := brokerScraper{
-		logger:       logger,
+		settings:     settings,
 		config:       cfg,
 		saramaConfig: saramaConfig,
 	}
 	return scraperhelper.NewScraper(
 		s.Name(),
 		s.scrape,
-		scraperhelper.WithShutdown(s.shutdown),
 		scraperhelper.WithStart(s.start),
+		scraperhelper.WithShutdown(s.shutdown),
 	)
 }

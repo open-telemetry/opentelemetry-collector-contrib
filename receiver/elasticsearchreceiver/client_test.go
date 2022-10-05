@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@ package elasticsearchreceiver
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -40,7 +40,7 @@ func TestCreateClientInvalidEndpoint(t *testing.T) {
 }
 
 func TestNodeStatsNoPassword(t *testing.T) {
-	nodeJSON, err := ioutil.ReadFile("./testdata/sample_payloads/nodes_linux.json")
+	nodeJSON, err := os.ReadFile("./testdata/sample_payloads/nodes_linux.json")
 	require.NoError(t, err)
 
 	actualNodeStats := model.NodeStats{}
@@ -63,7 +63,7 @@ func TestNodeStatsNoPassword(t *testing.T) {
 }
 
 func TestNodeStatsNilNodes(t *testing.T) {
-	nodeJSON, err := ioutil.ReadFile("./testdata/sample_payloads/nodes_linux.json")
+	nodeJSON, err := os.ReadFile("./testdata/sample_payloads/nodes_linux.json")
 	require.NoError(t, err)
 
 	actualNodeStats := model.NodeStats{}
@@ -87,7 +87,7 @@ func TestNodeStatsNilNodes(t *testing.T) {
 }
 
 func TestNodeStatsAuthentication(t *testing.T) {
-	nodeJSON, err := ioutil.ReadFile("./testdata/sample_payloads/nodes_linux.json")
+	nodeJSON, err := os.ReadFile("./testdata/sample_payloads/nodes_linux.json")
 	require.NoError(t, err)
 
 	actualNodeStats := model.NodeStats{}
@@ -150,7 +150,7 @@ func TestNodeStatsBadAuthentication(t *testing.T) {
 }
 
 func TestClusterHealthNoPassword(t *testing.T) {
-	healthJSON, err := ioutil.ReadFile("./testdata/sample_payloads/health.json")
+	healthJSON, err := os.ReadFile("./testdata/sample_payloads/health.json")
 	require.NoError(t, err)
 
 	actualClusterHealth := model.ClusterHealth{}
@@ -174,7 +174,7 @@ func TestClusterHealthNoPassword(t *testing.T) {
 }
 
 func TestClusterHealthAuthentication(t *testing.T) {
-	healthJSON, err := ioutil.ReadFile("./testdata/sample_payloads/health.json")
+	healthJSON, err := os.ReadFile("./testdata/sample_payloads/health.json")
 	require.NoError(t, err)
 
 	actualClusterHealth := model.ClusterHealth{}
@@ -236,6 +236,93 @@ func TestClusterHealthNoAuthorization(t *testing.T) {
 	require.ErrorIs(t, err, errUnauthorized)
 }
 
+func TestVersionNoPassword(t *testing.T) {
+	versionJSON, err := os.ReadFile("./testdata/sample_payloads/version.json")
+	require.NoError(t, err)
+
+	actualVersion := model.VersionResponse{}
+	require.NoError(t, json.Unmarshal(versionJSON, &actualVersion))
+
+	elasticsearchMock := mockServer(t, "", "")
+	defer elasticsearchMock.Close()
+
+	client, err := newElasticsearchClient(componenttest.NewNopTelemetrySettings(), Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: elasticsearchMock.URL,
+		},
+	}, componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	version, err := client.Version(ctx)
+	require.NoError(t, err)
+
+	require.Equal(t, &actualVersion, version)
+}
+
+func TestVersionAuthentication(t *testing.T) {
+	versionJSON, err := os.ReadFile("./testdata/sample_payloads/version.json")
+	require.NoError(t, err)
+
+	actualVersion := model.VersionResponse{}
+	require.NoError(t, json.Unmarshal(versionJSON, &actualVersion))
+
+	username := "user"
+	password := "pass"
+
+	elasticsearchMock := mockServer(t, username, password)
+	defer elasticsearchMock.Close()
+
+	client, err := newElasticsearchClient(componenttest.NewNopTelemetrySettings(), Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: elasticsearchMock.URL,
+		},
+		Username: username,
+		Password: password,
+	}, componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	version, err := client.Version(ctx)
+	require.NoError(t, err)
+
+	require.Equal(t, &actualVersion, version)
+}
+
+func TestVersionNoAuthentication(t *testing.T) {
+	elasticsearchMock := mockServer(t, "user", "pass")
+	defer elasticsearchMock.Close()
+
+	client, err := newElasticsearchClient(componenttest.NewNopTelemetrySettings(), Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: elasticsearchMock.URL,
+		},
+	}, componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	_, err = client.Version(ctx)
+	require.ErrorIs(t, err, errUnauthenticated)
+}
+
+func TestVersionNoAuthorization(t *testing.T) {
+	elasticsearchMock := mockServer(t, "user", "pass")
+	defer elasticsearchMock.Close()
+
+	client, err := newElasticsearchClient(componenttest.NewNopTelemetrySettings(), Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: elasticsearchMock.URL,
+		},
+		Username: "bad_user",
+		Password: "bad_pass",
+	}, componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	_, err = client.Version(ctx)
+	require.ErrorIs(t, err, errUnauthorized)
+}
+
 func TestDoRequestBadPath(t *testing.T) {
 	client, err := newElasticsearchClient(componenttest.NewNopTelemetrySettings(), Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -282,9 +369,11 @@ func TestDoRequest404(t *testing.T) {
 // mockServer gives a mock elasticsearch server for testing; if username or password is included, they will be required for the client.
 // otherwise, authorization is ignored.
 func mockServer(t *testing.T, username, password string) *httptest.Server {
-	nodes, err := ioutil.ReadFile("./testdata/sample_payloads/nodes_linux.json")
+	nodes, err := os.ReadFile("./testdata/sample_payloads/nodes_linux.json")
 	require.NoError(t, err)
-	health, err := ioutil.ReadFile("./testdata/sample_payloads/health.json")
+	health, err := os.ReadFile("./testdata/sample_payloads/health.json")
+	require.NoError(t, err)
+	version, err := os.ReadFile("./testdata/sample_payloads/version.json")
 	require.NoError(t, err)
 
 	elasticsearchMock := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -309,6 +398,14 @@ func mockServer(t *testing.T, username, password string) *httptest.Server {
 		if strings.HasPrefix(req.URL.Path, "/_cluster/health") {
 			rw.WriteHeader(200)
 			_, err = rw.Write(health)
+			require.NoError(t, err)
+			return
+		}
+
+		// version check
+		if req.URL.Path == "/" {
+			rw.WriteHeader(200)
+			_, err = rw.Write(version)
 			require.NoError(t, err)
 			return
 		}

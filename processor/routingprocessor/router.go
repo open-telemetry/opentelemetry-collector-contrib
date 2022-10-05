@@ -15,476 +15,179 @@
 package routingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-// router routes logs, metrics and traces using the configured attributes and
-// attribute sources.
-// Upon routing it also groups the logs, metrics and spans into a joint upper level
-// structure (pdata.Logs, pdata.Metrics and pdata.Traces respectively) in order
-// to not cause higher CPU usage in the exporters when exproting data (it's always
-// better to batch before exporting).
-type router struct {
-	config    Config
-	logger    *zap.Logger
-	extractor extractor
+var errExporterNotFound = errors.New("exporter not found")
 
-	defaultLogsExporters    []component.LogsExporter
-	logsExporters           map[string][]component.LogsExporter
-	defaultMetricsExporters []component.MetricsExporter
-	metricsExporters        map[string][]component.MetricsExporter
-	defaultTracesExporters  []component.TracesExporter
-	tracesExporters         map[string][]component.TracesExporter
+// router registers exporters and default exporters for an exporter. router can
+// be instantiated with component.TracesExporter, component.MetricsExporter, and
+// component.LogsExporter type arguments.
+type router[E component.Exporter, K any] struct {
+	logger *zap.Logger
+	parser ottl.Parser[K]
+
+	defaultExporterIDs []string
+	table              []RoutingTableItem
+
+	defaultExporters []E
+	routes           map[string]routingItem[E, K]
 }
 
-func newRouter(config Config, logger *zap.Logger) *router {
-	return &router{
-		config:           config,
-		logger:           logger,
-		extractor:        newExtractor(config.FromAttribute, logger),
-		logsExporters:    make(map[string][]component.LogsExporter),
-		metricsExporters: make(map[string][]component.MetricsExporter),
-		tracesExporters:  make(map[string][]component.TracesExporter),
-	}
-}
+// newRouter creates a new router instance with its type parameter constrained
+// to component.Exporter.
+func newRouter[E component.Exporter, K any](
+	table []RoutingTableItem,
+	defaultExporterIDs []string,
+	settings component.TelemetrySettings,
+	parser ottl.Parser[K],
+) router[E, K] {
+	return router[E, K]{
+		logger: settings.Logger,
+		parser: parser,
 
-type routedMetrics struct {
-	metrics   pdata.Metrics
-	exporters []component.MetricsExporter
-}
+		table:              table,
+		defaultExporterIDs: defaultExporterIDs,
 
-func (r *router) RouteMetrics(ctx context.Context, tm pdata.Metrics) []routedMetrics {
-	switch r.config.AttributeSource {
-	case contextAttributeSource:
-		fallthrough
-	default:
-		return []routedMetrics{r.routeMetricsForContext(ctx, tm)}
-
-	case resourceAttributeSource:
-		return r.routeMetricsForResource(ctx, tm)
+		routes: make(map[string]routingItem[E, K]),
 	}
 }
 
-func (r *router) routeMetricsForResource(_ context.Context, tm pdata.Metrics) []routedMetrics {
-	// routingEntry is used to group pdata.ResourceMetrics that are routed to
-	// the same set of exporters.
-	// This way we're not ending up with all the metrics split up which would cause
-	// higher CPU usage.
-	type routingEntry struct {
-		exporters  []component.MetricsExporter
-		resMetrics pdata.ResourceMetricsSlice
-	}
-	routingMap := map[string]routingEntry{}
-
-	resMetricsSlice := tm.ResourceMetrics()
-	for i := 0; i < resMetricsSlice.Len(); i++ {
-		resMetrics := resMetricsSlice.At(i)
-
-		attrValue := r.extractor.extractAttrFromResource(resMetrics.Resource())
-		exp := r.defaultMetricsExporters
-		// If we have an exporter list defined for that attribute value then use it.
-		if e, ok := r.metricsExporters[attrValue]; ok {
-			exp = e
-		}
-
-		if rEntry, ok := routingMap[attrValue]; ok {
-			resMetrics.CopyTo(rEntry.resMetrics.AppendEmpty())
-		} else {
-			new := pdata.NewResourceMetricsSlice()
-			resMetrics.CopyTo(new.AppendEmpty())
-
-			routingMap[attrValue] = routingEntry{
-				exporters:  exp,
-				resMetrics: new,
-			}
-		}
-	}
-
-	// Now that we have all the ResourceMetrics grouped, let's create pdata.Metrics
-	// for each group and add it to the returned routedMetrics slice.
-	ret := make([]routedMetrics, 0, len(routingMap))
-	for _, rEntry := range routingMap {
-		metrics := pdata.NewMetrics()
-		metrics.ResourceMetrics().EnsureCapacity(rEntry.resMetrics.Len())
-		rEntry.resMetrics.MoveAndAppendTo(metrics.ResourceMetrics())
-
-		ret = append(ret, routedMetrics{
-			metrics:   metrics,
-			exporters: rEntry.exporters,
-		})
-	}
-
-	return ret
+type routingItem[E component.Exporter, K any] struct {
+	exporters  []E
+	expression ottl.Statement[K]
 }
 
-func (r *router) routeMetricsForContext(ctx context.Context, tm pdata.Metrics) routedMetrics {
-	value := r.extractor.extractFromContext(ctx)
-
-	exp, ok := r.metricsExporters[value]
-	if !ok {
-		return routedMetrics{
-			metrics:   tm,
-			exporters: r.defaultMetricsExporters,
-		}
-	}
-
-	return routedMetrics{
-		metrics:   tm,
-		exporters: exp,
-	}
-}
-
-type routedTraces struct {
-	traces    pdata.Traces
-	exporters []component.TracesExporter
-}
-
-func (r *router) RouteTraces(ctx context.Context, tr pdata.Traces) []routedTraces {
-	switch r.config.AttributeSource {
-	case contextAttributeSource:
-		fallthrough
-	default:
-		return []routedTraces{r.routeTracesForContext(ctx, tr)}
-
-	case resourceAttributeSource:
-		return r.routeTracesForResource(ctx, tr)
-	}
-}
-
-func (r *router) routeTracesForResource(_ context.Context, tr pdata.Traces) []routedTraces {
-	// routingEntry is used to group pdata.ResourceSpans that are routed to
-	// the same set of exporters.
-	// This way we're not ending up with all the logs split up which would cause
-	// higher CPU usage.
-	type routingEntry struct {
-		exporters []component.TracesExporter
-		resSpans  pdata.ResourceSpansSlice
-	}
-	routingMap := map[string]routingEntry{}
-
-	resSpansSlice := tr.ResourceSpans()
-	for i := 0; i < resSpansSlice.Len(); i++ {
-		resSpans := resSpansSlice.At(i)
-
-		attrValue := r.extractor.extractAttrFromResource(resSpans.Resource())
-		exp := r.defaultTracesExporters
-		// If we have an exporter list defined for that attribute value then use it.
-		if e, ok := r.tracesExporters[attrValue]; ok {
-			exp = e
-		}
-
-		if rEntry, ok := routingMap[attrValue]; ok {
-			resSpans.CopyTo(rEntry.resSpans.AppendEmpty())
-		} else {
-			new := pdata.NewResourceSpansSlice()
-			resSpans.CopyTo(new.AppendEmpty())
-
-			routingMap[attrValue] = routingEntry{
-				exporters: exp,
-				resSpans:  new,
-			}
-		}
-	}
-
-	// Now that we have all the ResourceSpans grouped, let's create pdata.Traces
-	// for each group and add it to the returned routedTraces slice.
-	ret := make([]routedTraces, 0, len(routingMap))
-	for _, rEntry := range routingMap {
-		traces := pdata.NewTraces()
-		traces.ResourceSpans().EnsureCapacity(rEntry.resSpans.Len())
-		rEntry.resSpans.MoveAndAppendTo(traces.ResourceSpans())
-
-		ret = append(ret, routedTraces{
-			traces:    traces,
-			exporters: rEntry.exporters,
-		})
-	}
-
-	return ret
-}
-
-func (r *router) routeTracesForContext(ctx context.Context, tr pdata.Traces) routedTraces {
-	value := r.extractor.extractFromContext(ctx)
-
-	exp, ok := r.tracesExporters[value]
-	if !ok {
-		return routedTraces{
-			traces:    tr,
-			exporters: r.defaultTracesExporters,
-		}
-	}
-
-	return routedTraces{
-		traces:    tr,
-		exporters: exp,
-	}
-}
-
-type routedLogs struct {
-	logs      pdata.Logs
-	exporters []component.LogsExporter
-}
-
-func (r *router) RouteLogs(ctx context.Context, tl pdata.Logs) []routedLogs {
-	switch r.config.AttributeSource {
-	case contextAttributeSource:
-		fallthrough
-	default:
-		return []routedLogs{r.routeLogsForContext(ctx, tl)}
-
-	case resourceAttributeSource:
-		return r.routeLogsForResource(ctx, tl)
-	}
-}
-
-func (r *router) routeLogsForResource(_ context.Context, tl pdata.Logs) []routedLogs {
-	// routingEntry is used to group pdata.ResourceLogs that are routed to
-	// the same set of exporters.
-	// This way we're not ending up with all the logs split up which would cause
-	// higher CPU usage.
-	type routingEntry struct {
-		exporters []component.LogsExporter
-		resLogs   pdata.ResourceLogsSlice
-	}
-	routingMap := map[string]routingEntry{}
-
-	resLogsSlice := tl.ResourceLogs()
-	for i := 0; i < resLogsSlice.Len(); i++ {
-		resLogs := resLogsSlice.At(i)
-
-		attrValue := r.extractor.extractAttrFromResource(resLogs.Resource())
-		exp := r.defaultLogsExporters
-		// If we have an exporter list defined for that attribute value then use it.
-		if e, ok := r.logsExporters[attrValue]; ok {
-			exp = e
-		}
-
-		if rEntry, ok := routingMap[attrValue]; ok {
-			resLogs.CopyTo(rEntry.resLogs.AppendEmpty())
-		} else {
-			new := pdata.NewResourceLogsSlice()
-			resLogs.CopyTo(new.AppendEmpty())
-
-			routingMap[attrValue] = routingEntry{
-				exporters: exp,
-				resLogs:   new,
-			}
-		}
-	}
-
-	// Now that we have all the ResourceLogs grouped, let's create pdata.Logs
-	// for each group and add it to the returned routedLogs slice.
-	ret := make([]routedLogs, 0, len(routingMap))
-	for _, rEntry := range routingMap {
-		logs := pdata.NewLogs()
-		logs.ResourceLogs().EnsureCapacity(rEntry.resLogs.Len())
-		rEntry.resLogs.MoveAndAppendTo(logs.ResourceLogs())
-
-		ret = append(ret, routedLogs{
-			logs:      logs,
-			exporters: rEntry.exporters,
-		})
-	}
-
-	return ret
-}
-
-func (r *router) routeLogsForContext(ctx context.Context, tl pdata.Logs) routedLogs {
-	value := r.extractor.extractFromContext(ctx)
-
-	exp, ok := r.logsExporters[value]
-	if !ok {
-		return routedLogs{
-			logs:      tl,
-			exporters: r.defaultLogsExporters,
-		}
-	}
-
-	return routedLogs{
-		logs:      tl,
-		exporters: exp,
-	}
-}
-
-// registerExporters registers the exporters as per the configured routing table
-// taking into account the provided map of available exporters.
-func (r *router) registerExporters(hostExporters map[config.DataType]map[config.ComponentID]component.Exporter) error {
-	for _, reg := range []struct {
-		registerFunc func(map[config.ComponentID]component.Exporter) error
-		typ          config.Type
-	}{
-		{
-			r.registerTracesExporters,
-			config.TracesDataType,
-		},
-		{
-			r.registerMetricsExporters,
-			config.MetricsDataType,
-		},
-		{
-			r.registerLogsExporters,
-			config.LogsDataType,
-		},
-	} {
-		if err := reg.registerFunc(hostExporters[reg.typ]); err != nil {
-			if errors.Is(err, errDefaultExporterNotFound) {
-				r.logger.Warn("can't find the default exporter for the routing processor for this pipeline type. This is OK if you did not specify this processor for that pipeline type",
-					zap.Any("pipeline_type", reg.typ),
-					zap.Error(err),
-				)
-			} else {
-				// this seems to be more serious than what expected
-				return err
-			}
-		}
-	}
-
-	if len(r.defaultLogsExporters) == 0 &&
-		len(r.defaultMetricsExporters) == 0 &&
-		len(r.defaultTracesExporters) == 0 &&
-		len(r.logsExporters) == 0 &&
-		len(r.metricsExporters) == 0 &&
-		len(r.tracesExporters) == 0 {
-		return errNoExportersAfterRegistration
-	}
-
-	return nil
-}
-
-// ExporterMap represents a maping from exporter name to the actual exporter object.
-type ExporterMap map[string]component.Exporter
-
-func (r *router) registerMetricsExporters(hostMetricsExporters map[config.ComponentID]component.Exporter) error {
-	if len(hostMetricsExporters) == 0 {
-		return nil
-	}
-
-	availableExporters := ExporterMap{}
-	for compID, exp := range hostMetricsExporters {
-		mExp, ok := exp.(component.MetricsExporter)
-		if !ok {
-			return fmt.Errorf("the exporter %q isn't a metrics exporter", compID.String())
-		}
-		availableExporters[compID.String()] = mExp
-	}
-
-	return r.registerExportersForRoutes(availableExporters)
-}
-
-func (r *router) registerLogsExporters(hostLogsExporters map[config.ComponentID]component.Exporter) error {
-	if len(hostLogsExporters) == 0 {
-		return nil
-	}
-
-	availableExporters := ExporterMap{}
-	for compID, exp := range hostLogsExporters {
-		mExp, ok := exp.(component.LogsExporter)
-		if !ok {
-			return fmt.Errorf("the exporter %q isn't a logs exporter", compID.String())
-		}
-		availableExporters[compID.String()] = mExp
-	}
-
-	return r.registerExportersForRoutes(availableExporters)
-}
-
-func (r *router) registerTracesExporters(hostTracesExporters map[config.ComponentID]component.Exporter) error {
-	if len(hostTracesExporters) == 0 {
-		return nil
-	}
-
-	availableExporters := ExporterMap{}
-	for compID, exp := range hostTracesExporters {
-		tExp, ok := exp.(component.TracesExporter)
-		if !ok {
-			return fmt.Errorf("the exporter %q isn't a traces exporter", compID.String())
-		}
-		availableExporters[compID.String()] = tExp
-	}
-
-	return r.registerExportersForRoutes(availableExporters)
-}
-
-// registerExportersForRoutes registers exporters according to the configuring
-// routing table, taking into account the provided map of available exporters.
-func (r *router) registerExportersForRoutes(available ExporterMap) error {
-	r.logger.Debug("Registering exporters for routes")
-
-	// default exporters
-	if err := r.registerExportersForDefaultRoute(available); err != nil {
+func (r *router[E, K]) registerExporters(available map[config.ComponentID]component.Exporter) error {
+	// register default exporters
+	err := r.registerDefaultExporters(available)
+	if err != nil {
 		return err
 	}
 
-	// exporters for each defined value
-	for _, item := range r.config.Table {
-		if err := r.registerExportersForRoute(item.Value, available, item.Exporters); err != nil {
+	// register exporters for each route
+	err = r.registerRouteExporters(available)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// registerDefaultExporters registers the configured default exporters
+// using the provided available exporters map.
+func (r *router[E, K]) registerDefaultExporters(available map[config.ComponentID]component.Exporter) error {
+	for _, name := range r.defaultExporterIDs {
+		e, err := r.extractExporter(name, available)
+		if errors.Is(err, errExporterNotFound) {
+			continue
+		}
+		if err != nil {
 			return err
 		}
+		r.defaultExporters = append(r.defaultExporters, e)
 	}
 
 	return nil
 }
 
-// registerExportersForDefaultRoute registers the configured default exporters
-// using the provided available exporters map.
-func (r *router) registerExportersForDefaultRoute(available ExporterMap) error {
-	for _, exp := range r.config.DefaultExporters {
-		v, ok := available[exp]
-		if !ok {
-			return fmt.Errorf("error registering default exporter %q: %w",
-				exp, errDefaultExporterNotFound,
-			)
-		}
-
-		switch exp := v.(type) {
-		case component.TracesExporter:
-			r.defaultTracesExporters = append(r.defaultTracesExporters, exp)
-		case component.MetricsExporter:
-			r.defaultMetricsExporters = append(r.defaultMetricsExporters, exp)
-		case component.LogsExporter:
-			r.defaultLogsExporters = append(r.defaultLogsExporters, exp)
-		default:
-			return fmt.Errorf("unknown exporter type %T", v)
-		}
-	}
-
-	return nil
-}
-
-// registerExportersForRoute registers the requested exporters using the provided
+// registerRouteExporters registers route exporters using the provided
 // available exporters map to check if they were available.
-func (r *router) registerExportersForRoute(route string, available ExporterMap, requested []string) error {
-	r.logger.Debug("Registering exporter for route",
-		zap.String("route", route),
-		zap.Any("requested", requested),
-	)
+func (r *router[E, K]) registerRouteExporters(available map[config.ComponentID]component.Exporter) error {
+	for _, item := range r.table {
+		e, err := r.routingExpression(item)
+		if err != nil {
+			return err
+		}
 
-	for _, exp := range requested {
-		v, ok := available[exp]
+		route, ok := r.routes[key(item)]
 		if !ok {
-			return fmt.Errorf("error registering route %q for exporter %q: %w",
-				route, exp, errExporterNotFound,
-			)
+			route.expression = e
 		}
 
-		switch exp := v.(type) {
-		case component.TracesExporter:
-			r.tracesExporters[route] = append(r.tracesExporters[route], exp)
-		case component.MetricsExporter:
-			r.metricsExporters[route] = append(r.metricsExporters[route], exp)
-		case component.LogsExporter:
-			r.logsExporters[route] = append(r.logsExporters[route], exp)
-		default:
-			return fmt.Errorf("unknown exporter type %T", v)
+		for _, name := range item.Exporters {
+			e, err := r.extractExporter(name, available)
+			if errors.Is(err, errExporterNotFound) {
+				continue
+			}
+			if err != nil {
+				return err
+			}
+			route.exporters = append(route.exporters, e)
 		}
+		r.routes[key(item)] = route
 	}
-
 	return nil
+}
+
+// routingExpression builds a routing OTTL expressions from provided
+// routing table entry configuration. If routing table entry configuration
+// does not contain a OTTL expressions then nil is returned.
+func (r *router[E, K]) routingExpression(item RoutingTableItem) (ottl.Statement[K], error) {
+	var e ottl.Statement[K]
+	if item.Expression != "" {
+		queries, err := r.parser.ParseStatements([]string{item.Expression})
+		if err != nil {
+			return e, err
+		}
+		if len(queries) != 1 {
+			return e, errors.New("more than one expression specified")
+		}
+		e = queries[0]
+	}
+	return e, nil
+}
+
+func key(entry RoutingTableItem) string {
+	if entry.Value != "" {
+		return entry.Value
+	}
+	return entry.Expression
+}
+
+// extractExporter returns an exporter for the given name (type/name) and type
+// argument if it exists in the list of available exporters.
+func (r *router[E, K]) extractExporter(name string, available map[config.ComponentID]component.Exporter) (E, error) {
+	var exporter E
+
+	id, err := config.NewComponentIDFromString(name)
+	if err != nil {
+		return exporter, err
+	}
+	v, ok := available[id]
+	if !ok {
+		r.logger.Warn(
+			"Can't find the exporter for the routing processor for this pipeline type."+
+				" This is OK if you did not specify this processor for that pipeline type",
+			zap.Any("pipeline_type", new(E)),
+			zap.Error(
+				fmt.Errorf(
+					"error registering exporter %q",
+					name,
+				),
+			),
+		)
+		return exporter, errExporterNotFound
+	}
+	exporter, ok = v.(E)
+	if !ok {
+		return exporter,
+			fmt.Errorf("the exporter %q isn't a %T exporter", id.String(), new(E))
+	}
+	return exporter, nil
+}
+
+func (r *router[E, K]) getExporters(key string) []E {
+	e, ok := r.routes[key]
+	if !ok {
+		return r.defaultExporters
+	}
+	return e.exporters
 }

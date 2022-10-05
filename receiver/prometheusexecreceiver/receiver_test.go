@@ -28,9 +28,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
@@ -38,17 +38,16 @@ import (
 
 // loadConfigAssertNoError loads the test config and asserts there are no errors, and returns the receiver wanted
 func loadConfigAssertNoError(t *testing.T, receiverConfigID config.ComponentID) config.Receiver {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Receivers[factory.Type()] = factory
+	cfg := factory.CreateDefaultConfig()
 
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-	assert.NoError(t, err)
-	assert.NotNil(t, cfg)
+	sub, err := cm.Sub(receiverConfigID.String())
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
 
-	return cfg.Receivers[receiverConfigID]
+	return cfg
 }
 
 // TestExecKeyMissing loads config and asserts there is an error with that config
@@ -66,6 +65,7 @@ func assertErrorWhenExecKeyMissing(t *testing.T, errorReceiverConfig config.Rece
 
 // TestEndToEnd loads the test config and completes an e2e test where Prometheus metrics are scrapped twice from `test_prometheus_exporter.go`
 func TestEndToEnd(t *testing.T) {
+	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/5859")
 	receiverConfig := loadConfigAssertNoError(t, config.NewComponentIDWithName(typeStr, "end_to_end_test/2"))
 
 	// e2e test with port undefined by user
@@ -73,7 +73,7 @@ func TestEndToEnd(t *testing.T) {
 }
 
 // endToEndScrapeTest creates a receiver that invokes `go run test_prometheus_exporter.go` and waits until it has scraped the /metrics endpoint twice - the application will crash between each scrape
-func endToEndScrapeTest(t *testing.T, receiverConfig config.Receiver, testName string) {
+func endToEndScrapeTest(t *testing.T, receiverConfig config.Receiver, testName string) { //nolint
 	sink := new(consumertest.MetricsSink)
 	wrapper, err := newPromExecReceiver(componenttest.NewNopReceiverCreateSettings(), receiverConfig.(*Config), sink)
 	assert.NoError(t, err, "newPromExecReceiver() returned an error")
@@ -83,7 +83,7 @@ func endToEndScrapeTest(t *testing.T, receiverConfig config.Receiver, testName s
 	assert.NoError(t, err, "Start() returned an error")
 	defer func() { assert.NoError(t, wrapper.Shutdown(ctx)) }()
 
-	var metrics []pdata.Metrics
+	var metrics []pmetric.Metrics
 
 	// Make sure two scrapes have been completed (this implies the process was started, scraped, restarted and finally scraped a second time)
 	const waitFor = 30 * time.Second
@@ -102,11 +102,11 @@ func endToEndScrapeTest(t *testing.T, receiverConfig config.Receiver, testName s
 
 // assertTwoUniqueValuesScraped iterates over the found metrics and returns true if it finds at least 2 unique metrics, meaning the endpoint
 // was successfully scraped twice AND the subprocess being handled was stopped and restarted
-func assertTwoUniqueValuesScraped(t *testing.T, metricsSlice []pdata.Metrics) {
+func assertTwoUniqueValuesScraped(t *testing.T, metricsSlice []pmetric.Metrics) { //nolint
 	var value float64
 	for i := range metricsSlice {
-		ms := metricsSlice[i].ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-		var tempM pdata.Metric
+		ms := metricsSlice[i].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+		var tempM pmetric.Metric
 		ok := false
 		for j := 0; j < ms.Len(); j++ {
 			if ms.At(j).Name() == "timestamp_now" {
@@ -116,8 +116,8 @@ func assertTwoUniqueValuesScraped(t *testing.T, metricsSlice []pdata.Metrics) {
 			}
 		}
 		require.True(t, ok, "timestamp_now metric not found")
-		assert.Equal(t, pdata.MetricDataTypeGauge, tempM.DataType())
-		tempV := tempM.Gauge().DataPoints().At(0).DoubleVal()
+		assert.Equal(t, pmetric.MetricTypeGauge, tempM.Type())
+		tempV := tempM.Gauge().DataPoints().At(0).DoubleValue()
 		if i != 0 && tempV != value {
 			return
 		}

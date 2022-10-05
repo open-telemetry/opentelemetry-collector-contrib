@@ -26,17 +26,20 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "filter"
+	// The stability level of the processor.
+	stability = component.StabilityLevelAlpha
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Filter processor.
 func NewFactory() component.ProcessorFactory {
-	return processorhelper.NewFactory(
+	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithMetrics(createMetricsProcessor),
-		processorhelper.WithLogs(createLogsProcessor),
+		component.WithMetricsProcessor(createMetricsProcessor, stability),
+		component.WithLogsProcessor(createLogsProcessor, stability),
+		component.WithTracesProcessor(createTracesProcessor, stability),
 	)
 }
 
@@ -47,7 +50,7 @@ func createDefaultConfig() config.Processor {
 }
 
 func createMetricsProcessor(
-	_ context.Context,
+	ctx context.Context,
 	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
@@ -57,6 +60,8 @@ func createMetricsProcessor(
 		return nil, err
 	}
 	return processorhelper.NewMetricsProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		fp.processMetrics,
@@ -64,7 +69,7 @@ func createMetricsProcessor(
 }
 
 func createLogsProcessor(
-	_ context.Context,
+	ctx context.Context,
 	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
@@ -74,8 +79,29 @@ func createLogsProcessor(
 		return nil, err
 	}
 	return processorhelper.NewLogsProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		fp.ProcessLogs,
+		processorhelper.WithCapabilities(processorCapabilities))
+}
+
+func createTracesProcessor(
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
+	cfg config.Processor,
+	nextConsumer consumer.Traces,
+) (component.TracesProcessor, error) {
+	fp, err := newFilterSpansProcessor(set.Logger, cfg.(*Config))
+	if err != nil {
+		return nil, err
+	}
+	return processorhelper.NewTracesProcessor(
+		ctx,
+		set,
+		cfg,
+		nextConsumer,
+		fp.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities))
 }

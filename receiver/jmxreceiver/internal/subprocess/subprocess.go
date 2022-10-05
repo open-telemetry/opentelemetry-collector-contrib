@@ -257,7 +257,7 @@ func (subprocess *Subprocess) run(ctx context.Context) {
 			}
 		case shuttingDown:
 			if cmd.Process != nil {
-				cmd.Process.Signal(syscall.SIGTERM)
+				_ = cmd.Process.Signal(syscall.SIGTERM)
 			}
 			<-processReturned.ReturnedChan
 			stdout.Close()
@@ -304,7 +304,8 @@ func createCommand(execPath string, args, envVars []string) (*exec.Cmd, io.Write
 
 	var env []string
 	env = append(env, os.Environ()...)
-	cmd.Env = append(env, envVars...)
+	env = append(env, envVars...)
+	cmd.Env = env
 
 	inReader, inWriter, err := os.Pipe()
 	if err != nil {

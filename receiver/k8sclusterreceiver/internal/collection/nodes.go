@@ -21,7 +21,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/iancoleman/strcase"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
@@ -61,27 +61,34 @@ func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport, allocatabl
 			},
 		})
 	}
+
 	// Adding 'node allocatable type' metrics
 	for _, nodeAllocatableTypeValue := range allocatableTypesToReport {
 		nodeAllocatableMetric := getNodeAllocatableMetric(nodeAllocatableTypeValue)
 		v1NodeAllocatableTypeValue := corev1.ResourceName(nodeAllocatableTypeValue)
-		metricValue, err := nodeAllocatableValue(node, v1NodeAllocatableTypeValue)
-
-		// metrics will be skipped if metric not present in node or value is not convertable to int64
-		if err != nil {
-			logger.Debug(err.Error())
-		} else {
-			metrics = append(metrics, &metricspb.Metric{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        nodeAllocatableMetric,
-					Description: allocatableDesciption[v1NodeAllocatableTypeValue.String()],
-					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					utils.GetInt64TimeSeries(metricValue),
-				},
-			})
+		valType := metricspb.MetricDescriptor_GAUGE_INT64
+		quantity, ok := node.Status.Allocatable[v1NodeAllocatableTypeValue]
+		if !ok {
+			logger.Debug(fmt.Errorf("allocatable type %v not found in node %v", nodeAllocatableTypeValue,
+				node.GetName()).Error())
+			continue
 		}
+		val := utils.GetInt64TimeSeries(quantity.Value())
+		if v1NodeAllocatableTypeValue == corev1.ResourceCPU {
+			// cpu metrics must be of the double type to adhere to opentelemetry system.cpu metric specifications
+			val = utils.GetDoubleTimeSeries(float64(quantity.MilliValue()) / 1000.0)
+			valType = metricspb.MetricDescriptor_GAUGE_DOUBLE
+		}
+		metrics = append(metrics, &metricspb.Metric{
+			MetricDescriptor: &metricspb.MetricDescriptor{
+				Name:        nodeAllocatableMetric,
+				Description: allocatableDesciption[v1NodeAllocatableTypeValue.String()],
+				Type:        valType,
+			},
+			Timeseries: []*metricspb.TimeSeries{
+				val,
+			},
+		})
 	}
 
 	return []*resourceMetrics{
@@ -104,9 +111,8 @@ func getResourceForNode(node *corev1.Node) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: k8sType,
 		Labels: map[string]string{
-			conventions.AttributeK8SNodeUID:     string(node.UID),
-			conventions.AttributeK8SNodeName:    node.Name,
-			conventions.AttributeK8SClusterName: node.ClusterName,
+			conventions.AttributeK8SNodeUID:  string(node.UID),
+			conventions.AttributeK8SNodeName: node.Name,
 		},
 	}
 }
@@ -115,19 +121,6 @@ var nodeConditionValues = map[corev1.ConditionStatus]int64{
 	corev1.ConditionTrue:    1,
 	corev1.ConditionFalse:   0,
 	corev1.ConditionUnknown: -1,
-}
-
-func nodeAllocatableValue(node *corev1.Node, allocatableType corev1.ResourceName) (int64, error) {
-	value, ok := node.Status.Allocatable[allocatableType]
-	if !ok {
-		return 0, fmt.Errorf("allocatable type %v not found in node %v", allocatableType, node.GetName())
-	}
-
-	val, ok := value.AsInt64()
-	if !ok {
-		return 0, fmt.Errorf("metric %s has value %v which is not convertable to int64", allocatableType, value)
-	}
-	return val, nil
 }
 
 func nodeConditionValue(node *corev1.Node, condType corev1.NodeConditionType) int64 {

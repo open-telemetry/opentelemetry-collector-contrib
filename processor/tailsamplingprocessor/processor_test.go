@@ -26,9 +26,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
@@ -37,7 +40,7 @@ const (
 	defaultTestDecisionWait = 30 * time.Second
 )
 
-var testPolicy = []PolicyCfg{{Name: "test-policy", Type: AlwaysSample}}
+var testPolicy = []PolicyCfg{{sharedPolicyCfg: sharedPolicyCfg{Name: "test-policy", Type: AlwaysSample}}}
 
 func TestSequentialTraceArrival(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(128)
@@ -50,24 +53,25 @@ func TestSequentialTraceArrival(t *testing.T) {
 	sp, _ := newTracesProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	tsp.tickerFrequency = 100 * time.Millisecond
-	tsp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
 
 	for _, batch := range batches {
-		tsp.ConsumeTraces(context.Background(), batch)
+		require.NoError(t, tsp.ConsumeTraces(context.Background(), batch))
 	}
 
 	for i := range traceIds {
 		d, ok := tsp.idToTrace.Load(traceIds[i])
 		require.True(t, ok, "Missing expected traceId")
 		v := d.(*sampling.TraceData)
-		require.Equal(t, int64(i+1), v.SpanCount, "Incorrect number of spans for entry %d", i)
+		require.Equal(t, int64(i+1), v.SpanCount.Load(), "Incorrect number of spans for entry %d", i)
 	}
 }
 
 func TestConcurrentTraceArrival(t *testing.T) {
+	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10205")
 	traceIds, batches := generateIdsAndBatches(128)
 
 	var wg sync.WaitGroup
@@ -80,7 +84,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	sp, _ := newTracesProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	tsp.tickerFrequency = 100 * time.Millisecond
-	tsp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
@@ -88,12 +92,12 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	for _, batch := range batches {
 		// Add the same traceId twice.
 		wg.Add(2)
-		go func(td pdata.Traces) {
-			tsp.ConsumeTraces(context.Background(), td)
+		go func(td ptrace.Traces) {
+			require.NoError(t, tsp.ConsumeTraces(context.Background(), td))
 			wg.Done()
 		}(batch)
-		go func(td pdata.Traces) {
-			tsp.ConsumeTraces(context.Background(), td)
+		go func(td ptrace.Traces) {
+			require.NoError(t, tsp.ConsumeTraces(context.Background(), td))
 			wg.Done()
 		}(batch)
 	}
@@ -104,7 +108,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 		d, ok := tsp.idToTrace.Load(traceIds[i])
 		require.True(t, ok, "Missing expected traceId")
 		v := d.(*sampling.TraceData)
-		require.Equal(t, int64(i+1)*2, v.SpanCount, "Incorrect number of spans for entry %d", i)
+		require.Equal(t, int64(i+1)*2, v.SpanCount.Load(), "Incorrect number of spans for entry %d", i)
 	}
 }
 
@@ -120,13 +124,13 @@ func TestSequentialTraceMapSize(t *testing.T) {
 	sp, _ := newTracesProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	tsp.tickerFrequency = 100 * time.Millisecond
-	tsp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
 
 	for _, batch := range batches {
-		tsp.ConsumeTraces(context.Background(), batch)
+		require.NoError(t, tsp.ConsumeTraces(context.Background(), batch))
 	}
 
 	// On sequential insertion it is possible to know exactly which traces should be still on the map.
@@ -137,6 +141,7 @@ func TestSequentialTraceMapSize(t *testing.T) {
 }
 
 func TestConcurrentTraceMapSize(t *testing.T) {
+	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9126")
 	_, batches := generateIdsAndBatches(210)
 	const maxSize = 100
 	var wg sync.WaitGroup
@@ -149,15 +154,15 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 	sp, _ := newTracesProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	tsp.tickerFrequency = 100 * time.Millisecond
-	tsp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
 
 	for _, batch := range batches {
 		wg.Add(1)
-		go func(td pdata.Traces) {
-			tsp.ConsumeTraces(context.Background(), td)
+		go func(td ptrace.Traces) {
+			require.NoError(t, tsp.ConsumeTraces(context.Background(), td))
 			wg.Done()
 		}(batch)
 	}
@@ -189,11 +194,12 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
 		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
-		deleteChan:      make(chan pdata.TraceID, maxSize),
+		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
+		numTracesOnMap:  atomic.NewUint64(0),
 	}
-	tsp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
@@ -204,7 +210,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	// First evaluations shouldn't have anything to evaluate, until decision wait time passed.
 	for evalNum := 0; evalNum < decisionWaitSeconds; evalNum++ {
 		for ; currItem < numSpansPerBatchWindow*(evalNum+1); currItem++ {
-			tsp.ConsumeTraces(context.Background(), batches[currItem])
+			require.NoError(t, tsp.ConsumeTraces(context.Background(), batches[currItem]))
 			require.True(t, mtt.Started, "Time ticker was expected to have started")
 		}
 		tsp.samplingPolicyOnTick()
@@ -229,7 +235,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	require.Equal(t, numSpansPerBatchWindow, msp.SpanCount(), "not all spans of first window were accounted for")
 
 	// Late span of a sampled trace should be sent directly down the pipeline exporter
-	tsp.ConsumeTraces(context.Background(), batches[0])
+	require.NoError(t, tsp.ConsumeTraces(context.Background(), batches[0]))
 	expectedNumWithLateSpan := numSpansPerBatchWindow + 1
 	require.Equal(t, expectedNumWithLateSpan, msp.SpanCount(), "late span was not accounted for")
 }
@@ -249,11 +255,12 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
 		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
-		deleteChan:      make(chan pdata.TraceID, maxSize),
+		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
+		numTracesOnMap:  atomic.NewUint64(0),
 	}
-	tsp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
@@ -264,7 +271,7 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 	// First evaluations shouldn't have anything to evaluate, until decision wait time passed.
 	for evalNum := 0; evalNum < decisionWaitSeconds; evalNum++ {
 		for ; currItem < numSpansPerBatchWindow*(evalNum+1); currItem++ {
-			tsp.ConsumeTraces(context.Background(), batches[currItem])
+			require.NoError(t, tsp.ConsumeTraces(context.Background(), batches[currItem]))
 			require.True(t, mtt.Started, "Time ticker was expected to have started")
 		}
 		tsp.samplingPolicyOnTick()
@@ -289,7 +296,7 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 	require.Equal(t, numSpansPerBatchWindow, msp.SpanCount(), "not all spans of first window were accounted for")
 
 	// Late span of a sampled trace should be sent directly down the pipeline exporter
-	tsp.ConsumeTraces(context.Background(), batches[0])
+	require.NoError(t, tsp.ConsumeTraces(context.Background(), batches[0]))
 	expectedNumWithLateSpan := numSpansPerBatchWindow + 1
 	require.Equal(t, expectedNumWithLateSpan, msp.SpanCount(), "late span was not accounted for")
 }
@@ -316,11 +323,12 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 			{
 				name: "policy-2", evaluator: mpe2, ctx: context.TODO(),
 			}},
-		deleteChan:      make(chan pdata.TraceID, maxSize),
+		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
+		numTracesOnMap:  atomic.NewUint64(0),
 	}
-	tsp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
@@ -331,7 +339,7 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 	// First evaluations shouldn't have anything to evaluate, until decision wait time passed.
 	for evalNum := 0; evalNum < decisionWaitSeconds; evalNum++ {
 		for ; currItem < numSpansPerBatchWindow*(evalNum+1); currItem++ {
-			tsp.ConsumeTraces(context.Background(), batches[currItem])
+			require.NoError(t, tsp.ConsumeTraces(context.Background(), batches[currItem]))
 			require.True(t, mtt.Started, "Time ticker was expected to have started")
 		}
 		tsp.samplingPolicyOnTick()
@@ -358,7 +366,7 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 	require.Equal(t, numSpansPerBatchWindow, msp.SpanCount(), "nextConsumer should've been called with exactly 1 batch of spans")
 
 	// Late span of a sampled trace should be sent directly down the pipeline exporter
-	tsp.ConsumeTraces(context.Background(), batches[0])
+	require.NoError(t, tsp.ConsumeTraces(context.Background(), batches[0]))
 	expectedNumWithLateSpan := numSpansPerBatchWindow + 1
 	require.Equal(t, expectedNumWithLateSpan, msp.SpanCount(), "late span was not accounted for")
 }
@@ -378,11 +386,12 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
 		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
-		deleteChan:      make(chan pdata.TraceID, maxSize),
+		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
+		numTracesOnMap:  atomic.NewUint64(0),
 	}
-	tsp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
@@ -393,7 +402,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 	// First evaluations shouldn't have anything to evaluate, until decision wait time passed.
 	for evalNum := 0; evalNum < decisionWaitSeconds; evalNum++ {
 		for ; currItem < numSpansPerBatchWindow*(evalNum+1); currItem++ {
-			tsp.ConsumeTraces(context.Background(), batches[currItem])
+			require.NoError(t, tsp.ConsumeTraces(context.Background(), batches[currItem]))
 			require.True(t, mtt.Started, "Time ticker was expected to have started")
 		}
 		tsp.samplingPolicyOnTick()
@@ -411,7 +420,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 	require.EqualValues(t, 4, mpe.EvaluationCount, "policy should have been evaluated 4 times")
 
 	// Late span of a non-sampled trace should be ignored
-	tsp.ConsumeTraces(context.Background(), batches[0])
+	require.NoError(t, tsp.ConsumeTraces(context.Background(), batches[0]))
 	require.Equal(t, 0, msp.SpanCount())
 
 	mpe.NextDecision = sampling.Unspecified
@@ -421,7 +430,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 	require.EqualValues(t, 6, mpe.EvaluationCount, "policy should have been evaluated 6 times")
 
 	// Late span of a non-sampled trace should be ignored
-	tsp.ConsumeTraces(context.Background(), batches[0])
+	require.NoError(t, tsp.ConsumeTraces(context.Background(), batches[0]))
 	require.Equal(t, 0, msp.SpanCount())
 }
 
@@ -440,11 +449,12 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
 		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
-		deleteChan:      make(chan pdata.TraceID, maxSize),
+		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
+		numTracesOnMap:  atomic.NewUint64(0),
 	}
-	tsp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
@@ -455,7 +465,7 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 	// First evaluations shouldn't have anything to evaluate, until decision wait time passed.
 	for evalNum := 0; evalNum < decisionWaitSeconds; evalNum++ {
 		for ; currItem < numSpansPerBatchWindow*(evalNum+1); currItem++ {
-			tsp.ConsumeTraces(context.Background(), batches[currItem])
+			require.NoError(t, tsp.ConsumeTraces(context.Background(), batches[currItem]))
 			require.True(t, mtt.Started, "Time ticker was expected to have started")
 		}
 		tsp.samplingPolicyOnTick()
@@ -473,7 +483,7 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 	require.EqualValues(t, 4, mpe.EvaluationCount, "policy should have been evaluated 4 times")
 
 	// Late span of a non-sampled trace should be ignored
-	tsp.ConsumeTraces(context.Background(), batches[0])
+	require.NoError(t, tsp.ConsumeTraces(context.Background(), batches[0]))
 	require.Equal(t, 0, msp.SpanCount())
 
 	mpe.NextDecision = sampling.Unspecified
@@ -483,7 +493,7 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 	require.EqualValues(t, 6, mpe.EvaluationCount, "policy should have been evaluated 6 times")
 
 	// Late span of a non-sampled trace should be ignored
-	tsp.ConsumeTraces(context.Background(), batches[0])
+	require.NoError(t, tsp.ConsumeTraces(context.Background(), batches[0]))
 	require.Equal(t, 0, msp.SpanCount())
 }
 
@@ -502,11 +512,12 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
 		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
-		deleteChan:      make(chan pdata.TraceID, maxSize),
+		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
+		numTracesOnMap:  atomic.NewUint64(0),
 	}
-	tsp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
@@ -523,15 +534,15 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 	require.EqualValues(t, 3, len(msp.AllTraces()), "There should be three batches, one for each trace")
 
-	expectedSpanIds := make(map[int][]pdata.SpanID)
-	expectedSpanIds[0] = []pdata.SpanID{
+	expectedSpanIds := make(map[int][]pcommon.SpanID)
+	expectedSpanIds[0] = []pcommon.SpanID{
 		uInt64ToSpanID(uint64(1)),
 	}
-	expectedSpanIds[1] = []pdata.SpanID{
+	expectedSpanIds[1] = []pcommon.SpanID{
 		uInt64ToSpanID(uint64(2)),
 		uInt64ToSpanID(uint64(3)),
 	}
-	expectedSpanIds[2] = []pdata.SpanID{
+	expectedSpanIds[2] = []pcommon.SpanID{
 		uInt64ToSpanID(uint64(4)),
 		uInt64ToSpanID(uint64(5)),
 		uInt64ToSpanID(uint64(6)),
@@ -539,8 +550,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 	receivedTraces := msp.AllTraces()
 	for i, traceID := range traceIds {
-		trace := findTrace(receivedTraces, traceID)
-		require.NotNil(t, trace, "Trace was not received. TraceId %s", traceID.HexString())
+		trace := findTrace(t, receivedTraces, traceID)
 		require.EqualValues(t, i+1, trace.SpanCount(), "The trace should have all of its spans in a single batch")
 
 		expected := expectedSpanIds[i]
@@ -548,9 +558,9 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 		// might have received out of order, sort for comparison
 		sort.Slice(got, func(i, j int) bool {
-			bytesA := got[i].Bytes()
+			bytesA := got[i]
 			a := binary.BigEndian.Uint64(bytesA[:])
-			bytesB := got[j].Bytes()
+			bytesB := got[j]
 			b := binary.BigEndian.Uint64(bytesB[:])
 			return a < b
 		})
@@ -559,11 +569,11 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	}
 }
 
-func collectSpanIds(trace *pdata.Traces) []pdata.SpanID {
-	spanIDs := make([]pdata.SpanID, 0)
+func collectSpanIds(trace ptrace.Traces) []pcommon.SpanID {
+	var spanIDs []pcommon.SpanID
 
 	for i := 0; i < trace.ResourceSpans().Len(); i++ {
-		ilss := trace.ResourceSpans().At(i).InstrumentationLibrarySpans()
+		ilss := trace.ResourceSpans().At(i).ScopeSpans()
 
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
@@ -578,29 +588,30 @@ func collectSpanIds(trace *pdata.Traces) []pdata.SpanID {
 	return spanIDs
 }
 
-func findTrace(a []pdata.Traces, traceID pdata.TraceID) *pdata.Traces {
+func findTrace(t *testing.T, a []ptrace.Traces, traceID pcommon.TraceID) ptrace.Traces {
 	for _, batch := range a {
-		id := batch.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID()
-		if traceID.Bytes() == id.Bytes() {
-			return &batch
+		id := batch.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
+		if traceID == id {
+			return batch
 		}
 	}
-	return nil
+	t.Fatalf("Trace was not received. TraceId %s", traceID.HexString())
+	return ptrace.Traces{}
 }
 
-func generateIdsAndBatches(numIds int) ([]pdata.TraceID, []pdata.Traces) {
-	traceIds := make([]pdata.TraceID, numIds)
+func generateIdsAndBatches(numIds int) ([]pcommon.TraceID, []ptrace.Traces) {
+	traceIds := make([]pcommon.TraceID, numIds)
 	spanID := 0
-	var tds []pdata.Traces
+	var tds []ptrace.Traces
 	for i := 0; i < numIds; i++ {
 		traceID := [16]byte{}
 		binary.BigEndian.PutUint64(traceID[:8], 1)
 		binary.BigEndian.PutUint64(traceID[8:], uint64(i+1))
-		traceIds[i] = pdata.NewTraceID(traceID)
+		traceIds[i] = pcommon.TraceID(traceID)
 		// Send each span in a separate batch
 		for j := 0; j <= i; j++ {
 			td := simpleTraces()
-			span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+			span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 			span.SetTraceID(traceIds[i])
 
 			spanID++
@@ -612,11 +623,11 @@ func generateIdsAndBatches(numIds int) ([]pdata.TraceID, []pdata.Traces) {
 	return traceIds, tds
 }
 
-// uInt64ToSpanID converts the uint64 representation of a SpanID to pdata.SpanID.
-func uInt64ToSpanID(id uint64) pdata.SpanID {
+// uInt64ToSpanID converts the uint64 representation of a SpanID to pcommon.SpanID.
+func uInt64ToSpanID(id uint64) pcommon.SpanID {
 	spanID := [8]byte{}
 	binary.BigEndian.PutUint64(spanID[:], id)
-	return pdata.NewSpanID(spanID)
+	return pcommon.SpanID(spanID)
 }
 
 type mockPolicyEvaluator struct {
@@ -627,7 +638,7 @@ type mockPolicyEvaluator struct {
 
 var _ sampling.PolicyEvaluator = (*mockPolicyEvaluator)(nil)
 
-func (m *mockPolicyEvaluator) Evaluate(pdata.TraceID, *sampling.TraceData) (sampling.Decision, error) {
+func (m *mockPolicyEvaluator) Evaluate(pcommon.TraceID, *sampling.TraceData) (sampling.Decision, error) {
 	m.EvaluationCount++
 	return m.NextDecision, m.NextError
 }
@@ -636,16 +647,16 @@ type manualTTicker struct {
 	Started bool
 }
 
-var _ tTicker = (*manualTTicker)(nil)
+var _ timeutils.TTicker = (*manualTTicker)(nil)
 
-func (t *manualTTicker) start(time.Duration) {
+func (t *manualTTicker) Start(time.Duration) {
 	t.Started = true
 }
 
-func (t *manualTTicker) onTick() {
+func (t *manualTTicker) OnTick() {
 }
 
-func (t *manualTTicker) stop() {
+func (t *manualTTicker) Stop() {
 }
 
 type syncIDBatcher struct {
@@ -666,7 +677,7 @@ func newSyncIDBatcher(numBatches uint64) idbatcher.Batcher {
 	}
 }
 
-func (s *syncIDBatcher) AddToCurrentBatch(id pdata.TraceID) {
+func (s *syncIDBatcher) AddToCurrentBatch(id pcommon.TraceID) {
 	s.Lock()
 	s.openBatch = append(s.openBatch, id)
 	s.Unlock()
@@ -684,12 +695,12 @@ func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) 
 func (s *syncIDBatcher) Stop() {
 }
 
-func simpleTraces() pdata.Traces {
-	return simpleTracesWithID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
+func simpleTraces() ptrace.Traces {
+	return simpleTracesWithID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
 }
 
-func simpleTracesWithID(traceID pdata.TraceID) pdata.Traces {
-	traces := pdata.NewTraces()
-	traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(traceID)
+func simpleTracesWithID(traceID pcommon.TraceID) ptrace.Traces {
+	traces := ptrace.NewTraces()
+	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(traceID)
 	return traces
 }

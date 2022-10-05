@@ -1,6 +1,18 @@
 # Required: name of the receiver.
 name:
 
+# Optional: OTel Semantic Conventions version that will be associated with the scraped metrics.
+# This attribute should be set for metrics compliant with OTel Semantic Conventions.
+sem_conv_version: 1.9.0
+
+# Optional: map of resource attribute definitions with the key being the attribute name.
+resource_attributes:
+  <attribute.name>:
+    # Required: description of the attribute.
+    description:
+    # Required: attribute type.
+    type: <string|int|double|bool|bytes>
+
 # Optional: map of attribute definitions with the key being the attribute name and value
 # being described below.
 attributes:
@@ -12,12 +24,14 @@ attributes:
     description:
     # Optional: array of attribute values if they are static values.
     enum:
+    # Optional: attribute type. Default: string.
+    type: <string|int|double|bool|bytes>
 
 # Required: map of metric names with the key being the metric name and value
 # being described below.
 metrics:
   <metric.name>:
-    # Required: whether the metric is collected by default. Takes effect only with "--experimental-gen" mdatagen flag.
+    # Required: whether the metric is collected by default.
     enabled: # true | false
     # Required: metric description.
     description:
@@ -26,12 +40,12 @@ metrics:
     # Required: metric unit as defined by https://ucum.org/ucum.html.
     unit:
     # Required: metric type with its settings.
-    <sum|gauge|histogram>:
+    <sum|gauge>:
       # Required for sum and gauge metrics: type of number data point values.
       value_type: # int | double
       # Required for sum metric: whether the metric is monotonic (no negative delta values).
       monotonic: # true | false
-      # Required for sum and histogram metrics: whether reported values incorporate previous measurements
+      # Required for sum metric: whether reported values incorporate previous measurements
       # (cumulative) or not (delta).
       aggregation: # delta | cumulative
     # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.

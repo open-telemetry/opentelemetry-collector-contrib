@@ -17,7 +17,7 @@ package network // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"path"
 )
 
@@ -74,7 +74,7 @@ func (rw *FakeRW) Read(p []byte) (n int, err error) {
 func ReadBlobData(dir string, numFiles int) ([][]byte, error) {
 	var out [][]byte
 	for i := 0; i < numFiles; i++ {
-		bytes, err := ioutil.ReadFile(blobFile(dir, i))
+		bytes, err := os.ReadFile(blobFile(dir, i))
 		if err != nil {
 			return nil, err
 		}

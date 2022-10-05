@@ -44,7 +44,7 @@ func TestCreateExtension_DefaultConfig(t *testing.T) {
 func TestCreateExtension_ValidConfig(t *testing.T) {
 	cfg := &Config{
 		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-		Htpasswd: HtpasswdSettings{
+		Htpasswd: &HtpasswdSettings{
 			Inline: "username:password",
 		},
 	}

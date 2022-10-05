@@ -18,8 +18,10 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 )
 
 const (
@@ -32,15 +34,27 @@ func NewFactory() component.ExtensionFactory {
 	return component.NewExtensionFactory(
 		typeStr,
 		createDefaultConfig,
-		createExtension)
+		createExtension,
+		component.StabilityLevelBeta,
+	)
 }
 
 func createDefaultConfig() config.Extension {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		HTTPServerSettings: &confighttp.HTTPServerSettings{
+			Endpoint: ":5778",
+		},
+		GRPCServerSettings: &configgrpc.GRPCServerSettings{
+			NetAddr: confignet.NetAddr{
+				Endpoint:  ":14250",
+				Transport: "tcp",
+			},
+		},
+		Source: Source{},
 	}
 }
 
 func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
-	return componenthelper.New(), nil
+	return newExtension(cfg.(*Config), set.TelemetrySettings), nil
 }

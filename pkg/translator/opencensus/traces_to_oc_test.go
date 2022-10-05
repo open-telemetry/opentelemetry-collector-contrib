@@ -21,7 +21,8 @@ import (
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -54,12 +55,12 @@ func TestInternalTraceStateToOC(t *testing.T) {
 }
 
 func TestAttributesMapToOC(t *testing.T) {
-	assert.EqualValues(t, (*octrace.Span_Attributes)(nil), attributesMapToOCSpanAttributes(pdata.NewAttributeMap(), 0))
+	assert.EqualValues(t, (*octrace.Span_Attributes)(nil), attributesMapToOCSpanAttributes(pcommon.NewMap(), 0))
 
 	ocAttrs := &octrace.Span_Attributes{
 		DroppedAttributesCount: 123,
 	}
-	assert.EqualValues(t, ocAttrs, attributesMapToOCSpanAttributes(pdata.NewAttributeMap(), 123))
+	assert.EqualValues(t, ocAttrs, attributesMapToOCSpanAttributes(pcommon.NewMap(), 123))
 
 	ocAttrs = &octrace.Span_Attributes{
 		AttributeMap: map[string]*octrace.AttributeValue{
@@ -69,12 +70,9 @@ func TestAttributesMapToOC(t *testing.T) {
 		},
 		DroppedAttributesCount: 234,
 	}
-	assert.EqualValues(t, ocAttrs,
-		attributesMapToOCSpanAttributes(
-			pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-				"abc": pdata.NewAttributeValueString("def"),
-			}),
-			234))
+	attrs := pcommon.NewMap()
+	attrs.PutString("abc", "def")
+	assert.EqualValues(t, ocAttrs, attributesMapToOCSpanAttributes(attrs, 234))
 
 	ocAttrs.AttributeMap["intval"] = &octrace.AttributeValue{
 		Value: &octrace.AttributeValue_IntValue{IntValue: 345},
@@ -85,44 +83,42 @@ func TestAttributesMapToOC(t *testing.T) {
 	ocAttrs.AttributeMap["doubleval"] = &octrace.AttributeValue{
 		Value: &octrace.AttributeValue_DoubleValue{DoubleValue: 4.5},
 	}
-	assert.EqualValues(t, ocAttrs,
-		attributesMapToOCSpanAttributes(pdata.NewAttributeMapFromMap(
-			map[string]pdata.AttributeValue{
-				"abc":       pdata.NewAttributeValueString("def"),
-				"intval":    pdata.NewAttributeValueInt(345),
-				"boolval":   pdata.NewAttributeValueBool(true),
-				"doubleval": pdata.NewAttributeValueDouble(4.5),
-			}),
-			234))
+	attrs.FromRaw(map[string]interface{}{
+		"abc":       "def",
+		"intval":    345,
+		"boolval":   true,
+		"doubleval": 4.5,
+	})
+	assert.EqualValues(t, ocAttrs, attributesMapToOCSpanAttributes(attrs, 234))
 }
 
 func TestSpanKindToOC(t *testing.T) {
 	tests := []struct {
-		kind   pdata.SpanKind
+		kind   ptrace.SpanKind
 		ocKind octrace.Span_SpanKind
 	}{
 		{
-			kind:   pdata.SpanKindClient,
+			kind:   ptrace.SpanKindClient,
 			ocKind: octrace.Span_CLIENT,
 		},
 		{
-			kind:   pdata.SpanKindServer,
+			kind:   ptrace.SpanKindServer,
 			ocKind: octrace.Span_SERVER,
 		},
 		{
-			kind:   pdata.SpanKindConsumer,
+			kind:   ptrace.SpanKindConsumer,
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
 		},
 		{
-			kind:   pdata.SpanKindProducer,
+			kind:   ptrace.SpanKindProducer,
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
 		},
 		{
-			kind:   pdata.SpanKindUnspecified,
+			kind:   ptrace.SpanKindUnspecified,
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
 		},
 		{
-			kind:   pdata.SpanKindInternal,
+			kind:   ptrace.SpanKindInternal,
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
 		},
 	}
@@ -136,26 +132,26 @@ func TestSpanKindToOC(t *testing.T) {
 }
 
 func TestAttributesMapTOOcSameProcessAsParentSpan(t *testing.T) {
-	attr := pdata.NewAttributeMap()
+	attr := pcommon.NewMap()
 	assert.Nil(t, attributesMapToOCSameProcessAsParentSpan(attr))
 
-	attr.UpsertBool(occonventions.AttributeSameProcessAsParentSpan, true)
+	attr.PutBool(occonventions.AttributeSameProcessAsParentSpan, true)
 	assert.True(t, proto.Equal(wrapperspb.Bool(true), attributesMapToOCSameProcessAsParentSpan(attr)))
 
-	attr.UpsertBool(occonventions.AttributeSameProcessAsParentSpan, false)
+	attr.PutBool(occonventions.AttributeSameProcessAsParentSpan, false)
 	assert.True(t, proto.Equal(wrapperspb.Bool(false), attributesMapToOCSameProcessAsParentSpan(attr)))
 
-	attr.UpdateInt(occonventions.AttributeSameProcessAsParentSpan, 13)
+	attr.PutInt(occonventions.AttributeSameProcessAsParentSpan, 13)
 	assert.Nil(t, attributesMapToOCSameProcessAsParentSpan(attr))
 }
 
 func TestSpanKindToOCAttribute(t *testing.T) {
 	tests := []struct {
-		kind        pdata.SpanKind
+		kind        ptrace.SpanKind
 		ocAttribute *octrace.AttributeValue
 	}{
 		{
-			kind: pdata.SpanKindConsumer,
+			kind: ptrace.SpanKindConsumer,
 			ocAttribute: &octrace.AttributeValue{
 				Value: &octrace.AttributeValue_StringValue{
 					StringValue: &octrace.TruncatableString{
@@ -165,7 +161,7 @@ func TestSpanKindToOCAttribute(t *testing.T) {
 			},
 		},
 		{
-			kind: pdata.SpanKindProducer,
+			kind: ptrace.SpanKindProducer,
 			ocAttribute: &octrace.AttributeValue{
 				Value: &octrace.AttributeValue_StringValue{
 					StringValue: &octrace.TruncatableString{
@@ -175,7 +171,7 @@ func TestSpanKindToOCAttribute(t *testing.T) {
 			},
 		},
 		{
-			kind: pdata.SpanKindInternal,
+			kind: ptrace.SpanKindInternal,
 			ocAttribute: &octrace.AttributeValue{
 				Value: &octrace.AttributeValue_StringValue{
 					StringValue: &octrace.TruncatableString{
@@ -185,15 +181,15 @@ func TestSpanKindToOCAttribute(t *testing.T) {
 			},
 		},
 		{
-			kind:        pdata.SpanKindUnspecified,
+			kind:        ptrace.SpanKindUnspecified,
 			ocAttribute: nil,
 		},
 		{
-			kind:        pdata.SpanKindServer,
+			kind:        ptrace.SpanKindServer,
 			ocAttribute: nil,
 		},
 		{
-			kind:        pdata.SpanKindClient,
+			kind:        ptrace.SpanKindClient,
 			ocAttribute: nil,
 		},
 	}
@@ -289,7 +285,7 @@ func TestInternalToOC(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		td       pdata.Traces
+		td       ptrace.Traces
 		Node     *occommon.Node
 		Resource *ocresource.Resource
 		Spans    []*octrace.Span

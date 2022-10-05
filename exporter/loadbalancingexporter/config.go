@@ -15,8 +15,17 @@
 package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+)
+
+type routingKey int
+
+const (
+	traceIDRouting routingKey = iota
+	svcRouting
 )
 
 // Config defines configuration for the exporter.
@@ -24,6 +33,7 @@ type Config struct {
 	config.ExporterSettings `mapstructure:",squash"`
 	Protocol                Protocol         `mapstructure:"protocol"`
 	Resolver                ResolverSettings `mapstructure:"resolver"`
+	RoutingKey              string           `mapstructure:"routing_key"`
 }
 
 // Protocol holds the individual protocol-specific settings. Only OTLP is supported at the moment.
@@ -44,6 +54,8 @@ type StaticResolver struct {
 
 // DNSResolver defines the configuration for the DNS resolver
 type DNSResolver struct {
-	Hostname string `mapstructure:"hostname"`
-	Port     string `mapstructure:"port"`
+	Hostname string        `mapstructure:"hostname"`
+	Port     string        `mapstructure:"port"`
+	Interval time.Duration `mapstructure:"interval"`
+	Timeout  time.Duration `mapstructure:"timeout"`
 }

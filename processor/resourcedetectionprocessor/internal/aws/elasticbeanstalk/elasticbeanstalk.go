@@ -21,8 +21,8 @@ import (
 	"strconv"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -51,8 +51,8 @@ func NewDetector(component.ProcessorCreateSettings, internal.DetectorConfig) (in
 	return &Detector{fs: &ebFileSystem{}}, nil
 }
 
-func (d Detector) Detect(context.Context) (resource pdata.Resource, schemaURL string, err error) {
-	res := pdata.NewResource()
+func (d Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+	res := pcommon.NewResource()
 	var conf io.ReadCloser
 
 	if d.fs.IsWindows() {
@@ -77,10 +77,10 @@ func (d Detector) Detect(context.Context) (resource pdata.Resource, schemaURL st
 	}
 
 	attr := res.Attributes()
-	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSElasticBeanstalk)
-	attr.InsertString(conventions.AttributeServiceInstanceID, strconv.Itoa(ebmd.DeploymentID))
-	attr.InsertString(conventions.AttributeDeploymentEnvironment, ebmd.EnvironmentName)
-	attr.InsertString(conventions.AttributeServiceVersion, ebmd.VersionLabel)
+	attr.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attr.PutString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSElasticBeanstalk)
+	attr.PutString(conventions.AttributeServiceInstanceID, strconv.Itoa(ebmd.DeploymentID))
+	attr.PutString(conventions.AttributeDeploymentEnvironment, ebmd.EnvironmentName)
+	attr.PutString(conventions.AttributeServiceVersion, ebmd.VersionLabel)
 	return res, conventions.SchemaURL, nil
 }

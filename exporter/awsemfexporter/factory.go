@@ -19,7 +19,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
@@ -27,30 +26,29 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "awsemf"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for AWS EMF exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithMetrics(createMetricsExporter))
+		component.WithMetricsExporter(createMetricsExporter, stability))
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings:                config.NewExporterSettings(config.NewComponentID(typeStr)),
-		AWSSessionSettings:              awsutil.CreateDefaultSessionConfig(),
-		LogGroupName:                    "",
-		LogStreamName:                   "",
-		Namespace:                       "",
-		DimensionRollupOption:           "ZeroAndSingleDimensionRollup",
-		ParseJSONEncodedAttributeValues: make([]string, 0),
-		MetricDeclarations:              make([]*MetricDeclaration, 0),
-		MetricDescriptors:               make([]MetricDescriptor, 0),
-		OutputDestination:               "cloudwatch",
-		logger:                          nil,
+		ExporterSettings:      config.NewExporterSettings(config.NewComponentID(typeStr)),
+		AWSSessionSettings:    awsutil.CreateDefaultSessionConfig(),
+		LogGroupName:          "",
+		LogStreamName:         "",
+		Namespace:             "",
+		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+		OutputDestination:     "cloudwatch",
+		logger:                nil,
 	}
 }
 

@@ -17,13 +17,12 @@ package internal_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"strings"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -34,8 +33,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/service"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -55,10 +57,10 @@ func TestStalenessMarkersEndToEnd(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// 1. Setup the server that sends series that intermittently appear and disappear.
-	var n uint64
+	n := atomic.NewUint64(0)
 	scrapeServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// Increment the scrape count atomically per scrape.
-		i := atomic.AddUint64(&n, 1)
+		i := n.Add(1)
 
 		select {
 		case <-ctx.Done():
@@ -83,26 +85,21 @@ jvm_memory_pool_bytes_used{pool="CodeHeap 'non-nmethods'"} %.1f`, float64(i))
 	defer scrapeServer.Close()
 
 	serverURL, err := url.Parse(scrapeServer.URL)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// 2. Set up the Prometheus RemoteWrite endpoint.
 	prweUploads := make(chan *prompb.WriteRequest)
 	prweServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// Snappy decode the uploads.
-		payload, rerr := ioutil.ReadAll(req.Body)
-		if err != nil {
-			panic(rerr)
-		}
+		payload, rerr := io.ReadAll(req.Body)
+		require.NoError(t, rerr)
+
 		recv := make([]byte, len(payload))
 		decoded, derr := snappy.Decode(recv, payload)
-		if err != nil {
-			panic(derr)
-		}
+		require.NoError(t, derr)
 
 		writeReq := new(prompb.WriteRequest)
-		if uerr := proto.Unmarshal(decoded, writeReq); uerr != nil {
-			panic(uerr)
-		}
+		require.NoError(t, proto.Unmarshal(decoded, writeReq))
 
 		select {
 		case <-ctx.Done():
@@ -113,7 +110,7 @@ jvm_memory_pool_bytes_used{pool="CodeHeap 'non-nmethods'"} %.1f`, float64(i))
 	defer prweServer.Close()
 
 	// 3. Set the OpenTelemetry Prometheus receiver.
-	config := fmt.Sprintf(`
+	cfg := fmt.Sprintf(`
 receivers:
   prometheus:
     config:
@@ -138,10 +135,10 @@ service:
       processors: [batch]
       exporters: [prometheusremotewrite]`, serverURL.Host, prweServer.URL)
 
-	confFile, err := ioutil.TempFile(os.TempDir(), "conf-")
+	confFile, err := os.CreateTemp(os.TempDir(), "conf-")
 	require.Nil(t, err)
 	defer os.Remove(confFile.Name())
-	_, err = confFile.Write([]byte(config))
+	_, err = confFile.Write([]byte(cfg))
 	require.Nil(t, err)
 	// 4. Run the OpenTelemetry Collector.
 	receivers, err := component.MakeReceiverFactoryMap(prometheusreceiver.NewFactory())
@@ -157,9 +154,19 @@ service:
 		Processors: processors,
 	}
 
+	fmp := fileprovider.New()
+	configProvider, err := service.NewConfigProvider(
+		service.ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:      []string{confFile.Name()},
+				Providers: map[string]confmap.Provider{fmp.Scheme(): fmp},
+			},
+		})
+	require.NoError(t, err)
+
 	appSettings := service.CollectorSettings{
 		Factories:      factories,
-		ConfigProvider: service.MustNewDefaultConfigProvider([]string{confFile.Name()}, nil),
+		ConfigProvider: configProvider,
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
 			Description: "OpenTelemetry Collector",
@@ -177,9 +184,7 @@ service:
 	require.Nil(t, err)
 
 	go func() {
-		if err = app.Run(context.Background()); err != nil {
-			t.Error(err)
-		}
+		assert.NoError(t, app.Run(context.Background()))
 	}()
 	defer app.Shutdown()
 

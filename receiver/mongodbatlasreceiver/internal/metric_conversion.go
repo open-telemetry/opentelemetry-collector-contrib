@@ -15,37 +15,30 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 
 import (
-	"errors"
+	"fmt"
 
-	"github.com/hashicorp/go-multierror"
 	"go.mongodb.org/atlas/mongodbatlas"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
 func processMeasurements(
-	resource pdata.Resource,
+	mb *metadata.MetricsBuilder,
 	measurements []*mongodbatlas.Measurements,
-) (pdata.Metrics, error) {
-	allErrors := make([]error, 0)
-	metricSlice := pdata.NewMetrics()
-	rm := metricSlice.ResourceMetrics().AppendEmpty()
-	resource.CopyTo(rm.Resource())
-	ilms := rm.InstrumentationLibraryMetrics().AppendEmpty()
+) error {
+	var errs error
+
 	for _, meas := range measurements {
-		metric, err := metadata.MeasurementsToMetric(meas, false)
+		err := metadata.MeasurementsToMetric(mb, meas, false)
 		if err != nil {
-			allErrors = append(allErrors, err)
-		} else {
-			if metric != nil {
-				// TODO: still handling skipping metrics, there's got to be better
-				metric.CopyTo(ilms.Metrics().AppendEmpty())
-			}
+			errs = multierr.Append(errs, err)
 		}
 	}
-	if len(allErrors) > 0 {
-		return metricSlice, multierror.Append(errors.New("errors occurred while processing measurements"), allErrors...)
+
+	if errs != nil {
+		return fmt.Errorf("errors occurred while processing measurements: %w", errs)
 	}
-	return metricSlice, nil
+
+	return nil
 }

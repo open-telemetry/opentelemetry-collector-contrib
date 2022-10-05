@@ -19,14 +19,14 @@ import (
 
 	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/observ"
 )
 
 // Collector acts as an aggregator of LogRecords so that we don't have to
-// generate as many pdata.Logs instances...we can pre-batch the LogRecord
+// generate as many plog.Logs instances...we can pre-batch the LogRecord
 // instances from several Forward events into one to hopefully reduce
 // allocations and GC overhead.
 type Collector struct {
@@ -53,35 +53,28 @@ func (c *Collector) processEvents(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case e := <-c.eventCh:
-			buffered := []Event{e}
+			out := plog.NewLogs()
+			rls := out.ResourceLogs().AppendEmpty()
+			logSlice := rls.ScopeLogs().AppendEmpty().LogRecords()
+			e.LogRecords().MoveAndAppendTo(logSlice)
+
 			// Pull out anything waiting on the eventCh to get better
 			// efficiency on LogResource allocations.
-			buffered = fillBufferUntilChanEmpty(c.eventCh, buffered)
+			c.fillBufferUntilChanEmpty(logSlice)
 
-			logs := collectLogRecords(buffered)
-			c.nextConsumer.ConsumeLogs(ctx, logs)
+			stats.Record(context.Background(), observ.RecordsGenerated.M(int64(out.LogRecordCount())))
+			_ = c.nextConsumer.ConsumeLogs(ctx, out)
 		}
 	}
 }
 
-func fillBufferUntilChanEmpty(eventCh <-chan Event, buf []Event) []Event {
+func (c *Collector) fillBufferUntilChanEmpty(dest plog.LogRecordSlice) {
 	for {
 		select {
-		case e2 := <-eventCh:
-			buf = append(buf, e2)
+		case e := <-c.eventCh:
+			e.LogRecords().MoveAndAppendTo(dest)
 		default:
-			return buf
+			return
 		}
 	}
-}
-
-func collectLogRecords(events []Event) pdata.Logs {
-	out := pdata.NewLogs()
-	rls := out.ResourceLogs().AppendEmpty()
-	logSlice := rls.InstrumentationLibraryLogs().AppendEmpty().LogRecords()
-	for i := range events {
-		events[i].LogRecords().MoveAndAppendTo(logSlice)
-	}
-	stats.Record(context.Background(), observ.RecordsGenerated.M(int64(out.LogRecordCount())))
-	return out
 }

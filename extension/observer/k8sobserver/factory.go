@@ -33,7 +33,9 @@ func NewFactory() component.ExtensionFactory {
 	return component.NewExtensionFactory(
 		typeStr,
 		createDefaultConfig,
-		createExtension)
+		createExtension,
+		component.StabilityLevelUndefined,
+	)
 }
 
 // CreateDefaultConfig creates the default configuration for the extension.

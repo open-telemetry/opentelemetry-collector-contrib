@@ -22,7 +22,7 @@ import (
 )
 
 func init() {
-	view.Register(
+	_ = view.Register(
 		viewInvalidRequests,
 		viewRequestsReceived,
 		viewMetricsReceived,

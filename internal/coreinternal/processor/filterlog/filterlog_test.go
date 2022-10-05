@@ -19,7 +19,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -40,21 +41,22 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		{
 			name:        "empty_property",
 			property:    filterconfig.MatchProperties{},
-			errorString: "at least one of \"attributes\", \"libraries\" or \"resources\" field must be specified",
+			errorString: filterconfig.ErrMissingRequiredLogField.Error(),
 		},
 		{
-			name: "empty_log_names_and_attributes",
+			name: "empty_log_bodies_and_attributes",
 			property: filterconfig.MatchProperties{
-				LogNames: []string{},
+				LogBodies:        []string{},
+				LogSeverityTexts: []string{},
 			},
-			errorString: "at least one of \"attributes\", \"libraries\" or \"resources\" field must be specified",
+			errorString: filterconfig.ErrMissingRequiredLogField.Error(),
 		},
 		{
 			name: "span_properties",
 			property: filterconfig.MatchProperties{
 				SpanNames: []string{"span"},
 			},
-			errorString: "neither services nor span_names should be specified for log records",
+			errorString: filterconfig.ErrInvalidLogField.Error(),
 		},
 		{
 			name: "invalid_match_type",
@@ -85,6 +87,7 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 			output, err := NewMatcher(&tc.property)
 			assert.Nil(t, output)
 			require.NotNil(t, err)
+			println(tc.name)
 			assert.Equal(t, tc.errorString, err.Error())
 		})
 	}
@@ -114,16 +117,34 @@ func TestLogRecord_Matching_False(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "log_severity_text_regexp_dont_match",
+			properties: &filterconfig.MatchProperties{
+				Config:           *createConfig(filterset.Regexp),
+				LogSeverityTexts: []string{"debug.*"},
+			},
+		},
+		{
+			name: "log_min_severity_trace_dont_match",
+			properties: &filterconfig.MatchProperties{
+				Config: *createConfig(filterset.Regexp),
+				LogSeverityNumber: &filterconfig.LogSeverityNumberMatchProperties{
+					Min: plog.SeverityNumberInfo,
+				},
+			},
+		},
 	}
 
-	lr := pdata.NewLogRecord()
+	lr := plog.NewLogRecord()
+	lr.SetSeverityNumber(plog.SeverityNumberTrace)
+
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			matcher, err := NewMatcher(tc.properties)
 			assert.Nil(t, err)
 			require.NotNil(t, matcher)
 
-			assert.False(t, matcher.MatchLogRecord(lr, pdata.Resource{}, pdata.InstrumentationLibrary{}))
+			assert.False(t, matcher.MatchLogRecord(lr, pcommon.Resource{}, pcommon.InstrumentationScope{}))
 		})
 	}
 }
@@ -149,10 +170,36 @@ func TestLogRecord_Matching_True(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "log_body_regexp_match",
+			properties: &filterconfig.MatchProperties{
+				Config:    *createConfig(filterset.Regexp),
+				LogBodies: []string{"AUTH.*"},
+			},
+		},
+		{
+			name: "log_severity_text_regexp_match",
+			properties: &filterconfig.MatchProperties{
+				Config:           *createConfig(filterset.Regexp),
+				LogSeverityTexts: []string{"debug.*"},
+			},
+		},
+		{
+			name: "log_min_severity_match",
+			properties: &filterconfig.MatchProperties{
+				Config: *createConfig(filterset.Regexp),
+				LogSeverityNumber: &filterconfig.LogSeverityNumberMatchProperties{
+					Min: plog.SeverityNumberDebug,
+				},
+			},
+		},
 	}
 
-	lr := pdata.NewLogRecord()
-	lr.Attributes().InsertString("abc", "def")
+	lr := plog.NewLogRecord()
+	lr.Attributes().PutString("abc", "def")
+	lr.Body().SetStr("AUTHENTICATION FAILED")
+	lr.SetSeverityText("debug")
+	lr.SetSeverityNumber(plog.SeverityNumberDebug)
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -161,7 +208,7 @@ func TestLogRecord_Matching_True(t *testing.T) {
 			require.NotNil(t, mp)
 
 			assert.NotNil(t, lr)
-			assert.True(t, mp.MatchLogRecord(lr, pdata.Resource{}, pdata.InstrumentationLibrary{}))
+			assert.True(t, mp.MatchLogRecord(lr, pcommon.Resource{}, pcommon.InstrumentationScope{}))
 		})
 	}
 }

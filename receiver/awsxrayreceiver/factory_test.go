@@ -16,13 +16,11 @@ package awsxrayreceiver
 
 import (
 	"context"
-	"os"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
@@ -46,9 +44,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		t.Skip()
 	}
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(defaultRegionEnvName, mockRegion)
+	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	factory := NewFactory()
 	_, err := factory.CreateTracesReceiver(
@@ -69,21 +65,5 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		consumertest.NewNop(),
 	)
 	assert.NotNil(t, err, "a trace receiver factory should not create a metric receiver")
-	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
-}
-
-func stashEnv() []string {
-	env := os.Environ()
-	os.Clearenv()
-
-	return env
-}
-
-func restoreEnv(env []string) {
-	os.Clearenv()
-
-	for _, e := range env {
-		p := strings.SplitN(e, "=", 2)
-		os.Setenv(p[0], p[1])
-	}
+	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
 }

@@ -28,6 +28,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/service/servicetest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -37,8 +39,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	actual, ok := cfg.(*Config)
 	require.True(t, ok, "invalid Config: %#v", cfg)
-	assert.Equal(t, "http://localhost:30001", actual.Traces.Endpoint)
-	assert.Equal(t, "http://localhost:2878", actual.Metrics.Endpoint)
+	assert.False(t, actual.hasMetricsEndpoint())
+	assert.False(t, actual.hasTracesEndpoint())
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -61,6 +63,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		Metrics: MetricsConfig{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:2916"},
+			ResourceAttributes: resourcetotelemetry.Settings{Enabled: true},
 		},
 		QueueSettings: exporterhelper.QueueSettings{
 			Enabled:      true,
@@ -81,7 +84,7 @@ func TestCreateExporter(t *testing.T) {
 	defaultConfig := createDefaultConfig()
 	cfg := defaultConfig.(*Config)
 	params := componenttest.NewNopExporterCreateSettings()
-
+	cfg.Traces.Endpoint = "http://localhost:30001"
 	te, err := createTracesExporter(context.Background(), params, cfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
@@ -91,7 +94,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	defaultConfig := createDefaultConfig()
 	cfg := defaultConfig.(*Config)
 	params := componenttest.NewNopExporterCreateSettings()
-
+	cfg.Metrics.Endpoint = "http://localhost:2878"
 	te, err := createMetricsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create metrics exporter")

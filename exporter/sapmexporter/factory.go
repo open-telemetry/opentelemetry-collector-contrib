@@ -27,14 +27,16 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "sapm"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for SAPM exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter))
+		component.WithTracesExporter(createTracesExporter, stability))
 }
 
 func createDefaultConfig() config.Exporter {

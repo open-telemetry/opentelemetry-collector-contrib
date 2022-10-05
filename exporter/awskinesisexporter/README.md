@@ -1,5 +1,10 @@
 # Kinesis Exporter
 
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [beta]                |
+| Supported pipeline types | traces, logs, metrics |
+| Distributions            | [contrib]             |
 
 The kinesis exporter currently exports dynamic encodings to the configured kinesis stream.
 The exporter relies heavily on the kinesis.PutRecords api to reduce network I/O and and reduces records into smallest atomic representation
@@ -45,3 +50,6 @@ exporters:
       region: us-east-1
       role: arn:test-role
 ```
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

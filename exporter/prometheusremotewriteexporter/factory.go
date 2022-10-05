@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
@@ -31,17 +30,19 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "prometheusremotewrite"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a new Prometheus Remote Write exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithMetrics(createMetricsExporter))
+		component.WithMetricsExporter(createMetricsExporter, stability))
 }
 
-func createMetricsExporter(_ context.Context, set component.ExporterCreateSettings,
+func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings,
 	cfg config.Exporter) (component.MetricsExporter, error) {
 
 	prwCfg, ok := cfg.(*Config)
@@ -61,8 +62,9 @@ func createMetricsExporter(_ context.Context, set component.ExporterCreateSettin
 	// without considering this limitation, we experience
 	// "out of order samples" errors.
 	exporter, err := exporterhelper.NewMetricsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{
@@ -86,7 +88,6 @@ func createDefaultConfig() config.Exporter {
 		Namespace:        "",
 		ExternalLabels:   map[string]string{},
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
-		sanitizeLabel:    featuregate.IsEnabled(dropSanitizationGate.ID),
 		RetrySettings: exporterhelper.RetrySettings{
 			Enabled:         true,
 			InitialInterval: 50 * time.Millisecond,
@@ -106,6 +107,9 @@ func createDefaultConfig() config.Exporter {
 			Enabled:      true,
 			QueueSize:    10000,
 			NumConsumers: 5,
+		},
+		TargetInfo: &TargetInfo{
+			Enabled: true,
 		},
 	}
 }

@@ -37,9 +37,11 @@ type ResourceID string
 // {"env": "test", "team": "otel", "user": "bob"}. The k8sclusterreceiver
 // upon receiving the event corresponding to the labels updates will
 // generate a MetadataDelta with the following values -
-// 					MetadataToAdd: {"user": "bob"}
-// 					MetadataToRemove: {"usser": "bob"}
-// 					MetadataToUpdate: {"team": "otel"}
+//
+//	MetadataToAdd: {"user": "bob"}
+//	MetadataToRemove: {"usser": "bob"}
+//	MetadataToUpdate: {"team": "otel"}
+//
 // Apart from Kubernetes labels, the other metadata collected by this
 // receiver are also handled in the same manner.
 // Type, functionality, and fields not guaranteed to be stable or permanent.

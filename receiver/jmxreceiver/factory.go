@@ -22,26 +22,25 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 const (
 	typeStr      = "jmx"
+	stability    = component.StabilityLevelAlpha
 	otlpEndpoint = "0.0.0.0:0"
 )
 
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createReceiver))
+		component.WithMetricsReceiver(createReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
 		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
-		Properties:         map[string]string{"org.slf4j.simpleLogger.defaultLogLevel": "info"},
 		CollectionInterval: 10 * time.Second,
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: otlpEndpoint,

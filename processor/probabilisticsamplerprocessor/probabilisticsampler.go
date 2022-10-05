@@ -18,10 +18,14 @@ import (
 	"context"
 	"strconv"
 
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.uber.org/zap"
 )
 
 // samplingPriority has the semantic result of parsing the "sampling.priority"
@@ -51,49 +55,78 @@ const (
 type tracesamplerprocessor struct {
 	scaledSamplingRate uint32
 	hashSeed           uint32
+	logger             *zap.Logger
 }
 
 // newTracesProcessor returns a processor.TracesProcessor that will perform head sampling according to the given
 // configuration.
-func newTracesProcessor(nextConsumer consumer.Traces, cfg *Config) (component.TracesProcessor, error) {
+func newTracesProcessor(ctx context.Context, set component.ProcessorCreateSettings, cfg *Config, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 	tsp := &tracesamplerprocessor{
 		// Adjust sampling percentage on private so recalculations are avoided.
 		scaledSamplingRate: uint32(cfg.SamplingPercentage * percentageScaleFactor),
 		hashSeed:           cfg.HashSeed,
+		logger:             set.Logger,
 	}
 
 	return processorhelper.NewTracesProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		tsp.processTraces,
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }
 
-func (tsp *tracesamplerprocessor) processTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
-	td.ResourceSpans().RemoveIf(func(rs pdata.ResourceSpans) bool {
-		rs.InstrumentationLibrarySpans().RemoveIf(func(ils pdata.InstrumentationLibrarySpans) bool {
-			ils.Spans().RemoveIf(func(s pdata.Span) bool {
+func (tsp *tracesamplerprocessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
+		rs.ScopeSpans().RemoveIf(func(ils ptrace.ScopeSpans) bool {
+			ils.Spans().RemoveIf(func(s ptrace.Span) bool {
 				sp := parseSpanSamplingPriority(s)
 				if sp == doNotSampleSpan {
 					// The OpenTelemetry mentions this as a "hint" we take a stronger
 					// approach and do not sample the span since some may use it to
 					// remove specific spans from traces.
+					_ = stats.RecordWithTags(
+						ctx,
+						[]tag.Mutator{tag.Upsert(tagPolicyKey, "sampling_priority"), tag.Upsert(tagSampledKey, "false")},
+						statCountTracesSampled.M(int64(1)),
+					)
 					return true
 				}
+
+				_ = stats.RecordWithTags(
+					ctx,
+					[]tag.Mutator{tag.Upsert(tagPolicyKey, "sampling_priority"), tag.Upsert(tagSampledKey, "true")},
+					statCountTracesSampled.M(int64(1)),
+				)
 
 				// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
 				// with various different criteria to generate trace id and perhaps were already sampled without hashing.
 				// Hashing here prevents bias due to such systems.
-				tidBytes := s.TraceID().Bytes()
+				tidBytes := s.TraceID()
 				sampled := sp == mustSampleSpan ||
 					hash(tidBytes[:], tsp.hashSeed)&bitMaskHashBuckets < tsp.scaledSamplingRate
+
+				if sampled {
+					_ = stats.RecordWithTags(
+						ctx,
+						[]tag.Mutator{tag.Upsert(tagPolicyKey, "trace_id_hash"), tag.Upsert(tagSampledKey, "true")},
+						statCountTracesSampled.M(int64(1)),
+					)
+				} else {
+					_ = stats.RecordWithTags(
+						ctx,
+						[]tag.Mutator{tag.Upsert(tagPolicyKey, "trace_id_hash"), tag.Upsert(tagSampledKey, "false")},
+						statCountTracesSampled.M(int64(1)),
+					)
+				}
 				return !sampled
 			})
-			// Filter out empty InstrumentationLibraryMetrics
+			// Filter out empty ScopeMetrics
 			return ils.Spans().Len() == 0
 		})
 		// Filter out empty ResourceMetrics
-		return rs.InstrumentationLibrarySpans().Len() == 0
+		return rs.ScopeSpans().Len() == 0
 	})
 	if td.ResourceSpans().Len() == 0 {
 		return td, processorhelper.ErrSkipProcessingData
@@ -105,7 +138,7 @@ func (tsp *tracesamplerprocessor) processTraces(_ context.Context, td pdata.Trac
 // decide if the span should be sampled or not. The usage of the tag follows the
 // OpenTracing semantic tags:
 // https://github.com/opentracing/specification/blob/main/semantic_conventions.md#span-tags-table
-func parseSpanSamplingPriority(span pdata.Span) samplingPriority {
+func parseSpanSamplingPriority(span ptrace.Span) samplingPriority {
 	attribMap := span.Attributes()
 	if attribMap.Len() <= 0 {
 		return deferDecision
@@ -124,22 +157,22 @@ func parseSpanSamplingPriority(span pdata.Span) samplingPriority {
 	// client libraries it is also possible that the type was lost in translation
 	// between different formats.
 	switch samplingPriorityAttrib.Type() {
-	case pdata.AttributeValueTypeInt:
-		value := samplingPriorityAttrib.IntVal()
+	case pcommon.ValueTypeInt:
+		value := samplingPriorityAttrib.Int()
 		if value == 0 {
 			decision = doNotSampleSpan
 		} else if value > 0 {
 			decision = mustSampleSpan
 		}
-	case pdata.AttributeValueTypeDouble:
-		value := samplingPriorityAttrib.DoubleVal()
+	case pcommon.ValueTypeDouble:
+		value := samplingPriorityAttrib.Double()
 		if value == 0.0 {
 			decision = doNotSampleSpan
 		} else if value > 0.0 {
 			decision = mustSampleSpan
 		}
-	case pdata.AttributeValueTypeString:
-		attribVal := samplingPriorityAttrib.StringVal()
+	case pcommon.ValueTypeStr:
+		attribVal := samplingPriorityAttrib.Str()
 		if value, err := strconv.ParseFloat(attribVal, 64); err == nil {
 			if value == 0.0 {
 				decision = doNotSampleSpan

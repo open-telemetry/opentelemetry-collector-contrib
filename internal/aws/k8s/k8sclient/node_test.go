@@ -51,7 +51,6 @@ var nodeArray = []interface{}{
 				"node.alpha.kubernetes.io/ttl":                           "0",
 				"volumes.kubernetes.io/controller-managed-attach-detach": "true",
 			},
-			ClusterName: "",
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
@@ -142,7 +141,6 @@ var nodeArray = []interface{}{
 				"node.alpha.kubernetes.io/ttl":                           "0",
 				"volumes.kubernetes.io/controller-managed-attach-detach": "true",
 			},
-			ClusterName: "",
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
@@ -233,7 +231,6 @@ var nodeArray = []interface{}{
 				"node.alpha.kubernetes.io/ttl":                           "0",
 				"volumes.kubernetes.io/controller-managed-attach-detach": "true",
 			},
-			ClusterName: "",
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
@@ -249,7 +246,7 @@ var nodeArray = []interface{}{
 					Reason:  "KubeletHasSufficientMemory",
 					Message: "kubelet has sufficient memory available",
 				},
-				{ //This entry shows failed node
+				{ // This entry shows failed node
 					Type:   "DiskPressure",
 					Status: "True",
 					LastHeartbeatTime: metav1.Time{
@@ -307,7 +304,7 @@ func TestNodeClient(t *testing.T) {
 
 	fakeClientSet := fake.NewSimpleClientset()
 	client := newNodeClient(fakeClientSet, zap.NewNop(), setOption)
-	client.store.Replace(nodeArray, "")
+	assert.NoError(t, client.store.Replace(nodeArray, ""))
 
 	expectedClusterNodeCount := 3
 	expectedClusterFailedNodeCount := 1

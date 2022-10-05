@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,8 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
@@ -165,24 +166,24 @@ func GetUnitForMetric(metric string) string {
 }
 
 // ConvertToOTLPMetrics converts a field containing metric values and a tag containing the relevant labels to OTLP metrics
-func ConvertToOTLPMetrics(fields map[string]interface{}, tags map[string]string, logger *zap.Logger) pdata.Metrics {
-	md := pdata.NewMetrics()
+func ConvertToOTLPMetrics(fields map[string]interface{}, tags map[string]string, logger *zap.Logger) pmetric.Metrics {
+	md := pmetric.NewMetrics()
 	rms := md.ResourceMetrics()
 	rm := rms.AppendEmpty()
 
-	var timestamp pdata.Timestamp
+	var timestamp pcommon.Timestamp
 	resource := rm.Resource()
 	for tagKey, tagValue := range tags {
 		if tagKey == Timestamp {
 			timeNs, _ := strconv.ParseUint(tagValue, 10, 64)
-			timestamp = pdata.Timestamp(timeNs)
+			timestamp = pcommon.Timestamp(timeNs)
 			// convert from nanosecond to millisecond (as emf log use millisecond timestamp)
 			tagValue = strconv.FormatUint(timeNs/uint64(time.Millisecond), 10)
 		}
-		resource.Attributes().UpsertString(tagKey, tagValue)
+		resource.Attributes().PutString(tagKey, tagValue)
 	}
 
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 
 	metricType := tags[MetricType]
 	for key, value := range fields {
@@ -214,31 +215,29 @@ func ConvertToOTLPMetrics(fields map[string]interface{}, tags map[string]string,
 	return md
 }
 
-func intGauge(ilm pdata.InstrumentationLibraryMetrics, metricName string, unit string, value int64, ts pdata.Timestamp) {
+func intGauge(ilm pmetric.ScopeMetrics, metricName string, unit string, value int64, ts pcommon.Timestamp) {
 	metric := initMetric(ilm, metricName, unit)
 
-	metric.SetDataType(pdata.MetricDataTypeGauge)
-	intGauge := metric.Gauge()
+	intGauge := metric.SetEmptyGauge()
 	dataPoints := intGauge.DataPoints()
 	dataPoint := dataPoints.AppendEmpty()
 
-	dataPoint.SetIntVal(value)
+	dataPoint.SetIntValue(value)
 	dataPoint.SetTimestamp(ts)
 }
 
-func doubleGauge(ilm pdata.InstrumentationLibraryMetrics, metricName string, unit string, value float64, ts pdata.Timestamp) {
+func doubleGauge(ilm pmetric.ScopeMetrics, metricName string, unit string, value float64, ts pcommon.Timestamp) {
 	metric := initMetric(ilm, metricName, unit)
 
-	metric.SetDataType(pdata.MetricDataTypeGauge)
-	doubleGauge := metric.Gauge()
+	doubleGauge := metric.SetEmptyGauge()
 	dataPoints := doubleGauge.DataPoints()
 	dataPoint := dataPoints.AppendEmpty()
 
-	dataPoint.SetDoubleVal(value)
+	dataPoint.SetDoubleValue(value)
 	dataPoint.SetTimestamp(ts)
 }
 
-func initMetric(ilm pdata.InstrumentationLibraryMetrics, name, unit string) pdata.Metric {
+func initMetric(ilm pmetric.ScopeMetrics, name, unit string) pmetric.Metric {
 	metric := ilm.Metrics().AppendEmpty()
 	metric.SetName(name)
 	metric.SetUnit(unit)

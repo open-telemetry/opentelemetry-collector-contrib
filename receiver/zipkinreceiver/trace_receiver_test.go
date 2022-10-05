@@ -21,10 +21,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -33,14 +33,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 const (
@@ -62,9 +60,9 @@ func TestNew(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name:    "nil nextConsumer",
+			name:    "nil next Consumer",
 			args:    args{},
-			wantErr: componenterror.ErrNilNextConsumer,
+			wantErr: component.ErrNilNextConsumer,
 		},
 		{
 			name: "happy path",
@@ -112,7 +110,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 
 func TestConvertSpansToTraceSpans_json(t *testing.T) {
 	// Using Adrian Cole's sample at https://gist.github.com/adriancole/e8823c19dfed64e2eb71
-	blob, err := ioutil.ReadFile("./testdata/sample1.json")
+	blob, err := os.ReadFile("./testdata/sample1.json")
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
 	zi := newTestZipkinReceiver()
 	reqs, err := zi.v2ToTraceSpans(blob, nil)
@@ -122,7 +120,7 @@ func TestConvertSpansToTraceSpans_json(t *testing.T) {
 
 	req := reqs.ResourceSpans().At(0)
 	sn, _ := req.Resource().Attributes().Get(conventions.AttributeServiceName)
-	assert.Equal(t, "frontend", sn.StringVal())
+	assert.Equal(t, "frontend", sn.Str())
 
 	// Expecting 9 non-nil spans
 	require.Equal(t, 9, reqs.SpanCount(), "Incorrect non-nil spans count")
@@ -178,7 +176,7 @@ func TestReceiverContentTypes(t *testing.T) {
 			content:  "application/json",
 			encoding: "gzip",
 			bodyFn: func() ([]byte, error) {
-				return ioutil.ReadFile(zipkinV1SingleBatch)
+				return os.ReadFile(zipkinV1SingleBatch)
 			},
 		},
 
@@ -196,7 +194,7 @@ func TestReceiverContentTypes(t *testing.T) {
 			content:  "application/json",
 			encoding: "gzip",
 			bodyFn: func() ([]byte, error) {
-				return ioutil.ReadFile(zipkinV2Single)
+				return os.ReadFile(zipkinV2Single)
 			},
 		},
 
@@ -205,7 +203,7 @@ func TestReceiverContentTypes(t *testing.T) {
 			content:  "application/json",
 			encoding: "zlib",
 			bodyFn: func() ([]byte, error) {
-				return ioutil.ReadFile(zipkinV2Single)
+				return os.ReadFile(zipkinV2Single)
 			},
 		},
 
@@ -214,7 +212,7 @@ func TestReceiverContentTypes(t *testing.T) {
 			content:  "application/json",
 			encoding: "",
 			bodyFn: func() ([]byte, error) {
-				return ioutil.ReadFile(zipkinV2Single)
+				return os.ReadFile(zipkinV2Single)
 			},
 		},
 	}
@@ -286,7 +284,7 @@ func TestReceiverInvalidContentType(t *testing.T) {
 }
 
 func TestReceiverConsumerError(t *testing.T) {
-	body, err := ioutil.ReadFile(zipkinV2Single)
+	body, err := os.ReadFile(zipkinV2Single)
 	require.NoError(t, err)
 
 	r := httptest.NewRequest("POST", "/api/v2/spans", bytes.NewBuffer(body))
@@ -361,7 +359,7 @@ func compressZlib(body []byte) (*bytes.Buffer, error) {
 }
 
 func TestConvertSpansToTraceSpans_JSONWithoutSerivceName(t *testing.T) {
-	blob, err := ioutil.ReadFile("./testdata/sample2.json")
+	blob, err := os.ReadFile("./testdata/sample2.json")
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
 	zi := newTestZipkinReceiver()
 	reqs, err := zi.v2ToTraceSpans(blob, nil)
@@ -374,7 +372,7 @@ func TestConvertSpansToTraceSpans_JSONWithoutSerivceName(t *testing.T) {
 }
 
 func TestReceiverConvertsStringsToTypes(t *testing.T) {
-	body, err := ioutil.ReadFile(zipkinV2Single)
+	body, err := os.ReadFile(zipkinV2Single)
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
 
 	r := httptest.NewRequest("POST", "/api/v2/spans", bytes.NewBuffer(body))
@@ -401,28 +399,26 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	}, 2*time.Second, 10*time.Millisecond)
 
 	td := next.AllTraces()[0]
-	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 
-	expected := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-		"cache_hit":            pdata.NewAttributeValueBool(true),
-		"ping_count":           pdata.NewAttributeValueInt(25),
-		"timeout":              pdata.NewAttributeValueDouble(12.3),
-		"clnt/finagle.version": pdata.NewAttributeValueString("6.45.0"),
-		"http.path":            pdata.NewAttributeValueString("/api"),
-		"http.status_code":     pdata.NewAttributeValueInt(500),
-		"net.host.ip":          pdata.NewAttributeValueString("7::80:807f"),
-		"peer.service":         pdata.NewAttributeValueString("backend"),
-		"net.peer.ip":          pdata.NewAttributeValueString("192.168.99.101"),
-		"net.peer.port":        pdata.NewAttributeValueInt(9000),
-	}).Sort()
+	expected := map[string]interface{}{
+		"cache_hit":            true,
+		"ping_count":           int64(25),
+		"timeout":              12.3,
+		"clnt/finagle.version": "6.45.0",
+		"http.path":            "/api",
+		"http.status_code":     int64(500),
+		"net.host.ip":          "7::80:807f",
+		"peer.service":         "backend",
+		"net.peer.ip":          "192.168.99.101",
+		"net.peer.port":        int64(9000),
+	}
 
-	actual := span.Attributes().Sort()
-
-	assert.EqualValues(t, expected, actual)
+	assert.EqualValues(t, expected, span.Attributes().AsRaw())
 }
 
 func TestFromBytesWithNoTimestamp(t *testing.T) {
-	noTimestampBytes, err := ioutil.ReadFile(zipkinV2NoTimestamp)
+	noTimestampBytes, err := os.ReadFile(zipkinV2NoTimestamp)
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
 
 	cfg := &Config{
@@ -447,7 +443,7 @@ func TestFromBytesWithNoTimestamp(t *testing.T) {
 		return
 	}
 
-	gs := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	gs := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	assert.NotNil(t, gs.StartTimestamp)
 	assert.NotNil(t, gs.EndTimestamp)
 
@@ -462,5 +458,5 @@ func TestFromBytesWithNoTimestamp(t *testing.T) {
 
 	wasAbsent, mapContainedKey := gs.Attributes().Get("otel.zipkin.absentField.startTime")
 	assert.True(t, mapContainedKey)
-	assert.True(t, wasAbsent.BoolVal())
+	assert.True(t, wasAbsent.Bool())
 }

@@ -28,8 +28,9 @@ import (
 	"github.com/getsentry/sentry-go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 const (
@@ -37,12 +38,43 @@ const (
 	otelSentryExporterName    = "sentry.opentelemetry"
 )
 
-// canonicalCodes maps OpenTelemetry span codes to Sentry's span status.
-// See numeric codes in https://github.com/open-telemetry/opentelemetry-proto/blob/6cf77b2f544f6bc7fe1e4b4a8a52e5a42cb50ead/opentelemetry/proto/trace/v1/trace.proto#L303
-var canonicalCodes = [...]sentry.SpanStatus{
-	sentry.SpanStatusUndefined,
-	sentry.SpanStatusOK,
-	sentry.SpanStatusUnknown,
+// See OpenTelemetry span statuses in https://github.com/open-telemetry/opentelemetry-proto/blob/6cf77b2f544f6bc7fe1e4b4a8a52e5a42cb50ead/opentelemetry/proto/trace/v1/trace.proto#L303
+
+// OpenTelemetry span status can be Unset, Ok, Error. HTTP and Grpc codes contained in tags can make it more detailed.
+
+// canonicalCodesHTTPMap maps some HTTP codes to Sentry's span statuses. See possible mapping in https://develop.sentry.dev/sdk/event-payloads/span/
+var canonicalCodesHTTPMap = map[string]sentry.SpanStatus{
+	"400": sentry.SpanStatusFailedPrecondition, // SpanStatusInvalidArgument, SpanStatusOutOfRange
+	"401": sentry.SpanStatusUnauthenticated,
+	"403": sentry.SpanStatusPermissionDenied,
+	"404": sentry.SpanStatusNotFound,
+	"409": sentry.SpanStatusAborted, // SpanStatusAlreadyExists
+	"429": sentry.SpanStatusResourceExhausted,
+	"499": sentry.SpanStatusCanceled,
+	"500": sentry.SpanStatusInternalError, // SpanStatusDataLoss, SpanStatusUnknown
+	"501": sentry.SpanStatusUnimplemented,
+	"503": sentry.SpanStatusUnavailable,
+	"504": sentry.SpanStatusDeadlineExceeded,
+}
+
+// canonicalCodesGrpcMap maps some GRPC codes to Sentry's span statuses. See description in grpc documentation.
+var canonicalCodesGrpcMap = map[string]sentry.SpanStatus{
+	"1":  sentry.SpanStatusCanceled,
+	"2":  sentry.SpanStatusUnknown,
+	"3":  sentry.SpanStatusInvalidArgument,
+	"4":  sentry.SpanStatusDeadlineExceeded,
+	"5":  sentry.SpanStatusNotFound,
+	"6":  sentry.SpanStatusAlreadyExists,
+	"7":  sentry.SpanStatusPermissionDenied,
+	"8":  sentry.SpanStatusResourceExhausted,
+	"9":  sentry.SpanStatusFailedPrecondition,
+	"10": sentry.SpanStatusAborted,
+	"11": sentry.SpanStatusOutOfRange,
+	"12": sentry.SpanStatusUnimplemented,
+	"13": sentry.SpanStatusInternalError,
+	"14": sentry.SpanStatusUnavailable,
+	"15": sentry.SpanStatusDataLoss,
+	"16": sentry.SpanStatusUnauthenticated,
 }
 
 // SentryExporter defines the Sentry Exporter.
@@ -52,7 +84,7 @@ type SentryExporter struct {
 
 // pushTraceData takes an incoming OpenTelemetry trace, converts them into Sentry spans and transactions
 // and sends them using Sentry's transport.
-func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) error {
+func (s *SentryExporter) pushTraceData(_ context.Context, td ptrace.Traces) error {
 	var exceptionEvents []*sentry.Event
 	resourceSpans := td.ResourceSpans()
 	if resourceSpans.Len() == 0 {
@@ -70,10 +102,10 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) error
 		rs := resourceSpans.At(i)
 		resourceTags := generateTagsFromResource(rs.Resource())
 
-		ilss := rs.InstrumentationLibrarySpans()
+		ilss := rs.ScopeSpans()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
-			library := ils.InstrumentationLibrary()
+			library := ils.Scope()
 
 			spans := ils.Spans()
 			for k := 0; k < spans.Len(); k++ {
@@ -111,9 +143,9 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) error
 
 	transactions := generateTransactions(transactionMap, orphanSpans)
 
-	events := append(transactions, exceptionEvents...)
+	transactions = append(transactions, exceptionEvents...)
 
-	s.transport.SendEvents(events)
+	s.transport.SendEvents(transactions)
 
 	return nil
 }
@@ -136,19 +168,19 @@ func generateTransactions(transactionMap map[sentry.SpanID]*sentry.Event, orphan
 
 // convertEventsToSentryExceptions creates a set of sentry events from exception events present in spans.
 // These events are stored in a mutated eventList
-func convertEventsToSentryExceptions(eventList *[]*sentry.Event, events pdata.SpanEventSlice, sentrySpan *sentry.Span) {
+func convertEventsToSentryExceptions(eventList *[]*sentry.Event, events ptrace.SpanEventSlice, sentrySpan *sentry.Span) {
 	for i := 0; i < events.Len(); i++ {
 		event := events.At(i)
 		if event.Name() != "exception" {
 			continue
 		}
 		var exceptionMessage, exceptionType string
-		event.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		event.Attributes().Range(func(k string, v pcommon.Value) bool {
 			switch k {
 			case conventions.AttributeExceptionMessage:
-				exceptionMessage = v.StringVal()
+				exceptionMessage = v.Str()
 			case conventions.AttributeExceptionType:
-				exceptionType = v.StringVal()
+				exceptionType = v.Str()
 			}
 			return true
 		})
@@ -222,7 +254,7 @@ func classifyAsOrphanSpans(orphanSpans []*sentry.Span, prevLength int, idMap map
 	return classifyAsOrphanSpans(newOrphanSpans, len(orphanSpans), idMap, transactionMap)
 }
 
-func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, resourceTags map[string]string) (sentrySpan *sentry.Span) {
+func convertToSentrySpan(span ptrace.Span, library pcommon.InstrumentationScope, resourceTags map[string]string) (sentrySpan *sentry.Span) {
 	attributes := span.Attributes()
 	name := span.Name()
 	spanKind := span.Kind()
@@ -234,13 +266,13 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 		tags[k] = v
 	}
 
-	status, message := statusFromSpanStatus(span.Status())
+	status, message := statusFromSpanStatus(span.Status(), tags)
 
 	if message != "" {
 		tags["status_message"] = message
 	}
 
-	if spanKind != pdata.SpanKindUnspecified {
+	if spanKind != ptrace.SpanKindUnspecified {
 		tags["span_kind"] = spanKind.String()
 	}
 
@@ -248,8 +280,8 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 	tags["library_version"] = library.Version()
 
 	sentrySpan = &sentry.Span{
-		TraceID:     span.TraceID().Bytes(),
-		SpanID:      span.SpanID().Bytes(),
+		TraceID:     sentry.TraceID(span.TraceID()),
+		SpanID:      sentry.SpanID(span.SpanID()),
 		Description: description,
 		Op:          op,
 		Tags:        tags,
@@ -259,7 +291,7 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 	}
 
 	if parentSpanID := span.ParentSpanID(); !parentSpanID.IsEmpty() {
-		sentrySpan.ParentSpanID = parentSpanID.Bytes()
+		sentrySpan.ParentSpanID = sentry.SpanID(parentSpanID)
 	}
 
 	return sentrySpan
@@ -271,7 +303,7 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 //
 // See https://github.com/open-telemetry/opentelemetry-specification/tree/5b78ee1/specification/trace/semantic_conventions
 // for more details about the semantic conventions.
-func generateSpanDescriptors(name string, attrs pdata.AttributeMap, spanKind pdata.SpanKind) (op string, description string) {
+func generateSpanDescriptors(name string, attrs pcommon.Map, spanKind ptrace.SpanKind) (op string, description string) {
 	var opBuilder strings.Builder
 	var dBuilder strings.Builder
 
@@ -284,14 +316,14 @@ func generateSpanDescriptors(name string, attrs pdata.AttributeMap, spanKind pda
 		opBuilder.WriteString("http")
 
 		switch spanKind {
-		case pdata.SpanKindClient:
+		case ptrace.SpanKindClient:
 			opBuilder.WriteString(".client")
-		case pdata.SpanKindServer:
+		case ptrace.SpanKindServer:
 			opBuilder.WriteString(".server")
 		}
 
 		// Ex. description="GET /api/users/{user_id}".
-		fmt.Fprintf(&dBuilder, "%s %s", httpMethod.StringVal(), name)
+		fmt.Fprintf(&dBuilder, "%s %s", httpMethod.Str(), name)
 
 		return opBuilder.String(), dBuilder.String()
 	}
@@ -302,7 +334,7 @@ func generateSpanDescriptors(name string, attrs pdata.AttributeMap, spanKind pda
 
 		// Use DB statement (Ex "SELECT * FROM table") if possible as description.
 		if statement, okInst := attrs.Get(conventions.AttributeDBStatement); okInst {
-			dBuilder.WriteString(statement.StringVal())
+			dBuilder.WriteString(statement.Str())
 		} else {
 			dBuilder.WriteString(name)
 		}
@@ -326,7 +358,7 @@ func generateSpanDescriptors(name string, attrs pdata.AttributeMap, spanKind pda
 
 	// If faas.trigger exists then this is a function as a service span.
 	if trigger, ok := attrs.Get("faas.trigger"); ok {
-		opBuilder.WriteString(trigger.StringVal())
+		opBuilder.WriteString(trigger.Str())
 
 		return opBuilder.String(), name
 	}
@@ -335,23 +367,23 @@ func generateSpanDescriptors(name string, attrs pdata.AttributeMap, spanKind pda
 	return "", name
 }
 
-func generateTagsFromResource(resource pdata.Resource) map[string]string {
+func generateTagsFromResource(resource pcommon.Resource) map[string]string {
 	return generateTagsFromAttributes(resource.Attributes())
 }
 
-func generateTagsFromAttributes(attrs pdata.AttributeMap) map[string]string {
+func generateTagsFromAttributes(attrs pcommon.Map) map[string]string {
 	tags := make(map[string]string)
 
-	attrs.Range(func(key string, attr pdata.AttributeValue) bool {
+	attrs.Range(func(key string, attr pcommon.Value) bool {
 		switch attr.Type() {
-		case pdata.AttributeValueTypeString:
-			tags[key] = attr.StringVal()
-		case pdata.AttributeValueTypeBool:
-			tags[key] = strconv.FormatBool(attr.BoolVal())
-		case pdata.AttributeValueTypeDouble:
-			tags[key] = strconv.FormatFloat(attr.DoubleVal(), 'g', -1, 64)
-		case pdata.AttributeValueTypeInt:
-			tags[key] = strconv.FormatInt(attr.IntVal(), 10)
+		case pcommon.ValueTypeStr:
+			tags[key] = attr.Str()
+		case pcommon.ValueTypeBool:
+			tags[key] = strconv.FormatBool(attr.Bool())
+		case pcommon.ValueTypeDouble:
+			tags[key] = strconv.FormatFloat(attr.Double(), 'g', -1, 64)
+		case pcommon.ValueTypeInt:
+			tags[key] = strconv.FormatInt(attr.Int(), 10)
 		}
 		return true
 	})
@@ -359,20 +391,44 @@ func generateTagsFromAttributes(attrs pdata.AttributeMap) map[string]string {
 	return tags
 }
 
-func statusFromSpanStatus(spanStatus pdata.SpanStatus) (status sentry.SpanStatus, message string) {
+func statusFromSpanStatus(spanStatus ptrace.SpanStatus, tags map[string]string) (status sentry.SpanStatus, message string) {
 	code := spanStatus.Code()
-	if code < 0 || int(code) >= len(canonicalCodes) {
+	if code < 0 || int(code) > 2 {
 		return sentry.SpanStatusUnknown, fmt.Sprintf("error code %d", code)
 	}
-
-	return canonicalCodes[code], spanStatus.Message()
+	httpCode, foundHTTPCode := tags["http.status_code"]
+	grpcCode, foundGrpcCode := tags["rpc.grpc.status_code"]
+	var sentryStatus sentry.SpanStatus
+	switch {
+	case code == 1 || code == 0:
+		sentryStatus = sentry.SpanStatusOK
+	case foundHTTPCode:
+		httpStatus, foundHTTPStatus := canonicalCodesHTTPMap[httpCode]
+		switch {
+		case foundHTTPStatus:
+			sentryStatus = httpStatus
+		default:
+			sentryStatus = sentry.SpanStatusUnknown
+		}
+	case foundGrpcCode:
+		grpcStatus, foundGrpcStatus := canonicalCodesGrpcMap[grpcCode]
+		switch {
+		case foundGrpcStatus:
+			sentryStatus = grpcStatus
+		default:
+			sentryStatus = sentry.SpanStatusUnknown
+		}
+	default:
+		sentryStatus = sentry.SpanStatusUnknown
+	}
+	return sentryStatus, spanStatus.Message()
 }
 
 // spanIsTransaction determines if a span should be sent to Sentry as a transaction.
 // If parent span id is empty or the span kind allows remote parent spans, then the span is a root span.
-func spanIsTransaction(s pdata.Span) bool {
+func spanIsTransaction(s ptrace.Span) bool {
 	kind := s.Kind()
-	return s.ParentSpanID() == pdata.SpanID{} || kind == pdata.SpanKindServer || kind == pdata.SpanKindConsumer
+	return s.ParentSpanID() == pcommon.SpanID{} || kind == ptrace.SpanKindServer || kind == ptrace.SpanKindConsumer
 }
 
 // transactionFromSpan converts a span to a transaction.
@@ -380,7 +436,7 @@ func transactionFromSpan(span *sentry.Span) *sentry.Event {
 	transaction := sentry.NewEvent()
 	transaction.EventID = generateEventID()
 
-	transaction.Contexts["trace"] = sentry.TraceContext{
+	transaction.Contexts["trace"] = &sentry.TraceContext{
 		TraceID:      span.TraceID,
 		SpanID:       span.SpanID,
 		ParentSpanID: span.ParentSpanID,
@@ -436,8 +492,9 @@ func CreateSentryExporter(config *Config, set component.ExporterCreateSettings) 
 	}
 
 	return exporterhelper.NewTracesExporter(
-		config,
+		context.TODO(),
 		set,
+		config,
 		s.pushTraceData,
 		exporterhelper.WithShutdown(func(ctx context.Context) error {
 			allEventsFlushed := transport.Flush(ctx)

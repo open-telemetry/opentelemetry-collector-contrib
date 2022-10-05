@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,22 +23,22 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
 const (
-	typeStr = "mongodb"
+	typeStr   = "mongodb"
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for mongodb receiver.
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver))
+		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {
@@ -65,7 +65,7 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
-	ms := newMongodbScraper(params.Logger, cfg)
+	ms := newMongodbScraper(params, cfg)
 
 	scraper, err := scraperhelper.NewScraper(typeStr, ms.scrape,
 		scraperhelper.WithStart(ms.start),

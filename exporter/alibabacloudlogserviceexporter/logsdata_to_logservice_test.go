@@ -21,72 +21,61 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
-func getComplexAttributeValueMap() pdata.AttributeValue {
-	mapVal := pdata.NewAttributeValueMap()
-	mapValReal := mapVal.MapVal()
-	mapValReal.InsertBool("result", true)
-	mapValReal.InsertString("status", "ok")
-	mapValReal.InsertDouble("value", 1.3)
-	mapValReal.InsertInt("code", 200)
-	mapValReal.InsertNull("null")
-	arrayVal := pdata.NewAttributeValueArray()
-	arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
-	mapValReal.Insert("array", arrayVal)
-
-	subMapVal := pdata.NewAttributeValueMap()
-	subMapVal.MapVal().InsertString("data", "hello world")
-	mapValReal.Insert("map", subMapVal)
-
-	mapValReal.InsertString("status", "ok")
-	return mapVal
+func fillComplexAttributeValueMap(m pcommon.Map) {
+	m.PutBool("result", true)
+	m.PutString("status", "ok")
+	m.PutDouble("value", 1.3)
+	m.PutInt("code", 200)
+	m.PutEmpty("null")
+	m.PutEmptySlice("array").AppendEmpty().SetStr("array")
+	m.PutEmptyMap("map").PutString("data", "hello world")
+	m.PutString("status", "ok")
 }
 
-func createLogData(numberOfLogs int) pdata.Logs {
-	logs := pdata.NewLogs()
+func createLogData(numberOfLogs int) plog.Logs {
+	logs := plog.NewLogs()
 	logs.ResourceLogs().AppendEmpty() // Add an empty ResourceLogs
 	rl := logs.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().InsertString("resouceKey", "resourceValue")
-	rl.Resource().Attributes().InsertString(conventions.AttributeServiceName, "test-log-service-exporter")
-	rl.Resource().Attributes().InsertString(conventions.AttributeHostName, "test-host")
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	ill.InstrumentationLibrary().SetName("collector")
-	ill.InstrumentationLibrary().SetVersion("v0.1.0")
+	rl.Resource().Attributes().PutString("resouceKey", "resourceValue")
+	rl.Resource().Attributes().PutString(conventions.AttributeServiceName, "test-log-service-exporter")
+	rl.Resource().Attributes().PutString(conventions.AttributeHostName, "test-host")
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().SetName("collector")
+	sl.Scope().SetVersion("v0.1.0")
 
 	for i := 0; i < numberOfLogs; i++ {
-		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
-		logRecord := ill.LogRecords().AppendEmpty()
+		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
+		logRecord := sl.LogRecords().AppendEmpty()
 		switch i {
 		case 0:
 			// do nothing, left body null
 		case 1:
-			logRecord.Body().SetBoolVal(true)
+			logRecord.Body().SetBool(true)
 		case 2:
-			logRecord.Body().SetIntVal(2.0)
+			logRecord.Body().SetInt(2.0)
 		case 3:
-			logRecord.Body().SetDoubleVal(3.0)
+			logRecord.Body().SetDouble(3.0)
 		case 4:
-			logRecord.Body().SetStringVal("4")
+			logRecord.Body().SetStr("4")
 		case 5:
-
-			logRecord.Attributes().Insert("map-value", getComplexAttributeValueMap())
-			logRecord.Body().SetStringVal("log contents")
+			fillComplexAttributeValueMap(logRecord.Attributes().PutEmptyMap("map-value"))
+			logRecord.Body().SetStr("log contents")
 		case 6:
-			arrayVal := pdata.NewAttributeValueArray()
-			arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
-			logRecord.Attributes().Insert("array-value", arrayVal)
-			logRecord.Body().SetStringVal("log contents")
+			logRecord.Attributes().PutEmptySlice("array-value").AppendEmpty().SetStr("array")
+			logRecord.Body().SetStr("log contents")
 		default:
-			logRecord.Body().SetStringVal("log contents")
+			logRecord.Body().SetStr("log contents")
 		}
-		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
-		logRecord.Attributes().InsertString("my-label", "myapp-type")
-		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-		logRecord.Attributes().InsertString("custom", "custom")
-		logRecord.Attributes().InsertNull("null-value")
+		logRecord.Attributes().PutString(conventions.AttributeServiceName, "myapp")
+		logRecord.Attributes().PutString("my-label", "myapp-type")
+		logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
+		logRecord.Attributes().PutString("custom", "custom")
+		logRecord.Attributes().PutEmpty("null-value")
 
 		logRecord.SetTimestamp(ts)
 	}

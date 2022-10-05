@@ -20,7 +20,7 @@ import (
 	"reflect"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
@@ -41,12 +41,12 @@ const (
 	fieldPrometheusMetricType = "prom_metric_type"
 )
 
-var fieldPrometheusTypes = map[pdata.MetricDataType]string{
-	pdata.MetricDataTypeNone:      "",
-	pdata.MetricDataTypeGauge:     "gauge",
-	pdata.MetricDataTypeSum:       "counter",
-	pdata.MetricDataTypeHistogram: "histogram",
-	pdata.MetricDataTypeSummary:   "summary",
+var fieldPrometheusTypes = map[pmetric.MetricType]string{
+	pmetric.MetricTypeNone:      "",
+	pmetric.MetricTypeGauge:     "gauge",
+	pmetric.MetricTypeSum:       "counter",
+	pmetric.MetricTypeHistogram: "histogram",
+	pmetric.MetricTypeSummary:   "summary",
 }
 
 type cWMetrics struct {
@@ -81,7 +81,7 @@ type cWMetricMetadata struct {
 	instrumentationLibraryName string
 
 	receiver       string
-	metricDataType pdata.MetricDataType
+	metricDataType pmetric.MetricType
 }
 
 type metricTranslator struct {
@@ -99,23 +99,23 @@ func newMetricTranslator(config Config) metricTranslator {
 }
 
 // translateOTelToGroupedMetric converts OT metrics to Grouped Metric format.
-func (mt metricTranslator) translateOTelToGroupedMetric(rm *pdata.ResourceMetrics, groupedMetrics map[interface{}]*groupedMetric, config *Config) error {
+func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetrics, groupedMetrics map[interface{}]*groupedMetric, config *Config) error {
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 	var instrumentationLibName string
 	cWNamespace := getNamespace(rm, config.Namespace)
 	logGroup, logStream, patternReplaceSucceeded := getLogInfo(rm, cWNamespace, config)
 
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	var metricReceiver string
 	if receiver, ok := rm.Resource().Attributes().Get(attributeReceiver); ok {
-		metricReceiver = receiver.StringVal()
+		metricReceiver = receiver.Str()
 	}
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
-		if ilm.InstrumentationLibrary().Name() == "" {
+		if ilm.Scope().Name() == "" {
 			instrumentationLibName = noInstrumentationLibraryName
 		} else {
-			instrumentationLibName = ilm.InstrumentationLibrary().Name()
+			instrumentationLibName = ilm.Scope().Name()
 		}
 
 		metrics := ilm.Metrics()
@@ -130,9 +130,9 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm *pdata.ResourceMetric
 				},
 				instrumentationLibraryName: instrumentationLibName,
 				receiver:                   metricReceiver,
-				metricDataType:             metric.DataType(),
+				metricDataType:             metric.Type(),
 			}
-			err := addToGroupedMetric(&metric, groupedMetrics, metadata, patternReplaceSucceeded, config.logger, mt.metricDescriptor, config)
+			err := addToGroupedMetric(metric, groupedMetrics, metadata, patternReplaceSucceeded, config.logger, mt.metricDescriptor, config)
 			if err != nil {
 				return err
 			}
@@ -250,7 +250,7 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 	// If the whole batch of metrics don't match any metric declarations, drop them
 	if len(metricDeclarations) == 0 {
 		labelsStr, _ := json.Marshal(labels)
-		metricNames := make([]string, 0)
+		var metricNames []string
 		for metricName := range groupedMetric.metrics {
 			metricNames = append(metricNames, metricName)
 		}
@@ -344,7 +344,7 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cwlogs.Event {
 	cWMetricMap := make(map[string]interface{})
 	fieldMap := cWMetric.fields
 
-	//restore the json objects that are stored as string in attributes
+	// restore the json objects that are stored as string in attributes
 	for _, key := range config.ParseJSONEncodedAttributeValues {
 		if fieldMap[key] == nil {
 			continue

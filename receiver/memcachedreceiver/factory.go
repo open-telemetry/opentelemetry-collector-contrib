@@ -14,8 +14,6 @@
 
 package memcachedreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver"
 
-//go:generate mdatagen metadata.yaml
-
 import (
 	"context"
 	"time"
@@ -24,33 +22,47 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
 )
 
 const (
-	typeStr = "memcached"
+	typeStr                   = "memcached"
+	stability                 = component.StabilityLevelBeta
+	defaultEndpoint           = "localhost:11211"
+	defaultTimeout            = 10 * time.Second
+	defaultCollectionInterval = 10 * time.Second
 )
 
 // NewFactory creates a factory for memcached receiver.
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver))
+		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			CollectionInterval: 10 * time.Second,
+			CollectionInterval: defaultCollectionInterval,
 		},
-		Timeout: 10 * time.Second,
+		Timeout: defaultTimeout,
 		NetAddr: confignet.NetAddr{
-			Endpoint: "localhost:11211",
+			Endpoint: defaultEndpoint,
 		},
+		Metrics: metadata.DefaultMetricsSettings(),
 	}
+}
+
+func logDeprecatedFeatureGateForDirection(log *zap.Logger, gate featuregate.Gate) {
+	log.Warn("WARNING: The " + gate.ID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
+		"the direction attribute has been reverted in the specification. See https://github.com/open-telemetry/opentelemetry-specification/issues/2726 " +
+		"for additional details.")
 }
 
 func createMetricsReceiver(
@@ -61,7 +73,16 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
 
-	ms := newMemcachedScraper(params.Logger, cfg)
+	ms := newMemcachedScraper(params, cfg)
+
+	if !ms.emitMetricsWithDirectionAttribute {
+		logDeprecatedFeatureGateForDirection(ms.logger, emitMetricsWithDirectionAttributeFeatureGate)
+	}
+
+	if ms.emitMetricsWithoutDirectionAttribute {
+		logDeprecatedFeatureGateForDirection(ms.logger, emitMetricsWithoutDirectionAttributeFeatureGate)
+	}
+
 	scraper, err := scraperhelper.NewScraper(typeStr, ms.scrape)
 	if err != nil {
 		return nil, err

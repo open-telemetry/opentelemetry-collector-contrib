@@ -1,0 +1,7 @@
+routing:
+  attribute_source: resource
+  from_attribute: X-Tenant
+  table:
+    - value: acme
+      exporters:
+        - otlp/traces

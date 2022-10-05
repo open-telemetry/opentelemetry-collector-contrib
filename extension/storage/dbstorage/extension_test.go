@@ -12,12 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
+//go:build !windows
+// +build !windows
+
 package dbstorage
 
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"sync"
 	"testing"
 
@@ -33,8 +36,11 @@ func TestExtensionIntegrity(t *testing.T) {
 	ctx := context.Background()
 	se := newTestExtension(t)
 	err := se.Start(context.Background(), componenttest.NewNopHost())
-	defer se.Shutdown(context.Background())
 	assert.NoError(t, err)
+	defer func() {
+		err = se.Shutdown(context.Background())
+		assert.NoError(t, err)
+	}()
 
 	type mockComponent struct {
 		kind component.Kind
@@ -107,13 +113,10 @@ func TestExtensionIntegrity(t *testing.T) {
 }
 
 func newTestExtension(t *testing.T) storage.Extension {
-	tempDir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
-
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.DriverName = "sqlite3"
-	cfg.DataSource = fmt.Sprintf("file:%s/foo.db?_busy_timeout=10000&_journal=WAL&_sync=NORMAL", tempDir)
+	cfg.DataSource = fmt.Sprintf("file:%s/foo.db?_busy_timeout=10000&_journal=WAL&_sync=NORMAL", t.TempDir())
 
 	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
 	require.NoError(t, err)

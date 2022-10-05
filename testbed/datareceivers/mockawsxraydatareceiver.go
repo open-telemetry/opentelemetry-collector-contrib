@@ -18,7 +18,6 @@ import (
 	"context"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -42,7 +41,7 @@ func NewMockAwsXrayDataReceiver(port int) *MockAwsXrayDataReceiver {
 	return &MockAwsXrayDataReceiver{DataReceiverBase: testbed.DataReceiverBase{Port: port}}
 }
 
-//Start listening on the specified port
+// Start listening on the specified port
 func (ar *MockAwsXrayDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
 	var err error
 	os.Setenv("AWS_ACCESS_KEY_ID", "AWS_ACCESS_KEY_ID")
@@ -52,7 +51,7 @@ func (ar *MockAwsXrayDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics,
 	if rootCAs == nil {
 		rootCAs = x509.NewCertPool()
 	}
-	certs, err := ioutil.ReadFile("../mockdatareceivers/mockawsxrayreceiver/server.crt")
+	certs, err := os.ReadFile("../mockdatareceivers/mockawsxrayreceiver/server.crt")
 
 	if err != nil {
 		log.Fatalf("Failed to append %q to RootCAs: %v", "../mockdatareceivers/mockawsxrayreceiver/server.crt", err)
@@ -76,12 +75,11 @@ func (ar *MockAwsXrayDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics,
 		return err
 	}
 
-	return ar.receiver.Start(context.Background(), ar)
+	return ar.receiver.Start(context.Background(), componenttest.NewNopHost())
 }
 
 func (ar *MockAwsXrayDataReceiver) Stop() error {
-	ar.receiver.Shutdown(context.Background())
-	return nil
+	return ar.receiver.Shutdown(context.Background())
 }
 
 func (ar *MockAwsXrayDataReceiver) GenConfigYAMLStr() string {

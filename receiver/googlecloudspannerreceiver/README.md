@@ -1,5 +1,11 @@
 # Google Cloud Spanner Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 Google Cloud Spanner enable you to investigate issues with your database
 by exposing via [Total and Top N built-in tables](https://cloud.google.com/spanner/docs/introspection):
 - Query statistics
@@ -63,3 +69,6 @@ Brief description of configuration properties:
     - **instances** - list of Google Cloud Spanner instance for connection
         - **instance_id** - identifier of Google Cloud Spanner instance
         - **databases** - list of databases used from this instance
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

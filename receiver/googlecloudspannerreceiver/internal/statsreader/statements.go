@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ func currentStatsStatement(args statementArgs) statsStatement {
 func intervalStatsStatement(args statementArgs) statsStatement {
 	stmt := currentStatsStatement(args)
 
-	if len(stmt.statement.Params) <= 0 {
+	if len(stmt.statement.Params) == 0 {
 		stmt.statement.Params = map[string]interface{}{}
 	}
 

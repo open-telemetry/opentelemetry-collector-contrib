@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterhelper"
@@ -32,7 +32,7 @@ type AttributesMatcher []AttributeMatcher
 type AttributeMatcher struct {
 	Key string
 	// If both AttributeValue and StringFilter are nil only check for key existence.
-	AttributeValue *pdata.AttributeValue
+	AttributeValue *pcommon.Value
 	// StringFilter is needed to match against a regular expression
 	StringFilter filterset.FilterSet
 }
@@ -57,23 +57,25 @@ func NewAttributesMatcher(config filterset.Config, attributes []filterconfig.Att
 				return nil, err
 			}
 
-			if config.MatchType == filterset.Regexp {
-				if val.Type() != pdata.AttributeValueTypeString {
+			switch config.MatchType {
+			case filterset.Regexp:
+				if val.Type() != pcommon.ValueTypeStr {
 					return nil, fmt.Errorf(
 						"%s=%s for %q only supports STRING, but found %s",
 						filterset.MatchTypeFieldName, filterset.Regexp, attribute.Key, val.Type(),
 					)
 				}
 
-				filter, err := filterset.CreateFilterSet([]string{val.StringVal()}, &config)
+				filter, err := filterset.CreateFilterSet([]string{val.Str()}, &config)
 				if err != nil {
 					return nil, err
 				}
 				entry.StringFilter = filter
-			} else if config.MatchType == filterset.Strict {
+			case filterset.Strict:
 				entry.AttributeValue = &val
-			} else {
+			default:
 				return nil, filterset.NewUnrecognizedMatchTypeError(config.MatchType)
+
 			}
 		}
 
@@ -83,7 +85,7 @@ func NewAttributesMatcher(config filterset.Config, attributes []filterconfig.Att
 }
 
 // Match attributes specification against a span/log.
-func (ma AttributesMatcher) Match(attrs pdata.AttributeMap) bool {
+func (ma AttributesMatcher) Match(attrs pcommon.Map) bool {
 	// If there are no attributes to match against, the span/log matches.
 	if len(ma) == 0 {
 		return true
@@ -116,16 +118,16 @@ func (ma AttributesMatcher) Match(attrs pdata.AttributeMap) bool {
 	return true
 }
 
-func attributeStringValue(attr pdata.AttributeValue) (string, error) {
+func attributeStringValue(attr pcommon.Value) (string, error) {
 	switch attr.Type() {
-	case pdata.AttributeValueTypeString:
-		return attr.StringVal(), nil
-	case pdata.AttributeValueTypeBool:
-		return strconv.FormatBool(attr.BoolVal()), nil
-	case pdata.AttributeValueTypeDouble:
-		return strconv.FormatFloat(attr.DoubleVal(), 'f', -1, 64), nil
-	case pdata.AttributeValueTypeInt:
-		return strconv.FormatInt(attr.IntVal(), 10), nil
+	case pcommon.ValueTypeStr:
+		return attr.Str(), nil
+	case pcommon.ValueTypeBool:
+		return strconv.FormatBool(attr.Bool()), nil
+	case pcommon.ValueTypeDouble:
+		return strconv.FormatFloat(attr.Double(), 'f', -1, 64), nil
+	case pcommon.ValueTypeInt:
+		return strconv.FormatInt(attr.Int(), 10), nil
 	default:
 		return "", errUnexpectedAttributeType
 	}

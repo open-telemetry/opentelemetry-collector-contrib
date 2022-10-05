@@ -24,7 +24,7 @@ import (
 
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
-	gatewayruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	gatewayruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/cors"
 	"github.com/soheilhy/cmux"
 	"go.opentelemetry.io/collector/component"
@@ -76,7 +76,7 @@ func newOpenCensusReceiver(
 	// TODO: (@odeke-em) use options to enable address binding changes.
 	ln, err := net.Listen(transport, addr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to bind to address %q: %v", addr, err)
+		return nil, fmt.Errorf("failed to bind to address %q: %w", addr, err)
 	}
 
 	ocr := &ocReceiver{
@@ -251,18 +251,20 @@ func (ocr *ocReceiver) startServer(host component.Host) error {
 
 	httpL := m.Match(cmux.Any())
 	go func() {
-		if errGrpc := ocr.serverGRPC.Serve(grpcL); !errors.Is(errGrpc, grpc.ErrServerStopped) && errGrpc != nil {
-			host.ReportFatalError(errGrpc)
+		// Check for cmux.ErrServerClosed, because during the shutdown this is not properly close before closing the cmux,
+		// see TODO in Shutdown.
+		if err := ocr.serverGRPC.Serve(grpcL); !errors.Is(err, grpc.ErrServerStopped) && !errors.Is(err, cmux.ErrServerClosed) && err != nil {
+			host.ReportFatalError(err)
 		}
 	}()
 	go func() {
-		if errHTTP := ocr.httpServer().Serve(httpL); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			host.ReportFatalError(errHTTP)
+		if err := ocr.httpServer().Serve(httpL); !errors.Is(err, http.ErrServerClosed) && err != nil {
+			host.ReportFatalError(err)
 		}
 	}()
 	go func() {
-		if errServe := m.Serve(); errServe != nil && errServe != cmux.ErrServerClosed {
-			host.ReportFatalError(errServe)
+		if err := m.Serve(); !errors.Is(err, cmux.ErrServerClosed) && err != nil {
+			host.ReportFatalError(err)
 		}
 	}()
 	return nil

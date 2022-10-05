@@ -28,14 +28,16 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "jaeger_thrift"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for Jaeger Thrift over HTTP exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter))
+		component.WithTracesExporter(createTracesExporter, stability))
 }
 
 func createDefaultConfig() config.Exporter {
@@ -57,7 +59,7 @@ func createTracesExporter(
 	_, err := url.ParseRequestURI(expCfg.HTTPClientSettings.Endpoint)
 	if err != nil {
 		// TODO: Improve error message, see #215
-		err = fmt.Errorf("%q config requires a valid \"endpoint\": %v", expCfg.ID().String(), err)
+		err = fmt.Errorf("%q config requires a valid \"endpoint\": %w", expCfg.ID().String(), err)
 		return nil, err
 	}
 

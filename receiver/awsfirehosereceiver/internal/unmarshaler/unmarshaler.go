@@ -15,13 +15,13 @@
 package unmarshaler // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // MetricsUnmarshaler deserializes the message body
 type MetricsUnmarshaler interface {
 	// Unmarshal deserializes the records into metrics.
-	Unmarshal(records [][]byte) (pdata.Metrics, error)
+	Unmarshal(records [][]byte) (pmetric.Metrics, error)
 
 	// Type of the serialized messages.
 	Type() string

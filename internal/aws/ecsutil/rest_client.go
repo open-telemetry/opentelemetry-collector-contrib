@@ -18,17 +18,27 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 func NewRestClient(baseEndpoint url.URL, clientSettings confighttp.HTTPClientSettings, settings component.TelemetrySettings) (RestClient, error) {
-	clientProvider := NewClientProvider(baseEndpoint, clientSettings, settings)
+	clientProvider := NewClientProvider(baseEndpoint, clientSettings, &nopHost{}, settings)
 
 	client, err := clientProvider.BuildClient()
 	if err != nil {
 		return nil, err
 	}
 	return NewRestClientFromClient(client), nil
+}
+
+// TODO: Instead of using this, expose it as a argument to NewRestClient.
+type nopHost struct {
+	component.Host
+}
+
+func (nh *nopHost) GetExtensions() map[config.ComponentID]component.Extension {
+	return map[config.ComponentID]component.Extension{}
 }
 
 // RestClient is swappable for testing.

@@ -20,9 +20,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/correctnesstests"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
@@ -90,7 +91,7 @@ func testWithMetricsGoldenDataset(
 	return r
 }
 
-func getTestMetrics(t *testing.T) []pdata.Metrics {
+func getTestMetrics(t *testing.T) []pmetric.Metrics {
 	const file = "../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_metrics.txt"
 	mds, err := goldendataset.GenerateMetrics(file)
 	require.NoError(t, err)
@@ -107,7 +108,7 @@ func newDiffAccumulator() *diffAccumulator {
 	return &diffAccumulator{}
 }
 
-func (d *diffAccumulator) accept(metricName string, diffs []*MetricDiff) {
+func (d *diffAccumulator) accept(metricName string, diffs []*metricstestutil.MetricDiff) {
 	if len(diffs) > 0 {
 		d.numDiffs++
 		log.Printf("Found diffs for [%v]\n%v", metricName, diffs)

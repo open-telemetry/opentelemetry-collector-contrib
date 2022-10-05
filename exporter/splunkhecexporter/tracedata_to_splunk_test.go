@@ -20,7 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -28,76 +29,43 @@ import (
 
 func Test_traceDataToSplunk(t *testing.T) {
 	logger := zap.NewNop()
-	ts := pdata.Timestamp(123)
+	ts := pcommon.Timestamp(123)
 
 	tests := []struct {
-		name                string
-		traceDataFn         func() pdata.Traces
-		wantSplunkEvents    []*splunk.Event
-		configFn            func() *Config
-		wantNumDroppedSpans int
+		name            string
+		traceDataFn     func() ptrace.Traces
+		wantSplunkEvent *splunk.Event
+		configFn        func() *Config
 	}{
 		{
 			name: "valid",
-			traceDataFn: func() pdata.Traces {
-				traces := pdata.NewTraces()
+			traceDataFn: func() ptrace.Traces {
+				traces := ptrace.NewTraces()
 				rs := traces.ResourceSpans().AppendEmpty()
-				rs.Resource().Attributes().InsertString("com.splunk.source", "myservice")
-				rs.Resource().Attributes().InsertString("host.name", "myhost")
-				rs.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
-				rs.Resource().Attributes().InsertString("com.splunk.index", "myindex")
-				ils := rs.InstrumentationLibrarySpans().AppendEmpty()
-				initSpan("myspan", &ts, ils.Spans().AppendEmpty())
+				rs.Resource().Attributes().PutString("com.splunk.source", "myservice")
+				rs.Resource().Attributes().PutString("host.name", "myhost")
+				rs.Resource().Attributes().PutString("com.splunk.sourcetype", "mysourcetype")
+				rs.Resource().Attributes().PutString("com.splunk.index", "myindex")
+				ils := rs.ScopeSpans().AppendEmpty()
+				initSpan("myspan", ts, ils.Spans().AppendEmpty())
 				return traces
 			},
-			wantSplunkEvents: []*splunk.Event{
-				commonSplunkEvent("myspan", ts),
-			},
+			wantSplunkEvent: commonSplunkEvent("myspan", ts),
 			configFn: func() *Config {
 				return createDefaultConfig().(*Config)
 			},
-			wantNumDroppedSpans: 0,
-		},
-		{
-			name: "empty_rs",
-			traceDataFn: func() pdata.Traces {
-				traces := pdata.NewTraces()
-				traces.ResourceSpans().AppendEmpty()
-				return traces
-			},
-			configFn: func() *Config {
-				return createDefaultConfig().(*Config)
-			},
-			wantSplunkEvents:    []*splunk.Event{},
-			wantNumDroppedSpans: 0,
-		},
-		{
-			name: "empty_ils",
-			traceDataFn: func() pdata.Traces {
-				traces := pdata.NewTraces()
-				rs := traces.ResourceSpans().AppendEmpty()
-				rs.Resource().Attributes().InsertString("com.splunk.source", "myservice")
-				rs.Resource().Attributes().InsertString("host.name", "myhost")
-				rs.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
-				rs.InstrumentationLibrarySpans().AppendEmpty()
-				return traces
-			},
-			configFn: func() *Config {
-				return createDefaultConfig().(*Config)
-			},
-			wantSplunkEvents:    []*splunk.Event{},
-			wantNumDroppedSpans: 0,
 		},
 		{
 			name: "custom_config",
-			traceDataFn: func() pdata.Traces {
-				traces := pdata.NewTraces()
+			traceDataFn: func() ptrace.Traces {
+				traces := ptrace.NewTraces()
 				rs := traces.ResourceSpans().AppendEmpty()
-				rs.Resource().Attributes().InsertString("mysource", "myservice")
-				rs.Resource().Attributes().InsertString("myhost", "myhost")
-				rs.Resource().Attributes().InsertString("mysourcetype", "mysourcetype")
-				rs.Resource().Attributes().InsertString("myindex", "mysourcetype")
-				rs.InstrumentationLibrarySpans().AppendEmpty()
+				rs.Resource().Attributes().PutString("mysource", "myservice")
+				rs.Resource().Attributes().PutString("myhost", "myhost")
+				rs.Resource().Attributes().PutString("mysourcetype", "othersourcetype")
+				rs.Resource().Attributes().PutString("myindex", "mysourcetype")
+				ils := rs.ScopeSpans().AppendEmpty()
+				initSpan("myspan", ts, ils.Spans().AppendEmpty())
 				return traces
 			},
 			configFn: func() *Config {
@@ -111,8 +79,12 @@ func Test_traceDataToSplunk(t *testing.T) {
 
 				return cfg
 			},
-			wantSplunkEvents:    []*splunk.Event{},
-			wantNumDroppedSpans: 0,
+			wantSplunkEvent: func() *splunk.Event {
+				e := commonSplunkEvent("myspan", ts)
+				e.Index = "mysourcetype"
+				e.SourceType = "othersourcetype"
+				return e
+			}(),
 		},
 	}
 	for _, tt := range tests {
@@ -120,51 +92,42 @@ func Test_traceDataToSplunk(t *testing.T) {
 			traces := tt.traceDataFn()
 
 			cfg := tt.configFn()
-			gotEvents, gotNumDroppedSpans := traceDataToSplunk(logger, traces, cfg)
-			assert.Equal(t, tt.wantNumDroppedSpans, gotNumDroppedSpans)
-			require.Equal(t, len(tt.wantSplunkEvents), len(gotEvents))
-			for i, want := range tt.wantSplunkEvents {
-				assert.EqualValues(t, want, gotEvents[i])
-			}
-			assert.Equal(t, tt.wantSplunkEvents, gotEvents)
+			event := mapSpanToSplunkEvent(traces.ResourceSpans().At(0).Resource(), traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0), cfg, logger)
+			require.NotNil(t, event)
+			assert.Equal(t, tt.wantSplunkEvent, event)
 		})
 	}
 }
 
-func initSpan(name string, ts *pdata.Timestamp, span pdata.Span) {
-	span.Attributes().InsertString("foo", "bar")
+func initSpan(name string, ts pcommon.Timestamp, span ptrace.Span) {
+	span.Attributes().PutString("foo", "bar")
 	span.SetName(name)
-	if ts != nil {
-		span.SetStartTimestamp(*ts)
-	}
+	span.SetStartTimestamp(ts)
 	spanLink := span.Links().AppendEmpty()
-	spanLink.SetTraceState("OK")
+	spanLink.TraceState().FromRaw("OK")
 	bytes, _ := hex.DecodeString("12345678")
 	var traceID [16]byte
 	copy(traceID[:], bytes)
-	spanLink.SetTraceID(pdata.NewTraceID(traceID))
+	spanLink.SetTraceID(traceID)
 	bytes, _ = hex.DecodeString("1234")
 	var spanID [8]byte
 	copy(spanID[:], bytes)
-	spanLink.SetSpanID(pdata.NewSpanID(spanID))
-	spanLink.Attributes().InsertInt("foo", 1)
-	spanLink.Attributes().InsertBool("bar", false)
-	foobarContents := pdata.NewAttributeValueArray()
-	foobarContents.SliceVal().AppendEmpty().SetStringVal("a")
-	foobarContents.SliceVal().AppendEmpty().SetStringVal("b")
-	spanLink.Attributes().Insert("foobar", foobarContents)
+	spanLink.SetSpanID(spanID)
+	spanLink.Attributes().PutInt("foo", 1)
+	spanLink.Attributes().PutBool("bar", false)
+	foobarContents := spanLink.Attributes().PutEmptySlice("foobar")
+	foobarContents.AppendEmpty().SetStr("a")
+	foobarContents.AppendEmpty().SetStr("b")
 
 	spanEvent := span.Events().AppendEmpty()
-	spanEvent.Attributes().InsertString("foo", "bar")
+	spanEvent.Attributes().PutString("foo", "bar")
 	spanEvent.SetName("myEvent")
-	if ts != nil {
-		spanEvent.SetTimestamp(*ts + 3)
-	}
+	spanEvent.SetTimestamp(ts + 3)
 }
 
 func commonSplunkEvent(
 	name string,
-	ts pdata.Timestamp,
+	ts pcommon.Timestamp,
 ) *splunk.Event {
 	return &splunk.Event{
 		Time:       timestampToSecondsWithMillisecondPrecision(ts),

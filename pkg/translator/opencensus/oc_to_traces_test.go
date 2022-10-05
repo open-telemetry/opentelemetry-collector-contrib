@@ -22,7 +22,8 @@ import (
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -53,32 +54,32 @@ func TestOcTraceStateToInternal(t *testing.T) {
 }
 
 func TestInitAttributeMapFromOC(t *testing.T) {
-	attrs := pdata.NewAttributeMap()
+	attrs := pcommon.NewMap()
 	initAttributeMapFromOC(nil, attrs)
-	assert.EqualValues(t, pdata.NewAttributeMap(), attrs)
+	assert.EqualValues(t, pcommon.NewMap(), attrs)
 	assert.EqualValues(t, 0, ocAttrsToDroppedAttributes(nil))
 
 	ocAttrs := &octrace.Span_Attributes{}
-	attrs = pdata.NewAttributeMap()
+	attrs = pcommon.NewMap()
 	initAttributeMapFromOC(ocAttrs, attrs)
-	assert.EqualValues(t, pdata.NewAttributeMap(), attrs)
+	assert.EqualValues(t, pcommon.NewMap(), attrs)
 	assert.EqualValues(t, 0, ocAttrsToDroppedAttributes(ocAttrs))
 
 	ocAttrs = &octrace.Span_Attributes{
 		DroppedAttributesCount: 123,
 	}
-	attrs = pdata.NewAttributeMap()
+	attrs = pcommon.NewMap()
 	initAttributeMapFromOC(ocAttrs, attrs)
-	assert.EqualValues(t, pdata.NewAttributeMap(), attrs)
+	assert.EqualValues(t, pcommon.NewMap(), attrs)
 	assert.EqualValues(t, 123, ocAttrsToDroppedAttributes(ocAttrs))
 
 	ocAttrs = &octrace.Span_Attributes{
 		AttributeMap:           map[string]*octrace.AttributeValue{},
 		DroppedAttributesCount: 234,
 	}
-	attrs = pdata.NewAttributeMap()
+	attrs = pcommon.NewMap()
 	initAttributeMapFromOC(ocAttrs, attrs)
-	assert.EqualValues(t, pdata.NewAttributeMap(), attrs)
+	assert.EqualValues(t, pcommon.NewMap(), attrs)
 	assert.EqualValues(t, 234, ocAttrsToDroppedAttributes(ocAttrs))
 
 	ocAttrs = &octrace.Span_Attributes{
@@ -89,14 +90,9 @@ func TestInitAttributeMapFromOC(t *testing.T) {
 		},
 		DroppedAttributesCount: 234,
 	}
-	attrs = pdata.NewAttributeMap()
+	attrs = pcommon.NewMap()
 	initAttributeMapFromOC(ocAttrs, attrs)
-	assert.EqualValues(t,
-		pdata.NewAttributeMapFromMap(
-			map[string]pdata.AttributeValue{
-				"abc": pdata.NewAttributeValueString("def"),
-			}),
-		attrs)
+	assert.Equal(t, map[string]interface{}{"abc": "def"}, attrs.AsRaw())
 	assert.EqualValues(t, 234, ocAttrsToDroppedAttributes(ocAttrs))
 
 	ocAttrs.AttributeMap["intval"] = &octrace.AttributeValue{
@@ -108,16 +104,15 @@ func TestInitAttributeMapFromOC(t *testing.T) {
 	ocAttrs.AttributeMap["doubleval"] = &octrace.AttributeValue{
 		Value: &octrace.AttributeValue_DoubleValue{DoubleValue: 4.5},
 	}
-	attrs = pdata.NewAttributeMap()
+	attrs = pcommon.NewMap()
 	initAttributeMapFromOC(ocAttrs, attrs)
 
-	expectedAttr := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-		"abc":       pdata.NewAttributeValueString("def"),
-		"intval":    pdata.NewAttributeValueInt(345),
-		"boolval":   pdata.NewAttributeValueBool(true),
-		"doubleval": pdata.NewAttributeValueDouble(4.5),
-	})
-	assert.EqualValues(t, expectedAttr.Sort(), attrs.Sort())
+	assert.EqualValues(t, map[string]interface{}{
+		"abc":       "def",
+		"intval":    int64(345),
+		"boolval":   true,
+		"doubleval": 4.5,
+	}, attrs.AsRaw())
 	assert.EqualValues(t, 234, ocAttrsToDroppedAttributes(ocAttrs))
 }
 
@@ -125,19 +120,19 @@ func TestOcSpanKindToInternal(t *testing.T) {
 	tests := []struct {
 		ocAttrs  *octrace.Span_Attributes
 		ocKind   octrace.Span_SpanKind
-		otlpKind pdata.SpanKind
+		otlpKind ptrace.SpanKind
 	}{
 		{
 			ocKind:   octrace.Span_CLIENT,
-			otlpKind: pdata.SpanKindClient,
+			otlpKind: ptrace.SpanKindClient,
 		},
 		{
 			ocKind:   octrace.Span_SERVER,
-			otlpKind: pdata.SpanKindServer,
+			otlpKind: ptrace.SpanKindServer,
 		},
 		{
 			ocKind:   octrace.Span_SPAN_KIND_UNSPECIFIED,
-			otlpKind: pdata.SpanKindUnspecified,
+			otlpKind: ptrace.SpanKindUnspecified,
 		},
 		{
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
@@ -147,7 +142,7 @@ func TestOcSpanKindToInternal(t *testing.T) {
 						StringValue: &octrace.TruncatableString{Value: "consumer"}}},
 				},
 			},
-			otlpKind: pdata.SpanKindConsumer,
+			otlpKind: ptrace.SpanKindConsumer,
 		},
 		{
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
@@ -157,7 +152,7 @@ func TestOcSpanKindToInternal(t *testing.T) {
 						StringValue: &octrace.TruncatableString{Value: "producer"}}},
 				},
 			},
-			otlpKind: pdata.SpanKindProducer,
+			otlpKind: ptrace.SpanKindProducer,
 		},
 		{
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
@@ -167,7 +162,7 @@ func TestOcSpanKindToInternal(t *testing.T) {
 						IntValue: 123}},
 				},
 			},
-			otlpKind: pdata.SpanKindUnspecified,
+			otlpKind: ptrace.SpanKindUnspecified,
 		},
 		{
 			ocKind: octrace.Span_CLIENT,
@@ -177,7 +172,7 @@ func TestOcSpanKindToInternal(t *testing.T) {
 						StringValue: &octrace.TruncatableString{Value: "consumer"}}},
 				},
 			},
-			otlpKind: pdata.SpanKindClient,
+			otlpKind: ptrace.SpanKindClient,
 		},
 		{
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
@@ -187,7 +182,7 @@ func TestOcSpanKindToInternal(t *testing.T) {
 						StringValue: &octrace.TruncatableString{Value: "internal"}}},
 				},
 			},
-			otlpKind: pdata.SpanKindInternal,
+			otlpKind: ptrace.SpanKindInternal,
 		},
 	}
 
@@ -303,14 +298,14 @@ func TestOcToInternal(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		td       pdata.Traces
+		td       ptrace.Traces
 		node     *occommon.Node
 		resource *ocresource.Resource
 		spans    []*octrace.Span
 	}{
 		{
 			name: "empty",
-			td:   pdata.NewTraces(),
+			td:   ptrace.NewTraces(),
 		},
 
 		{
@@ -390,7 +385,7 @@ func TestOcToInternal(t *testing.T) {
 }
 
 func TestOcSameProcessAsParentSpanToInternal(t *testing.T) {
-	span := pdata.NewSpan()
+	span := ptrace.NewSpan()
 	ocSameProcessAsParentSpanToInternal(nil, span)
 	assert.Equal(t, 0, span.Attributes().Len())
 
@@ -398,15 +393,15 @@ func TestOcSameProcessAsParentSpanToInternal(t *testing.T) {
 	assert.Equal(t, 1, span.Attributes().Len())
 	v, ok := span.Attributes().Get(occonventions.AttributeSameProcessAsParentSpan)
 	assert.True(t, ok)
-	assert.EqualValues(t, pdata.AttributeValueTypeBool, v.Type())
-	assert.False(t, v.BoolVal())
+	assert.EqualValues(t, pcommon.ValueTypeBool, v.Type())
+	assert.False(t, v.Bool())
 
 	ocSameProcessAsParentSpanToInternal(wrapperspb.Bool(true), span)
 	assert.Equal(t, 1, span.Attributes().Len())
 	v, ok = span.Attributes().Get(occonventions.AttributeSameProcessAsParentSpan)
 	assert.True(t, ok)
-	assert.EqualValues(t, pdata.AttributeValueTypeBool, v.Type())
-	assert.True(t, v.BoolVal())
+	assert.EqualValues(t, pcommon.ValueTypeBool, v.Type())
+	assert.True(t, v.Bool())
 }
 
 func BenchmarkSpansWithAttributesOCToInternal(b *testing.B) {

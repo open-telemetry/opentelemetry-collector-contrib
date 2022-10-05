@@ -1,24 +1,6 @@
-receivers:
-    nop:
-
-processors:
-    metricstransform:
-        transforms:
-          - include: old_name
-            action: combine
-            new_name: new_name
-            submatch_case: invalid
-
-exporters:
-    nop:
-
-service:
-    pipelines:
-        traces:
-            receivers: [nop]
-            processors: [metricstransform]
-            exporters: [nop]
-        metrics:
-            receivers: [nop]
-            processors: [metricstransform]
-            exporters: [nop]
+metricstransform:
+  transforms:
+    - include: old_name
+      action: combine
+      new_name: new_name
+      submatch_case: invalid

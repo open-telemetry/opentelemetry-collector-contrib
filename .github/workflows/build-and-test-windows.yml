@@ -7,34 +7,97 @@ on:
   pull_request:
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
+  # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
+  # Cache downloads for this workflow consistently run in under 10 minutes
+  SEGMENT_DOWNLOAD_TIMEOUT_MIN: 15
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
 
 jobs:
-  windows-unittest:
+  setup-environment:
     runs-on: windows-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
-      - name: Setup Go Environment
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-        shell: bash
-      - name: Cache Go
-        uses: actions/cache@v2
+      - name: Cache Go Mod
+        id: go-mod-cache
+        uses: actions/cache@v3
         with:
           path: |
-            \Users\runneradmin\go\pkg\mod
-            %LocalAppData%\go-build
-          key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
+            ~\go\pkg\mod
+          key: go-mod-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: "10"
+      - name: Install dependencies
+        if: steps.go-mod-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+  windows-unittest-matrix:
+    needs: [setup-environment]
+    strategy:
+      matrix:
+        group:
+          - receiver-0
+          - receiver-1
+          - processor
+          - exporter
+          - extension
+          - internal
+          - other
+    runs-on: windows-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+      - if: matrix.group == 'receiver-0'
+        name: install IIS
+        run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
+      - if: matrix.group == 'receiver-0'
+        name: Install Active Directory DS
+        run: Install-WindowsFeature -name AD-Domain-Services -IncludeManagementTools
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19
+      - name: Cache Go
+        id: go-mod-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~\go\pkg\mod
+          key: go-mod-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: "10"
+      - name: Cache Go Build
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~\AppData\Local\go-build
+          key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: "10"
       - name: Run Unit tests
-        # use default Go build tags from Makefile.common
-        run: go test --tags containers_image_openpgp,exclude_graphdriver_btrfs,exclude_graphdriver_devicemapper ./...
-      - name: GitHub Issue Generator
-        if: ${{ failure() && github.ref == 'ref/head/main' }}
+        run: make gotest GROUP=${{ matrix.group }}
+  windows-unittest:
+    if: ${{ always() }}
+    runs-on: windows-latest
+    needs: [windows-unittest-matrix]
+    steps:
+      - name: Print result
+        run: echo ${{ needs.windows-unittest-matrix.result }}
+      - name: Interpret result
+        shell: bash
         run: |
-          cd internal/tools && go install go.opentelemetry.io/collector/cmd/issuegenerator
-          issuegenerator $TEST_RESULTS
+          if [[ success == ${{ needs.windows-unittest-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
+          fi

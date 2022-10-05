@@ -17,14 +17,16 @@ package apachereceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
@@ -38,18 +40,18 @@ type apacheScraper struct {
 }
 
 func newApacheScraper(
-	settings component.TelemetrySettings,
+	settings component.ReceiverCreateSettings,
 	cfg *Config,
 ) *apacheScraper {
 	return &apacheScraper{
-		settings: settings,
+		settings: settings.TelemetrySettings,
 		cfg:      cfg,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
+		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
 	}
 }
 
 func (r *apacheScraper) start(_ context.Context, host component.Host) error {
-	httpClient, err := r.cfg.ToClient(host.GetExtensions(), r.settings)
+	httpClient, err := r.cfg.ToClient(host, r.settings)
 	if err != nil {
 		return err
 	}
@@ -57,44 +59,70 @@ func (r *apacheScraper) start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (r *apacheScraper) scrape(context.Context) (pdata.Metrics, error) {
+func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	if r.httpClient == nil {
-		return pdata.Metrics{}, errors.New("failed to connect to Apache HTTPd")
+		return pmetric.Metrics{}, errors.New("failed to connect to Apache HTTPd")
 	}
 
 	stats, err := r.GetStats()
 	if err != nil {
 		r.settings.Logger.Error("failed to fetch Apache Httpd stats", zap.Error(err))
-		return pdata.Metrics{}, err
+		return pmetric.Metrics{}, err
 	}
 
-	now := pdata.NewTimestampFromTime(time.Now())
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
 	for metricKey, metricValue := range parseStats(stats) {
 		switch metricKey {
 		case "ServerUptimeSeconds":
-			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				r.mb.RecordApacheUptimeDataPoint(now, i, r.cfg.serverName)
-			}
+			addPartialIfError(errs, r.mb.RecordApacheUptimeDataPoint(now, metricValue, r.cfg.serverName))
 		case "ConnsTotal":
-			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				r.mb.RecordApacheCurrentConnectionsDataPoint(now, i, r.cfg.serverName)
-			}
+			addPartialIfError(errs, r.mb.RecordApacheCurrentConnectionsDataPoint(now, metricValue, r.cfg.serverName))
 		case "BusyWorkers":
-			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				r.mb.RecordApacheWorkersDataPoint(now, i, r.cfg.serverName, "busy")
-			}
+			addPartialIfError(errs, r.mb.RecordApacheWorkersDataPoint(now, metricValue, r.cfg.serverName,
+				metadata.AttributeWorkersStateBusy))
 		case "IdleWorkers":
-			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				r.mb.RecordApacheWorkersDataPoint(now, i, r.cfg.serverName, "idle")
-			}
+			addPartialIfError(errs, r.mb.RecordApacheWorkersDataPoint(now, metricValue, r.cfg.serverName,
+				metadata.AttributeWorkersStateIdle))
 		case "Total Accesses":
-			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				r.mb.RecordApacheRequestsDataPoint(now, i, r.cfg.serverName)
-			}
+			addPartialIfError(errs, r.mb.RecordApacheRequestsDataPoint(now, metricValue, r.cfg.serverName))
 		case "Total kBytes":
-			if i, ok := r.parseInt(metricKey, metricValue); ok {
+			i, err := strconv.ParseInt(metricValue, 10, 64)
+			if err != nil {
+				errs.AddPartial(1, err)
+			} else {
 				r.mb.RecordApacheTrafficDataPoint(now, kbytesToBytes(i), r.cfg.serverName)
 			}
+		case "CPUChildrenSystem":
+			addPartialIfError(
+				errs,
+				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, r.cfg.serverName, metadata.AttributeCPULevelChildren, metadata.AttributeCPUModeSystem),
+			)
+		case "CPUChildrenUser":
+			addPartialIfError(
+				errs,
+				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, r.cfg.serverName, metadata.AttributeCPULevelChildren, metadata.AttributeCPUModeUser),
+			)
+		case "CPUSystem":
+			addPartialIfError(
+				errs,
+				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, r.cfg.serverName, metadata.AttributeCPULevelSelf, metadata.AttributeCPUModeSystem),
+			)
+		case "CPUUser":
+			addPartialIfError(
+				errs,
+				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, r.cfg.serverName, metadata.AttributeCPULevelSelf, metadata.AttributeCPUModeUser),
+			)
+		case "CPULoad":
+			addPartialIfError(errs, r.mb.RecordApacheCPULoadDataPoint(now, metricValue, r.cfg.serverName))
+		case "Load1":
+			addPartialIfError(errs, r.mb.RecordApacheLoad1DataPoint(now, metricValue, r.cfg.serverName))
+		case "Load5":
+			addPartialIfError(errs, r.mb.RecordApacheLoad5DataPoint(now, metricValue, r.cfg.serverName))
+		case "Load15":
+			addPartialIfError(errs, r.mb.RecordApacheLoad15DataPoint(now, metricValue, r.cfg.serverName))
+		case "Total Duration":
+			addPartialIfError(errs, r.mb.RecordApacheRequestTimeDataPoint(now, metricValue, r.cfg.serverName))
 		case "Scoreboard":
 			scoreboardMap := parseScoreboard(metricValue)
 			for state, score := range scoreboardMap {
@@ -103,11 +131,13 @@ func (r *apacheScraper) scrape(context.Context) (pdata.Metrics, error) {
 		}
 	}
 
-	md := pdata.NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/apache")
-	r.mb.Emit(ilm.Metrics())
-	return md, nil
+	return r.mb.Emit(), errs.Combine()
+}
+
+func addPartialIfError(errs *scrapererror.ScrapeErrors, err error) {
+	if err != nil {
+		errs.AddPartial(1, err)
+	}
 }
 
 // GetStats collects metric stats by making a get request at an endpoint.
@@ -119,7 +149,7 @@ func (r *apacheScraper) GetStats() (string, error) {
 
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
@@ -141,69 +171,50 @@ func parseStats(resp string) map[string]string {
 	return metrics
 }
 
-// parseInt converts string to int64.
-func (r *apacheScraper) parseInt(key, value string) (int64, bool) {
-	i, err := strconv.ParseInt(value, 10, 64)
-	if err != nil {
-		r.logInvalid("int", key, value)
-		return 0, false
-	}
-	return i, true
-}
-
-func (r *apacheScraper) logInvalid(expectedType, key, value string) {
-	r.settings.Logger.Info(
-		"invalid value",
-		zap.String("expectedType", expectedType),
-		zap.String("key", key),
-		zap.String("value", value),
-	)
-}
-
-type scoreboardCountsByLabel map[string]int64
+type scoreboardCountsByLabel map[metadata.AttributeScoreboardState]int64
 
 // parseScoreboard quantifies the symbolic mapping of the scoreboard.
 func parseScoreboard(values string) scoreboardCountsByLabel {
 	scoreboard := scoreboardCountsByLabel{
-		"waiting":      0,
-		"starting":     0,
-		"reading":      0,
-		"sending":      0,
-		"keepalive":    0,
-		"dnslookup":    0,
-		"closing":      0,
-		"logging":      0,
-		"finishing":    0,
-		"idle_cleanup": 0,
-		"open":         0,
+		metadata.AttributeScoreboardStateWaiting:     0,
+		metadata.AttributeScoreboardStateStarting:    0,
+		metadata.AttributeScoreboardStateReading:     0,
+		metadata.AttributeScoreboardStateSending:     0,
+		metadata.AttributeScoreboardStateKeepalive:   0,
+		metadata.AttributeScoreboardStateDnslookup:   0,
+		metadata.AttributeScoreboardStateClosing:     0,
+		metadata.AttributeScoreboardStateLogging:     0,
+		metadata.AttributeScoreboardStateFinishing:   0,
+		metadata.AttributeScoreboardStateIdleCleanup: 0,
+		metadata.AttributeScoreboardStateOpen:        0,
 	}
 
 	for _, char := range values {
 		switch string(char) {
 		case "_":
-			scoreboard["waiting"]++
+			scoreboard[metadata.AttributeScoreboardStateWaiting]++
 		case "S":
-			scoreboard["starting"]++
+			scoreboard[metadata.AttributeScoreboardStateStarting]++
 		case "R":
-			scoreboard["reading"]++
+			scoreboard[metadata.AttributeScoreboardStateReading]++
 		case "W":
-			scoreboard["sending"]++
+			scoreboard[metadata.AttributeScoreboardStateSending]++
 		case "K":
-			scoreboard["keepalive"]++
+			scoreboard[metadata.AttributeScoreboardStateKeepalive]++
 		case "D":
-			scoreboard["dnslookup"]++
+			scoreboard[metadata.AttributeScoreboardStateDnslookup]++
 		case "C":
-			scoreboard["closing"]++
+			scoreboard[metadata.AttributeScoreboardStateClosing]++
 		case "L":
-			scoreboard["logging"]++
+			scoreboard[metadata.AttributeScoreboardStateLogging]++
 		case "G":
-			scoreboard["finishing"]++
+			scoreboard[metadata.AttributeScoreboardStateFinishing]++
 		case "I":
-			scoreboard["idle_cleanup"]++
+			scoreboard[metadata.AttributeScoreboardStateIdleCleanup]++
 		case ".":
-			scoreboard["open"]++
+			scoreboard[metadata.AttributeScoreboardStateOpen]++
 		default:
-			scoreboard["unknown"]++
+			scoreboard[metadata.AttributeScoreboardStateUnknown]++
 		}
 	}
 	return scoreboard

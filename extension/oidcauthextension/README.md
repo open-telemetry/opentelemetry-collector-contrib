@@ -1,5 +1,10 @@
 # Authenticator - OIDC
 
+| Status                   |                      |
+| ------------------------ |----------------------|
+| Stability                | [beta]               |
+| Distributions            | [contrib]            |
+
 This extension implements a `configauth.ServerAuthenticator`, to be used in receivers inside the `auth` settings. The authenticator type has to be set to `oidc`.
 
 ## Configuration
@@ -33,3 +38,6 @@ service:
       processors: []
       exporters: [logging]
 ```
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

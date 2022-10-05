@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
@@ -156,7 +156,7 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 					resourceMetric := resourceMetrics.At(i)
 					resource := resourceMetric.Resource()
 					if nameAttr, ok := resource.Attributes().Get(conventions.AttributeContainerImageName); ok {
-						if strings.Contains(nameAttr.StringVal(), "redis") {
+						if strings.Contains(nameAttr.Str(), "redis") {
 							return true
 						}
 					}

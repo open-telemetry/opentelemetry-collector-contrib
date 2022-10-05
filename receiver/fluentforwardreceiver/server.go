@@ -77,7 +77,7 @@ func (s *server) handleConnections(ctx context.Context, listener net.Listener) {
 
 			err := s.handleConn(ctx, conn)
 			if err != nil {
-				if err == io.EOF {
+				if errors.Is(err, io.EOF) {
 					s.logger.Debug("Closing connection", zap.String("remoteAddr", conn.RemoteAddr().String()), zap.Error(err))
 				} else {
 					s.logger.Debug("Unexpected error handling connection", zap.String("remoteAddr", conn.RemoteAddr().String()), zap.Error(err))
@@ -113,10 +113,10 @@ func (s *server) handleConn(ctx context.Context, conn net.Conn) error {
 
 		err = event.DecodeMsg(reader)
 		if err != nil {
-			if err != io.EOF {
+			if !errors.Is(err, io.EOF) {
 				stats.Record(ctx, observ.FailedToParse.M(1))
 			}
-			return fmt.Errorf("failed to parse %s mode event: %v", mode.String(), err)
+			return fmt.Errorf("failed to parse %s mode event: %w", mode.String(), err)
 		}
 
 		stats.Record(ctx, observ.EventsParsed.M(1))
@@ -130,7 +130,7 @@ func (s *server) handleConn(ctx context.Context, conn net.Conn) error {
 		if event.Chunk() != "" {
 			err := msgp.Encode(conn, AckResponse{Ack: event.Chunk()})
 			if err != nil {
-				return fmt.Errorf("failed to acknowledge chunk %s: %v", event.Chunk(), err)
+				return fmt.Errorf("failed to acknowledge chunk %s: %w", event.Chunk(), err)
 			}
 		}
 	}

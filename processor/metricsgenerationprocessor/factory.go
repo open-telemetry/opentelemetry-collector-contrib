@@ -27,16 +27,18 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "experimental_metricsgeneration"
+	// The stability level of the processor.
+	stability = component.StabilityLevelInDevelopment
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Metrics Generation processor.
 func NewFactory() component.ProcessorFactory {
-	return processorhelper.NewFactory(
+	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithMetrics(createMetricsProcessor))
+		component.WithMetricsProcessor(createMetricsProcessor, stability))
 }
 
 func createDefaultConfig() config.Processor {
@@ -47,7 +49,7 @@ func createDefaultConfig() config.Processor {
 
 func createMetricsProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateSettings,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
@@ -56,10 +58,11 @@ func createMetricsProcessor(
 		return nil, fmt.Errorf("configuration parsing error")
 	}
 
-	processorConfig.Validate()
-	metricsProcessor := newMetricsGenerationProcessor(buildInternalConfig(processorConfig), params.Logger)
+	metricsProcessor := newMetricsGenerationProcessor(buildInternalConfig(processorConfig), set.Logger)
 
 	return processorhelper.NewMetricsProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		metricsProcessor.processMetrics,
