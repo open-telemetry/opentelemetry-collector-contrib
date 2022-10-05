@@ -14,8 +14,26 @@
 
 package awscloudwatchreceiver
 
-import "testing"
+import (
+	"context"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.uber.org/zap"
+)
 
 func TestStart(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
 
+	sink := &consumertest.LogsSink{}
+	alertRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
+
+	err := alertRcvr.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	err = alertRcvr.Shutdown(context.Background())
+	require.NoError(t, err)
 }

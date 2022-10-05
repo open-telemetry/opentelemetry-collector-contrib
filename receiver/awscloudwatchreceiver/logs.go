@@ -128,11 +128,6 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, logGroup LogGroupConfig)
 		}
 
 		logs := l.processEvents(observedTime, logGroup, resp)
-		if err != nil {
-			l.logger.Error("unable to process events", zap.Error(err))
-			break
-		}
-
 		if logs.LogRecordCount() > 0 {
 			if err = l.consumer.ConsumeLogs(ctx, logs); err != nil {
 				l.logger.Error("unable to consume logs", zap.Error(err))
@@ -146,7 +141,7 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, logGroup LogGroupConfig)
 }
 
 func (l *logsReceiver) logEventsRequest(token *string, lg LogGroupConfig) *cloudwatchlogs.FilterLogEventsInput {
-	// this sliding window may need to be explored more
+	// this sliding window may need to be explored more.
 	st := time.Now().Add(-l.pollInterval).UnixMilli()
 	et := time.Now().UnixMilli()
 
@@ -230,7 +225,7 @@ func (l *logsReceiver) discoverGroups(ctx context.Context) error {
 
 		for _, lg := range dlgResults.LogGroups {
 			l.logger.Debug("discovered log group", zap.String("log group", lg.GoString()))
-			newGroups = append(l.groups, LogGroupConfig{
+			newGroups = append(newGroups, LogGroupConfig{
 				Name:         *lg.LogGroupName,
 				StreamPrefix: "",
 				LogStreams:   make([]*string, 0),

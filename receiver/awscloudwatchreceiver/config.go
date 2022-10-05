@@ -53,9 +53,10 @@ type LogGroupConfig struct {
 }
 
 var (
-	errNoRegion            = errors.New("no region was specified")
-	errInvalidEventLimit   = errors.New("event limit is improperly configured, value must be greater than 1")
-	errInvalidPollInterval = errors.New("poll interval is incorrect, it must be a duration greater than one second")
+	errNoRegion             = errors.New("no region was specified")
+	errInvalidEventLimit    = errors.New("event limit is improperly configured, value must be greater than 0")
+	errInvalidPollInterval  = errors.New("poll interval is incorrect, it must be a duration greater than one second")
+	errInvalidLogGroupLimit = errors.New("log group limit is improperly configured, value must be greater than 0 and less than or equal to 50")
 )
 
 // Validate validates all portions of the relevant config
@@ -76,6 +77,9 @@ func (c *Config) validateLogsConfig() error {
 	}
 	if c.Logs.PollInterval < time.Second {
 		return errInvalidPollInterval
+	}
+	if c.Logs.LogGroupLimit <= 0 || c.Logs.LogGroupLimit > 50 {
+		return errInvalidLogGroupLimit
 	}
 	return nil
 }

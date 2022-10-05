@@ -15,13 +15,27 @@
 package awscloudwatchreceiver
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	ft := factory.Type()
 	require.EqualValues(t, typeStr, ft)
+}
+
+func TestCreateLogsReceiver(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-2"
+	_, err := NewFactory().CreateLogsReceiver(
+		context.Background(),
+		componenttest.NewNopReceiverCreateSettings(),
+		cfg,
+		nil,
+	)
+	require.NoError(t, err)
 }

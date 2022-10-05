@@ -32,8 +32,9 @@ func TestValidate(t *testing.T) {
 			config: Config{
 				Region: "us-west-2",
 				Logs: LogsConfig{
-					EventLimit:   defaultEventLimit,
-					PollInterval: defaultPollInterval,
+					EventLimit:    defaultEventLimit,
+					PollInterval:  defaultPollInterval,
+					LogGroupLimit: defaultLogGroupLimit,
 				},
 			},
 		},
@@ -49,7 +50,8 @@ func TestValidate(t *testing.T) {
 			config: Config{
 				Region: "us-west-2",
 				Logs: LogsConfig{
-					EventLimit: -1,
+					EventLimit:   -1,
+					PollInterval: defaultPollInterval,
 				},
 			},
 			expectedErr: errInvalidEventLimit,
@@ -59,11 +61,24 @@ func TestValidate(t *testing.T) {
 			config: Config{
 				Region: "us-west-2",
 				Logs: LogsConfig{
-					EventLimit:   defaultEventLimit,
-					PollInterval: 100 * time.Millisecond,
+					EventLimit:    defaultEventLimit,
+					PollInterval:  100 * time.Millisecond,
+					LogGroupLimit: defaultLogGroupLimit,
 				},
 			},
 			expectedErr: errInvalidPollInterval,
+		},
+		{
+			name: "Invalid Log Group Limit",
+			config: Config{
+				Region: "us-east-1",
+				Logs: LogsConfig{
+					EventLimit:    defaultEventLimit,
+					PollInterval:  defaultPollInterval,
+					LogGroupLimit: -1,
+				},
+			},
+			expectedErr: errInvalidLogGroupLimit,
 		},
 	}
 
