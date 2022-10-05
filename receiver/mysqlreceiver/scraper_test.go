@@ -43,6 +43,7 @@ func TestScrape(t *testing.T) {
 		cfg.Metrics.MysqlStatementEventWaitTime.Enabled = true
 		cfg.Metrics.MysqlConnectionErrors.Enabled = true
 		cfg.Metrics.MysqlMysqlxWorkerThreads.Enabled = true
+		cfg.Metrics.MysqlJoins.Enabled = true
 
 		scraper := newMySQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 		scraper.sqlclient = &mockClient{

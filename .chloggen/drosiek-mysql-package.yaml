@@ -5,7 +5,7 @@ change_type: enhancement
 component: mysqlreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: add more metrics to mysql receiver
+note: add more mysql metrics
 
 # One or more tracking issues related to the change
 issues: [14138]
@@ -16,3 +16,4 @@ issues: [14138]
 subtext: |
   - Add mysql.connection.errors metric (#14723)
   - Add mysql.mysqlx_connections metric (#14727)
+  - Add mysql.joins metric (#14728)
