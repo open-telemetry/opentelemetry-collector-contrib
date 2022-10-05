@@ -1,4 +1,4 @@
-change_type: braking
+change_type: breaking
 component: tanzuobservabilityexporter
 note: Add a new metric exporter config to exclude application resource attrs(application, service.name, cluster, shard) from the metric tags.
       Rename the config resource_attributes to app_tags_excluded.
