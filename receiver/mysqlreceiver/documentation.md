@@ -21,6 +21,7 @@ These are the metrics available for this scraper.
 | **mysql.index.io.wait.time** | The total time of I/O wait events for an index. | ns | Sum(Int) | <ul> <li>io_waits_operations</li> <li>table_name</li> <li>schema</li> <li>index_name</li> </ul> |
 | **mysql.locks** | The number of MySQL locks. | 1 | Sum(Int) | <ul> <li>locks</li> </ul> |
 | **mysql.log_operations** | The number of InnoDB log operations. | 1 | Sum(Int) | <ul> <li>log_operations</li> </ul> |
+| **mysql.mysqlx_connections** | The number of mysqlx connections. This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html) | 1 | Sum(Int) | <ul> <li>connection_status</li> </ul> |
 | **mysql.operations** | The number of InnoDB operations. | 1 | Sum(Int) | <ul> <li>operations</li> </ul> |
 | **mysql.page_operations** | The number of InnoDB page operations. | 1 | Sum(Int) | <ul> <li>page_operations</li> </ul> |
 | **mysql.row_locks** | The number of InnoDB row locks. | 1 | Sum(Int) | <ul> <li>row_locks</li> </ul> |
@@ -54,6 +55,7 @@ metrics:
 | buffer_pool_operations (operation) | The buffer pool operations types. | read_ahead_rnd, read_ahead, read_ahead_evicted, read_requests, reads, wait_free, write_requests |
 | buffer_pool_pages (kind) | The buffer pool pages types. | data, free, misc |
 | command (command) | The command types. | execute, close, fetch, prepare, reset, send_long_data |
+| connection_status (status) | The connection status. | accepted, closed, rejected |
 | double_writes (kind) | The doublewrite types. | pages_written, writes |
 | handler (kind) | The handler types. | commit, delete, discover, external_lock, mrr_init, prepare, read_first, read_key, read_last, read_next, read_prev, read_rnd, read_rnd_next, rollback, savepoint, savepoint_rollback, update, write |
 | index_name (index) | The name of the index. |  |

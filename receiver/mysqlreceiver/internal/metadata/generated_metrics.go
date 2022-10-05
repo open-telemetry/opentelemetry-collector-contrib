@@ -32,6 +32,7 @@ type MetricsSettings struct {
 	MysqlIndexIoWaitTime       MetricSettings `mapstructure:"mysql.index.io.wait.time"`
 	MysqlLocks                 MetricSettings `mapstructure:"mysql.locks"`
 	MysqlLogOperations         MetricSettings `mapstructure:"mysql.log_operations"`
+	MysqlMysqlxConnections     MetricSettings `mapstructure:"mysql.mysqlx_connections"`
 	MysqlOperations            MetricSettings `mapstructure:"mysql.operations"`
 	MysqlPageOperations        MetricSettings `mapstructure:"mysql.page_operations"`
 	MysqlRowLocks              MetricSettings `mapstructure:"mysql.row_locks"`
@@ -82,6 +83,9 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		MysqlLogOperations: MetricSettings{
+			Enabled: true,
+		},
+		MysqlMysqlxConnections: MetricSettings{
 			Enabled: true,
 		},
 		MysqlOperations: MetricSettings{
@@ -256,6 +260,36 @@ var MapAttributeCommand = map[string]AttributeCommand{
 	"prepare":        AttributeCommandPrepare,
 	"reset":          AttributeCommandReset,
 	"send_long_data": AttributeCommandSendLongData,
+}
+
+// AttributeConnectionStatus specifies the a value connection_status attribute.
+type AttributeConnectionStatus int
+
+const (
+	_ AttributeConnectionStatus = iota
+	AttributeConnectionStatusAccepted
+	AttributeConnectionStatusClosed
+	AttributeConnectionStatusRejected
+)
+
+// String returns the string representation of the AttributeConnectionStatus.
+func (av AttributeConnectionStatus) String() string {
+	switch av {
+	case AttributeConnectionStatusAccepted:
+		return "accepted"
+	case AttributeConnectionStatusClosed:
+		return "closed"
+	case AttributeConnectionStatusRejected:
+		return "rejected"
+	}
+	return ""
+}
+
+// MapAttributeConnectionStatus is a helper map of string to AttributeConnectionStatus attribute value.
+var MapAttributeConnectionStatus = map[string]AttributeConnectionStatus{
+	"accepted": AttributeConnectionStatusAccepted,
+	"closed":   AttributeConnectionStatusClosed,
+	"rejected": AttributeConnectionStatusRejected,
 }
 
 // AttributeDoubleWrites specifies the a value double_writes attribute.
@@ -1373,6 +1407,59 @@ func newMetricMysqlLogOperations(settings MetricSettings) metricMysqlLogOperatio
 	return m
 }
 
+type metricMysqlMysqlxConnections struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.mysqlx_connections metric with initial data.
+func (m *metricMysqlMysqlxConnections) init() {
+	m.data.SetName("mysql.mysqlx_connections")
+	m.data.SetDescription("The number of mysqlx connections.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMysqlMysqlxConnections) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, connectionStatusAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("status", connectionStatusAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlMysqlxConnections) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlMysqlxConnections) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlMysqlxConnections(settings MetricSettings) metricMysqlMysqlxConnections {
+	m := metricMysqlMysqlxConnections{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlOperations struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -1875,6 +1962,7 @@ type MetricsBuilder struct {
 	metricMysqlIndexIoWaitTime       metricMysqlIndexIoWaitTime
 	metricMysqlLocks                 metricMysqlLocks
 	metricMysqlLogOperations         metricMysqlLogOperations
+	metricMysqlMysqlxConnections     metricMysqlMysqlxConnections
 	metricMysqlOperations            metricMysqlOperations
 	metricMysqlPageOperations        metricMysqlPageOperations
 	metricMysqlRowLocks              metricMysqlRowLocks
@@ -1914,6 +2002,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricMysqlIndexIoWaitTime:       newMetricMysqlIndexIoWaitTime(settings.MysqlIndexIoWaitTime),
 		metricMysqlLocks:                 newMetricMysqlLocks(settings.MysqlLocks),
 		metricMysqlLogOperations:         newMetricMysqlLogOperations(settings.MysqlLogOperations),
+		metricMysqlMysqlxConnections:     newMetricMysqlMysqlxConnections(settings.MysqlMysqlxConnections),
 		metricMysqlOperations:            newMetricMysqlOperations(settings.MysqlOperations),
 		metricMysqlPageOperations:        newMetricMysqlPageOperations(settings.MysqlPageOperations),
 		metricMysqlRowLocks:              newMetricMysqlRowLocks(settings.MysqlRowLocks),
@@ -1995,6 +2084,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMysqlIndexIoWaitTime.emit(ils.Metrics())
 	mb.metricMysqlLocks.emit(ils.Metrics())
 	mb.metricMysqlLogOperations.emit(ils.Metrics())
+	mb.metricMysqlMysqlxConnections.emit(ils.Metrics())
 	mb.metricMysqlOperations.emit(ils.Metrics())
 	mb.metricMysqlPageOperations.emit(ils.Metrics())
 	mb.metricMysqlRowLocks.emit(ils.Metrics())
@@ -2130,6 +2220,16 @@ func (mb *MetricsBuilder) RecordMysqlLogOperationsDataPoint(ts pcommon.Timestamp
 		return fmt.Errorf("failed to parse int64 for MysqlLogOperations, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlLogOperations.recordDataPoint(mb.startTime, ts, val, logOperationsAttributeValue.String())
+	return nil
+}
+
+// RecordMysqlMysqlxConnectionsDataPoint adds a data point to mysql.mysqlx_connections metric.
+func (mb *MetricsBuilder) RecordMysqlMysqlxConnectionsDataPoint(ts pcommon.Timestamp, inputVal string, connectionStatusAttributeValue AttributeConnectionStatus) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlMysqlxConnections, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlMysqlxConnections.recordDataPoint(mb.startTime, ts, val, connectionStatusAttributeValue.String())
 	return nil
 }
 

@@ -79,6 +79,10 @@ attributes:
     value: resource
     description: The kind of temporary resources.
     enum: [disk_tables, files, tables]
+  connection_status:
+    value: status
+    description: The connection status.
+    enum: [accepted, closed, rejected]
 
 metrics:
   mysql.buffer_pool.pages:
@@ -283,6 +287,17 @@ metrics:
       monotonic: false
       aggregation: cumulative
     attributes: [threads]
+  mysql.mysqlx_connections:
+    enabled: true
+    description: The number of mysqlx connections.
+    extended_documentation: This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html)
+    unit: 1
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+    attributes: [connection_status]
   mysql.tmp_resources:
     enabled: true
     description: The number of created temporary resources.
