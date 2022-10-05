@@ -22,6 +22,10 @@ attributes:
     value: command
     description: The command types.
     enum: [execute, close, fetch, prepare, reset, send_long_data]
+  connection_error:
+    value: error
+    description: The connection error type.
+    enum: [accept, internal, max_connections, peer_address, select, tcpwrap]
   handler:
     value: kind
     description: The handler types.
@@ -283,6 +287,16 @@ metrics:
       monotonic: false
       aggregation: cumulative
     attributes: [threads]
+  mysql.connection.errors:
+    enabled: true
+    description: Errors that occur during the client connection process.
+    unit: 1
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+    attributes: [connection_error]
   mysql.tmp_resources:
     enabled: true
     description: The number of created temporary resources.

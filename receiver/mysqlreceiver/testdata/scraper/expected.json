@@ -352,6 +352,95 @@
                      "unit": "1"
                   },
                   {
+                     "description": "Errors that occur during the client connection process.",
+                     "name": "mysql.connection.errors",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "182",
+                              "attributes": [
+                                 {
+                                    "key": "error",
+                                    "value": {
+                                       "stringValue": "accept"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "183",
+                              "attributes": [
+                                 {
+                                    "key": "error",
+                                    "value": {
+                                       "stringValue": "internal"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "184",
+                              "attributes": [
+                                 {
+                                    "key": "error",
+                                    "value": {
+                                       "stringValue": "max_connections"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "185",
+                              "attributes": [
+                                 {
+                                    "key": "error",
+                                    "value": {
+                                       "stringValue": "peer_address"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "186",
+                              "attributes": [
+                                 {
+                                    "key": "error",
+                                    "value": {
+                                       "stringValue": "select"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "187",
+                              "attributes": [
+                                 {
+                                    "key": "error",
+                                    "value": {
+                                       "stringValue": "tcpwrap"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
                      "description": "The number of writes to the InnoDB doublewrite buffer.",
                      "name": "mysql.double_writes",
                      "sum": {

@@ -158,6 +158,26 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
 				metadata.AttributeBufferPoolOperationsWriteRequests))
 
+		// connection.errors
+		case "Connection_errors_accept":
+			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
+				metadata.AttributeConnectionErrorAccept))
+		case "Connection_errors_internal":
+			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
+				metadata.AttributeConnectionErrorInternal))
+		case "Connection_errors_max_connections":
+			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
+				metadata.AttributeConnectionErrorMaxConnections))
+		case "Connection_errors_peer_address":
+			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
+				metadata.AttributeConnectionErrorPeerAddress))
+		case "Connection_errors_select":
+			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
+				metadata.AttributeConnectionErrorSelect))
+		case "Connection_errors_tcpwrap":
+			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
+				metadata.AttributeConnectionErrorTcpwrap))
+
 		// commands
 		case "Com_stmt_execute":
 			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandExecute))
