@@ -239,32 +239,32 @@ func TestProcess(t *testing.T) {
 
 func BenchmarkTwoSpans(b *testing.B) {
 	tests := []struct {
-		name    string
-		queries []string
+		name       string
+		statements []string
 	}{
 		{
-			name:    "no processing",
-			queries: []string{},
+			name:       "no processing",
+			statements: []string{},
 		},
 		{
-			name:    "set attribute",
-			queries: []string{`set(attributes["test"], "pass") where name == "operationA"`},
+			name:       "set attribute",
+			statements: []string{`set(attributes["test"], "pass") where name == "operationA"`},
 		},
 		{
-			name:    "keep_keys attribute",
-			queries: []string{`keep_keys(attributes, "http.method") where name == "operationA"`},
+			name:       "keep_keys attribute",
+			statements: []string{`keep_keys(attributes, "http.method") where name == "operationA"`},
 		},
 		{
-			name:    "no match",
-			queries: []string{`keep_keys(attributes, "http.method") where name == "unknownOperation"`},
+			name:       "no match",
+			statements: []string{`keep_keys(attributes, "http.method") where name == "unknownOperation"`},
 		},
 		{
-			name:    "inner field",
-			queries: []string{`set(status.code, 1) where attributes["http.path"] == "/health"`},
+			name:       "inner field",
+			statements: []string{`set(status.code, 1) where attributes["http.path"] == "/health"`},
 		},
 		{
 			name: "inner field both spans",
-			queries: []string{
+			statements: []string{
 				`set(status.code, 1) where name == "operationA"`,
 				`set(status.code, 2) where name == "operationB"`,
 			},
@@ -273,7 +273,7 @@ func BenchmarkTwoSpans(b *testing.B) {
 
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			processor, err := NewProcessor(tt.queries, Functions(), componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(tt.statements, Functions(), componenttest.NewNopTelemetrySettings())
 			assert.NoError(b, err)
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
@@ -287,35 +287,35 @@ func BenchmarkTwoSpans(b *testing.B) {
 
 func BenchmarkHundredSpans(b *testing.B) {
 	tests := []struct {
-		name    string
-		queries []string
+		name       string
+		statements []string
 	}{
 		{
-			name:    "no processing",
-			queries: []string{},
+			name:       "no processing",
+			statements: []string{},
 		},
 		{
 			name: "set status code",
-			queries: []string{
+			statements: []string{
 				`set(status.code, 1) where name == "operationA"`,
 				`set(status.code, 2) where name == "operationB"`,
 			},
 		},
 		{
-			name: "hundred queries",
-			queries: func() []string {
-				var queries []string
-				queries = append(queries, `set(status.code, 1) where name == "operationA"`)
+			name: "hundred statements",
+			statements: func() []string {
+				var statements []string
+				statements = append(statements, `set(status.code, 1) where name == "operationA"`)
 				for i := 0; i < 99; i++ {
-					queries = append(queries, `keep_keys(attributes, "http.method") where name == "unknownOperation"`)
+					statements = append(statements, `keep_keys(attributes, "http.method") where name == "unknownOperation"`)
 				}
-				return queries
+				return statements
 			}(),
 		},
 	}
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			processor, err := NewProcessor(tt.queries, Functions(), componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(tt.statements, Functions(), componenttest.NewNopTelemetrySettings())
 			assert.NoError(b, err)
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
