@@ -17,8 +17,11 @@ package instanaexporter // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"net/http"
+	"os"
 	"runtime"
 	"strings"
 
@@ -110,6 +113,32 @@ func (e *instanaExporter) export(ctx context.Context, url string, header map[str
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
 	if err != nil {
 		return consumererror.NewPermanent(err)
+	}
+
+	if e.config.CAFile != "" {
+		caCertPool := x509.NewCertPool()
+
+		certData, readErr := os.ReadFile(e.config.CAFile)
+
+		if readErr != nil {
+			return consumererror.NewPermanent(readErr)
+		}
+
+		if ok := caCertPool.AppendCertsFromPEM(certData); !ok {
+			parsedCert, parseErr := x509.ParseCertificate(certData)
+
+			if parseErr != nil {
+				return consumererror.NewPermanent(parseErr)
+			}
+
+			caCertPool.AddCert(parsedCert)
+		}
+
+		e.client.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs: caCertPool,
+			},
+		}
 	}
 
 	req.Header.Set("Content-Type", "application/json")

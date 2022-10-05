@@ -16,8 +16,10 @@ package instanaexporter
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -57,4 +59,50 @@ func newTestTraces() ptrace.Traces {
 	span.SetTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4})
 	span.SetSpanID([8]byte{0, 0, 0, 0, 1, 2, 3, 4})
 	return traces
+}
+
+func TestSelfSignedBackend(t *testing.T) {
+	var err error
+	caFile := "testdata/ca.crt"
+	handler := http.NewServeMux()
+	handler.HandleFunc("/bundle", func(w http.ResponseWriter, r *http.Request) {
+		_, err = io.WriteString(w, "Hello from CA self signed server")
+
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	server := httptest.NewTLSServer(handler)
+	defer server.Close()
+
+	err = os.WriteFile(caFile, server.Certificate().Raw, os.FileMode(0600))
+	defer func() {
+		assert.NoError(t, os.Remove(caFile))
+	}()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Starts the exporter to test the HTTP client request
+
+	cfg := Config{
+		AgentKey:           "key11",
+		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: server.URL},
+		Endpoint:           server.URL,
+		CAFile:             caFile,
+		ExporterSettings:   config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid")),
+	}
+
+	ctx := context.Background()
+
+	instanaExporter := newInstanaExporter(&cfg, componenttest.NewNopExporterCreateSettings())
+	err = instanaExporter.start(ctx, componenttest.NewNopHost())
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.NoError(t, instanaExporter.export(ctx, server.URL, make(map[string]string), []byte{}))
 }

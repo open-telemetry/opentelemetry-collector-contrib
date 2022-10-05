@@ -73,6 +73,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Endpoint: "http://example.com/api/",
 			AgentKey: "key1",
+			CAFile:   "ca.crt",
 		}, validConfig)
 	})
 
