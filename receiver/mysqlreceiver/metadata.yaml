@@ -75,6 +75,10 @@ attributes:
   index_name:
     value: index
     description: The name of the index.
+  join_kind:
+    value: kind
+    description: The kind of join.
+    enum: [full, full_range, range, range_check, scan]
   tmp_resource:
     value: resource
     description: The kind of temporary resources.
@@ -283,6 +287,16 @@ metrics:
       monotonic: false
       aggregation: cumulative
     attributes: [threads]
+  mysql.joins:
+    enabled: true
+    description: The number of joins that perform table scans.
+    unit: 1
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+    attributes: [join_kind]
   mysql.tmp_resources:
     enabled: true
     description: The number of created temporary resources.

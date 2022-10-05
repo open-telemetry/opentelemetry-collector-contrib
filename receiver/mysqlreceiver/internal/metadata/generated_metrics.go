@@ -30,6 +30,7 @@ type MetricsSettings struct {
 	MysqlHandlers              MetricSettings `mapstructure:"mysql.handlers"`
 	MysqlIndexIoWaitCount      MetricSettings `mapstructure:"mysql.index.io.wait.count"`
 	MysqlIndexIoWaitTime       MetricSettings `mapstructure:"mysql.index.io.wait.time"`
+	MysqlJoins                 MetricSettings `mapstructure:"mysql.joins"`
 	MysqlLocks                 MetricSettings `mapstructure:"mysql.locks"`
 	MysqlLogOperations         MetricSettings `mapstructure:"mysql.log_operations"`
 	MysqlOperations            MetricSettings `mapstructure:"mysql.operations"`
@@ -76,6 +77,9 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		MysqlIndexIoWaitTime: MetricSettings{
+			Enabled: true,
+		},
+		MysqlJoins: MetricSettings{
 			Enabled: true,
 		},
 		MysqlLocks: MetricSettings{
@@ -406,6 +410,44 @@ var MapAttributeIoWaitsOperations = map[string]AttributeIoWaitsOperations{
 	"fetch":  AttributeIoWaitsOperationsFetch,
 	"insert": AttributeIoWaitsOperationsInsert,
 	"update": AttributeIoWaitsOperationsUpdate,
+}
+
+// AttributeJoinKind specifies the a value join_kind attribute.
+type AttributeJoinKind int
+
+const (
+	_ AttributeJoinKind = iota
+	AttributeJoinKindFull
+	AttributeJoinKindFullRange
+	AttributeJoinKindRange
+	AttributeJoinKindRangeCheck
+	AttributeJoinKindScan
+)
+
+// String returns the string representation of the AttributeJoinKind.
+func (av AttributeJoinKind) String() string {
+	switch av {
+	case AttributeJoinKindFull:
+		return "full"
+	case AttributeJoinKindFullRange:
+		return "full_range"
+	case AttributeJoinKindRange:
+		return "range"
+	case AttributeJoinKindRangeCheck:
+		return "range_check"
+	case AttributeJoinKindScan:
+		return "scan"
+	}
+	return ""
+}
+
+// MapAttributeJoinKind is a helper map of string to AttributeJoinKind attribute value.
+var MapAttributeJoinKind = map[string]AttributeJoinKind{
+	"full":        AttributeJoinKindFull,
+	"full_range":  AttributeJoinKindFullRange,
+	"range":       AttributeJoinKindRange,
+	"range_check": AttributeJoinKindRangeCheck,
+	"scan":        AttributeJoinKindScan,
 }
 
 // AttributeLocks specifies the a value locks attribute.
@@ -1267,6 +1309,59 @@ func newMetricMysqlIndexIoWaitTime(settings MetricSettings) metricMysqlIndexIoWa
 	return m
 }
 
+type metricMysqlJoins struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.joins metric with initial data.
+func (m *metricMysqlJoins) init() {
+	m.data.SetName("mysql.joins")
+	m.data.SetDescription("The number of joins that perform table scans.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMysqlJoins) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, joinKindAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("kind", joinKindAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlJoins) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlJoins) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlJoins(settings MetricSettings) metricMysqlJoins {
+	m := metricMysqlJoins{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlLocks struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -1873,6 +1968,7 @@ type MetricsBuilder struct {
 	metricMysqlHandlers              metricMysqlHandlers
 	metricMysqlIndexIoWaitCount      metricMysqlIndexIoWaitCount
 	metricMysqlIndexIoWaitTime       metricMysqlIndexIoWaitTime
+	metricMysqlJoins                 metricMysqlJoins
 	metricMysqlLocks                 metricMysqlLocks
 	metricMysqlLogOperations         metricMysqlLogOperations
 	metricMysqlOperations            metricMysqlOperations
@@ -1912,6 +2008,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricMysqlHandlers:              newMetricMysqlHandlers(settings.MysqlHandlers),
 		metricMysqlIndexIoWaitCount:      newMetricMysqlIndexIoWaitCount(settings.MysqlIndexIoWaitCount),
 		metricMysqlIndexIoWaitTime:       newMetricMysqlIndexIoWaitTime(settings.MysqlIndexIoWaitTime),
+		metricMysqlJoins:                 newMetricMysqlJoins(settings.MysqlJoins),
 		metricMysqlLocks:                 newMetricMysqlLocks(settings.MysqlLocks),
 		metricMysqlLogOperations:         newMetricMysqlLogOperations(settings.MysqlLogOperations),
 		metricMysqlOperations:            newMetricMysqlOperations(settings.MysqlOperations),
@@ -1993,6 +2090,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMysqlHandlers.emit(ils.Metrics())
 	mb.metricMysqlIndexIoWaitCount.emit(ils.Metrics())
 	mb.metricMysqlIndexIoWaitTime.emit(ils.Metrics())
+	mb.metricMysqlJoins.emit(ils.Metrics())
 	mb.metricMysqlLocks.emit(ils.Metrics())
 	mb.metricMysqlLogOperations.emit(ils.Metrics())
 	mb.metricMysqlOperations.emit(ils.Metrics())
@@ -2111,6 +2209,16 @@ func (mb *MetricsBuilder) RecordMysqlIndexIoWaitCountDataPoint(ts pcommon.Timest
 // RecordMysqlIndexIoWaitTimeDataPoint adds a data point to mysql.index.io.wait.time metric.
 func (mb *MetricsBuilder) RecordMysqlIndexIoWaitTimeDataPoint(ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue AttributeIoWaitsOperations, tableNameAttributeValue string, schemaAttributeValue string, indexNameAttributeValue string) {
 	mb.metricMysqlIndexIoWaitTime.recordDataPoint(mb.startTime, ts, val, ioWaitsOperationsAttributeValue.String(), tableNameAttributeValue, schemaAttributeValue, indexNameAttributeValue)
+}
+
+// RecordMysqlJoinsDataPoint adds a data point to mysql.joins metric.
+func (mb *MetricsBuilder) RecordMysqlJoinsDataPoint(ts pcommon.Timestamp, inputVal string, joinKindAttributeValue AttributeJoinKind) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlJoins, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlJoins.recordDataPoint(mb.startTime, ts, val, joinKindAttributeValue.String())
+	return nil
 }
 
 // RecordMysqlLocksDataPoint adds a data point to mysql.locks metric.
