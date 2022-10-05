@@ -71,19 +71,19 @@ exporters:
   file/no_rotation:
     path: ./foo
 
-file/rotation_with_default_settings:
-  path: ./foo
-  rotation:
+  file/rotation_with_default_settings:
+    path: ./foo
+    rotation:
 
-file/rotation_with_custom_settings:
-  path: ./foo
-  rotation:
-    max_megabytes: 10
-    max_days: 3
-    max_backups: 3
-    localtime: true
-  format: proto
-  compression: zstd
+  file/rotation_with_custom_settings:
+    path: ./foo
+    rotation:
+      max_megabytes: 10
+      max_days: 3
+      max_backups: 3
+      localtime: true
+    format: proto
+    compression: zstd
 ```
 
 
