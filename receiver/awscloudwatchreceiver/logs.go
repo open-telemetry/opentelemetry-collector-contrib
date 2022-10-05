@@ -16,10 +16,12 @@ package awscloudwatchreceiver
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"go.opentelemetry.io/collector/component"
@@ -30,37 +32,51 @@ import (
 )
 
 type logsReceiver struct {
-	region       string
-	profile      string
-	groupPrefix  string
-	groups       []LogGroupConfig
-	eventLimit   *int64
-	pollInterval time.Duration
-	logger       *zap.Logger
-	client       *cloudwatchlogs.CloudWatchLogs
-	consumer     consumer.Logs
+	region        string
+	profile       string
+	groupPrefix   string
+	groups        []LogGroupConfig
+	eventLimit    *int64
+	logGroupLimit int64
+	pollInterval  time.Duration
+	logger        *zap.Logger
+	client        client
+	consumer      consumer.Logs
 
 	wg       *sync.WaitGroup
 	doneChan chan bool
 }
 
+type client interface {
+	DescribeLogGroupsWithContext(ctx context.Context, input *cloudwatchlogs.DescribeLogGroupsInput, opts ...request.Option) (*cloudwatchlogs.DescribeLogGroupsOutput, error)
+	FilterLogEventsWithContext(ctx context.Context, input *cloudwatchlogs.FilterLogEventsInput, opts ...request.Option) (*cloudwatchlogs.FilterLogEventsOutput, error)
+}
+
 func newLogsReceiver(cfg *Config, logger *zap.Logger, consumer consumer.Logs) *logsReceiver {
 	return &logsReceiver{
-		region:       cfg.Region,
-		profile:      cfg.Profile,
-		consumer:     consumer,
-		groupPrefix:  cfg.Logs.LogGroupPrefix,
-		groups:       cfg.Logs.LogGroups,
-		pollInterval: cfg.Logs.PollInterval,
-		eventLimit:   &cfg.Logs.EventLimit,
-		logger:       logger,
-		wg:           &sync.WaitGroup{},
-		doneChan:     make(chan bool),
+		region:        cfg.Region,
+		profile:       cfg.Profile,
+		consumer:      consumer,
+		logGroupLimit: cfg.Logs.LogGroupLimit,
+		groupPrefix:   cfg.Logs.LogGroupPrefix,
+		groups:        cfg.Logs.LogGroups,
+		pollInterval:  cfg.Logs.PollInterval,
+		eventLimit:    &cfg.Logs.EventLimit,
+		logger:        logger,
+		wg:            &sync.WaitGroup{},
+		doneChan:      make(chan bool),
 	}
 }
 
 func (l *logsReceiver) Start(ctx context.Context, host component.Host) error {
 	l.logger.Debug("starting to poll for Cloudwatch logs")
+	if len(l.groups) == 0 {
+		err := l.discoverGroups(ctx)
+		if err != nil {
+			l.logger.Error("unable to auto discover log groups using prefix", zap.String("prefix", l.groupPrefix), zap.Error(err))
+		}
+	}
+
 	for _, lg := range l.groups {
 		l.wg.Add(1)
 		go l.poll(ctx, lg)
@@ -105,13 +121,13 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, logGroup LogGroupConfig)
 	for nextToken != nil {
 		observedTime := pcommon.NewTimestampFromTime(time.Now())
 		input := l.logEventsRequest(nextToken, logGroup)
-		resp, err := l.client.FilterLogEvents(input)
+		resp, err := l.client.FilterLogEventsWithContext(ctx, input)
 		if err != nil {
 			l.logger.Error("unable to retrieve logs from cloudwatch", zap.Error(err))
 			break
 		}
 
-		logs, err := l.processEvents(observedTime, logGroup, resp)
+		logs := l.processEvents(observedTime, logGroup, resp)
 		if err != nil {
 			l.logger.Error("unable to process events", zap.Error(err))
 			break
@@ -126,7 +142,6 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, logGroup LogGroupConfig)
 
 		nextToken = resp.NextToken
 	}
-
 	return nil
 }
 
@@ -144,6 +159,11 @@ func (l *logsReceiver) logEventsRequest(token *string, lg LogGroupConfig) *cloud
 
 	if token != nil && *token != "" {
 		baseReq.NextToken = token
+	}
+
+	// no specification, collect all
+	if len(lg.LogStreams) == 0 && lg.StreamPrefix == "" {
+		return baseReq
 	}
 
 	if len(lg.LogStreams) > 0 {
@@ -188,9 +208,44 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, lc LogGroupConfig, o
 	return logs
 }
 
-// ensureSession will refresh the session so that all expiry's are
-// respected.
+func (l *logsReceiver) discoverGroups(ctx context.Context) error {
+	err := l.ensureSession()
+	if err != nil {
+		return fmt.Errorf("unable to establish a session to auto discover log groups: %w", err)
+	}
+	var nextToken = aws.String("")
+	newGroups := []LogGroupConfig{}
+	for nextToken != nil || len(l.groups) >= int(l.logGroupLimit) {
+		req := &cloudwatchlogs.DescribeLogGroupsInput{
+			Limit: &l.logGroupLimit,
+		}
+		if l.groupPrefix != "" {
+			req.LogGroupNamePrefix = &l.groupPrefix
+		}
+
+		dlgResults, err := l.client.DescribeLogGroupsWithContext(ctx, req)
+		if err != nil {
+			return fmt.Errorf("unable to list log groups: %w", err)
+		}
+
+		for _, lg := range dlgResults.LogGroups {
+			l.logger.Debug("discovered log group", zap.String("log group", lg.GoString()))
+			newGroups = append(l.groups, LogGroupConfig{
+				Name:         *lg.LogGroupName,
+				StreamPrefix: "",
+				LogStreams:   make([]*string, 0),
+			})
+		}
+		nextToken = dlgResults.NextToken
+	}
+	l.groups = newGroups
+	return nil
+}
+
 func (l *logsReceiver) ensureSession() error {
+	if l.client != nil {
+		return nil
+	}
 	awsConfig := aws.NewConfig().WithRegion(l.region)
 	if l.profile != "" {
 		s, err := session.NewSessionWithOptions(session.Options{

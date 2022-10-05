@@ -50,8 +50,9 @@ func createLogsReceiver(
 func createDefaultConfig() config.Receiver {
 	return &Config{
 		Logs: LogsConfig{
-			PollInterval: defaultPollInterval,
-			EventLimit:   defaultEventLimit,
+			PollInterval:  defaultPollInterval,
+			EventLimit:    defaultEventLimit,
+			LogGroupLimit: defaultLogGroupLimit,
 		},
 	}
 }

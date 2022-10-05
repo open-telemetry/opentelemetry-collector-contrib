@@ -23,8 +23,9 @@ import (
 )
 
 var (
-	defaultPollInterval = 1 * time.Minute
-	defaultEventLimit   = int64(1000)
+	defaultPollInterval  = 1 * time.Minute
+	defaultEventLimit    = int64(1000)
+	defaultLogGroupLimit = int64(50)
 )
 
 // Config is the overall config structure for the awscloudwatchreceiver
@@ -39,6 +40,7 @@ type Config struct {
 type LogsConfig struct {
 	PollInterval   time.Duration    `mapstructure:"poll_interval"`
 	EventLimit     int64            `mapstructure:"event_limit"`
+	LogGroupLimit  int64            `mapstructure:"log_group_limit"`
 	LogGroupPrefix string           `mapstructure:"log_group_prefix"`
 	LogGroups      []LogGroupConfig `mapstructure:"log_groups"`
 }
