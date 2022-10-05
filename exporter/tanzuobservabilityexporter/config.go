@@ -32,7 +32,9 @@ type TracesConfig struct {
 type MetricsConfig struct {
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 	IncludeResourceAttrs          bool `mapstructure:"resource_attrs_included"`
-	ExcludeAppTags                bool `mapstructure:"app_tags_excluded"`
+	// ExcludeAppTags will exclude the Resource Attributes `application`, `service.name` -> (service),
+	// `cluster`, and `shard` from the transformed TObs metric if set to true.
+	ExcludeAppTags bool `mapstructure:"app_tags_excluded"`
 }
 
 // Config defines configuration options for the exporter.

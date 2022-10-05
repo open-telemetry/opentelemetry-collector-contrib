@@ -432,7 +432,11 @@ func TestAppAttributesToTags(t *testing.T) {
 	tags := appAttributesToTags(attrMap)
 	assert.Equal(t, map[string]string{}, tags)
 
-	attrMap = newMap(map[string]string{"k": "v", "application": "test_app", "service.name": "test_service", "shard": "test_shard", "cluster": "test_cluster"})
+	attrMap = newMap(map[string]string{"k": "v", "application": "test_app", "service.name": "test_service.name", "shard": "test_shard", "cluster": "test_cluster"})
 	tags = appAttributesToTags(attrMap)
-	assert.Equal(t, map[string]string{"application": "test_app", "service.name": "test_service", "shard": "test_shard", "cluster": "test_cluster"}, tags)
+	assert.Equal(t, map[string]string{"application": "test_app", "service": "test_service.name", "shard": "test_shard", "cluster": "test_cluster"}, tags)
+
+	attrMap = newMap(map[string]string{"k": "v", "application": "test_app", "service.name": "test_service.name", "shard": "test_shard", "cluster": "test_cluster", "service": "test_service"})
+	tags = appAttributesToTags(attrMap)
+	assert.Equal(t, map[string]string{"application": "test_app", "service": "test_service", "shard": "test_shard", "cluster": "test_cluster"}, tags)
 }
