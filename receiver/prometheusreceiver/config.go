@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -111,13 +110,7 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 // Method to exercise the prometheus file discovery behavior to ensure there are no errors
 // - reference https://github.com/prometheus/prometheus/blob/c0c22ed04200a8d24d1d5719f605c85710f0d008/discovery/file/file.go#L372
 func checkSDFile(filename string) error {
-	fd, err := os.Open(filename)
-	if err != nil {
-		return err
-	}
-	defer fd.Close()
-
-	content, err := io.ReadAll(fd)
+	content, err := os.ReadFile(filepath.Clean(filename))
 	if err != nil {
 		return err
 	}
