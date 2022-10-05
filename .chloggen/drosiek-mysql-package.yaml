@@ -15,3 +15,4 @@ issues: [14138]
 # Use pipe (|) for multiline entries.
 subtext: |
   - Add mysql.connection.errors metric (#14723)
+  - Add mysql.mysqlx_connections metric (#14727)

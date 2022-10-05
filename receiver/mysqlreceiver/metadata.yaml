@@ -101,6 +101,10 @@ attributes:
     value: kind
     description: The worker thread count kind.
     enum: [available, active]
+  connection_status:
+    value: status
+    description: The connection status.
+    enum: [accepted, closed, rejected]
 
 metrics:
   mysql.buffer_pool.pages:
@@ -334,6 +338,17 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: [connection_error]
+  mysql.mysqlx_connections:
+    enabled: true
+    description: The number of mysqlx connections.
+    extended_documentation: This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html)
+    unit: 1
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+    attributes: [connection_status]
   mysql.tmp_resources:
     enabled: true
     description: The number of created temporary resources.
@@ -363,7 +378,7 @@ metrics:
       aggregation: cumulative
     attributes: [schema, digest, digest_text]
   mysql.mysqlx_worker_threads:
-    enabled: true
+    enabled: false
     description: The number of worker threads available.
     unit: 1
     extended_documentation: This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html)

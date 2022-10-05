@@ -23,7 +23,8 @@ These are the metrics available for this scraper.
 | **mysql.locked_connects** | The number of attempts to connect to locked user accounts. | 1 | Sum(Int) | <ul> </ul> |
 | **mysql.locks** | The number of MySQL locks. | 1 | Sum(Int) | <ul> <li>locks</li> </ul> |
 | **mysql.log_operations** | The number of InnoDB log operations. | 1 | Sum(Int) | <ul> <li>log_operations</li> </ul> |
-| **mysql.mysqlx_worker_threads** | The number of worker threads available. This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html) | 1 | Sum(Int) | <ul> <li>mysqlx_threads</li> </ul> |
+| **mysql.mysqlx_connections** | The number of mysqlx connections. This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html) | 1 | Sum(Int) | <ul> <li>connection_status</li> </ul> |
+| mysql.mysqlx_worker_threads | The number of worker threads available. This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html) | 1 | Sum(Int) | <ul> <li>mysqlx_threads</li> </ul> |
 | **mysql.opened_resources** | The number of opened resources. | 1 | Sum(Int) | <ul> <li>opened_resources</li> </ul> |
 | **mysql.operations** | The number of InnoDB operations. | 1 | Sum(Int) | <ul> <li>operations</li> </ul> |
 | **mysql.page_operations** | The number of InnoDB page operations. | 1 | Sum(Int) | <ul> <li>page_operations</li> </ul> |
@@ -61,6 +62,7 @@ metrics:
 | buffer_pool_pages (kind) | The buffer pool pages types. | data, free, misc |
 | command (command) | The command types. | execute, close, fetch, prepare, reset, send_long_data |
 | connection_error (error) | The connection error type. | accept, internal, max_connections, peer_address, select, tcpwrap |
+| connection_status (status) | The connection status. | accepted, closed, rejected |
 | digest (digest) | Digest. |  |
 | digest_text (digest_text) | Text before digestion. |  |
 | double_writes (kind) | The doublewrite types. | pages_written, writes |
