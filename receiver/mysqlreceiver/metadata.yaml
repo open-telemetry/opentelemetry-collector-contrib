@@ -75,6 +75,10 @@ attributes:
   index_name:
     value: index
     description: The name of the index.
+  tmp_resource:
+    value: resource
+    description: The kind of temporary resources.
+    enum: [disk_tables, files, tables]
 
 metrics:
   mysql.buffer_pool.pages:
@@ -279,3 +283,13 @@ metrics:
       monotonic: false
       aggregation: cumulative
     attributes: [threads]
+  mysql.tmp_resources:
+    enabled: true
+    description: The number of created temporary resources.
+    unit: 1
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+    attributes: [tmp_resource]

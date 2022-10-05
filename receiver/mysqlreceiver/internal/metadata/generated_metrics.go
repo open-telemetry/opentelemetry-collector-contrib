@@ -40,6 +40,7 @@ type MetricsSettings struct {
 	MysqlTableIoWaitCount      MetricSettings `mapstructure:"mysql.table.io.wait.count"`
 	MysqlTableIoWaitTime       MetricSettings `mapstructure:"mysql.table.io.wait.time"`
 	MysqlThreads               MetricSettings `mapstructure:"mysql.threads"`
+	MysqlTmpResources          MetricSettings `mapstructure:"mysql.tmp_resources"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
@@ -105,6 +106,9 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		MysqlThreads: MetricSettings{
+			Enabled: true,
+		},
+		MysqlTmpResources: MetricSettings{
 			Enabled: true,
 		},
 	}
@@ -646,6 +650,36 @@ var MapAttributeThreads = map[string]AttributeThreads{
 	"connected": AttributeThreadsConnected,
 	"created":   AttributeThreadsCreated,
 	"running":   AttributeThreadsRunning,
+}
+
+// AttributeTmpResource specifies the a value tmp_resource attribute.
+type AttributeTmpResource int
+
+const (
+	_ AttributeTmpResource = iota
+	AttributeTmpResourceDiskTables
+	AttributeTmpResourceFiles
+	AttributeTmpResourceTables
+)
+
+// String returns the string representation of the AttributeTmpResource.
+func (av AttributeTmpResource) String() string {
+	switch av {
+	case AttributeTmpResourceDiskTables:
+		return "disk_tables"
+	case AttributeTmpResourceFiles:
+		return "files"
+	case AttributeTmpResourceTables:
+		return "tables"
+	}
+	return ""
+}
+
+// MapAttributeTmpResource is a helper map of string to AttributeTmpResource attribute value.
+var MapAttributeTmpResource = map[string]AttributeTmpResource{
+	"disk_tables": AttributeTmpResourceDiskTables,
+	"files":       AttributeTmpResourceFiles,
+	"tables":      AttributeTmpResourceTables,
 }
 
 type metricMysqlBufferPoolDataPages struct {
@@ -1767,6 +1801,59 @@ func newMetricMysqlThreads(settings MetricSettings) metricMysqlThreads {
 	return m
 }
 
+type metricMysqlTmpResources struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.tmp_resources metric with initial data.
+func (m *metricMysqlTmpResources) init() {
+	m.data.SetName("mysql.tmp_resources")
+	m.data.SetDescription("The number of created temporary resources.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMysqlTmpResources) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tmpResourceAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutString("resource", tmpResourceAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlTmpResources) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlTmpResources) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlTmpResources(settings MetricSettings) metricMysqlTmpResources {
+	m := metricMysqlTmpResources{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -1796,6 +1883,7 @@ type MetricsBuilder struct {
 	metricMysqlTableIoWaitCount      metricMysqlTableIoWaitCount
 	metricMysqlTableIoWaitTime       metricMysqlTableIoWaitTime
 	metricMysqlThreads               metricMysqlThreads
+	metricMysqlTmpResources          metricMysqlTmpResources
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -1834,6 +1922,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricMysqlTableIoWaitCount:      newMetricMysqlTableIoWaitCount(settings.MysqlTableIoWaitCount),
 		metricMysqlTableIoWaitTime:       newMetricMysqlTableIoWaitTime(settings.MysqlTableIoWaitTime),
 		metricMysqlThreads:               newMetricMysqlThreads(settings.MysqlThreads),
+		metricMysqlTmpResources:          newMetricMysqlTmpResources(settings.MysqlTmpResources),
 	}
 	for _, op := range options {
 		op(mb)
@@ -1914,6 +2003,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMysqlTableIoWaitCount.emit(ils.Metrics())
 	mb.metricMysqlTableIoWaitTime.emit(ils.Metrics())
 	mb.metricMysqlThreads.emit(ils.Metrics())
+	mb.metricMysqlTmpResources.emit(ils.Metrics())
 	for _, op := range rmo {
 		op(rm)
 	}
@@ -2110,6 +2200,16 @@ func (mb *MetricsBuilder) RecordMysqlThreadsDataPoint(ts pcommon.Timestamp, inpu
 		return fmt.Errorf("failed to parse int64 for MysqlThreads, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlThreads.recordDataPoint(mb.startTime, ts, val, threadsAttributeValue.String())
+	return nil
+}
+
+// RecordMysqlTmpResourcesDataPoint adds a data point to mysql.tmp_resources metric.
+func (mb *MetricsBuilder) RecordMysqlTmpResourcesDataPoint(ts pcommon.Timestamp, inputVal string, tmpResourceAttributeValue AttributeTmpResource) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlTmpResources, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlTmpResources.recordDataPoint(mb.startTime, ts, val, tmpResourceAttributeValue.String())
 	return nil
 }
 
