@@ -32,7 +32,6 @@ func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs plog.LogRecordSlice
 		lr := lrs.AppendEmpty()
 
 		attrs := lr.Attributes()
-		attrs.Clear()
 		attrs.EnsureCapacity(2 + len(event.Dimensions) + len(event.Properties))
 
 		for _, dim := range event.Dimensions {

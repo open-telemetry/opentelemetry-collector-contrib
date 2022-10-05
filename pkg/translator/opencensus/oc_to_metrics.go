@@ -212,7 +212,6 @@ func fillAttributesMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocme
 		lablesCount = len(ocLabelValues)
 	}
 
-	attributesMap.Clear()
 	attributesMap.EnsureCapacity(lablesCount)
 	for i := 0; i < lablesCount; i++ {
 		if !ocLabelValues[i].GetHasValue() {
