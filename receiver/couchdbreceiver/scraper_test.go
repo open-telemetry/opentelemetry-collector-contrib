@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -191,13 +190,7 @@ func getStats(filename string) (map[string]interface{}, error) {
 		return stats, nil
 	}
 
-	file, err := os.Open(path.Join("testdata", "scraper", filename))
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	body, err := io.ReadAll(file)
+	body, err := os.ReadFile(path.Join("testdata", "scraper", filename))
 	if err != nil {
 		return nil, err
 	}
