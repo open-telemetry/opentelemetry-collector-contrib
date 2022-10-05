@@ -316,7 +316,9 @@ func TestPushTraceData(t *testing.T) {
 	exp, err := f.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 
-	err = exp.ConsumeTraces(context.Background(), testutils.TestTraces.Clone())
+	testTraces := ptrace.NewTraces()
+	testutils.TestTraces.CopyTo(testTraces)
+	err = exp.ConsumeTraces(context.Background(), testTraces)
 	assert.NoError(t, err)
 
 	body := <-server.MetadataChan

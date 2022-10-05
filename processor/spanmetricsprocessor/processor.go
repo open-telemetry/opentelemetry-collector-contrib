@@ -500,7 +500,7 @@ func getDimensionValue(d Dimension, spanAttr pcommon.Map, resourceAttr pcommon.M
 	}
 	// Set the default if configured, otherwise this metric will have no value set for the dimension.
 	if d.Default != nil {
-		return pcommon.NewValueString(*d.Default), true
+		return pcommon.NewValueStr(*d.Default), true
 	}
 	return v, ok
 }

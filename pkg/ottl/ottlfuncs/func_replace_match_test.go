@@ -25,7 +25,7 @@ import (
 )
 
 func Test_replaceMatch(t *testing.T) {
-	input := pcommon.NewValueString("hello world")
+	input := pcommon.NewValueStr("hello world")
 
 	target := &ottl.StandardGetSetter[pcommon.Value]{
 		Getter: func(ctx pcommon.Value) interface{} {
@@ -64,13 +64,13 @@ func Test_replaceMatch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scenarioValue := pcommon.NewValueString(input.Str())
+			scenarioValue := pcommon.NewValueStr(input.Str())
 
 			exprFunc, err := ReplaceMatch(tt.target, tt.pattern, tt.replacement)
 			require.NoError(t, err)
 			assert.Nil(t, exprFunc(scenarioValue))
 
-			expected := pcommon.NewValueString("")
+			expected := pcommon.NewValueStr("")
 			tt.want(expected)
 
 			assert.Equal(t, expected, scenarioValue)

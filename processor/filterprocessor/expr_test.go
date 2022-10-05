@@ -37,7 +37,7 @@ import (
 const filteredMetric = "p0_metric_1"
 const filteredAttrKey = "pt-label-key-1"
 
-var filteredAttrVal = pcommon.NewValueString("pt-label-val-1")
+var filteredAttrVal = pcommon.NewValueStr("pt-label-val-1")
 
 func TestExprError(t *testing.T) {
 	testMatchError(t, pmetric.MetricTypeGauge, pmetric.NumberDataPointValueTypeInt)

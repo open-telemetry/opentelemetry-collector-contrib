@@ -99,7 +99,7 @@ func Test_keepKeys(t *testing.T) {
 }
 
 func Test_keepKeys_bad_input(t *testing.T) {
-	input := pcommon.NewValueString("not a map")
+	input := pcommon.NewValueStr("not a map")
 	target := &ottl.StandardGetSetter[interface{}]{
 		Getter: func(ctx interface{}) interface{} {
 			return ctx
@@ -115,7 +115,7 @@ func Test_keepKeys_bad_input(t *testing.T) {
 	require.NoError(t, err)
 	exprFunc(input)
 
-	assert.Equal(t, pcommon.NewValueString("not a map"), input)
+	assert.Equal(t, pcommon.NewValueStr("not a map"), input)
 }
 
 func Test_keepKeys_get_nil(t *testing.T) {

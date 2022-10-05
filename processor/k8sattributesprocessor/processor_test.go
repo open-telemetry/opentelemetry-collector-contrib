@@ -1169,13 +1169,13 @@ func Test_intFromAttribute(t *testing.T) {
 		},
 		{
 			name:    "wrong-string-number",
-			attrVal: pcommon.NewValueString("NaN"),
+			attrVal: pcommon.NewValueStr("NaN"),
 			wantInt: 0,
 			wantErr: true,
 		},
 		{
 			name:    "valid-string-number",
-			attrVal: pcommon.NewValueString("3"),
+			attrVal: pcommon.NewValueStr("3"),
 			wantInt: 3,
 			wantErr: false,
 		},
