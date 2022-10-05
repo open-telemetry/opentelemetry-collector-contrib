@@ -126,7 +126,6 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, logGroup LogGroupConfig)
 			l.logger.Error("unable to retrieve logs from cloudwatch", zap.Error(err))
 			break
 		}
-
 		logs := l.processEvents(observedTime, logGroup, resp)
 		if logs.LogRecordCount() > 0 {
 			if err = l.consumer.ConsumeLogs(ctx, logs); err != nil {
@@ -134,7 +133,6 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, logGroup LogGroupConfig)
 				break
 			}
 		}
-
 		nextToken = resp.NextToken
 	}
 	return nil
