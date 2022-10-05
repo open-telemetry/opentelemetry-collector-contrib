@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"testing"
 	"time"
@@ -666,10 +665,7 @@ func BenchmarkMetricConversion(b *testing.B) {
 	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "")
 	require.NoError(b, err)
 
-	file, err := os.Open("testdata/json/hostmetrics.json")
-	defer func() { _ = file.Close() }()
-	require.NoError(b, err)
-	bytes, err := io.ReadAll(file)
+	bytes, err := os.ReadFile("testdata/json/hostmetrics.json")
 	require.NoError(b, err)
 
 	unmarshaller := pmetric.NewJSONUnmarshaler()
@@ -705,12 +701,7 @@ func getMetrics(metrics []map[string]string) pmetric.Metrics {
 }
 
 func testReadJSON(f string, v interface{}) error {
-	file, err := os.Open(f)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = file.Close() }()
-	bytes, err := io.ReadAll(file)
+	bytes, err := os.ReadFile(f)
 	if err != nil {
 		return err
 	}

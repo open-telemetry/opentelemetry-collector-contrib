@@ -219,7 +219,6 @@ func initAttributeMapFromOC(ocAttrs *octrace.Span_Attributes, dest pcommon.Map) 
 		return
 	}
 
-	dest.Clear()
 	dest.EnsureCapacity(len(ocAttrs.AttributeMap))
 	for key, ocAttr := range ocAttrs.AttributeMap {
 		switch attribValue := ocAttr.Value.(type) {

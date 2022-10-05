@@ -204,11 +204,11 @@ func TestAwsWithAwsSqsResources(t *testing.T) {
 
 	queueURL := "https://sqs.use1.amazonaws.com/Meltdown-Alerts"
 	attributes := make(map[string]pcommon.Value)
-	attributes[awsxray.AWSOperationAttribute] = pcommon.NewValueString("SendMessage")
-	attributes[awsxray.AWSAccountAttribute] = pcommon.NewValueString("987654321")
-	attributes[awsxray.AWSRegionAttribute] = pcommon.NewValueString("us-east-2")
-	attributes[awsxray.AWSQueueURLAttribute] = pcommon.NewValueString(queueURL)
-	attributes["employee.id"] = pcommon.NewValueString("XB477")
+	attributes[awsxray.AWSOperationAttribute] = pcommon.NewValueStr("SendMessage")
+	attributes[awsxray.AWSAccountAttribute] = pcommon.NewValueStr("987654321")
+	attributes[awsxray.AWSRegionAttribute] = pcommon.NewValueStr("us-east-2")
+	attributes[awsxray.AWSQueueURLAttribute] = pcommon.NewValueStr(queueURL)
+	attributes["employee.id"] = pcommon.NewValueStr("XB477")
 
 	filtered, awsData := makeAws(attributes, resource)
 
@@ -221,7 +221,7 @@ func TestAwsWithAwsSqsResources(t *testing.T) {
 func TestAwsWithRpcAttributes(t *testing.T) {
 	resource := pcommon.NewResource()
 	attributes := make(map[string]pcommon.Value)
-	attributes[conventions.AttributeRPCMethod] = pcommon.NewValueString("ListBuckets")
+	attributes[conventions.AttributeRPCMethod] = pcommon.NewValueStr("ListBuckets")
 
 	_, awsData := makeAws(attributes, resource)
 
@@ -232,7 +232,7 @@ func TestAwsWithRpcAttributes(t *testing.T) {
 func TestAwsWithSqsAlternateAttribute(t *testing.T) {
 	queueURL := "https://sqs.use1.amazonaws.com/Meltdown-Alerts"
 	attributes := make(map[string]pcommon.Value)
-	attributes[awsxray.AWSQueueURLAttribute2] = pcommon.NewValueString(queueURL)
+	attributes[awsxray.AWSQueueURLAttribute2] = pcommon.NewValueStr(queueURL)
 
 	filtered, awsData := makeAws(attributes, pcommon.NewResource())
 
@@ -264,10 +264,10 @@ func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 
 	tableName := "WIDGET_TYPES"
 	attributes := make(map[string]pcommon.Value)
-	attributes[conventions.AttributeRPCMethod] = pcommon.NewValueString("IncorrectAWSSDKOperation")
-	attributes[awsxray.AWSOperationAttribute] = pcommon.NewValueString("PutItem")
-	attributes[awsxray.AWSRequestIDAttribute] = pcommon.NewValueString("75107C82-EC8A-4F75-883F-4440B491B0AB")
-	attributes[awsxray.AWSTableNameAttribute] = pcommon.NewValueString(tableName)
+	attributes[conventions.AttributeRPCMethod] = pcommon.NewValueStr("IncorrectAWSSDKOperation")
+	attributes[awsxray.AWSOperationAttribute] = pcommon.NewValueStr("PutItem")
+	attributes[awsxray.AWSRequestIDAttribute] = pcommon.NewValueStr("75107C82-EC8A-4F75-883F-4440B491B0AB")
+	attributes[awsxray.AWSTableNameAttribute] = pcommon.NewValueStr(tableName)
 
 	filtered, awsData := makeAws(attributes, resource)
 
@@ -281,7 +281,7 @@ func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 func TestAwsWithDynamoDbAlternateAttribute(t *testing.T) {
 	tableName := "MyTable"
 	attributes := make(map[string]pcommon.Value)
-	attributes[awsxray.AWSTableNameAttribute2] = pcommon.NewValueString(tableName)
+	attributes[awsxray.AWSTableNameAttribute2] = pcommon.NewValueStr(tableName)
 
 	filtered, awsData := makeAws(attributes, pcommon.NewResource())
 
@@ -293,7 +293,7 @@ func TestAwsWithDynamoDbAlternateAttribute(t *testing.T) {
 func TestAwsWithRequestIdAlternateAttribute(t *testing.T) {
 	requestid := "12345-request"
 	attributes := make(map[string]pcommon.Value)
-	attributes[awsxray.AWSRequestIDAttribute2] = pcommon.NewValueString(requestid)
+	attributes[awsxray.AWSRequestIDAttribute2] = pcommon.NewValueStr(requestid)
 
 	filtered, awsData := makeAws(attributes, pcommon.NewResource())
 

@@ -15,7 +15,6 @@
 package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
-	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -256,12 +255,7 @@ type FileDataProvider struct {
 // NewFileDataProvider creates an instance of FileDataProvider which generates test data
 // loaded from a file.
 func NewFileDataProvider(filePath string, dataType config.DataType) (*FileDataProvider, error) {
-	file, err := os.OpenFile(filepath.Clean(filePath), os.O_RDONLY, 0)
-	if err != nil {
-		return nil, err
-	}
-	var buf []byte
-	buf, err = io.ReadAll(file)
+	buf, err := os.ReadFile(filepath.Clean(filePath))
 	if err != nil {
 		return nil, err
 	}

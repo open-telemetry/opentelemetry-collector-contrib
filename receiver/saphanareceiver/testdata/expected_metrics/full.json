@@ -3289,7 +3289,7 @@
                            }
                         ]
                      },
-                     "unit": "1"
+                     "unit": "{licenses}"
                   },
                   {
                      "description": "The peak product usage value during last 13 months, measured periodically.",
@@ -3337,7 +3337,7 @@
                            }
                         ]
                      },
-                     "unit": "1"
+                     "unit": "{licenses}"
                   },
                   {
                      "description": "The average amount of time consumed replicating a log.",

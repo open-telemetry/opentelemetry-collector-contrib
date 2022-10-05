@@ -29,6 +29,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
@@ -724,6 +726,53 @@ func TestDimensionKeyCharsWithPeriod(t *testing.T) {
 	require.NoError(t, err)
 	assert.EqualValues(t, expected, c.MetricsToSignalFxV2(md))
 
+}
+
+func TestInvalidNumberOfDimensions(t *testing.T) {
+	observedZapCore, observedLogs := observer.New(zap.DebugLevel)
+	logger := zap.New(observedZapCore)
+
+	md := pmetric.NewMetrics()
+	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetName("valid")
+	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetIntValue(123)
+	for i := 0; i < 10; i++ {
+		dp.Attributes().PutString(fmt.Sprint("dim_key_", i), fmt.Sprint("dim_val_", i))
+	}
+	c, err := NewMetricsConverter(logger, nil, nil, nil, "_-.")
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, len(c.MetricsToSignalFxV2(md)))
+	// No log message should be printed
+	require.Equal(t, 0, observedLogs.Len())
+
+	mdInvalid := pmetric.NewMetrics()
+	mInvalid := mdInvalid.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetName("invalid")
+	dpInvalid := mInvalid.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetIntValue(123)
+
+	// SFX datapoint is used for log validation
+	gaugeType := sfxpb.MetricType_GAUGE
+	dpSFX := &sfxpb.DataPoint{
+		MetricType: &gaugeType,
+		Dimensions: make([]*sfxpb.Dimension, 0, 37),
+	}
+	for i := 0; i < 37; i++ {
+		dpInvalid.Attributes().PutString(fmt.Sprint("dim_key_", i), fmt.Sprint("dim_val_", i))
+		dpSFX.Dimensions = append(dpSFX.Dimensions, &sfxpb.Dimension{
+			Key:   fmt.Sprint("dim_key_", i),
+			Value: fmt.Sprint("dim_val_", i),
+		})
+	}
+	assert.EqualValues(t, 0, len(c.MetricsToSignalFxV2(mdInvalid)))
+	require.Equal(t, 1, observedLogs.Len())
+	assert.Equal(t, "dropping datapoint", observedLogs.All()[0].Message)
+	assert.ElementsMatch(t, []zap.Field{
+		{Type: zapcore.StringType, Key: "reason", String: invalidNumberOfDimensions},
+		{Type: zapcore.StringType, Key: "datapoint", String: DatapointToString(dpSFX)},
+		{Type: zapcore.Int64Type, Key: "number_of_dimensions", Integer: 37},
+	}, observedLogs.All()[0].Context)
 }
 
 func sortDimensions(points []*sfxpb.DataPoint) {

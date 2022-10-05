@@ -56,10 +56,9 @@ func metricsData(
 	ts pcommon.Timestamp,
 	resourceLabels map[string]string,
 	metrics ...Metric,
-) pmetric.Metrics {
+) pmetric.ResourceMetrics {
 	rLabels := mergeMaps(defaultLabels(), resourceLabels)
-	md := pmetric.NewMetrics()
-	rs := md.ResourceMetrics().AppendEmpty()
+	rs := pmetric.NewResourceMetrics()
 	rs.SetSchemaUrl(conventions.SchemaURL)
 	rsAttr := rs.Resource().Attributes()
 	for k, v := range rLabels {
@@ -96,7 +95,7 @@ func metricsData(
 		}
 	}
 
-	return md
+	return rs
 }
 
 func defaultLabels() map[string]string {
@@ -193,9 +192,9 @@ func assertMetricsDataEqual(
 	now pcommon.Timestamp,
 	expected []Metric,
 	labels map[string]string,
-	actual pmetric.Metrics,
+	actual pmetric.ResourceMetrics,
 ) {
-	actual.ResourceMetrics().At(0).Resource().Attributes().Sort()
+	actual.Resource().Attributes().Sort()
 	assert.Equal(t, metricsData(now, labels, expected...), actual)
 }
 

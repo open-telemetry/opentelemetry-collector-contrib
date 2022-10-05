@@ -22,8 +22,8 @@ These are the metrics available for this scraper.
 | **saphana.instance.memory.shared.allocated** | The shared memory size of SAP HANA processes. | By | Sum(Int) | <ul> </ul> |
 | **saphana.instance.memory.used.peak** | The peak memory from the memory pool used by SAP HANA processes since the instance started (this is a sample-based value). | By | Sum(Int) | <ul> </ul> |
 | **saphana.license.expiration.time** | The amount of time remaining before license expiration. | s | Gauge(Int) | <ul> <li>system</li> <li>product</li> </ul> |
-| **saphana.license.limit** | The allowed product usage as specified by the license (for example, main memory). | 1 | Sum(Int) | <ul> <li>system</li> <li>product</li> </ul> |
-| **saphana.license.peak** | The peak product usage value during last 13 months, measured periodically. | 1 | Sum(Int) | <ul> <li>system</li> <li>product</li> </ul> |
+| **saphana.license.limit** | The allowed product usage as specified by the license (for example, main memory). | {licenses} | Sum(Int) | <ul> <li>system</li> <li>product</li> </ul> |
+| **saphana.license.peak** | The peak product usage value during last 13 months, measured periodically. | {licenses} | Sum(Int) | <ul> <li>system</li> <li>product</li> </ul> |
 | **saphana.network.request.average_time** | The average response time calculated over recent requests | ms | Gauge(Double) | <ul> </ul> |
 | **saphana.network.request.count** | The number of active and pending service requests. | {requests} | Sum(Int) | <ul> <li>active_pending_request_state</li> </ul> |
 | **saphana.network.request.finished.count** | The number of service requests that have completed. | {requests} | Sum(Int) | <ul> <li>internal_external_request_type</li> </ul> |

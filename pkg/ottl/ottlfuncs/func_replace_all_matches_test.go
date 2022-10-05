@@ -35,7 +35,6 @@ func Test_replaceAllMatches(t *testing.T) {
 			return ctx
 		},
 		Setter: func(ctx pcommon.Map, val interface{}) {
-			ctx.Clear()
 			val.(pcommon.Map).CopyTo(ctx)
 		},
 	}
@@ -53,7 +52,6 @@ func Test_replaceAllMatches(t *testing.T) {
 			pattern:     "hello*",
 			replacement: "hello {universe}",
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutString("test", "hello {universe}")
 				expectedMap.PutString("test2", "hello {universe}")
 				expectedMap.PutString("test3", "goodbye")
@@ -65,7 +63,6 @@ func Test_replaceAllMatches(t *testing.T) {
 			pattern:     "nothing*",
 			replacement: "nothing {matches}",
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutString("test", "hello world")
 				expectedMap.PutString("test2", "hello")
 				expectedMap.PutString("test3", "goodbye")
@@ -90,7 +87,7 @@ func Test_replaceAllMatches(t *testing.T) {
 }
 
 func Test_replaceAllMatches_bad_input(t *testing.T) {
-	input := pcommon.NewValueString("not a map")
+	input := pcommon.NewValueStr("not a map")
 	target := &ottl.StandardGetSetter[interface{}]{
 		Getter: func(ctx interface{}) interface{} {
 			return ctx
@@ -103,7 +100,7 @@ func Test_replaceAllMatches_bad_input(t *testing.T) {
 	exprFunc, err := ReplaceAllMatches[interface{}](target, "*", "{replacement}")
 	require.NoError(t, err)
 	assert.Nil(t, exprFunc(input))
-	assert.Equal(t, pcommon.NewValueString("not a map"), input)
+	assert.Equal(t, pcommon.NewValueStr("not a map"), input)
 }
 
 func Test_replaceAllMatches_get_nil(t *testing.T) {

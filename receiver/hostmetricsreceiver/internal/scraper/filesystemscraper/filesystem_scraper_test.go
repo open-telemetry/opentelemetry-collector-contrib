@@ -134,16 +134,16 @@ func TestScrape(t *testing.T) {
 			expectedDeviceDataPoints: 2,
 			expectedDeviceAttributes: []map[string]pcommon.Value{
 				{
-					"device":     pcommon.NewValueString("device_a"),
-					"mountpoint": pcommon.NewValueString("mount_point_a"),
-					"type":       pcommon.NewValueString("fs_type_a"),
-					"mode":       pcommon.NewValueString("unknown"),
+					"device":     pcommon.NewValueStr("device_a"),
+					"mountpoint": pcommon.NewValueStr("mount_point_a"),
+					"type":       pcommon.NewValueStr("fs_type_a"),
+					"mode":       pcommon.NewValueStr("unknown"),
 				},
 				{
-					"device":     pcommon.NewValueString("device_b"),
-					"mountpoint": pcommon.NewValueString("mount_point_d"),
-					"type":       pcommon.NewValueString("fs_type_c"),
-					"mode":       pcommon.NewValueString("unknown"),
+					"device":     pcommon.NewValueStr("device_b"),
+					"mountpoint": pcommon.NewValueStr("mount_point_d"),
+					"type":       pcommon.NewValueStr("fs_type_c"),
+					"mode":       pcommon.NewValueStr("unknown"),
 				},
 			},
 		},
@@ -324,14 +324,14 @@ func assertFileSystemUsageMetricValid(
 		assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), fileSystemStatesLen)
 	}
 	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state",
-		pcommon.NewValueString(metadata.AttributeStateUsed.String()))
+		pcommon.NewValueStr(metadata.AttributeStateUsed.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state",
-		pcommon.NewValueString(metadata.AttributeStateFree.String()))
+		pcommon.NewValueStr(metadata.AttributeStateFree.String()))
 }
 
 func assertFileSystemUsageMetricHasUnixSpecificStateLabels(t *testing.T, metric pmetric.Metric) {
 	internal.AssertSumMetricHasAttributeValue(t, metric, 2, "state",
-		pcommon.NewValueString(metadata.AttributeStateReserved.String()))
+		pcommon.NewValueStr(metadata.AttributeStateReserved.String()))
 }
 
 func isUnix() bool {

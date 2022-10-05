@@ -372,7 +372,7 @@ func getAttributeValueFromContext(ctx context.Context, key string) (pcommon.Valu
 
 		switch a := attr.(type) {
 		case string:
-			return pcommon.NewValueString(a), true
+			return pcommon.NewValueStr(a), true
 		case []string:
 			vals = a
 		default:
@@ -388,7 +388,7 @@ func getAttributeValueFromContext(ctx context.Context, key string) (pcommon.Valu
 		return pcommon.Value{}, false
 	}
 
-	return pcommon.NewValueString(strings.Join(vals, ";")), true
+	return pcommon.NewValueStr(strings.Join(vals, ";")), true
 }
 
 func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs pcommon.Map) (pcommon.Value, bool) {

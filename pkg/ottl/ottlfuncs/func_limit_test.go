@@ -35,7 +35,6 @@ func Test_limit(t *testing.T) {
 			return ctx
 		},
 		Setter: func(ctx pcommon.Map, val interface{}) {
-			ctx.Clear()
 			val.(pcommon.Map).CopyTo(ctx)
 		},
 	}
@@ -52,7 +51,6 @@ func Test_limit(t *testing.T) {
 			target: target,
 			limit:  int64(1),
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutString("test", "hello world")
 			},
 		},
@@ -69,7 +67,6 @@ func Test_limit(t *testing.T) {
 			target: target,
 			limit:  int64(100),
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutString("test", "hello world")
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)
@@ -80,7 +77,6 @@ func Test_limit(t *testing.T) {
 			target: target,
 			limit:  int64(3),
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutString("test", "hello world")
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)
@@ -92,7 +88,6 @@ func Test_limit(t *testing.T) {
 			limit:  int64(2),
 			keep:   []string{"test3"},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutString("test", "hello world")
 				expectedMap.PutBool("test3", true)
 			},
@@ -103,7 +98,6 @@ func Test_limit(t *testing.T) {
 			limit:  int64(2),
 			keep:   []string{"test", "test3"},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutString("test", "hello world")
 				expectedMap.PutBool("test3", true)
 			},
@@ -114,7 +108,6 @@ func Test_limit(t *testing.T) {
 			limit:  int64(1),
 			keep:   []string{"te"},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutString("test", "hello world")
 			},
 		},
@@ -124,7 +117,6 @@ func Test_limit(t *testing.T) {
 			limit:  int64(2),
 			keep:   []string{"te", "test3"},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.PutString("test", "hello world")
 				expectedMap.PutBool("test3", true)
 			},
@@ -175,7 +167,7 @@ func Test_limit_validation(t *testing.T) {
 }
 
 func Test_limit_bad_input(t *testing.T) {
-	input := pcommon.NewValueString("not a map")
+	input := pcommon.NewValueStr("not a map")
 	target := &ottl.StandardGetSetter[interface{}]{
 		Getter: func(ctx interface{}) interface{} {
 			return ctx
@@ -188,7 +180,7 @@ func Test_limit_bad_input(t *testing.T) {
 	exprFunc, err := Limit[interface{}](target, 1, []string{})
 	require.NoError(t, err)
 	assert.Nil(t, exprFunc(input))
-	assert.Equal(t, pcommon.NewValueString("not a map"), input)
+	assert.Equal(t, pcommon.NewValueStr("not a map"), input)
 }
 
 func Test_limit_get_nil(t *testing.T) {

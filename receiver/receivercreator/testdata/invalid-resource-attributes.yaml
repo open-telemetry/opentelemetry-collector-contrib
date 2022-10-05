@@ -13,16 +13,3 @@ receivers:
         k8s.node.key: k8s.node.value
       not.a.real.type:
         not: real
-
-processors:
-  nop:
-
-exporters:
-  nop:
-
-service:
-  pipelines:
-    metrics:
-      receivers: [receiver_creator]
-      processors: [nop]
-      exporters: [nop]

@@ -193,7 +193,6 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   refLog.Attributes(),
 			newVal: newAttrs,
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().Clear()
 				newAttrs.CopyTo(log.Attributes())
 			},
 		},

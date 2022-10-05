@@ -216,7 +216,6 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   refSpan.Attributes(),
 			newVal: newAttrs,
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().Clear()
 				newAttrs.CopyTo(span.Attributes())
 			},
 		},

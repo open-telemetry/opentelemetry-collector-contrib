@@ -219,11 +219,11 @@ func parseAnnotationValue(value string, parseStringTags bool) pcommon.Value {
 			bValue, _ := strconv.ParseBool(value)
 			return pcommon.NewValueBool(bValue)
 		default:
-			return pcommon.NewValueString(value)
+			return pcommon.NewValueStr(value)
 		}
 	}
 
-	return pcommon.NewValueString(value)
+	return pcommon.NewValueStr(value)
 }
 
 // Unknown service name works both as a default value and a flag to indicate that a valid endpoint was found.
