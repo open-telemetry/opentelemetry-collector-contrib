@@ -6,8 +6,7 @@
 | Supported pipeline types | logs      |
 | Distributions            | [contrib] |
 
-The kubernetes Objects receiver collects(pull/watch) objects from the Kubernetes
-API server. 
+The kubernetes Objects receiver collects(pull/watch) objects from the Kubernetes API server.
 
 Currently this receiver supports authentication via service accounts only.
 See [example](#example) for more information.
