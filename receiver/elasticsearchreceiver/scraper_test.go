@@ -226,7 +226,7 @@ func TestScrapingError(t *testing.T) {
 			},
 		},
 		{
-			desc: "Both node stats and cluster health fails",
+			desc: "Node stats, index stats and cluster health fails",
 			run: func(t *testing.T) {
 				t.Parallel()
 
@@ -237,7 +237,7 @@ func TestScrapingError(t *testing.T) {
 				mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nil, err500)
 				mockClient.On("ClusterHealth", mock.Anything).Return(nil, err404)
-				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
+				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(nil, err500)
 
 				sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
@@ -277,7 +277,7 @@ func TestScrapingError(t *testing.T) {
 			},
 		},
 		{
-			desc: "Version, node stats and cluster health fails",
+			desc: "Version, node stats, index stats and cluster health fails",
 			run: func(t *testing.T) {
 				t.Parallel()
 
@@ -288,7 +288,7 @@ func TestScrapingError(t *testing.T) {
 				mockClient.On("Version", mock.Anything).Return(nil, err404)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nil, err500)
 				mockClient.On("ClusterHealth", mock.Anything).Return(nil, err404)
-				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
+				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(nil, err500)
 
 				sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())

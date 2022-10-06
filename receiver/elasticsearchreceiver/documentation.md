@@ -22,6 +22,8 @@ These are the metrics available for this scraper.
 | **elasticsearch.cluster.state_queue** | Number of cluster states in queue. | 1 | Sum(Int) | <ul> <li>cluster_state_queue_state</li> </ul> |
 | **elasticsearch.cluster.state_update.count** | The number of cluster state update attempts that changed the cluster state since the node started. | 1 | Sum(Int) | <ul> <li>cluster_state_update_state</li> </ul> |
 | **elasticsearch.cluster.state_update.time** | The cumulative amount of time updating the cluster state since the node started. | ms | Sum(Int) | <ul> <li>cluster_state_update_state</li> <li>cluster_state_update_type</li> </ul> |
+| **elasticsearch.index.operations.completed** | The number of operations completed for an index. | {operations} | Sum(Int) | <ul> <li>operation</li> <li>index_aggregation_type</li> </ul> |
+| **elasticsearch.index.operations.time** | Time spent on operations for an index. | ms | Sum(Int) | <ul> <li>operation</li> <li>index_aggregation_type</li> </ul> |
 | **elasticsearch.indexing_pressure.memory.limit** | Configured memory limit, in bytes, for the indexing requests. | By | Gauge(Int) | <ul> </ul> |
 | **elasticsearch.indexing_pressure.memory.total.primary_rejections** | Cumulative number of indexing requests rejected in the primary stage. | 1 | Sum(Int) | <ul> </ul> |
 | **elasticsearch.indexing_pressure.memory.total.replica_rejections** | Number of indexing requests rejected in the replica stage. | 1 | Sum(Int) | <ul> </ul> |
@@ -110,6 +112,7 @@ metrics:
 | document_state (state) | The state of the document. | active, deleted |
 | fs_direction (direction) | The direction of filesystem IO. | read, write |
 | health_status (status) | The health status of the cluster. | green, yellow, red |
+| index_aggregation_type (type) | Type of aggregation for index statistics | primaries, total |
 | indexing_memory_state (state) | State of the indexing memory | current, total |
 | indexing_pressure_stage (stage) | Stage of the indexing pressure | coordinating, primary, replica |
 | ingest_pipeline_name (name) | Name of the ingest pipeline. |  |
