@@ -223,7 +223,7 @@ func initAttributeMapFromOC(ocAttrs *octrace.Span_Attributes, dest pcommon.Map) 
 	for key, ocAttr := range ocAttrs.AttributeMap {
 		switch attribValue := ocAttr.Value.(type) {
 		case *octrace.AttributeValue_StringValue:
-			dest.PutString(key, attribValue.StringValue.GetValue())
+			dest.PutStr(key, attribValue.StringValue.GetValue())
 		case *octrace.AttributeValue_IntValue:
 			dest.PutInt(key, attribValue.IntValue)
 		case *octrace.AttributeValue_BoolValue:
@@ -231,7 +231,7 @@ func initAttributeMapFromOC(ocAttrs *octrace.Span_Attributes, dest pcommon.Map) 
 		case *octrace.AttributeValue_DoubleValue:
 			dest.PutDouble(key, attribValue.DoubleValue)
 		default:
-			dest.PutString(key, "<Unknown OpenCensus attribute value type>")
+			dest.PutStr(key, "<Unknown OpenCensus attribute value type>")
 		}
 	}
 }
@@ -352,7 +352,7 @@ func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent
 		return
 	}
 
-	dest.PutString("message.type", msgEvent.Type.String())
+	dest.PutStr("message.type", msgEvent.Type.String())
 	dest.PutInt(conventions.AttributeMessagingMessageID, int64(msgEvent.Id))
 	dest.PutInt(conventions.AttributeMessagingMessagePayloadSizeBytes, int64(msgEvent.UncompressedSize))
 	dest.PutInt(conventions.AttributeMessagingMessagePayloadCompressedSizeBytes, int64(msgEvent.CompressedSize))

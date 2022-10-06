@@ -36,7 +36,7 @@ var (
 
 func prepareAttributeMap() pcommon.Map {
 	am := pcommon.NewMap()
-	am.PutString("xx", "aa")
+	am.PutStr("xx", "aa")
 	am.PutInt("yy", 11)
 	return am
 }
@@ -79,8 +79,8 @@ func someComplexLogs(withResourceAttrIndex bool, rlCount int, illCount int) plog
 
 		for j := 0; j < illCount; j++ {
 			log := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-			log.Attributes().PutString("commonGroupedAttr", "abc")
-			log.Attributes().PutString("commonNonGroupedAttr", "xyz")
+			log.Attributes().PutStr("commonGroupedAttr", "abc")
+			log.Attributes().PutStr("commonNonGroupedAttr", "xyz")
 		}
 	}
 
@@ -99,8 +99,8 @@ func someComplexTraces(withResourceAttrIndex bool, rsCount int, ilsCount int) pt
 		for j := 0; j < ilsCount; j++ {
 			span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			span.SetName(fmt.Sprintf("foo-%d-%d", i, j))
-			span.Attributes().PutString("commonGroupedAttr", "abc")
-			span.Attributes().PutString("commonNonGroupedAttr", "xyz")
+			span.Attributes().PutStr("commonGroupedAttr", "abc")
+			span.Attributes().PutStr("commonNonGroupedAttr", "xyz")
 		}
 	}
 
@@ -125,8 +125,8 @@ func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, d
 				dataPoint := dps.AppendEmpty()
 				dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 				dataPoint.SetIntValue(int64(k))
-				dataPoint.Attributes().PutString("commonGroupedAttr", "abc")
-				dataPoint.Attributes().PutString("commonNonGroupedAttr", "xyz")
+				dataPoint.Attributes().PutStr("commonGroupedAttr", "abc")
+				dataPoint.Attributes().PutStr("commonNonGroupedAttr", "xyz")
 			}
 		}
 	}
@@ -156,8 +156,8 @@ func someComplexHistogramMetrics(withResourceAttrIndex bool, rmCount int, ilmCou
 				dataPoint.BucketCounts().FromRaw(buckets)
 				dataPoint.ExplicitBounds().FromRaw(randFloat64Arr(histogramSize))
 				dataPoint.SetCount(sum(buckets))
-				dataPoint.Attributes().PutString("commonGroupedAttr", "abc")
-				dataPoint.Attributes().PutString("commonNonGroupedAttr", "xyz")
+				dataPoint.Attributes().PutStr("commonGroupedAttr", "abc")
+				dataPoint.Attributes().PutStr("commonNonGroupedAttr", "xyz")
 			}
 		}
 	}
@@ -301,11 +301,11 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			outputResourceAttrs := pcommon.NewMap()
 			if tt.shouldMoveCommonGroupedAttr {
 				// This was present at record level and should be found on Resource level after the processor
-				outputResourceAttrs.PutString("commonGroupedAttr", "abc")
+				outputResourceAttrs.PutStr("commonGroupedAttr", "abc")
 			} else {
-				outputRecordAttrs.PutString("commonGroupedAttr", "abc")
+				outputRecordAttrs.PutStr("commonGroupedAttr", "abc")
 			}
-			outputRecordAttrs.PutString("commonNonGroupedAttr", "xyz")
+			outputRecordAttrs.PutStr("commonNonGroupedAttr", "xyz")
 
 			rls := processedLogs.ResourceLogs()
 			assert.Equal(t, tt.outputResourceCount, rls.Len())
@@ -707,7 +707,7 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 
 	metrics := pmetric.NewMetrics()
 	resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
-	resourceMetrics.Resource().Attributes().PutString("host.name", "localhost")
+	resourceMetrics.Resource().Attributes().PutStr("host.name", "localhost")
 
 	ilm := resourceMetrics.ScopeMetrics().AppendEmpty()
 
@@ -715,14 +715,14 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	gauge1 := ilm.Metrics().AppendEmpty()
 	gauge1.SetName("gauge-1")
 	datapoint := gauge1.SetEmptyGauge().DataPoints().AppendEmpty()
-	datapoint.Attributes().PutString("host.name", "host-A")
-	datapoint.Attributes().PutString("id", "eth0")
+	datapoint.Attributes().PutStr("host.name", "host-A")
+	datapoint.Attributes().PutStr("id", "eth0")
 	datapoint = gauge1.Gauge().DataPoints().AppendEmpty()
-	datapoint.Attributes().PutString("host.name", "host-A")
-	datapoint.Attributes().PutString("id", "eth0")
+	datapoint.Attributes().PutStr("host.name", "host-A")
+	datapoint.Attributes().PutStr("id", "eth0")
 	datapoint = gauge1.Gauge().DataPoints().AppendEmpty()
-	datapoint.Attributes().PutString("host.name", "host-B")
-	datapoint.Attributes().PutString("id", "eth0")
+	datapoint.Attributes().PutStr("host.name", "host-B")
+	datapoint.Attributes().PutStr("id", "eth0")
 
 	// Duplicate the same metric, with same name and same type
 	gauge1.CopyTo(ilm.Metrics().AppendEmpty())
@@ -736,17 +736,17 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	mixedType2 := ilm.Metrics().AppendEmpty()
 	mixedType2.SetName("mixed-type")
 	datapoint = mixedType2.SetEmptySum().DataPoints().AppendEmpty()
-	datapoint.Attributes().PutString("host.name", "host-A")
-	datapoint.Attributes().PutString("id", "eth0")
+	datapoint.Attributes().PutStr("host.name", "host-A")
+	datapoint.Attributes().PutStr("id", "eth0")
 	datapoint = mixedType2.Sum().DataPoints().AppendEmpty()
-	datapoint.Attributes().PutString("host.name", "host-A")
-	datapoint.Attributes().PutString("id", "eth0")
+	datapoint.Attributes().PutStr("host.name", "host-A")
+	datapoint.Attributes().PutStr("id", "eth0")
 
 	// dontmove (metric that will not move to another resource)
 	dontmove := ilm.Metrics().AppendEmpty()
 	dontmove.SetName("dont-move")
 	datapoint = dontmove.SetEmptyGauge().DataPoints().AppendEmpty()
-	datapoint.Attributes().PutString("id", "eth0")
+	datapoint.Attributes().PutStr("id", "eth0")
 
 	// Perform the test
 	gap := createGroupByAttrsProcessor(zap.NewNop(), []string{"host.name"})

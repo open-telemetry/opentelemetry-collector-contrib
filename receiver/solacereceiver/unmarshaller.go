@@ -134,12 +134,12 @@ func (u *solaceMessageUnmarshallerV1) mapResourceSpanAttributes(spanData *model_
 		solosVersionAttrKey   = "service.version"
 	)
 	if spanData.RouterName != nil {
-		attrMap.PutString(routerNameAttrKey, *spanData.RouterName)
+		attrMap.PutStr(routerNameAttrKey, *spanData.RouterName)
 	}
 	if spanData.MessageVpnName != nil {
-		attrMap.PutString(messageVpnNameAttrKey, *spanData.MessageVpnName)
+		attrMap.PutStr(messageVpnNameAttrKey, *spanData.MessageVpnName)
 	}
-	attrMap.PutString(solosVersionAttrKey, spanData.SolosVersion)
+	attrMap.PutStr(solosVersionAttrKey, spanData.SolosVersion)
 }
 
 func (u *solaceMessageUnmarshallerV1) mapClientSpanData(spanData *model_v1.SpanData, clientSpan ptrace.Span) {
@@ -189,8 +189,8 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 		operationAttrKey   = "messaging.operation"
 		operationAttrValue = "receive"
 	)
-	attrMap.PutString(systemAttrKey, systemAttrValue)
-	attrMap.PutString(operationAttrKey, operationAttrValue)
+	attrMap.PutStr(systemAttrKey, systemAttrValue)
+	attrMap.PutStr(operationAttrKey, operationAttrValue)
 	// attributes from spanData
 	const (
 		protocolAttrKey                    = "messaging.protocol"
@@ -215,25 +215,25 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 		peerIPAttrKey                      = "net.peer.ip"
 		peerPortAttrKey                    = "net.peer.port"
 	)
-	attrMap.PutString(protocolAttrKey, spanData.Protocol)
+	attrMap.PutStr(protocolAttrKey, spanData.Protocol)
 	if spanData.ProtocolVersion != nil {
-		attrMap.PutString(protocolVersionAttrKey, *spanData.ProtocolVersion)
+		attrMap.PutStr(protocolVersionAttrKey, *spanData.ProtocolVersion)
 	}
 	if spanData.ApplicationMessageId != nil {
-		attrMap.PutString(messageIDAttrKey, *spanData.ApplicationMessageId)
+		attrMap.PutStr(messageIDAttrKey, *spanData.ApplicationMessageId)
 	}
 	if spanData.CorrelationId != nil {
-		attrMap.PutString(conversationIDAttrKey, *spanData.CorrelationId)
+		attrMap.PutStr(conversationIDAttrKey, *spanData.CorrelationId)
 	}
 	attrMap.PutInt(payloadSizeBytesAttrKey, int64(spanData.BinaryAttachmentSize+spanData.XmlAttachmentSize+spanData.MetadataSize))
-	attrMap.PutString(clientUsernameAttrKey, spanData.ClientUsername)
-	attrMap.PutString(clientNameAttrKey, spanData.ClientName)
+	attrMap.PutStr(clientUsernameAttrKey, spanData.ClientUsername)
+	attrMap.PutStr(clientNameAttrKey, spanData.ClientName)
 	attrMap.PutInt(receiveTimeAttrKey, spanData.BrokerReceiveTimeUnixNano)
-	attrMap.PutString(destinationAttrKey, spanData.Topic)
+	attrMap.PutStr(destinationAttrKey, spanData.Topic)
 
 	rgmid := u.rgmidToString(spanData.ReplicationGroupMessageId)
 	if len(rgmid) > 0 {
-		attrMap.PutString(replicationGroupMessageIDAttrKey, rgmid)
+		attrMap.PutStr(replicationGroupMessageIDAttrKey, rgmid)
 	}
 
 	if spanData.Priority != nil {
@@ -243,7 +243,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 		attrMap.PutInt(ttlAttrKey, *spanData.Ttl)
 	}
 	if spanData.ReplyToTopic != nil {
-		attrMap.PutString(replyToAttrKey, *spanData.ReplyToTopic)
+		attrMap.PutStr(replyToAttrKey, *spanData.ReplyToTopic)
 	}
 	attrMap.PutBool(dmqEligibleAttrKey, spanData.DmqEligible)
 	attrMap.PutInt(droppedEnqueueEventsSuccessAttrKey, int64(spanData.DroppedEnqueueEventsSuccess))
@@ -251,7 +251,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 
 	hostIPLen := len(spanData.HostIp)
 	if hostIPLen == 4 || hostIPLen == 16 {
-		attrMap.PutString(hostIPAttrKey, net.IP(spanData.HostIp).String())
+		attrMap.PutStr(hostIPAttrKey, net.IP(spanData.HostIp).String())
 	} else {
 		u.logger.Warn("Host ip attribute has an illegal length", zap.Int("length", hostIPLen))
 		recordRecoverableUnmarshallingError()
@@ -260,7 +260,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 
 	peerIPLen := len(spanData.HostIp)
 	if peerIPLen == 4 || peerIPLen == 16 {
-		attrMap.PutString(peerIPAttrKey, net.IP(spanData.PeerIp).String())
+		attrMap.PutStr(peerIPAttrKey, net.IP(spanData.PeerIp).String())
 	} else {
 		u.logger.Warn("Peer ip attribute has an illegal length", zap.Int("length", peerIPLen))
 		recordRecoverableUnmarshallingError()
@@ -325,11 +325,11 @@ func (u *solaceMessageUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v1.Spa
 	clientEvent.SetName(eventName)
 	clientEvent.SetTimestamp(pcommon.Timestamp(enqueueEvent.TimeUnixNano))
 	clientEvent.Attributes().EnsureCapacity(3)
-	clientEvent.Attributes().PutString(messagingDestinationEventKey, destinationName)
-	clientEvent.Attributes().PutString(messagingDestinationTypeEventKey, destinationType)
+	clientEvent.Attributes().PutStr(messagingDestinationEventKey, destinationName)
+	clientEvent.Attributes().PutStr(messagingDestinationTypeEventKey, destinationType)
 	clientEvent.Attributes().PutBool(rejectsAllEnqueuesKey, enqueueEvent.RejectsAllEnqueues)
 	if enqueueEvent.ErrorDescription != nil {
-		clientEvent.Attributes().PutString(statusMessageEventKey, enqueueEvent.GetErrorDescription())
+		clientEvent.Attributes().PutStr(statusMessageEventKey, enqueueEvent.GetErrorDescription())
 	}
 }
 
@@ -375,23 +375,23 @@ func (u *solaceMessageUnmarshallerV1) mapTransactionEvent(transactionEvent *mode
 		u.logger.Warn(fmt.Sprintf("Unknown transaction initiator %d", transactionEvent.GetInitiator()))
 		recordRecoverableUnmarshallingError()
 	}
-	clientEvent.Attributes().PutString(transactionInitiatorEventKey, initiator)
+	clientEvent.Attributes().PutStr(transactionInitiatorEventKey, initiator)
 	// conditionally set the error description if one occurred, otherwise omit
 	if transactionEvent.ErrorDescription != nil {
-		clientEvent.Attributes().PutString(transactionErrorMessageEventKey, transactionEvent.GetErrorDescription())
+		clientEvent.Attributes().PutStr(transactionErrorMessageEventKey, transactionEvent.GetErrorDescription())
 	}
 	// map the transaction type/id
 	transactionID := transactionEvent.GetTransactionId()
 	switch casted := transactionID.(type) {
 	case *model_v1.SpanData_TransactionEvent_LocalId:
 		clientEvent.Attributes().PutInt(transactionIDEventKey, int64(casted.LocalId.TransactionId))
-		clientEvent.Attributes().PutString(transactedSessionNameEventKey, casted.LocalId.SessionName)
+		clientEvent.Attributes().PutStr(transactedSessionNameEventKey, casted.LocalId.SessionName)
 		clientEvent.Attributes().PutInt(transactedSessionIDEventKey, int64(casted.LocalId.SessionId))
 	case *model_v1.SpanData_TransactionEvent_Xid_:
 		// format xxxxxxxx-yyyyyyyy-zzzzzzzz where x is FormatID (hex rep of int32), y is BranchQualifier and z is GlobalID, hex encoded.
 		xidString := fmt.Sprintf("%08x", casted.Xid.FormatId) + "-" +
 			hex.EncodeToString(casted.Xid.BranchQualifier) + "-" + hex.EncodeToString(casted.Xid.GlobalId)
-		clientEvent.Attributes().PutString(transactionXIDEventKey, xidString)
+		clientEvent.Attributes().PutStr(transactionXIDEventKey, xidString)
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown transaction ID type %T", transactionID))
 		recordRecoverableUnmarshallingError()
@@ -451,9 +451,9 @@ func (u *solaceMessageUnmarshallerV1) insertUserProperty(toMap pcommon.Map, key 
 	case *model_v1.SpanData_UserPropertyValue_Uint64Value:
 		toMap.PutInt(k, int64(v.Uint64Value))
 	case *model_v1.SpanData_UserPropertyValue_StringValue:
-		toMap.PutString(k, v.StringValue)
+		toMap.PutStr(k, v.StringValue)
 	case *model_v1.SpanData_UserPropertyValue_DestinationValue:
-		toMap.PutString(k, v.DestinationValue)
+		toMap.PutStr(k, v.DestinationValue)
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown user property type: %T", v))
 		recordRecoverableUnmarshallingError()

@@ -440,10 +440,10 @@ func (p *processorImp) updateLatencyMetrics(key metricKey, latency float64, inde
 
 func (p *processorImp) buildDimensionKVs(serviceName string, span ptrace.Span, optionalDims []Dimension, resourceAttrs pcommon.Map) pcommon.Map {
 	dims := pcommon.NewMap()
-	dims.PutString(serviceNameKey, serviceName)
-	dims.PutString(operationKey, span.Name())
-	dims.PutString(spanKindKey, span.Kind().String())
-	dims.PutString(statusCodeKey, span.Status().Code().String())
+	dims.PutStr(serviceNameKey, serviceName)
+	dims.PutStr(operationKey, span.Name())
+	dims.PutStr(spanKindKey, span.Kind().String())
+	dims.PutStr(statusCodeKey, span.Status().Code().String())
 	for _, d := range optionalDims {
 		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
 			v.CopyTo(dims.PutEmpty(d.Name))
@@ -568,7 +568,7 @@ func setLatencyExemplars(exemplarsData []exemplarData, timestamp pcommon.Timesta
 
 		exemplar.SetDoubleValue(value)
 		exemplar.SetTimestamp(timestamp)
-		exemplar.FilteredAttributes().PutString(traceIDKey, traceID.HexString())
+		exemplar.FilteredAttributes().PutStr(traceIDKey, traceID.HexString())
 	}
 
 	es.CopyTo(exemplars)

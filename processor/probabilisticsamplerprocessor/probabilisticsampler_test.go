@@ -460,9 +460,9 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 		traces.ResourceSpans().EnsureCapacity(resourceSpanCount)
 		for j := 0; j < resourceSpanCount; j++ {
 			rs := traces.ResourceSpans().AppendEmpty()
-			rs.Resource().Attributes().PutString("service.name", serviceName)
+			rs.Resource().Attributes().PutStr("service.name", serviceName)
 			rs.Resource().Attributes().PutBool("bool", true)
-			rs.Resource().Attributes().PutString("string", "yes")
+			rs.Resource().Attributes().PutStr("string", "yes")
 			rs.Resource().Attributes().PutInt("int64", 10000000)
 			ils := rs.ScopeSpans().AppendEmpty()
 			ils.Spans().EnsureCapacity(numTracesPerBatch)
@@ -472,7 +472,7 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 				span.SetTraceID(idutils.UInt64ToTraceID(r.Uint64(), r.Uint64()))
 				span.SetSpanID(idutils.UInt64ToSpanID(r.Uint64()))
 				span.Attributes().PutInt(conventions.AttributeHTTPStatusCode, 404)
-				span.Attributes().PutString("http.status_text", "Not Found")
+				span.Attributes().PutStr("http.status_text", "Not Found")
 			}
 		}
 		traceBatches = append(traceBatches, traces)

@@ -269,7 +269,7 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 			wantAttributes: func() pcommon.Map {
 				ret := pcommon.NewMap()
 				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
-				ret.PutString(tracetranslator.TagHTTPStatusMsg, "NotFound")
+				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
 			wantStatus: func() ptrace.SpanStatus {
@@ -303,7 +303,7 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 			wantAttributes: func() pcommon.Map {
 				ret := pcommon.NewMap()
 				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
-				ret.PutString(tracetranslator.TagHTTPStatusMsg, "NotFound")
+				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
 			wantStatus: func() ptrace.SpanStatus {
@@ -333,7 +333,7 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 			wantAttributes: func() pcommon.Map {
 				ret := pcommon.NewMap()
 				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
-				ret.PutString(tracetranslator.TagHTTPStatusMsg, "NotFound")
+				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
 			wantStatus: func() ptrace.SpanStatus {
@@ -362,7 +362,7 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 			wantAttributes: func() pcommon.Map {
 				ret := pcommon.NewMap()
 				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
-				ret.PutString(tracetranslator.TagHTTPStatusMsg, "NotFound")
+				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
 			wantStatus: func() ptrace.SpanStatus {
@@ -425,7 +425,7 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 			wantAttributes: func() pcommon.Map {
 				ret := pcommon.NewMap()
 				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
-				ret.PutString(tracetranslator.TagHTTPStatusMsg, "NotFound")
+				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
 			wantStatus: func() ptrace.SpanStatus {
@@ -517,8 +517,8 @@ func TestJSONHTTPToStatusCode(t *testing.T) {
 var tracesFromZipkinV1 = func() ptrace.Traces {
 	td := ptrace.NewTraces()
 	rm := td.ResourceSpans().AppendEmpty()
-	rm.Resource().Attributes().PutString(conventions.AttributeServiceName, "front-proxy")
-	rm.Resource().Attributes().PutString("ipv4", "172.31.0.2")
+	rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "front-proxy")
+	rm.Resource().Attributes().PutStr("ipv4", "172.31.0.2")
 
 	span := rm.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0xd2, 0xe6, 0x3c, 0xbe, 0x71, 0xf5, 0xa8})
@@ -529,8 +529,8 @@ var tracesFromZipkinV1 = func() ptrace.Traces {
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(1544805927, 459699000)))
 
 	rm = td.ResourceSpans().AppendEmpty()
-	rm.Resource().Attributes().PutString(conventions.AttributeServiceName, "service1")
-	rm.Resource().Attributes().PutString("ipv4", "172.31.0.4")
+	rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "service1")
+	rm.Resource().Attributes().PutStr("ipv4", "172.31.0.4")
 
 	span = rm.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0xd2, 0xe6, 0x3c, 0xbe, 0x71, 0xf5, 0xa8})
@@ -553,8 +553,8 @@ var tracesFromZipkinV1 = func() ptrace.Traces {
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(1544805927, 457663000)))
 
 	rm = td.ResourceSpans().AppendEmpty()
-	rm.Resource().Attributes().PutString(conventions.AttributeServiceName, "service2")
-	rm.Resource().Attributes().PutString("ipv4", "172.31.0.7")
+	rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "service2")
+	rm.Resource().Attributes().PutStr("ipv4", "172.31.0.7")
 	span = rm.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0xd2, 0xe6, 0x3c, 0xbe, 0x71, 0xf5, 0xa8})
 	span.SetSpanID([8]byte{0xf9, 0xeb, 0xb6, 0xe6, 0x48, 0x80, 0x61, 0x2a})
@@ -571,7 +571,7 @@ var tracesFromZipkinV1 = func() ptrace.Traces {
 	})
 
 	rm = td.ResourceSpans().AppendEmpty()
-	rm.Resource().Attributes().PutString(conventions.AttributeServiceName, "unknown-service")
+	rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "unknown-service")
 	span = rm.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0xd2, 0xe6, 0x3c, 0xbe, 0x71, 0xf5, 0xa8})
 	span.SetSpanID([8]byte{0xfe, 0x35, 0x1a, 0x05, 0x3f, 0xbc, 0xac, 0x1f})

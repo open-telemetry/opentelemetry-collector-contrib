@@ -49,7 +49,7 @@ func Test_mapToAdxLog(t *testing.T) {
 			logRecordFn: func() plog.LogRecord {
 				logRecord := plog.NewLogRecord()
 				logRecord.Body().SetStr("mylogsample")
-				logRecord.Attributes().PutString("test", "value")
+				logRecord.Attributes().PutStr("test", "value")
 				logRecord.SetTimestamp(ts)
 				logRecord.SetObservedTimestamp(ts)
 				logRecord.SetSpanID(pcommon.SpanID(spanID))
@@ -80,7 +80,7 @@ func Test_mapToAdxLog(t *testing.T) {
 			logRecordFn: func() plog.LogRecord {
 				logRecord := plog.NewLogRecord()
 				logRecord.Body().SetStr("mylogsample")
-				logRecord.Attributes().PutString("test", "value")
+				logRecord.Attributes().PutStr("test", "value")
 				logRecord.SetTimestamp(ts)
 				logRecord.SetObservedTimestamp(ts)
 				logRecord.SetSpanID(pcommon.SpanID(spanID))
@@ -106,7 +106,7 @@ func Test_mapToAdxLog(t *testing.T) {
 			name: "with nil body",
 			logRecordFn: func() plog.LogRecord {
 				logRecord := plog.NewLogRecord()
-				logRecord.Attributes().PutString("test", "value")
+				logRecord.Attributes().PutStr("test", "value")
 				logRecord.SetTimestamp(ts)
 				logRecord.SetObservedTimestamp(ts)
 				logRecord.SetSpanID(pcommon.SpanID(spanID))
@@ -138,9 +138,9 @@ func Test_mapToAdxLog(t *testing.T) {
 				attVal := pcommon.NewValueMap()
 				attMap := attVal.Map()
 				attMap.PutDouble("23", 45)
-				attMap.PutString("foo", "bar")
+				attMap.PutStr("foo", "bar")
 				attVal.CopyTo(logRecord.Body())
-				logRecord.Attributes().PutString("test", "value")
+				logRecord.Attributes().PutStr("test", "value")
 				logRecord.SetTimestamp(ts)
 				logRecord.SetObservedTimestamp(ts)
 				logRecord.SetSpanID(pcommon.SpanID(spanID))

@@ -217,7 +217,7 @@ func fillAttributesMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocme
 		if !ocLabelValues[i].GetHasValue() {
 			continue
 		}
-		attributesMap.PutString(ocLabelsKeys[i].Key, ocLabelValues[i].Value)
+		attributesMap.PutStr(ocLabelsKeys[i].Key, ocLabelValues[i].Value)
 	}
 }
 
@@ -344,10 +344,9 @@ func exemplarToMetrics(ocExemplar *ocmetrics.DistributionValue_Exemplar, exempla
 	ocAttachments := ocExemplar.GetAttachments()
 	exemplar.SetDoubleValue(ocExemplar.GetValue())
 	filteredAttributes := exemplar.FilteredAttributes()
-	filteredAttributes.Clear()
 	filteredAttributes.EnsureCapacity(len(ocAttachments))
 	for k, v := range ocAttachments {
-		filteredAttributes.PutString(k, v)
+		filteredAttributes.PutStr(k, v)
 	}
 }
 
