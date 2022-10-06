@@ -158,8 +158,8 @@ func (cfg *Config) Validate() error {
 }
 
 func (cfg *Config) validatePromConfig(promConfig *promconfig.Config) error {
-	if len(promConfig.ScrapeConfigs) == 0 {
-		return errors.New("no Prometheus scrape_configs")
+	if len(promConfig.ScrapeConfigs) == 0 && cfg.TargetAllocator == nil {
+		return errors.New("no Prometheus scrape_configs or target_allocator set")
 	}
 
 	// Reject features that Prometheus supports but that the receiver doesn't support:
