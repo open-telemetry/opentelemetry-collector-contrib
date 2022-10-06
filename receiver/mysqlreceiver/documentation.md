@@ -28,6 +28,7 @@ These are the metrics available for this scraper.
 | **mysql.sorts** | The number of MySQL sorts. | 1 | Sum(Int) | <ul> <li>sorts</li> </ul> |
 | **mysql.table.io.wait.count** | The total count of I/O wait events for a table. | 1 | Sum(Int) | <ul> <li>io_waits_operations</li> <li>table_name</li> <li>schema</li> </ul> |
 | **mysql.table.io.wait.time** | The total time of I/O wait events for a table. | ns | Sum(Int) | <ul> <li>io_waits_operations</li> <li>table_name</li> <li>schema</li> </ul> |
+| **mysql.table_open_cache** | The number of statuses (e.g. hit) for open tables cache lookups. | 1 | Sum(Int) | <ul> <li>cache_status</li> </ul> |
 | **mysql.threads** | The state of MySQL threads. | 1 | Sum(Int) | <ul> <li>threads</li> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
@@ -52,6 +53,7 @@ metrics:
 | buffer_pool_data (status) | The status of buffer pool data. | dirty, clean |
 | buffer_pool_operations (operation) | The buffer pool operations types. | read_ahead_rnd, read_ahead, read_ahead_evicted, read_requests, reads, wait_free, write_requests |
 | buffer_pool_pages (kind) | The buffer pool pages types. | data, free, misc |
+| cache_status (status) | The status of cache access. | hit, miss, overflow |
 | command (command) | The command types. | execute, close, fetch, prepare, reset, send_long_data |
 | double_writes (kind) | The doublewrite types. | pages_written, writes |
 | handler (kind) | The handler types. | commit, delete, discover, external_lock, mrr_init, prepare, read_first, read_key, read_last, read_next, read_prev, read_rnd, read_rnd_next, rollback, savepoint, savepoint_rollback, update, write |

@@ -39,6 +39,7 @@ type MetricsSettings struct {
 	MysqlSorts                 MetricSettings `mapstructure:"mysql.sorts"`
 	MysqlTableIoWaitCount      MetricSettings `mapstructure:"mysql.table.io.wait.count"`
 	MysqlTableIoWaitTime       MetricSettings `mapstructure:"mysql.table.io.wait.time"`
+	MysqlTableOpenCache        MetricSettings `mapstructure:"mysql.table_open_cache"`
 	MysqlThreads               MetricSettings `mapstructure:"mysql.threads"`
 }
 
@@ -102,6 +103,9 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		MysqlTableIoWaitTime: MetricSettings{
+			Enabled: true,
+		},
+		MysqlTableOpenCache: MetricSettings{
 			Enabled: true,
 		},
 		MysqlThreads: MetricSettings{
@@ -210,6 +214,36 @@ var MapAttributeBufferPoolPages = map[string]AttributeBufferPoolPages{
 	"data": AttributeBufferPoolPagesData,
 	"free": AttributeBufferPoolPagesFree,
 	"misc": AttributeBufferPoolPagesMisc,
+}
+
+// AttributeCacheStatus specifies the a value cache_status attribute.
+type AttributeCacheStatus int
+
+const (
+	_ AttributeCacheStatus = iota
+	AttributeCacheStatusHit
+	AttributeCacheStatusMiss
+	AttributeCacheStatusOverflow
+)
+
+// String returns the string representation of the AttributeCacheStatus.
+func (av AttributeCacheStatus) String() string {
+	switch av {
+	case AttributeCacheStatusHit:
+		return "hit"
+	case AttributeCacheStatusMiss:
+		return "miss"
+	case AttributeCacheStatusOverflow:
+		return "overflow"
+	}
+	return ""
+}
+
+// MapAttributeCacheStatus is a helper map of string to AttributeCacheStatus attribute value.
+var MapAttributeCacheStatus = map[string]AttributeCacheStatus{
+	"hit":      AttributeCacheStatusHit,
+	"miss":     AttributeCacheStatusMiss,
+	"overflow": AttributeCacheStatusOverflow,
 }
 
 // AttributeCommand specifies the a value command attribute.
@@ -1714,6 +1748,59 @@ func newMetricMysqlTableIoWaitTime(settings MetricSettings) metricMysqlTableIoWa
 	return m
 }
 
+type metricMysqlTableOpenCache struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.table_open_cache metric with initial data.
+func (m *metricMysqlTableOpenCache) init() {
+	m.data.SetName("mysql.table_open_cache")
+	m.data.SetDescription("The number of statuses (e.g. hit) for open tables cache lookups.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMysqlTableOpenCache) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cacheStatusAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutString("status", cacheStatusAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlTableOpenCache) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlTableOpenCache) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlTableOpenCache(settings MetricSettings) metricMysqlTableOpenCache {
+	m := metricMysqlTableOpenCache{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlThreads struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -1795,6 +1882,7 @@ type MetricsBuilder struct {
 	metricMysqlSorts                 metricMysqlSorts
 	metricMysqlTableIoWaitCount      metricMysqlTableIoWaitCount
 	metricMysqlTableIoWaitTime       metricMysqlTableIoWaitTime
+	metricMysqlTableOpenCache        metricMysqlTableOpenCache
 	metricMysqlThreads               metricMysqlThreads
 }
 
@@ -1833,6 +1921,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricMysqlSorts:                 newMetricMysqlSorts(settings.MysqlSorts),
 		metricMysqlTableIoWaitCount:      newMetricMysqlTableIoWaitCount(settings.MysqlTableIoWaitCount),
 		metricMysqlTableIoWaitTime:       newMetricMysqlTableIoWaitTime(settings.MysqlTableIoWaitTime),
+		metricMysqlTableOpenCache:        newMetricMysqlTableOpenCache(settings.MysqlTableOpenCache),
 		metricMysqlThreads:               newMetricMysqlThreads(settings.MysqlThreads),
 	}
 	for _, op := range options {
@@ -1913,6 +2002,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMysqlSorts.emit(ils.Metrics())
 	mb.metricMysqlTableIoWaitCount.emit(ils.Metrics())
 	mb.metricMysqlTableIoWaitTime.emit(ils.Metrics())
+	mb.metricMysqlTableOpenCache.emit(ils.Metrics())
 	mb.metricMysqlThreads.emit(ils.Metrics())
 	for _, op := range rmo {
 		op(rm)
@@ -2101,6 +2191,16 @@ func (mb *MetricsBuilder) RecordMysqlTableIoWaitCountDataPoint(ts pcommon.Timest
 // RecordMysqlTableIoWaitTimeDataPoint adds a data point to mysql.table.io.wait.time metric.
 func (mb *MetricsBuilder) RecordMysqlTableIoWaitTimeDataPoint(ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue AttributeIoWaitsOperations, tableNameAttributeValue string, schemaAttributeValue string) {
 	mb.metricMysqlTableIoWaitTime.recordDataPoint(mb.startTime, ts, val, ioWaitsOperationsAttributeValue.String(), tableNameAttributeValue, schemaAttributeValue)
+}
+
+// RecordMysqlTableOpenCacheDataPoint adds a data point to mysql.table_open_cache metric.
+func (mb *MetricsBuilder) RecordMysqlTableOpenCacheDataPoint(ts pcommon.Timestamp, inputVal string, cacheStatusAttributeValue AttributeCacheStatus) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlTableOpenCache, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlTableOpenCache.recordDataPoint(mb.startTime, ts, val, cacheStatusAttributeValue.String())
+	return nil
 }
 
 // RecordMysqlThreadsDataPoint adds a data point to mysql.threads metric.

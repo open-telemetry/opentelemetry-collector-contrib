@@ -1536,6 +1536,56 @@
                         ]
                      },
                      "unit": "ns"
+                  },
+                  {
+                     "description": "The number of statuses (e.g. hit) for open tables cache lookups.",
+                     "name": "mysql.table_open_cache",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "442",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "hit"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "443",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "miss"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "444",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "overflow"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
                   }
                ]
             }
