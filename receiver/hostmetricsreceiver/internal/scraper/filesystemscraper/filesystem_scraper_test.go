@@ -47,6 +47,8 @@ func TestScrape(t *testing.T) {
 		newErrRegex              string
 		initializationErr        string
 		expectedErr              string
+		failedMetricsLen         *int
+		continueOnErr            bool
 	}
 
 	testCases := []testCase{
@@ -252,6 +254,9 @@ func TestScrape(t *testing.T) {
 					"mode":       pcommon.NewValueStr("unknown"),
 				},
 			},
+			expectedErr:      "failed collecting partitions information: invalid partitions collection",
+			failedMetricsLen: new(int),
+			continueOnErr:    true,
 		},
 		{
 			name:        "Usage Error",
@@ -296,12 +301,18 @@ func TestScrape(t *testing.T) {
 				if isPartial {
 					var scraperErr scrapererror.PartialScrapeError
 					require.ErrorAs(t, err, &scraperErr)
-					assert.Equal(t, metricsLen, scraperErr.Failed)
+					expectedFailedMetricsLen := metricsLen
+					if test.failedMetricsLen != nil {
+						expectedFailedMetricsLen = *test.failedMetricsLen
+					}
+					assert.Equal(t, expectedFailedMetricsLen, scraperErr.Failed)
 				}
-
-				return
+				if !test.continueOnErr {
+					return
+				}
+			} else {
+				require.NoError(t, err, "Failed to scrape metrics: %v", err)
 			}
-			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
 			if !test.expectMetrics {
 				assert.Equal(t, 0, md.MetricCount())
