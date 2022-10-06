@@ -72,7 +72,7 @@ func TestLogsExporter(t *testing.T) {
 				ld: func() plog.Logs {
 					lrr := testdata.GenerateLogsOneLogRecord()
 					ldd := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-					ldd.Attributes().PutString("message", "hello")
+					ldd.Attributes().PutStr("message", "hello")
 					return lrr
 				}(),
 			},
