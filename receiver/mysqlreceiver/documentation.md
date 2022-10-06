@@ -52,7 +52,7 @@ metrics:
 | buffer_pool_data (status) | The status of buffer pool data. | dirty, clean |
 | buffer_pool_operations (operation) | The buffer pool operations types. | read_ahead_rnd, read_ahead, read_ahead_evicted, read_requests, reads, wait_free, write_requests |
 | buffer_pool_pages (kind) | The buffer pool pages types. | data, free, misc |
-| command (command) | The command types. | execute, close, fetch, prepare, reset, send_long_data |
+| command (command) | The command types. | delete, insert, select, update |
 | double_writes (kind) | The doublewrite types. | pages_written, writes |
 | handler (kind) | The handler types. | commit, delete, discover, external_lock, mrr_init, prepare, read_first, read_key, read_last, read_next, read_prev, read_rnd, read_rnd_next, rollback, savepoint, savepoint_rollback, update, write |
 | index_name (index) | The name of the index. |  |

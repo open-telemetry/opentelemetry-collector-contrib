@@ -217,41 +217,33 @@ type AttributeCommand int
 
 const (
 	_ AttributeCommand = iota
-	AttributeCommandExecute
-	AttributeCommandClose
-	AttributeCommandFetch
-	AttributeCommandPrepare
-	AttributeCommandReset
-	AttributeCommandSendLongData
+	AttributeCommandDelete
+	AttributeCommandInsert
+	AttributeCommandSelect
+	AttributeCommandUpdate
 )
 
 // String returns the string representation of the AttributeCommand.
 func (av AttributeCommand) String() string {
 	switch av {
-	case AttributeCommandExecute:
-		return "execute"
-	case AttributeCommandClose:
-		return "close"
-	case AttributeCommandFetch:
-		return "fetch"
-	case AttributeCommandPrepare:
-		return "prepare"
-	case AttributeCommandReset:
-		return "reset"
-	case AttributeCommandSendLongData:
-		return "send_long_data"
+	case AttributeCommandDelete:
+		return "delete"
+	case AttributeCommandInsert:
+		return "insert"
+	case AttributeCommandSelect:
+		return "select"
+	case AttributeCommandUpdate:
+		return "update"
 	}
 	return ""
 }
 
 // MapAttributeCommand is a helper map of string to AttributeCommand attribute value.
 var MapAttributeCommand = map[string]AttributeCommand{
-	"execute":        AttributeCommandExecute,
-	"close":          AttributeCommandClose,
-	"fetch":          AttributeCommandFetch,
-	"prepare":        AttributeCommandPrepare,
-	"reset":          AttributeCommandReset,
-	"send_long_data": AttributeCommandSendLongData,
+	"delete": AttributeCommandDelete,
+	"insert": AttributeCommandInsert,
+	"select": AttributeCommandSelect,
+	"update": AttributeCommandUpdate,
 }
 
 // AttributeDoubleWrites specifies the a value double_writes attribute.

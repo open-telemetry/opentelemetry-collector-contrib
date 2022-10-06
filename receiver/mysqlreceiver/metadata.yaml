@@ -21,7 +21,7 @@ attributes:
   command:
     value: command
     description: The command types.
-    enum: [execute, close, fetch, prepare, reset, send_long_data]
+    enum: [delete, insert, select, update]
   handler:
     value: kind
     description: The handler types.

@@ -269,12 +269,12 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "165",
+                              "asInt": "50",
                               "attributes": [
                                  {
                                     "key": "command",
                                     "value": {
-                                       "stringValue": "prepare"
+                                       "stringValue": "delete"
                                     }
                                  }
                               ],
@@ -282,12 +282,12 @@
                               "timeUnixNano": "1644862687825772000"
                            },
                            {
-                              "asInt": "163",
+                              "asInt": "78",
                               "attributes": [
                                  {
                                     "key": "command",
                                     "value": {
-                                       "stringValue": "close"
+                                       "stringValue": "insert"
                                     }
                                  }
                               ],
@@ -295,12 +295,12 @@
                               "timeUnixNano": "1644862687825772000"
                            },
                            {
-                              "asInt": "167",
+                              "asInt": "106",
                               "attributes": [
                                  {
                                     "key": "command",
                                     "value": {
-                                       "stringValue": "send_long_data"
+                                       "stringValue": "select"
                                     }
                                  }
                               ],
@@ -308,38 +308,12 @@
                               "timeUnixNano": "1644862687825772000"
                            },
                            {
-                              "asInt": "166",
+                              "asInt": "173",
                               "attributes": [
                                  {
                                     "key": "command",
                                     "value": {
-                                       "stringValue": "reset"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "162",
-                              "attributes": [
-                                 {
-                                    "key": "command",
-                                    "value": {
-                                       "stringValue": "execute"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "164",
-                              "attributes": [
-                                 {
-                                    "key": "command",
-                                    "value": {
-                                       "stringValue": "fetch"
+                                       "stringValue": "update"
                                     }
                                  }
                               ],
