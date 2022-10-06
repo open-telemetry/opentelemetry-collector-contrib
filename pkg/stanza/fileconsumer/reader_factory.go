@@ -27,6 +27,7 @@ type readerFactory struct {
 	readerConfig   *readerConfig
 	fromBeginning  bool
 	splitterConfig helper.SplitterConfig
+	encodingConfig helper.EncodingConfig
 }
 
 func (f *readerFactory) newReader(file *os.File, fp *Fingerprint) (*Reader, error) {
@@ -100,6 +101,12 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 			return
 		}
 	}
+
+	enc, err := b.encodingConfig.Build()
+	if err != nil {
+		return
+	}
+	r.encoding = enc
 
 	if b.file != nil {
 		r.file = b.file
