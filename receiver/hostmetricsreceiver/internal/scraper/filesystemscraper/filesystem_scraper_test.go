@@ -201,6 +201,59 @@ func TestScrape(t *testing.T) {
 			expectedErr:    "err1",
 		},
 		{
+			name: "Partitions and error provided",
+			config: Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+				IncludeDevices: DeviceMatchConfig{
+					Config: filterset.Config{
+						MatchType: filterset.Strict,
+					},
+					Devices: []string{"device_a", "device_b"},
+				},
+				ExcludeFSTypes: FSTypeMatchConfig{
+					Config: filterset.Config{
+						MatchType: filterset.Strict,
+					},
+					FSTypes: []string{"fs_type_b"},
+				},
+			},
+			usageFunc: func(s string) (*disk.UsageStat, error) {
+				return &disk.UsageStat{
+					Fstype: "fs_type_a",
+				}, nil
+			},
+			partitionsFunc: func(b bool) ([]disk.PartitionStat, error) {
+				return []disk.PartitionStat{
+					{
+						Device:     "device_a",
+						Mountpoint: "mount_point_a",
+						Fstype:     "fs_type_a",
+					},
+					{
+						Device:     "device_b",
+						Mountpoint: "mount_point_d",
+						Fstype:     "fs_type_c",
+					},
+				}, errors.New("invalid partitions collection")
+			},
+			expectMetrics:            true,
+			expectedDeviceDataPoints: 2,
+			expectedDeviceAttributes: []map[string]pcommon.Value{
+				{
+					"device":     pcommon.NewValueStr("device_a"),
+					"mountpoint": pcommon.NewValueStr("mount_point_a"),
+					"type":       pcommon.NewValueStr("fs_type_a"),
+					"mode":       pcommon.NewValueStr("unknown"),
+				},
+				{
+					"device":     pcommon.NewValueStr("device_b"),
+					"mountpoint": pcommon.NewValueStr("mount_point_d"),
+					"type":       pcommon.NewValueStr("fs_type_c"),
+					"mode":       pcommon.NewValueStr("unknown"),
+				},
+			},
+		},
+		{
 			name:        "Usage Error",
 			usageFunc:   func(string) (*disk.UsageStat, error) { return nil, errors.New("err2") },
 			expectedErr: "err2",

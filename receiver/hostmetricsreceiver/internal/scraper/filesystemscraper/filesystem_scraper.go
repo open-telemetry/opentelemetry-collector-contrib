@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
 )
@@ -79,7 +80,10 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	// omit logical (virtual) filesystems (not relevant for windows)
 	partitions, err := s.partitions( /*all=*/ false)
 	if err != nil {
-		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
+		if len(partitions) == 0 {
+			return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
+		}
+		s.settings.Logger.Warn("errors reporting collecting partitions information", zap.Error(err))
 	}
 
 	var errors scrapererror.ScrapeErrors
