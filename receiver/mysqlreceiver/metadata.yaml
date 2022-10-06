@@ -83,6 +83,10 @@ attributes:
     value: resource
     description: The kind of temporary resources.
     enum: [disk_tables, files, tables]
+  mysqlx_threads:
+    value: kind
+    description: The worker thread count kind.
+    enum: [available, active]
 
 metrics:
   mysql.buffer_pool.pages:
@@ -316,3 +320,14 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: [tmp_resource]
+  mysql.mysqlx_worker_threads:
+    enabled: true
+    description: The number of worker threads available.
+    unit: 1
+    extended_documentation: This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html)
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation: cumulative
+    attributes: [mysqlx_threads]

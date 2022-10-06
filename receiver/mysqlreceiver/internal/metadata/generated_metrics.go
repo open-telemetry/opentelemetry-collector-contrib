@@ -33,6 +33,7 @@ type MetricsSettings struct {
 	MysqlLockedConnects        MetricSettings `mapstructure:"mysql.locked_connects"`
 	MysqlLocks                 MetricSettings `mapstructure:"mysql.locks"`
 	MysqlLogOperations         MetricSettings `mapstructure:"mysql.log_operations"`
+	MysqlMysqlxWorkerThreads   MetricSettings `mapstructure:"mysql.mysqlx_worker_threads"`
 	MysqlOpenedResources       MetricSettings `mapstructure:"mysql.opened_resources"`
 	MysqlOperations            MetricSettings `mapstructure:"mysql.operations"`
 	MysqlPageOperations        MetricSettings `mapstructure:"mysql.page_operations"`
@@ -87,6 +88,9 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		MysqlLogOperations: MetricSettings{
+			Enabled: true,
+		},
+		MysqlMysqlxWorkerThreads: MetricSettings{
 			Enabled: true,
 		},
 		MysqlOpenedResources: MetricSettings{
@@ -470,6 +474,32 @@ var MapAttributeLogOperations = map[string]AttributeLogOperations{
 	"waits":          AttributeLogOperationsWaits,
 	"write_requests": AttributeLogOperationsWriteRequests,
 	"writes":         AttributeLogOperationsWrites,
+}
+
+// AttributeMysqlxThreads specifies the a value mysqlx_threads attribute.
+type AttributeMysqlxThreads int
+
+const (
+	_ AttributeMysqlxThreads = iota
+	AttributeMysqlxThreadsAvailable
+	AttributeMysqlxThreadsActive
+)
+
+// String returns the string representation of the AttributeMysqlxThreads.
+func (av AttributeMysqlxThreads) String() string {
+	switch av {
+	case AttributeMysqlxThreadsAvailable:
+		return "available"
+	case AttributeMysqlxThreadsActive:
+		return "active"
+	}
+	return ""
+}
+
+// MapAttributeMysqlxThreads is a helper map of string to AttributeMysqlxThreads attribute value.
+var MapAttributeMysqlxThreads = map[string]AttributeMysqlxThreads{
+	"available": AttributeMysqlxThreadsAvailable,
+	"active":    AttributeMysqlxThreadsActive,
 }
 
 // AttributeOpenedResources specifies the a value opened_resources attribute.
@@ -1462,6 +1492,59 @@ func newMetricMysqlLogOperations(settings MetricSettings) metricMysqlLogOperatio
 	return m
 }
 
+type metricMysqlMysqlxWorkerThreads struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.mysqlx_worker_threads metric with initial data.
+func (m *metricMysqlMysqlxWorkerThreads) init() {
+	m.data.SetName("mysql.mysqlx_worker_threads")
+	m.data.SetDescription("The number of worker threads available.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMysqlMysqlxWorkerThreads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, mysqlxThreadsAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("kind", mysqlxThreadsAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlMysqlxWorkerThreads) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlMysqlxWorkerThreads) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlMysqlxWorkerThreads(settings MetricSettings) metricMysqlMysqlxWorkerThreads {
+	m := metricMysqlMysqlxWorkerThreads{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlOpenedResources struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -2018,6 +2101,7 @@ type MetricsBuilder struct {
 	metricMysqlLockedConnects        metricMysqlLockedConnects
 	metricMysqlLocks                 metricMysqlLocks
 	metricMysqlLogOperations         metricMysqlLogOperations
+	metricMysqlMysqlxWorkerThreads   metricMysqlMysqlxWorkerThreads
 	metricMysqlOpenedResources       metricMysqlOpenedResources
 	metricMysqlOperations            metricMysqlOperations
 	metricMysqlPageOperations        metricMysqlPageOperations
@@ -2059,6 +2143,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricMysqlLockedConnects:        newMetricMysqlLockedConnects(settings.MysqlLockedConnects),
 		metricMysqlLocks:                 newMetricMysqlLocks(settings.MysqlLocks),
 		metricMysqlLogOperations:         newMetricMysqlLogOperations(settings.MysqlLogOperations),
+		metricMysqlMysqlxWorkerThreads:   newMetricMysqlMysqlxWorkerThreads(settings.MysqlMysqlxWorkerThreads),
 		metricMysqlOpenedResources:       newMetricMysqlOpenedResources(settings.MysqlOpenedResources),
 		metricMysqlOperations:            newMetricMysqlOperations(settings.MysqlOperations),
 		metricMysqlPageOperations:        newMetricMysqlPageOperations(settings.MysqlPageOperations),
@@ -2142,6 +2227,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMysqlLockedConnects.emit(ils.Metrics())
 	mb.metricMysqlLocks.emit(ils.Metrics())
 	mb.metricMysqlLogOperations.emit(ils.Metrics())
+	mb.metricMysqlMysqlxWorkerThreads.emit(ils.Metrics())
 	mb.metricMysqlOpenedResources.emit(ils.Metrics())
 	mb.metricMysqlOperations.emit(ils.Metrics())
 	mb.metricMysqlPageOperations.emit(ils.Metrics())
@@ -2288,6 +2374,16 @@ func (mb *MetricsBuilder) RecordMysqlLogOperationsDataPoint(ts pcommon.Timestamp
 		return fmt.Errorf("failed to parse int64 for MysqlLogOperations, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlLogOperations.recordDataPoint(mb.startTime, ts, val, logOperationsAttributeValue.String())
+	return nil
+}
+
+// RecordMysqlMysqlxWorkerThreadsDataPoint adds a data point to mysql.mysqlx_worker_threads metric.
+func (mb *MetricsBuilder) RecordMysqlMysqlxWorkerThreadsDataPoint(ts pcommon.Timestamp, inputVal string, mysqlxThreadsAttributeValue AttributeMysqlxThreads) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlMysqlxWorkerThreads, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlMysqlxWorkerThreads.recordDataPoint(mb.startTime, ts, val, mysqlxThreadsAttributeValue.String())
 	return nil
 }
 
