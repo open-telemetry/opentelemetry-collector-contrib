@@ -346,35 +346,11 @@ func trimWhitespaces(data []byte) []byte {
 	return token
 }
 
-// CustomizedConfig is a configuration of Customized Splitter helper
-type CustomizedConfig struct {
-	Enabled  bool
-	Splitter bufio.SplitFunc
-}
-
-// NewCustomizedConfig  creates a new CustomizedConfig
-func NewCustomizedConfig() CustomizedConfig {
-	return CustomizedConfig{Enabled: false}
-}
-
-// Build creates Customized SplitFunc
-func (c CustomizedConfig) Build(flusher *Flusher) (bufio.SplitFunc, error) {
-	if c.Splitter == nil {
-		return nil, fmt.Errorf("customized splitter is nil")
-	}
-	var splitFunc bufio.SplitFunc
-	if flusher != nil {
-		splitFunc = flusher.SplitFunc(c.Splitter)
-	}
-	return splitFunc, nil
-}
-
 // SplitterConfig consolidates MultilineConfig and FlusherConfig
 type SplitterConfig struct {
-	EncodingConfig EncodingConfig   `mapstructure:",squash,omitempty"`
-	Multiline      MultilineConfig  `mapstructure:"multiline,omitempty"`
-	Flusher        FlusherConfig    `mapstructure:",squash,omitempty"`
-	Customization  CustomizedConfig `mapstructure:",squash,omitempty"`
+	EncodingConfig EncodingConfig  `mapstructure:",squash,omitempty"                        json:",inline,omitempty"                       yaml:",inline,omitempty"`
+	Multiline      MultilineConfig `mapstructure:"multiline,omitempty"                      json:"multiline,omitempty"                     yaml:"multiline,omitempty"`
+	Flusher        FlusherConfig   `mapstructure:",squash,omitempty"                        json:",inline,omitempty"                       yaml:",inline,omitempty"`
 }
 
 // NewSplitterConfig returns default SplitterConfig
@@ -383,7 +359,6 @@ func NewSplitterConfig() SplitterConfig {
 		EncodingConfig: NewEncodingConfig(),
 		Multiline:      NewMultilineConfig(),
 		Flusher:        NewFlusherConfig(),
-		Customization:  NewCustomizedConfig(),
 	}
 }
 
@@ -393,20 +368,14 @@ func (c *SplitterConfig) Build(flushAtEOF bool, maxLogSize int) (*Splitter, erro
 	if err != nil {
 		return nil, err
 	}
-	if c.Customization.Enabled &&
-		(c.Multiline.LineStartPattern != "" || c.Multiline.LineEndPattern != "") {
-		return nil, fmt.Errorf("multiline should not be set when using customized splitter")
-	}
+
 	flusher := c.Flusher.Build()
-	var splitFunc bufio.SplitFunc
-	if c.Customization.Enabled {
-		splitFunc, err = c.Customization.Build(flusher)
-	} else {
-		splitFunc, err = c.Multiline.Build(enc.Encoding, flushAtEOF, flusher, maxLogSize)
-	}
+	splitFunc, err := c.Multiline.Build(enc.Encoding, flushAtEOF, flusher, maxLogSize)
+
 	if err != nil {
 		return nil, err
 	}
+
 	return &Splitter{
 		Encoding:  enc,
 		Flusher:   flusher,
