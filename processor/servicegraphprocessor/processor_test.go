@@ -196,7 +196,7 @@ func verifyDuration(t *testing.T, m pmetric.Metric) {
 func verifyAttr(t *testing.T, attrs pcommon.Map, k, expected string) {
 	v, ok := attrs.Get(k)
 	assert.True(t, ok)
-	assert.Equal(t, expected, v.AsString())
+	assert.Equal(t, expected, v.Str())
 }
 
 func sampleTraces() ptrace.Traces {

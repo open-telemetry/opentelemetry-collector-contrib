@@ -173,9 +173,9 @@ func TestScraper_SingleRow_MultiMetrics(t *testing.T) {
 		attrs := dp.Attributes()
 		assert.Equal(t, 2, attrs.Len())
 		fooVal, _ := attrs.Get("foo_name")
-		assert.Equal(t, "baz", fooVal.AsString())
+		assert.Equal(t, "baz", fooVal.Str())
 		barVal, _ := attrs.Get("bar_name")
-		assert.Equal(t, "quux", barVal.AsString())
+		assert.Equal(t, "quux", barVal.Str())
 	}
 	{
 		sumMetric := ms.At(1)
@@ -188,9 +188,9 @@ func TestScraper_SingleRow_MultiMetrics(t *testing.T) {
 		attrs := dp.Attributes()
 		assert.Equal(t, 2, attrs.Len())
 		fooVal, _ := attrs.Get("foo_name")
-		assert.Equal(t, "baz", fooVal.AsString())
+		assert.Equal(t, "baz", fooVal.Str())
 		barVal, _ := attrs.Get("bar_name")
-		assert.Equal(t, "quux", barVal.AsString())
+		assert.Equal(t, "quux", barVal.Str())
 	}
 }
 

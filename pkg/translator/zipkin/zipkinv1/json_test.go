@@ -145,8 +145,7 @@ func TestZipkinJSONFallbackToLocalComponent(t *testing.T) {
 	gotSecond, found := reqs.ResourceSpans().At(1).Resource().Attributes().Get(conventions.AttributeServiceName)
 	require.True(t, found)
 
-	if gotFirst.AsString() == "myLocalComponent" {
-		require.Equal(t, "myLocalComponent", gotFirst.Str())
+	if gotFirst.Str() == "myLocalComponent" {
 		require.Equal(t, "myServiceName", gotSecond.Str())
 	} else {
 		require.Equal(t, "myServiceName", gotFirst.Str())

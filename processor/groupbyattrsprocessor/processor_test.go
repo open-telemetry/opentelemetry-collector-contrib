@@ -779,7 +779,7 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	assert.Equal(t, 1, hostAGauge1.Gauge().DataPoints().At(0).Attributes().Len())
 	metricIDAttribute, foundMetricIDAttribute := hostAGauge1.Gauge().DataPoints().At(0).Attributes().Get("id")
 	assert.True(t, foundMetricIDAttribute)
-	assert.Equal(t, "eth0", metricIDAttribute.AsString())
+	assert.Equal(t, "eth0", metricIDAttribute.Str())
 	hostAMixedGauge, foundHostAMixedGauge := retrieveMetric(hostA.ScopeMetrics().At(0).Metrics(), "mixed-type", pmetric.MetricTypeGauge)
 	assert.True(t, foundHostAMixedGauge)
 	assert.Equal(t, 2, hostAMixedGauge.Gauge().DataPoints().Len())
@@ -806,7 +806,7 @@ func retrieveHostResource(resources pmetric.ResourceMetricsSlice, hostname strin
 	for i := 0; i < resources.Len(); i++ {
 		resource := resources.At(i)
 		hostnameValue, foundKey := resource.Resource().Attributes().Get("host.name")
-		if foundKey && hostnameValue.AsString() == hostname {
+		if foundKey && hostnameValue.Str() == hostname {
 			return resource, true
 		}
 	}

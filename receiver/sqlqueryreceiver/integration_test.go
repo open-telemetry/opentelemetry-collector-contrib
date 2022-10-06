@@ -257,7 +257,7 @@ func testMovieMetrics(t *testing.T, rm pmetric.ResourceMetrics, genreAttrKey str
 	for _, metric := range metricsByName["genre.count"] {
 		pt := metric.Gauge().DataPoints().At(0)
 		genre, _ := pt.Attributes().Get(genreAttrKey)
-		genreStr := genre.AsString()
+		genreStr := genre.Str()
 		switch genreStr {
 		case "SciFi":
 			assert.EqualValues(t, 3, pt.IntValue())
@@ -271,7 +271,7 @@ func testMovieMetrics(t *testing.T, rm pmetric.ResourceMetrics, genreAttrKey str
 	for _, metric := range metricsByName["genre.imdb"] {
 		pt := metric.Gauge().DataPoints().At(0)
 		genre, _ := pt.Attributes().Get(genreAttrKey)
-		genreStr := genre.AsString()
+		genreStr := genre.Str()
 		switch genreStr {
 		case "SciFi":
 			assert.InDelta(t, 8.2, pt.DoubleValue(), 0.1)

@@ -1243,10 +1243,10 @@ func TestSubLogs(t *testing.T) {
 
 	// The name of the leftmost log record should be 0_0_0.
 	val, _ := got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "0_0_0", val.AsString())
+	assert.Equal(t, "0_0_0", val.Str())
 	// The name of the rightmost log record should be 1_1_2.
 	val, _ = got.ResourceLogs().At(1).ScopeLogs().At(1).LogRecords().At(2).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_1_2", val.AsString())
+	assert.Equal(t, "1_1_2", val.Str())
 
 	// Logs subset from some mid index (resource 0, library 1, log 2).
 	_0_1_2 := &index{resource: 0, library: 1, record: 2} //revive:disable-line:var-naming
@@ -1256,10 +1256,10 @@ func TestSubLogs(t *testing.T) {
 
 	// The name of the leftmost log record should be 0_1_2.
 	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "0_1_2", val.AsString())
+	assert.Equal(t, "0_1_2", val.Str())
 	// The name of the rightmost log record should be 1_1_2.
 	val, _ = got.ResourceLogs().At(1).ScopeLogs().At(1).LogRecords().At(2).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_1_2", val.AsString())
+	assert.Equal(t, "1_1_2", val.Str())
 
 	// Logs subset from rightmost index (resource 1, library 1, log 2).
 	_1_1_2 := &index{resource: 1, library: 1, record: 2} //revive:disable-line:var-naming
@@ -1270,7 +1270,7 @@ func TestSubLogs(t *testing.T) {
 
 	// The name of the sole log record should be 1_1_2.
 	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_1_2", val.AsString())
+	assert.Equal(t, "1_1_2", val.Str())
 
 	// Now see how profiling and log data are merged
 	logs = createLogDataWithCustomLibraries(2, []string{"otel.logs", "otel.profiling"}, []int{10, 10})
@@ -1282,20 +1282,20 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, 5+2+10, got.LogRecordCount())
 	assert.Equal(t, "otel.logs", got.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Name())
 	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_0_5", val.AsString())
+	assert.Equal(t, "1_0_5", val.Str())
 	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(4).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_0_9", val.AsString())
+	assert.Equal(t, "1_0_9", val.Str())
 
 	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(1).ScopeLogs().At(0).Scope().Name())
 	val, _ = got.ResourceLogs().At(1).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "0_1_8", val.AsString())
+	assert.Equal(t, "0_1_8", val.Str())
 	val, _ = got.ResourceLogs().At(1).ScopeLogs().At(0).LogRecords().At(1).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "0_1_9", val.AsString())
+	assert.Equal(t, "0_1_9", val.Str())
 	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(2).ScopeLogs().At(0).Scope().Name())
 	val, _ = got.ResourceLogs().At(2).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_1_0", val.AsString())
+	assert.Equal(t, "1_1_0", val.Str())
 	val, _ = got.ResourceLogs().At(2).ScopeLogs().At(0).LogRecords().At(9).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_1_9", val.AsString())
+	assert.Equal(t, "1_1_9", val.Str())
 }
 
 // validateCompressedEqual validates that GZipped `got` contains `expected` strings

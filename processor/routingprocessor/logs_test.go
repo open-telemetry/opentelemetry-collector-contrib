@@ -394,7 +394,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		rspan := defaultExp.AllLogs()[0].ResourceLogs().At(0)
 		attr, ok := rspan.Resource().Attributes().Get("X-Tenant")
 		assert.True(t, ok, "routing attribute must exists")
-		assert.Equal(t, attr.AsString(), "something-else")
+		assert.Equal(t, "something-else", attr.Str())
 	})
 }
 

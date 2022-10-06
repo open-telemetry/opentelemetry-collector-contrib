@@ -855,7 +855,7 @@ func TestSetLatencyExemplars(t *testing.T) {
 
 	assert.NotEmpty(t, exemplarSlice)
 	assert.True(t, exist)
-	assert.Equal(t, traceIDValue.AsString(), traceID.HexString())
+	assert.Equal(t, traceIDValue.Str(), traceID.HexString())
 	assert.Equal(t, exemplarSlice.At(0).Timestamp(), timestamp)
 	assert.Equal(t, exemplarSlice.At(0).DoubleValue(), value)
 }
