@@ -17,6 +17,7 @@ require (
 	github.com/openshift/api v0.0.0-20210521075222-e273a339932a // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	go.opencensus.io v0.23.0 // indirect
 )
 
 require (

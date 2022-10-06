@@ -54,7 +54,7 @@ func (c mockDynamicClient) createPods(objects ...*unstructured.Unstructured) {
 		Resource: "pods",
 	})
 	for _, pod := range objects {
-		pods.Namespace(pod.GetNamespace()).Create(context.Background(), pod, v1.CreateOptions{})
+		_, _ = pods.Namespace(pod.GetNamespace()).Create(context.Background(), pod, v1.CreateOptions{})
 	}
 }
 

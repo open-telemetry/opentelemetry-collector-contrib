@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
@@ -31,9 +32,11 @@ type k8sobjectsreceiver struct {
 	stopperChanList []chan struct{}
 	client          dynamic.Interface
 	consumer        consumer.Logs
+	obsrecv         *obsreport.Receiver
 }
 
 func newReceiver(params component.ReceiverCreateSettings, config *Config, consumer consumer.Logs) (component.LogsReceiver, error) {
+	transport := "http"
 	client, err := config.getDynamicClient()
 	if err != nil {
 		return nil, err
@@ -44,6 +47,11 @@ func newReceiver(params component.ReceiverCreateSettings, config *Config, consum
 		setting:  params,
 		consumer: consumer,
 		objects:  config.Objects,
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             config.ID(),
+			Transport:              transport,
+			ReceiverCreateSettings: params,
+		}),
 	}, nil
 }
 
@@ -104,7 +112,9 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 				kr.setting.Logger.Error("error in pulling object", zap.String("resource", config.gvr.String()), zap.Error(err))
 			} else if len(objects.Items) > 0 {
 				logs := unstructuredListToLogData(objects)
-				kr.consumer.ConsumeLogs(ctx, logs)
+				obsCtx := kr.obsrecv.StartLogsOp(ctx)
+				err = kr.consumer.ConsumeLogs(obsCtx, logs)
+				kr.obsrecv.EndLogsOp(obsCtx, typeStr, logs.LogRecordCount(), err)
 			}
 		case <-stopperChan:
 			return
@@ -133,7 +143,10 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 		select {
 		case data := <-res:
 			logs := watchEventToLogData(data)
-			kr.consumer.ConsumeLogs(ctx, logs)
+
+			obsCtx := kr.obsrecv.StartLogsOp(ctx)
+			err := kr.consumer.ConsumeLogs(obsCtx, logs)
+			kr.obsrecv.EndLogsOp(obsCtx, typeStr, 1, err)
 		case <-stopperChan:
 			watch.Stop()
 			return

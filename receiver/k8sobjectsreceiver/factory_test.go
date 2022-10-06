@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -33,6 +35,9 @@ func TestDefaultConfig(t *testing.T) {
 
 	assert.Equal(t, &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("k8sobjects")),
+		APIConfig: k8sconfig.APIConfig{
+			AuthType: k8sconfig.AuthTypeServiceAccount,
+		},
 	}, rCfg)
 }
 

@@ -27,14 +27,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
-type Mode string
+type mode string
 
 const (
-	PullMode  Mode = "pull"
-	WatchMode Mode = "watch"
+	PullMode  mode = "pull"
+	WatchMode mode = "watch"
+
+	defaultPullInterval time.Duration = time.Hour
+	defaultMode         mode          = PullMode
 )
 
-var modeMap = map[Mode]bool{
+var modeMap = map[mode]bool{
 	PullMode:  true,
 	WatchMode: true,
 }
@@ -42,7 +45,7 @@ var modeMap = map[Mode]bool{
 type K8sObjectsConfig struct {
 	Name          string        `mapstructure:"name"`
 	Namespaces    []string      `mapstructure:"namespaces"`
-	Mode          Mode          `mapstructure:"mode"`
+	Mode          mode          `mapstructure:"mode"`
 	LabelSelector string        `mapstructure:"label_selector"`
 	FieldSelector string        `mapstructure:"field_selector"`
 	Interval      time.Duration `mapstructure:"interval"`
@@ -77,9 +80,13 @@ func (c *Config) Validate() error {
 		}
 
 		if object.Mode == "" {
-			object.Mode = PullMode
+			object.Mode = defaultMode
 		} else if _, ok := modeMap[object.Mode]; !ok {
 			return fmt.Errorf("invalid mode: %v", object.Mode)
+		}
+
+		if object.Mode == PullMode && object.Interval == 0 {
+			object.Interval = defaultPullInterval
 		}
 
 		object.gvr = gvr

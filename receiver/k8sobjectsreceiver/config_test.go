@@ -21,70 +21,77 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
-	factories, err := componenttest.NopFactories()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[config.Type(typeStr)] = factory
-	cfg, err := servicetest.LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
+	cfg := factory.CreateDefaultConfig().(*Config)
 
+	sub, err := cm.Sub("k8sobjects")
 	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
 	require.NotNil(t, cfg)
 
-	require.Equal(t, len(cfg.Receivers), 1)
-
-	r1 := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
-
-	err = r1.Validate()
+	err = cfg.Validate()
 	require.Error(t, err)
 
-	r1.makeDiscoveryClient = getMockDiscoveryClient
+	cfg.makeDiscoveryClient = getMockDiscoveryClient
+
+	err = cfg.Validate()
+	assert.NoError(t, err)
 
 	expected := []*K8sObjectsConfig{
 		{
 			Name:          "pods",
 			Mode:          PullMode,
-			Interval:      time.Second * 30,
+			Interval:      time.Hour,
 			FieldSelector: "status.phase=Running",
 			LabelSelector: "environment in (production),tier in (frontend)",
+			gvr: &schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "pods",
+			},
 		},
 		{
 			Name:       "events",
 			Mode:       WatchMode,
 			Namespaces: []string{"default"},
+			gvr: &schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "events",
+			},
 		},
 	}
-	assert.EqualValues(t, expected, r1.Objects)
-
-	err = cfg.Validate()
-	assert.NoError(t, err)
+	assert.EqualValues(t, expected, cfg.Objects)
 
 }
 
 func TestValidConfigs(t *testing.T) {
 	t.Parallel()
-	factories, err := componenttest.NopFactories()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid_config.yaml"))
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[config.Type(typeStr)] = factory
-	cfg, err := servicetest.LoadConfig(filepath.Join("testdata", "invalid_config.yaml"), factories)
+	cfg := factory.CreateDefaultConfig().(*Config)
 
+	sub, err := cm.Sub("k8sobjects/invalid_resource")
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
 
-	invalid_resource_config := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalid_resource")].(*Config)
+	cfg.makeDiscoveryClient = getMockDiscoveryClient
 
-	invalid_resource_config.makeDiscoveryClient = getMockDiscoveryClient
-
-	err = invalid_resource_config.Validate()
+	err = cfg.Validate()
 	assert.ErrorContains(t, err, "resource fake_resource not found")
 
 }
