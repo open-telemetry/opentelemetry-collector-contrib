@@ -37,14 +37,14 @@ func TestCopyMetric(t *testing.T) {
 			Tags:     []string{"x", "y", "z"},
 			Unit:     sptr("oldunit"),
 			Interval: dptr(3),
-		}, "newname", 1, 0), datadog.Metric{
+		}, "newname", 1), datadog.Metric{
 			Metric:   sptr("newname"),
 			Points:   []datadog.DataPoint{dp(1, 2), dp(3, 4)},
 			Type:     sptr("gauge"),
 			Host:     sptr("oldhost"),
 			Tags:     []string{"x", "y", "z"},
 			Unit:     sptr("oldunit"),
-			Interval: dptr(3),
+			Interval: dptr(1),
 		})
 
 		require.EqualValues(t, copyMetric(datadog.Metric{
@@ -55,14 +55,14 @@ func TestCopyMetric(t *testing.T) {
 			Tags:     []string{"x", "y", "z"},
 			Unit:     sptr("oldunit"),
 			Interval: dptr(3),
-		}, "", 1, 0), datadog.Metric{
+		}, "", 1), datadog.Metric{
 			Metric:   sptr(""),
 			Points:   []datadog.DataPoint{dp(1, 2), dp(3, 4)},
 			Type:     sptr("gauge"),
 			Host:     sptr("oldhost"),
 			Tags:     []string{"x", "y", "z"},
 			Unit:     sptr("oldunit"),
-			Interval: dptr(3),
+			Interval: dptr(1),
 		})
 
 		require.EqualValues(t, copyMetric(datadog.Metric{
@@ -73,14 +73,14 @@ func TestCopyMetric(t *testing.T) {
 			Tags:     []string{"x", "y", "z"},
 			Unit:     sptr("oldunit"),
 			Interval: dptr(3),
-		}, "", 1, 0), datadog.Metric{
+		}, "", 1), datadog.Metric{
 			Metric:   sptr(""),
 			Points:   []datadog.DataPoint{dp(1, 2), dp(3, 4)},
 			Type:     sptr("gauge"),
 			Host:     sptr("oldhost"),
 			Tags:     []string{"x", "y", "z"},
 			Unit:     sptr("oldunit"),
-			Interval: dptr(3),
+			Interval: dptr(1),
 		})
 	})
 
@@ -93,14 +93,14 @@ func TestCopyMetric(t *testing.T) {
 			Tags:     []string{"x", "y", "z"},
 			Unit:     sptr("oldunit"),
 			Interval: dptr(3),
-		}, "", 1, 5), datadog.Metric{
+		}, "", 1), datadog.Metric{
 			Metric:   sptr(""),
 			Points:   []datadog.DataPoint{dp(1, 2), dp(3, 4)},
 			Type:     sptr("gauge"),
 			Host:     sptr("oldhost"),
 			Tags:     []string{"x", "y", "z"},
 			Unit:     sptr("oldunit"),
-			Interval: dptr(5),
+			Interval: dptr(1),
 		})
 	})
 
@@ -142,8 +142,8 @@ func TestCopyMetric(t *testing.T) {
 		} {
 			t.Run(fmt.Sprintf("%.0f", tt.div), func(t *testing.T) {
 				require.EqualValues(t,
-					copyMetric(datadog.Metric{Points: tt.in}, "", tt.div, 0),
-					datadog.Metric{Metric: sptr(""), Type: sptr("gauge"), Points: tt.out},
+					copyMetric(datadog.Metric{Points: tt.in}, "", tt.div),
+					datadog.Metric{Metric: sptr(""), Type: sptr("gauge"), Points: tt.out, Interval: dptr(1)},
 				)
 			})
 		}
@@ -258,10 +258,11 @@ func TestExtractSystemMetrics(t *testing.T) {
 				Tags:   []string{"state:steal"},
 			},
 			out: []datadog.Metric{{
-				Metric: sptr("system.cpu.stolen"),
-				Points: []datadog.DataPoint{dp(2, 200), dp(3, 400)},
-				Tags:   []string{"state:steal"},
-				Type:   sptr("gauge"),
+				Metric:   sptr("system.cpu.stolen"),
+				Points:   []datadog.DataPoint{dp(2, 200), dp(3, 400)},
+				Tags:     []string{"state:steal"},
+				Type:     sptr("gauge"),
+				Interval: dptr(1),
 			}},
 		},
 		{
@@ -400,9 +401,10 @@ func TestExtractSystemMetrics(t *testing.T) {
 				Points: []datadog.DataPoint{dp(2, 2), dp(3, 4)},
 			},
 			out: []datadog.Metric{{
-				Metric: sptr("system.disk.in_use"),
-				Points: []datadog.DataPoint{dp(2, 2), dp(3, 4)},
-				Type:   sptr("gauge"),
+				Metric:   sptr("system.disk.in_use"),
+				Points:   []datadog.DataPoint{dp(2, 2), dp(3, 4)},
+				Type:     sptr("gauge"),
+				Interval: dptr(1),
 			}},
 		},
 	} {
@@ -607,10 +609,11 @@ func TestPrepareSystemMetrics(t *testing.T) {
 			Interval: dptr(1),
 		},
 		{
-			Metric: sptr("system.cpu.stolen"),
-			Points: []datadog.DataPoint{{fptr(0.24), fptr(25)}},
-			Type:   sptr("gauge"),
-			Tags:   []string{"state:steal"},
+			Metric:   sptr("system.cpu.stolen"),
+			Points:   []datadog.DataPoint{{fptr(0.24), fptr(25)}},
+			Type:     sptr("gauge"),
+			Tags:     []string{"state:steal"},
+			Interval: dptr(1),
 		},
 		{
 			Metric:   sptr("system.mem.total"),
@@ -696,9 +699,10 @@ func TestPrepareSystemMetrics(t *testing.T) {
 			Interval: dptr(1),
 		},
 		{
-			Metric: sptr("system.disk.in_use"),
-			Points: []datadog.DataPoint{{fptr(1), fptr(4.3)}, {fptr(2), fptr(5.5)}, {fptr(3), fptr(12.1)}},
-			Type:   sptr("gauge"),
+			Metric:   sptr("system.disk.in_use"),
+			Points:   []datadog.DataPoint{{fptr(1), fptr(4.3)}, {fptr(2), fptr(5.5)}, {fptr(3), fptr(12.1)}},
+			Type:     sptr("gauge"),
+			Interval: dptr(1),
 		},
 	})
 }
