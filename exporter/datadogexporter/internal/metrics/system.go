@@ -20,12 +20,12 @@ import (
 	"gopkg.in/zorkian/go-datadog-api.v2"
 )
 
-// copyMetric copies the metric from src by giving it a new name. If div differs from 1, it scales all
+// copySystemMetric copies the metric from src by giving it a new name. If div differs from 1, it scales all
 // data points.
 //
 // Warning: this is not a deep copy. Only some fields are fully copied, others remain shared. This is intentional.
 // Do not alter the returned metric (or the source one) after copying.
-func copyMetric(src datadog.Metric, name string, div float64) datadog.Metric {
+func copySystemMetric(src datadog.Metric, name string, div float64) datadog.Metric {
 	cp := src
 	cp.Metric = &name
 	i := 1
@@ -60,54 +60,54 @@ func extractSystemMetrics(m datadog.Metric) []datadog.Metric {
 	var series []datadog.Metric
 	switch *m.Metric {
 	case "system.cpu.load_average.1m":
-		series = append(series, copyMetric(m, "system.load.1", 1))
+		series = append(series, copySystemMetric(m, "system.load.1", 1))
 	case "system.cpu.load_average.5m":
-		series = append(series, copyMetric(m, "system.load.5", 1))
+		series = append(series, copySystemMetric(m, "system.load.5", 1))
 	case "system.cpu.load_average.15m":
-		series = append(series, copyMetric(m, "system.load.15", 1))
+		series = append(series, copySystemMetric(m, "system.load.15", 1))
 	case "system.cpu.utilization":
 		for _, tag := range m.Tags {
 			switch tag {
 			case "state:idle":
-				series = append(series, copyMetric(m, "system.cpu.idle", divPercentage))
+				series = append(series, copySystemMetric(m, "system.cpu.idle", divPercentage))
 			case "state:user":
-				series = append(series, copyMetric(m, "system.cpu.user", divPercentage))
+				series = append(series, copySystemMetric(m, "system.cpu.user", divPercentage))
 			case "state:system":
-				series = append(series, copyMetric(m, "system.cpu.system", divPercentage))
+				series = append(series, copySystemMetric(m, "system.cpu.system", divPercentage))
 			case "state:wait":
-				series = append(series, copyMetric(m, "system.cpu.iowait", divPercentage))
+				series = append(series, copySystemMetric(m, "system.cpu.iowait", divPercentage))
 			case "state:steal":
-				series = append(series, copyMetric(m, "system.cpu.stolen", divPercentage))
+				series = append(series, copySystemMetric(m, "system.cpu.stolen", divPercentage))
 			}
 		}
 	case "system.memory.usage":
-		series = append(series, copyMetric(m, "system.mem.total", divMebibytes))
+		series = append(series, copySystemMetric(m, "system.mem.total", divMebibytes))
 		for _, tag := range m.Tags {
 			switch tag {
 			case "state:free", "state:cached", "state:buffered":
-				series = append(series, copyMetric(m, "system.mem.usable", divMebibytes))
+				series = append(series, copySystemMetric(m, "system.mem.usable", divMebibytes))
 			}
 		}
 	case "system.network.io":
 		for _, tag := range m.Tags {
 			switch tag {
 			case "direction:receive":
-				series = append(series, copyMetric(m, "system.net.bytes_rcvd", 1))
+				series = append(series, copySystemMetric(m, "system.net.bytes_rcvd", 1))
 			case "direction:transmit":
-				series = append(series, copyMetric(m, "system.net.bytes_sent", 1))
+				series = append(series, copySystemMetric(m, "system.net.bytes_sent", 1))
 			}
 		}
 	case "system.paging.usage":
 		for _, tag := range m.Tags {
 			switch tag {
 			case "state:free":
-				series = append(series, copyMetric(m, "system.swap.free", divMebibytes))
+				series = append(series, copySystemMetric(m, "system.swap.free", divMebibytes))
 			case "state:used":
-				series = append(series, copyMetric(m, "system.swap.used", divMebibytes))
+				series = append(series, copySystemMetric(m, "system.swap.used", divMebibytes))
 			}
 		}
 	case "system.filesystem.utilization":
-		series = append(series, copyMetric(m, "system.disk.in_use", 1))
+		series = append(series, copySystemMetric(m, "system.disk.in_use", 1))
 	}
 	return series
 }

@@ -29,7 +29,7 @@ func TestCopyMetric(t *testing.T) {
 	dp := func(a, b float64) datadog.DataPoint { return datadog.DataPoint{&a, &b} }
 
 	t.Run("renaming", func(t *testing.T) {
-		require.EqualValues(t, copyMetric(datadog.Metric{
+		require.EqualValues(t, copySystemMetric(datadog.Metric{
 			Metric:   sptr("oldname"),
 			Points:   []datadog.DataPoint{dp(1, 2), dp(3, 4)},
 			Type:     sptr("oldtype"),
@@ -47,7 +47,7 @@ func TestCopyMetric(t *testing.T) {
 			Interval: dptr(1),
 		})
 
-		require.EqualValues(t, copyMetric(datadog.Metric{
+		require.EqualValues(t, copySystemMetric(datadog.Metric{
 			Metric:   sptr("oldname"),
 			Points:   []datadog.DataPoint{dp(1, 2), dp(3, 4)},
 			Type:     sptr("oldtype"),
@@ -65,7 +65,7 @@ func TestCopyMetric(t *testing.T) {
 			Interval: dptr(1),
 		})
 
-		require.EqualValues(t, copyMetric(datadog.Metric{
+		require.EqualValues(t, copySystemMetric(datadog.Metric{
 			Metric:   nil,
 			Points:   []datadog.DataPoint{dp(1, 2), dp(3, 4)},
 			Type:     sptr("oldtype"),
@@ -85,7 +85,7 @@ func TestCopyMetric(t *testing.T) {
 	})
 
 	t.Run("interval", func(t *testing.T) {
-		require.EqualValues(t, copyMetric(datadog.Metric{
+		require.EqualValues(t, copySystemMetric(datadog.Metric{
 			Metric:   nil,
 			Points:   []datadog.DataPoint{dp(1, 2), dp(3, 4)},
 			Type:     sptr("oldtype"),
@@ -142,7 +142,7 @@ func TestCopyMetric(t *testing.T) {
 		} {
 			t.Run(fmt.Sprintf("%.0f", tt.div), func(t *testing.T) {
 				require.EqualValues(t,
-					copyMetric(datadog.Metric{Points: tt.in}, "", tt.div),
+					copySystemMetric(datadog.Metric{Points: tt.in}, "", tt.div),
 					datadog.Metric{Metric: sptr(""), Type: sptr("gauge"), Points: tt.out, Interval: dptr(1)},
 				)
 			})
