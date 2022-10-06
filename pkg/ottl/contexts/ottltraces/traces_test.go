@@ -38,7 +38,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	refSpan, refIS, refResource := createTelemetry()
 
 	newAttrs := pcommon.NewMap()
-	newAttrs.PutString("hello", "world")
+	newAttrs.PutStr("hello", "world")
 
 	newEvents := ptrace.NewSpanEventSlice()
 	newEvents.AppendEmpty().SetName("new event")
@@ -230,7 +230,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().PutString("str", "newVal")
+				span.Attributes().PutStr("str", "newVal")
 			},
 		},
 		{
@@ -549,7 +549,7 @@ func createTelemetry() (ptrace.Span, pcommon.InstrumentationScope, pcommon.Resou
 	span.SetKind(ptrace.SpanKindServer)
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
-	span.Attributes().PutString("str", "val")
+	span.Attributes().PutStr("str", "val")
 	span.Attributes().PutBool("bool", true)
 	span.Attributes().PutInt("int", 10)
 	span.Attributes().PutDouble("double", 1.2)

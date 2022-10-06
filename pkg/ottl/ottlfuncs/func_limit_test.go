@@ -26,7 +26,7 @@ import (
 
 func Test_limit(t *testing.T) {
 	input := pcommon.NewMap()
-	input.PutString("test", "hello world")
+	input.PutStr("test", "hello world")
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
@@ -51,7 +51,7 @@ func Test_limit(t *testing.T) {
 			target: target,
 			limit:  int64(1),
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 			},
 		},
 		{
@@ -67,7 +67,7 @@ func Test_limit(t *testing.T) {
 			target: target,
 			limit:  int64(100),
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)
 			},
@@ -77,7 +77,7 @@ func Test_limit(t *testing.T) {
 			target: target,
 			limit:  int64(3),
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)
 			},
@@ -88,7 +88,7 @@ func Test_limit(t *testing.T) {
 			limit:  int64(2),
 			keep:   []string{"test3"},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutBool("test3", true)
 			},
 		},
@@ -98,7 +98,7 @@ func Test_limit(t *testing.T) {
 			limit:  int64(2),
 			keep:   []string{"test", "test3"},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutBool("test3", true)
 			},
 		},
@@ -108,7 +108,7 @@ func Test_limit(t *testing.T) {
 			limit:  int64(1),
 			keep:   []string{"te"},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 			},
 		},
 		{
@@ -117,7 +117,7 @@ func Test_limit(t *testing.T) {
 			limit:  int64(2),
 			keep:   []string{"te", "test3"},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutBool("test3", true)
 			},
 		},

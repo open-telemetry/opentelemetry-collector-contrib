@@ -63,7 +63,7 @@ func (b builder) setAttrs(attrs pcommon.Map, attrValues []string) {
 		panic(attrValues)
 	}
 	for i, a := range b.attrs {
-		attrs.PutString(a, attrValues[i])
+		attrs.PutStr(a, attrValues[i])
 	}
 }
 

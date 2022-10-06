@@ -142,7 +142,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.Attributes().PutString("str", "newVal")
+				datapoint.Attributes().PutStr("str", "newVal")
 			},
 		},
 		{
@@ -467,7 +467,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(datapoint pmetric.HistogramDataPoint) {
-				datapoint.Attributes().PutString("str", "newVal")
+				datapoint.Attributes().PutStr("str", "newVal")
 			},
 		},
 		{
@@ -888,7 +888,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
-				datapoint.Attributes().PutString("str", "newVal")
+				datapoint.Attributes().PutStr("str", "newVal")
 			},
 		},
 		{
@@ -1194,7 +1194,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(datapoint pmetric.SummaryDataPoint) {
-				datapoint.Attributes().PutString("str", "newVal")
+				datapoint.Attributes().PutStr("str", "newVal")
 			},
 		},
 		{
@@ -1375,7 +1375,7 @@ func createSummaryDataPointTelemetry() pmetric.SummaryDataPoint {
 	return summaryDataPoint
 }
 func createAttributeTelemetry(attributes pcommon.Map) {
-	attributes.PutString("str", "val")
+	attributes.PutStr("str", "val")
 	attributes.PutBool("bool", true)
 	attributes.PutInt("int", 10)
 	attributes.PutDouble("double", 1.2)
@@ -1561,7 +1561,7 @@ func createNewTelemetry() (pmetric.ExemplarSlice, pcommon.Map) {
 	newExemplars.AppendEmpty().SetIntValue(4)
 
 	newAttrs := pcommon.NewMap()
-	newAttrs.PutString("hello", "world")
+	newAttrs.PutStr("hello", "world")
 
 	return newExemplars, newAttrs
 }

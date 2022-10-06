@@ -59,7 +59,7 @@ func (m *metricPostgresqlBlocksRead) recordDatapointWithoutDatabaseAndTable(star
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("source", sourceAttributeValue)
+	dp.Attributes().PutStr("source", sourceAttributeValue)
 }
 
 // RecordPostgresqlCommitsDataPointWithoutDatabase adds a data point to postgresql.commits metric without the database metric attribute
@@ -105,7 +105,7 @@ func (m *metricPostgresqlRows) recordDatapointWithoutDatabaseAndTable(start pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("state", stateAttributeValue)
+	dp.Attributes().PutStr("state", stateAttributeValue)
 }
 
 // RecordPostgresqlOperationsDataPointWithoutDatabaseAndTable adds a data point to postgresql.operations metric without the database or table metric attribute
@@ -121,5 +121,5 @@ func (m *metricPostgresqlOperations) recordDatapointWithoutDatabaseAndTable(star
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("operation", operationAttributeValue)
+	dp.Attributes().PutStr("operation", operationAttributeValue)
 }

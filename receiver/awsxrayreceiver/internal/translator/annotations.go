@@ -26,7 +26,7 @@ func addAnnotations(annos map[string]interface{}, attrs pcommon.Map) {
 		case int64:
 			attrs.PutInt(k, t)
 		case string:
-			attrs.PutString(k, t)
+			attrs.PutStr(k, t)
 		case bool:
 			attrs.PutBool(k, t)
 		case float32:

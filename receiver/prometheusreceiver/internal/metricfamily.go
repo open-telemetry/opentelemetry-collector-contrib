@@ -218,7 +218,7 @@ func populateAttributes(mType pmetric.MetricType, ls labels.Labels, dest pcommon
 			// empty label values should be omitted
 			continue
 		}
-		dest.PutString(ls[i].Name, ls[i].Value)
+		dest.PutStr(ls[i].Name, ls[i].Value)
 	}
 }
 

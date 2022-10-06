@@ -53,7 +53,7 @@ func Test_mapToAdxTrace(t *testing.T) {
 				span.SetKind(ptrace.SpanKindServer)
 				span.SetStartTimestamp(ts)
 				span.SetEndTimestamp(ts)
-				span.Attributes().PutString("traceAttribKey", "traceAttribVal")
+				span.Attributes().PutStr("traceAttribKey", "traceAttribVal")
 
 				return span
 			},
@@ -104,11 +104,11 @@ func Test_mapToAdxTrace(t *testing.T) {
 				span.SetKind(ptrace.SpanKindServer)
 				span.SetStartTimestamp(ts)
 				span.SetEndTimestamp(ts)
-				span.Attributes().PutString("traceAttribKey", "traceAttribVal")
+				span.Attributes().PutStr("traceAttribKey", "traceAttribVal")
 				event := span.Events().AppendEmpty()
 				event.SetName("eventName")
 				event.SetTimestamp(ts)
-				event.Attributes().PutString("eventkey", "eventvalue")
+				event.Attributes().PutStr("eventkey", "eventvalue")
 
 				link := span.Links().AppendEmpty()
 				link.SetSpanID(pcommon.SpanID(spanID))
