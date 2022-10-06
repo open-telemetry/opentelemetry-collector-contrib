@@ -21,84 +21,83 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
 )
 
-func TestDefaultConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+func TestLoadConfig(t *testing.T) {
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Exporters[factory.Type()] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "default.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[config.NewComponentID(typeStr)]
-
-	assert.Equal(t, e,
-		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-			QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-			RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-			TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
-			Encoding: Encoding{
-				Name:        "otlp",
-				Compression: "none",
+	tests := []struct {
+		id       config.ComponentID
+		expected config.Exporter
+	}{
+		{
+			id: config.NewComponentIDWithName(typeStr, "default"),
+			expected: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+				TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
+				Encoding: Encoding{
+					Name:        "otlp",
+					Compression: "none",
+				},
+				AWS: AWSConfig{
+					Region: "us-west-2",
+				},
+				MaxRecordsPerBatch: batch.MaxBatchedRecords,
+				MaxRecordSize:      batch.MaxRecordSize,
 			},
-			AWS: AWSConfig{
-				Region: "us-west-2",
-			},
-			MaxRecordsPerBatch: batch.MaxBatchedRecords,
-			MaxRecordSize:      batch.MaxRecordSize,
 		},
-	)
-}
-
-func TestConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[factory.Type()] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	e := cfg.Exporters[config.NewComponentID(typeStr)]
-
-	assert.Equal(t, e,
-		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-			RetrySettings: exporterhelper.RetrySettings{
-				Enabled:         false,
-				MaxInterval:     30 * time.Second,
-				InitialInterval: 5 * time.Second,
-				MaxElapsedTime:  300 * time.Second,
+		{
+			id: config.NewComponentIDWithName(typeStr, ""),
+			expected: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				RetrySettings: exporterhelper.RetrySettings{
+					Enabled:         false,
+					MaxInterval:     30 * time.Second,
+					InitialInterval: 5 * time.Second,
+					MaxElapsedTime:  300 * time.Second,
+				},
+				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+				Encoding: Encoding{
+					Name:        "otlp-proto",
+					Compression: "none",
+				},
+				AWS: AWSConfig{
+					StreamName:      "test-stream",
+					KinesisEndpoint: "awskinesis.mars-1.aws.galactic",
+					Region:          "mars-1",
+					Role:            "arn:test-role",
+				},
+				MaxRecordSize:      1000,
+				MaxRecordsPerBatch: 10,
 			},
-			TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-			QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-			Encoding: Encoding{
-				Name:        "otlp-proto",
-				Compression: "none",
-			},
-			AWS: AWSConfig{
-				StreamName:      "test-stream",
-				KinesisEndpoint: "awskinesis.mars-1.aws.galactic",
-				Region:          "mars-1",
-				Role:            "arn:test-role",
-			},
-			MaxRecordSize:      1000,
-			MaxRecordsPerBatch: 10,
 		},
-	)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalExporter(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
 
 func TestConfigCheck(t *testing.T) {
