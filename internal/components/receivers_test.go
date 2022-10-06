@@ -290,6 +290,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "skywalking",
 		},
 		{
+			receiver: "snmp",
+		},
+		{
 			receiver: "splunk_hec",
 		},
 		{
