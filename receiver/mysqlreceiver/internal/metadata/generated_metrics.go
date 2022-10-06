@@ -46,6 +46,7 @@ type MetricsSettings struct {
 	MysqlBufferPoolPages        MetricSettings `mapstructure:"mysql.buffer_pool.pages"`
 	MysqlBufferPoolUsage        MetricSettings `mapstructure:"mysql.buffer_pool.usage"`
 	MysqlCommands               MetricSettings `mapstructure:"mysql.commands"`
+	MysqlConnectionCount        MetricSettings `mapstructure:"mysql.connection.count"`
 	MysqlDoubleWrites           MetricSettings `mapstructure:"mysql.double_writes"`
 	MysqlHandlers               MetricSettings `mapstructure:"mysql.handlers"`
 	MysqlIndexIoWaitCount       MetricSettings `mapstructure:"mysql.index.io.wait.count"`
@@ -90,6 +91,9 @@ func DefaultMetricsSettings() MetricsSettings {
 		},
 		MysqlCommands: MetricSettings{
 			Enabled: true,
+		},
+		MysqlConnectionCount: MetricSettings{
+			Enabled: false,
 		},
 		MysqlDoubleWrites: MetricSettings{
 			Enabled: true,
@@ -1203,6 +1207,57 @@ func newMetricMysqlCommands(settings MetricSettings) metricMysqlCommands {
 	return m
 }
 
+type metricMysqlConnectionCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.connection.count metric with initial data.
+func (m *metricMysqlConnectionCount) init() {
+	m.data.SetName("mysql.connection.count")
+	m.data.SetDescription("The number of connection attempts (successful or not) to the MySQL server.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlConnectionCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlConnectionCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlConnectionCount(settings MetricSettings) metricMysqlConnectionCount {
+	m := metricMysqlConnectionCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlDoubleWrites struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -2291,6 +2346,7 @@ type MetricsBuilder struct {
 	metricMysqlBufferPoolPages        metricMysqlBufferPoolPages
 	metricMysqlBufferPoolUsage        metricMysqlBufferPoolUsage
 	metricMysqlCommands               metricMysqlCommands
+	metricMysqlConnectionCount        metricMysqlConnectionCount
 	metricMysqlDoubleWrites           metricMysqlDoubleWrites
 	metricMysqlHandlers               metricMysqlHandlers
 	metricMysqlIndexIoWaitCount       metricMysqlIndexIoWaitCount
@@ -2335,6 +2391,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricMysqlBufferPoolPages:        newMetricMysqlBufferPoolPages(settings.MysqlBufferPoolPages),
 		metricMysqlBufferPoolUsage:        newMetricMysqlBufferPoolUsage(settings.MysqlBufferPoolUsage),
 		metricMysqlCommands:               newMetricMysqlCommands(settings.MysqlCommands),
+		metricMysqlConnectionCount:        newMetricMysqlConnectionCount(settings.MysqlConnectionCount),
 		metricMysqlDoubleWrites:           newMetricMysqlDoubleWrites(settings.MysqlDoubleWrites),
 		metricMysqlHandlers:               newMetricMysqlHandlers(settings.MysqlHandlers),
 		metricMysqlIndexIoWaitCount:       newMetricMysqlIndexIoWaitCount(settings.MysqlIndexIoWaitCount),
@@ -2421,6 +2478,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMysqlBufferPoolPages.emit(ils.Metrics())
 	mb.metricMysqlBufferPoolUsage.emit(ils.Metrics())
 	mb.metricMysqlCommands.emit(ils.Metrics())
+	mb.metricMysqlConnectionCount.emit(ils.Metrics())
 	mb.metricMysqlDoubleWrites.emit(ils.Metrics())
 	mb.metricMysqlHandlers.emit(ils.Metrics())
 	mb.metricMysqlIndexIoWaitCount.emit(ils.Metrics())
@@ -2517,6 +2575,16 @@ func (mb *MetricsBuilder) RecordMysqlCommandsDataPoint(ts pcommon.Timestamp, inp
 		return fmt.Errorf("failed to parse int64 for MysqlCommands, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlCommands.recordDataPoint(mb.startTime, ts, val, commandAttributeValue.String())
+	return nil
+}
+
+// RecordMysqlConnectionCountDataPoint adds a data point to mysql.connection.count metric.
+func (mb *MetricsBuilder) RecordMysqlConnectionCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlConnectionCount, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlConnectionCount.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

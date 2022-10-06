@@ -320,6 +320,15 @@ metrics:
       input_type: string
       monotonic: true
       aggregation: cumulative
+  mysql.connection.count:
+    enabled: false
+    description: The number of connection attempts (successful or not) to the MySQL server.
+    unit: 1
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
   mysql.tmp_resources:
     enabled: true
     description: The number of created temporary resources.

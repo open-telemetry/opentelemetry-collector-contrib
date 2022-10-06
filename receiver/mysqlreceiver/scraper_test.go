@@ -42,6 +42,8 @@ func TestScrape(t *testing.T) {
 		cfg.Metrics.MysqlStatementEventCount.Enabled = true
 		cfg.Metrics.MysqlStatementEventWaitTime.Enabled = true
 
+		cfg.Metrics.MysqlConnectionCount.Enabled = true
+
 		scraper := newMySQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 		scraper.sqlclient = &mockClient{
 			globalStatsFile:     "global_stats",
