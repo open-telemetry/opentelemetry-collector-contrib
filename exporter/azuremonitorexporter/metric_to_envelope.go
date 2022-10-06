@@ -22,64 +22,50 @@ import (
 	"go.uber.org/zap"
 )
 
-// const (
-// 	traceIDTag      = "TraceId"
-// 	spanIDTag       = "SpanId"
-// 	categoryNameTag = "CategoryName"
-// )
-
-// var severityLevelMap = map[string]contracts.SeverityLevel{
-// 	"Verbose":     contracts.Verbose,
-// 	"Information": contracts.Information,
-// 	"Warning":     contracts.Warning,
-// 	"Error":       contracts.Error,
-// 	"Critical":    contracts.Critical,
-// }
-
 type metricPacker struct {
 	logger *zap.Logger
 }
 
-func (packer *metricPacker) MetricToEnvelope(metric pmetric.Metric) *contracts.Envelope {
-	envelope := contracts.NewEnvelope()
-	envelope.Tags = make(map[string]string)
-	envelope.Time = time.Now().Format(time.RFC3339Nano)
+type metricDataPoint interface {
+	getDataPoints() []*contracts.DataPoint
+}
 
-	dataPoint := contracts.NewDataPoint()
-	dataPoint.Name = metric.Name()
-	dataPoint.Value = 12.34
-	dataPoint.Count = 1
-	dataPoint.Kind = contracts.Measurement
+func (packer *metricPacker) MetricToEnvelopes(metric pmetric.Metric) []*contracts.Envelope {
+	var envelopes []*contracts.Envelope
 
-	metricData := contracts.NewMetricData()
-	metricData.Metrics = []*contracts.DataPoint{dataPoint}
-	metricData.Properties = make(map[string]string)
+	metricDataPoint := packer.getMetricDataPoint(metric)
 
-	packer.logger.Info("dataPoint.Value = ", zap.Any("dataPoint.Value", dataPoint.Value))
+	if metricDataPoint != nil {
 
-	// metric.GetData()
+		for _, dataPoint := range metricDataPoint.getDataPoints() {
 
-	// messageData.Message = logRecord.Body().StringVal()
+			envelope := contracts.NewEnvelope()
+			envelope.Tags = make(map[string]string)
+			envelope.Time = time.Now().Format(time.RFC3339Nano)
 
-	// hexTraceID := logRecord.TraceID().HexString()
-	// messageData.Properties[traceIDTag] = hexTraceID
-	// envelope.Tags[contracts.OperationId] = hexTraceID
+			metricData := contracts.NewMetricData()
+			metricData.Metrics = []*contracts.DataPoint{dataPoint}
+			metricData.Properties = make(map[string]string)
 
-	// messageData.Properties[spanIDTag] = logRecord.SpanID().HexString()
+			envelope.Name = metricData.EnvelopeName("")
 
-	// messageData.Properties[categoryNameTag] = logRecord.Name()
-	envelope.Name = metricData.EnvelopeName("")
+			data := contracts.NewData()
+			data.BaseData = metricData
+			data.BaseType = metricData.BaseType()
+			envelope.Data = data
 
-	data := contracts.NewData()
-	data.BaseData = metricData
-	data.BaseType = metricData.BaseType()
-	envelope.Data = data
+			packer.sanitize(func() []string { return metricData.Sanitize() })
+			packer.sanitize(func() []string { return envelope.Sanitize() })
+			packer.sanitize(func() []string { return contracts.SanitizeTags(envelope.Tags) })
 
-	packer.sanitize(func() []string { return metricData.Sanitize() })
-	packer.sanitize(func() []string { return envelope.Sanitize() })
-	packer.sanitize(func() []string { return contracts.SanitizeTags(envelope.Tags) })
+			packer.logger.Debug("Metric is packed", zap.String("name", dataPoint.Name), zap.Any("value", dataPoint.Value))
 
-	return envelope
+			envelopes = append(envelopes, envelope)
+
+		}
+	}
+
+	return envelopes
 }
 
 func (packer *metricPacker) sanitize(sanitizeFunc func() []string) {
@@ -88,18 +74,138 @@ func (packer *metricPacker) sanitize(sanitizeFunc func() []string) {
 	}
 }
 
-// func (packer *logPacker) toAiSeverityLevel(severityText string) contracts.SeverityLevel {
-// 	if severityLevel, ok := severityLevelMap[severityText]; ok {
-// 		return severityLevel
-// 	}
-
-// 	packer.logger.Warn("Unknown Severity Level", zap.String("Severity Level", severityText))
-// 	return contracts.Verbose
-// }
-
 func newMetricPacker(logger *zap.Logger) *metricPacker {
 	packer := &metricPacker{
 		logger: logger,
 	}
 	return packer
+}
+
+func (packer metricPacker) getMetricDataPoint(metric pmetric.Metric) metricDataPoint {
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
+		return newScalarMetric(metric.Name(), metric.Gauge().DataPoints())
+	case pmetric.MetricTypeSum:
+		return newScalarMetric(metric.Name(), metric.Sum().DataPoints())
+	case pmetric.MetricTypeHistogram:
+		return newHistogramMetric(metric.Name(), metric.Histogram().DataPoints())
+	case pmetric.MetricTypeExponentialHistogram:
+		return newExponentialHistogramMetric(metric.Name(), metric.ExponentialHistogram().DataPoints())
+	case pmetric.MetricTypeSummary:
+		return newSummaryMetric(metric.Name(), metric.Summary().DataPoints())
+	}
+
+	packer.logger.Debug("Unsupported metric type", zap.Any("Metric Type", metric.Type()))
+	return nil
+}
+
+type scalarMetric struct {
+	name           string
+	dataPointSlice pmetric.NumberDataPointSlice
+}
+
+func newScalarMetric(name string, dataPointSlice pmetric.NumberDataPointSlice) *scalarMetric {
+	return &scalarMetric{
+		name:           name,
+		dataPointSlice: dataPointSlice,
+	}
+}
+
+func (m scalarMetric) getDataPoints() []*contracts.DataPoint {
+	dataPoints := make([]*contracts.DataPoint, m.dataPointSlice.Len())
+	for i := 0; i < m.dataPointSlice.Len(); i++ {
+		numberDataPoint := m.dataPointSlice.At(i)
+		dataPoint := contracts.NewDataPoint()
+		dataPoint.Name = m.name
+		dataPoint.Value = numberDataPoint.DoubleValue()
+		dataPoint.Count = 1
+		dataPoint.Kind = contracts.Measurement
+		dataPoints[i] = dataPoint
+	}
+	return dataPoints
+}
+
+type histogramMetric struct {
+	name           string
+	dataPointSlice pmetric.HistogramDataPointSlice
+}
+
+func newHistogramMetric(name string, dataPointSlice pmetric.HistogramDataPointSlice) *histogramMetric {
+	return &histogramMetric{
+		name:           name,
+		dataPointSlice: dataPointSlice,
+	}
+}
+
+func (m histogramMetric) getDataPoints() []*contracts.DataPoint {
+	dataPoints := make([]*contracts.DataPoint, m.dataPointSlice.Len())
+	for i := 0; i < m.dataPointSlice.Len(); i++ {
+		histogramDataPoint := m.dataPointSlice.At(i)
+		dataPoint := contracts.NewDataPoint()
+		dataPoint.Name = m.name
+		dataPoint.Value = histogramDataPoint.Sum()
+		dataPoint.Kind = contracts.Aggregation
+		dataPoint.Min = histogramDataPoint.Min()
+		dataPoint.Max = histogramDataPoint.Max()
+		dataPoint.Count = int(histogramDataPoint.Count())
+
+		dataPoints[i] = dataPoint
+	}
+	return dataPoints
+}
+
+type exponentialHistogramMetric struct {
+	name           string
+	dataPointSlice pmetric.ExponentialHistogramDataPointSlice
+}
+
+func newExponentialHistogramMetric(name string, dataPointSlice pmetric.ExponentialHistogramDataPointSlice) *exponentialHistogramMetric {
+	return &exponentialHistogramMetric{
+		name:           name,
+		dataPointSlice: dataPointSlice,
+	}
+}
+
+func (m exponentialHistogramMetric) getDataPoints() []*contracts.DataPoint {
+	dataPoints := make([]*contracts.DataPoint, m.dataPointSlice.Len())
+	for i := 0; i < m.dataPointSlice.Len(); i++ {
+		exponentialHistogramDataPoint := m.dataPointSlice.At(i)
+		dataPoint := contracts.NewDataPoint()
+		dataPoint.Name = m.name
+		dataPoint.Value = exponentialHistogramDataPoint.Sum()
+		dataPoint.Kind = contracts.Aggregation
+		dataPoint.Min = exponentialHistogramDataPoint.Min()
+		dataPoint.Max = exponentialHistogramDataPoint.Max()
+		dataPoint.Count = int(exponentialHistogramDataPoint.Count())
+
+		dataPoints[i] = dataPoint
+	}
+	return dataPoints
+}
+
+type summaryMetric struct {
+	name           string
+	dataPointSlice pmetric.SummaryDataPointSlice
+}
+
+func newSummaryMetric(name string, dataPointSlice pmetric.SummaryDataPointSlice) *summaryMetric {
+	return &summaryMetric{
+		name:           name,
+		dataPointSlice: dataPointSlice,
+	}
+}
+
+func (m summaryMetric) getDataPoints() []*contracts.DataPoint {
+	dataPoints := make([]*contracts.DataPoint, m.dataPointSlice.Len())
+	for i := 0; i < m.dataPointSlice.Len(); i++ {
+		summaryDataPoint := m.dataPointSlice.At(i)
+		dataPoint := contracts.NewDataPoint()
+		dataPoint.Name = m.name
+		dataPoint.Value = summaryDataPoint.Sum()
+		dataPoint.Kind = contracts.Aggregation
+		dataPoint.Count = int(summaryDataPoint.Count())
+
+		dataPoints[i] = dataPoint
+	}
+	return dataPoints
 }

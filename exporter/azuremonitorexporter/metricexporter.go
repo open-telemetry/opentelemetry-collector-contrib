@@ -38,9 +38,10 @@ func (exporter *metricExporter) onMetricData(context context.Context, metricData
 		for j := 0; j < scopeMetrics.Len(); j++ {
 			metrics := scopeMetrics.At(j).Metrics()
 			for k := 0; k < metrics.Len(); k++ {
-				envelope := metricPacker.MetricToEnvelope(metrics.At(k))
-				envelope.IKey = exporter.config.InstrumentationKey
-				exporter.transportChannel.Send(envelope)
+				for _, envelope := range metricPacker.MetricToEnvelopes(metrics.At(k)) {
+					envelope.IKey = exporter.config.InstrumentationKey
+					exporter.transportChannel.Send(envelope)
+				}
 			}
 		}
 	}
