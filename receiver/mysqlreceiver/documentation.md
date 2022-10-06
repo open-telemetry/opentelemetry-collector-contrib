@@ -14,6 +14,7 @@ These are the metrics available for this scraper.
 | **mysql.buffer_pool.page_flushes** | The number of requests to flush pages from the InnoDB buffer pool. | 1 | Sum(Int) | <ul> </ul> |
 | **mysql.buffer_pool.pages** | The number of pages in the InnoDB buffer pool. | 1 | Sum(Int) | <ul> <li>buffer_pool_pages</li> </ul> |
 | **mysql.buffer_pool.usage** | The number of bytes in the InnoDB buffer pool. | By | Sum(Int) | <ul> <li>buffer_pool_data</li> </ul> |
+| mysql.client.network.io | The number of transmitted bytes between server and clients. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
 | **mysql.commands** | The number of times each type of command has been executed. | 1 | Sum(Int) | <ul> <li>command</li> </ul> |
 | mysql.connection.errors | Errors that occur during the client connection process. | 1 | Sum(Int) | <ul> <li>connection_error</li> </ul> |
 | **mysql.double_writes** | The number of writes to the InnoDB doublewrite buffer. | 1 | Sum(Int) | <ul> <li>double_writes</li> </ul> |
@@ -75,6 +76,7 @@ metrics:
 | connection_status (status) | The connection status. | accepted, closed, rejected |
 | digest (digest) | Digest. |  |
 | digest_text (digest_text) | Text before digestion. |  |
+| direction (kind) | The name of the transmission direction. | received, sent |
 | double_writes (kind) | The doublewrite types. | pages_written, writes |
 | event_state (kind) | Possible event states. | errors, warnings, rows_affected, rows_sent, rows_examined, created_tmp_disk_tables, created_tmp_tables, sort_merge_passes, sort_rows, no_index_used |
 | handler (kind) | The handler types. | commit, delete, discover, external_lock, mrr_init, prepare, read_first, read_key, read_last, read_next, read_prev, read_rnd, read_rnd_next, rollback, savepoint, savepoint_rollback, update, write |

@@ -54,6 +54,8 @@ func TestScrape(t *testing.T) {
 		cfg.Metrics.MysqlTableLockWaitWriteCount.Enabled = true
 		cfg.Metrics.MysqlTableLockWaitWriteTime.Enabled = true
 
+		cfg.Metrics.MysqlClientNetworkIo.Enabled = true
+
 		scraper := newMySQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 		scraper.sqlclient = &mockClient{
 			globalStatsFile:             "global_stats",

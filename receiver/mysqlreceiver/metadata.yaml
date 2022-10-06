@@ -79,6 +79,10 @@ attributes:
   index_name:
     value: index
     description: The name of the index.
+  direction:
+    value: kind
+    description: The name of the transmission direction.
+    enum: [received, sent]
   digest:
     value: digest
     description: Digest.
@@ -325,6 +329,16 @@ metrics:
       monotonic: false
       aggregation: cumulative
     attributes: [threads]
+  mysql.client.network.io:
+    enabled: false
+    description: The number of transmitted bytes between server and clients.
+    unit: By
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+    attributes: [direction]
   mysql.opened_resources:
     enabled: true
     description: The number of opened resources.
