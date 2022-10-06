@@ -348,9 +348,9 @@ func trimWhitespaces(data []byte) []byte {
 
 // SplitterConfig consolidates MultilineConfig and FlusherConfig
 type SplitterConfig struct {
-	EncodingConfig EncodingConfig  `mapstructure:",squash,omitempty"                        json:",inline,omitempty"                       yaml:",inline,omitempty"`
-	Multiline      MultilineConfig `mapstructure:"multiline,omitempty"                      json:"multiline,omitempty"                     yaml:"multiline,omitempty"`
-	Flusher        FlusherConfig   `mapstructure:",squash,omitempty"                        json:",inline,omitempty"                       yaml:",inline,omitempty"`
+	EncodingConfig EncodingConfig  `mapstructure:",squash,omitempty"`
+	Multiline      MultilineConfig `mapstructure:"multiline,omitempty"`
+	Flusher        FlusherConfig   `mapstructure:",squash,omitempty"`
 }
 
 // NewSplitterConfig returns default SplitterConfig
