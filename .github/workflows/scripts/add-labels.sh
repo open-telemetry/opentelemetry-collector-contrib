@@ -23,7 +23,7 @@ fi
 declare -A labels
 labels["/good-first-issue"]="good first issue"
 labels["/help-wanted"]="help wanted"
-
+labels["/never-stale"]="never stale"
 
 if [ -n "${labels["${COMMENT}"]}" ] ; then
     gh issue edit "${ISSUE}" --add-label "${labels["${COMMENT}"]}"
