@@ -47,3 +47,7 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace go.opentelemetry.io/collector => github.com/dmitryax/opentelemetry-collector v0.49.1-0.20221006222824-5b0277b73df3
+
+replace go.opentelemetry.io/collector/pdata => github.com/dmitryax/opentelemetry-collector/pdata v0.0.0-20221006222824-5b0277b73df3

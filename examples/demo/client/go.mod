@@ -31,3 +31,7 @@ require (
 	google.golang.org/genproto v0.0.0-20211118181313-81c1377c94b1 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )
+
+replace go.opentelemetry.io/collector => github.com/dmitryax/opentelemetry-collector v0.49.1-0.20221006222824-5b0277b73df3
+
+replace go.opentelemetry.io/collector/pdata => github.com/dmitryax/opentelemetry-collector/pdata v0.0.0-20221006222824-5b0277b73df3

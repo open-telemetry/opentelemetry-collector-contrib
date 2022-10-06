@@ -19,6 +19,8 @@ github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ3
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/dmitryax/opentelemetry-collector/pdata v0.0.0-20221006222824-5b0277b73df3 h1:YHCsH6JQb5NKFmKv30C1w0I4bb8NRoqCbwFWsfw07Tg=
+github.com/dmitryax/opentelemetry-collector/pdata v0.0.0-20221006222824-5b0277b73df3/go.mod h1:0hqgNMRneVXaLNelv3q0XKJbyBW9aMDwyC15pKd30+E=
 github.com/eapache/go-resiliency v1.2.0/go.mod h1:kFI+JgMyC7bLPUVY133qvEBtVayf5mFgVsvEsIPBvNs=
 github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21/go.mod h1:+020luEh2TKB4/GOp8oxxtq0Daoen/Cii55CzbTV6DU=
 github.com/eapache/queue v1.1.0/go.mod h1:6eCeP0CKFpHLu8blIFXhExK/dRa7WDZfr6jVFPTqq+I=
@@ -140,8 +142,6 @@ github.com/xdg-go/scram v1.0.2/go.mod h1:1WAq6h33pAW+iRreB34OORO2Nf7qel3VV3fjBj+
 github.com/xdg-go/stringprep v1.0.2/go.mod h1:8F9zXuvzgwmyT5DUm4GUfZGDdT3W+LCvS6+da4O5kxM=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
-go.opentelemetry.io/collector/pdata v0.61.1-0.20221004012633-7cb544d3be36 h1:VvTydiEO/vdMsbm1enwrmvmmYzQ+8+wEraxSxidltc4=
-go.opentelemetry.io/collector/pdata v0.61.1-0.20221004012633-7cb544d3be36/go.mod h1:0hqgNMRneVXaLNelv3q0XKJbyBW9aMDwyC15pKd30+E=
 go.opentelemetry.io/collector/semconv v0.61.1-0.20221004012633-7cb544d3be36 h1:HDXJc9bkJAtsax1UNV/4unYhp1cb75Sso4Xd5nDiCsU=
 go.opentelemetry.io/collector/semconv v0.61.1-0.20221004012633-7cb544d3be36/go.mod h1:aRkHuJ/OshtDFYluKEtnG5nkKTsy1HZuvZVHmakx+Vo=
 go.opentelemetry.io/proto/otlp v0.7.0/go.mod h1:PqfVotwruBrMGOCsRd/89rSnXhoiJIqeYNgFYFoEGnI=

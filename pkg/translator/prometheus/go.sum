@@ -14,6 +14,10 @@ github.com/cncf/xds/go v0.0.0-20211011173535-cb28da3451f1/go.mod h1:eXthEFrGJvWH
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/dmitryax/opentelemetry-collector v0.49.1-0.20221006222824-5b0277b73df3 h1:8ftz9j53BmE10Ztieg5J1GC2bYqxDaGESRFYuI6LHw8=
+github.com/dmitryax/opentelemetry-collector v0.49.1-0.20221006222824-5b0277b73df3/go.mod h1:TaURV/Ub8t2JC12w7WDdWNyToyytXBqfsVF+FmROIhc=
+github.com/dmitryax/opentelemetry-collector/pdata v0.0.0-20221006222824-5b0277b73df3 h1:YHCsH6JQb5NKFmKv30C1w0I4bb8NRoqCbwFWsfw07Tg=
+github.com/dmitryax/opentelemetry-collector/pdata v0.0.0-20221006222824-5b0277b73df3/go.mod h1:0hqgNMRneVXaLNelv3q0XKJbyBW9aMDwyC15pKd30+E=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=
@@ -79,10 +83,6 @@ github.com/stretchr/testify v1.8.0 h1:pSgiaMZlXftHpm5L7V1+rVB+AZJydKsMxsQBIJw4PK
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
-go.opentelemetry.io/collector v0.61.1-0.20221004012633-7cb544d3be36 h1:zRfP98G2+nIg/uRA+XqmqeMcAm9T9HXT5cKas27D83E=
-go.opentelemetry.io/collector v0.61.1-0.20221004012633-7cb544d3be36/go.mod h1:TaURV/Ub8t2JC12w7WDdWNyToyytXBqfsVF+FmROIhc=
-go.opentelemetry.io/collector/pdata v0.61.1-0.20221004012633-7cb544d3be36 h1:VvTydiEO/vdMsbm1enwrmvmmYzQ+8+wEraxSxidltc4=
-go.opentelemetry.io/collector/pdata v0.61.1-0.20221004012633-7cb544d3be36/go.mod h1:0hqgNMRneVXaLNelv3q0XKJbyBW9aMDwyC15pKd30+E=
 go.opentelemetry.io/proto/otlp v0.7.0/go.mod h1:PqfVotwruBrMGOCsRd/89rSnXhoiJIqeYNgFYFoEGnI=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=

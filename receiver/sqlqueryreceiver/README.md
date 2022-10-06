@@ -75,8 +75,8 @@ Descriptor:
      -> DataType: Gauge
 NumberDataPoints #0
 Data point attributes:
-     -> genre: STRING(sci-fi)
-     -> dbinstance: STRING(mydbinstance)     
+     -> genre: Str(sci-fi)
+     -> dbinstance: Str(mydbinstance)     
 Value: 2
 
 Metric #1
@@ -85,8 +85,8 @@ Descriptor:
      -> DataType: Gauge
 NumberDataPoints #0
 Data point attributes:
-     -> genre: STRING(action)
-     -> dbinstance: STRING(mydbinstance)
+     -> genre: Str(action)
+     -> dbinstance: Str(mydbinstance)
 Value: 1
 ```
 

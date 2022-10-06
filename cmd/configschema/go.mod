@@ -1002,3 +1002,7 @@ exclude github.com/docker/distribution v2.8.0+incompatible
 // some dependencies attempt to bring something like v1.8.2-0.20220303173753-edfe657b5405, which is older than v0.38.0
 // at the time of this inclusion, v0.38.0 was the latest version available (also tagged as v2.38.0)
 replace github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.38.0
+
+replace go.opentelemetry.io/collector => github.com/dmitryax/opentelemetry-collector v0.49.1-0.20221006222824-5b0277b73df3
+
+replace go.opentelemetry.io/collector/pdata => github.com/dmitryax/opentelemetry-collector/pdata v0.0.0-20221006222824-5b0277b73df3
