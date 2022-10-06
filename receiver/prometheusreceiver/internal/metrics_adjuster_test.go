@@ -659,13 +659,13 @@ func runScript(t *testing.T, ma MetricsAdjuster, job, instance string, tests []*
 			adjusted := pmetric.NewMetrics()
 			test.metrics.CopyTo(adjusted)
 			// Add the instance/job to the input metrics.
-			adjusted.ResourceMetrics().At(0).Resource().Attributes().PutString(semconv.AttributeServiceInstanceID, instance)
-			adjusted.ResourceMetrics().At(0).Resource().Attributes().PutString(semconv.AttributeServiceName, job)
+			adjusted.ResourceMetrics().At(0).Resource().Attributes().PutStr(semconv.AttributeServiceInstanceID, instance)
+			adjusted.ResourceMetrics().At(0).Resource().Attributes().PutStr(semconv.AttributeServiceName, job)
 			assert.NoError(t, ma.AdjustMetrics(adjusted))
 
 			// Add the instance/job to the expected metrics as well.
-			test.adjusted.ResourceMetrics().At(0).Resource().Attributes().PutString(semconv.AttributeServiceInstanceID, instance)
-			test.adjusted.ResourceMetrics().At(0).Resource().Attributes().PutString(semconv.AttributeServiceName, job)
+			test.adjusted.ResourceMetrics().At(0).Resource().Attributes().PutStr(semconv.AttributeServiceInstanceID, instance)
+			test.adjusted.ResourceMetrics().At(0).Resource().Attributes().PutStr(semconv.AttributeServiceName, job)
 			assert.EqualValues(t, test.adjusted, adjusted)
 		})
 	}

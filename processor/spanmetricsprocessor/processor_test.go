@@ -604,10 +604,10 @@ func buildSampleTrace() ptrace.Traces {
 
 func initServiceSpans(serviceSpans serviceSpans, spans ptrace.ResourceSpans) {
 	if serviceSpans.serviceName != "" {
-		spans.Resource().Attributes().PutString(conventions.AttributeServiceName, serviceSpans.serviceName)
+		spans.Resource().Attributes().PutStr(conventions.AttributeServiceName, serviceSpans.serviceName)
 	}
 
-	spans.Resource().Attributes().PutString(regionResourceAttrName, sampleRegion)
+	spans.Resource().Attributes().PutStr(regionResourceAttrName, sampleRegion)
 
 	ils := spans.ScopeSpans().AppendEmpty()
 	for _, span := range serviceSpans.spans {
@@ -622,7 +622,7 @@ func initSpan(span span, s ptrace.Span) {
 	now := time.Now()
 	s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
 	s.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(sampleLatencyDuration)))
-	s.Attributes().PutString(stringAttrName, "stringAttrValue")
+	s.Attributes().PutStr(stringAttrName, "stringAttrValue")
 	s.Attributes().PutInt(intAttrName, 99)
 	s.Attributes().PutDouble(doubleAttrName, 99.99)
 	s.Attributes().PutBool(boolAttrName, true)

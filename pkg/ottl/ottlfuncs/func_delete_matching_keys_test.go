@@ -26,7 +26,7 @@ import (
 
 func Test_deleteMatchingKeys(t *testing.T) {
 	input := pcommon.NewMap()
-	input.PutString("test", "hello world")
+	input.PutStr("test", "hello world")
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
@@ -55,7 +55,7 @@ func Test_deleteMatchingKeys(t *testing.T) {
 			target:  target,
 			pattern: "\\d$",
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 			},
 		},
 		{
@@ -63,7 +63,7 @@ func Test_deleteMatchingKeys(t *testing.T) {
 			target:  target,
 			pattern: "not a matching pattern",
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)
 			},

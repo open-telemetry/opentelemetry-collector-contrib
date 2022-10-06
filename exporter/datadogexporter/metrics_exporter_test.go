@@ -434,9 +434,9 @@ func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {
 	rm := rms.AppendEmpty()
 
 	attrs := rm.Resource().Attributes()
-	attrs.PutString("datadog.host.name", host)
+	attrs.PutStr("datadog.host.name", host)
 	for attr, val := range additionalAttributes {
-		attrs.PutString(attr, val)
+		attrs.PutStr(attr, val)
 	}
 	ilms := rm.ScopeMetrics()
 

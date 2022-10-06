@@ -28,7 +28,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 	refResource := createResource()
 
 	newAttrs := pcommon.NewMap()
-	newAttrs.PutString("hello", "world")
+	newAttrs.PutStr("hello", "world")
 
 	tests := []struct {
 		name     string
@@ -70,7 +70,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(resource pcommon.Resource) {
-				resource.Attributes().PutString("str", "newVal")
+				resource.Attributes().PutStr("str", "newVal")
 			},
 		},
 		{
@@ -250,7 +250,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 
 func createResource() pcommon.Resource {
 	resource := pcommon.NewResource()
-	resource.Attributes().PutString("str", "val")
+	resource.Attributes().PutStr("str", "val")
 	resource.Attributes().PutBool("bool", true)
 	resource.Attributes().PutInt("int", 10)
 	resource.Attributes().PutDouble("double", 1.2)

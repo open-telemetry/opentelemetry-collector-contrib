@@ -285,31 +285,31 @@ func generateLogs(resourceFunc ...generateResourceFunc) plog.Logs {
 
 func withPassthroughIP(passthroughIP string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().PutString(kube.K8sIPLabelName, passthroughIP)
+		res.Attributes().PutStr(kube.K8sIPLabelName, passthroughIP)
 	}
 }
 
 func withHostname(hostname string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().PutString(conventions.AttributeHostName, hostname)
+		res.Attributes().PutStr(conventions.AttributeHostName, hostname)
 	}
 }
 
 func withPodUID(uid string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().PutString("k8s.pod.uid", uid)
+		res.Attributes().PutStr("k8s.pod.uid", uid)
 	}
 }
 
 func withContainerName(containerName string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().PutString(conventions.AttributeK8SContainerName, containerName)
+		res.Attributes().PutStr(conventions.AttributeK8SContainerName, containerName)
 	}
 }
 
 func withContainerRunID(containerRunID string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().PutString(conventions.AttributeK8SContainerRestartCount, containerRunID)
+		res.Attributes().PutStr(conventions.AttributeK8SContainerRestartCount, containerRunID)
 	}
 }
 
@@ -530,10 +530,10 @@ func TestIPSourceWithoutPodAssociation(t *testing.T) {
 
 			for _, res := range resources {
 				if tc.resourceK8SIP != "" {
-					res.Attributes().PutString(kube.K8sIPLabelName, tc.resourceK8SIP)
+					res.Attributes().PutStr(kube.K8sIPLabelName, tc.resourceK8SIP)
 				}
 				if tc.resourceIP != "" {
-					res.Attributes().PutString(clientIPLabelName, tc.resourceIP)
+					res.Attributes().PutStr(clientIPLabelName, tc.resourceIP)
 				}
 			}
 
@@ -620,7 +620,7 @@ func TestIPSourceWithPodAssociation(t *testing.T) {
 			}
 
 			for _, res := range resources {
-				res.Attributes().PutString(tc.labelName, tc.labelValue)
+				res.Attributes().PutStr(tc.labelName, tc.labelValue)
 			}
 
 			m.testConsume(ctx, traces, metrics, logs, nil)

@@ -26,9 +26,9 @@ import (
 
 func Test_replaceAllMatches(t *testing.T) {
 	input := pcommon.NewMap()
-	input.PutString("test", "hello world")
-	input.PutString("test2", "hello")
-	input.PutString("test3", "goodbye")
+	input.PutStr("test", "hello world")
+	input.PutStr("test2", "hello")
+	input.PutStr("test3", "goodbye")
 
 	target := &ottl.StandardGetSetter[pcommon.Map]{
 		Getter: func(ctx pcommon.Map) interface{} {
@@ -52,9 +52,9 @@ func Test_replaceAllMatches(t *testing.T) {
 			pattern:     "hello*",
 			replacement: "hello {universe}",
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutString("test", "hello {universe}")
-				expectedMap.PutString("test2", "hello {universe}")
-				expectedMap.PutString("test3", "goodbye")
+				expectedMap.PutStr("test", "hello {universe}")
+				expectedMap.PutStr("test2", "hello {universe}")
+				expectedMap.PutStr("test3", "goodbye")
 			},
 		},
 		{
@@ -63,9 +63,9 @@ func Test_replaceAllMatches(t *testing.T) {
 			pattern:     "nothing*",
 			replacement: "nothing {matches}",
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutString("test", "hello world")
-				expectedMap.PutString("test2", "hello")
-				expectedMap.PutString("test3", "goodbye")
+				expectedMap.PutStr("test", "hello world")
+				expectedMap.PutStr("test2", "hello")
+				expectedMap.PutStr("test3", "goodbye")
 			},
 		},
 	}

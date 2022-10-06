@@ -242,7 +242,7 @@ func TestBodyConversion(t *testing.T) {
 	le.Attributes().Sort()
 
 	body := pcommon.NewValueMap()
-	body.Map().PutString("a", "value")
+	body.Map().PutStr("a", "value")
 
 	bv := body.Map().PutEmptySlice("b")
 	bv.AppendEmpty().SetStr("first")

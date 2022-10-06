@@ -120,6 +120,6 @@ func fillInAttributes(dimensions []*model.Dimension, attributes pcommon.Map) {
 			// TODO: Log or metric for this odd ball?
 			continue
 		}
-		attributes.PutString(dim.Key, dim.Value)
+		attributes.PutStr(dim.Key, dim.Value)
 	}
 }
