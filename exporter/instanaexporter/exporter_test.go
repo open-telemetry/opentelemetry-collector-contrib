@@ -106,3 +106,26 @@ func TestSelfSignedBackend(t *testing.T) {
 
 	assert.NoError(t, instanaExporter.export(ctx, server.URL, make(map[string]string), []byte{}))
 }
+
+func TestSelfSignedBackendCAFileNotFound(t *testing.T) {
+	var err error
+
+	cfg := Config{
+		AgentKey:           "key11",
+		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
+		Endpoint:           "",
+		CAFile:             "ca_file_not_found.pem",
+		ExporterSettings:   config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid")),
+	}
+
+	ctx := context.Background()
+
+	instanaExporter := newInstanaExporter(&cfg, componenttest.NewNopExporterCreateSettings())
+	err = instanaExporter.start(ctx, componenttest.NewNopHost())
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Error(t, instanaExporter.export(ctx, "", make(map[string]string), []byte{}), "expect not to find the ca file")
+}

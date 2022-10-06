@@ -16,7 +16,9 @@ exporters:
     endpoint: http://example.com/api/
     agent_key: key1
     ca_file: ca.crt
-
+  instana/valid_no_ca_file:
+    endpoint: http://example.com/api/
+    agent_key: key1
 
 service:
   pipelines:

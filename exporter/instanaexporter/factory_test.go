@@ -77,6 +77,24 @@ func TestLoadConfig(t *testing.T) {
 		}, validConfig)
 	})
 
+	t.Run("valid config without ca_file", func(t *testing.T) {
+		validConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "valid_no_ca_file")].(*Config)
+		err = validConfig.Validate()
+
+		require.NoError(t, err)
+		assert.Equal(t, &Config{
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid_no_ca_file")),
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint:        "http://example.com/api/",
+				Timeout:         30 * time.Second,
+				Headers:         map[string]string{},
+				WriteBufferSize: 512 * 1024,
+			},
+			Endpoint: "http://example.com/api/",
+			AgentKey: "key1",
+		}, validConfig)
+	})
+
 	t.Run("bad endpoint", func(t *testing.T) {
 		badEndpointConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "bad_endpoint")].(*Config)
 		err = badEndpointConfig.Validate()
