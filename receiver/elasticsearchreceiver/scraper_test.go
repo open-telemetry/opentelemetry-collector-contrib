@@ -51,6 +51,7 @@ func TestScraper(t *testing.T) {
 	mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
 	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
 	mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
+	mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
 	sc.client = &mockClient
 
@@ -77,6 +78,7 @@ func TestScraperMetricsWithoutDirection(t *testing.T) {
 	mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
 	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
 	mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
+	mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
 	sc.client = &mockClient
 
@@ -104,6 +106,7 @@ func TestScraperSkipClusterMetrics(t *testing.T) {
 	mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
 	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
 	mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
+	mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
 	sc.client = &mockClient
 
@@ -131,6 +134,7 @@ func TestScraperNoNodesMetrics(t *testing.T) {
 	mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
 	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
 	mockClient.On("NodeStats", mock.Anything, []string{}).Return(nodeStats(t), nil)
+	mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
 	sc.client = &mockClient
 
@@ -182,6 +186,7 @@ func TestScrapingError(t *testing.T) {
 				mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nil, err404)
 				mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
+				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
 				sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
@@ -206,6 +211,7 @@ func TestScrapingError(t *testing.T) {
 				mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 				mockClient.On("ClusterHealth", mock.Anything).Return(nil, err404)
+				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
 				sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
@@ -231,6 +237,7 @@ func TestScrapingError(t *testing.T) {
 				mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nil, err500)
 				mockClient.On("ClusterHealth", mock.Anything).Return(nil, err404)
+				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
 				sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
@@ -256,6 +263,7 @@ func TestScrapingError(t *testing.T) {
 				mockClient.On("Version", mock.Anything).Return(nil, err404)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 				mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
+				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
 				sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
@@ -280,6 +288,7 @@ func TestScrapingError(t *testing.T) {
 				mockClient.On("Version", mock.Anything).Return(nil, err404)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nil, err500)
 				mockClient.On("ClusterHealth", mock.Anything).Return(nil, err404)
+				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
 				sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
@@ -306,6 +315,7 @@ func TestScrapingError(t *testing.T) {
 				mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 				mockClient.On("ClusterHealth", mock.Anything).Return(ch, nil)
+				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
 				sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
@@ -342,6 +352,15 @@ func nodeStats(t *testing.T) *model.NodeStats {
 	nodeStats := model.NodeStats{}
 	require.NoError(t, json.Unmarshal(nodeJSON, &nodeStats))
 	return &nodeStats
+}
+
+func indexStats(t *testing.T) *model.IndexStats {
+	indexJSON, err := os.ReadFile("./testdata/sample_payloads/indices.json")
+	require.NoError(t, err)
+
+	indexStats := model.IndexStats{}
+	require.NoError(t, json.Unmarshal(indexJSON, &indexStats))
+	return &indexStats
 }
 
 func versionNumber(t *testing.T) *model.VersionResponse {

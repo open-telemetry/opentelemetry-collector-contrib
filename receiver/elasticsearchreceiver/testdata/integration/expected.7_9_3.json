@@ -802,7 +802,7 @@
                      "unit": "{files}"
                   },
                   {
-                     "description": "The number of operations completed.",
+                     "description": "The number of operations completed for a node.",
                      "name": "elasticsearch.node.operations.completed",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -956,7 +956,7 @@
                      "unit": "{operations}"
                   },
                   {
-                     "description": "Time spent on operations.",
+                     "description": "Time spent on operations for a node.",
                      "name": "elasticsearch.node.operations.time",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",

@@ -367,11 +367,14 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pco
 }
 
 func (r *elasticsearchScraper) scrapeIndicesMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	// TODO: config
-	indexStats, err := r.client.IndexStats(ctx, []string{})
+	if len(r.cfg.Indices) == 0 {
+		return
+	}
+
+	indexStats, err := r.client.IndexStats(ctx, r.cfg.Indices)
 
 	if err != nil {
-		errs.AddPartial(4, err)
+		errs.AddPartial(0, err)
 		return
 	}
 
