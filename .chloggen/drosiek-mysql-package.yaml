@@ -17,3 +17,4 @@ subtext: |
   - Add mysql.connection.errors metric (#14723)
   - Add mysql.mysqlx_connections metric (#14727)
   - Add mysql.joins metric (#14728)
+  - Add mysql.table_open_cache metric (#14737)

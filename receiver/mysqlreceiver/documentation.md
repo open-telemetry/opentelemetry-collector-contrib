@@ -36,6 +36,7 @@ These are the metrics available for this scraper.
 | mysql.statement_event.wait.time | The total wait time of the summarized timed events. | ns | Sum(Int) | <ul> <li>schema</li> <li>digest</li> <li>digest_text</li> </ul> |
 | **mysql.table.io.wait.count** | The total count of I/O wait events for a table. | 1 | Sum(Int) | <ul> <li>io_waits_operations</li> <li>table_name</li> <li>schema</li> </ul> |
 | **mysql.table.io.wait.time** | The total time of I/O wait events for a table. | ns | Sum(Int) | <ul> <li>io_waits_operations</li> <li>table_name</li> <li>schema</li> </ul> |
+| mysql.table_open_cache | The number of hits, misses or overflows for open tables cache lookups. | 1 | Sum(Int) | <ul> <li>cache_status</li> </ul> |
 | **mysql.threads** | The state of MySQL threads. | 1 | Sum(Int) | <ul> <li>threads</li> </ul> |
 | **mysql.tmp_resources** | The number of created temporary resources. | 1 | Sum(Int) | <ul> <li>tmp_resource</li> </ul> |
 
@@ -61,6 +62,7 @@ metrics:
 | buffer_pool_data (status) | The status of buffer pool data. | dirty, clean |
 | buffer_pool_operations (operation) | The buffer pool operations types. | read_ahead_rnd, read_ahead, read_ahead_evicted, read_requests, reads, wait_free, write_requests |
 | buffer_pool_pages (kind) | The buffer pool pages types. | data, free, misc |
+| cache_status (status) | The status of cache access. | hit, miss, overflow |
 | command (command) | The command types. | execute, close, fetch, prepare, reset, send_long_data |
 | connection_error (error) | The connection error type. | accept, internal, max_connections, peer_address, select, tcpwrap |
 | connection_status (status) | The connection status. | accepted, closed, rejected |
