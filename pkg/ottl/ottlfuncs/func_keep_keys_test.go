@@ -86,7 +86,7 @@ func Test_keepKeys(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc, err := KeepKeys(tt.target, tt.keys...)
+			exprFunc, err := KeepKeys(tt.target, tt.keys)
 			require.NoError(t, err)
 			exprFunc(scenarioMap)
 
@@ -111,7 +111,7 @@ func Test_keepKeys_bad_input(t *testing.T) {
 
 	keys := []string{"anything"}
 
-	exprFunc, err := KeepKeys[interface{}](target, keys...)
+	exprFunc, err := KeepKeys[interface{}](target, keys)
 	require.NoError(t, err)
 	exprFunc(input)
 
@@ -130,7 +130,7 @@ func Test_keepKeys_get_nil(t *testing.T) {
 
 	keys := []string{"anything"}
 
-	exprFunc, err := KeepKeys[interface{}](target, keys...)
+	exprFunc, err := KeepKeys[interface{}](target, keys)
 	require.NoError(t, err)
 	assert.Nil(t, exprFunc(nil))
 }

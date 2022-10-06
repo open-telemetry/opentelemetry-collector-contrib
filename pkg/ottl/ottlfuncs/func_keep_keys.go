@@ -20,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func KeepKeys[K any](target ottl.GetSetter[K], keys ...string) (ottl.ExprFunc[K], error) {
+func KeepKeys[K any](target ottl.GetSetter[K], keys []string) (ottl.ExprFunc[K], error) {
 	keySet := make(map[string]struct{}, len(keys))
 	for _, key := range keys {
 		keySet[key] = struct{}{}

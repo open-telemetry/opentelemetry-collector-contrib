@@ -25,23 +25,23 @@ Functions
 
 ## Concat
 
-`Concat(delimiter, ...values)`
+`Concat(delimiter, values[])`
 
 The `Concat` factory function takes a delimiter and a sequence of values and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string.
 
 `delimiter` is a string value that is placed between strings during concatenation. If no delimiter is desired, then simply pass an empty string.
 
-`values` is a series of values passed as arguments. It supports paths, primitive values, and byte slices (such as trace IDs or span IDs).
+`values` is a list of values passed as arguments. It supports paths, primitive values, and byte slices (such as trace IDs or span IDs).
 
 Examples:
 
-- `Concat(": ", attributes["http.method"], attributes["http.path"])`
+- `Concat(": ", [attributes["http.method"], attributes["http.path"]])`
 
 
-- `Concat(" ", name, 1)`
+- `Concat(" ", [name, 1])`
 
 
-- `Concat("", "HTTP method is: ", attributes["http.method"])`
+- `Concat("", ["HTTP method is: ", attributes["http.method"]])`
 
 ## Int
 
@@ -159,7 +159,7 @@ Examples:
 
 ## keep_keys
 
-`keep_keys(target, keys...)`
+`keep_keys(target, keys[])`
 
 The `keep_keys` function removes all keys from the `pdata.Map` that do not match one of the supplied keys.
 
@@ -169,10 +169,10 @@ The map will be changed to only contain the keys specified by the list of string
 
 Examples:
 
-- `keep_keys(attributes, "http.method")`
+- `keep_keys(attributes, ["http.method"])`
 
 
-- `keep_keys(resource.attributes, "http.method", "http.route", "http.url")`
+- `keep_keys(resource.attributes, ["http.method", "http.route", "http.url"])`
 
 ## limit
 

@@ -25,7 +25,7 @@ Example Invocations
 
 #### Invocation parameters
 
-The OTTL will use reflection to determine parameter types when parsing an invocation within a statement.  When interpreting slice parameter types, the OTTL will attempt to build the slice from all remaining Values in the Invocation's arguments.  As a result, function implementations of Invocations may only contain one slice argument and it must be the last argument in the function definition.  See [function syntax guidelines](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#function-syntax) for more details.
+The OTTL will use reflection to determine parameter types when parsing an invocation within a statement.
 
 The following types are supported for single parameter values:
 - `Setter`
@@ -42,12 +42,6 @@ For slice parameters, the following types are supported:
 - `float64`
 - `int64`
 - `uint8`. Byte slice literals are parsed as byte slices by the OTTL.
-- `Getter`
-
-For variadic parameters, the following types are supported:
-- `string`
-- `float64`
-- `int64`
 - `Getter`
 
 ### Values
@@ -197,11 +191,11 @@ logs:
 
 ```
 traces:
-  keep_keys(attributes, "http.method", "http.status_code")
+  keep_keys(attributes, ["http.method", "http.status_code"])
 metrics:
-  keep_keys(attributes, "http.method", "http.status_code")
+  keep_keys(attributes, ["http.method", "http.status_code"])
 logs:
-  keep_keys(attributes, "http.method", "http.status_code")
+  keep_keys(attributes, ["http.method", "http.status_code"])
 ```
 
 ### Reduce cardinality of an attribute

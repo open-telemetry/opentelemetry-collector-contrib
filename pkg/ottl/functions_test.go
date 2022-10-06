@@ -33,7 +33,6 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 	functions["testing_string"] = functionWithString
 	functions["testing_string_slice"] = functionWithStringSlice
 	functions["testing_byte_slice"] = functionWithByteSlice
-	functions["testing_string_variadic"] = functionWithStringVariadic
 	functions["testing_enum"] = functionWithEnum
 	functions["testing_telemetry_settings_first"] = functionWithTelemetrySettingsFirst
 
@@ -216,20 +215,6 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
-			name: "mismatching variadic argument type",
-			inv: invocation{
-				Function: "testing_string_variadic",
-				Arguments: []value{
-					{
-						String: ottltest.Strp("test"),
-					},
-					{
-						Int: ottltest.Intp(10),
-					},
-				},
-			},
-		},
-		{
 			name: "function call returns error",
 			inv: invocation{
 				Function: "testing_error",
@@ -269,117 +254,6 @@ func Test_NewFunctionCall(t *testing.T) {
 		inv  invocation
 		want any
 	}{
-		{
-			name: "empty variadic arg",
-			inv: invocation{
-				Function:  "testing_string_variadic",
-				Arguments: []value{},
-			},
-			want: 0,
-		},
-		{
-			name: "string variadic arg",
-			inv: invocation{
-				Function: "testing_string_variadic",
-				Arguments: []value{
-					{
-						String: ottltest.Strp("test"),
-					},
-					{
-						String: ottltest.Strp("test"),
-					},
-					{
-						String: ottltest.Strp("test"),
-					},
-				},
-			},
-			want: 3,
-		},
-		{
-			name: "float variadic arg",
-			inv: invocation{
-				Function: "testing_float_variadic",
-				Arguments: []value{
-					{
-						Float: ottltest.Floatp(1.1),
-					},
-					{
-						Float: ottltest.Floatp(1.2),
-					},
-					{
-						Float: ottltest.Floatp(1.3),
-					},
-				},
-			},
-			want: 3,
-		},
-		{
-			name: "int variadic arg",
-			inv: invocation{
-				Function: "testing_int_variadic",
-				Arguments: []value{
-					{
-						Int: ottltest.Intp(1),
-					},
-					{
-						Int: ottltest.Intp(2),
-					},
-					{
-						Int: ottltest.Intp(3),
-					},
-				},
-			},
-			want: 3,
-		},
-		{
-			name: "getter variadic arg",
-			inv: invocation{
-				Function: "testing_getter_variadic",
-				Arguments: []value{
-					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
-								},
-							},
-						},
-					},
-					{
-						String: ottltest.Strp("test"),
-					},
-					{
-						Int: ottltest.Intp(1),
-					},
-					{
-						Float: ottltest.Floatp(1.1),
-					},
-					{
-						Bool: (*boolean)(ottltest.Boolp(true)),
-					},
-					{
-						Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM")),
-					},
-					{
-						Invocation: &invocation{
-							Function: "testing_getter",
-							Arguments: []value{
-								{
-									Path: &Path{
-										Fields: []Field{
-											{
-												Name: "name",
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			want: 7,
-		},
 		{
 			name: "empty slice arg",
 			inv: invocation{
@@ -669,12 +543,6 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Int: ottltest.Intp(1),
 					},
-					{
-						String: ottltest.Strp("test"),
-					},
-					{
-						String: ottltest.Strp("test"),
-					},
 				},
 			},
 			want: nil,
@@ -788,30 +656,6 @@ func functionWithGetterSlice(getters []Getter[interface{}]) (ExprFunc[interface{
 	}, nil
 }
 
-func functionWithStringVariadic(strs ...string) (ExprFunc[interface{}], error) {
-	return func(interface{}) interface{} {
-		return len(strs)
-	}, nil
-}
-
-func functionWithFloatVariadic(floats ...float64) (ExprFunc[interface{}], error) {
-	return func(interface{}) interface{} {
-		return len(floats)
-	}, nil
-}
-
-func functionWithIntVariadic(ints ...int64) (ExprFunc[interface{}], error) {
-	return func(interface{}) interface{} {
-		return len(ints)
-	}, nil
-}
-
-func functionWithGetterVariadic(getters ...Getter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(interface{}) interface{} {
-		return len(getters)
-	}, nil
-}
-
 func functionWithSetter(Setter[interface{}]) (ExprFunc[interface{}], error) {
 	return func(interface{}) interface{} {
 		return "anything"
@@ -854,7 +698,7 @@ func functionWithBool(bool) (ExprFunc[interface{}], error) {
 	}, nil
 }
 
-func functionWithMultipleArgs(GetSetter[interface{}], string, float64, int64, ...string) (ExprFunc[interface{}], error) {
+func functionWithMultipleArgs(GetSetter[interface{}], string, float64, int64) (ExprFunc[interface{}], error) {
 	return func(interface{}) interface{} {
 		return "anything"
 	}, nil
@@ -898,10 +742,6 @@ func defaultFunctionsForTests() map[string]interface{} {
 	functions["testing_int_slice"] = functionWithIntSlice
 	functions["testing_byte_slice"] = functionWithByteSlice
 	functions["testing_getter_slice"] = functionWithGetterSlice
-	functions["testing_string_variadic"] = functionWithStringVariadic
-	functions["testing_float_variadic"] = functionWithFloatVariadic
-	functions["testing_int_variadic"] = functionWithIntVariadic
-	functions["testing_getter_variadic"] = functionWithGetterVariadic
 	functions["testing_setter"] = functionWithSetter
 	functions["testing_getsetter"] = functionWithGetSetter
 	functions["testing_getter"] = functionWithGetter

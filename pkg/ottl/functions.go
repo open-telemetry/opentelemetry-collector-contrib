@@ -57,16 +57,8 @@ func (p *Parser[K]) buildArgs(inv invocation, fType reflect.Type) ([]reflect.Val
 	DSLArgumentIndex := 0
 	for i := 0; i < fType.NumIn(); i++ {
 		argType := fType.In(i)
-		argIsVariadic := fType.IsVariadic() && i == fType.NumIn()-1
 
 		switch {
-		case argIsVariadic:
-			err := p.buildVariadicArg(inv, argType, i, &args)
-			if err != nil {
-				return nil, err
-			}
-			// Variadic arguments must be the final argument in an invocation.
-			return args, nil
 		case argType.Kind() == reflect.Slice:
 			err := p.buildSliceArg(inv, argType, i, &args)
 			if err != nil {
@@ -167,44 +159,6 @@ func (p *Parser[K]) buildSliceArg(inv invocation, argType reflect.Type, index in
 		*args = append(*args, reflect.ValueOf(arg))
 	default:
 		return fmt.Errorf("unsupported slice type '%s' for function '%v'", argType.Elem().Name(), inv.Function)
-	}
-	return nil
-}
-
-func (p *Parser[K]) buildVariadicArg(inv invocation, argType reflect.Type, startingIndex int, args *[]reflect.Value) error {
-	name := argType.Elem().Name()
-	switch {
-	case name == reflect.String.String():
-		for j := startingIndex; j < len(inv.Arguments); j++ {
-			if inv.Arguments[j].String == nil {
-				return fmt.Errorf("invalid variadic argument at position %v, must be a string", j)
-			}
-			*args = append(*args, reflect.ValueOf(*inv.Arguments[j].String))
-		}
-	case name == reflect.Float64.String():
-		for j := startingIndex; j < len(inv.Arguments); j++ {
-			if inv.Arguments[j].Float == nil {
-				return fmt.Errorf("invalid variadic argument at position %v, must be a float", j)
-			}
-			*args = append(*args, reflect.ValueOf(*inv.Arguments[j].Float))
-		}
-	case name == reflect.Int64.String():
-		for j := startingIndex; j < len(inv.Arguments); j++ {
-			if inv.Arguments[j].Int == nil {
-				return fmt.Errorf("invalid variadic argument at position %v, must be an int", j)
-			}
-			*args = append(*args, reflect.ValueOf(*inv.Arguments[j].Int))
-		}
-	case strings.HasPrefix(name, "Getter"):
-		for j := startingIndex; j < len(inv.Arguments); j++ {
-			val, err := p.newGetter(inv.Arguments[j])
-			if err != nil {
-				return err
-			}
-			*args = append(*args, reflect.ValueOf(val))
-		}
-	default:
-		return fmt.Errorf("unsupported variadic argument type '%s' for function '%v'", argType.Elem().Name(), inv.Function)
 	}
 	return nil
 }
