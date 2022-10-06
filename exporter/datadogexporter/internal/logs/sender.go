@@ -19,10 +19,9 @@ import (
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
 // Sender submits logs to Datadog intake
@@ -46,7 +45,7 @@ func NewSender(endpoint string, logger *zap.Logger, s exporterhelper.TimeoutSett
 			URL: endpoint,
 		},
 	}
-	cfg.HTTPClient = utils.NewHTTPClient(s, insecureSkipVerify)
+	cfg.HTTPClient = clientutil.NewHTTPClient(s, insecureSkipVerify)
 	cfg.AddDefaultHeader("DD-API-KEY", apiKey)
 	apiClient := datadog.NewAPIClient(cfg)
 	// enable sending gzip

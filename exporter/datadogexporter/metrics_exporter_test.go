@@ -34,11 +34,11 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 func TestNewExporter(t *testing.T) {
-	server := testutils.DatadogServerMock()
+	server := testutil.DatadogServerMock()
 	defer server.Close()
 
 	cfg := &Config{
@@ -67,7 +67,7 @@ func TestNewExporter(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 	testMetrics := pmetric.NewMetrics()
-	testutils.TestMetrics.CopyTo(testMetrics)
+	testutil.TestMetrics.CopyTo(testMetrics)
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	assert.Equal(t, len(server.MetadataChan), 0)
@@ -75,7 +75,7 @@ func TestNewExporter(t *testing.T) {
 	cfg.HostMetadata.Enabled = true
 	cfg.HostMetadata.HostnameSource = HostnameSourceFirstResource
 	testMetrics = pmetric.NewMetrics()
-	testutils.TestMetrics.CopyTo(testMetrics)
+	testutil.TestMetrics.CopyTo(testMetrics)
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	body := <-server.MetadataChan
@@ -289,9 +289,9 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("kind=%s,histgramMode=%s", tt.source.Kind, tt.histogramMode), func(t *testing.T) {
-			seriesRecorder := &testutils.HTTPRequestRecorder{Pattern: "/api/v1/series"}
-			sketchRecorder := &testutils.HTTPRequestRecorder{Pattern: "/api/beta/sketches"}
-			server := testutils.DatadogServerMock(
+			seriesRecorder := &testutil.HTTPRequestRecorder{Pattern: "/api/v1/series"}
+			sketchRecorder := &testutil.HTTPRequestRecorder{Pattern: "/api/beta/sketches"}
+			server := testutil.DatadogServerMock(
 				seriesRecorder.HandlerFunc,
 				sketchRecorder.HandlerFunc,
 			)
@@ -303,7 +303,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				componenttest.NewNopExporterCreateSettings(),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				&once,
-				&testutils.MockSourceProvider{Src: tt.source},
+				&testutil.MockSourceProvider{Src: tt.source},
 			)
 			if tt.expectedErr == nil {
 				assert.NoError(t, err, "unexpected error")

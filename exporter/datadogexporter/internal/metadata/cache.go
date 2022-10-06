@@ -12,14 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cache
+package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 
 import (
-	"testing"
+	"time"
 
-	"github.com/stretchr/testify/assert"
+	gocache "github.com/patrickmn/go-cache"
 )
 
-func TestCache(t *testing.T) {
-	assert.NotNil(t, Cache)
-}
+const (
+	// cacheKeyHostname specifies the cache key for storing hostnames.
+	cacheKeyHostname = "canonical_hostname"
+)
+
+// hostnameCache specifies a cache used for storing hostname resolution outcomes.
+var hostnameCache = gocache.New(20*time.Minute, 10*time.Minute)
