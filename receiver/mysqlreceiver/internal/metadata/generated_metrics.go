@@ -25,6 +25,7 @@ type MetricsSettings struct {
 	MysqlBufferPoolPageFlushes  MetricSettings `mapstructure:"mysql.buffer_pool.page_flushes"`
 	MysqlBufferPoolPages        MetricSettings `mapstructure:"mysql.buffer_pool.pages"`
 	MysqlBufferPoolUsage        MetricSettings `mapstructure:"mysql.buffer_pool.usage"`
+	MysqlClientNetworkIo        MetricSettings `mapstructure:"mysql.client.network.io"`
 	MysqlCommands               MetricSettings `mapstructure:"mysql.commands"`
 	MysqlDoubleWrites           MetricSettings `mapstructure:"mysql.double_writes"`
 	MysqlHandlers               MetricSettings `mapstructure:"mysql.handlers"`
@@ -66,6 +67,9 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		MysqlBufferPoolUsage: MetricSettings{
+			Enabled: true,
+		},
+		MysqlClientNetworkIo: MetricSettings{
 			Enabled: true,
 		},
 		MysqlCommands: MetricSettings{
@@ -816,6 +820,32 @@ var MapAttributeTmpResource = map[string]AttributeTmpResource{
 	"tables":      AttributeTmpResourceTables,
 }
 
+// AttributeTransmissionDirection specifies the a value transmission_direction attribute.
+type AttributeTransmissionDirection int
+
+const (
+	_ AttributeTransmissionDirection = iota
+	AttributeTransmissionDirectionReceived
+	AttributeTransmissionDirectionSent
+)
+
+// String returns the string representation of the AttributeTransmissionDirection.
+func (av AttributeTransmissionDirection) String() string {
+	switch av {
+	case AttributeTransmissionDirectionReceived:
+		return "received"
+	case AttributeTransmissionDirectionSent:
+		return "sent"
+	}
+	return ""
+}
+
+// MapAttributeTransmissionDirection is a helper map of string to AttributeTransmissionDirection attribute value.
+var MapAttributeTransmissionDirection = map[string]AttributeTransmissionDirection{
+	"received": AttributeTransmissionDirectionReceived,
+	"sent":     AttributeTransmissionDirectionSent,
+}
+
 type metricMysqlBufferPoolDataPages struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -1123,6 +1153,59 @@ func (m *metricMysqlBufferPoolUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlBufferPoolUsage(settings MetricSettings) metricMysqlBufferPoolUsage {
 	m := metricMysqlBufferPoolUsage{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlClientNetworkIo struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.client.network.io metric with initial data.
+func (m *metricMysqlClientNetworkIo) init() {
+	m.data.SetName("mysql.client.network.io")
+	m.data.SetDescription("The number of transmitted bytes between server and clients.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMysqlClientNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, transmissionDirectionAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("kind", transmissionDirectionAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlClientNetworkIo) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlClientNetworkIo) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlClientNetworkIo(settings MetricSettings) metricMysqlClientNetworkIo {
+	m := metricMysqlClientNetworkIo{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2270,6 +2353,7 @@ type MetricsBuilder struct {
 	metricMysqlBufferPoolPageFlushes  metricMysqlBufferPoolPageFlushes
 	metricMysqlBufferPoolPages        metricMysqlBufferPoolPages
 	metricMysqlBufferPoolUsage        metricMysqlBufferPoolUsage
+	metricMysqlClientNetworkIo        metricMysqlClientNetworkIo
 	metricMysqlCommands               metricMysqlCommands
 	metricMysqlDoubleWrites           metricMysqlDoubleWrites
 	metricMysqlHandlers               metricMysqlHandlers
@@ -2314,6 +2398,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricMysqlBufferPoolPageFlushes:  newMetricMysqlBufferPoolPageFlushes(settings.MysqlBufferPoolPageFlushes),
 		metricMysqlBufferPoolPages:        newMetricMysqlBufferPoolPages(settings.MysqlBufferPoolPages),
 		metricMysqlBufferPoolUsage:        newMetricMysqlBufferPoolUsage(settings.MysqlBufferPoolUsage),
+		metricMysqlClientNetworkIo:        newMetricMysqlClientNetworkIo(settings.MysqlClientNetworkIo),
 		metricMysqlCommands:               newMetricMysqlCommands(settings.MysqlCommands),
 		metricMysqlDoubleWrites:           newMetricMysqlDoubleWrites(settings.MysqlDoubleWrites),
 		metricMysqlHandlers:               newMetricMysqlHandlers(settings.MysqlHandlers),
@@ -2400,6 +2485,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMysqlBufferPoolPageFlushes.emit(ils.Metrics())
 	mb.metricMysqlBufferPoolPages.emit(ils.Metrics())
 	mb.metricMysqlBufferPoolUsage.emit(ils.Metrics())
+	mb.metricMysqlClientNetworkIo.emit(ils.Metrics())
 	mb.metricMysqlCommands.emit(ils.Metrics())
 	mb.metricMysqlDoubleWrites.emit(ils.Metrics())
 	mb.metricMysqlHandlers.emit(ils.Metrics())
@@ -2488,6 +2574,16 @@ func (mb *MetricsBuilder) RecordMysqlBufferPoolPagesDataPoint(ts pcommon.Timesta
 // RecordMysqlBufferPoolUsageDataPoint adds a data point to mysql.buffer_pool.usage metric.
 func (mb *MetricsBuilder) RecordMysqlBufferPoolUsageDataPoint(ts pcommon.Timestamp, val int64, bufferPoolDataAttributeValue AttributeBufferPoolData) {
 	mb.metricMysqlBufferPoolUsage.recordDataPoint(mb.startTime, ts, val, bufferPoolDataAttributeValue.String())
+}
+
+// RecordMysqlClientNetworkIoDataPoint adds a data point to mysql.client.network.io metric.
+func (mb *MetricsBuilder) RecordMysqlClientNetworkIoDataPoint(ts pcommon.Timestamp, inputVal string, transmissionDirectionAttributeValue AttributeTransmissionDirection) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlClientNetworkIo, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlClientNetworkIo.recordDataPoint(mb.startTime, ts, val, transmissionDirectionAttributeValue.String())
+	return nil
 }
 
 // RecordMysqlCommandsDataPoint adds a data point to mysql.commands metric.

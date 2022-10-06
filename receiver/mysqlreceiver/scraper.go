@@ -123,6 +123,12 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 	for k, v := range globalStats {
 		switch k {
 
+		// bytes transmission
+		case "Bytes_received":
+			addPartialIfError(errs, m.mb.RecordMysqlClientNetworkIoDataPoint(now, v, metadata.AttributeTransmissionDirectionReceived))
+		case "Bytes_sent":
+			addPartialIfError(errs, m.mb.RecordMysqlClientNetworkIoDataPoint(now, v, metadata.AttributeTransmissionDirectionSent))
+
 		// buffer_pool.pages
 		case "Innodb_buffer_pool_pages_data":
 			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v,
