@@ -16,7 +16,6 @@ PYTHON_VERSION_INFO=(${PYTHON_VERSION//./ })
 
 coverage erase
 
-cov exporter/opentelemetry-exporter-datadog
 cov instrumentation/opentelemetry-instrumentation-flask
 cov instrumentation/opentelemetry-instrumentation-requests
 cov instrumentation/opentelemetry-instrumentation-wsgi
