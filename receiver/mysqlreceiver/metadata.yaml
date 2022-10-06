@@ -279,3 +279,30 @@ metrics:
       monotonic: false
       aggregation: cumulative
     attributes: [threads]
+  mysql.queries.client.count:
+    enabled: true
+    description: The number of statements executed by the server. This includes only statements sent to the server by clients.
+    unit: 1
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+  mysql.queries.count:
+    enabled: true
+    description: The number of statements executed by the server.
+    unit: 1
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+  mysql.queries.slow.count:
+    enabled: true
+    description: The number of slow queries.
+    unit: 1
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative

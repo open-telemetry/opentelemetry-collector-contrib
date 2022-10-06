@@ -266,6 +266,14 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		case "Table_locks_waited":
 			addPartialIfError(errs, m.mb.RecordMysqlLocksDataPoint(now, v, metadata.AttributeLocksWaited))
 
+		// queries
+		case "Queries":
+			addPartialIfError(errs, m.mb.RecordMysqlQueriesCountDataPoint(now, v))
+		case "Questions":
+			addPartialIfError(errs, m.mb.RecordMysqlQueriesClientCountDataPoint(now, v))
+		case "Slow_queries":
+			addPartialIfError(errs, m.mb.RecordMysqlQueriesSlowCountDataPoint(now, v))
+
 		// sorts
 		case "Sort_merge_passes":
 			addPartialIfError(errs, m.mb.RecordMysqlSortsDataPoint(now, v, metadata.AttributeSortsMergePasses))
