@@ -19,7 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
@@ -29,14 +29,14 @@ type metricExporter struct {
 	logger           *zap.Logger
 }
 
-func (exporter *metricExporter) onMetricData(context context.Context, metricData pdata.Metrics) error {
+func (exporter *metricExporter) onMetricData(context context.Context, metricData pmetric.Metrics) error {
 	resourceMetrics := metricData.ResourceMetrics()
 	metricPacker := newMetricPacker(exporter.logger)
 
 	for i := 0; i < resourceMetrics.Len(); i++ {
-		instrumentationLibraryMetrics := resourceMetrics.At(i).InstrumentationLibraryMetrics()
-		for j := 0; j < instrumentationLibraryMetrics.Len(); j++ {
-			metrics := instrumentationLibraryMetrics.At(j).Metrics()
+		scopeMetrics := resourceMetrics.At(i).ScopeMetrics()
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			metrics := scopeMetrics.At(j).Metrics()
 			for k := 0; k < metrics.Len(); k++ {
 				envelope := metricPacker.MetricToEnvelope(metrics.At(k))
 				envelope.IKey = exporter.config.InstrumentationKey
@@ -56,5 +56,5 @@ func newMetricsExporter(config *Config, transportChannel transportChannel, set c
 		logger:           set.Logger,
 	}
 
-	return exporterhelper.NewMetricsExporter(config, set, exporter.onMetricData)
+	return exporterhelper.NewMetricsExporter(context.TODO(), set, config, exporter.onMetricData)
 }

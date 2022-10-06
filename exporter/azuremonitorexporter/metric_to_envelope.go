@@ -15,8 +15,10 @@
 package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 
 import (
+	"time"
+
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
@@ -38,27 +40,26 @@ type metricPacker struct {
 	logger *zap.Logger
 }
 
-func (packer *metricPacker) MetricToEnvelope(metric pdata.Metric) *contracts.Envelope {
+func (packer *metricPacker) MetricToEnvelope(metric pmetric.Metric) *contracts.Envelope {
 	envelope := contracts.NewEnvelope()
 	envelope.Tags = make(map[string]string)
-	//envelope.Time = toTime(logRecord.Timestamp()).Format(time.RFC3339Nano)
+	envelope.Time = time.Now().Format(time.RFC3339Nano)
 
-	data := contracts.NewData()
-
-	metricData := contracts.NewMetricData()
-	metricData.Properties = make(map[string]string)
-
-	//messageData.SeverityLevel = packer.toAiSeverityLevel(logRecord.SeverityText())
-
-	metricData.Metrics = make([]*contracts.DataPoint, 1)
 	dataPoint := contracts.NewDataPoint()
 	dataPoint.Name = metric.Name()
-	dataPoint.Value = 12.5
+	dataPoint.Value = 12.34
+	dataPoint.Count = 1
+	dataPoint.Kind = contracts.Measurement
 
-	// 	metricData.Metrics[0]
+	metricData := contracts.NewMetricData()
+	metricData.Metrics = []*contracts.DataPoint{dataPoint}
+	metricData.Properties = make(map[string]string)
+
+	packer.logger.Info("dataPoint.Value = ", zap.Any("dataPoint.Value", dataPoint.Value))
+
 	// metric.GetData()
 
-	//messageData.Message = logRecord.Body().StringVal()
+	// messageData.Message = logRecord.Body().StringVal()
 
 	// hexTraceID := logRecord.TraceID().HexString()
 	// messageData.Properties[traceIDTag] = hexTraceID
@@ -67,15 +68,16 @@ func (packer *metricPacker) MetricToEnvelope(metric pdata.Metric) *contracts.Env
 	// messageData.Properties[spanIDTag] = logRecord.SpanID().HexString()
 
 	// messageData.Properties[categoryNameTag] = logRecord.Name()
-	envelope.Name = metricData.EnvelopeName(metric.Name())
+	envelope.Name = metricData.EnvelopeName("")
 
+	data := contracts.NewData()
 	data.BaseData = metricData
 	data.BaseType = metricData.BaseType()
 	envelope.Data = data
 
 	packer.sanitize(func() []string { return metricData.Sanitize() })
 	packer.sanitize(func() []string { return envelope.Sanitize() })
-	//packer.sanitize(func() []string { return contracts.SanitizeTags(envelope.Tags) })
+	packer.sanitize(func() []string { return contracts.SanitizeTags(envelope.Tags) })
 
 	return envelope
 }
