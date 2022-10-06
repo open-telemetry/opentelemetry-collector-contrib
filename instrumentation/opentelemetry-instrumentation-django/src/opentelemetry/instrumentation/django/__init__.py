@@ -195,6 +195,7 @@ from typing import Collection
 
 from django import VERSION as django_version
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 
 from opentelemetry.instrumentation.django.environment_variables import (
     OTEL_PYTHON_DJANGO_INSTRUMENT,
@@ -275,7 +276,23 @@ class DjangoInstrumentor(BaseInstrumentor):
         # https://docs.djangoproject.com/en/3.0/ref/middleware/#middleware-ordering
 
         _middleware_setting = _get_django_middleware_setting()
-        settings_middleware = getattr(settings, _middleware_setting, [])
+        settings_middleware = []
+        try:
+            settings_middleware = getattr(settings, _middleware_setting, [])
+        except ImproperlyConfigured as exception:
+            _logger.debug(
+                "DJANGO_SETTINGS_MODULE environment variable not configured. Defaulting to empty settings: %s",
+                exception,
+            )
+            settings.configure()
+            settings_middleware = getattr(settings, _middleware_setting, [])
+        except ModuleNotFoundError as exception:
+            _logger.debug(
+                "DJANGO_SETTINGS_MODULE points to a non-existent module. Defaulting to empty settings: %s",
+                exception,
+            )
+            settings.configure()
+            settings_middleware = getattr(settings, _middleware_setting, [])
 
         # Django allows to specify middlewares as a tuple, so we convert this tuple to a
         # list, otherwise we wouldn't be able to call append/remove
