@@ -68,6 +68,7 @@ type MetricsConfig struct {
 	MysqlTableOpenCache          MetricConfig `mapstructure:"mysql.table_open_cache"`
 	MysqlThreads                 MetricConfig `mapstructure:"mysql.threads"`
 	MysqlTmpResources            MetricConfig `mapstructure:"mysql.tmp_resources"`
+	MysqlUptime                  MetricConfig `mapstructure:"mysql.uptime"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -199,6 +200,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		MysqlTmpResources: MetricConfig{
+			Enabled: true,
+		},
+		MysqlUptime: MetricConfig{
 			Enabled: true,
 		},
 	}
