@@ -18,3 +18,4 @@ subtext: |
   - Add mysql.mysqlx_connections metric (#14727)
   - Add mysql.joins metric (#14728)
   - Add mysql.table_open_cache metric (#14737)
+  - Add mysql queries (all, client and slow) count metrics (#14738)

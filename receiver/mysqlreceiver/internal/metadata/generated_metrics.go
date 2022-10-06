@@ -60,6 +60,9 @@ type MetricsSettings struct {
 	MysqlOpenedResources        MetricSettings `mapstructure:"mysql.opened_resources"`
 	MysqlOperations             MetricSettings `mapstructure:"mysql.operations"`
 	MysqlPageOperations         MetricSettings `mapstructure:"mysql.page_operations"`
+	MysqlQueryClientCount       MetricSettings `mapstructure:"mysql.query.client.count"`
+	MysqlQueryCount             MetricSettings `mapstructure:"mysql.query.count"`
+	MysqlQuerySlowCount         MetricSettings `mapstructure:"mysql.query.slow.count"`
 	MysqlRowLocks               MetricSettings `mapstructure:"mysql.row_locks"`
 	MysqlRowOperations          MetricSettings `mapstructure:"mysql.row_operations"`
 	MysqlSorts                  MetricSettings `mapstructure:"mysql.sorts"`
@@ -136,6 +139,15 @@ func DefaultMetricsSettings() MetricsSettings {
 		},
 		MysqlPageOperations: MetricSettings{
 			Enabled: true,
+		},
+		MysqlQueryClientCount: MetricSettings{
+			Enabled: false,
+		},
+		MysqlQueryCount: MetricSettings{
+			Enabled: false,
+		},
+		MysqlQuerySlowCount: MetricSettings{
+			Enabled: false,
 		},
 		MysqlRowLocks: MetricSettings{
 			Enabled: true,
@@ -2105,6 +2117,159 @@ func newMetricMysqlPageOperations(settings MetricSettings) metricMysqlPageOperat
 	return m
 }
 
+type metricMysqlQueryClientCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.query.client.count metric with initial data.
+func (m *metricMysqlQueryClientCount) init() {
+	m.data.SetName("mysql.query.client.count")
+	m.data.SetDescription("The number of statements executed by the server. This includes only statements sent to the server by clients.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlQueryClientCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlQueryClientCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlQueryClientCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlQueryClientCount(settings MetricSettings) metricMysqlQueryClientCount {
+	m := metricMysqlQueryClientCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlQueryCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.query.count metric with initial data.
+func (m *metricMysqlQueryCount) init() {
+	m.data.SetName("mysql.query.count")
+	m.data.SetDescription("The number of statements executed by the server.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlQueryCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlQueryCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlQueryCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlQueryCount(settings MetricSettings) metricMysqlQueryCount {
+	m := metricMysqlQueryCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlQuerySlowCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.query.slow.count metric with initial data.
+func (m *metricMysqlQuerySlowCount) init() {
+	m.data.SetName("mysql.query.slow.count")
+	m.data.SetDescription("The number of slow queries.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlQuerySlowCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlQuerySlowCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlQuerySlowCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlQuerySlowCount(settings MetricSettings) metricMysqlQuerySlowCount {
+	m := metricMysqlQuerySlowCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlRowLocks struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -2673,6 +2838,9 @@ type MetricsBuilder struct {
 	metricMysqlOpenedResources        metricMysqlOpenedResources
 	metricMysqlOperations             metricMysqlOperations
 	metricMysqlPageOperations         metricMysqlPageOperations
+	metricMysqlQueryClientCount       metricMysqlQueryClientCount
+	metricMysqlQueryCount             metricMysqlQueryCount
+	metricMysqlQuerySlowCount         metricMysqlQuerySlowCount
 	metricMysqlRowLocks               metricMysqlRowLocks
 	metricMysqlRowOperations          metricMysqlRowOperations
 	metricMysqlSorts                  metricMysqlSorts
@@ -2721,6 +2889,9 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricMysqlOpenedResources:        newMetricMysqlOpenedResources(settings.MysqlOpenedResources),
 		metricMysqlOperations:             newMetricMysqlOperations(settings.MysqlOperations),
 		metricMysqlPageOperations:         newMetricMysqlPageOperations(settings.MysqlPageOperations),
+		metricMysqlQueryClientCount:       newMetricMysqlQueryClientCount(settings.MysqlQueryClientCount),
+		metricMysqlQueryCount:             newMetricMysqlQueryCount(settings.MysqlQueryCount),
+		metricMysqlQuerySlowCount:         newMetricMysqlQuerySlowCount(settings.MysqlQuerySlowCount),
 		metricMysqlRowLocks:               newMetricMysqlRowLocks(settings.MysqlRowLocks),
 		metricMysqlRowOperations:          newMetricMysqlRowOperations(settings.MysqlRowOperations),
 		metricMysqlSorts:                  newMetricMysqlSorts(settings.MysqlSorts),
@@ -2811,6 +2982,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMysqlOpenedResources.emit(ils.Metrics())
 	mb.metricMysqlOperations.emit(ils.Metrics())
 	mb.metricMysqlPageOperations.emit(ils.Metrics())
+	mb.metricMysqlQueryClientCount.emit(ils.Metrics())
+	mb.metricMysqlQueryCount.emit(ils.Metrics())
+	mb.metricMysqlQuerySlowCount.emit(ils.Metrics())
 	mb.metricMysqlRowLocks.emit(ils.Metrics())
 	mb.metricMysqlRowOperations.emit(ils.Metrics())
 	mb.metricMysqlSorts.emit(ils.Metrics())
@@ -3027,6 +3201,36 @@ func (mb *MetricsBuilder) RecordMysqlPageOperationsDataPoint(ts pcommon.Timestam
 		return fmt.Errorf("failed to parse int64 for MysqlPageOperations, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlPageOperations.recordDataPoint(mb.startTime, ts, val, pageOperationsAttributeValue.String())
+	return nil
+}
+
+// RecordMysqlQueryClientCountDataPoint adds a data point to mysql.query.client.count metric.
+func (mb *MetricsBuilder) RecordMysqlQueryClientCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlQueryClientCount, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlQueryClientCount.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlQueryCountDataPoint adds a data point to mysql.query.count metric.
+func (mb *MetricsBuilder) RecordMysqlQueryCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlQueryCount, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlQueryCount.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlQuerySlowCountDataPoint adds a data point to mysql.query.slow.count metric.
+func (mb *MetricsBuilder) RecordMysqlQuerySlowCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlQuerySlowCount, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlQuerySlowCount.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
