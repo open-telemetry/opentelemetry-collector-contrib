@@ -29,6 +29,7 @@ These are the metrics available for this scraper.
 | **mysql.table.io.wait.count** | The total count of I/O wait events for a table. | 1 | Sum(Int) | <ul> <li>io_waits_operations</li> <li>table_name</li> <li>schema</li> </ul> |
 | **mysql.table.io.wait.time** | The total time of I/O wait events for a table. | ns | Sum(Int) | <ul> <li>io_waits_operations</li> <li>table_name</li> <li>schema</li> </ul> |
 | **mysql.threads** | The state of MySQL threads. | 1 | Sum(Int) | <ul> <li>threads</li> </ul> |
+| **mysql.tmp_resources** | The number of created temporary resources. | 1 | Sum(Int) | <ul> <li>tmp_resource</li> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:
@@ -67,3 +68,4 @@ metrics:
 | sorts (kind) | The sort count type. | merge_passes, range, rows, scan |
 | table_name (table) | Table name for event or process. |  |
 | threads (kind) | The thread count type. | cached, connected, created, running |
+| tmp_resource (resource) | The kind of temporary resources. | disk_tables, files, tables |

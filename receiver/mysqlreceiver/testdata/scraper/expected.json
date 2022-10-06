@@ -1536,6 +1536,56 @@
                         ]
                      },
                      "unit": "ns"
+                  },
+                  {
+                     "description": "The number of created temporary resources.",
+                     "name": "mysql.tmp_resources",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": true,
+                        "dataPoints": [
+                           {
+                              "asInt": "189",
+                              "attributes": [
+                                 {
+                                    "key": "resource",
+                                    "value": {
+                                       "stringValue": "disk_tables"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "190",
+                              "attributes": [
+                                 {
+                                    "key": "resource",
+                                    "value": {
+                                       "stringValue": "files"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "191",
+                              "attributes": [
+                                 {
+                                    "key": "resource",
+                                    "value": {
+                                       "stringValue": "tables"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ]
+                     },
+                     "unit": "1"
                   }
                ]
             }
