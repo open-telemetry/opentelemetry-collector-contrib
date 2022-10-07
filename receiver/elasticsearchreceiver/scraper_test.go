@@ -1,6 +1,6 @@
 // Copyright The OpenTelemetry Authors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
+// Licensed under the Apache License, ClusterMetadata 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
@@ -48,7 +48,7 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, err)
 
 	mockClient := mocks.MockElasticsearchClient{}
-	mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
+	mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
 	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
 	mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 	mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
@@ -75,7 +75,7 @@ func TestScraperMetricsWithoutDirection(t *testing.T) {
 	require.NoError(t, err)
 
 	mockClient := mocks.MockElasticsearchClient{}
-	mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
+	mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
 	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
 	mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 	mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
@@ -103,7 +103,7 @@ func TestScraperSkipClusterMetrics(t *testing.T) {
 	require.NoError(t, err)
 
 	mockClient := mocks.MockElasticsearchClient{}
-	mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
+	mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
 	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
 	mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 	mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
@@ -131,7 +131,7 @@ func TestScraperNoNodesMetrics(t *testing.T) {
 	require.NoError(t, err)
 
 	mockClient := mocks.MockElasticsearchClient{}
-	mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
+	mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
 	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
 	mockClient.On("NodeStats", mock.Anything, []string{}).Return(nodeStats(t), nil)
 	mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
@@ -183,7 +183,7 @@ func TestScrapingError(t *testing.T) {
 				err404 := errors.New("expected status 200 but got 404")
 
 				mockClient := mocks.MockElasticsearchClient{}
-				mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
+				mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nil, err404)
 				mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
 				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
@@ -208,7 +208,7 @@ func TestScrapingError(t *testing.T) {
 				err404 := errors.New("expected status 200 but got 404")
 
 				mockClient := mocks.MockElasticsearchClient{}
-				mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
+				mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 				mockClient.On("ClusterHealth", mock.Anything).Return(nil, err404)
 				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
@@ -234,7 +234,7 @@ func TestScrapingError(t *testing.T) {
 				err500 := errors.New("expected status 200 but got 500")
 
 				mockClient := mocks.MockElasticsearchClient{}
-				mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
+				mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nil, err500)
 				mockClient.On("ClusterHealth", mock.Anything).Return(nil, err404)
 				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(nil, err500)
@@ -253,14 +253,14 @@ func TestScrapingError(t *testing.T) {
 			},
 		},
 		{
-			desc: "Version is invalid, node stats and cluster health succeed",
+			desc: "ClusterMetadata is invalid, node stats and cluster health succeed",
 			run: func(t *testing.T) {
 				t.Parallel()
 
 				err404 := errors.New("expected status 200 but got 404")
 
 				mockClient := mocks.MockElasticsearchClient{}
-				mockClient.On("Version", mock.Anything).Return(nil, err404)
+				mockClient.On("ClusterMetadata", mock.Anything).Return(nil, err404)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 				mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
 				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
@@ -277,7 +277,7 @@ func TestScrapingError(t *testing.T) {
 			},
 		},
 		{
-			desc: "Version, node stats, index stats and cluster health fails",
+			desc: "ClusterMetadata, node stats, index stats and cluster health fails",
 			run: func(t *testing.T) {
 				t.Parallel()
 
@@ -285,7 +285,7 @@ func TestScrapingError(t *testing.T) {
 				err500 := errors.New("expected status 200 but got 500")
 
 				mockClient := mocks.MockElasticsearchClient{}
-				mockClient.On("Version", mock.Anything).Return(nil, err404)
+				mockClient.On("ClusterMetadata", mock.Anything).Return(nil, err404)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nil, err500)
 				mockClient.On("ClusterHealth", mock.Anything).Return(nil, err404)
 				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(nil, err500)
@@ -312,7 +312,7 @@ func TestScrapingError(t *testing.T) {
 				ch.Status = "pink"
 
 				mockClient := mocks.MockElasticsearchClient{}
-				mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
+				mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 				mockClient.On("ClusterHealth", mock.Anything).Return(ch, nil)
 				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
@@ -363,11 +363,11 @@ func indexStats(t *testing.T) *model.IndexStats {
 	return &indexStats
 }
 
-func versionNumber(t *testing.T) *model.VersionResponse {
-	versionJSON, err := os.ReadFile("./testdata/sample_payloads/version.json")
+func clusterMetadata(t *testing.T) *model.ClusterMetadataResponse {
+	metadataJSON, err := os.ReadFile("./testdata/sample_payloads/metadata.json")
 	require.NoError(t, err)
 
-	versionResponse := model.VersionResponse{}
-	require.NoError(t, json.Unmarshal(versionJSON, &versionResponse))
-	return &versionResponse
+	metadataResponse := model.ClusterMetadataResponse{}
+	require.NoError(t, json.Unmarshal(metadataJSON, &metadataResponse))
+	return &metadataResponse
 }

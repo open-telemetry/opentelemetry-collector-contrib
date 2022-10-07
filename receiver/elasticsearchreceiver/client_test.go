@@ -236,12 +236,12 @@ func TestClusterHealthNoAuthorization(t *testing.T) {
 	require.ErrorIs(t, err, errUnauthorized)
 }
 
-func TestVersionNoPassword(t *testing.T) {
-	versionJSON, err := os.ReadFile("./testdata/sample_payloads/version.json")
+func TestMetadataNoPassword(t *testing.T) {
+	metadataJSON, err := os.ReadFile("./testdata/sample_payloads/metadata.json")
 	require.NoError(t, err)
 
-	actualVersion := model.VersionResponse{}
-	require.NoError(t, json.Unmarshal(versionJSON, &actualVersion))
+	actualMetadata := model.ClusterMetadataResponse{}
+	require.NoError(t, json.Unmarshal(metadataJSON, &actualMetadata))
 
 	elasticsearchMock := mockServer(t, "", "")
 	defer elasticsearchMock.Close()
@@ -254,18 +254,18 @@ func TestVersionNoPassword(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	version, err := client.Version(ctx)
+	metadata, err := client.ClusterMetadata(ctx)
 	require.NoError(t, err)
 
-	require.Equal(t, &actualVersion, version)
+	require.Equal(t, &actualMetadata, metadata)
 }
 
-func TestVersionAuthentication(t *testing.T) {
-	versionJSON, err := os.ReadFile("./testdata/sample_payloads/version.json")
+func TestMetadataAuthentication(t *testing.T) {
+	metadataJSON, err := os.ReadFile("./testdata/sample_payloads/metadata.json")
 	require.NoError(t, err)
 
-	actualVersion := model.VersionResponse{}
-	require.NoError(t, json.Unmarshal(versionJSON, &actualVersion))
+	actualMetadata := model.ClusterMetadataResponse{}
+	require.NoError(t, json.Unmarshal(metadataJSON, &actualMetadata))
 
 	username := "user"
 	password := "pass"
@@ -283,13 +283,13 @@ func TestVersionAuthentication(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	version, err := client.Version(ctx)
+	metadata, err := client.ClusterMetadata(ctx)
 	require.NoError(t, err)
 
-	require.Equal(t, &actualVersion, version)
+	require.Equal(t, &actualMetadata, metadata)
 }
 
-func TestVersionNoAuthentication(t *testing.T) {
+func TestMetadataNoAuthentication(t *testing.T) {
 	elasticsearchMock := mockServer(t, "user", "pass")
 	defer elasticsearchMock.Close()
 
@@ -301,11 +301,11 @@ func TestVersionNoAuthentication(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	_, err = client.Version(ctx)
+	_, err = client.ClusterMetadata(ctx)
 	require.ErrorIs(t, err, errUnauthenticated)
 }
 
-func TestVersionNoAuthorization(t *testing.T) {
+func TestMetadataNoAuthorization(t *testing.T) {
 	elasticsearchMock := mockServer(t, "user", "pass")
 	defer elasticsearchMock.Close()
 
@@ -319,7 +319,7 @@ func TestVersionNoAuthorization(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	_, err = client.Version(ctx)
+	_, err = client.ClusterMetadata(ctx)
 	require.ErrorIs(t, err, errUnauthorized)
 }
 
@@ -485,7 +485,7 @@ func mockServer(t *testing.T, username, password string) *httptest.Server {
 	require.NoError(t, err)
 	health, err := os.ReadFile("./testdata/sample_payloads/health.json")
 	require.NoError(t, err)
-	version, err := os.ReadFile("./testdata/sample_payloads/version.json")
+	metadata, err := os.ReadFile("./testdata/sample_payloads/metadata.json")
 	require.NoError(t, err)
 
 	elasticsearchMock := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -521,10 +521,10 @@ func mockServer(t *testing.T, username, password string) *httptest.Server {
 			return
 		}
 
-		// version check
+		// metadata check
 		if req.URL.Path == "/" {
 			rw.WriteHeader(200)
-			_, err = rw.Write(version)
+			_, err = rw.Write(metadata)
 			require.NoError(t, err)
 			return
 		}

@@ -82,6 +82,7 @@ type elasticsearchScraper struct {
 	cfg                                  *Config
 	mb                                   *metadata.MetricsBuilder
 	version                              *version.Version
+	clusterName                          string
 	emitMetricsWithDirectionAttribute    bool
 	emitMetricsWithoutDirectionAttribute bool
 }
@@ -109,7 +110,7 @@ func (r *elasticsearchScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	r.getVersion(ctx, errs)
+	r.getClusterMetadata(ctx, errs)
 	r.scrapeNodeMetrics(ctx, now, errs)
 	r.scrapeClusterMetrics(ctx, now, errs)
 	r.scrapeIndicesMetrics(ctx, now, errs)
@@ -118,14 +119,16 @@ func (r *elasticsearchScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 }
 
 // scrapeVersion gets and assigns the elasticsearch version number
-func (r *elasticsearchScraper) getVersion(ctx context.Context, errs *scrapererror.ScrapeErrors) {
-	versionResponse, err := r.client.Version(ctx)
+func (r *elasticsearchScraper) getClusterMetadata(ctx context.Context, errs *scrapererror.ScrapeErrors) {
+	response, err := r.client.ClusterMetadata(ctx)
 	if err != nil {
 		errs.AddPartial(2, err)
 		return
 	}
 
-	esVersion, err := version.NewVersion(versionResponse.Version.Number)
+	r.clusterName = response.ClusterName
+
+	esVersion, err := version.NewVersion(response.Version.Number)
 	if err != nil {
 		errs.AddPartial(2, err)
 		return

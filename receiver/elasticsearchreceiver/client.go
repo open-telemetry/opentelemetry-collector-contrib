@@ -41,7 +41,7 @@ type elasticsearchClient interface {
 	NodeStats(ctx context.Context, nodes []string) (*model.NodeStats, error)
 	ClusterHealth(ctx context.Context) (*model.ClusterHealth, error)
 	IndexStats(ctx context.Context, indices []string) (*model.IndexStats, error)
-	Version(ctx context.Context) (*model.VersionResponse, error)
+	ClusterMetadata(ctx context.Context) (*model.ClusterMetadataResponse, error)
 }
 
 // defaultElasticsearchClient is the main implementation of elasticsearchClient.
@@ -143,13 +143,13 @@ func (c defaultElasticsearchClient) IndexStats(ctx context.Context, indices []st
 	return &indexStats, err
 }
 
-func (c defaultElasticsearchClient) Version(ctx context.Context) (*model.VersionResponse, error) {
+func (c defaultElasticsearchClient) ClusterMetadata(ctx context.Context) (*model.ClusterMetadataResponse, error) {
 	body, err := c.doRequest(ctx, "")
 	if err != nil {
 		return nil, err
 	}
 
-	versionResponse := model.VersionResponse{}
+	versionResponse := model.ClusterMetadataResponse{}
 	err = json.Unmarshal(body, &versionResponse)
 	return &versionResponse, err
 }
