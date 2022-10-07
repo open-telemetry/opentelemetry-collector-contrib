@@ -17,6 +17,7 @@ The following exporter configuration parameters are supported.
 |----------------|-------------|
 | endpoint | The Instana backend endpoint that the Exporter connects to. It depends on your region and it starts with ``https://serverless-``. It corresponds to the Instana environment variable ``INSTANA_ENDPOINT_URL`` |
 | agent_key      | Your Instana Agent key. The same agent key can be used for host agents and serverless monitoring. It corresponds to the Instana environment variable ``INSTANA_AGENT_KEY`` |
+| ca_file        | This optional argument allows you to provide a CA certificate file. When provided, the exporter will use this certificate to make HTTPS requests against the backend. This case is useful, for instance, when the backend runs in an on premise environment and it has a self signed CA certificate |
 
 > These parameters match the Instana Serverless Monitoring environment variables and can be found [here](https://www.ibm.com/docs/en/instana-observability/current?topic=references-environment-variables#serverless-monitoring).
 
@@ -57,9 +58,9 @@ exporters:
   logging:
     loglevel: debug
   instana:
-    loglevel: debug
     endpoint: ${INSTANA_ENDPOINT_URL}
     agent_key: ${INSTANA_AGENT_KEY}
+    ca_file: someCA.pem # Optional. See the parameter table above for details.
 
 service:
   pipelines:
