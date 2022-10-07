@@ -22,11 +22,10 @@ import (
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 // setPdataFeatureGateForTest changes the pdata feature gate during a test.
@@ -41,25 +40,24 @@ func setPdataFeatureGateForTest(t testing.TB, enabled bool) func() {
 
 func TestLoadConfig(t *testing.T) {
 	defer setPdataFeatureGateForTest(t, true)()
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, len(cfg.Exporters), 2)
+	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalExporter(sub, cfg))
 
-	r0 := cfg.Exporters[config.NewComponentID(typeStr)].(*Config)
-	assert.Equal(t, sanitize(r0), sanitize(factory.CreateDefaultConfig().(*Config)))
+	assert.Equal(t, sanitize(cfg.(*Config)), sanitize(factory.CreateDefaultConfig().(*Config)))
 
-	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
-	assert.Equal(t, sanitize(r1),
+	sub, err = cm.Sub(config.NewComponentIDWithName(typeStr, "customname").String())
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalExporter(sub, cfg))
+
+	assert.Equal(t, sanitize(cfg.(*Config)),
 		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "customname")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 20 * time.Second,
 			},
