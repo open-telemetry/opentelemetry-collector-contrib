@@ -45,7 +45,7 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| mysql.instance.endpoint | Endpoint of the MySQL instance. | String |
+| mysql.instance.endpoint | Endpoint of the MySQL instance. | Str |
 
 ## Metric attributes
 

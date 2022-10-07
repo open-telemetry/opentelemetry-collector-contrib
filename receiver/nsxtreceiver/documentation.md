@@ -29,10 +29,10 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| device.id | The name of the network interface. | String |
-| nsxt.node.id | The ID of the NSX Node. | String |
-| nsxt.node.name | The name of the NSX Node. | String |
-| nsxt.node.type | The type of NSX Node. | String |
+| device.id | The name of the network interface. | Str |
+| nsxt.node.id | The ID of the NSX Node. | Str |
+| nsxt.node.name | The name of the NSX Node. | Str |
+| nsxt.node.type | The type of NSX Node. | Str |
 
 ## Metric attributes
 

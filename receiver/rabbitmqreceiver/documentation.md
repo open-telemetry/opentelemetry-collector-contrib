@@ -28,9 +28,9 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| rabbitmq.node.name | The name of the RabbitMQ node. | String |
-| rabbitmq.queue.name | The name of the RabbitMQ queue. | String |
-| rabbitmq.vhost.name | The name of the RabbitMQ vHost. | String |
+| rabbitmq.node.name | The name of the RabbitMQ node. | Str |
+| rabbitmq.queue.name | The name of the RabbitMQ queue. | Str |
+| rabbitmq.vhost.name | The name of the RabbitMQ vHost. | Str |
 
 ## Metric attributes
 

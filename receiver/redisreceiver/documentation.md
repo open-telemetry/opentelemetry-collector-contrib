@@ -55,7 +55,7 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| redis.version | Redis server's version. | String |
+| redis.version | Redis server's version. | Str |
 
 ## Metric attributes
 

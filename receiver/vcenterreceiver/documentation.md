@@ -72,12 +72,12 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| vcenter.cluster.name | The name of the vCenter Cluster. | String |
-| vcenter.datastore.name | The name of the vCenter datastore. | String |
-| vcenter.host.name | The hostname of the vCenter ESXi host. | String |
-| vcenter.resource_pool.name | The name of the resource pool. | String |
-| vcenter.vm.id | The instance UUID of the virtual machine. | String |
-| vcenter.vm.name | The name of the virtual machine. | String |
+| vcenter.cluster.name | The name of the vCenter Cluster. | Str |
+| vcenter.datastore.name | The name of the vCenter datastore. | Str |
+| vcenter.host.name | The hostname of the vCenter ESXi host. | Str |
+| vcenter.resource_pool.name | The name of the resource pool. | Str |
+| vcenter.vm.id | The instance UUID of the virtual machine. | Str |
+| vcenter.vm.name | The name of the virtual machine. | Str |
 
 ## Metric attributes
 

@@ -7,7 +7,7 @@ require (
 	github.com/prometheus/common v0.37.0
 	github.com/prometheus/prometheus v0.38.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.61.1-0.20221004012633-7cb544d3be36
+	go.opentelemetry.io/collector v0.61.1-0.20221006231412-05d1c5f5572d
 	k8s.io/client-go v0.25.2
 )
 
@@ -117,8 +117,8 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/vultr/govultr/v2 v2.17.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.61.1-0.20221004012633-7cb544d3be36 // indirect
-	go.opentelemetry.io/collector/semconv v0.61.1-0.20221004012633-7cb544d3be36 // indirect
+	go.opentelemetry.io/collector/pdata v0.61.1-0.20221006231412-05d1c5f5572d // indirect
+	go.opentelemetry.io/collector/semconv v0.61.1-0.20221006231412-05d1c5f5572d // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.1 // indirect
 	go.opentelemetry.io/otel v1.10.0 // indirect
 	go.opentelemetry.io/otel/metric v0.32.1 // indirect
