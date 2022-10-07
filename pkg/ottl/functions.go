@@ -194,9 +194,9 @@ func (p *Parser[K]) buildInternalArg(argType reflect.Type) (reflect.Value, bool)
 	}
 }
 
-type BuildArg func(value, reflect.Type, int) (any, error)
+type buildArgFunc func(value, reflect.Type, int) (any, error)
 
-func buildSlice[T any](inv invocation, argType reflect.Type, index int, buildArg BuildArg, name string) (reflect.Value, error) {
+func buildSlice[T any](inv invocation, argType reflect.Type, index int, buildArg buildArgFunc, name string) (reflect.Value, error) {
 	if inv.Arguments[index].List == nil {
 		return reflect.ValueOf(nil), fmt.Errorf("invalid argument for parameter at position %v, must be a list of type %v", index, name)
 	}
