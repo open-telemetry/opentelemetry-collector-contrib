@@ -18,8 +18,8 @@ package model // import "github.com/open-telemetry/opentelemetry-collector-contr
 // The struct is not exhaustive; It does not provide all values returned by elasticsearch,
 // only the ones relevant to the metrics retrieved by the scraper.
 type IndexStats struct {
-	All     IndexStatsIndexInfo            `json:"_all"`
-	Indices map[string]IndexStatsIndexInfo `json:"indices"`
+	All     IndexStatsIndexInfo             `json:"_all"`
+	Indices map[string]*IndexStatsIndexInfo `json:"indices"`
 }
 
 type IndexStatsIndexInfo struct {

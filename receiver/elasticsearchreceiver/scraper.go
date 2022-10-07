@@ -385,7 +385,7 @@ func (r *elasticsearchScraper) scrapeIndicesMetrics(ctx context.Context, now pco
 	r.scrapeOneIndexMetrics(now, "_all", &indexStats.All)
 
 	for name, stats := range indexStats.Indices {
-		r.scrapeOneIndexMetrics(now, name, &stats)
+		r.scrapeOneIndexMetrics(now, name, stats)
 	}
 }
 
