@@ -7,6 +7,9 @@ resource_attributes:
   elasticsearch.node.name:
     description: The name of the elasticsearch node.
     type: string
+  elasticsearch.index.name:
+    description: The name of the elasticsearch index.
+    type: string
 
 attributes:
   cache_name:
@@ -137,6 +140,13 @@ attributes:
     enum:
       - hit
       - miss
+  index_aggregation_type:
+    value: aggregation
+    description: Type of shard aggregation for index statistics
+    enum:
+      - primary_shards
+      - total
+
 metrics:
   # these metrics are from /_nodes/stats, and are node level metrics
   elasticsearch.breaker.memory.estimated:
@@ -295,7 +305,7 @@ metrics:
     attributes: []
     enabled: true
   elasticsearch.node.operations.completed:
-    description: The number of operations completed.
+    description: The number of operations completed by a node.
     unit: "{operations}"
     sum:
       monotonic: true
@@ -304,7 +314,7 @@ metrics:
     attributes: [operation]
     enabled: true
   elasticsearch.node.operations.time:
-    description: Time spent on operations.
+    description: Time spent on operations by a node.
     unit: ms
     sum:
       monotonic: true
@@ -749,4 +759,23 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [ ]
+    enabled: true
+  # these metrics are from /*/_stats and are index level metrics
+  elasticsearch.index.operations.completed:
+    description: The number of operations completed for an index.
+    unit: "{operations}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [operation, index_aggregation_type]
+    enabled: true
+  elasticsearch.index.operations.time:
+    description: Time spent on operations for an index.
+    unit: ms
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [operation, index_aggregation_type]
     enabled: true
