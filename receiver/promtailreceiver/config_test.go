@@ -5,20 +5,22 @@ import (
 	"testing"
 	"time"
 
+	"github.com/weaveworks/common/server"
+
+	"github.com/prometheus/prometheus/discovery"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 
 	"github.com/grafana/loki/clients/pkg/promtail/targets/file"
 
-	"github.com/grafana/loki/clients/pkg/promtail/scrapeconfig"
-	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/discovery"
-
 	"github.com/grafana/loki/clients/pkg/promtail/positions"
+	"github.com/grafana/loki/clients/pkg/promtail/scrapeconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
+	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
@@ -48,10 +50,11 @@ func testdataConfigYaml() *PromtailConfig {
 		},
 		InputConfig: func() Config {
 			c := NewConfig()
-			c.PositionsConfig = positions.Config{PositionsFile: "/tmp/positions.yaml"}
-			c.ScrapeConfig = []scrapeconfig.Config{
+			c.Input.PositionsConfig = positions.Config{PositionsFile: "/tmp/positions.yaml"}
+			c.Input.ScrapeConfig = []scrapeconfig.Config{
 				{
-					JobName: "system",
+					JobName:        "system",
+					PipelineStages: []interface{}{},
 					ServiceDiscoveryConfig: scrapeconfig.ServiceDiscoveryConfig{
 						StaticConfigs: discovery.StaticConfig{
 							{
@@ -59,16 +62,15 @@ func testdataConfigYaml() *PromtailConfig {
 									"job":      "varlogs",
 									"__path__": "testdata/simple.log",
 								},
+								Targets: []model.LabelSet{},
 							},
 						},
 					},
 				},
 			}
 
-			syncPeriod, _ := time.ParseDuration("10s")
-
-			c.TargetConfig = file.Config{
-				SyncPeriod: syncPeriod,
+			c.Input.TargetConfig = file.Config{
+				SyncPeriod: time.Second * 10,
 			}
 
 			return *c
@@ -79,8 +81,8 @@ func testdataConfigYaml() *PromtailConfig {
 func TestBuild(t *testing.T) {
 	basicConfig := func() *Config {
 		cfg := NewConfigWithID("testfile")
-		cfg.PositionsConfig = positions.Config{}
-		cfg.ScrapeConfig = []scrapeconfig.Config{
+		cfg.Input.PositionsConfig = positions.Config{}
+		cfg.Input.ScrapeConfig = []scrapeconfig.Config{
 			{
 				JobName: "testjob",
 				ServiceDiscoveryConfig: scrapeconfig.ServiceDiscoveryConfig{
@@ -95,7 +97,7 @@ func TestBuild(t *testing.T) {
 				},
 			},
 		}
-		cfg.TargetConfig = file.Config{
+		cfg.Input.TargetConfig = file.Config{
 			SyncPeriod: 10 * time.Second,
 		}
 
@@ -113,20 +115,20 @@ func TestBuild(t *testing.T) {
 			modifyBaseConfig: func(f *Config) {},
 			errorRequirement: require.NoError,
 			validate: func(t *testing.T, f *PromtailInput) {
-				require.Equal(t, "/var/log/positions.yaml", f.config.PositionsConfig.PositionsFile)
-				require.Equal(t, 10*time.Second, f.config.PositionsConfig.SyncPeriod)
-				require.Len(t, f.config.ScrapeConfig, 1)
+				require.Equal(t, "/var/log/positions.yaml", f.config.Input.PositionsConfig.PositionsFile)
+				require.Equal(t, 10*time.Second, f.config.Input.PositionsConfig.SyncPeriod)
+				require.Len(t, f.config.Input.ScrapeConfig, 1)
 
-				staticConfigs := f.config.ScrapeConfig[0].ServiceDiscoveryConfig.StaticConfigs
+				staticConfigs := f.config.Input.ScrapeConfig[0].ServiceDiscoveryConfig.StaticConfigs
 				require.Len(t, staticConfigs, 1)
 
-				require.Equal(t, 10*time.Second, f.config.TargetConfig.SyncPeriod)
+				require.Equal(t, 10*time.Second, f.config.Input.TargetConfig.SyncPeriod)
 			},
 		},
 		{
 			name: "ScrapeConfigMissing",
 			modifyBaseConfig: func(f *Config) {
-				f.ScrapeConfig = nil
+				f.Input.ScrapeConfig = nil
 			},
 			errorRequirement: require.Error,
 			validate:         nil,
@@ -134,7 +136,7 @@ func TestBuild(t *testing.T) {
 		{
 			name: "TargetConfigSyncPeriodMissing",
 			modifyBaseConfig: func(f *Config) {
-				f.TargetConfig = file.Config{}
+				f.Input.TargetConfig = file.Config{}
 			},
 			errorRequirement: require.Error,
 			validate:         nil,
@@ -175,9 +177,10 @@ func TestUnmarshal(t *testing.T) {
 				ExpectErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
-					cfg.ScrapeConfig = []scrapeconfig.Config{
+					cfg.Input.ScrapeConfig = []scrapeconfig.Config{
 						{
-							JobName: "testjob",
+							JobName:        "testjob",
+							PipelineStages: []interface{}{},
 							ServiceDiscoveryConfig: scrapeconfig.ServiceDiscoveryConfig{
 								StaticConfigs: []*targetgroup.Group{
 									{
@@ -185,8 +188,33 @@ func TestUnmarshal(t *testing.T) {
 											"job":      "varlogs",
 											"__path__": "/var/log/example.log",
 										},
+										Targets: []model.LabelSet{},
 									},
 								},
+							},
+						},
+					}
+					return cfg
+				}(),
+			},
+			{
+				Name:      "loki_push_api",
+				ExpectErr: false,
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.Input.ScrapeConfig = []scrapeconfig.Config{
+						{
+							JobName:        "push",
+							PipelineStages: []interface{}{},
+							PushConfig: &scrapeconfig.PushTargetConfig{
+								Server: server.Config{
+									HTTPListenPort: 3101,
+									GRPCListenPort: 3600,
+								},
+								Labels: model.LabelSet{
+									"pushserver": "push1",
+								},
+								KeepTimestamp: true,
 							},
 						},
 					}

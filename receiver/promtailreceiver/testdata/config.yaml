@@ -1,11 +1,12 @@
 promtail:
-  positions:
-    filename: /tmp/positions.yaml
-  scrape_configs:
-    - job_name: system
-      static_configs:
-        - labels:
-            job: varlogs
-            __path__: testdata/simple.log
-  target_config:
-    sync_period: 10s
+  config:
+    positions:
+      filename: /tmp/positions.yaml
+    scrape_configs:
+      - job_name: system
+        static_configs:
+          - labels:
+              job: varlogs
+              __path__: testdata/simple.log
+    target_config:
+      sync_period: 10s

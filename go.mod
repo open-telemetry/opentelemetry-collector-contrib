@@ -1082,3 +1082,6 @@ replace github.com/cloudflare/cloudflare-go => github.com/cyriltovena/cloudflare
 
 // using fork for custom dialer support - see https://github.com/bradfitz/gomemcache/pull/86
 replace github.com/bradfitz/gomemcache => github.com/grafana/gomemcache v0.0.0-20220812141859-1e3ae89e91a7
+
+// Fork containing a line-buffered logger which should improve logging performance.
+replace github.com/go-kit/log => github.com/dannykopping/go-kit-log v0.2.2-0.20221002180827-5591c1641b6b

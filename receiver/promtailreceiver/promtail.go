@@ -68,10 +68,10 @@ func (p *PromtailInput) Start(_ operator.Persister) error {
 		p.app,
 		p.app.reg,
 		p.app.logger,
-		p.config.PositionsConfig,
+		p.config.Input.PositionsConfig,
 		p.app.client,
-		p.config.ScrapeConfig,
-		&p.config.TargetConfig,
+		p.config.Input.ScrapeConfig,
+		&p.config.Input.TargetConfig,
 	)
 
 	if err != nil {

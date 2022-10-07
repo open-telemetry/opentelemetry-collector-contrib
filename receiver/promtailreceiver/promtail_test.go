@@ -18,7 +18,7 @@ import (
 func TestPromtailInput_parsePromtailEntry(t *testing.T) {
 	basicConfig := func() *Config {
 		cfg := NewConfigWithID("testfile")
-		cfg.ScrapeConfig = []scrapeconfig.Config{
+		cfg.Input.ScrapeConfig = []scrapeconfig.Config{
 			{
 				JobName: "testjob",
 				ServiceDiscoveryConfig: scrapeconfig.ServiceDiscoveryConfig{
@@ -33,7 +33,7 @@ func TestPromtailInput_parsePromtailEntry(t *testing.T) {
 				},
 			},
 		}
-		cfg.TargetConfig = file.Config{
+		cfg.Input.TargetConfig = file.Config{
 			SyncPeriod: 10 * time.Second,
 		}
 

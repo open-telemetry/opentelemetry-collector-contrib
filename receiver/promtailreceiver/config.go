@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/promtailreceiver/internal"
+	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/grafana/loki/clients/pkg/promtail/api"
 	"github.com/grafana/loki/clients/pkg/promtail/positions"
@@ -15,12 +16,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v2"
 )
 
 // PromtailConfig defines configuration for the promtail receiver
 type PromtailConfig struct {
-	adapter.BaseConfig `mapstructure:",squash"`
-	InputConfig        Config `mapstructure:",squash"`
+	InputConfig        Config `mapstructure:",squash" yaml:",inline"`
+	adapter.BaseConfig `mapstructure:",squash" yaml:",inline"`
 }
 
 // NewConfig creates a new input config with default values
@@ -35,12 +37,15 @@ func NewConfigWithID(operatorID string) *Config {
 	}
 }
 
-type Config struct {
-	helper.InputConfig `mapstructure:",squash"`
+type PromtailInputConfig struct {
+	PositionsConfig positions.Config      `mapstructure:"positions,omitempty" yaml:"positions,omitempty"`
+	ScrapeConfig    []scrapeconfig.Config `mapstructure:"scrape_configs,omitempty" yaml:"scrape_configs,omitempty"`
+	TargetConfig    file.Config           `mapstructure:"target_config,omitempty" yaml:"target_config,omitempty"`
+}
 
-	PositionsConfig positions.Config      `mapstructure:"positions,omitempty"`
-	ScrapeConfig    []scrapeconfig.Config `mapstructure:"scrape_configs,omitempty"`
-	TargetConfig    file.Config           `mapstructure:"target_config,omitempty"`
+type Config struct {
+	helper.InputConfig `mapstructure:",squash" yaml:",inline"`
+	Input              PromtailInputConfig `mapstructure:"config,omitempty" yaml:"config,omitempty"`
 }
 
 // Build will build a promtail input operator from the supplied configuration
@@ -49,16 +54,16 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(c.ScrapeConfig) == 0 {
+	if len(c.Input.ScrapeConfig) == 0 {
 		return nil, fmt.Errorf("required argument `scrape_configs` is empty")
 	}
-	if c.PositionsConfig.PositionsFile == "" {
-		c.PositionsConfig.PositionsFile = "/var/log/positions.yaml"
+	if c.Input.PositionsConfig.PositionsFile == "" {
+		c.Input.PositionsConfig.PositionsFile = "/var/log/positions.yaml"
 	}
-	if c.PositionsConfig.SyncPeriod == 0 {
-		c.PositionsConfig.SyncPeriod = 10 * time.Second
+	if c.Input.PositionsConfig.SyncPeriod == 0 {
+		c.Input.PositionsConfig.SyncPeriod = 10 * time.Second
 	}
-	if c.TargetConfig.SyncPeriod == 0 {
+	if c.Input.TargetConfig.SyncPeriod == 0 {
 		return nil, fmt.Errorf("required argument `target_configs.sync_period` is empty")
 	}
 
@@ -74,4 +79,21 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 			reg:     prometheus.DefaultRegisterer,
 		},
 	}, nil
+}
+
+// Unmarshal a config.Parser into the config struct.
+func (c *PromtailInputConfig) Unmarshal(componentParser *confmap.Conf) error {
+	if componentParser == nil {
+		return nil
+	}
+	out, err := yaml.Marshal(componentParser.ToStringMap())
+	if err != nil {
+		return fmt.Errorf("promtail receiver failed to marshal config to yaml: %w", err)
+	}
+
+	err = yaml.UnmarshalStrict(out, c)
+	if err != nil {
+		return fmt.Errorf("promtail receiver failed to unmarshal yaml to promtail config: %w", err)
+	}
+	return nil
 }
