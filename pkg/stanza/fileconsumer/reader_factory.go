@@ -94,13 +94,14 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 		Offset:       b.offset,
 	}
 
+	var splitter *helper.Splitter
 	if b.splitFunc != nil {
 		r.splitFunc = b.splitFunc
 	} else {
-		splitter, err := b.splitterConfig.Build(false, b.readerConfig.maxLogSize)
+		splitter, err = b.splitterConfig.Build(false, b.readerConfig.maxLogSize)
 		r.splitFunc = splitter.SplitFunc
 		if err != nil {
-			return nil, err
+			return
 		}
 	}
 
