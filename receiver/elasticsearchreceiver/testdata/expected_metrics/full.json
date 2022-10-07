@@ -2385,6 +2385,12 @@
                   "value": {
                      "stringValue": ".geoip_databases"
                   }
+               },
+               {
+                  "key": "elasticsearch.cluster.name",
+                  "value": {
+                     "stringValue": "docker-cluster"
+                  }
                }
             ]
          },
@@ -2504,6 +2510,12 @@
                   "key": "elasticsearch.index.name",
                   "value": {
                      "stringValue": "_all"
+                  }
+               },
+               {
+                  "key": "elasticsearch.cluster.name",
+                  "value": {
+                     "stringValue": "docker-cluster"
                   }
                }
             ]
