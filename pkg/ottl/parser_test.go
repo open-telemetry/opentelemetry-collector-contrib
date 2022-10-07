@@ -482,31 +482,6 @@ func testParsePath(val *Path) (GetSetter[interface{}], error) {
 	return nil, fmt.Errorf("bad path %v", val)
 }
 
-// Helper for test cases where the WHERE clause is all that matters.
-// Parse string should start with `set(name, "test") where`...
-func setNameTest(b *booleanExpression) *transformationStatement {
-	return &transformationStatement{
-		Invocation: invocation{
-			Function: "set",
-			Arguments: []value{
-				{
-					Path: &Path{
-						Fields: []Field{
-							{
-								Name: "name",
-							},
-						},
-					},
-				},
-				{
-					String: ottltest.Strp("test"),
-				},
-			},
-		},
-		WhereClause: b,
-	}
-}
-
 func Test_parseWhere(t *testing.T) {
 	tests := []struct {
 		statement string
