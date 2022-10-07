@@ -93,9 +93,9 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| elasticsearch.cluster.name | The name of the elasticsearch cluster. | String |
-| elasticsearch.index.name | The name of the elasticsearch index. | String |
-| elasticsearch.node.name | The name of the elasticsearch node. | String |
+| elasticsearch.cluster.name | The name of the elasticsearch cluster. | Str |
+| elasticsearch.index.name | The name of the elasticsearch index. | Str |
+| elasticsearch.node.name | The name of the elasticsearch node. | Str |
 
 ## Metric attributes
 
