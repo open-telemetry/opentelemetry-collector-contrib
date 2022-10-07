@@ -23,7 +23,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
@@ -32,7 +31,17 @@ import (
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"`
 
-	ottlconfig.Config `mapstructure:",squash"`
+	OTTLConfig `mapstructure:",squash"`
+}
+
+type OTTLConfig struct {
+	Traces  SignalConfig `mapstructure:"traces"`
+	Metrics SignalConfig `mapstructure:"metrics"`
+	Logs    SignalConfig `mapstructure:"logs"`
+}
+
+type SignalConfig struct {
+	Statements []string `mapstructure:"statements"`
 }
 
 var _ config.Processor = (*Config)(nil)
@@ -41,19 +50,19 @@ func (c *Config) Validate() error {
 	var errors error
 
 	ottltracesp := ottltraces.NewParser(traces.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
-	_, err := ottltracesp.ParseStatements(c.Traces.Queries)
+	_, err := ottltracesp.ParseStatements(c.Traces.Statements)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
 
 	ottlmetricsp := ottldatapoints.NewParser(metrics.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
-	_, err = ottlmetricsp.ParseStatements(c.Metrics.Queries)
+	_, err = ottlmetricsp.ParseStatements(c.Metrics.Statements)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
 
 	ottllogsp := ottllogs.NewParser(logs.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
-	_, err = ottllogsp.ParseStatements(c.Logs.Queries)
+	_, err = ottllogsp.ParseStatements(c.Logs.Statements)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}

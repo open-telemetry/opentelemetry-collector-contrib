@@ -138,6 +138,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver v0.61.0
@@ -154,7 +155,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.61.0
 	github.com/prometheus/prometheus v1.8.2-0.20220303173753-edfe657b5405
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.61.0
+	go.opentelemetry.io/collector v0.61.1-0.20221004012633-7cb544d3be36
 	go.uber.org/multierr v1.8.0
 	golang.org/x/sys v0.0.0-20220909162455-aba9fc2a8ff2
 )
@@ -311,6 +312,7 @@ require (
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.0 // indirect
 	github.com/getsentry/sentry-go v0.13.0 // indirect
+	github.com/go-errors/errors v1.4.2 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.6.1 // indirect
 	github.com/go-kit/kit v0.12.0 // indirect
@@ -575,12 +577,12 @@ require (
 	go.mongodb.org/atlas v0.17.0 // indirect
 	go.mongodb.org/mongo-driver v1.10.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.61.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.61.0 // indirect
+	go.opentelemetry.io/collector/pdata v0.61.1-0.20221004012633-7cb544d3be36 // indirect
+	go.opentelemetry.io/collector/semconv v0.61.1-0.20221004012633-7cb544d3be36 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.1 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.10.0 // indirect
-	go.opentelemetry.io/contrib/zpages v0.36.0 // indirect
+	go.opentelemetry.io/contrib/zpages v0.36.1 // indirect
 	go.opentelemetry.io/otel v1.10.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.32.1 // indirect
 	go.opentelemetry.io/otel/metric v0.32.1 // indirect
@@ -964,6 +966,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signa
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver => ./receiver/simpleprometheusreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver => ./receiver/skywalkingreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver => ./receiver/snmpreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver => ./receiver/solacereceiver
 

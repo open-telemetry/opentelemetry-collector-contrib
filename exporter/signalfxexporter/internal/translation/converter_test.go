@@ -240,10 +240,10 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().PutString("k/r0", "vr0")
-				res.Attributes().PutString("k/r1", "vr1")
-				res.Attributes().PutString("k/n0", "vn0")
-				res.Attributes().PutString("k/n1", "vn1")
+				res.Attributes().PutStr("k/r0", "vr0")
+				res.Attributes().PutStr("k/r1", "vr1")
+				res.Attributes().PutStr("k/n0", "vn0")
+				res.Attributes().PutStr("k/n1", "vn1")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(2)
@@ -288,10 +288,10 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().PutString("k/r0", "vr0")
-				res.Attributes().PutString("k/r1", "vr1")
-				res.Attributes().PutString("k/n0", "vn0")
-				res.Attributes().PutString("k/n1", "vn1")
+				res.Attributes().PutStr("k/r0", "vr0")
+				res.Attributes().PutStr("k/r1", "vr1")
+				res.Attributes().PutStr("k/n0", "vn0")
+				res.Attributes().PutStr("k/n1", "vn1")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(5)
@@ -351,10 +351,10 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().PutString("k/r0", "vr0")
-				res.Attributes().PutString("k/r1", "vr1")
-				res.Attributes().PutString("k/n0", "vn0")
-				res.Attributes().PutString("k/n1", "vn1")
+				res.Attributes().PutStr("k/r0", "vr0")
+				res.Attributes().PutStr("k/r1", "vr1")
+				res.Attributes().PutStr("k/n0", "vn0")
+				res.Attributes().PutStr("k/n1", "vn1")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(1)
@@ -388,11 +388,11 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().PutString("k/r0", "vr0")
-				res.Attributes().PutString("k/r1", "vr1")
-				res.Attributes().PutString("cloud.provider", conventions.AttributeCloudProviderAWS)
-				res.Attributes().PutString("cloud.account.id", "efgh")
-				res.Attributes().PutString("cloud.region", "us-east")
+				res.Attributes().PutStr("k/r0", "vr0")
+				res.Attributes().PutStr("k/r1", "vr1")
+				res.Attributes().PutStr("cloud.provider", conventions.AttributeCloudProviderAWS)
+				res.Attributes().PutStr("cloud.account.id", "efgh")
+				res.Attributes().PutStr("cloud.region", "us-east")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
@@ -420,12 +420,12 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().PutString("k/r0", "vr0")
-				res.Attributes().PutString("k/r1", "vr1")
-				res.Attributes().PutString("cloud.provider", conventions.AttributeCloudProviderAWS)
-				res.Attributes().PutString("cloud.account.id", "efgh")
-				res.Attributes().PutString("cloud.region", "us-east")
-				res.Attributes().PutString("host.id", "abcd")
+				res.Attributes().PutStr("k/r0", "vr0")
+				res.Attributes().PutStr("k/r1", "vr1")
+				res.Attributes().PutStr("cloud.provider", conventions.AttributeCloudProviderAWS)
+				res.Attributes().PutStr("cloud.account.id", "efgh")
+				res.Attributes().PutStr("cloud.region", "us-east")
+				res.Attributes().PutStr("host.id", "abcd")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
@@ -455,10 +455,10 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().PutString("k/r0", "vr0")
-				res.Attributes().PutString("k/r1", "vr1")
-				res.Attributes().PutString("cloud.provider", conventions.AttributeCloudProviderGCP)
-				res.Attributes().PutString("host.id", "abcd")
+				res.Attributes().PutStr("k/r0", "vr0")
+				res.Attributes().PutStr("k/r1", "vr1")
+				res.Attributes().PutStr("cloud.provider", conventions.AttributeCloudProviderGCP)
+				res.Attributes().PutStr("host.id", "abcd")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
@@ -485,11 +485,11 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().PutString("k/r0", "vr0")
-				res.Attributes().PutString("k/r1", "vr1")
-				res.Attributes().PutString("cloud.provider", conventions.AttributeCloudProviderGCP)
-				res.Attributes().PutString("host.id", "abcd")
-				res.Attributes().PutString("cloud.account.id", "efgh")
+				res.Attributes().PutStr("k/r0", "vr0")
+				res.Attributes().PutStr("k/r1", "vr1")
+				res.Attributes().PutStr("cloud.provider", conventions.AttributeCloudProviderGCP)
+				res.Attributes().PutStr("host.id", "abcd")
+				res.Attributes().PutStr("cloud.account.id", "efgh")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
@@ -665,7 +665,7 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 	m.SetName("metric1")
 	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 	dp.SetIntValue(123)
-	dp.Attributes().PutString("old.dim", "val1")
+	dp.Attributes().PutStr("old.dim", "val1")
 
 	gaugeType := sfxpb.MetricType_GAUGE
 	expected := []*sfxpb.DataPoint{
@@ -704,7 +704,7 @@ func TestDimensionKeyCharsWithPeriod(t *testing.T) {
 	m.SetName("metric1")
 	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 	dp.SetIntValue(123)
-	dp.Attributes().PutString("old.dim.with.periods", "val1")
+	dp.Attributes().PutStr("old.dim.with.periods", "val1")
 
 	gaugeType := sfxpb.MetricType_GAUGE
 	expected := []*sfxpb.DataPoint{
@@ -738,7 +738,7 @@ func TestInvalidNumberOfDimensions(t *testing.T) {
 	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 	dp.SetIntValue(123)
 	for i := 0; i < 10; i++ {
-		dp.Attributes().PutString(fmt.Sprint("dim_key_", i), fmt.Sprint("dim_val_", i))
+		dp.Attributes().PutStr(fmt.Sprint("dim_key_", i), fmt.Sprint("dim_val_", i))
 	}
 	c, err := NewMetricsConverter(logger, nil, nil, nil, "_-.")
 	require.NoError(t, err)
@@ -759,7 +759,7 @@ func TestInvalidNumberOfDimensions(t *testing.T) {
 		Dimensions: make([]*sfxpb.Dimension, 0, 37),
 	}
 	for i := 0; i < 37; i++ {
-		dpInvalid.Attributes().PutString(fmt.Sprint("dim_key_", i), fmt.Sprint("dim_val_", i))
+		dpInvalid.Attributes().PutStr(fmt.Sprint("dim_key_", i), fmt.Sprint("dim_val_", i))
 		dpSFX.Dimensions = append(dpSFX.Dimensions, &sfxpb.Dimension{
 			Key:   fmt.Sprint("dim_key_", i),
 			Value: fmt.Sprint("dim_val_", i),

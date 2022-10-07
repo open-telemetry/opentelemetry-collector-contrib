@@ -37,7 +37,7 @@ func NewParser[K any](functions map[string]interface{}, pathParser PathExpressio
 }
 
 func (p *Parser[K]) ParseStatements(statements []string) ([]Statement[K], error) {
-	var queries []Statement[K]
+	var parsedStatements []Statement[K]
 	var errors error
 
 	for _, statement := range statements {
@@ -56,7 +56,7 @@ func (p *Parser[K]) ParseStatements(statements []string) ([]Statement[K], error)
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		queries = append(queries, Statement[K]{
+		parsedStatements = append(parsedStatements, Statement[K]{
 			Function:  function,
 			Condition: expression,
 		})
@@ -65,7 +65,7 @@ func (p *Parser[K]) ParseStatements(statements []string) ([]Statement[K], error)
 	if errors != nil {
 		return nil, errors
 	}
-	return queries, nil
+	return parsedStatements, nil
 }
 
 var parser = newParser()

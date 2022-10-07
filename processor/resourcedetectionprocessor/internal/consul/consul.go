@@ -82,12 +82,12 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	}
 
 	for key, element := range metadata.HostMetadata {
-		attrs.PutString(key, element)
+		attrs.PutStr(key, element)
 	}
 
-	attrs.PutString(conventions.AttributeHostName, metadata.Hostname)
-	attrs.PutString(conventions.AttributeCloudRegion, metadata.Datacenter)
-	attrs.PutString(conventions.AttributeHostID, metadata.NodeID)
+	attrs.PutStr(conventions.AttributeHostName, metadata.Hostname)
+	attrs.PutStr(conventions.AttributeCloudRegion, metadata.Datacenter)
+	attrs.PutStr(conventions.AttributeHostID, metadata.NodeID)
 
 	return res, conventions.SchemaURL, nil
 }

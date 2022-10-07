@@ -120,15 +120,15 @@ func TestHTTPServerSpanToRequestDataAttributeSet1(t *testing.T) {
 	spanAttributes := span.Attributes()
 
 	// http.scheme, http.host, http.target => data.Url
-	spanAttributes.PutString(conventions.AttributeHTTPScheme, "https")
-	spanAttributes.PutString(conventions.AttributeHTTPHost, "foo")
-	spanAttributes.PutString(conventions.AttributeHTTPTarget, "/bar?biz=baz")
+	spanAttributes.PutStr(conventions.AttributeHTTPScheme, "https")
+	spanAttributes.PutStr(conventions.AttributeHTTPHost, "foo")
+	spanAttributes.PutStr(conventions.AttributeHTTPTarget, "/bar?biz=baz")
 
 	// A non 2xx status code
 	spanAttributes.PutInt(conventions.AttributeHTTPStatusCode, 400)
 
 	// A specific http route
-	spanAttributes.PutString(conventions.AttributeHTTPRoute, "bizzle")
+	spanAttributes.PutStr(conventions.AttributeHTTPRoute, "bizzle")
 
 	// Unused but should get copied to the RequestData .Properties and .Measurements
 	spanAttributes.PutBool("somebool", false)
@@ -158,12 +158,12 @@ func TestHTTPServerSpanToRequestDataAttributeSet2(t *testing.T) {
 	spanAttributes := span.Attributes()
 
 	spanAttributes.PutInt(conventions.AttributeHTTPStatusCode, defaultHTTPStatusCode)
-	spanAttributes.PutString(conventions.AttributeHTTPScheme, "https")
-	spanAttributes.PutString(conventions.AttributeHTTPServerName, "foo")
+	spanAttributes.PutStr(conventions.AttributeHTTPScheme, "https")
+	spanAttributes.PutStr(conventions.AttributeHTTPServerName, "foo")
 	spanAttributes.PutInt(conventions.AttributeNetHostPort, 81)
-	spanAttributes.PutString(conventions.AttributeHTTPTarget, "/bar?biz=baz")
+	spanAttributes.PutStr(conventions.AttributeHTTPTarget, "/bar?biz=baz")
 
-	spanAttributes.PutString(conventions.AttributeNetPeerIP, "127.0.0.1")
+	spanAttributes.PutStr(conventions.AttributeNetPeerIP, "127.0.0.1")
 
 	envelope, _ := spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
 	commonEnvelopeValidations(t, span, envelope, defaultRequestDataEnvelopeName)
@@ -183,13 +183,13 @@ func TestHTTPServerSpanToRequestDataAttributeSet3(t *testing.T) {
 	spanAttributes := span.Attributes()
 
 	spanAttributes.PutInt(conventions.AttributeHTTPStatusCode, defaultHTTPStatusCode)
-	spanAttributes.PutString(conventions.AttributeHTTPScheme, "https")
-	spanAttributes.PutString(conventions.AttributeNetHostName, "foo")
+	spanAttributes.PutStr(conventions.AttributeHTTPScheme, "https")
+	spanAttributes.PutStr(conventions.AttributeNetHostName, "foo")
 	spanAttributes.PutInt(conventions.AttributeNetHostPort, 81)
-	spanAttributes.PutString(conventions.AttributeHTTPTarget, "/bar?biz=baz")
+	spanAttributes.PutStr(conventions.AttributeHTTPTarget, "/bar?biz=baz")
 
-	spanAttributes.PutString(conventions.AttributeHTTPClientIP, "127.0.0.2")
-	spanAttributes.PutString(conventions.AttributeNetPeerIP, "127.0.0.1")
+	spanAttributes.PutStr(conventions.AttributeHTTPClientIP, "127.0.0.2")
+	spanAttributes.PutStr(conventions.AttributeNetPeerIP, "127.0.0.1")
 
 	envelope, _ := spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
 	commonEnvelopeValidations(t, span, envelope, defaultRequestDataEnvelopeName)
@@ -206,7 +206,7 @@ func TestHTTPServerSpanToRequestDataAttributeSet4(t *testing.T) {
 	spanAttributes := span.Attributes()
 
 	spanAttributes.PutInt(conventions.AttributeHTTPStatusCode, defaultHTTPStatusCode)
-	spanAttributes.PutString(conventions.AttributeHTTPURL, "https://foo:81/bar?biz=baz")
+	spanAttributes.PutStr(conventions.AttributeHTTPURL, "https://foo:81/bar?biz=baz")
 
 	envelope, _ := spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
 	commonEnvelopeValidations(t, span, envelope, defaultRequestDataEnvelopeName)
@@ -232,7 +232,7 @@ func TestHTTPClientSpanToRemoteDependencyAttributeSet1(t *testing.T) {
 	span := getDefaultHTTPClientSpan()
 	spanAttributes := span.Attributes()
 
-	spanAttributes.PutString(conventions.AttributeHTTPURL, "https://foo:81/bar?biz=baz")
+	spanAttributes.PutStr(conventions.AttributeHTTPURL, "https://foo:81/bar?biz=baz")
 	spanAttributes.PutInt(conventions.AttributeHTTPStatusCode, 400)
 
 	envelope, _ := spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
@@ -257,12 +257,12 @@ func TestHTTPClientSpanToRemoteDependencyAttributeSet2(t *testing.T) {
 
 	// http.scheme, http.host, http.target => data.Url
 	spanAttributes.PutInt(conventions.AttributeHTTPStatusCode, defaultHTTPStatusCode)
-	spanAttributes.PutString(conventions.AttributeHTTPScheme, "https")
-	spanAttributes.PutString(conventions.AttributeHTTPHost, "foo")
-	spanAttributes.PutString(conventions.AttributeHTTPTarget, "bar/12345?biz=baz")
+	spanAttributes.PutStr(conventions.AttributeHTTPScheme, "https")
+	spanAttributes.PutStr(conventions.AttributeHTTPHost, "foo")
+	spanAttributes.PutStr(conventions.AttributeHTTPTarget, "bar/12345?biz=baz")
 
 	// A specific http.route
-	spanAttributes.PutString(conventions.AttributeHTTPRoute, "/bar/:baz_id")
+	spanAttributes.PutStr(conventions.AttributeHTTPRoute, "/bar/:baz_id")
 
 	envelope, _ := spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
 	commonEnvelopeValidations(t, span, envelope, defaultRemoteDependencyDataEnvelopeName)
@@ -283,10 +283,10 @@ func TestHTTPClientSpanToRemoteDependencyAttributeSet3(t *testing.T) {
 	spanAttributes := span.Attributes()
 
 	spanAttributes.PutInt(conventions.AttributeHTTPStatusCode, defaultHTTPStatusCode)
-	spanAttributes.PutString(conventions.AttributeHTTPScheme, "https")
-	spanAttributes.PutString(conventions.AttributeNetPeerName, "foo")
+	spanAttributes.PutStr(conventions.AttributeHTTPScheme, "https")
+	spanAttributes.PutStr(conventions.AttributeNetPeerName, "foo")
 	spanAttributes.PutInt(conventions.AttributeNetPeerPort, 81)
-	spanAttributes.PutString(conventions.AttributeHTTPTarget, "/bar?biz=baz")
+	spanAttributes.PutStr(conventions.AttributeHTTPTarget, "/bar?biz=baz")
 
 	envelope, _ := spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
 	commonEnvelopeValidations(t, span, envelope, defaultRemoteDependencyDataEnvelopeName)
@@ -302,10 +302,10 @@ func TestHTTPClientSpanToRemoteDependencyAttributeSet4(t *testing.T) {
 	spanAttributes := span.Attributes()
 
 	spanAttributes.PutInt(conventions.AttributeHTTPStatusCode, defaultHTTPStatusCode)
-	spanAttributes.PutString(conventions.AttributeHTTPScheme, "https")
-	spanAttributes.PutString(conventions.AttributeNetPeerIP, "127.0.0.1")
+	spanAttributes.PutStr(conventions.AttributeHTTPScheme, "https")
+	spanAttributes.PutStr(conventions.AttributeNetPeerIP, "127.0.0.1")
 	spanAttributes.PutInt(conventions.AttributeNetPeerPort, 81)
-	spanAttributes.PutString(conventions.AttributeHTTPTarget, "/bar?biz=baz")
+	spanAttributes.PutStr(conventions.AttributeHTTPTarget, "/bar?biz=baz")
 
 	envelope, _ := spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
 	commonEnvelopeValidations(t, span, envelope, defaultRemoteDependencyDataEnvelopeName)
@@ -319,8 +319,8 @@ func TestRPCServerSpanToRequestData(t *testing.T) {
 	span := getDefaultRPCServerSpan()
 	spanAttributes := span.Attributes()
 
-	spanAttributes.PutString(conventions.AttributeNetPeerName, "foo")
-	spanAttributes.PutString(conventions.AttributeNetPeerIP, "127.0.0.1")
+	spanAttributes.PutStr(conventions.AttributeNetPeerName, "foo")
+	spanAttributes.PutStr(conventions.AttributeNetPeerIP, "127.0.0.1")
 	spanAttributes.PutInt(conventions.AttributeNetPeerPort, 81)
 
 	envelope, _ := spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
@@ -329,8 +329,8 @@ func TestRPCServerSpanToRequestData(t *testing.T) {
 	defaultRPCRequestDataValidations(t, span, data, "foo:81")
 
 	// test fallback to peerip
-	spanAttributes.PutString(conventions.AttributeNetPeerName, "")
-	spanAttributes.PutString(conventions.AttributeNetPeerIP, "127.0.0.1")
+	spanAttributes.PutStr(conventions.AttributeNetPeerName, "")
+	spanAttributes.PutStr(conventions.AttributeNetPeerIP, "127.0.0.1")
 
 	envelope, _ = spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
 	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RequestData)
@@ -342,9 +342,9 @@ func TestRPCClientSpanToRemoteDependencyData(t *testing.T) {
 	span := getDefaultRPCClientSpan()
 	spanAttributes := span.Attributes()
 
-	spanAttributes.PutString(conventions.AttributeNetPeerName, "foo")
+	spanAttributes.PutStr(conventions.AttributeNetPeerName, "foo")
 	spanAttributes.PutInt(conventions.AttributeNetPeerPort, 81)
-	spanAttributes.PutString(conventions.AttributeNetPeerIP, "127.0.0.1")
+	spanAttributes.PutStr(conventions.AttributeNetPeerIP, "127.0.0.1")
 
 	envelope, _ := spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
 	commonEnvelopeValidations(t, span, envelope, defaultRemoteDependencyDataEnvelopeName)
@@ -352,8 +352,8 @@ func TestRPCClientSpanToRemoteDependencyData(t *testing.T) {
 	defaultRPCRemoteDependencyDataValidations(t, span, data, "foo:81")
 
 	// test fallback to peerip
-	spanAttributes.PutString(conventions.AttributeNetPeerName, "")
-	spanAttributes.PutString(conventions.AttributeNetPeerIP, "127.0.0.1")
+	spanAttributes.PutStr(conventions.AttributeNetPeerName, "")
+	spanAttributes.PutStr(conventions.AttributeNetPeerIP, "127.0.0.1")
 
 	envelope, _ = spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
 	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
@@ -377,8 +377,8 @@ func TestDatabaseClientSpanToRemoteDependencyData(t *testing.T) {
 	span := getDefaultDatabaseClientSpan()
 	spanAttributes := span.Attributes()
 
-	spanAttributes.PutString(conventions.AttributeDBStatement, defaultDBStatement)
-	spanAttributes.PutString(conventions.AttributeNetPeerName, "foo")
+	spanAttributes.PutStr(conventions.AttributeDBStatement, defaultDBStatement)
+	spanAttributes.PutStr(conventions.AttributeNetPeerName, "foo")
 	spanAttributes.PutInt(conventions.AttributeNetPeerPort, 81)
 
 	envelope, _ := spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
@@ -390,8 +390,8 @@ func TestDatabaseClientSpanToRemoteDependencyData(t *testing.T) {
 	assert.Equal(t, defaultDBStatement, data.Data)
 
 	// Test the fallback to data.Data fallback to DBOperation
-	spanAttributes.PutString(conventions.AttributeDBStatement, "")
-	spanAttributes.PutString(conventions.AttributeDBOperation, defaultDBOperation)
+	spanAttributes.PutStr(conventions.AttributeDBStatement, "")
+	spanAttributes.PutStr(conventions.AttributeDBOperation, defaultDBOperation)
 
 	envelope, _ = spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
 	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
@@ -403,8 +403,8 @@ func TestMessagingConsumerSpanToRequestData(t *testing.T) {
 	span := getDefaultMessagingConsumerSpan()
 	spanAttributes := span.Attributes()
 
-	spanAttributes.PutString(conventions.AttributeMessagingURL, defaultMessagingURL)
-	spanAttributes.PutString(conventions.AttributeNetPeerName, "foo")
+	spanAttributes.PutStr(conventions.AttributeMessagingURL, defaultMessagingURL)
+	spanAttributes.PutStr(conventions.AttributeNetPeerName, "foo")
 	spanAttributes.PutInt(conventions.AttributeNetPeerPort, 81)
 
 	envelope, _ := spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
@@ -415,7 +415,7 @@ func TestMessagingConsumerSpanToRequestData(t *testing.T) {
 	assert.Equal(t, defaultMessagingURL, data.Source)
 
 	// test fallback from MessagingURL to net.* properties
-	spanAttributes.PutString(conventions.AttributeMessagingURL, "")
+	spanAttributes.PutStr(conventions.AttributeMessagingURL, "")
 
 	envelope, _ = spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
 	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RequestData)
@@ -428,8 +428,8 @@ func TestMessagingProducerSpanToRequestData(t *testing.T) {
 	span := getDefaultMessagingProducerSpan()
 	spanAttributes := span.Attributes()
 
-	spanAttributes.PutString(conventions.AttributeMessagingURL, defaultMessagingURL)
-	spanAttributes.PutString(conventions.AttributeNetPeerName, "foo")
+	spanAttributes.PutStr(conventions.AttributeMessagingURL, defaultMessagingURL)
+	spanAttributes.PutStr(conventions.AttributeNetPeerName, "foo")
 	spanAttributes.PutInt(conventions.AttributeNetPeerPort, 81)
 
 	envelope, _ := spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
@@ -440,7 +440,7 @@ func TestMessagingProducerSpanToRequestData(t *testing.T) {
 	assert.Equal(t, defaultMessagingURL, data.Target)
 
 	// test fallback from MessagingURL to net.* properties
-	spanAttributes.PutString(conventions.AttributeMessagingURL, "")
+	spanAttributes.PutStr(conventions.AttributeMessagingURL, "")
 
 	envelope, _ = spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
 	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
@@ -453,7 +453,7 @@ func TestUnknownInternalSpanToRemoteDependencyData(t *testing.T) {
 	span := getDefaultInternalSpan()
 	spanAttributes := span.Attributes()
 
-	spanAttributes.PutString("foo", "bar")
+	spanAttributes.PutStr("foo", "bar")
 
 	envelope, _ := spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
 	commonEnvelopeValidations(t, span, envelope, defaultRemoteDependencyDataEnvelopeName)
@@ -771,9 +771,9 @@ func getDefaultInternalSpan() ptrace.Span {
 // Returns a default Resource
 func getResource() pcommon.Resource {
 	r := pcommon.NewResource()
-	r.Attributes().PutString(conventions.AttributeServiceName, defaultServiceName)
-	r.Attributes().PutString(conventions.AttributeServiceNamespace, defaultServiceNamespace)
-	r.Attributes().PutString(conventions.AttributeServiceInstanceID, defaultServiceInstance)
+	r.Attributes().PutStr(conventions.AttributeServiceName, defaultServiceName)
+	r.Attributes().PutStr(conventions.AttributeServiceNamespace, defaultServiceNamespace)
+	r.Attributes().PutStr(conventions.AttributeServiceInstanceID, defaultServiceInstance)
 	return r
 }
 

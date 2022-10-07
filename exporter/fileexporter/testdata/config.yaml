@@ -29,6 +29,15 @@ exporters:
     format: proto
     compression: zstd
 
+  file/no_rotation:
+    path: ./foo
+  file/rotation_with_default_settings:
+    path: ./foo
+    rotation:
+  file/rotation_with_custom_settings:
+    path: ./foo
+    rotation:
+      max_megabytes: 1234
 service:
   pipelines:
     traces:

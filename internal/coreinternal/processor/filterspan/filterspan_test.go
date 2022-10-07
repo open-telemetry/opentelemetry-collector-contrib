@@ -270,16 +270,16 @@ func TestSpan_Matching_True(t *testing.T) {
 	span := ptrace.NewSpan()
 	span.SetName("spanName")
 
-	span.Attributes().PutString("keyString", "arithmetic")
+	span.Attributes().PutStr("keyString", "arithmetic")
 	span.Attributes().PutInt("keyInt", 123)
 	span.Attributes().PutDouble("keyDouble", 3245.6)
 	span.Attributes().PutBool("keyBool", true)
-	span.Attributes().PutString("keyExists", "present")
+	span.Attributes().PutStr("keyExists", "present")
 	span.SetKind(ptrace.SpanKindClient)
 	assert.NotNil(t, span)
 
 	resource := pcommon.NewResource()
-	resource.Attributes().PutString(conventions.AttributeServiceName, "svcA")
+	resource.Attributes().PutStr(conventions.AttributeServiceName, "svcA")
 
 	library := pcommon.NewInstrumentationScope()
 

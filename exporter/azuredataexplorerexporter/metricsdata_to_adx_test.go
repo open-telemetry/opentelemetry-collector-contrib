@@ -584,8 +584,8 @@ func Test_mapToAdxMetric(t *testing.T) {
 
 func newDummyResource() pcommon.Resource {
 	res := pcommon.NewResource()
-	res.Attributes().PutString("key", "value")
-	res.Attributes().PutString(hostkey, testhost)
+	res.Attributes().PutStr("key", "value")
+	res.Attributes().PutStr(hostkey, testhost)
 	return res
 }
 
@@ -603,8 +603,8 @@ func newMetrics(metricType pmetric.MetricType, ts pcommon.Timestamp) pmetric.Met
 	// Create metrics
 	metrics := pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics().AppendEmpty()
-	rms.Resource().Attributes().PutString("key", "value")
-	rms.Resource().Attributes().PutString(hostkey, testhost)
+	rms.Resource().Attributes().PutStr("key", "value")
+	rms.Resource().Attributes().PutStr(hostkey, testhost)
 	// // Scope metric in a metric
 	sms := rms.ScopeMetrics().AppendEmpty()
 	scope := sms.Scope()
@@ -630,7 +630,7 @@ func newMetrics(metricType pmetric.MetricType, ts pcommon.Timestamp) pmetric.Met
 		histogramPt := histogram.Histogram().DataPoints().AppendEmpty()
 		histogramPt.ExplicitBounds().FromRaw(distributionBounds)
 		histogramPt.BucketCounts().FromRaw(distributionCounts)
-		histogramPt.Attributes().PutString("k1", "v1")
+		histogramPt.Attributes().PutStr("k1", "v1")
 		histogramPt.SetSum(23)  //
 		histogramPt.SetCount(7) // sum of distributionBounds
 		histogramPt.SetTimestamp(pcommon.NewTimestampFromTime(ts.AsTime()))

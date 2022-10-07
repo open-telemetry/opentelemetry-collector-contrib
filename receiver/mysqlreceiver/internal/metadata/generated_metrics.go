@@ -40,6 +40,7 @@ type MetricsSettings struct {
 	MysqlTableIoWaitCount      MetricSettings `mapstructure:"mysql.table.io.wait.count"`
 	MysqlTableIoWaitTime       MetricSettings `mapstructure:"mysql.table.io.wait.time"`
 	MysqlThreads               MetricSettings `mapstructure:"mysql.threads"`
+	MysqlTmpResources          MetricSettings `mapstructure:"mysql.tmp_resources"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
@@ -105,6 +106,9 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		MysqlThreads: MetricSettings{
+			Enabled: true,
+		},
+		MysqlTmpResources: MetricSettings{
 			Enabled: true,
 		},
 	}
@@ -648,6 +652,36 @@ var MapAttributeThreads = map[string]AttributeThreads{
 	"running":   AttributeThreadsRunning,
 }
 
+// AttributeTmpResource specifies the a value tmp_resource attribute.
+type AttributeTmpResource int
+
+const (
+	_ AttributeTmpResource = iota
+	AttributeTmpResourceDiskTables
+	AttributeTmpResourceFiles
+	AttributeTmpResourceTables
+)
+
+// String returns the string representation of the AttributeTmpResource.
+func (av AttributeTmpResource) String() string {
+	switch av {
+	case AttributeTmpResourceDiskTables:
+		return "disk_tables"
+	case AttributeTmpResourceFiles:
+		return "files"
+	case AttributeTmpResourceTables:
+		return "tables"
+	}
+	return ""
+}
+
+// MapAttributeTmpResource is a helper map of string to AttributeTmpResource attribute value.
+var MapAttributeTmpResource = map[string]AttributeTmpResource{
+	"disk_tables": AttributeTmpResourceDiskTables,
+	"files":       AttributeTmpResourceFiles,
+	"tables":      AttributeTmpResourceTables,
+}
+
 type metricMysqlBufferPoolDataPages struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -673,7 +707,7 @@ func (m *metricMysqlBufferPoolDataPages) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("status", bufferPoolDataAttributeValue)
+	dp.Attributes().PutStr("status", bufferPoolDataAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -777,7 +811,7 @@ func (m *metricMysqlBufferPoolOperations) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("operation", bufferPoolOperationsAttributeValue)
+	dp.Attributes().PutStr("operation", bufferPoolOperationsAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -881,7 +915,7 @@ func (m *metricMysqlBufferPoolPages) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("kind", bufferPoolPagesAttributeValue)
+	dp.Attributes().PutStr("kind", bufferPoolPagesAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -934,7 +968,7 @@ func (m *metricMysqlBufferPoolUsage) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("status", bufferPoolDataAttributeValue)
+	dp.Attributes().PutStr("status", bufferPoolDataAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -987,7 +1021,7 @@ func (m *metricMysqlCommands) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("command", commandAttributeValue)
+	dp.Attributes().PutStr("command", commandAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1040,7 +1074,7 @@ func (m *metricMysqlDoubleWrites) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("kind", doubleWritesAttributeValue)
+	dp.Attributes().PutStr("kind", doubleWritesAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1093,7 +1127,7 @@ func (m *metricMysqlHandlers) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("kind", handlerAttributeValue)
+	dp.Attributes().PutStr("kind", handlerAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1146,10 +1180,10 @@ func (m *metricMysqlIndexIoWaitCount) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("operation", ioWaitsOperationsAttributeValue)
-	dp.Attributes().PutString("table", tableNameAttributeValue)
-	dp.Attributes().PutString("schema", schemaAttributeValue)
-	dp.Attributes().PutString("index", indexNameAttributeValue)
+	dp.Attributes().PutStr("operation", ioWaitsOperationsAttributeValue)
+	dp.Attributes().PutStr("table", tableNameAttributeValue)
+	dp.Attributes().PutStr("schema", schemaAttributeValue)
+	dp.Attributes().PutStr("index", indexNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1202,10 +1236,10 @@ func (m *metricMysqlIndexIoWaitTime) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("operation", ioWaitsOperationsAttributeValue)
-	dp.Attributes().PutString("table", tableNameAttributeValue)
-	dp.Attributes().PutString("schema", schemaAttributeValue)
-	dp.Attributes().PutString("index", indexNameAttributeValue)
+	dp.Attributes().PutStr("operation", ioWaitsOperationsAttributeValue)
+	dp.Attributes().PutStr("table", tableNameAttributeValue)
+	dp.Attributes().PutStr("schema", schemaAttributeValue)
+	dp.Attributes().PutStr("index", indexNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1258,7 +1292,7 @@ func (m *metricMysqlLocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("kind", locksAttributeValue)
+	dp.Attributes().PutStr("kind", locksAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1311,7 +1345,7 @@ func (m *metricMysqlLogOperations) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("operation", logOperationsAttributeValue)
+	dp.Attributes().PutStr("operation", logOperationsAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1364,7 +1398,7 @@ func (m *metricMysqlOperations) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("operation", operationsAttributeValue)
+	dp.Attributes().PutStr("operation", operationsAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1417,7 +1451,7 @@ func (m *metricMysqlPageOperations) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("operation", pageOperationsAttributeValue)
+	dp.Attributes().PutStr("operation", pageOperationsAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1470,7 +1504,7 @@ func (m *metricMysqlRowLocks) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("kind", rowLocksAttributeValue)
+	dp.Attributes().PutStr("kind", rowLocksAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1523,7 +1557,7 @@ func (m *metricMysqlRowOperations) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("operation", rowOperationsAttributeValue)
+	dp.Attributes().PutStr("operation", rowOperationsAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1576,7 +1610,7 @@ func (m *metricMysqlSorts) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("kind", sortsAttributeValue)
+	dp.Attributes().PutStr("kind", sortsAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1629,9 +1663,9 @@ func (m *metricMysqlTableIoWaitCount) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("operation", ioWaitsOperationsAttributeValue)
-	dp.Attributes().PutString("table", tableNameAttributeValue)
-	dp.Attributes().PutString("schema", schemaAttributeValue)
+	dp.Attributes().PutStr("operation", ioWaitsOperationsAttributeValue)
+	dp.Attributes().PutStr("table", tableNameAttributeValue)
+	dp.Attributes().PutStr("schema", schemaAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1684,9 +1718,9 @@ func (m *metricMysqlTableIoWaitTime) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("operation", ioWaitsOperationsAttributeValue)
-	dp.Attributes().PutString("table", tableNameAttributeValue)
-	dp.Attributes().PutString("schema", schemaAttributeValue)
+	dp.Attributes().PutStr("operation", ioWaitsOperationsAttributeValue)
+	dp.Attributes().PutStr("table", tableNameAttributeValue)
+	dp.Attributes().PutStr("schema", schemaAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1739,7 +1773,7 @@ func (m *metricMysqlThreads) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("kind", threadsAttributeValue)
+	dp.Attributes().PutStr("kind", threadsAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1760,6 +1794,59 @@ func (m *metricMysqlThreads) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlThreads(settings MetricSettings) metricMysqlThreads {
 	m := metricMysqlThreads{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlTmpResources struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.tmp_resources metric with initial data.
+func (m *metricMysqlTmpResources) init() {
+	m.data.SetName("mysql.tmp_resources")
+	m.data.SetDescription("The number of created temporary resources.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMysqlTmpResources) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tmpResourceAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("resource", tmpResourceAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlTmpResources) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlTmpResources) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlTmpResources(settings MetricSettings) metricMysqlTmpResources {
+	m := metricMysqlTmpResources{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1796,6 +1883,7 @@ type MetricsBuilder struct {
 	metricMysqlTableIoWaitCount      metricMysqlTableIoWaitCount
 	metricMysqlTableIoWaitTime       metricMysqlTableIoWaitTime
 	metricMysqlThreads               metricMysqlThreads
+	metricMysqlTmpResources          metricMysqlTmpResources
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -1834,6 +1922,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricMysqlTableIoWaitCount:      newMetricMysqlTableIoWaitCount(settings.MysqlTableIoWaitCount),
 		metricMysqlTableIoWaitTime:       newMetricMysqlTableIoWaitTime(settings.MysqlTableIoWaitTime),
 		metricMysqlThreads:               newMetricMysqlThreads(settings.MysqlThreads),
+		metricMysqlTmpResources:          newMetricMysqlTmpResources(settings.MysqlTmpResources),
 	}
 	for _, op := range options {
 		op(mb)
@@ -1857,7 +1946,7 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithMysqlInstanceEndpoint sets provided value as "mysql.instance.endpoint" attribute for current resource.
 func WithMysqlInstanceEndpoint(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("mysql.instance.endpoint", val)
+		rm.Resource().Attributes().PutStr("mysql.instance.endpoint", val)
 	}
 }
 
@@ -1914,6 +2003,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMysqlTableIoWaitCount.emit(ils.Metrics())
 	mb.metricMysqlTableIoWaitTime.emit(ils.Metrics())
 	mb.metricMysqlThreads.emit(ils.Metrics())
+	mb.metricMysqlTmpResources.emit(ils.Metrics())
 	for _, op := range rmo {
 		op(rm)
 	}
@@ -2110,6 +2200,16 @@ func (mb *MetricsBuilder) RecordMysqlThreadsDataPoint(ts pcommon.Timestamp, inpu
 		return fmt.Errorf("failed to parse int64 for MysqlThreads, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlThreads.recordDataPoint(mb.startTime, ts, val, threadsAttributeValue.String())
+	return nil
+}
+
+// RecordMysqlTmpResourcesDataPoint adds a data point to mysql.tmp_resources metric.
+func (mb *MetricsBuilder) RecordMysqlTmpResourcesDataPoint(ts pcommon.Timestamp, inputVal string, tmpResourceAttributeValue AttributeTmpResource) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlTmpResources, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlTmpResources.recordDataPoint(mb.startTime, ts, val, tmpResourceAttributeValue.String())
 	return nil
 }
 

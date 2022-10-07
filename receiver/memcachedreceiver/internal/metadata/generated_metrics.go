@@ -292,7 +292,7 @@ func (m *metricMemcachedCommands) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("command", commandAttributeValue)
+	dp.Attributes().PutStr("command", commandAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -447,7 +447,7 @@ func (m *metricMemcachedCPUUsage) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutString("state", stateAttributeValue)
+	dp.Attributes().PutStr("state", stateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -602,7 +602,7 @@ func (m *metricMemcachedNetwork) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("direction", directionAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -755,7 +755,7 @@ func (m *metricMemcachedOperationHitRatio) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutString("operation", operationAttributeValue)
+	dp.Attributes().PutStr("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -808,8 +808,8 @@ func (m *metricMemcachedOperations) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("type", typeAttributeValue)
-	dp.Attributes().PutString("operation", operationAttributeValue)
+	dp.Attributes().PutStr("type", typeAttributeValue)
+	dp.Attributes().PutStr("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

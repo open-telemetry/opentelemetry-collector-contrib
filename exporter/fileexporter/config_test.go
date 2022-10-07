@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
 			Path:             "./filename.json",
-			Rotation: Rotation{
+			Rotation: &Rotation{
 				MaxMegabytes: 10,
 				MaxDays:      3,
 				MaxBackups:   3,
@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "3")),
 			Path:             "./filename",
-			Rotation: Rotation{
+			Rotation: &Rotation{
 				MaxMegabytes: 10,
 				MaxDays:      3,
 				MaxBackups:   3,
@@ -64,6 +64,36 @@ func TestLoadConfig(t *testing.T) {
 			},
 			FormatType:  formatTypeProto,
 			Compression: compressionZSTD,
+		})
+	e3 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "no_rotation")]
+	assert.Equal(t, e3,
+		&Config{
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "no_rotation")),
+			Path:             "./foo",
+			FormatType:       formatTypeJSON,
+		})
+	e4 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "rotation_with_default_settings")]
+	assert.Equal(t, e4,
+		&Config{
+			ExporterSettings: config.NewExporterSettings(
+				config.NewComponentIDWithName(typeStr, "rotation_with_default_settings")),
+			Path:       "./foo",
+			FormatType: formatTypeJSON,
+			Rotation: &Rotation{
+				MaxBackups: defaultMaxBackups,
+			},
+		})
+	e5 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "rotation_with_custom_settings")]
+	assert.Equal(t, e5,
+		&Config{
+			ExporterSettings: config.NewExporterSettings(
+				config.NewComponentIDWithName(typeStr, "rotation_with_custom_settings")),
+			Path: "./foo",
+			Rotation: &Rotation{
+				MaxMegabytes: 1234,
+				MaxBackups:   defaultMaxBackups,
+			},
+			FormatType: formatTypeJSON,
 		})
 }
 

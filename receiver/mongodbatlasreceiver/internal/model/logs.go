@@ -71,8 +71,8 @@ type AuditRole struct {
 func (ar AuditRole) Pdata() pcommon.Map {
 	m := pcommon.NewMap()
 	m.EnsureCapacity(2)
-	m.PutString("role", ar.Role)
-	m.PutString("db", ar.Database)
+	m.PutStr("role", ar.Role)
+	m.PutStr("db", ar.Database)
 	return m
 }
 
@@ -84,7 +84,7 @@ type AuditUser struct {
 func (ar AuditUser) Pdata() pcommon.Map {
 	m := pcommon.NewMap()
 	m.EnsureCapacity(2)
-	m.PutString("user", ar.User)
-	m.PutString("db", ar.Database)
+	m.PutStr("user", ar.User)
+	m.PutStr("db", ar.Database)
 	return m
 }

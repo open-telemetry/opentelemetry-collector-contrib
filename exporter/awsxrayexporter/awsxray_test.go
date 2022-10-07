@@ -153,14 +153,14 @@ func constructW3CFormatTraceSpanData(ispans ptrace.ScopeSpans) {
 func constructResource() pcommon.Resource {
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
-	attrs.PutString(conventions.AttributeServiceName, "signup_aggregator")
-	attrs.PutString(conventions.AttributeContainerName, "signup_aggregator")
-	attrs.PutString(conventions.AttributeContainerImageName, "otel/signupaggregator")
-	attrs.PutString(conventions.AttributeContainerImageTag, "v1")
-	attrs.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.PutString(conventions.AttributeCloudAccountID, "999999998")
-	attrs.PutString(conventions.AttributeCloudRegion, "us-west-2")
-	attrs.PutString(conventions.AttributeCloudAvailabilityZone, "us-west-1b")
+	attrs.PutStr(conventions.AttributeServiceName, "signup_aggregator")
+	attrs.PutStr(conventions.AttributeContainerName, "signup_aggregator")
+	attrs.PutStr(conventions.AttributeContainerImageName, "otel/signupaggregator")
+	attrs.PutStr(conventions.AttributeContainerImageTag, "v1")
+	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.PutStr(conventions.AttributeCloudAccountID, "999999998")
+	attrs.PutStr(conventions.AttributeCloudRegion, "us-west-2")
+	attrs.PutStr(conventions.AttributeCloudAvailabilityZone, "us-west-1b")
 	return resource
 }
 
@@ -227,7 +227,7 @@ func constructSpanAttributes(attributes map[string]interface{}) pcommon.Map {
 		} else if cast, ok := value.(int64); ok {
 			attrs.PutInt(key, cast)
 		} else {
-			attrs.PutString(key, fmt.Sprintf("%v", value))
+			attrs.PutStr(key, fmt.Sprintf("%v", value))
 		}
 	}
 	return attrs

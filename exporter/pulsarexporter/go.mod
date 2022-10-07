@@ -9,9 +9,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.61.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.61.0
-	go.opentelemetry.io/collector/pdata v0.61.0
-	go.opentelemetry.io/collector/semconv v0.61.0
+	go.opentelemetry.io/collector v0.61.1-0.20221004012633-7cb544d3be36
+	go.opentelemetry.io/collector/pdata v0.61.1-0.20221004012633-7cb544d3be36
+	go.opentelemetry.io/collector/semconv v0.61.1-0.20221004012633-7cb544d3be36
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 )

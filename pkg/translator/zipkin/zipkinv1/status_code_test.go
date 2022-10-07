@@ -55,13 +55,13 @@ func TestAttribToStatusCode(t *testing.T) {
 
 		{
 			name: "valid-string-code",
-			attr: pcommon.NewValueString("200"),
+			attr: pcommon.NewValueStr("200"),
 			code: 200,
 		},
 
 		{
 			name: "invalid-string-code",
-			attr: pcommon.NewValueString("nan"),
+			attr: pcommon.NewValueStr("nan"),
 			code: 0,
 			err:  atoiError,
 		},
@@ -304,7 +304,7 @@ func TestStatusCodeMapperCases(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			sMapper := &statusMapper{}
 			for k, v := range test.attributes {
-				sMapper.fromAttribute(k, pcommon.NewValueString(v))
+				sMapper.fromAttribute(k, pcommon.NewValueStr(v))
 			}
 
 			spanStatus := ptrace.NewSpanStatus()
