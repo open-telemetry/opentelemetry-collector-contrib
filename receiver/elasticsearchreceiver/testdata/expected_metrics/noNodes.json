@@ -224,7 +224,7 @@
                                     }
                                  },
                                  {
-                                    "key": "type",
+                                    "key": "aggregation",
                                     "value": {
                                        "stringValue": "total"
                                     }
@@ -243,7 +243,7 @@
                                     }
                                  },
                                  {
-                                    "key": "type",
+                                    "key": "aggregation",
                                     "value": {
                                        "stringValue": "total"
                                     }
@@ -273,7 +273,7 @@
                                     }
                                  },
                                  {
-                                    "key": "type",
+                                    "key": "aggregation",
                                     "value": {
                                        "stringValue": "total"
                                     }
@@ -292,7 +292,7 @@
                                     }
                                  },
                                  {
-                                    "key": "type",
+                                    "key": "aggregation",
                                     "value": {
                                        "stringValue": "total"
                                     }
@@ -344,7 +344,7 @@
                                     }
                                  },
                                  {
-                                    "key": "type",
+                                    "key": "aggregation",
                                     "value": {
                                        "stringValue": "total"
                                     }
@@ -363,7 +363,7 @@
                                     }
                                  },
                                  {
-                                    "key": "type",
+                                    "key": "aggregation",
                                     "value": {
                                        "stringValue": "total"
                                     }
@@ -393,7 +393,7 @@
                                     }
                                  },
                                  {
-                                    "key": "type",
+                                    "key": "aggregation",
                                     "value": {
                                        "stringValue": "total"
                                     }
@@ -412,7 +412,7 @@
                                     }
                                  },
                                  {
-                                    "key": "type",
+                                    "key": "aggregation",
                                     "value": {
                                        "stringValue": "total"
                                     }

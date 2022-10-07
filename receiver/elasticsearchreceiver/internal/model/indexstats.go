@@ -23,8 +23,6 @@ type IndexStats struct {
 }
 
 type IndexStatsIndexInfo struct {
-	// TODO: used structs come from nodestats.go, because they refer to the same JSON structures
-	// this should be refactored in a follow-up PR
 	Primaries NodeStatsNodesInfoIndices `json:"primaries"`
 	Total     NodeStatsNodesInfoIndices `json:"total"`
 }

@@ -541,15 +541,15 @@ type AttributeIndexAggregationType int
 
 const (
 	_ AttributeIndexAggregationType = iota
-	AttributeIndexAggregationTypePrimaries
+	AttributeIndexAggregationTypePrimaryShards
 	AttributeIndexAggregationTypeTotal
 )
 
 // String returns the string representation of the AttributeIndexAggregationType.
 func (av AttributeIndexAggregationType) String() string {
 	switch av {
-	case AttributeIndexAggregationTypePrimaries:
-		return "primaries"
+	case AttributeIndexAggregationTypePrimaryShards:
+		return "primary_shards"
 	case AttributeIndexAggregationTypeTotal:
 		return "total"
 	}
@@ -558,8 +558,8 @@ func (av AttributeIndexAggregationType) String() string {
 
 // MapAttributeIndexAggregationType is a helper map of string to AttributeIndexAggregationType attribute value.
 var MapAttributeIndexAggregationType = map[string]AttributeIndexAggregationType{
-	"primaries": AttributeIndexAggregationTypePrimaries,
-	"total":     AttributeIndexAggregationTypeTotal,
+	"primary_shards": AttributeIndexAggregationTypePrimaryShards,
+	"total":          AttributeIndexAggregationTypeTotal,
 }
 
 // AttributeIndexingMemoryState specifies the a value indexing_memory_state attribute.
@@ -1575,7 +1575,7 @@ func (m *metricElasticsearchIndexOperationsCompleted) recordDataPoint(start pcom
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutString("operation", operationAttributeValue)
-	dp.Attributes().PutString("type", indexAggregationTypeAttributeValue)
+	dp.Attributes().PutString("aggregation", indexAggregationTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1629,7 +1629,7 @@ func (m *metricElasticsearchIndexOperationsTime) recordDataPoint(start pcommon.T
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutString("operation", operationAttributeValue)
-	dp.Attributes().PutString("type", indexAggregationTypeAttributeValue)
+	dp.Attributes().PutString("aggregation", indexAggregationTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2798,7 +2798,7 @@ type metricElasticsearchNodeOperationsCompleted struct {
 // init fills elasticsearch.node.operations.completed metric with initial data.
 func (m *metricElasticsearchNodeOperationsCompleted) init() {
 	m.data.SetName("elasticsearch.node.operations.completed")
-	m.data.SetDescription("The number of operations completed for a node.")
+	m.data.SetDescription("The number of operations completed by a node.")
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -2851,7 +2851,7 @@ type metricElasticsearchNodeOperationsTime struct {
 // init fills elasticsearch.node.operations.time metric with initial data.
 func (m *metricElasticsearchNodeOperationsTime) init() {
 	m.data.SetName("elasticsearch.node.operations.time")
-	m.data.SetDescription("Time spent on operations for a node.")
+	m.data.SetDescription("Time spent on operations by a node.")
 	m.data.SetUnit("ms")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)

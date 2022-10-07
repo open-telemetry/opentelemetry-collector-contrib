@@ -141,10 +141,10 @@ attributes:
       - hit
       - miss
   index_aggregation_type:
-    value: type
-    description: Type of aggregation for index statistics
+    value: aggregation
+    description: Type of shard aggregation for index statistics
     enum:
-      - primaries
+      - primary_shards
       - total
 
 metrics:
@@ -305,7 +305,7 @@ metrics:
     attributes: []
     enabled: true
   elasticsearch.node.operations.completed:
-    description: The number of operations completed for a node.
+    description: The number of operations completed by a node.
     unit: "{operations}"
     sum:
       monotonic: true
@@ -314,7 +314,7 @@ metrics:
     attributes: [operation]
     enabled: true
   elasticsearch.node.operations.time:
-    description: Time spent on operations for a node.
+    description: Time spent on operations by a node.
     unit: ms
     sum:
       monotonic: true

@@ -802,7 +802,7 @@
                      "unit": "{files}"
                   },
                   {
-                     "description": "The number of operations completed for a node.",
+                     "description": "The number of operations completed by a node.",
                      "name": "elasticsearch.node.operations.completed",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -956,7 +956,7 @@
                      "unit": "{operations}"
                   },
                   {
-                     "description": "Time spent on operations for a node.",
+                     "description": "Time spent on operations by a node.",
                      "name": "elasticsearch.node.operations.time",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -4099,7 +4099,7 @@
                                     }
                                  },
                                  {
-                                    "key": "type",
+                                    "key": "aggregation",
                                     "value": {
                                        "stringValue": "total"
                                     }
@@ -4118,7 +4118,7 @@
                                     }
                                  },
                                  {
-                                    "key": "type",
+                                    "key": "aggregation",
                                     "value": {
                                        "stringValue": "total"
                                     }
@@ -4148,7 +4148,7 @@
                                     }
                                  },
                                  {
-                                    "key": "type",
+                                    "key": "aggregation",
                                     "value": {
                                        "stringValue": "total"
                                     }
@@ -4167,7 +4167,7 @@
                                     }
                                  },
                                  {
-                                    "key": "type",
+                                    "key": "aggregation",
                                     "value": {
                                        "stringValue": "total"
                                     }
@@ -4219,7 +4219,7 @@
                                     }
                                  },
                                  {
-                                    "key": "type",
+                                    "key": "aggregation",
                                     "value": {
                                        "stringValue": "total"
                                     }
@@ -4238,7 +4238,7 @@
                                     }
                                  },
                                  {
-                                    "key": "type",
+                                    "key": "aggregation",
                                     "value": {
                                        "stringValue": "total"
                                     }
@@ -4268,7 +4268,7 @@
                                     }
                                  },
                                  {
-                                    "key": "type",
+                                    "key": "aggregation",
                                     "value": {
                                        "stringValue": "total"
                                     }
@@ -4287,7 +4287,7 @@
                                     }
                                  },
                                  {
-                                    "key": "type",
+                                    "key": "aggregation",
                                     "value": {
                                        "stringValue": "total"
                                     }
