@@ -36,24 +36,27 @@ type Config struct {
 	Logs                    LogsConfig `mapstructure:"logs"`
 }
 
-// LogsConfig is the configuration  for the logs portion of this receiver
+// LogsConfig is the configuration for the logs portion of this receiver
 type LogsConfig struct {
 	PollInterval        time.Duration `mapstructure:"poll_interval"`
 	MaxEventsPerRequest int64         `mapstructure:"max_events_per_request"`
 	Groups              GroupConfig   `mapstructure:"groups"`
 }
 
+// GroupConfig is the configuration for log group collection
 type GroupConfig struct {
 	AutodiscoverConfig *AutodiscoverConfig     `mapstructure:"autodiscover,omitempty"`
 	NamedConfigs       map[string]StreamConfig `mapstructure:"named"`
 }
 
+// AutodiscoverConfig is the configuration for the autodiscovery functionality of log groups
 type AutodiscoverConfig struct {
 	Prefix  string       `mapstructure:"prefix"`
 	Limit   int64        `mapstructure:"limit"`
 	Streams StreamConfig `mapstructure:"streams"`
 }
 
+// StreamConfig represents the configuration for the log stream filtering
 type StreamConfig struct {
 	Prefixes []*string `mapstructure:"prefixes"`
 	Names    []*string `mapstructure:"names"`

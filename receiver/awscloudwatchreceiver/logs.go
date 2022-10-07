@@ -177,26 +177,33 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, logGroup string, pc poll
 	if err != nil {
 		return err
 	}
-
 	nextToken := aws.String("")
 	for nextToken != nil {
-		startTime := time.Now().Add(-l.pollInterval)
-		endTime := time.Now()
-		input := pc.request(l.maxEventsPerRequest, &startTime, &endTime)
-		resp, err := l.client.FilterLogEventsWithContext(ctx, input)
-		if err != nil {
-			l.logger.Error("unable to retrieve logs from cloudwatch", zap.String("log group", logGroup), zap.Error(err))
-			break
-		}
-		observedTime := pcommon.NewTimestampFromTime(time.Now())
-		logs := l.processEvents(observedTime, logGroup, resp)
-		if logs.LogRecordCount() > 0 {
-			if err = l.consumer.ConsumeLogs(ctx, logs); err != nil {
-				l.logger.Error("unable to consume logs", zap.Error(err))
+		select {
+		// if done, we want to stop processing paginated stream
+		case _, ok := <-l.doneChan:
+			if !ok {
+				return nil
+			}
+		default:
+			startTime := time.Now().Add(-l.pollInterval)
+			endTime := time.Now()
+			input := pc.request(l.maxEventsPerRequest, &startTime, &endTime)
+			resp, err := l.client.FilterLogEventsWithContext(ctx, input)
+			if err != nil {
+				l.logger.Error("unable to retrieve logs from cloudwatch", zap.String("log group", logGroup), zap.Error(err))
 				break
 			}
+			observedTime := pcommon.NewTimestampFromTime(time.Now())
+			logs := l.processEvents(observedTime, logGroup, resp)
+			if logs.LogRecordCount() > 0 {
+				if err = l.consumer.ConsumeLogs(ctx, logs); err != nil {
+					l.logger.Error("unable to consume logs", zap.Error(err))
+					break
+				}
+			}
+			nextToken = resp.NextToken
 		}
-		nextToken = resp.NextToken
 	}
 	return nil
 }
@@ -245,7 +252,7 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 
 	numGroups := 0
 	var nextToken = aws.String("")
-	for nextToken != nil || numGroups >= int(auto.Limit) {
+	for nextToken != nil {
 		req := &cloudwatchlogs.DescribeLogGroupsInput{
 			Limit: &auto.Limit,
 		}
