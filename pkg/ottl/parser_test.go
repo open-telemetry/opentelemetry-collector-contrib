@@ -519,7 +519,7 @@ func Test_parse(t *testing.T) {
 		},
 		{
 			name:      "Invocation with nested heterogeneous types",
-			statement: `set(attributes["test"], [Concat("+", "a", "b"), ["1", 2, 3.0], nil, attributes["test"]])`,
+			statement: `set(attributes["test"], [Concat(["a", "b"], "+"), ["1", 2, 3.0], nil, attributes["test"]])`,
 			expected: &parsedStatement{
 				Invocation: invocation{
 					Function: "set",
@@ -542,13 +542,19 @@ func Test_parse(t *testing.T) {
 											Function: "Concat",
 											Arguments: []value{
 												{
+													List: &list{
+														Values: []value{
+															{
+																String: ottltest.Strp("a"),
+															},
+															{
+																String: ottltest.Strp("b"),
+															},
+														},
+													},
+												},
+												{
 													String: ottltest.Strp("+"),
-												},
-												{
-													String: ottltest.Strp("a"),
-												},
-												{
-													String: ottltest.Strp("b"),
 												},
 											},
 										},

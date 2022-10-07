@@ -77,7 +77,7 @@ Example List Values:
 - `[]`
 - `[1]`
 - `["1", "2", "3"]`
-- `["a", attributes["key"], Concat("-", "a", "b")]`
+- `["a", attributes["key"], Concat(["a", "b"], "-")]`
 
 #### Literals
 

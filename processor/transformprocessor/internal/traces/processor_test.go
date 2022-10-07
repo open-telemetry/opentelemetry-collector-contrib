@@ -184,27 +184,27 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], Concat(": ", [attributes["http.method"], attributes["http.url"]]))`,
+			statement: `set(attributes["test"], Concat([attributes["http.method"], attributes["http.url"]], ": "))`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "get: http://localhost/health")
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("test", "get: http://localhost/health")
 			},
 		},
 		{
-			statement: `set(attributes["test"], Concat("", [attributes["http.method"], ": ", attributes["http.url"]]))`,
+			statement: `set(attributes["test"], Concat([attributes["http.method"], ": ", attributes["http.url"]], ""))`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "get: http://localhost/health")
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("test", "get: http://localhost/health")
 			},
 		},
 		{
-			statement: `set(attributes["test"], Concat(": ", [attributes["http.method"], attributes["http.url"]])) where name == Concat("", ["operation", "A"])`,
+			statement: `set(attributes["test"], Concat([attributes["http.method"], attributes["http.url"]], ": ")) where name == Concat(["operation", "A"], "")`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "get: http://localhost/health")
 			},
 		},
 		{
-			statement: `set(attributes["kind"], Concat("", ["kind", ": ", kind])) where kind == 1`,
+			statement: `set(attributes["kind"], Concat(["kind", ": ", kind], "")) where kind == 1`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("kind", "kind: 1")
 			},
