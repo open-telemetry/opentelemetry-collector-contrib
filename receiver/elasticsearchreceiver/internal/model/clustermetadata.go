@@ -14,8 +14,9 @@
 
 package model // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
 
-type VersionResponse struct {
-	Version struct {
+type ClusterMetadataResponse struct {
+	ClusterName string `json:"cluster_name"`
+	Version     struct {
 		Number string `json:"number"`
 	} `json:"version"`
 }
