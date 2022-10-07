@@ -13,4 +13,8 @@ issues: [13391]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: Existing variadic function calls should be updated to put the parameters in a list.
+subtext: |
+  The following functions have changed:
+  `keep_keys` now has a function signature of `keep_keys(target, keys[])`.
+  `Concat` now has a function signature of `Concat(keys[], delimiter)`.
+
