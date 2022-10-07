@@ -70,10 +70,15 @@ limit, the metric will not show up in Tanzu Observability.
 
 ### Application Resource Attributes on Metrics
 
-The Tanzu Observability Exporter will include application resource attributes on metrics(`application`, `service.name`
+The Tanzu Observability Exporter will
+include [application resource attributes](https://docs.wavefront.com/trace_data_details.html#application-tags) on
+metrics (`application`, `service.name`
 , `cluster`, and `shard`). To exclude these resource
 attributes as tags on metrics, set the flag `app_tags_excluded` to `true` as per the example
 below.
+
+**Note:** A tag `service.name`(if provided) becomes `service` on the transformed wavefront metric. However, if both the
+tags (`service` & `service.name`) are provided then the `service` tag will be included.
 
 ### Queuing and Retries
 

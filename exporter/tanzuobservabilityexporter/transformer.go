@@ -222,8 +222,10 @@ func appAttributesToTags(attributes ...pcommon.Map) map[string]string {
 	for _, att := range attributes {
 		att.Range(func(k string, v pcommon.Value) bool {
 			if slices.Contains(appResAttrsKeys, k) {
-				if _, ok := tags[labelService]; !ok && (k == conventions.AttributeServiceName) {
-					tags[labelService] = v.AsString()
+				if k == conventions.AttributeServiceName {
+					if _, ok := tags[labelService]; !ok {
+						tags[labelService] = v.AsString()
+					}
 				} else {
 					tags[k] = v.AsString()
 				}

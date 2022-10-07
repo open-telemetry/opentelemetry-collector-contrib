@@ -407,18 +407,14 @@ func TestAttributesToTagsForMetrics(t *testing.T) {
 	wfTags := attributesToTagsForMetrics("", attrMap)
 	assert.Equal(t, map[string]string{"k": "v"}, wfTags)
 
-	// 2. sourceKey exists in attrMap: delete from resulting wfTags
-	attrMap = newMap(map[string]string{"k": "v", "a_key": "a_val"})
-	wfTags = attributesToTagsForMetrics("a_key", attrMap)
-	assert.Equal(t, map[string]string{"k": "v"}, wfTags)
-
-	// 3. sourceKey is "source": delete from resulting wfTags. This scenario should only occur when
+	// 2. sourceKey is "source": delete from resulting wfTags. This scenario should only occur when
 	//    the Resource Attrs contained an Attr named "source", which is the determinant of sourceKey.
 	attrMap = newMap(map[string]string{"k": "v", "source": "a_source"})
 	wfTags = attributesToTagsForMetrics("source", attrMap)
 	assert.Equal(t, map[string]string{"k": "v"}, wfTags)
+	assert.Equal(t, 1, len(wfTags))
 
-	// 4. sourceKey is not "source", but a "source" tag exists in Attrs
+	// 3. sourceKey is not "source", but a "source" tag exists in Attrs
 	//    This scenario should only occur if Resource Attrs did not include a "source" attr, but
 	//    the Attrs at the metric-level happened to include an attr named "source". In this edge-
 	//    case scenario, rename the resulting wfTag to "_source" so the data isn't lost.
@@ -428,15 +424,18 @@ func TestAttributesToTagsForMetrics(t *testing.T) {
 }
 
 func TestAppAttributesToTags(t *testing.T) {
+	// 1. other attributes provided
 	attrMap := newMap(map[string]string{"k": "v"})
 	tags := appAttributesToTags(attrMap)
 	assert.Equal(t, map[string]string{}, tags)
 
+	// 2. service.name converted to service
 	attrMap = newMap(map[string]string{"k": "v", "application": "test_app", "service.name": "test_service.name", "shard": "test_shard", "cluster": "test_cluster"})
-	tags = appAttributesToTags(attrMap)
-	assert.Equal(t, map[string]string{"application": "test_app", "service": "test_service.name", "shard": "test_shard", "cluster": "test_cluster"}, tags)
+	tags1 := appAttributesToTags(attrMap)
+	assert.Equal(t, map[string]string{"application": "test_app", "service": "test_service.name", "shard": "test_shard", "cluster": "test_cluster"}, tags1)
 
+	// 3. service get picked up when both the tags are provided
 	attrMap = newMap(map[string]string{"k": "v", "application": "test_app", "service.name": "test_service.name", "shard": "test_shard", "cluster": "test_cluster", "service": "test_service"})
-	tags = appAttributesToTags(attrMap)
-	assert.Equal(t, map[string]string{"application": "test_app", "service": "test_service", "shard": "test_shard", "cluster": "test_cluster"}, tags)
+	tags2 := appAttributesToTags(attrMap)
+	assert.Equal(t, map[string]string{"application": "test_app", "service": "test_service", "shard": "test_shard", "cluster": "test_cluster"}, tags2)
 }
