@@ -63,12 +63,12 @@ func simpleTraces(count int) ptrace.Traces {
 		s := ss.Spans().AppendEmpty()
 		s.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		s.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		s.Attributes().PutString(conventions.AttributeServiceName, "v")
+		s.Attributes().PutStr(conventions.AttributeServiceName, "v")
 		event := s.Events().AppendEmpty()
 		event.SetName("event1")
 		event.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		link := s.Links().AppendEmpty()
-		link.Attributes().PutString("k", "v")
+		link.Attributes().PutStr("k", "v")
 	}
 	return traces
 }

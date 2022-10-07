@@ -127,7 +127,7 @@ func simpleLogs(count int) plog.Logs {
 	for i := 0; i < count; i++ {
 		r := sl.LogRecords().AppendEmpty()
 		r.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		r.Attributes().PutString(conventions.AttributeServiceName, "v")
+		r.Attributes().PutStr(conventions.AttributeServiceName, "v")
 	}
 	return logs
 }
