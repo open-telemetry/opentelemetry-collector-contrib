@@ -1574,8 +1574,8 @@ func (m *metricElasticsearchIndexOperationsCompleted) recordDataPoint(start pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("operation", operationAttributeValue)
-	dp.Attributes().PutString("aggregation", indexAggregationTypeAttributeValue)
+	dp.Attributes().PutStr("operation", operationAttributeValue)
+	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1628,8 +1628,8 @@ func (m *metricElasticsearchIndexOperationsTime) recordDataPoint(start pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("operation", operationAttributeValue)
-	dp.Attributes().PutString("aggregation", indexAggregationTypeAttributeValue)
+	dp.Attributes().PutStr("operation", operationAttributeValue)
+	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4669,7 +4669,7 @@ func WithElasticsearchClusterName(val string) ResourceMetricsOption {
 // WithElasticsearchIndexName sets provided value as "elasticsearch.index.name" attribute for current resource.
 func WithElasticsearchIndexName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("elasticsearch.index.name", val)
+		rm.Resource().Attributes().PutStr("elasticsearch.index.name", val)
 	}
 }
 
