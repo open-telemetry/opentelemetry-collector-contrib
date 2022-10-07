@@ -33,11 +33,11 @@ type metricDataPoint interface {
 func (packer *metricPacker) MetricToEnvelopes(metric pmetric.Metric) []*contracts.Envelope {
 	var envelopes []*contracts.Envelope
 
-	metricDataPoint := packer.getMetricDataPoint(metric)
+	mdp := packer.getMetricDataPoint(metric)
 
-	if metricDataPoint != nil {
+	if mdp != nil {
 
-		for _, dataPoint := range metricDataPoint.getDataPoints() {
+		for _, dataPoint := range mdp.getDataPoints() {
 
 			envelope := contracts.NewEnvelope()
 			envelope.Tags = make(map[string]string)
