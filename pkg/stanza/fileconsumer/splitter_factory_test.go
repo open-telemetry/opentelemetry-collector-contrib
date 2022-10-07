@@ -3,8 +3,9 @@ package fileconsumer
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
 func Test_multilineSplitterFactory_Build(t *testing.T) {
