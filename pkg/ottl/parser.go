@@ -20,28 +20,63 @@ import (
 	"go.uber.org/multierr"
 )
 
+// Statement holds a top level statement for processing telemetry data. A Statement is a combination of a function
+// invocation and the expression to match telemetry for invoking the function.
+type Statement[K any] struct {
+	Function  ExprFunc[K]
+	Condition BoolExpressionEvaluator[K]
+}
+
 type Parser[K any] struct {
-	functions         map[string]interface{}
-	pathParser        PathExpressionParser[K]
-	enumParser        EnumParser
-	telemetrySettings component.TelemetrySettings
+	functions            map[string]interface{}
+	pathParser           PathExpressionParser[K]
+	enumParser           EnumParser
+	telemetrySettings    component.TelemetrySettings
+	transformationParser *participle.Parser[transformationStatement]
+	conditionParser      *participle.Parser[conditionStatement]
 }
 
 func NewParser[K any](functions map[string]interface{}, pathParser PathExpressionParser[K], enumParser EnumParser, telemetrySettings component.TelemetrySettings) Parser[K] {
 	return Parser[K]{
-		functions:         functions,
-		pathParser:        pathParser,
-		enumParser:        enumParser,
-		telemetrySettings: telemetrySettings,
+		functions:            functions,
+		pathParser:           pathParser,
+		enumParser:           enumParser,
+		telemetrySettings:    telemetrySettings,
+		transformationParser: newParser[transformationStatement](),
+		conditionParser:      newParser[conditionStatement](),
 	}
 }
 
-func (p *Parser[K]) ParseStatements(statements []string) ([]Statement[K], error) {
-	var parsedStatements []Statement[K]
+func (p *Parser[K]) ParseConditions(rawStatements []string) ([]BoolExpressionEvaluator[K], error) {
+	var statements []BoolExpressionEvaluator[K]
 	var errors error
 
-	for _, statement := range statements {
-		parsed, err := parseStatement(statement)
+	for _, statement := range rawStatements {
+		parsed, err := parseStatement(p.conditionParser, statement)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
+		}
+		expression, err := p.newBooleanExpressionEvaluator(parsed.BooleanExpression)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
+		}
+		statements = append(statements, expression)
+	}
+
+	if errors != nil {
+		return nil, errors
+	}
+	return statements, nil
+}
+
+func (p *Parser[K]) ParseStatements(rawStatements []string) ([]Statement[K], error) {
+	var statements []Statement[K]
+	var errors error
+
+	for _, statement := range rawStatements {
+		parsed, err := parseStatement(p.transformationParser, statement)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
@@ -56,7 +91,7 @@ func (p *Parser[K]) ParseStatements(statements []string) ([]Statement[K], error)
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		parsedStatements = append(parsedStatements, Statement[K]{
+		statements = append(statements, Statement[K]{
 			Function:  function,
 			Condition: expression,
 		})
@@ -65,12 +100,10 @@ func (p *Parser[K]) ParseStatements(statements []string) ([]Statement[K], error)
 	if errors != nil {
 		return nil, errors
 	}
-	return parsedStatements, nil
+	return statements, nil
 }
 
-var parser = newParser()
-
-func parseStatement(raw string) (*parsedStatement, error) {
+func parseStatement[G transformationStatement | conditionStatement](parser *participle.Parser[G], raw string) (*G, error) {
 	parsed, err := parser.ParseString("", raw)
 	if err != nil {
 		return nil, err
@@ -78,11 +111,11 @@ func parseStatement(raw string) (*parsedStatement, error) {
 	return parsed, nil
 }
 
-// newParser returns a parser that can be used to read a string into a parsedStatement. An error will be returned if the string
+// newParser returns a parser that can be used to read a string into a transformationStatement. An error will be returned if the string
 // is not formatted for the DSL.
-func newParser() *participle.Parser[parsedStatement] {
+func newParser[K any]() *participle.Parser[K] {
 	lex := buildLexer()
-	parser, err := participle.Build[parsedStatement](
+	parser, err := participle.Build[K](
 		participle.Lexer(lex),
 		participle.Unquote("String"),
 		participle.Elide("whitespace"),

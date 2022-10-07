@@ -18,8 +18,8 @@ import (
 	"fmt"
 )
 
-// boolExpressionEvaluator is a function that returns the result.
-type boolExpressionEvaluator[K any] func(ctx K) bool
+// BoolExpressionEvaluator is a function that returns the result.
+type BoolExpressionEvaluator[K any] func(ctx K) bool
 
 func alwaysTrue[K any](K) bool {
 	return true
@@ -30,8 +30,8 @@ func alwaysFalse[K any](K) bool {
 }
 
 // builds a function that returns a short-circuited result of ANDing
-// boolExpressionEvaluator funcs
-func andFuncs[K any](funcs []boolExpressionEvaluator[K]) boolExpressionEvaluator[K] {
+// BoolExpressionEvaluator funcs
+func andFuncs[K any](funcs []BoolExpressionEvaluator[K]) BoolExpressionEvaluator[K] {
 	return func(ctx K) bool {
 		for _, f := range funcs {
 			if !f(ctx) {
@@ -43,8 +43,8 @@ func andFuncs[K any](funcs []boolExpressionEvaluator[K]) boolExpressionEvaluator
 }
 
 // builds a function that returns a short-circuited result of ORing
-// boolExpressionEvaluator funcs
-func orFuncs[K any](funcs []boolExpressionEvaluator[K]) boolExpressionEvaluator[K] {
+// BoolExpressionEvaluator funcs
+func orFuncs[K any](funcs []BoolExpressionEvaluator[K]) BoolExpressionEvaluator[K] {
 	return func(ctx K) bool {
 		for _, f := range funcs {
 			if f(ctx) {
@@ -55,7 +55,7 @@ func orFuncs[K any](funcs []boolExpressionEvaluator[K]) boolExpressionEvaluator[
 	}
 }
 
-func (p *Parser[K]) newComparisonEvaluator(comparison *comparison) (boolExpressionEvaluator[K], error) {
+func (p *Parser[K]) newComparisonEvaluator(comparison *comparison) (BoolExpressionEvaluator[K], error) {
 	if comparison == nil {
 		return alwaysTrue[K], nil
 	}
@@ -77,7 +77,7 @@ func (p *Parser[K]) newComparisonEvaluator(comparison *comparison) (boolExpressi
 
 }
 
-func (p *Parser[K]) newBooleanExpressionEvaluator(expr *booleanExpression) (boolExpressionEvaluator[K], error) {
+func (p *Parser[K]) newBooleanExpressionEvaluator(expr *booleanExpression) (BoolExpressionEvaluator[K], error) {
 	if expr == nil {
 		return alwaysTrue[K], nil
 	}
@@ -85,7 +85,7 @@ func (p *Parser[K]) newBooleanExpressionEvaluator(expr *booleanExpression) (bool
 	if err != nil {
 		return nil, err
 	}
-	funcs := []boolExpressionEvaluator[K]{f}
+	funcs := []BoolExpressionEvaluator[K]{f}
 	for _, rhs := range expr.Right {
 		f, err := p.newBooleanTermEvaluator(rhs.Term)
 		if err != nil {
@@ -97,7 +97,7 @@ func (p *Parser[K]) newBooleanExpressionEvaluator(expr *booleanExpression) (bool
 	return orFuncs(funcs), nil
 }
 
-func (p *Parser[K]) newBooleanTermEvaluator(term *term) (boolExpressionEvaluator[K], error) {
+func (p *Parser[K]) newBooleanTermEvaluator(term *term) (BoolExpressionEvaluator[K], error) {
 	if term == nil {
 		return alwaysTrue[K], nil
 	}
@@ -105,7 +105,7 @@ func (p *Parser[K]) newBooleanTermEvaluator(term *term) (boolExpressionEvaluator
 	if err != nil {
 		return nil, err
 	}
-	funcs := []boolExpressionEvaluator[K]{f}
+	funcs := []BoolExpressionEvaluator[K]{f}
 	for _, rhs := range term.Right {
 		f, err := p.newBooleanValueEvaluator(rhs.Value)
 		if err != nil {
@@ -117,7 +117,7 @@ func (p *Parser[K]) newBooleanTermEvaluator(term *term) (boolExpressionEvaluator
 	return andFuncs(funcs), nil
 }
 
-func (p *Parser[K]) newBooleanValueEvaluator(value *booleanValue) (boolExpressionEvaluator[K], error) {
+func (p *Parser[K]) newBooleanValueEvaluator(value *booleanValue) (BoolExpressionEvaluator[K], error) {
 	if value == nil {
 		return alwaysTrue[K], nil
 	}

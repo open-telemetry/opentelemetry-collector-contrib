@@ -20,10 +20,15 @@ import (
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
-// parsedStatement represents a parsed statement. It is the entry point into the statement DSL.
-type parsedStatement struct {
+// transformationStatement represents a transformation statement. It is the entry point into the statement DSL.
+type transformationStatement struct {
 	Invocation  invocation         `parser:"@@"`
 	WhereClause *booleanExpression `parser:"( 'where' @@ )?"`
+}
+
+// conditionStatement represents a condition statement.
+type conditionStatement struct {
+	BooleanExpression *booleanExpression `parser:"@@"`
 }
 
 // booleanValue represents something that evaluates to a boolean --
@@ -149,13 +154,6 @@ type Path struct {
 type Field struct {
 	Name   string  `parser:"@Lowercase"`
 	MapKey *string `parser:"( '[' @String ']' )?"`
-}
-
-// Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
-// invocation and the expression to match telemetry for invoking the function.
-type Statement[K any] struct {
-	Function  ExprFunc[K]
-	Condition boolExpressionEvaluator[K]
 }
 
 // byteSlice type for capturing byte slices
