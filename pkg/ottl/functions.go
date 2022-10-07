@@ -65,7 +65,6 @@ func (p *Parser[K]) buildArgs(inv invocation, fType reflect.Type) ([]reflect.Val
 				return nil, err
 			}
 			args = append(args, arg)
-			DSLArgumentIndex++
 		default:
 			arg, isInternalArg := p.buildInternalArg(argType)
 
@@ -86,9 +85,9 @@ func (p *Parser[K]) buildArgs(inv invocation, fType reflect.Type) ([]reflect.Val
 			}
 
 			args = append(args, reflect.ValueOf(val))
-
-			DSLArgumentIndex++
 		}
+
+		DSLArgumentIndex++
 	}
 
 	if len(inv.Arguments) > DSLArgumentIndex {
