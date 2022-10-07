@@ -22,52 +22,34 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service"
-	"go.opentelemetry.io/collector/service/servicetest"
 )
-
-// Helper method to handle boilerplate of loading configuration from file
-func loadConfig(t *testing.T, file string) (*service.Config, error) {
-	// Initialize exporter factory
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-
-	// Load configurations
-	return servicetest.LoadConfigAndValidate(filepath.Join("testdata", file), factories)
-}
 
 // Helper method to handle boilerplate of loading exporter configuration from file
 func loadExporterConfig(t *testing.T, file string, id config.ComponentID) (config.Exporter, *Config) {
 	// Initialize exporter factory
-	factories, err := componenttest.NopFactories()
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", file))
 	require.NoError(t, err)
-
 	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
+	cfg := factory.CreateDefaultConfig()
 
-	// Load configurations
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", file), factories)
+	sub, err := cm.Sub(id.String())
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
-	actual := cfg.Exporters[id]
+	require.NoError(t, config.UnmarshalExporter(sub, cfg))
 
 	def := factory.CreateDefaultConfig().(*Config)
 	require.NotNil(t, def)
 
-	return actual, def
+	return cfg, def
 }
 
 func TestLoadWithDefaults(t *testing.T) {
 	// Arrange / Act
-	actual, expected := loadExporterConfig(t, "config.yaml", config.NewComponentID(typeStr))
+	actual, expected := loadExporterConfig(t, "config.yaml", config.NewComponentIDWithName(typeStr, ""))
 	expected.Traces.IngestToken = "00000000-0000-0000-0000-0000000000000"
 	expected.Endpoint = "https://cloud.humio.com/"
 
@@ -77,8 +59,8 @@ func TestLoadWithDefaults(t *testing.T) {
 
 func TestLoadInvalidCompression(t *testing.T) {
 	// Act
-	_, err := loadConfig(t, "invalid-compression.yaml")
-
+	cfg, _ := loadExporterConfig(t, "invalid-compression.yaml", config.NewComponentIDWithName(typeStr, ""))
+	err := cfg.Validate()
 	// Assert
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "the Content-Encoding header must")
@@ -86,7 +68,8 @@ func TestLoadInvalidCompression(t *testing.T) {
 
 func TestLoadInvalidTagStrategy(t *testing.T) {
 	// Act
-	_, err := loadConfig(t, "invalid-tag.yaml")
+	cfg, _ := loadExporterConfig(t, "invalid-tag.yaml", config.NewComponentIDWithName(typeStr, ""))
+	err := cfg.Validate()
 
 	// Assert
 	require.Error(t, err)
@@ -96,7 +79,7 @@ func TestLoadInvalidTagStrategy(t *testing.T) {
 func TestLoadAllSettings(t *testing.T) {
 	// Arrange
 	expected := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "allsettings")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 
 		QueueSettings: exporterhelper.QueueSettings{
 			Enabled:      false,
