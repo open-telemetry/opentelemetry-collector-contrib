@@ -38,25 +38,33 @@ type Config struct {
 
 // LogsConfig is the configuration  for the logs portion of this receiver
 type LogsConfig struct {
-	PollInterval   time.Duration    `mapstructure:"poll_interval"`
-	EventLimit     int64            `mapstructure:"event_limit"`
-	LogGroupLimit  int64            `mapstructure:"log_group_limit"`
-	LogGroupPrefix string           `mapstructure:"log_group_prefix"`
-	LogGroups      []LogGroupConfig `mapstructure:"log_groups"`
+	PollInterval        time.Duration `mapstructure:"poll_interval"`
+	MaxEventsPerRequest int64         `mapstructure:"max_events_per_request"`
+	Groups              GroupConfig   `mapstructure:"groups"`
 }
 
-// LogGroupConfig represents configuration for how to treat a log group
-type LogGroupConfig struct {
-	Name         string    `mapstructure:"name"`
-	StreamPrefix string    `mapstructure:"stream_prefix"`
-	LogStreams   []*string `mapstructure:"log_streams"`
+type GroupConfig struct {
+	AutodiscoverConfig *AutodiscoverConfig     `mapstructure:"autodiscover,omitempty"`
+	NamedConfigs       map[string]StreamConfig `mapstructure:"named"`
+}
+
+type AutodiscoverConfig struct {
+	Prefix  string       `mapstructure:"prefix"`
+	Limit   int64        `mapstructure:"limit"`
+	Streams StreamConfig `mapstructure:"streams"`
+}
+
+type StreamConfig struct {
+	Prefixes []*string `mapstructure:"prefixes"`
+	Names    []*string `mapstructure:"names"`
 }
 
 var (
-	errNoRegion             = errors.New("no region was specified")
-	errInvalidEventLimit    = errors.New("event limit is improperly configured, value must be greater than 0")
-	errInvalidPollInterval  = errors.New("poll interval is incorrect, it must be a duration greater than one second")
-	errInvalidLogGroupLimit = errors.New("log group limit is improperly configured, value must be greater than 0 and less than or equal to 50")
+	errNoRegion                       = errors.New("no region was specified")
+	errInvalidEventLimit              = errors.New("event limit is improperly configured, value must be greater than 0")
+	errInvalidPollInterval            = errors.New("poll interval is incorrect, it must be a duration greater than one second")
+	errInvalidAutodiscoverLimit       = errors.New("the limit of autodiscovery of log groups is improperly configured, value must be greater than 0 and less than or equal to 50")
+	errAutodiscoverAndNamedConfigured = errors.New("both autodiscover and named configs are configured, Only one or the other is permitted")
 )
 
 // Validate validates all portions of the relevant config
@@ -72,14 +80,31 @@ func (c *Config) Validate() error {
 }
 
 func (c *Config) validateLogsConfig() error {
-	if c.Logs.EventLimit <= 0 {
+	if c.Logs.MaxEventsPerRequest <= 0 {
 		return errInvalidEventLimit
 	}
 	if c.Logs.PollInterval < time.Second {
 		return errInvalidPollInterval
 	}
-	if c.Logs.LogGroupLimit <= 0 || c.Logs.LogGroupLimit > 50 {
-		return errInvalidLogGroupLimit
+
+	return c.Logs.Groups.validate()
+}
+
+func (c *GroupConfig) validate() error {
+	if c.AutodiscoverConfig != nil && len(c.NamedConfigs) > 0 {
+		return errAutodiscoverAndNamedConfigured
+	}
+
+	if c.AutodiscoverConfig != nil {
+		return validateAutodiscover(*c.AutodiscoverConfig)
+	}
+
+	return nil
+}
+
+func validateAutodiscover(cfg AutodiscoverConfig) error {
+	if cfg.Limit <= 0 || cfg.Limit > 50 {
+		return errInvalidAutodiscoverLimit
 	}
 	return nil
 }

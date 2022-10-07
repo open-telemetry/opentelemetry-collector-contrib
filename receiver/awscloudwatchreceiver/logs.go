@@ -32,16 +32,16 @@ import (
 )
 
 type logsReceiver struct {
-	region        string
-	profile       string
-	groupPrefix   string
-	groups        []LogGroupConfig
-	eventLimit    *int64
-	logGroupLimit int64
-	pollInterval  time.Duration
-	logger        *zap.Logger
-	client        client
-	consumer      consumer.Logs
+	region              string
+	profile             string
+	pollInterval        time.Duration
+	maxEventsPerRequest int64
+	namedPolls          []namesPollConfig
+	prefixedPolls       []prefixPollConfig
+	autodiscover        *AutodiscoverConfig
+	logger              *zap.Logger
+	client              client
+	consumer            consumer.Logs
 
 	wg       *sync.WaitGroup
 	doneChan chan bool
@@ -52,35 +52,97 @@ type client interface {
 	FilterLogEventsWithContext(ctx context.Context, input *cloudwatchlogs.FilterLogEventsInput, opts ...request.Option) (*cloudwatchlogs.FilterLogEventsOutput, error)
 }
 
+type namesPollConfig struct {
+	logGroup    string
+	streamNames []*string
+}
+
+func (npc *namesPollConfig) request(limit int64, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
+	base := &cloudwatchlogs.FilterLogEventsInput{
+		LogGroupName: &npc.logGroup,
+		StartTime:    aws.Int64(st.UnixMilli()),
+		EndTime:      aws.Int64(et.UnixMilli()),
+		Limit:        aws.Int64(limit),
+	}
+	if len(npc.streamNames) > 0 {
+		base.LogStreamNames = npc.streamNames
+	}
+	return base
+}
+
+type prefixPollConfig struct {
+	logGroup string
+	prefix   *string
+}
+
+func (ppc *prefixPollConfig) request(limit int64, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
+	return &cloudwatchlogs.FilterLogEventsInput{
+		LogGroupName:        &ppc.logGroup,
+		StartTime:           aws.Int64(st.UnixMilli()),
+		EndTime:             aws.Int64(et.UnixMilli()),
+		Limit:               aws.Int64(limit),
+		LogStreamNamePrefix: ppc.prefix,
+	}
+}
+
+type pollConfig interface {
+	request(limit int64, startTime, endTime *time.Time) *cloudwatchlogs.FilterLogEventsInput
+}
+
 func newLogsReceiver(cfg *Config, logger *zap.Logger, consumer consumer.Logs) *logsReceiver {
+	namedPolls := []namesPollConfig{}
+	prefixedPolls := []prefixPollConfig{}
+	for logGroupName, sc := range cfg.Logs.Groups.NamedConfigs {
+		for _, prefix := range sc.Prefixes {
+			prefixedPolls = append(prefixedPolls, prefixPollConfig{
+				logGroup: logGroupName,
+				prefix:   prefix,
+			})
+		}
+
+		namedPolls = append(namedPolls, namesPollConfig{
+			logGroup:    logGroupName,
+			streamNames: sc.Names,
+		})
+	}
+
 	return &logsReceiver{
-		region:        cfg.Region,
-		profile:       cfg.Profile,
-		consumer:      consumer,
-		logGroupLimit: cfg.Logs.LogGroupLimit,
-		groupPrefix:   cfg.Logs.LogGroupPrefix,
-		groups:        cfg.Logs.LogGroups,
-		pollInterval:  cfg.Logs.PollInterval,
-		eventLimit:    &cfg.Logs.EventLimit,
-		logger:        logger,
-		wg:            &sync.WaitGroup{},
-		doneChan:      make(chan bool),
+		region:              cfg.Region,
+		profile:             cfg.Profile,
+		consumer:            consumer,
+		maxEventsPerRequest: cfg.Logs.MaxEventsPerRequest,
+		autodiscover:        cfg.Logs.Groups.AutodiscoverConfig,
+		pollInterval:        cfg.Logs.PollInterval,
+		namedPolls:          namedPolls,
+		prefixedPolls:       prefixedPolls,
+		logger:              logger,
+		wg:                  &sync.WaitGroup{},
+		doneChan:            make(chan bool),
 	}
 }
 
 func (l *logsReceiver) Start(ctx context.Context, host component.Host) error {
 	l.logger.Debug("starting to poll for Cloudwatch logs")
-	if len(l.groups) == 0 {
-		err := l.discoverGroups(ctx)
+
+	if l.autodiscover != nil {
+		namedPolls, prefixedPolls, err := l.discoverGroups(ctx, l.autodiscover)
 		if err != nil {
-			l.logger.Error("unable to auto discover log groups using prefix", zap.String("prefix", l.groupPrefix), zap.Error(err))
+			return fmt.Errorf("unable to auto discover log groups using prefix  %s: %w", l.autodiscover.Prefix, err)
 		}
+		l.namedPolls = namedPolls
+		l.prefixedPolls = prefixedPolls
 	}
 
-	for _, lg := range l.groups {
+	for _, np := range l.namedPolls {
 		l.wg.Add(1)
-		go l.poll(ctx, lg)
+		go l.poll(ctx, np.logGroup, &np)
 	}
+
+	for _, pp := range l.prefixedPolls {
+		l.wg.Add(1)
+		go l.poll(ctx, pp.logGroup, &pp)
+	}
+
 	return nil
 }
 
@@ -91,7 +153,7 @@ func (l *logsReceiver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (l *logsReceiver) poll(ctx context.Context, logGroup LogGroupConfig) {
+func (l *logsReceiver) poll(ctx context.Context, logGroup string, pc pollConfig) {
 	defer l.wg.Done()
 
 	t := time.NewTicker(l.pollInterval)
@@ -102,30 +164,31 @@ func (l *logsReceiver) poll(ctx context.Context, logGroup LogGroupConfig) {
 		case <-l.doneChan:
 			return
 		case <-t.C:
-			err := l.pollForLogs(ctx, logGroup)
+			err := l.pollForLogs(ctx, logGroup, pc)
 			if err != nil {
-				l.logger.Error("there was an error during the poll", zap.String("log group", logGroup.Name), zap.Error(err))
+				l.logger.Error("there was an error during the poll", zap.String("log group", logGroup), zap.Error(err))
 			}
 		}
 	}
 }
 
-func (l *logsReceiver) pollForLogs(ctx context.Context, logGroup LogGroupConfig) error {
+func (l *logsReceiver) pollForLogs(ctx context.Context, logGroup string, pc pollConfig) error {
 	err := l.ensureSession()
 	if err != nil {
 		return err
 	}
 
-	var token = ""
-	nextToken := &token
+	nextToken := aws.String("")
 	for nextToken != nil {
-		observedTime := pcommon.NewTimestampFromTime(time.Now())
-		input := l.logEventsRequest(nextToken, logGroup)
+		startTime := time.Now().Add(-l.pollInterval)
+		endTime := time.Now()
+		input := pc.request(l.maxEventsPerRequest, &startTime, &endTime)
 		resp, err := l.client.FilterLogEventsWithContext(ctx, input)
 		if err != nil {
-			l.logger.Error("unable to retrieve logs from cloudwatch", zap.Error(err))
+			l.logger.Error("unable to retrieve logs from cloudwatch", zap.String("log group", logGroup), zap.Error(err))
 			break
 		}
+		observedTime := pcommon.NewTimestampFromTime(time.Now())
 		logs := l.processEvents(observedTime, logGroup, resp)
 		if logs.LogRecordCount() > 0 {
 			if err = l.consumer.ConsumeLogs(ctx, logs); err != nil {
@@ -138,39 +201,7 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, logGroup LogGroupConfig)
 	return nil
 }
 
-func (l *logsReceiver) logEventsRequest(token *string, lg LogGroupConfig) *cloudwatchlogs.FilterLogEventsInput {
-	// this sliding window may need to be explored more.
-	st := time.Now().Add(-l.pollInterval).UnixMilli()
-	et := time.Now().UnixMilli()
-
-	baseReq := &cloudwatchlogs.FilterLogEventsInput{
-		Limit:        l.eventLimit,
-		LogGroupName: &lg.Name,
-		StartTime:    &st,
-		EndTime:      &et,
-	}
-
-	if token != nil && *token != "" {
-		baseReq.NextToken = token
-	}
-
-	// no specification, collect all
-	if len(lg.LogStreams) == 0 && lg.StreamPrefix == "" {
-		return baseReq
-	}
-
-	if len(lg.LogStreams) > 0 {
-		baseReq.LogStreamNames = lg.LogStreams
-	}
-
-	if lg.StreamPrefix != "" {
-		baseReq.LogStreamNamePrefix = &lg.StreamPrefix
-	}
-
-	return baseReq
-}
-
-func (l *logsReceiver) processEvents(now pcommon.Timestamp, lc LogGroupConfig, output *cloudwatchlogs.FilterLogEventsOutput) plog.Logs {
+func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string, output *cloudwatchlogs.FilterLogEventsOutput) plog.Logs {
 	logs := plog.NewLogs()
 	for _, e := range output.Events {
 		if e.Timestamp == nil {
@@ -187,7 +218,7 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, lc LogGroupConfig, o
 		resourceAttributes := rl.Resource().Attributes()
 
 		safePutAttribute("aws.region", &l.region, resourceAttributes.PutString)
-		safePutAttribute("cloudwatch.log.group.name", &lc.Name, resourceAttributes.PutString)
+		safePutAttribute("cloudwatch.log.group.name", &logGroupName, resourceAttributes.PutString)
 		safePutAttribute("cloudwatch.log.stream", e.LogStreamName, resourceAttributes.PutString)
 
 		logRecord := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
@@ -201,38 +232,64 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, lc LogGroupConfig, o
 	return logs
 }
 
-func (l *logsReceiver) discoverGroups(ctx context.Context) error {
+func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverConfig) ([]namesPollConfig, []prefixPollConfig, error) {
+	l.logger.Debug("attempting to discover log groups.", zap.Int64("limit", l.maxEventsPerRequest))
+
+	newNamedPolls := []namesPollConfig{}
+	newPrefixedPolls := []prefixPollConfig{}
+
 	err := l.ensureSession()
 	if err != nil {
-		return fmt.Errorf("unable to establish a session to auto discover log groups: %w", err)
+		return newNamedPolls, newPrefixedPolls, fmt.Errorf("unable to establish a session to auto discover log groups: %w", err)
 	}
+
+	numGroups := 0
 	var nextToken = aws.String("")
-	newGroups := []LogGroupConfig{}
-	for nextToken != nil || len(l.groups) >= int(l.logGroupLimit) {
+	for nextToken != nil || numGroups >= int(auto.Limit) {
 		req := &cloudwatchlogs.DescribeLogGroupsInput{
-			Limit: &l.logGroupLimit,
+			Limit: &auto.Limit,
 		}
-		if l.groupPrefix != "" {
-			req.LogGroupNamePrefix = &l.groupPrefix
+
+		if auto.Prefix != "" {
+			req.LogGroupNamePrefix = &auto.Prefix
 		}
 
 		dlgResults, err := l.client.DescribeLogGroupsWithContext(ctx, req)
 		if err != nil {
-			return fmt.Errorf("unable to list log groups: %w", err)
+			return newNamedPolls, newPrefixedPolls, fmt.Errorf("unable to list log groups: %w", err)
 		}
 
 		for _, lg := range dlgResults.LogGroups {
+			numGroups++
 			l.logger.Debug("discovered log group", zap.String("log group", lg.GoString()))
-			newGroups = append(newGroups, LogGroupConfig{
-				Name:         *lg.LogGroupName,
-				StreamPrefix: "",
-				LogStreams:   make([]*string, 0),
-			})
+			// default behavior is to collect all if not stream filtered
+			if len(auto.Streams.Names) == 0 && len(auto.Streams.Prefixes) == 0 {
+				newNamedPolls = append(newNamedPolls, namesPollConfig{
+					logGroup: *lg.LogGroupName,
+				})
+				continue
+			}
+
+			for _, prefix := range auto.Streams.Prefixes {
+				newPrefixedPolls = append(newPrefixedPolls, prefixPollConfig{
+					logGroup: *lg.LogGroupName,
+					prefix:   prefix,
+				})
+			}
+
+			if len(auto.Streams.Names) > 0 {
+				newNamedPolls = append(newNamedPolls,
+					namesPollConfig{
+						logGroup:    *lg.LogGroupName,
+						streamNames: auto.Streams.Names,
+					},
+				)
+			}
 		}
 		nextToken = dlgResults.NextToken
 	}
-	l.groups = newGroups
-	return nil
+
+	return newNamedPolls, newPrefixedPolls, nil
 }
 
 func (l *logsReceiver) ensureSession() error {

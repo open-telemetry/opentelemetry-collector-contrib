@@ -32,10 +32,11 @@ func TestValidate(t *testing.T) {
 			config: Config{
 				Region: "us-west-2",
 				Logs: LogsConfig{
-					EventLimit:    defaultEventLimit,
-					PollInterval:  defaultPollInterval,
-					LogGroupLimit: defaultLogGroupLimit,
-				},
+					MaxEventsPerRequest: defaultEventLimit,
+					PollInterval:        defaultPollInterval,
+					Groups: GroupConfig{
+						AutodiscoverConfig: nil,
+					}},
 			},
 		},
 		{
@@ -50,8 +51,8 @@ func TestValidate(t *testing.T) {
 			config: Config{
 				Region: "us-west-2",
 				Logs: LogsConfig{
-					EventLimit:   -1,
-					PollInterval: defaultPollInterval,
+					MaxEventsPerRequest: -1,
+					PollInterval:        defaultPollInterval,
 				},
 			},
 			expectedErr: errInvalidEventLimit,
@@ -61,9 +62,11 @@ func TestValidate(t *testing.T) {
 			config: Config{
 				Region: "us-west-2",
 				Logs: LogsConfig{
-					EventLimit:    defaultEventLimit,
-					PollInterval:  100 * time.Millisecond,
-					LogGroupLimit: defaultLogGroupLimit,
+					MaxEventsPerRequest: defaultEventLimit,
+					PollInterval:        100 * time.Millisecond,
+					Groups: GroupConfig{
+						AutodiscoverConfig: nil,
+					},
 				},
 			},
 			expectedErr: errInvalidPollInterval,
@@ -73,12 +76,15 @@ func TestValidate(t *testing.T) {
 			config: Config{
 				Region: "us-east-1",
 				Logs: LogsConfig{
-					EventLimit:    defaultEventLimit,
-					PollInterval:  defaultPollInterval,
-					LogGroupLimit: -1,
-				},
+					MaxEventsPerRequest: defaultEventLimit,
+					PollInterval:        defaultPollInterval,
+					Groups: GroupConfig{
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit: 10000,
+						},
+					}},
 			},
-			expectedErr: errInvalidLogGroupLimit,
+			expectedErr: errInvalidAutodiscoverLimit,
 		},
 	}
 
