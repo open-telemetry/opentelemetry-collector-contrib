@@ -14,6 +14,12 @@
                   "value": {
                      "stringValue": "917e13e55eed"
                   }
+               },
+               {
+                  "key": "elasticsearch.endpoint",
+                  "value": {
+                     "stringValue": "http://localhost:9200"
+                  }
                }
             ]
          },
@@ -2198,6 +2204,12 @@
                   "value": {
                      "stringValue": "docker-cluster"
                   }
+               },
+               {
+                  "key": "elasticsearch.endpoint",
+                  "value": {
+                     "stringValue": "http://localhost:9200"
+                  }
                }
             ]
          },
@@ -2323,6 +2335,12 @@
                   "key": "elasticsearch.cluster.name",
                   "value": {
                      "stringValue": "docker-cluster"
+                  }
+               },
+               {
+                  "key": "elasticsearch.endpoint",
+                  "value": {
+                     "stringValue": "http://localhost:9200"
                   }
                }
             ]

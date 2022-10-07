@@ -4666,6 +4666,13 @@ func WithElasticsearchClusterName(val string) ResourceMetricsOption {
 	}
 }
 
+// WithElasticsearchEndpoint sets provided value as "elasticsearch.endpoint" attribute for current resource.
+func WithElasticsearchEndpoint(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().PutStr("elasticsearch.endpoint", val)
+	}
+}
+
 // WithElasticsearchIndexName sets provided value as "elasticsearch.index.name" attribute for current resource.
 func WithElasticsearchIndexName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {

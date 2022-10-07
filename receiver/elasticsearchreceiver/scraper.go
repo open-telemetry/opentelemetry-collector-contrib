@@ -321,8 +321,11 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchNodeScriptCompilationsDataPoint(now, info.Script.Compilations)
 		r.mb.RecordElasticsearchNodeScriptCompilationLimitTriggeredDataPoint(now, info.Script.CompilationLimitTriggered)
 
-		r.mb.EmitForResource(metadata.WithElasticsearchClusterName(nodeStats.ClusterName),
-			metadata.WithElasticsearchNodeName(info.Name))
+		r.mb.EmitForResource(
+			metadata.WithElasticsearchClusterName(nodeStats.ClusterName),
+			metadata.WithElasticsearchNodeName(info.Name),
+			metadata.WithElasticsearchEndpoint(r.cfg.Endpoint),
+		)
 	}
 }
 
@@ -366,7 +369,10 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pco
 		errs.AddPartial(1, fmt.Errorf("health status %s: %w", clusterHealth.Status, errUnknownClusterStatus))
 	}
 
-	r.mb.EmitForResource(metadata.WithElasticsearchClusterName(clusterHealth.ClusterName))
+	r.mb.EmitForResource(
+		metadata.WithElasticsearchClusterName(clusterHealth.ClusterName),
+		metadata.WithElasticsearchEndpoint(r.cfg.Endpoint),
+	)
 }
 
 func (r *elasticsearchScraper) scrapeIndicesMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
@@ -404,5 +410,9 @@ func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name
 		now, stats.Total.SearchOperations.QueryTimeInMs, metadata.AttributeOperationQuery, metadata.AttributeIndexAggregationTypeTotal,
 	)
 
-	r.mb.EmitForResource(metadata.WithElasticsearchIndexName(name), metadata.WithElasticsearchClusterName(r.clusterName))
+	r.mb.EmitForResource(
+		metadata.WithElasticsearchIndexName(name),
+		metadata.WithElasticsearchClusterName(r.clusterName),
+		metadata.WithElasticsearchEndpoint(r.cfg.Endpoint),
+	)
 }

@@ -94,6 +94,7 @@ metrics:
 | Name | Description | Type |
 | ---- | ----------- | ---- |
 | elasticsearch.cluster.name | The name of the elasticsearch cluster. | String |
+| elasticsearch.endpoint | Endpoint of the queried elasticsearch node. | String |
 | elasticsearch.index.name | The name of the elasticsearch index. | String |
 | elasticsearch.node.name | The name of the elasticsearch node. | String |
 

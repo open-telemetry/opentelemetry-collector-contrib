@@ -14,6 +14,12 @@
                   "value": {
                      "stringValue": "a3fd1f595e8a"
                   }
+               },
+               {
+                  "key": "elasticsearch.endpoint",
+                  "value": {
+                     "stringValue": "http://localhost:9200"
+                  }
                }
             ]
          },
@@ -3883,6 +3889,12 @@
                   "value": {
                      "stringValue": "docker-cluster"
                   }
+               },
+               {
+                  "key": "elasticsearch.endpoint",
+                  "value": {
+                     "stringValue": "http://localhost:9200"
+                  }
                }
             ]
          },
@@ -4076,6 +4088,12 @@
                   "value": {
                      "stringValue": ".geoip_databases"
                   }
+               },
+               {
+                  "key": "elasticsearch.endpoint",
+                  "value": {
+                     "stringValue": "http://localhost:9200"
+                  }
                }
             ]
          },
@@ -4195,6 +4213,12 @@
                   "key": "elasticsearch.index.name",
                   "value": {
                      "stringValue": "_all"
+                  }
+               },
+               {
+                  "key": "elasticsearch.endpoint",
+                  "value": {
+                     "stringValue": "http://localhost:9200"
                   }
                }
             ]

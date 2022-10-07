@@ -1,0 +1,5 @@
+change_type: breaking
+component: elasticsearchreceiver
+note: Add resource attribute with queried endpoint
+issues: [14635]
+
