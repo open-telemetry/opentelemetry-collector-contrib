@@ -333,7 +333,7 @@ func (r *elasticsearchScraper) scrapeIndicesMetrics(ctx context.Context, now pco
 	indexStats, err := r.client.IndexStats(ctx, r.cfg.Indices)
 
 	if err != nil {
-		errs.AddPartial(8, err)
+		errs.AddPartial(14, err)
 		return
 	}
 
@@ -372,6 +372,39 @@ func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name
 
 	r.mb.RecordElasticsearchIndexShardsSizeDataPoint(
 		now, stats.Total.StoreInfo.SizeInBy, metadata.AttributeIndexAggregationTypeTotal,
+	)
+
+	r.mb.RecordElasticsearchIndexSegmentsCountDataPoint(
+		now, stats.Total.SegmentsStats.Count, metadata.AttributeIndexAggregationTypeTotal,
+	)
+
+	r.mb.RecordElasticsearchIndexSegmentsSizeDataPoint(
+		now, stats.Total.SegmentsStats.MemoryInBy, metadata.AttributeIndexAggregationTypeTotal,
+	)
+
+	r.mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(
+		now,
+		stats.Total.SegmentsStats.DocumentValuesMemoryInBy,
+		metadata.AttributeIndexAggregationTypeTotal,
+		metadata.AttributeSegmentsMemoryObjectTypeDocValue,
+	)
+	r.mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(
+		now,
+		stats.Total.SegmentsStats.FixedBitSetMemoryInBy,
+		metadata.AttributeIndexAggregationTypeTotal,
+		metadata.AttributeSegmentsMemoryObjectTypeFixedBitSet,
+	)
+	r.mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(
+		now,
+		stats.Total.SegmentsStats.IndexWriterMemoryInBy,
+		metadata.AttributeIndexAggregationTypeTotal,
+		metadata.AttributeSegmentsMemoryObjectTypeIndexWriter,
+	)
+	r.mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(
+		now,
+		stats.Total.SegmentsStats.TermsMemoryInBy,
+		metadata.AttributeIndexAggregationTypeTotal,
+		metadata.AttributeSegmentsMemoryObjectTypeTerm,
 	)
 
 	r.mb.EmitForResource(metadata.WithElasticsearchIndexName(name), metadata.WithElasticsearchClusterName(r.clusterName))
