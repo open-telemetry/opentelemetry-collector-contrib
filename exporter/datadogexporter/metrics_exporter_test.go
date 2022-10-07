@@ -32,7 +32,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
@@ -149,18 +148,19 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"tags":   []interface{}{"lower_bound:0", "upper_bound:inf", "env:dev"},
 					},
 					map[string]interface{}{
-						"metric": "system.disk.in_use",
-						"points": []interface{}{[]interface{}{float64(0), float64(333)}},
-						"type":   "gauge",
-						"host":   "test-host",
-						"tags":   []interface{}{"env:dev"},
-					},
-					map[string]interface{}{
 						"metric": "otel.datadog_exporter.metrics.running",
 						"points": []interface{}{[]interface{}{float64(0), float64(1)}},
 						"type":   "gauge",
 						"host":   "test-host",
 						"tags":   []interface{}{"version:latest", "command:otelcol"},
+					},
+					map[string]interface{}{
+						"metric":   "system.disk.in_use",
+						"points":   []interface{}{[]interface{}{float64(0), float64(333)}},
+						"type":     "gauge",
+						"host":     "test-host",
+						"interval": float64(1),
+						"tags":     []interface{}{"env:dev"},
 					},
 				},
 			},
@@ -192,18 +192,19 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"tags":   []interface{}{"env:dev"},
 					},
 					map[string]interface{}{
-						"metric": "system.disk.in_use",
-						"points": []interface{}{[]interface{}{float64(0), float64(333)}},
-						"type":   "gauge",
-						"host":   "test-host",
-						"tags":   []interface{}{"env:dev"},
-					},
-					map[string]interface{}{
 						"metric": "otel.datadog_exporter.metrics.running",
 						"points": []interface{}{[]interface{}{float64(0), float64(1)}},
 						"type":   "gauge",
 						"host":   "test-host",
 						"tags":   []interface{}{"version:latest", "command:otelcol"},
+					},
+					map[string]interface{}{
+						"metric":   "system.disk.in_use",
+						"points":   []interface{}{[]interface{}{float64(0), float64(333)}},
+						"type":     "gauge",
+						"host":     "test-host",
+						"interval": float64(1),
+						"tags":     []interface{}{"env:dev"},
 					},
 				},
 			},
@@ -266,18 +267,19 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"tags":   []interface{}{"lower_bound:0", "upper_bound:inf", "env:dev", "key1:value1", "key2:value2"},
 					},
 					map[string]interface{}{
-						"metric": "system.disk.in_use",
-						"points": []interface{}{[]interface{}{float64(0), float64(333)}},
-						"type":   "gauge",
-						"host":   "test-host",
-						"tags":   []interface{}{"env:dev", "key1:value1", "key2:value2"},
-					},
-					map[string]interface{}{
 						"metric": "otel.datadog_exporter.metrics.running",
 						"points": []interface{}{[]interface{}{float64(0), float64(1)}},
 						"type":   "gauge",
 						"host":   "test-host",
 						"tags":   []interface{}{"version:latest", "command:otelcol", "key1:value1", "key2:value2"},
+					},
+					map[string]interface{}{
+						"metric":   "system.disk.in_use",
+						"points":   []interface{}{[]interface{}{float64(0), float64(333)}},
+						"type":     "gauge",
+						"host":     "test-host",
+						"interval": float64(1),
+						"tags":     []interface{}{"env:dev", "key1:value1", "key2:value2"},
 					},
 				},
 			},
@@ -326,7 +328,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				assert.NoError(t, err)
 				var actual map[string]interface{}
 				assert.NoError(t, json.Unmarshal(seriesRecorder.ByteBody, &actual))
-				assert.Equal(t, tt.expectedSeries, actual)
+				assert.EqualValues(t, tt.expectedSeries, actual)
 			}
 			if tt.expectedSketchPayload == nil {
 				assert.Nil(t, sketchRecorder.ByteBody)
@@ -340,87 +342,6 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestPrepareSystemMetrics(t *testing.T) {
-	var once sync.Once
-	cfg := NewFactory().CreateDefaultConfig().(*Config)
-	exp, err := newMetricsExporter(
-		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
-		cfg,
-		&once,
-		&testutils.MockSourceProvider{Src: source.Source{
-			Kind:       source.AWSECSFargateKind,
-			Identifier: "task_arn",
-		}},
-	)
-	require.NoError(t, err)
-	sptr := func(s string) *string { return &s }
-	dptr := func(d int) *int { return &d }
-	ms := []datadog.Metric{
-		{Metric: sptr("system.something")},
-		{Metric: sptr("process.something")},
-		{Metric: sptr("process.cpu.time")},
-		{Metric: sptr("system.memory.usage")},
-		{Metric: sptr("system.filesystem.utilization")},
-		{Metric: sptr("system.network.io")},
-		{Metric: sptr("system.memory.usage")},
-		{Metric: sptr("system.cpu.utilization")},
-		{Metric: sptr("system.cpu.load_average.1m")},
-		{Metric: sptr("system.cpu.load_average.5m")},
-		{Metric: sptr("system.cpu.load_average.15m")},
-		{Metric: sptr("processes.cpu.time")},
-		{Metric: sptr("systemd.metric.name")},
-		{Metric: sptr("random.metric.name")},
-		{Metric: sptr("system.disk.in_use")},
-		{Metric: sptr("system.net.bytes_sent")},
-		{Metric: sptr("system.net.bytes_rcvd")},
-		{Metric: sptr("system.mem.usable")},
-		{Metric: sptr("system.mem.total")},
-		{Metric: sptr("system.cpu.stolen")},
-		{Metric: sptr("system.cpu.iowait")},
-		{Metric: sptr("system.cpu.system")},
-		{Metric: sptr("system.cpu.user")},
-		{Metric: sptr("system.cpu.idle")},
-		{Metric: sptr("system.swap.free")},
-		{Metric: sptr("system.swap.used")},
-		{Metric: sptr("system.load.15")},
-		{Metric: sptr("system.load.5")},
-		{Metric: sptr("system.load.1")},
-	}
-	exp.prepareSystemMetrics(ms)
-	require.EqualValues(t, ms, []datadog.Metric{
-		{Metric: sptr("otel.system.something")},
-		{Metric: sptr("otel.process.something")},
-		{Metric: sptr("otel.process.cpu.time")},
-		{Metric: sptr("otel.system.memory.usage")},
-		{Metric: sptr("otel.system.filesystem.utilization")},
-		{Metric: sptr("otel.system.network.io")},
-		{Metric: sptr("otel.system.memory.usage")},
-		{Metric: sptr("otel.system.cpu.utilization")},
-		{Metric: sptr("otel.system.cpu.load_average.1m")},
-		{Metric: sptr("otel.system.cpu.load_average.5m")},
-		{Metric: sptr("otel.system.cpu.load_average.15m")},
-		{Metric: sptr("processes.cpu.time")},
-		{Metric: sptr("systemd.metric.name")},
-		{Metric: sptr("random.metric.name")},
-		{Metric: sptr("system.disk.in_use")},
-		{Metric: sptr("system.net.bytes_sent"), Type: sptr("gauge"), Interval: dptr(1)},
-		{Metric: sptr("system.net.bytes_rcvd"), Type: sptr("gauge"), Interval: dptr(1)},
-		{Metric: sptr("system.mem.usable"), Interval: dptr(1)},
-		{Metric: sptr("system.mem.total"), Interval: dptr(1)},
-		{Metric: sptr("system.cpu.stolen")},
-		{Metric: sptr("system.cpu.iowait")},
-		{Metric: sptr("system.cpu.system"), Interval: dptr(1)},
-		{Metric: sptr("system.cpu.user"), Interval: dptr(1)},
-		{Metric: sptr("system.cpu.idle"), Interval: dptr(1)},
-		{Metric: sptr("system.swap.free"), Interval: dptr(1)},
-		{Metric: sptr("system.swap.used"), Interval: dptr(1)},
-		{Metric: sptr("system.load.15"), Interval: dptr(1)},
-		{Metric: sptr("system.load.5"), Interval: dptr(1)},
-		{Metric: sptr("system.load.1"), Interval: dptr(1)},
-	})
 }
 
 func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {
