@@ -15,6 +15,7 @@
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
+	"bufio"
 	"os"
 
 	"go.uber.org/zap"
@@ -43,7 +44,7 @@ func (f *readerFactory) copy(old *Reader, newFile *os.File) (*Reader, error) {
 		withFile(newFile).
 		withFingerprint(old.Fingerprint.Copy()).
 		withOffset(old.Offset).
-		withSplitter(old.splitter).
+		withSplitterFunc(old.splitFunc).
 		build()
 }
 
@@ -57,18 +58,18 @@ func (f *readerFactory) newFingerprint(file *os.File) (*Fingerprint, error) {
 
 type readerBuilder struct {
 	*readerFactory
-	file     *os.File
-	fp       *Fingerprint
-	offset   int64
-	splitter *helper.Splitter
+	file      *os.File
+	fp        *Fingerprint
+	offset    int64
+	splitFunc bufio.SplitFunc
 }
 
 func (f *readerFactory) newReaderBuilder() *readerBuilder {
 	return &readerBuilder{readerFactory: f}
 }
 
-func (b *readerBuilder) withSplitter(s *helper.Splitter) *readerBuilder {
-	b.splitter = s
+func (b *readerBuilder) withSplitterFunc(s bufio.SplitFunc) *readerBuilder {
+	b.splitFunc = s
 	return b
 }
 
@@ -93,10 +94,12 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 		Offset:       b.offset,
 	}
 
-	if b.splitter != nil {
-		r.splitter = b.splitter
+	var splitter *helper.Splitter
+	if b.splitFunc != nil {
+		r.splitFunc = b.splitFunc
 	} else {
-		r.splitter, err = b.splitterConfig.Build(false, b.readerConfig.maxLogSize)
+		splitter, err = b.splitterConfig.Build(false, b.readerConfig.maxLogSize)
+		r.splitFunc = splitter.SplitFunc
 		if err != nil {
 			return
 		}
