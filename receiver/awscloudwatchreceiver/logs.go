@@ -180,7 +180,7 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, logGroup string, pc poll
 	nextToken := aws.String("")
 	for nextToken != nil {
 		select {
-		// if done, we want to stop processing paginated stream
+		// if done, we want to stop processing paginated stream of events
 		case _, ok := <-l.doneChan:
 			if !ok {
 				return nil
