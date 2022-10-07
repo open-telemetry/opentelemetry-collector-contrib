@@ -30,6 +30,8 @@ type multilineSplitterFactory struct {
 	Multiline      helper.MultilineConfig
 }
 
+var _ splitterFactory = (*multilineSplitterFactory)(nil)
+
 func newMultilineSplitterFactory(
 	encoding helper.EncodingConfig,
 	flusher helper.FlusherConfig,
