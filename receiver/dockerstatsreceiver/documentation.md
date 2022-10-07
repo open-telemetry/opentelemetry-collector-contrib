@@ -85,11 +85,11 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| container.hostname | The hostname of the container. | String |
-| container.id | The ID of the container. | String |
-| container.image.name | The name of the docker image in use by the container. | String |
-| container.name | The name of the container. | String |
-| container.runtime | The runtime of the container. For this receiver, it will always be 'docker'. | String |
+| container.hostname | The hostname of the container. | Str |
+| container.id | The ID of the container. | Str |
+| container.image.name | The name of the docker image in use by the container. | Str |
+| container.name | The name of the container. | Str |
+| container.runtime | The runtime of the container. For this receiver, it will always be 'docker'. | Str |
 
 ## Metric attributes
 

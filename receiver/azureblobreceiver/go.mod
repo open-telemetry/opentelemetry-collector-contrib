@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.61.0
-	go.opentelemetry.io/collector v0.61.1-0.20221004012633-7cb544d3be36
+	go.opentelemetry.io/collector v0.61.1-0.20221006231412-05d1c5f5572d
 )
 
 require (
@@ -17,7 +17,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	go.opentelemetry.io/collector/pdata v0.61.1-0.20221004012633-7cb544d3be36 // indirect
+	go.opentelemetry.io/collector/pdata v0.61.1-0.20221006231412-05d1c5f5572d // indirect
 	go.opentelemetry.io/otel v1.10.0 // indirect
 	go.opentelemetry.io/otel/metric v0.32.1 // indirect
 	go.opentelemetry.io/otel/trace v1.10.0 // indirect
