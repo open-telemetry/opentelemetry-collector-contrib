@@ -60,7 +60,9 @@ func (m *mockLogConsumer) Logs() []plog.Logs {
 	defer m.lock.Unlock()
 	logs := make([]plog.Logs, len(m.logs))
 	for i, log := range m.logs {
-		logs[i] = log.Clone()
+		copy := plog.NewLogs()
+		log.CopyTo(copy)
+		logs[i] = copy
 	}
 
 	return logs
