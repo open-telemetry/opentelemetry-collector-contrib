@@ -15,6 +15,7 @@
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
@@ -34,8 +35,8 @@ type readerConfig struct {
 type Reader struct {
 	*zap.SugaredLogger `json:"-"` // json tag excludes embedded fields from storage
 	*readerConfig
-	splitter *helper.Splitter
-	encoding helper.Encoding
+	splitFunc bufio.SplitFunc
+	encoding  helper.Encoding
 
 	Fingerprint    *Fingerprint
 	Offset         int64
@@ -61,7 +62,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		return
 	}
 
-	scanner := NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitter.SplitFunc)
+	scanner := NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
 	for {
