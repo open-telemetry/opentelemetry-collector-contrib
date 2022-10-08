@@ -77,7 +77,7 @@ func TestClientSpanWithoutDBurlAttribute(t *testing.T) {
 	attributes[conventions.AttributeNetPeerPort] = pcommon.NewValueStr("3306")
 	span := constructSQLSpan(attributes)
 
-	filtered, sqlData := makeSQL(attributes)
+	filtered, sqlData := makeSQL(span, attributes)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, sqlData)
 
