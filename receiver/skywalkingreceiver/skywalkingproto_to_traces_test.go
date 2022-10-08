@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	agentV3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
@@ -168,7 +169,7 @@ func Test_stringToTraceID(t *testing.T) {
 	tests := []struct {
 		name          string
 		segmentObject args
-		want          [16]byte
+		want          pcommon.TraceID
 	}{
 		{
 			name:          "mock-sw-normal-trace-id-rfc4122v4",
@@ -199,7 +200,7 @@ func Test_stringToTraceID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := swTraceIDToTraceID(tt.segmentObject.traceID)
-			assert.Equal(t, tt.want, got.Bytes())
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -227,7 +228,7 @@ func Test_stringToTraceID_Unique(t *testing.T) {
 		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			got := swTraceIDToTraceID(tt.segmentObject.traceID)
-			results[i] = got.Bytes()
+			results[i] = got
 		})
 	}
 	assert.NotEqual(t, tests[0].segmentObject.traceID, t, tests[1].segmentObject.traceID)
@@ -242,7 +243,7 @@ func Test_segmentIdToSpanId(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want [8]byte
+		want pcommon.SpanID
 	}{
 		{
 			name: "mock-sw-span-id-normal",
@@ -273,7 +274,7 @@ func Test_segmentIdToSpanId(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := segmentIDToSpanID(tt.args.segmentID, tt.args.spanID)
-			assert.Equal(t, tt.want, got.Bytes())
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -301,7 +302,7 @@ func Test_segmentIdToSpanId_Unique(t *testing.T) {
 		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			got := segmentIDToSpanID(tt.args.segmentID, tt.args.spanID)
-			results[i] = got.Bytes()
+			results[i] = got
 		})
 	}
 

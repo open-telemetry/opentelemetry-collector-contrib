@@ -57,30 +57,15 @@ func TestFactory(t *testing.T) {
 	require.Error(t, err)
 	require.Nil(t, r)
 
-	// Fails with bad K8s Config.
-	r, err = f.CreateMetricsReceiver(
-		context.Background(), componenttest.NewNopReceiverCreateSettings(),
-		rCfg, consumertest.NewNop(),
-	)
-	require.Error(t, err)
-	require.Nil(t, r)
-
-	// Override for tests.
-	rCfg.makeClient = func(apiConf k8sconfig.APIConfig) (kubernetes.Interface, error) {
-		return fake.NewSimpleClientset(), nil
-	}
-	r, err = f.CreateMetricsReceiver(
-		context.Background(), componenttest.NewNopReceiverCreateSettings(),
-		rCfg, consumertest.NewNop(),
-	)
-	require.NoError(t, err)
-	require.NotNil(t, r)
+	r = newTestReceiver(t, rCfg)
 
 	// Test metadata exporters setup.
 	ctx := context.Background()
 	require.NoError(t, r.Start(ctx, nopHostWithExporters{}))
 	require.NoError(t, r.Shutdown(ctx))
+
 	rCfg.MetadataExporters = []string{"nop/withoutmetadata"}
+	r = newTestReceiver(t, rCfg)
 	require.Error(t, r.Start(context.Background(), nopHostWithExporters{}))
 }
 
@@ -92,43 +77,33 @@ func TestFactoryDistributions(t *testing.T) {
 	rCfg, ok := cfg.(*Config)
 	require.True(t, ok)
 
-	rCfg.makeClient = func(apiConf k8sconfig.APIConfig) (kubernetes.Interface, error) {
-		return fake.NewSimpleClientset(), nil
-	}
-	rCfg.makeOpenShiftQuotaClient = func(apiConf k8sconfig.APIConfig) (quotaclientset.Interface, error) {
-		return fakeQuota.NewSimpleClientset(), nil
-	}
-
 	// default
-	r, err := f.CreateMetricsReceiver(
-		context.Background(), componenttest.NewNopReceiverCreateSettings(),
-		rCfg, consumertest.NewNop(),
-	)
+	r := newTestReceiver(t, rCfg)
+	err := r.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	require.NotNil(t, r)
-	rr := r.(*kubernetesReceiver)
-	require.Nil(t, rr.resourceWatcher.osQuotaClient)
+	require.Nil(t, r.resourceWatcher.osQuotaClient)
 
 	// openshift
 	rCfg.Distribution = "openshift"
-	r, err = f.CreateMetricsReceiver(
-		context.Background(), componenttest.NewNopReceiverCreateSettings(),
-		rCfg, consumertest.NewNop(),
-	)
+	r = newTestReceiver(t, rCfg)
+	err = r.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	require.NotNil(t, r.resourceWatcher.osQuotaClient)
+}
+
+func newTestReceiver(t *testing.T, cfg *Config) *kubernetesReceiver {
+	r, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, r)
-	rr = r.(*kubernetesReceiver)
-	require.NotNil(t, rr.resourceWatcher.osQuotaClient)
-
-	// bad distribution
-	rCfg.Distribution = "unknown-distro"
-	r, err = f.CreateMetricsReceiver(
-		context.Background(), componenttest.NewNopReceiverCreateSettings(),
-		rCfg, consumertest.NewNop(),
-	)
-	require.Error(t, err)
-	require.Nil(t, r)
-	require.EqualError(t, err, "\"unknown-distro\" is not a supported distribution. Must be one of: \"openshift\", \"kubernetes\"")
+	rcvr, ok := r.(*kubernetesReceiver)
+	require.True(t, ok)
+	rcvr.resourceWatcher.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
+		return fake.NewSimpleClientset(), nil
+	}
+	rcvr.resourceWatcher.makeOpenShiftQuotaClient = func(_ k8sconfig.APIConfig) (quotaclientset.Interface, error) {
+		return fakeQuota.NewSimpleClientset(), nil
+	}
+	return rcvr
 }
 
 // nopHostWithExporters mocks a receiver.ReceiverHost for test purposes.

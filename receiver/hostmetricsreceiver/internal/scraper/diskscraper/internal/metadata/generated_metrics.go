@@ -122,7 +122,7 @@ func (m *metricSystemDiskIo) init() {
 	m.data.SetName("system.disk.io")
 	m.data.SetDescription("Disk bytes transferred.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -135,9 +135,9 @@ func (m *metricSystemDiskIo) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
-	dp.Attributes().InsertString("direction", directionAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -176,7 +176,7 @@ func (m *metricSystemDiskIoRead) init() {
 	m.data.SetName("system.disk.io.read")
 	m.data.SetDescription("Disk bytes read.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -189,8 +189,8 @@ func (m *metricSystemDiskIoRead) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -229,7 +229,7 @@ func (m *metricSystemDiskIoWrite) init() {
 	m.data.SetName("system.disk.io.write")
 	m.data.SetDescription("Disk bytes written.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -242,8 +242,8 @@ func (m *metricSystemDiskIoWrite) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -282,7 +282,7 @@ func (m *metricSystemDiskIoTime) init() {
 	m.data.SetName("system.disk.io_time")
 	m.data.SetDescription("Time disk spent activated. On Windows, this is calculated as the inverse of disk idle time.")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -295,8 +295,8 @@ func (m *metricSystemDiskIoTime) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -335,7 +335,7 @@ func (m *metricSystemDiskMerged) init() {
 	m.data.SetName("system.disk.merged")
 	m.data.SetDescription("The number of disk reads/writes merged into single physical disk access operations.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -348,9 +348,9 @@ func (m *metricSystemDiskMerged) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
-	dp.Attributes().InsertString("direction", directionAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -389,7 +389,7 @@ func (m *metricSystemDiskMergedRead) init() {
 	m.data.SetName("system.disk.merged.read")
 	m.data.SetDescription("The number of disk reads merged into single physical disk access operations.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -402,8 +402,8 @@ func (m *metricSystemDiskMergedRead) recordDataPoint(start pcommon.Timestamp, ts
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -442,7 +442,7 @@ func (m *metricSystemDiskMergedWrite) init() {
 	m.data.SetName("system.disk.merged.write")
 	m.data.SetDescription("The number of disk writes merged into single physical disk access operations.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -455,8 +455,8 @@ func (m *metricSystemDiskMergedWrite) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -495,7 +495,7 @@ func (m *metricSystemDiskOperationTime) init() {
 	m.data.SetName("system.disk.operation_time")
 	m.data.SetDescription("Time spent in disk operations.")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -508,9 +508,9 @@ func (m *metricSystemDiskOperationTime) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
-	dp.Attributes().InsertString("direction", directionAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -549,7 +549,7 @@ func (m *metricSystemDiskOperationTimeRead) init() {
 	m.data.SetName("system.disk.operation_time.read")
 	m.data.SetDescription("Time spent in disk reads.")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -562,8 +562,8 @@ func (m *metricSystemDiskOperationTimeRead) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -602,7 +602,7 @@ func (m *metricSystemDiskOperationTimeWrite) init() {
 	m.data.SetName("system.disk.operation_time.write")
 	m.data.SetDescription("Time spent in disk writes.")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -615,8 +615,8 @@ func (m *metricSystemDiskOperationTimeWrite) recordDataPoint(start pcommon.Times
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -655,7 +655,7 @@ func (m *metricSystemDiskOperations) init() {
 	m.data.SetName("system.disk.operations")
 	m.data.SetDescription("Disk operations count.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -668,9 +668,9 @@ func (m *metricSystemDiskOperations) recordDataPoint(start pcommon.Timestamp, ts
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
-	dp.Attributes().InsertString("direction", directionAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -709,7 +709,7 @@ func (m *metricSystemDiskOperationsRead) init() {
 	m.data.SetName("system.disk.operations.read")
 	m.data.SetDescription("Disk reads count.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -722,8 +722,8 @@ func (m *metricSystemDiskOperationsRead) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -762,7 +762,7 @@ func (m *metricSystemDiskOperationsWrite) init() {
 	m.data.SetName("system.disk.operations.write")
 	m.data.SetDescription("Disk writes count.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -775,8 +775,8 @@ func (m *metricSystemDiskOperationsWrite) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -815,7 +815,7 @@ func (m *metricSystemDiskPendingOperations) init() {
 	m.data.SetName("system.disk.pending_operations")
 	m.data.SetDescription("The queue size of pending I/O operations.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -828,8 +828,8 @@ func (m *metricSystemDiskPendingOperations) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -868,7 +868,7 @@ func (m *metricSystemDiskWeightedIoTime) init() {
 	m.data.SetName("system.disk.weighted_io_time")
 	m.data.SetDescription("Time disk spent activated multiplied by the queue length.")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -881,8 +881,8 @@ func (m *metricSystemDiskWeightedIoTime) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -992,10 +992,10 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {

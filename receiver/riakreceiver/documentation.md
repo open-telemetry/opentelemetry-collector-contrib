@@ -28,7 +28,7 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| riak.node.name | The name this node uses to identify itself. | String |
+| riak.node.name | The name this node uses to identify itself. | Str |
 
 ## Metric attributes
 

@@ -50,9 +50,9 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 	return &SysLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
+			Operators:        []operator.Config{},
 		},
-		Config: *syslog.NewConfig(),
+		InputConfig: *syslog.NewConfig(),
 	}
 }
 
@@ -63,14 +63,13 @@ func (f ReceiverType) BaseConfig(cfg config.Receiver) adapter.BaseConfig {
 
 // SysLogConfig defines configuration for the syslog receiver
 type SysLogConfig struct {
-	syslog.Config      `mapstructure:",squash"`
+	InputConfig        syslog.Config `mapstructure:",squash"`
 	adapter.BaseConfig `mapstructure:",squash"`
 }
 
-// DecodeInputConfig unmarshals the input operator
-func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
-	logConfig := cfg.(*SysLogConfig)
-	return &operator.Config{Builder: &logConfig.Config}, nil
+// InputConfig unmarshals the input operator
+func (f ReceiverType) InputConfig(cfg config.Receiver) operator.Config {
+	return operator.NewConfig(&cfg.(*SysLogConfig).InputConfig)
 }
 
 func (cfg *SysLogConfig) Unmarshal(componentParser *confmap.Conf) error {
@@ -80,9 +79,9 @@ func (cfg *SysLogConfig) Unmarshal(componentParser *confmap.Conf) error {
 	}
 
 	if componentParser.IsSet("tcp") {
-		cfg.TCP = &tcp.NewConfig().BaseConfig
+		cfg.InputConfig.TCP = &tcp.NewConfig().BaseConfig
 	} else if componentParser.IsSet("udp") {
-		cfg.UDP = &udp.NewConfig().BaseConfig
+		cfg.InputConfig.UDP = &udp.NewConfig().BaseConfig
 	}
 
 	return componentParser.UnmarshalExact(cfg)

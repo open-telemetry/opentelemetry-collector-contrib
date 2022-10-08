@@ -193,7 +193,7 @@ func (m *metricRedisClientsBlocked) init() {
 	m.data.SetName("redis.clients.blocked")
 	m.data.SetDescription("Number of clients pending on a blocking call")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -205,7 +205,7 @@ func (m *metricRedisClientsBlocked) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -244,7 +244,7 @@ func (m *metricRedisClientsConnected) init() {
 	m.data.SetName("redis.clients.connected")
 	m.data.SetDescription("Number of client connections (excluding connections from replicas)")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -256,7 +256,7 @@ func (m *metricRedisClientsConnected) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -295,7 +295,7 @@ func (m *metricRedisClientsMaxInputBuffer) init() {
 	m.data.SetName("redis.clients.max_input_buffer")
 	m.data.SetDescription("Biggest input buffer among current client connections")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricRedisClientsMaxInputBuffer) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -305,7 +305,7 @@ func (m *metricRedisClientsMaxInputBuffer) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -344,7 +344,7 @@ func (m *metricRedisClientsMaxOutputBuffer) init() {
 	m.data.SetName("redis.clients.max_output_buffer")
 	m.data.SetDescription("Longest output list among current client connections")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricRedisClientsMaxOutputBuffer) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -354,7 +354,7 @@ func (m *metricRedisClientsMaxOutputBuffer) recordDataPoint(start pcommon.Timest
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -393,7 +393,7 @@ func (m *metricRedisCmdCalls) init() {
 	m.data.SetName("redis.cmd.calls")
 	m.data.SetDescription("Total number of calls for a command")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -406,8 +406,8 @@ func (m *metricRedisCmdCalls) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("cmd", cmdAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("cmd", cmdAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -446,7 +446,7 @@ func (m *metricRedisCmdUsec) init() {
 	m.data.SetName("redis.cmd.usec")
 	m.data.SetDescription("Total time for all executions of this command")
 	m.data.SetUnit("us")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -459,8 +459,8 @@ func (m *metricRedisCmdUsec) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("cmd", cmdAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("cmd", cmdAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -499,7 +499,7 @@ func (m *metricRedisCommands) init() {
 	m.data.SetName("redis.commands")
 	m.data.SetDescription("Number of commands processed per second")
 	m.data.SetUnit("{ops}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricRedisCommands) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -509,7 +509,7 @@ func (m *metricRedisCommands) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -548,7 +548,7 @@ func (m *metricRedisCommandsProcessed) init() {
 	m.data.SetName("redis.commands.processed")
 	m.data.SetDescription("Total number of commands processed by the server")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -560,7 +560,7 @@ func (m *metricRedisCommandsProcessed) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -599,7 +599,7 @@ func (m *metricRedisConnectionsReceived) init() {
 	m.data.SetName("redis.connections.received")
 	m.data.SetDescription("Total number of connections accepted by the server")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -611,7 +611,7 @@ func (m *metricRedisConnectionsReceived) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -650,7 +650,7 @@ func (m *metricRedisConnectionsRejected) init() {
 	m.data.SetName("redis.connections.rejected")
 	m.data.SetDescription("Number of connections rejected because of maxclients limit")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -662,7 +662,7 @@ func (m *metricRedisConnectionsRejected) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -701,7 +701,7 @@ func (m *metricRedisCPUTime) init() {
 	m.data.SetName("redis.cpu.time")
 	m.data.SetDescription("System CPU consumed by the Redis server in seconds since server start")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -714,8 +714,8 @@ func (m *metricRedisCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("state", stateAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("state", stateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -754,7 +754,7 @@ func (m *metricRedisDbAvgTTL) init() {
 	m.data.SetName("redis.db.avg_ttl")
 	m.data.SetDescription("Average keyspace keys TTL")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -765,8 +765,8 @@ func (m *metricRedisDbAvgTTL) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("db", dbAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("db", dbAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -805,7 +805,7 @@ func (m *metricRedisDbExpires) init() {
 	m.data.SetName("redis.db.expires")
 	m.data.SetDescription("Number of keyspace keys with an expiration")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -816,8 +816,8 @@ func (m *metricRedisDbExpires) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("db", dbAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("db", dbAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -856,7 +856,7 @@ func (m *metricRedisDbKeys) init() {
 	m.data.SetName("redis.db.keys")
 	m.data.SetDescription("Number of keyspace keys")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -867,8 +867,8 @@ func (m *metricRedisDbKeys) recordDataPoint(start pcommon.Timestamp, ts pcommon.
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("db", dbAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("db", dbAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -907,7 +907,7 @@ func (m *metricRedisKeysEvicted) init() {
 	m.data.SetName("redis.keys.evicted")
 	m.data.SetDescription("Number of evicted keys due to maxmemory limit")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -919,7 +919,7 @@ func (m *metricRedisKeysEvicted) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -958,7 +958,7 @@ func (m *metricRedisKeysExpired) init() {
 	m.data.SetName("redis.keys.expired")
 	m.data.SetDescription("Total number of key expiration events")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -970,7 +970,7 @@ func (m *metricRedisKeysExpired) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1009,7 +1009,7 @@ func (m *metricRedisKeyspaceHits) init() {
 	m.data.SetName("redis.keyspace.hits")
 	m.data.SetDescription("Number of successful lookup of keys in the main dictionary")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1021,7 +1021,7 @@ func (m *metricRedisKeyspaceHits) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1060,7 +1060,7 @@ func (m *metricRedisKeyspaceMisses) init() {
 	m.data.SetName("redis.keyspace.misses")
 	m.data.SetDescription("Number of failed lookup of keys in the main dictionary")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1072,7 +1072,7 @@ func (m *metricRedisKeyspaceMisses) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1111,7 +1111,7 @@ func (m *metricRedisLatestFork) init() {
 	m.data.SetName("redis.latest_fork")
 	m.data.SetDescription("Duration of the latest fork operation in microseconds")
 	m.data.SetUnit("us")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricRedisLatestFork) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1121,7 +1121,7 @@ func (m *metricRedisLatestFork) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1160,7 +1160,7 @@ func (m *metricRedisMaxmemory) init() {
 	m.data.SetName("redis.maxmemory")
 	m.data.SetDescription("The value of the maxmemory configuration directive")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricRedisMaxmemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1170,7 +1170,7 @@ func (m *metricRedisMaxmemory) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1209,7 +1209,7 @@ func (m *metricRedisMemoryFragmentationRatio) init() {
 	m.data.SetName("redis.memory.fragmentation_ratio")
 	m.data.SetDescription("Ratio between used_memory_rss and used_memory")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricRedisMemoryFragmentationRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -1219,7 +1219,7 @@ func (m *metricRedisMemoryFragmentationRatio) recordDataPoint(start pcommon.Time
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1258,7 +1258,7 @@ func (m *metricRedisMemoryLua) init() {
 	m.data.SetName("redis.memory.lua")
 	m.data.SetDescription("Number of bytes used by the Lua engine")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricRedisMemoryLua) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1268,7 +1268,7 @@ func (m *metricRedisMemoryLua) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1307,7 +1307,7 @@ func (m *metricRedisMemoryPeak) init() {
 	m.data.SetName("redis.memory.peak")
 	m.data.SetDescription("Peak memory consumed by Redis (in bytes)")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricRedisMemoryPeak) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1317,7 +1317,7 @@ func (m *metricRedisMemoryPeak) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1356,7 +1356,7 @@ func (m *metricRedisMemoryRss) init() {
 	m.data.SetName("redis.memory.rss")
 	m.data.SetDescription("Number of bytes that Redis allocated as seen by the operating system")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricRedisMemoryRss) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1366,7 +1366,7 @@ func (m *metricRedisMemoryRss) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1405,7 +1405,7 @@ func (m *metricRedisMemoryUsed) init() {
 	m.data.SetName("redis.memory.used")
 	m.data.SetDescription("Total number of bytes allocated by Redis using its allocator")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricRedisMemoryUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1415,7 +1415,7 @@ func (m *metricRedisMemoryUsed) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1454,7 +1454,7 @@ func (m *metricRedisNetInput) init() {
 	m.data.SetName("redis.net.input")
 	m.data.SetDescription("The total number of bytes read from the network")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1466,7 +1466,7 @@ func (m *metricRedisNetInput) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1505,7 +1505,7 @@ func (m *metricRedisNetOutput) init() {
 	m.data.SetName("redis.net.output")
 	m.data.SetDescription("The total number of bytes written to the network")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1517,7 +1517,7 @@ func (m *metricRedisNetOutput) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1556,7 +1556,7 @@ func (m *metricRedisRdbChangesSinceLastSave) init() {
 	m.data.SetName("redis.rdb.changes_since_last_save")
 	m.data.SetDescription("Number of changes since the last dump")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1568,7 +1568,7 @@ func (m *metricRedisRdbChangesSinceLastSave) recordDataPoint(start pcommon.Times
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1607,7 +1607,7 @@ func (m *metricRedisReplicationBacklogFirstByteOffset) init() {
 	m.data.SetName("redis.replication.backlog_first_byte_offset")
 	m.data.SetDescription("The master offset of the replication backlog buffer")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricRedisReplicationBacklogFirstByteOffset) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1617,7 +1617,7 @@ func (m *metricRedisReplicationBacklogFirstByteOffset) recordDataPoint(start pco
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1656,7 +1656,7 @@ func (m *metricRedisReplicationOffset) init() {
 	m.data.SetName("redis.replication.offset")
 	m.data.SetDescription("The server's current replication offset")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricRedisReplicationOffset) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1666,7 +1666,7 @@ func (m *metricRedisReplicationOffset) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1705,7 +1705,7 @@ func (m *metricRedisRole) init() {
 	m.data.SetName("redis.role")
 	m.data.SetDescription("Redis node's role")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1718,8 +1718,8 @@ func (m *metricRedisRole) recordDataPoint(start pcommon.Timestamp, ts pcommon.Ti
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("role", roleAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("role", roleAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1758,7 +1758,7 @@ func (m *metricRedisSlavesConnected) init() {
 	m.data.SetName("redis.slaves.connected")
 	m.data.SetDescription("Number of connected replicas")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1770,7 +1770,7 @@ func (m *metricRedisSlavesConnected) recordDataPoint(start pcommon.Timestamp, ts
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1809,7 +1809,7 @@ func (m *metricRedisUptime) init() {
 	m.data.SetName("redis.uptime")
 	m.data.SetDescription("Number of seconds since Redis server start")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1821,7 +1821,7 @@ func (m *metricRedisUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon.
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1963,7 +1963,7 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithRedisVersion sets provided value as "redis.version" attribute for current resource.
 func WithRedisVersion(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("redis.version", val)
+		rm.Resource().Attributes().PutStr("redis.version", val)
 	}
 }
 
@@ -1974,10 +1974,10 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {

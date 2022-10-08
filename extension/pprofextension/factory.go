@@ -32,7 +32,7 @@ const (
 
 // NewFactory creates a factory for pprof extension.
 func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactoryWithStabilityLevel(
+	return component.NewExtensionFactory(
 		typeStr,
 		createDefaultConfig,
 		createExtension,

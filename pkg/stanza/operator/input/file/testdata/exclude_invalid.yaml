@@ -1,4 +1,0 @@
-type: file_input
-include:
-  - "*.log"
-exclude: "aRandomString"

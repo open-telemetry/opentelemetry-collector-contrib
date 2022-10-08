@@ -20,49 +20,65 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 3)
-
-	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
-	assert.Equal(t, r1,
-		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "customname")),
-			Protocols: Protocols{
-				HTTP: &confighttp.HTTPServerSettings{
-					Endpoint: "0.0.0.0:12801",
-				},
-			},
-		})
-
-	rDefaults := cfg.Receivers[config.NewComponentIDWithName(typeStr, "defaults")].(*Config)
-	assert.Equal(t, rDefaults,
-		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "defaults")),
-			Protocols: Protocols{
-				GRPC: &configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
-						Endpoint:  defaultGRPCBindEndpoint,
-						Transport: "tcp",
+	tests := []struct {
+		id       config.ComponentID
+		expected config.Receiver
+	}{
+		{
+			id:       config.NewComponentIDWithName(typeStr, ""),
+			expected: createDefaultConfig(),
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "customname"),
+			expected: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				Protocols: Protocols{
+					HTTP: &confighttp.HTTPServerSettings{
+						Endpoint: "0.0.0.0:12801",
 					},
 				},
 			},
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "defaults"),
+			expected: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				Protocols: Protocols{
+					GRPC: &configgrpc.GRPCServerSettings{
+						NetAddr: confignet.NetAddr{
+							Endpoint:  defaultGRPCBindEndpoint,
+							Transport: "tcp",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
+	}
 }

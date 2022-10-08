@@ -34,7 +34,7 @@ func NewEncodingConfig() EncodingConfig {
 
 // EncodingConfig is the configuration of a Encoding helper
 type EncodingConfig struct {
-	Encoding string `mapstructure:"encoding,omitempty"              json:"encoding,omitempty"             yaml:"encoding,omitempty"`
+	Encoding string `mapstructure:"encoding,omitempty"`
 }
 
 // Build will build an Encoding operator.

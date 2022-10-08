@@ -164,7 +164,7 @@ metrics:
   vcenter.host.disk.throughput:
     enabled: true
     description: Average number of kilobytes read from or written to the disk each second.
-    unit: "{KBy/s}"
+    unit: "{KiBy/s}"
     sum:
       monotonic: false
       value_type: int
@@ -175,7 +175,7 @@ metrics:
   vcenter.host.disk.throughput.read:
     enabled: true
     description: Average number of kilobytes read from the disk each second.
-    unit: "{KBy/s}"
+    unit: "{KiBy/s}"
     sum:
       monotonic: false
       value_type: int
@@ -185,7 +185,7 @@ metrics:
   vcenter.host.disk.throughput.write:
     enabled: true
     description: Average number of kilobytes written to the disk each second.
-    unit: "{KBy/s}"
+    unit: "{KiBy/s}"
     sum:
       monotonic: false
       value_type: int
@@ -234,7 +234,7 @@ metrics:
   vcenter.host.memory.usage:
     enabled: true
     description: The amount of memory the host system is using.
-    unit: MBy
+    unit: MiBy
     sum:
       monotonic: false
       value_type: int
@@ -244,7 +244,7 @@ metrics:
   vcenter.host.network.throughput:
     enabled: true
     description: The amount of data that was transmitted or received over the network by the host.
-    unit: "{KBy/s}"
+    unit: "{KiBy/s}"
     sum:
       monotonic: false
       value_type: int
@@ -255,7 +255,7 @@ metrics:
   vcenter.host.network.throughput.receive:
     enabled: true
     description: The amount of data that was received over the network by the host.
-    unit: "{KBy/s}"
+    unit: "{KiBy/s}"
     sum:
       monotonic: false
       value_type: int
@@ -265,7 +265,7 @@ metrics:
   vcenter.host.network.throughput.transmit:
     enabled: true
     description: The amount of data that was transmitted over the network by the host.
-    unit: "{KBy/s}"
+    unit: "{KiBy/s}"
     sum:
       monotonic: false
       value_type: int
@@ -274,7 +274,7 @@ metrics:
   vcenter.host.network.usage:
     enabled: true
     description: The sum of the data transmitted and received for all the NIC instances of the host.
-    unit: "{KBy/s}"
+    unit: "{KiBy/s}"
     sum:
       monotonic: false
       value_type: int
@@ -342,7 +342,7 @@ metrics:
   vcenter.resource_pool.memory.usage:
     enabled: true
     description: The usage of the memory by the resource pool.
-    unit: MBy
+    unit: MiBy
     sum:
       monotonic: false
       value_type: int
@@ -387,7 +387,7 @@ metrics:
   vcenter.vm.memory.usage:
     enabled: true
     description: The amount of memory that is used by the virtual machine.
-    unit: MBy
+    unit: MiBy
     sum:
       monotonic: false
       value_type: int
@@ -514,7 +514,7 @@ metrics:
   vcenter.vm.network.usage:
     enabled: true
     description: The network utilization combined transmit and receive rates during an interval.
-    unit: "{KBy/s}"
+    unit: "{KiBy/s}"
     sum:
       monotonic: false
       value_type: int

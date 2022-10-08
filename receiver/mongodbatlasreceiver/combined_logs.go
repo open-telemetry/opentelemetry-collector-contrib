@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,29 +17,29 @@ package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 
-	"github.com/hashicorp/go-multierror"
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/multierr"
 )
 
-// combindedLogsReceiver wraps alerts and log receivers in a single log receiver to be consumed by the factory
-type combindedLogsReceiver struct {
+// combinedLogsReceiver wraps alerts and log receivers in a single log receiver to be consumed by the factory
+type combinedLogsReceiver struct {
 	alerts *alertsReceiver
 	logs   *logsReceiver
 }
 
 // Starts up the combined MongoDB Atlas Logs and Alert Receiver
-func (c *combindedLogsReceiver) Start(ctx context.Context, host component.Host) error {
+func (c *combinedLogsReceiver) Start(ctx context.Context, host component.Host) error {
 	var errs error
 
 	if c.alerts != nil {
 		if err := c.alerts.Start(ctx, host); err != nil {
-			errs = multierror.Append(errs, err)
+			errs = multierr.Append(errs, err)
 		}
 	}
 
 	if c.logs != nil {
 		if err := c.logs.Start(ctx, host); err != nil {
-			errs = multierror.Append(errs, err)
+			errs = multierr.Append(errs, err)
 		}
 	}
 
@@ -47,18 +47,18 @@ func (c *combindedLogsReceiver) Start(ctx context.Context, host component.Host) 
 }
 
 // Shutsdown the combined MongoDB Atlas Logs and Alert Receiver
-func (c *combindedLogsReceiver) Shutdown(ctx context.Context) error {
+func (c *combinedLogsReceiver) Shutdown(ctx context.Context) error {
 	var errs error
 
 	if c.alerts != nil {
 		if err := c.alerts.Shutdown(ctx); err != nil {
-			errs = multierror.Append(errs, err)
+			errs = multierr.Append(errs, err)
 		}
 	}
 
 	if c.logs != nil {
 		if err := c.logs.Shutdown(ctx); err != nil {
-			errs = multierror.Append(errs, err)
+			errs = multierr.Append(errs, err)
 		}
 	}
 

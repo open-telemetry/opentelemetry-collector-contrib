@@ -35,7 +35,7 @@ func parseSecurity(message string) (string, map[string]interface{}) {
 		return message, nil
 	}
 
-	moreInfo := []string{}
+	var moreInfo []string
 
 	for mp.hasNext() {
 		l = mp.next()
@@ -89,7 +89,7 @@ func (mp *messageProcessor) consumeSubsection(depth int) map[string]interface{} 
 }
 
 func (mp *messageProcessor) consumeSublist(depth int) []string {
-	sublist := []string{}
+	var sublist []string
 	for mp.hasNext() {
 		if !mp.hasNextIndented(depth) {
 			return sublist

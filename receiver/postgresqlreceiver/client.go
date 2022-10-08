@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -103,7 +103,9 @@ func sslConnectionString(tls configtls.TLSClientSetting) string {
 }
 
 func newPostgreSQLClient(conf postgreSQLConfig) (*postgreSQLClient, error) {
-	dbField := ""
+	// postgres will assume the supplied user as the database name if none is provided,
+	// so we must specify a databse name even when we are just collecting the list of databases.
+	dbField := "dbname=postgres"
 	if conf.database != "" {
 		dbField = fmt.Sprintf("dbname=%s ", conf.database)
 	}
@@ -118,7 +120,7 @@ func newPostgreSQLClient(conf postgreSQLConfig) (*postgreSQLClient, error) {
 		host = fmt.Sprintf("/%s", host)
 	}
 
-	connStr := fmt.Sprintf("port=%s host=%s user=%s password=%s %s%s", port, host, conf.username, conf.password, dbField, sslConnectionString(conf.tls))
+	connStr := fmt.Sprintf("port=%s host=%s user=%s password=%s %s %s", port, host, conf.username, conf.password, dbField, sslConnectionString(conf.tls))
 
 	conn, err := pq.NewConnector(connStr)
 	if err != nil {
@@ -466,7 +468,7 @@ func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicati
 		return nil, fmt.Errorf("unable to query pg_stat_replication: %w", err)
 	}
 	defer rows.Close()
-	rs := []replicationStats{}
+	var rs []replicationStats
 	var errors error
 	for rows.Next() {
 		var client string
@@ -518,7 +520,7 @@ func (c *postgreSQLClient) listDatabases(ctx context.Context) ([]string, error) 
 	}
 	defer rows.Close()
 
-	databases := []string{}
+	var databases []string
 	for rows.Next() {
 		var database string
 		if err := rows.Scan(&database); err != nil {
@@ -532,7 +534,7 @@ func (c *postgreSQLClient) listDatabases(ctx context.Context) ([]string, error) 
 
 func filterQueryByDatabases(baseQuery string, databases []string, groupBy bool) string {
 	if len(databases) > 0 {
-		queryDatabases := []string{}
+		var queryDatabases []string
 		for _, db := range databases {
 			queryDatabases = append(queryDatabases, fmt.Sprintf("'%s'", db))
 		}

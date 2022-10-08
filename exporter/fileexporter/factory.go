@@ -16,10 +16,13 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"io"
+	"os"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 )
@@ -29,6 +32,16 @@ const (
 	typeStr = "file"
 	// The stability level of the exporter.
 	stability = component.StabilityLevelAlpha
+
+	// the number of old log files to retain
+	defaultMaxBackups = 100
+
+	// the format of encoded telemetry data
+	formatTypeJSON  = "json"
+	formatTypeProto = "proto"
+
+	// the type of compression codec
+	compressionZSTD = "zstd"
 )
 
 // NewFactory creates a factory for OTLP exporter.
@@ -44,6 +57,7 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		FormatType:       formatTypeJSON,
 	}
 }
 
@@ -52,10 +66,23 @@ func createTracesExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
+	conf := cfg.(*Config)
+	writer, err := buildFileWriter(conf)
+	if err != nil {
+		return nil, err
+	}
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{path: cfg.(*Config).Path}
+		return &fileExporter{
+			path:            conf.Path,
+			formatType:      conf.FormatType,
+			file:            writer,
+			tracesMarshaler: tracesMarshalers[conf.FormatType],
+			exporter:        buildExportFunc(conf),
+			compression:     conf.Compression,
+			compressor:      buildCompressor(conf.Compression),
+		}
 	})
-	return exporterhelper.NewTracesExporterWithContext(
+	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
 		cfg,
@@ -70,10 +97,23 @@ func createMetricsExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
+	conf := cfg.(*Config)
+	writer, err := buildFileWriter(conf)
+	if err != nil {
+		return nil, err
+	}
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{path: cfg.(*Config).Path}
+		return &fileExporter{
+			path:             conf.Path,
+			formatType:       conf.FormatType,
+			file:             writer,
+			metricsMarshaler: metricsMarshalers[conf.FormatType],
+			exporter:         buildExportFunc(conf),
+			compression:      conf.Compression,
+			compressor:       buildCompressor(conf.Compression),
+		}
 	})
-	return exporterhelper.NewMetricsExporterWithContext(
+	return exporterhelper.NewMetricsExporter(
 		ctx,
 		set,
 		cfg,
@@ -88,10 +128,23 @@ func createLogsExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
+	conf := cfg.(*Config)
+	writer, err := buildFileWriter(conf)
+	if err != nil {
+		return nil, err
+	}
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{path: cfg.(*Config).Path}
+		return &fileExporter{
+			path:          conf.Path,
+			formatType:    conf.FormatType,
+			file:          writer,
+			logsMarshaler: logsMarshalers[conf.FormatType],
+			exporter:      buildExportFunc(conf),
+			compression:   conf.Compression,
+			compressor:    buildCompressor(conf.Compression),
+		}
 	})
-	return exporterhelper.NewLogsExporterWithContext(
+	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
 		cfg,
@@ -99,6 +152,19 @@ func createLogsExporter(
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
 	)
+}
+
+func buildFileWriter(cfg *Config) (io.WriteCloser, error) {
+	if cfg.Rotation == nil {
+		return os.OpenFile(cfg.Path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	}
+	return &lumberjack.Logger{
+		Filename:   cfg.Path,
+		MaxSize:    cfg.Rotation.MaxMegabytes,
+		MaxAge:     cfg.Rotation.MaxDays,
+		MaxBackups: cfg.Rotation.MaxBackups,
+		LocalTime:  cfg.Rotation.LocalTime,
+	}, nil
 }
 
 // This is the map of already created File exporters for particular configurations.

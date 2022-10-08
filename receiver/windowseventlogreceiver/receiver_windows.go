@@ -50,10 +50,10 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 	return &WindowsLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
+			Operators:        []operator.Config{},
 			Converter:        adapter.ConverterConfig{},
 		},
-		Config: *windows.NewConfig(),
+		InputConfig: *windows.NewConfig(),
 	}
 }
 
@@ -62,14 +62,13 @@ func (f ReceiverType) BaseConfig(cfg config.Receiver) adapter.BaseConfig {
 	return cfg.(*WindowsLogConfig).BaseConfig
 }
 
-// DecodeInputConfig unmarshals the input operator
-func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
-	logConfig := cfg.(*WindowsLogConfig)
-	return &operator.Config{Builder: &logConfig.Config}, nil
+// InputConfig unmarshals the input operator
+func (f ReceiverType) InputConfig(cfg config.Receiver) operator.Config {
+	return operator.NewConfig(&cfg.(*WindowsLogConfig).InputConfig)
 }
 
 // WindowsLogConfig defines configuration for the windowseventlog receiver
 type WindowsLogConfig struct {
-	windows.Config     `mapstructure:",squash"`
+	InputConfig        windows.Config `mapstructure:",squash"`
 	adapter.BaseConfig `mapstructure:",squash"`
 }

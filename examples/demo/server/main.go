@@ -160,7 +160,7 @@ func main() {
 		span := trace.SpanFromContext(ctx)
 		bag := baggage.FromContext(ctx)
 
-		baggageAttributes := []attribute.KeyValue{}
+		var baggageAttributes []attribute.KeyValue
 		baggageAttributes = append(baggageAttributes, serverAttribute)
 		for _, member := range bag.Members() {
 			baggageAttributes = append(baggageAttributes, attribute.String("baggage key:"+member.Key(), member.Value()))
@@ -173,12 +173,14 @@ func main() {
 		}
 
 	})
-	wrappedHandler := otelhttp.NewHandler(handler, "/hello")
 
-	// serve up the wrapped handler
-	http.Handle("/hello", wrappedHandler)
-	if err := http.ListenAndServe(":7080", nil); err != nil {
+	mux := http.NewServeMux()
+	mux.Handle("/hello", otelhttp.NewHandler(handler, "/hello"))
+	server := &http.Server{
+		Addr:    ":7080",
+		Handler: mux,
+	}
+	if err := server.ListenAndServe(); err != http.ErrServerClosed {
 		handleErr(err, "server failed to serve")
 	}
-
 }

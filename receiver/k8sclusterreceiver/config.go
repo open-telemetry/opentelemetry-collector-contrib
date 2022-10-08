@@ -15,11 +15,10 @@
 package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 
 import (
+	"fmt"
 	"time"
 
-	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
 	"go.opentelemetry.io/collector/config"
-	k8s "k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -43,26 +42,14 @@ type Config struct {
 
 	// Whether OpenShift supprot should be enabled or not.
 	Distribution string `mapstructure:"distribution"`
-
-	// For mocking.
-	makeClient               func(apiConf k8sconfig.APIConfig) (k8s.Interface, error)
-	makeOpenShiftQuotaClient func(apiConf k8sconfig.APIConfig) (quotaclientset.Interface, error)
 }
 
 func (cfg *Config) Validate() error {
+	switch cfg.Distribution {
+	case distributionOpenShift:
+	case distributionKubernetes:
+	default:
+		return fmt.Errorf("\"%s\" is not a supported distribution. Must be one of: \"openshift\", \"kubernetes\"", cfg.Distribution)
+	}
 	return cfg.APIConfig.Validate()
-}
-
-func (cfg *Config) getK8sClient() (k8s.Interface, error) {
-	if cfg.makeClient == nil {
-		cfg.makeClient = k8sconfig.MakeClient
-	}
-	return cfg.makeClient(cfg.APIConfig)
-}
-
-func (cfg *Config) getOpenShiftQuotaClient() (quotaclientset.Interface, error) {
-	if cfg.makeOpenShiftQuotaClient == nil {
-		cfg.makeOpenShiftQuotaClient = k8sconfig.MakeOpenShiftQuotaClient
-	}
-	return cfg.makeOpenShiftQuotaClient(cfg.APIConfig)
 }

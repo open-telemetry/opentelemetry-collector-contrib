@@ -18,8 +18,8 @@ import (
 	"strings"
 	"unicode"
 
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/service/featuregate"
 )
 
 // The map to translate OTLP units to Prometheus units
@@ -110,7 +110,7 @@ func BuildPromCompliantName(metric pmetric.Metric, namespace string) string {
 	}
 
 	// Simple case (no full normalization, no units, etc.), we simply trim out forbidden chars
-	metricName = CleanUpString(metric.Name())
+	metricName = RemovePromForbiddenRunes(metric.Name())
 
 	// Namespace?
 	if namespace != "" {
@@ -163,7 +163,7 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 	}
 
 	// Append _total for Counters
-	if metric.DataType() == pmetric.MetricDataTypeSum && metric.Sum().IsMonotonic() {
+	if metric.Type() == pmetric.MetricTypeSum && metric.Sum().IsMonotonic() {
 		nameTokens = append(removeItem(nameTokens, "total"), "total")
 	}
 
@@ -172,7 +172,7 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aissue+some+metric+units+don%27t+follow+otel+semantic+conventions
 	// Until these issues have been fixed, we're appending `_ratio` for gauges ONLY
 	// Theoretically, counters could be ratios as well, but it's absurd (for mathematical reasons)
-	if metric.Unit() == "1" && metric.DataType() == pmetric.MetricDataTypeGauge {
+	if metric.Unit() == "1" && metric.Type() == pmetric.MetricTypeGauge {
 		nameTokens = append(removeItem(nameTokens, "ratio"), "ratio")
 	}
 
@@ -195,6 +195,10 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 // Clean up specified string so it's Prometheus compliant
 func CleanUpString(s string) string {
 	return strings.Join(strings.FieldsFunc(s, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) }), "_")
+}
+
+func RemovePromForbiddenRunes(s string) string {
+	return strings.Join(strings.FieldsFunc(s, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' && r != ':' }), "_")
 }
 
 // Retrieve the Prometheus "basic" unit corresponding to the specified "basic" unit

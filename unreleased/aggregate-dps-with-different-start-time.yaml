@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: processor/metricstransform
-note: Aggregate cumulative data points with different start time.
-issues: [12611]
-

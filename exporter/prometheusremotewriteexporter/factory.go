@@ -61,7 +61,7 @@ func createMetricsExporter(ctx context.Context, set component.ExporterCreateSett
 	// order for each timeseries. If we shard the incoming metrics
 	// without considering this limitation, we experience
 	// "out of order samples" errors.
-	exporter, err := exporterhelper.NewMetricsExporterWithContext(
+	exporter, err := exporterhelper.NewMetricsExporter(
 		ctx,
 		set,
 		cfg,

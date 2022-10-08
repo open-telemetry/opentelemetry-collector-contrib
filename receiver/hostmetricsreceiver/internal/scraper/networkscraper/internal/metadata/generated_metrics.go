@@ -144,7 +144,7 @@ func (m *metricSystemNetworkConnections) init() {
 	m.data.SetName("system.network.connections")
 	m.data.SetDescription("The number of connections.")
 	m.data.SetUnit("{connections}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -157,9 +157,9 @@ func (m *metricSystemNetworkConnections) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("protocol", protocolAttributeValue)
-	dp.Attributes().InsertString("state", stateAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("protocol", protocolAttributeValue)
+	dp.Attributes().PutStr("state", stateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -198,7 +198,7 @@ func (m *metricSystemNetworkConntrackCount) init() {
 	m.data.SetName("system.network.conntrack.count")
 	m.data.SetDescription("The count of entries in conntrack table.")
 	m.data.SetUnit("{entries}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -210,7 +210,7 @@ func (m *metricSystemNetworkConntrackCount) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -249,7 +249,7 @@ func (m *metricSystemNetworkConntrackMax) init() {
 	m.data.SetName("system.network.conntrack.max")
 	m.data.SetDescription("The limit for entries in the conntrack table.")
 	m.data.SetUnit("{entries}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -261,7 +261,7 @@ func (m *metricSystemNetworkConntrackMax) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -300,7 +300,7 @@ func (m *metricSystemNetworkDropped) init() {
 	m.data.SetName("system.network.dropped")
 	m.data.SetDescription("The number of packets dropped. (Deprecated)")
 	m.data.SetUnit("{packets}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -313,9 +313,9 @@ func (m *metricSystemNetworkDropped) recordDataPoint(start pcommon.Timestamp, ts
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
-	dp.Attributes().InsertString("direction", directionAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -354,7 +354,7 @@ func (m *metricSystemNetworkDroppedReceive) init() {
 	m.data.SetName("system.network.dropped.receive")
 	m.data.SetDescription("The number of packets dropped on receive.")
 	m.data.SetUnit("{packets}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -367,8 +367,8 @@ func (m *metricSystemNetworkDroppedReceive) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -407,7 +407,7 @@ func (m *metricSystemNetworkDroppedTransmit) init() {
 	m.data.SetName("system.network.dropped.transmit")
 	m.data.SetDescription("The number of packets dropped on transmit.")
 	m.data.SetUnit("{packets}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -420,8 +420,8 @@ func (m *metricSystemNetworkDroppedTransmit) recordDataPoint(start pcommon.Times
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -460,7 +460,7 @@ func (m *metricSystemNetworkErrors) init() {
 	m.data.SetName("system.network.errors")
 	m.data.SetDescription("The number of errors encountered. (Deprecated)")
 	m.data.SetUnit("{errors}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -473,9 +473,9 @@ func (m *metricSystemNetworkErrors) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
-	dp.Attributes().InsertString("direction", directionAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -514,7 +514,7 @@ func (m *metricSystemNetworkErrorsReceive) init() {
 	m.data.SetName("system.network.errors.receive")
 	m.data.SetDescription("The number of errors encountered on receive.")
 	m.data.SetUnit("{errors}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -527,8 +527,8 @@ func (m *metricSystemNetworkErrorsReceive) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -567,7 +567,7 @@ func (m *metricSystemNetworkErrorsTransmit) init() {
 	m.data.SetName("system.network.errors.transmit")
 	m.data.SetDescription("The number of errors encountered on transmit.")
 	m.data.SetUnit("{errors}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -580,8 +580,8 @@ func (m *metricSystemNetworkErrorsTransmit) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -620,7 +620,7 @@ func (m *metricSystemNetworkIo) init() {
 	m.data.SetName("system.network.io")
 	m.data.SetDescription("The number of bytes transmitted and received. (Deprecated)")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -633,9 +633,9 @@ func (m *metricSystemNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
-	dp.Attributes().InsertString("direction", directionAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -674,7 +674,7 @@ func (m *metricSystemNetworkIoReceive) init() {
 	m.data.SetName("system.network.io.receive")
 	m.data.SetDescription("The number of bytes received.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -687,8 +687,8 @@ func (m *metricSystemNetworkIoReceive) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -727,7 +727,7 @@ func (m *metricSystemNetworkIoTransmit) init() {
 	m.data.SetName("system.network.io.transmit")
 	m.data.SetDescription("The number of bytes transmitted.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -740,8 +740,8 @@ func (m *metricSystemNetworkIoTransmit) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -780,7 +780,7 @@ func (m *metricSystemNetworkPackets) init() {
 	m.data.SetName("system.network.packets")
 	m.data.SetDescription("The number of packets transferred. (Deprecated)")
 	m.data.SetUnit("{packets}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -793,9 +793,9 @@ func (m *metricSystemNetworkPackets) recordDataPoint(start pcommon.Timestamp, ts
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
-	dp.Attributes().InsertString("direction", directionAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -834,7 +834,7 @@ func (m *metricSystemNetworkPacketsReceive) init() {
 	m.data.SetName("system.network.packets.receive")
 	m.data.SetDescription("The number of packets received.")
 	m.data.SetUnit("{packets}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -847,8 +847,8 @@ func (m *metricSystemNetworkPacketsReceive) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -887,7 +887,7 @@ func (m *metricSystemNetworkPacketsTransmit) init() {
 	m.data.SetName("system.network.packets.transmit")
 	m.data.SetDescription("The number of packets transmitted.")
 	m.data.SetUnit("{packets}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -900,8 +900,8 @@ func (m *metricSystemNetworkPacketsTransmit) recordDataPoint(start pcommon.Times
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1011,10 +1011,10 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {

@@ -29,6 +29,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
 )
 
+const (
+	picosecondsInNanoseconds int64 = 1000
+)
+
 type mySQLScraper struct {
 	sqlclient client
 	logger    *zap.Logger
@@ -90,11 +94,24 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		addPartialIfError(errs, m.mb.RecordMysqlBufferPoolLimitDataPoint(now, v))
 	}
 
+	// collect io_waits metrics.
+	m.scrapeTableIoWaitsStats(now, errs)
+	m.scrapeIndexIoWaitsStats(now, errs)
+
 	// collect global status metrics.
+	m.scrapeGlobalStats(now, errs)
+
+	m.mb.EmitForResource(metadata.WithMysqlInstanceEndpoint(m.config.Endpoint))
+
+	return m.mb.Emit(), errs.Combine()
+}
+
+func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	globalStats, err := m.sqlclient.getGlobalStats()
 	if err != nil {
 		m.logger.Error("Failed to fetch global stats", zap.Error(err))
-		return pmetric.Metrics{}, err
+		errs.AddPartial(66, err)
+		return
 	}
 
 	m.recordDataPages(now, globalStats, errs)
@@ -154,6 +171,14 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandReset))
 		case "Com_stmt_send_long_data":
 			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandSendLongData))
+
+		// created tmps
+		case "Created_tmp_disk_tables":
+			addPartialIfError(errs, m.mb.RecordMysqlTmpResourcesDataPoint(now, v, metadata.AttributeTmpResourceDiskTables))
+		case "Created_tmp_files":
+			addPartialIfError(errs, m.mb.RecordMysqlTmpResourcesDataPoint(now, v, metadata.AttributeTmpResourceFiles))
+		case "Created_tmp_tables":
+			addPartialIfError(errs, m.mb.RecordMysqlTmpResourcesDataPoint(now, v, metadata.AttributeTmpResourceTables))
 
 		// handlers
 		case "Handler_commit":
@@ -249,6 +274,10 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		case "Table_locks_waited":
 			addPartialIfError(errs, m.mb.RecordMysqlLocksDataPoint(now, v, metadata.AttributeLocksWaited))
 
+		// locked_connects
+		case "Locked_connects":
+			addPartialIfError(errs, m.mb.RecordMysqlLockedConnectsDataPoint(now, v))
+
 		// sorts
 		case "Sort_merge_passes":
 			addPartialIfError(errs, m.mb.RecordMysqlSortsDataPoint(now, v, metadata.AttributeSortsMergePasses))
@@ -270,8 +299,70 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			addPartialIfError(errs, m.mb.RecordMysqlThreadsDataPoint(now, v, metadata.AttributeThreadsRunning))
 		}
 	}
+}
 
-	return m.mb.Emit(), errs.Combine()
+func (m *mySQLScraper) scrapeTableIoWaitsStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	tableIoWaitsStats, err := m.sqlclient.getTableIoWaitsStats()
+	if err != nil {
+		m.logger.Error("Failed to fetch table io_waits stats", zap.Error(err))
+		errs.AddPartial(8, err)
+		return
+	}
+
+	for i := 0; i < len(tableIoWaitsStats); i++ {
+		s := tableIoWaitsStats[i]
+		// counts
+		m.mb.RecordMysqlTableIoWaitCountDataPoint(now, s.countDelete, metadata.AttributeIoWaitsOperationsDelete, s.name, s.schema)
+		m.mb.RecordMysqlTableIoWaitCountDataPoint(now, s.countFetch, metadata.AttributeIoWaitsOperationsFetch, s.name, s.schema)
+		m.mb.RecordMysqlTableIoWaitCountDataPoint(now, s.countInsert, metadata.AttributeIoWaitsOperationsInsert, s.name, s.schema)
+		m.mb.RecordMysqlTableIoWaitCountDataPoint(now, s.countUpdate, metadata.AttributeIoWaitsOperationsUpdate, s.name, s.schema)
+
+		// times
+		m.mb.RecordMysqlTableIoWaitTimeDataPoint(
+			now, s.timeDelete/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsDelete, s.name, s.schema,
+		)
+		m.mb.RecordMysqlTableIoWaitTimeDataPoint(
+			now, s.timeFetch/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsFetch, s.name, s.schema,
+		)
+		m.mb.RecordMysqlTableIoWaitTimeDataPoint(
+			now, s.timeInsert/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsInsert, s.name, s.schema,
+		)
+		m.mb.RecordMysqlTableIoWaitTimeDataPoint(
+			now, s.timeUpdate/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsUpdate, s.name, s.schema,
+		)
+	}
+}
+
+func (m *mySQLScraper) scrapeIndexIoWaitsStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	indexIoWaitsStats, err := m.sqlclient.getIndexIoWaitsStats()
+	if err != nil {
+		m.logger.Error("Failed to fetch index io_waits stats", zap.Error(err))
+		errs.AddPartial(8, err)
+		return
+	}
+
+	for i := 0; i < len(indexIoWaitsStats); i++ {
+		s := indexIoWaitsStats[i]
+		// counts
+		m.mb.RecordMysqlIndexIoWaitCountDataPoint(now, s.countDelete, metadata.AttributeIoWaitsOperationsDelete, s.name, s.schema, s.index)
+		m.mb.RecordMysqlIndexIoWaitCountDataPoint(now, s.countFetch, metadata.AttributeIoWaitsOperationsFetch, s.name, s.schema, s.index)
+		m.mb.RecordMysqlIndexIoWaitCountDataPoint(now, s.countInsert, metadata.AttributeIoWaitsOperationsInsert, s.name, s.schema, s.index)
+		m.mb.RecordMysqlIndexIoWaitCountDataPoint(now, s.countUpdate, metadata.AttributeIoWaitsOperationsUpdate, s.name, s.schema, s.index)
+
+		// times
+		m.mb.RecordMysqlIndexIoWaitTimeDataPoint(
+			now, s.timeDelete/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsDelete, s.name, s.schema, s.index,
+		)
+		m.mb.RecordMysqlIndexIoWaitTimeDataPoint(
+			now, s.timeFetch/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsFetch, s.name, s.schema, s.index,
+		)
+		m.mb.RecordMysqlIndexIoWaitTimeDataPoint(
+			now, s.timeInsert/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsInsert, s.name, s.schema, s.index,
+		)
+		m.mb.RecordMysqlIndexIoWaitTimeDataPoint(
+			now, s.timeUpdate/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsUpdate, s.name, s.schema, s.index,
+		)
+	}
 }
 
 func addPartialIfError(errors *scrapererror.ScrapeErrors, err error) {

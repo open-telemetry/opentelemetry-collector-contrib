@@ -78,7 +78,7 @@ func (m *metricSystemFilesystemInodesUsage) init() {
 	m.data.SetName("system.filesystem.inodes.usage")
 	m.data.SetDescription("FileSystem inodes used.")
 	m.data.SetUnit("{inodes}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -91,12 +91,12 @@ func (m *metricSystemFilesystemInodesUsage) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
-	dp.Attributes().InsertString("mode", modeAttributeValue)
-	dp.Attributes().InsertString("mountpoint", mountpointAttributeValue)
-	dp.Attributes().InsertString("type", typeAttributeValue)
-	dp.Attributes().InsertString("state", stateAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("mode", modeAttributeValue)
+	dp.Attributes().PutStr("mountpoint", mountpointAttributeValue)
+	dp.Attributes().PutStr("type", typeAttributeValue)
+	dp.Attributes().PutStr("state", stateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -135,7 +135,7 @@ func (m *metricSystemFilesystemUsage) init() {
 	m.data.SetName("system.filesystem.usage")
 	m.data.SetDescription("Filesystem bytes used.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -148,12 +148,12 @@ func (m *metricSystemFilesystemUsage) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
-	dp.Attributes().InsertString("mode", modeAttributeValue)
-	dp.Attributes().InsertString("mountpoint", mountpointAttributeValue)
-	dp.Attributes().InsertString("type", typeAttributeValue)
-	dp.Attributes().InsertString("state", stateAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("mode", modeAttributeValue)
+	dp.Attributes().PutStr("mountpoint", mountpointAttributeValue)
+	dp.Attributes().PutStr("type", typeAttributeValue)
+	dp.Attributes().PutStr("state", stateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -192,7 +192,7 @@ func (m *metricSystemFilesystemUtilization) init() {
 	m.data.SetName("system.filesystem.utilization")
 	m.data.SetDescription("Fraction of filesystem bytes used.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -203,11 +203,11 @@ func (m *metricSystemFilesystemUtilization) recordDataPoint(start pcommon.Timest
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("device", deviceAttributeValue)
-	dp.Attributes().InsertString("mode", modeAttributeValue)
-	dp.Attributes().InsertString("mountpoint", mountpointAttributeValue)
-	dp.Attributes().InsertString("type", typeAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("mode", modeAttributeValue)
+	dp.Attributes().PutStr("mountpoint", mountpointAttributeValue)
+	dp.Attributes().PutStr("type", typeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -293,10 +293,10 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {

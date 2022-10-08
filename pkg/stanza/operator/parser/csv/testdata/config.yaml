@@ -17,6 +17,20 @@ lazy_quotes:
   parse_from: body.message
   header: id,severity,message
   lazy_quotes: true
+ignore_quotes:
+  type: csv_parser
+  parse_from: body.message
+  header: id,severity,message
+  ignore_quotes: true
+parse_to_attributes:
+  type: csv_parser
+  parse_to: attributes
+parse_to_body:
+  type: csv_parser
+  parse_to: body
+parse_to_resource:
+  type: csv_parser
+  parse_to: resource
 timestamp:
   type: csv_parser
   header: timestamp_field,severity,message

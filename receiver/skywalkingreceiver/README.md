@@ -8,10 +8,6 @@
 
 Receives trace data in [Skywalking](https://skywalking.apache.org/) format.
 
-## ⚠️ Warning
-
-Note: This component is experimental and is not recommended for production environments.
-
 ## Getting Started
 
 By default, the Skywalking receiver will not serve any protocol. A protocol must be

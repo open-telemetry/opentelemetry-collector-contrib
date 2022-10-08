@@ -66,13 +66,17 @@ func TestNewExporter(t *testing.T) {
 	exp, err := f.CreateMetricsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
-	err = exp.ConsumeMetrics(context.Background(), testutils.TestMetrics.Clone())
+	testMetrics := pmetric.NewMetrics()
+	testutils.TestMetrics.CopyTo(testMetrics)
+	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	assert.Equal(t, len(server.MetadataChan), 0)
 
 	cfg.HostMetadata.Enabled = true
 	cfg.HostMetadata.HostnameSource = HostnameSourceFirstResource
-	err = exp.ConsumeMetrics(context.Background(), testutils.TestMetrics.Clone())
+	testMetrics = pmetric.NewMetrics()
+	testutils.TestMetrics.CopyTo(testMetrics)
+	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	body := <-server.MetadataChan
 	var recvMetadata metadata.HostMetadata
@@ -85,27 +89,6 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 	attrs := map[string]string{
 		conventions.AttributeDeploymentEnvironment: "dev",
 		"custom_attribute":                         "custom_value",
-	}
-	newConfig := func(t *testing.T, endpoint string, hostTags []string, histogramMode HistogramMode) *Config {
-		t.Helper()
-		return &Config{
-			HostMetadata: HostMetadataConfig{
-				Tags: hostTags,
-			},
-			Metrics: MetricsConfig{
-				TCPAddr: confignet.TCPAddr{
-					Endpoint: endpoint,
-				},
-				HistConfig: HistogramConfig{
-					Mode: histogramMode,
-				},
-				// Set values to avoid errors. No particular intention in value selection.
-				DeltaTTL: 3600,
-				SumConfig: SumConfig{
-					CumulativeMonotonicMode: CumulativeMonotonicSumModeRawValue,
-				},
-			},
-		}
 	}
 	tests := []struct {
 		metrics               pmetric.Metrics
@@ -144,6 +127,13 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"tags":   []interface{}{"env:dev"},
 					},
 					map[string]interface{}{
+						"metric": "otel.system.filesystem.utilization",
+						"points": []interface{}{[]interface{}{float64(0), float64(333)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []interface{}{"env:dev"},
+					},
+					map[string]interface{}{
 						"metric": "double.histogram.bucket",
 						"points": []interface{}{[]interface{}{float64(0), float64(2)}},
 						"type":   "count",
@@ -163,6 +153,14 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":   "gauge",
 						"host":   "test-host",
 						"tags":   []interface{}{"version:latest", "command:otelcol"},
+					},
+					map[string]interface{}{
+						"metric":   "system.disk.in_use",
+						"points":   []interface{}{[]interface{}{float64(0), float64(333)}},
+						"type":     "gauge",
+						"host":     "test-host",
+						"interval": float64(1),
+						"tags":     []interface{}{"env:dev"},
 					},
 				},
 			},
@@ -187,11 +185,26 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"tags":   []interface{}{"env:dev"},
 					},
 					map[string]interface{}{
+						"metric": "otel.system.filesystem.utilization",
+						"points": []interface{}{[]interface{}{float64(0), float64(333)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []interface{}{"env:dev"},
+					},
+					map[string]interface{}{
 						"metric": "otel.datadog_exporter.metrics.running",
 						"points": []interface{}{[]interface{}{float64(0), float64(1)}},
 						"type":   "gauge",
 						"host":   "test-host",
 						"tags":   []interface{}{"version:latest", "command:otelcol"},
+					},
+					map[string]interface{}{
+						"metric":   "system.disk.in_use",
+						"points":   []interface{}{[]interface{}{float64(0), float64(333)}},
+						"type":     "gauge",
+						"host":     "test-host",
+						"interval": float64(1),
+						"tags":     []interface{}{"env:dev"},
 					},
 				},
 			},
@@ -233,6 +246,13 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"tags":   []interface{}{"env:dev", "key1:value1", "key2:value2"},
 					},
 					map[string]interface{}{
+						"metric": "otel.system.filesystem.utilization",
+						"points": []interface{}{[]interface{}{float64(0), float64(333)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []interface{}{"env:dev", "key1:value1", "key2:value2"},
+					},
+					map[string]interface{}{
 						"metric": "double.histogram.bucket",
 						"points": []interface{}{[]interface{}{float64(0), float64(2)}},
 						"type":   "count",
@@ -252,6 +272,14 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":   "gauge",
 						"host":   "test-host",
 						"tags":   []interface{}{"version:latest", "command:otelcol", "key1:value1", "key2:value2"},
+					},
+					map[string]interface{}{
+						"metric":   "system.disk.in_use",
+						"points":   []interface{}{[]interface{}{float64(0), float64(333)}},
+						"type":     "gauge",
+						"host":     "test-host",
+						"interval": float64(1),
+						"tags":     []interface{}{"env:dev", "key1:value1", "key2:value2"},
 					},
 				},
 			},
@@ -273,7 +301,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			exp, err := newMetricsExporter(
 				context.Background(),
 				componenttest.NewNopExporterCreateSettings(),
-				newConfig(t, server.URL, tt.hostTags, tt.histogramMode),
+				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				&once,
 				&testutils.MockSourceProvider{Src: tt.source},
 			)
@@ -300,7 +328,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				assert.NoError(t, err)
 				var actual map[string]interface{}
 				assert.NoError(t, json.Unmarshal(seriesRecorder.ByteBody, &actual))
-				assert.Equal(t, tt.expectedSeries, actual)
+				assert.EqualValues(t, tt.expectedSeries, actual)
 			}
 			if tt.expectedSketchPayload == nil {
 				assert.Nil(t, sketchRecorder.ByteBody)
@@ -327,9 +355,9 @@ func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {
 	rm := rms.AppendEmpty()
 
 	attrs := rm.Resource().Attributes()
-	attrs.InsertString("datadog.host.name", host)
+	attrs.PutStr("datadog.host.name", host)
 	for attr, val := range additionalAttributes {
-		attrs.InsertString(attr, val)
+		attrs.PutStr(attr, val)
 	}
 	ilms := rm.ScopeMetrics()
 
@@ -342,23 +370,29 @@ func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {
 	// IntGauge
 	met := metricsArray.AppendEmpty()
 	met.SetName("int.gauge")
-	met.SetDataType(pmetric.MetricDataTypeGauge)
-	dpsInt := met.Gauge().DataPoints()
+	dpsInt := met.SetEmptyGauge().DataPoints()
 	dpInt := dpsInt.AppendEmpty()
 	dpInt.SetTimestamp(seconds(0))
-	dpInt.SetIntVal(222)
+	dpInt.SetIntValue(222)
+
+	// host metric
+	met = metricsArray.AppendEmpty()
+	met.SetName("system.filesystem.utilization")
+	dpsInt = met.SetEmptyGauge().DataPoints()
+	dpInt = dpsInt.AppendEmpty()
+	dpInt.SetTimestamp(seconds(0))
+	dpInt.SetIntValue(333)
 
 	// Histogram (delta)
 	met = metricsArray.AppendEmpty()
 	met.SetName("double.histogram")
-	met.SetDataType(pmetric.MetricDataTypeHistogram)
-	met.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+	met.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 	dpsDoubleHist := met.Histogram().DataPoints()
 	dpDoubleHist := dpsDoubleHist.AppendEmpty()
 	dpDoubleHist.SetCount(20)
 	dpDoubleHist.SetSum(6)
-	dpDoubleHist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{2, 18}))
-	dpDoubleHist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0}))
+	dpDoubleHist.BucketCounts().FromRaw([]uint64{2, 18})
+	dpDoubleHist.ExplicitBounds().FromRaw([]float64{0})
 	dpDoubleHist.SetTimestamp(seconds(0))
 
 	return md
@@ -366,4 +400,26 @@ func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {
 
 func seconds(i int) pcommon.Timestamp {
 	return pcommon.NewTimestampFromTime(time.Unix(int64(i), 0))
+}
+
+func newTestConfig(t *testing.T, endpoint string, hostTags []string, histogramMode HistogramMode) *Config {
+	t.Helper()
+	return &Config{
+		HostMetadata: HostMetadataConfig{
+			Tags: hostTags,
+		},
+		Metrics: MetricsConfig{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: endpoint,
+			},
+			HistConfig: HistogramConfig{
+				Mode: histogramMode,
+			},
+			// Set values to avoid errors. No particular intention in value selection.
+			DeltaTTL: 3600,
+			SumConfig: SumConfig{
+				CumulativeMonotonicMode: CumulativeMonotonicSumModeRawValue,
+			},
+		},
+	}
 }

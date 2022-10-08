@@ -115,7 +115,7 @@ func (m *metricRiakMemoryLimit) init() {
 	m.data.SetName("riak.memory.limit")
 	m.data.SetDescription("The amount of memory allocated to the node.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -127,7 +127,7 @@ func (m *metricRiakMemoryLimit) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -166,7 +166,7 @@ func (m *metricRiakNodeOperationCount) init() {
 	m.data.SetName("riak.node.operation.count")
 	m.data.SetDescription("The number of operations performed by the node.")
 	m.data.SetUnit("{operation}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -179,8 +179,8 @@ func (m *metricRiakNodeOperationCount) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("request", requestAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("request", requestAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -219,7 +219,7 @@ func (m *metricRiakNodeOperationTimeMean) init() {
 	m.data.SetName("riak.node.operation.time.mean")
 	m.data.SetDescription("The mean time between request and response for operations performed by the node over the last minute.")
 	m.data.SetUnit("us")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -230,8 +230,8 @@ func (m *metricRiakNodeOperationTimeMean) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("request", requestAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("request", requestAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -270,7 +270,7 @@ func (m *metricRiakNodeReadRepairCount) init() {
 	m.data.SetName("riak.node.read_repair.count")
 	m.data.SetDescription("The number of read repairs performed by the node.")
 	m.data.SetUnit("{read_repair}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -282,7 +282,7 @@ func (m *metricRiakNodeReadRepairCount) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -321,7 +321,7 @@ func (m *metricRiakVnodeIndexOperationCount) init() {
 	m.data.SetName("riak.vnode.index.operation.count")
 	m.data.SetDescription("The number of index operations performed by vnodes on the node.")
 	m.data.SetUnit("{operation}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -334,8 +334,8 @@ func (m *metricRiakVnodeIndexOperationCount) recordDataPoint(start pcommon.Times
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("operation", operationAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -374,7 +374,7 @@ func (m *metricRiakVnodeOperationCount) init() {
 	m.data.SetName("riak.vnode.operation.count")
 	m.data.SetDescription("The number of operations performed by vnodes on the node.")
 	m.data.SetUnit("{operation}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -387,8 +387,8 @@ func (m *metricRiakVnodeOperationCount) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("request", requestAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("request", requestAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -476,7 +476,7 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithRiakNodeName sets provided value as "riak.node.name" attribute for current resource.
 func WithRiakNodeName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("riak.node.name", val)
+		rm.Resource().Attributes().PutStr("riak.node.name", val)
 	}
 }
 
@@ -487,10 +487,10 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {

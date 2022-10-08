@@ -140,7 +140,7 @@ func newLegacyGoogleCloudMetricsExporter(cfg *LegacyConfig, set component.Export
 	}
 	mExp := &metricsExporter{mexporter: sde}
 
-	return exporterhelper.NewMetricsExporterWithContext(
+	return exporterhelper.NewMetricsExporter(
 		context.TODO(),
 		set,
 		cfg,

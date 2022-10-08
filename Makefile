@@ -264,12 +264,12 @@ generate:
 
 .PHONY: chlog-install
 chlog-install:
-	cd cmd/chloggen && $(GOCMD) install .
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/chloggen
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
 chlog-new: chlog-install
-	chloggen new -filename $(FILENAME)
+	chloggen new --filename $(FILENAME)
 
 .PHONY: chlog-validate
 chlog-validate: chlog-install
@@ -277,11 +277,11 @@ chlog-validate: chlog-install
 
 .PHONY: chlog-preview
 chlog-preview: chlog-install
-	chloggen update -dry
+	chloggen update --dry
 
 .PHONY: chlog-update
 chlog-update: chlog-install
-	chloggen update -version $(VERSION)
+	chloggen update --version $(VERSION)
 
 # Build the Collector executable.
 .PHONY: otelcontribcol

@@ -19,8 +19,8 @@ import (
 )
 
 type Finder struct {
-	Include []string `mapstructure:"include,omitempty" json:"include,omitempty" yaml:"include,omitempty"`
-	Exclude []string `mapstructure:"exclude,omitempty" json:"exclude,omitempty" yaml:"exclude,omitempty"`
+	Include []string `mapstructure:"include,omitempty"`
+	Exclude []string `mapstructure:"exclude,omitempty"`
 }
 
 // FindFiles gets a list of paths given an array of glob patterns to include and exclude

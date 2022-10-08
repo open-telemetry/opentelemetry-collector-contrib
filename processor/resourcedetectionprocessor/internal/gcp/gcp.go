@@ -62,44 +62,44 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 		return res, "", nil
 	}
 	b := &resourceBuilder{logger: d.logger, attrs: res.Attributes()}
-	b.attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
+	b.attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
 	b.add(conventions.AttributeCloudAccountID, d.detector.ProjectID)
 
 	switch d.detector.CloudPlatform() {
 	case gcp.GKE:
-		b.attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPKubernetesEngine)
+		b.attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPKubernetesEngine)
 		b.addZoneOrRegion(d.detector.GKEAvailabilityZoneOrRegion)
 		b.add(conventions.AttributeK8SClusterName, d.detector.GKEClusterName)
 		b.add(conventions.AttributeHostID, d.detector.GKEHostID)
 		// GCEHostname is fallible on GKE, since it's not available when using workload identity.
 		b.addFallible(conventions.AttributeHostName, d.detector.GCEHostName)
 	case gcp.CloudRun:
-		b.attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPCloudRun)
+		b.attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPCloudRun)
 		b.add(conventions.AttributeFaaSName, d.detector.FaaSName)
 		b.add(conventions.AttributeFaaSVersion, d.detector.FaaSVersion)
 		b.add(conventions.AttributeFaaSID, d.detector.FaaSID)
 		b.add(conventions.AttributeCloudRegion, d.detector.FaaSCloudRegion)
 	case gcp.CloudFunctions:
-		b.attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPCloudFunctions)
+		b.attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPCloudFunctions)
 		b.add(conventions.AttributeFaaSName, d.detector.FaaSName)
 		b.add(conventions.AttributeFaaSVersion, d.detector.FaaSVersion)
 		b.add(conventions.AttributeFaaSID, d.detector.FaaSID)
 		b.add(conventions.AttributeCloudRegion, d.detector.FaaSCloudRegion)
 	case gcp.AppEngineFlex:
-		b.attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPAppEngine)
+		b.attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPAppEngine)
 		b.addZoneAndRegion(d.detector.AppEngineFlexAvailabilityZoneAndRegion)
 		b.add(conventions.AttributeFaaSName, d.detector.AppEngineServiceName)
 		b.add(conventions.AttributeFaaSVersion, d.detector.AppEngineServiceVersion)
 		b.add(conventions.AttributeFaaSID, d.detector.AppEngineServiceInstance)
 	case gcp.AppEngineStandard:
-		b.attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPAppEngine)
+		b.attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPAppEngine)
 		b.add(conventions.AttributeFaaSName, d.detector.AppEngineServiceName)
 		b.add(conventions.AttributeFaaSVersion, d.detector.AppEngineServiceVersion)
 		b.add(conventions.AttributeFaaSID, d.detector.AppEngineServiceInstance)
 		b.add(conventions.AttributeCloudAvailabilityZone, d.detector.AppEngineStandardAvailabilityZone)
 		b.add(conventions.AttributeCloudRegion, d.detector.AppEngineStandardCloudRegion)
 	case gcp.GCE:
-		b.attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPComputeEngine)
+		b.attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPComputeEngine)
 		b.addZoneAndRegion(d.detector.GCEAvailabilityZoneAndRegion)
 		b.add(conventions.AttributeHostType, d.detector.GCEHostType)
 		b.add(conventions.AttributeHostID, d.detector.GCEHostID)
@@ -119,44 +119,49 @@ type resourceBuilder struct {
 }
 
 func (r *resourceBuilder) add(key string, detect func() (string, error)) {
-	if v, err := detect(); err == nil {
-		r.attrs.InsertString(key, v)
-	} else {
+	v, err := detect()
+	if err != nil {
 		r.errs = append(r.errs, err)
+		return
 	}
+	r.attrs.PutStr(key, v)
 }
 
 // addFallible adds a detect function whose failures should be ignored
 func (r *resourceBuilder) addFallible(key string, detect func() (string, error)) {
-	if v, err := detect(); err == nil {
-		r.attrs.InsertString(key, v)
-	} else {
+	v, err := detect()
+	if err != nil {
 		r.logger.Info("Fallible detector failed. This attribute will not be available.", zap.String("key", key), zap.Error(err))
+		return
 	}
+	r.attrs.PutStr(key, v)
 }
 
 // zoneAndRegion functions are expected to return zone, region, err.
 func (r *resourceBuilder) addZoneAndRegion(detect func() (string, string, error)) {
-	if zone, region, err := detect(); err == nil {
-		r.attrs.InsertString(conventions.AttributeCloudAvailabilityZone, zone)
-		r.attrs.InsertString(conventions.AttributeCloudRegion, region)
-	} else {
+	zone, region, err := detect()
+	if err != nil {
 		r.errs = append(r.errs, err)
+		return
 	}
+	r.attrs.PutStr(conventions.AttributeCloudAvailabilityZone, zone)
+	r.attrs.PutStr(conventions.AttributeCloudRegion, region)
 }
 
 func (r *resourceBuilder) addZoneOrRegion(detect func() (string, gcp.LocationType, error)) {
-	if v, locType, err := detect(); err == nil {
-		switch locType {
-		case gcp.Zone:
-			r.attrs.InsertString(conventions.AttributeCloudAvailabilityZone, v)
-		case gcp.Region:
-			r.attrs.InsertString(conventions.AttributeCloudRegion, v)
-		default:
-			r.errs = append(r.errs, fmt.Errorf("location must be zone or region. Got %v", locType))
-		}
-	} else {
+	v, locType, err := detect()
+	if err != nil {
 		r.errs = append(r.errs, err)
+		return
+	}
+
+	switch locType {
+	case gcp.Zone:
+		r.attrs.PutStr(conventions.AttributeCloudAvailabilityZone, v)
+	case gcp.Region:
+		r.attrs.PutStr(conventions.AttributeCloudRegion, v)
+	default:
+		r.errs = append(r.errs, fmt.Errorf("location must be zone or region. Got %v", locType))
 	}
 }
 
@@ -166,7 +171,7 @@ func (r *resourceBuilder) addZoneOrRegion(detect func() (string, gcp.LocationTyp
 // deduplicate, which would break users.
 // TODO(#10348): Remove this function after the v0.54.0 release.
 func DeduplicateDetectors(set component.ProcessorCreateSettings, detectors []string) []string {
-	out := []string{}
+	var out []string
 	var found bool
 	for _, d := range detectors {
 		switch d {

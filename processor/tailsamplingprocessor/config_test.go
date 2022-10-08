@@ -47,87 +47,119 @@ func TestLoadConfig(t *testing.T) {
 			ExpectedNewTracesPerSec: 10,
 			PolicyCfgs: []PolicyCfg{
 				{
-					Name: "test-policy-1",
-					Type: AlwaysSample,
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name: "test-policy-1",
+						Type: AlwaysSample,
+					},
 				},
 				{
-					Name:       "test-policy-2",
-					Type:       Latency,
-					LatencyCfg: LatencyCfg{ThresholdMs: 5000},
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name:       "test-policy-2",
+						Type:       Latency,
+						LatencyCfg: LatencyCfg{ThresholdMs: 5000},
+					},
 				},
 				{
-					Name:                "test-policy-3",
-					Type:                NumericAttribute,
-					NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name:                "test-policy-3",
+						Type:                NumericAttribute,
+						NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
+					},
 				},
 				{
-					Name:             "test-policy-4",
-					Type:             Probabilistic,
-					ProbabilisticCfg: ProbabilisticCfg{HashSalt: "custom-salt", SamplingPercentage: 0.1},
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name:             "test-policy-4",
+						Type:             Probabilistic,
+						ProbabilisticCfg: ProbabilisticCfg{HashSalt: "custom-salt", SamplingPercentage: 0.1},
+					},
 				},
 				{
-					Name:          "test-policy-5",
-					Type:          StatusCode,
-					StatusCodeCfg: StatusCodeCfg{StatusCodes: []string{"ERROR", "UNSET"}},
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name:          "test-policy-5",
+						Type:          StatusCode,
+						StatusCodeCfg: StatusCodeCfg{StatusCodes: []string{"ERROR", "UNSET"}},
+					},
 				},
 				{
-					Name:               "test-policy-6",
-					Type:               StringAttribute,
-					StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name:               "test-policy-6",
+						Type:               StringAttribute,
+						StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
+					},
 				},
 				{
-					Name:            "test-policy-7",
-					Type:            RateLimiting,
-					RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 35},
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name:            "test-policy-7",
+						Type:            RateLimiting,
+						RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 35},
+					},
 				},
 				{
-					Name:         "test-policy-8",
-					Type:         SpanCount,
-					SpanCountCfg: SpanCountCfg{MinSpans: 2},
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name:         "test-policy-8",
+						Type:         SpanCount,
+						SpanCountCfg: SpanCountCfg{MinSpans: 2},
+					},
 				},
 				{
-					Name:          "test-policy-9",
-					Type:          TraceState,
-					TraceStateCfg: TraceStateCfg{Key: "key3", Values: []string{"value1", "value2"}},
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name:          "test-policy-9",
+						Type:          TraceState,
+						TraceStateCfg: TraceStateCfg{Key: "key3", Values: []string{"value1", "value2"}},
+					},
 				},
 				{
-					Name: "and-policy-1",
-					Type: And,
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name: "and-policy-1",
+						Type: And,
+					},
 					AndCfg: AndCfg{
 						SubPolicyCfg: []AndSubPolicyCfg{
 							{
-								Name:                "test-and-policy-1",
-								Type:                NumericAttribute,
-								NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
+								sharedPolicyCfg: sharedPolicyCfg{
+									Name:                "test-and-policy-1",
+									Type:                NumericAttribute,
+									NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
+								},
 							},
 							{
-								Name:               "test-and-policy-2",
-								Type:               StringAttribute,
-								StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
+								sharedPolicyCfg: sharedPolicyCfg{
+									Name:               "test-and-policy-2",
+									Type:               StringAttribute,
+									StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
+								},
 							},
 						},
 					},
 				},
 				{
-					Name: "composite-policy-1",
-					Type: Composite,
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name: "composite-policy-1",
+						Type: Composite,
+					},
 					CompositeCfg: CompositeCfg{
 						MaxTotalSpansPerSecond: 1000,
 						PolicyOrder:            []string{"test-composite-policy-1", "test-composite-policy-2", "test-composite-policy-3"},
-						SubPolicyCfg: []SubPolicyCfg{
+						SubPolicyCfg: []CompositeSubPolicyCfg{
 							{
-								Name:                "test-composite-policy-1",
-								Type:                NumericAttribute,
-								NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
+								sharedPolicyCfg: sharedPolicyCfg{
+									Name:                "test-composite-policy-1",
+									Type:                NumericAttribute,
+									NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
+								},
 							},
 							{
-								Name:               "test-composite-policy-2",
-								Type:               StringAttribute,
-								StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
+								sharedPolicyCfg: sharedPolicyCfg{
+									Name:               "test-composite-policy-2",
+									Type:               StringAttribute,
+									StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
+								},
 							},
 							{
-								Name: "test-composite-policy-3",
-								Type: AlwaysSample,
+								sharedPolicyCfg: sharedPolicyCfg{
+									Name: "test-composite-policy-3",
+									Type: AlwaysSample,
+								},
 							},
 						},
 						RateAllocation: []RateAllocationCfg{

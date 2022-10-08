@@ -47,6 +47,7 @@ func TestLoadConfig(t *testing.T) {
 		Service:           "service",
 		AssumeRole: AssumeRole{
 			SessionName: "role_session_name",
+			STSRegion:   "region",
 		},
 		// Ensure creds are the same for load config test; tested in extension_test.go
 		credsProvider: cfg.(*Config).credsProvider,
@@ -61,5 +62,5 @@ func TestLoadConfigError(t *testing.T) {
 	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "missing_credentials").String())
 	require.NoError(t, err)
 	require.NoError(t, config.UnmarshalExtension(sub, cfg))
-	assert.ErrorIs(t, cfg.Validate(), errBadCreds)
+	assert.Error(t, cfg.Validate())
 }

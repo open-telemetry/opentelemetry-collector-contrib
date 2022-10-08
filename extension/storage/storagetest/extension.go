@@ -28,19 +28,21 @@ var testStorageType config.Type = "test_storage"
 type TestStorage struct {
 	config.ExtensionSettings
 	storageDir string
-	clients    []*TestClient
 }
 
 // Ensure this storage extension implements the appropriate interface
 var _ storage.Extension = (*TestStorage)(nil)
 
+func NewStorageID(name string) config.ComponentID {
+	return config.NewComponentIDWithName(testStorageType, name)
+}
+
 // NewInMemoryStorageExtension creates a TestStorage extension
 func NewInMemoryStorageExtension(name string) *TestStorage {
 	return &TestStorage{
 		ExtensionSettings: config.NewExtensionSettings(
-			config.NewComponentIDWithName(testStorageType, name),
+			NewStorageID(name),
 		),
-		clients: []*TestClient{},
 	}
 }
 
@@ -48,7 +50,7 @@ func NewInMemoryStorageExtension(name string) *TestStorage {
 func NewFileBackedStorageExtension(name string, storageDir string) *TestStorage {
 	return &TestStorage{
 		ExtensionSettings: config.NewExtensionSettings(
-			config.NewComponentIDWithName(testStorageType, name),
+			NewStorageID(name),
 		),
 		storageDir: storageDir,
 	}
@@ -65,11 +67,14 @@ func (s *TestStorage) Shutdown(ctx context.Context) error {
 }
 
 // GetClient returns a storage client for an individual component
-func (s *TestStorage) GetClient(_ context.Context, kind component.Kind, ent config.ComponentID, name string) (storage.Client, error) {
+func (s *TestStorage) GetClient(ctx context.Context, kind component.Kind, ent config.ComponentID, name string) (storage.Client, error) {
+	var client *TestClient
 	if s.storageDir == "" {
-		return NewInMemoryClient(kind, ent, name), nil
+		client = NewInMemoryClient(kind, ent, name)
+	} else {
+		client = NewFileBackedClient(kind, ent, name, s.storageDir)
 	}
-	return NewFileBackedClient(kind, ent, name, s.storageDir), nil
+	return client, setCreatorID(ctx, client, s.ID())
 }
 
 var nonStorageType config.Type = "non_storage"
@@ -83,11 +88,15 @@ type NonStorage struct {
 // Ensure this extension implements the appropriate interface
 var _ component.Extension = (*NonStorage)(nil)
 
+func NewNonStorageID(name string) config.ComponentID {
+	return config.NewComponentIDWithName(nonStorageType, name)
+}
+
 // NewNonStorageExtension creates a NonStorage extension
 func NewNonStorageExtension(name string) *NonStorage {
 	return &NonStorage{
 		ExtensionSettings: config.NewExtensionSettings(
-			config.NewComponentIDWithName(nonStorageType, name),
+			NewNonStorageID(name),
 		),
 	}
 }

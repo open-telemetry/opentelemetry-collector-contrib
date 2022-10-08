@@ -37,7 +37,7 @@ func init() {
 
 // UnstartableConfig is the configuration of an unstartable mock operator
 type UnstartableConfig struct {
-	helper.OutputConfig `yaml:",inline"`
+	helper.OutputConfig `mapstructure:",squash"`
 }
 
 // UnstartableOperator is an operator that will build but not start
@@ -47,15 +47,11 @@ type UnstartableOperator struct {
 	helper.OutputOperator
 }
 
-func newUnstartableParams() map[string]interface{} {
-	return map[string]interface{}{"type": "unstartable_operator"}
-}
-
-// NewUnstartableConfig creates new output config
-func NewUnstartableConfig() *UnstartableConfig {
-	return &UnstartableConfig{
+// newUnstartableConfig creates new output config
+func NewUnstartableConfig() operator.Config {
+	return operator.NewConfig(&UnstartableConfig{
 		OutputConfig: helper.NewOutputConfig("unstartable_operator", "unstartable_operator"),
-	}
+	})
 }
 
 // Build will build an unstartable operator
@@ -87,7 +83,7 @@ const testType = "test"
 
 type TestConfig struct {
 	BaseConfig `mapstructure:",squash"`
-	Input      InputConfig `mapstructure:",remain"`
+	Input      operator.Config `mapstructure:",squash"`
 }
 type TestReceiverType struct{}
 
@@ -99,13 +95,13 @@ func (f TestReceiverType) CreateDefaultConfig() config.Receiver {
 	return &TestConfig{
 		BaseConfig: BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(testType)),
-			Operators:        OperatorConfigs{},
+			Operators:        []operator.Config{},
 			Converter: ConverterConfig{
 				MaxFlushCount: 1,
 				FlushInterval: 100 * time.Millisecond,
 			},
 		},
-		Input: InputConfig{},
+		Input: operator.NewConfig(noop.NewConfig()),
 	}
 }
 
@@ -113,17 +109,6 @@ func (f TestReceiverType) BaseConfig(cfg config.Receiver) BaseConfig {
 	return cfg.(*TestConfig).BaseConfig
 }
 
-func (f TestReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
-	testConfig := cfg.(*TestConfig)
-
-	// Allow tests to run without implementing input config
-	if testConfig.Input["type"] == nil {
-		return &operator.Config{Builder: noop.NewConfig()}, nil
-	}
-
-	// Allow tests to explicitly prompt a failure
-	if testConfig.Input["type"] == "unknown" {
-		return nil, errors.New("unknown input type")
-	}
-	return &operator.Config{Builder: NewUnstartableConfig()}, nil
+func (f TestReceiverType) InputConfig(cfg config.Receiver) operator.Config {
+	return cfg.(*TestConfig).Input
 }

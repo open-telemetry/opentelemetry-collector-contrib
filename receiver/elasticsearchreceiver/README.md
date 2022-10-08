@@ -6,7 +6,7 @@
 | Supported pipeline types | metrics   |
 | Distributions            | [contrib] |
 
-This receiver queries the Elasticsearch [node stats](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-nodes-stats.html) and [cluster health](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-health.html) endpoints in order to scrape metrics from a running elasticsearch cluster.
+This receiver queries the Elasticsearch [node stats](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-nodes-stats.html), [cluster health](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-health.html) and [index stats](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-stats.html) endpoints in order to scrape metrics from a running elasticsearch cluster.
 
 ## Prerequisites
 
@@ -21,6 +21,7 @@ The following settings are optional:
 - `metrics` (default: see `DefaultMetricsSettings` [here](./internal/metadata/generated_metrics.go): Allows enabling and disabling specific metrics from being collected in this receiver.
 - `nodes` (default: `["_all"]`): Allows specifying node filters that define which nodes are scraped for node-level metrics. See [the Elasticsearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster.html#cluster-nodes) for allowed filters. If this option is left explicitly empty, then no node-level metrics will be scraped.
 - `skip_cluster_metrics` (default: `false`): If true, cluster-level metrics will not be scraped.
+- `indices` (default: `["_all"]`): Allows specifying index filters that define which indices are scraped for index-level metrics. See [the Elasticsearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-stats.html#index-stats-api-path-params) for allowed filters. If this option is left explicitly empty, then no index-level metrics will be scraped.
 - `endpoint` (default = `http://localhost:9200`): The base URL of the Elasticsearch API for the cluster to monitor.
 - `username` (no default): Specifies the username used to authenticate with Elasticsearch using basic auth. Must be specified if password is specified.
 - `password` (no default): Specifies the password used to authenticate with Elasticsearch using basic auth. Must be specified if username is specified.
@@ -36,6 +37,7 @@ receivers:
         enabled: false
     nodes: ["_local"]
     skip_cluster_metrics: true
+    indices: [".geoip_databases"]
     endpoint: http://localhost:9200
     username: otel
     password: password
@@ -46,28 +48,25 @@ The full list of settings exposed for this receiver are documented [here](./conf
 
 ## Metrics
 
+The following metric are available with versions:
+- `elasticsearch.indexing_pressure.memory.limit` >= [7.10](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/release-notes-7.10.0.html)
+- `elasticsearch.node.shards.data_set.size` >= [7.13](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/release-notes-7.13.0.html)
+- `elasticsearch.cluster.state_update.count` >= [7.16.0](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/release-notes-7.16.0.html)
+- `elasticsearch.cluster.state_update.time` >= [7.16.0](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/release-notes-7.16.0.html)
+
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
 
 ### Feature gate configurations
 
 #### Transition from metrics with "direction" attribute
 
-There is a proposal to change some elasticsearch metrics from being reported with a `direction` attribute to being
-reported with the direction included in the metric name.
+The proposal to change metrics from being reported with a `direction` attribute has been reverted in the specification. As a result, the
+following feature gates will be removed in v0.62.0:
 
-- `elasticsearch.node.cluster.io` will become:
-  - `elasticsearch.node.cluster.io.received`
-  - `elasticsearch.node.cluster.io.sent`
+- **receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute**
+- **receiver.elasticsearchreceiver.emitMetricsWithDirectionAttribute**
 
-The following feature gates control the transition process:
-
-- **receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute**: controls if the new metrics without `direction` attribute are emitted by the receiver.
-- **receiver.elasticsearchreceiver.emitMetricsWithDirectionAttribute**: controls if the deprecated metrics with `direction` attribute are emitted by the receiver.
-
-##### Transition schedule:
-
-The final decision on the transition is not finalized yet. The transition is on hold until
-https://github.com/open-telemetry/opentelemetry-specification/issues/2726 is resolved.
+For additional information, see https://github.com/open-telemetry/opentelemetry-specification/issues/2726.
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

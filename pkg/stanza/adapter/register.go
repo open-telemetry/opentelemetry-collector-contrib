@@ -20,6 +20,7 @@ import (
 	_ "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/output/stdout"
 	_ "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/csv"
 	_ "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json"
+	_ "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/keyvalue"
 	_ "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	_ "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/severity"
 	_ "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/time"

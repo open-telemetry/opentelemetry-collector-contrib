@@ -38,11 +38,11 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
-		logRecord.Body().SetStringVal("mylog")
-		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
-		logRecord.Attributes().InsertString("my-label", "myapp-type")
-		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-		logRecord.Attributes().InsertString("custom", "custom")
+		logRecord.Body().SetStr("mylog")
+		logRecord.Attributes().PutStr(conventions.AttributeServiceName, "myapp")
+		logRecord.Attributes().PutStr("my-label", "myapp-type")
+		logRecord.Attributes().PutStr(conventions.AttributeHostName, "myhost")
+		logRecord.Attributes().PutStr("custom", "custom")
 		logRecord.SetTimestamp(ts)
 	}
 	sl.LogRecords().AppendEmpty()

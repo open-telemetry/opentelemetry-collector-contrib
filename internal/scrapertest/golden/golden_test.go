@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -84,14 +84,14 @@ func testMetrics() pmetric.MetricSlice {
 
 	dp := dps.AppendEmpty()
 	attributes := pcommon.NewMap()
-	attributes.Insert("testKey1", pcommon.NewValueString("teststringvalue1"))
-	attributes.Insert("testKey2", pcommon.NewValueString("testvalue1"))
+	attributes.PutStr("testKey1", "teststringvalue1")
+	attributes.PutStr("testKey2", "testvalue1")
 	setDPDoubleVal(dp, 2, attributes, time.Time{})
 
 	dp = dps.AppendEmpty()
 	attributes = pcommon.NewMap()
-	attributes.Insert("testKey1", pcommon.NewValueString("teststringvalue2"))
-	attributes.Insert("testKey2", pcommon.NewValueString("testvalue2"))
+	attributes.PutStr("testKey1", "teststringvalue2")
+	attributes.PutStr("testKey2", "testvalue2")
 	setDPDoubleVal(dp, 2, attributes, time.Time{})
 
 	// Gauge with one int dp
@@ -101,7 +101,7 @@ func testMetrics() pmetric.MetricSlice {
 
 	dp = dps.AppendEmpty()
 	attributes = pcommon.NewMap()
-	attributes.Insert("testKey2", pcommon.NewValueString("teststringvalue2"))
+	attributes.PutStr("testKey2", "teststringvalue2")
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	// Delta Sum with two int dps
@@ -111,12 +111,12 @@ func testMetrics() pmetric.MetricSlice {
 
 	dp = dps.AppendEmpty()
 	attributes = pcommon.NewMap()
-	attributes.Insert("testKey2", pcommon.NewValueString("teststringvalue2"))
+	attributes.PutStr("testKey2", "teststringvalue2")
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	dp = dps.AppendEmpty()
 	attributes = pcommon.NewMap()
-	attributes.Insert("testKey2", pcommon.NewValueString("teststringvalue2"))
+	attributes.PutStr("testKey2", "teststringvalue2")
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	// Cumulative Sum with one double dp
@@ -131,29 +131,28 @@ func testMetrics() pmetric.MetricSlice {
 }
 
 func setDPDoubleVal(dp pmetric.NumberDataPoint, value float64, attributes pcommon.Map, timeStamp time.Time) {
-	dp.SetDoubleVal(value)
+	dp.SetDoubleValue(value)
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeStamp))
 	attributes.CopyTo(dp.Attributes())
 }
 
 func setDPIntVal(dp pmetric.NumberDataPoint, value int64, attributes pcommon.Map, timeStamp time.Time) {
-	dp.SetIntVal(value)
+	dp.SetIntValue(value)
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeStamp))
 	attributes.CopyTo(dp.Attributes())
 }
 
 func initGauge(metric pmetric.Metric, name, desc, unit string) {
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	metric.SetDescription(desc)
 	metric.SetName(name)
 	metric.SetUnit(unit)
+	metric.SetEmptyGauge()
 }
 
 func initSum(metric pmetric.Metric, name, desc, unit string, aggr pmetric.MetricAggregationTemporality, isMonotonic bool) {
-	metric.SetDataType(pmetric.MetricDataTypeSum)
-	metric.Sum().SetIsMonotonic(isMonotonic)
-	metric.Sum().SetAggregationTemporality(aggr)
 	metric.SetDescription(desc)
 	metric.SetName(name)
 	metric.SetUnit(unit)
+	metric.SetEmptySum().SetIsMonotonic(isMonotonic)
+	metric.Sum().SetAggregationTemporality(aggr)
 }

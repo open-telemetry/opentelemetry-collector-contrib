@@ -42,7 +42,7 @@ const (
 )
 
 func logDataToLogService(ld plog.Logs) []*sls.Log {
-	slsLogs := make([]*sls.Log, 0)
+	var slsLogs []*sls.Log
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)

@@ -21,7 +21,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
@@ -54,7 +53,7 @@ func TestParserConfigInvalidTimeParser(t *testing.T) {
 
 func TestParserConfigBodyCollision(t *testing.T) {
 	cfg := NewParserConfig("test-id", "test-type")
-	cfg.ParseTo = entry.NewBodyField()
+	cfg.ParseTo = entry.RootableField{Field: entry.NewBodyField()}
 
 	b := entry.NewAttributeField("message")
 	cfg.BodyField = &b
@@ -75,7 +74,7 @@ func TestParserConfigBuildValid(t *testing.T) {
 	}
 
 	sevField := entry.NewBodyField("timestamp")
-	cfg.Config = &SeverityConfig{
+	cfg.SeverityConfig = &SeverityConfig{
 		ParseFrom: &sevField,
 	}
 
@@ -387,7 +386,7 @@ func TestParserFields(t *testing.T) {
 		{
 			"ParseToBodyRoot",
 			func(cfg *ParserConfig) {
-				cfg.ParseTo = entry.NewBodyField()
+				cfg.ParseTo = entry.RootableField{Field: entry.NewBodyField()}
 			},
 			func() *entry.Entry {
 				e := entry.New()
@@ -407,7 +406,7 @@ func TestParserFields(t *testing.T) {
 		{
 			"ParseToAttributesRoot",
 			func(cfg *ParserConfig) {
-				cfg.ParseTo = entry.NewAttributeField()
+				cfg.ParseTo = entry.RootableField{Field: entry.NewAttributeField()}
 			},
 			func() *entry.Entry {
 				e := entry.New()
@@ -428,7 +427,7 @@ func TestParserFields(t *testing.T) {
 		{
 			"ParseToResourceRoot",
 			func(cfg *ParserConfig) {
-				cfg.ParseTo = entry.NewResourceField()
+				cfg.ParseTo = entry.RootableField{Field: entry.NewResourceField()}
 			},
 			func() *entry.Entry {
 				e := entry.New()
@@ -449,7 +448,7 @@ func TestParserFields(t *testing.T) {
 		{
 			"ParseToBodyField",
 			func(cfg *ParserConfig) {
-				cfg.ParseTo = entry.NewBodyField("one", "two")
+				cfg.ParseTo = entry.RootableField{Field: entry.NewBodyField("one", "two")}
 			},
 			func() *entry.Entry {
 				e := entry.New()
@@ -473,7 +472,7 @@ func TestParserFields(t *testing.T) {
 		{
 			"ParseToAttributeField",
 			func(cfg *ParserConfig) {
-				cfg.ParseTo = entry.NewAttributeField("one", "two")
+				cfg.ParseTo = entry.RootableField{Field: entry.NewAttributeField("one", "two")}
 			},
 			func() *entry.Entry {
 				e := entry.New()
@@ -498,7 +497,7 @@ func TestParserFields(t *testing.T) {
 		{
 			"ParseToResourceField",
 			func(cfg *ParserConfig) {
-				cfg.ParseTo = entry.NewResourceField("one", "two")
+				cfg.ParseTo = entry.RootableField{Field: entry.NewResourceField("one", "two")}
 			},
 			func() *entry.Entry {
 				e := entry.New()
@@ -654,7 +653,7 @@ func TestParserFields(t *testing.T) {
 func NewTestParserConfig() ParserConfig {
 	expect := NewParserConfig("parser_config", "test_type")
 	expect.ParseFrom = entry.NewBodyField("from")
-	expect.ParseTo = entry.NewBodyField("to")
+	expect.ParseTo = entry.RootableField{Field: entry.NewBodyField("to")}
 	tp := NewTimeParser()
 	expect.TimeParser = &tp
 
@@ -663,71 +662,12 @@ func NewTestParserConfig() ParserConfig {
 		"info": "3xx",
 		"warn": "4xx",
 	}
-	expect.Config = &sp
+	expect.SeverityConfig = &sp
 
 	lnp := NewScopeNameParser()
 	lnp.ParseFrom = entry.NewBodyField("logger")
 	expect.ScopeNameParser = &lnp
 	return expect
-}
-
-func TestMapStructureDecodeParserConfigWithHook(t *testing.T) {
-	expect := NewTestParserConfig()
-	input := map[string]interface{}{
-		"id":         "parser_config",
-		"type":       "test_type",
-		"on_error":   "send",
-		"parse_from": "body.from",
-		"parse_to":   "body.to",
-		"timestamp": map[string]interface{}{
-			"layout_type": "strptime",
-		},
-		"severity": map[string]interface{}{
-			"mapping": map[interface{}]interface{}{
-				"info": "3xx",
-				"warn": "4xx",
-			},
-		},
-		"scope_name": map[string]interface{}{
-			"parse_from": "body.logger",
-		},
-	}
-
-	var actual ParserConfig
-	dc := &mapstructure.DecoderConfig{Result: &actual, DecodeHook: JSONUnmarshalerHook()}
-	ms, err := mapstructure.NewDecoder(dc)
-	require.NoError(t, err)
-	err = ms.Decode(input)
-	require.NoError(t, err)
-	require.Equal(t, expect, actual)
-}
-
-func TestMapStructureDecodeParserConfig(t *testing.T) {
-	expect := NewTestParserConfig()
-	input := map[string]interface{}{
-		"id":         "parser_config",
-		"type":       "test_type",
-		"on_error":   "send",
-		"parse_from": entry.NewBodyField("from"),
-		"parse_to":   entry.NewBodyField("to"),
-		"timestamp": map[string]interface{}{
-			"layout_type": "strptime",
-		},
-		"severity": map[string]interface{}{
-			"mapping": map[interface{}]interface{}{
-				"info": "3xx",
-				"warn": "4xx",
-			},
-		},
-		"scope_name": map[string]interface{}{
-			"parse_from": entry.NewBodyField("logger"),
-		},
-	}
-
-	var actual ParserConfig
-	err := mapstructure.Decode(input, &actual)
-	require.NoError(t, err)
-	require.Equal(t, expect, actual)
 }
 
 func writerWithFakeOut(t *testing.T) (*WriterOperator, *testutil.FakeOutput) {

@@ -83,8 +83,8 @@ func TestScrape(t *testing.T) {
 		},
 	}
 
-	const bootTime = 100
-	const expectedStartTime = 100 * 1e9
+	const createTime = 100
+	const expectedStartTime = 100 * 1e6
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
@@ -96,7 +96,7 @@ func TestScrape(t *testing.T) {
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}
-			scraper.bootTime = func() (uint64, error) { return bootTime, nil }
+			scraper.getProcessCreateTime = func(p processHandle) (int64, error) { return createTime, nil }
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
 			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
@@ -158,12 +158,12 @@ func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetr
 		internal.AssertSumMetricStartTimeEquals(t, cpuTimeMetric, startTime)
 	}
 	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 0, "state",
-		pcommon.NewValueString(metadata.AttributeStateUser.String()))
+		pcommon.NewValueStr(metadata.AttributeStateUser.String()))
 	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 1, "state",
-		pcommon.NewValueString(metadata.AttributeStateSystem.String()))
+		pcommon.NewValueStr(metadata.AttributeStateSystem.String()))
 	if runtime.GOOS == "linux" {
 		internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 2, "state",
-			pcommon.NewValueString(metadata.AttributeStateWait.String()))
+			pcommon.NewValueStr(metadata.AttributeStateWait.String()))
 	}
 }
 
@@ -217,9 +217,9 @@ func assertOldDiskIOMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMe
 		internal.AssertSumMetricStartTimeEquals(t, diskIOMetric, startTime)
 	}
 	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 0, "direction",
-		pcommon.NewValueString(metadata.AttributeDirectionRead.String()))
+		pcommon.NewValueStr(metadata.AttributeDirectionRead.String()))
 	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 1, "direction",
-		pcommon.NewValueString(metadata.AttributeDirectionWrite.String()))
+		pcommon.NewValueStr(metadata.AttributeDirectionWrite.String()))
 }
 
 func assertSameTimeStampForAllMetricsWithinResource(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice) {
@@ -488,7 +488,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 			for i, expectedName := range test.expectedNames {
 				rm := md.ResourceMetrics().At(i)
 				name, _ := rm.Resource().Attributes().Get(conventions.AttributeProcessExecutableName)
-				assert.Equal(t, expectedName, name.StringVal())
+				assert.Equal(t, expectedName, name.Str())
 			}
 		})
 	}

@@ -123,13 +123,13 @@ func TestDeduplicateIDs(t *testing.T) {
 		{
 			"one_op_rename",
 			func() []operator.Config {
-				ops := []operator.Config{}
+				var ops []operator.Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser"))
 				return ops
 			},
 			func() []operator.Config {
-				ops := []operator.Config{}
+				var ops []operator.Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser1"))
 				return ops
@@ -138,7 +138,7 @@ func TestDeduplicateIDs(t *testing.T) {
 		{
 			"multi_op_rename",
 			func() []operator.Config {
-				ops := []operator.Config{}
+				var ops []operator.Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser"))
@@ -148,7 +148,7 @@ func TestDeduplicateIDs(t *testing.T) {
 				return ops
 			},
 			func() []operator.Config {
-				ops := []operator.Config{}
+				var ops []operator.Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser1"))
 				ops = append(ops, newDummyJSON("json_parser2"))
@@ -160,7 +160,7 @@ func TestDeduplicateIDs(t *testing.T) {
 		{
 			"different_ops",
 			func() []operator.Config {
-				ops := []operator.Config{}
+				var ops []operator.Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser"))
@@ -169,7 +169,7 @@ func TestDeduplicateIDs(t *testing.T) {
 				return ops
 			},
 			func() []operator.Config {
-				ops := []operator.Config{}
+				var ops []operator.Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser1"))
 				ops = append(ops, newDummyJSON("json_parser2"))
@@ -181,7 +181,7 @@ func TestDeduplicateIDs(t *testing.T) {
 		{
 			"unordered",
 			func() []operator.Config {
-				ops := []operator.Config{}
+				var ops []operator.Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyCopy("copy"))
 				ops = append(ops, newDummyJSON("json_parser"))
@@ -190,7 +190,7 @@ func TestDeduplicateIDs(t *testing.T) {
 				return ops
 			},
 			func() []operator.Config {
-				ops := []operator.Config{}
+				var ops []operator.Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyCopy("copy"))
 				ops = append(ops, newDummyJSON("json_parser1"))
@@ -202,7 +202,7 @@ func TestDeduplicateIDs(t *testing.T) {
 		{
 			"already_renamed",
 			func() []operator.Config {
-				ops := []operator.Config{}
+				var ops []operator.Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser"))
@@ -211,7 +211,7 @@ func TestDeduplicateIDs(t *testing.T) {
 				return ops
 			},
 			func() []operator.Config {
-				ops := []operator.Config{}
+				var ops []operator.Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser1"))
 				ops = append(ops, newDummyJSON("json_parser2"))
@@ -223,7 +223,7 @@ func TestDeduplicateIDs(t *testing.T) {
 		{
 			"iterate_twice",
 			func() []operator.Config {
-				ops := []operator.Config{}
+				var ops []operator.Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser3"))
@@ -232,7 +232,7 @@ func TestDeduplicateIDs(t *testing.T) {
 				return ops
 			},
 			func() []operator.Config {
-				ops := []operator.Config{}
+				var ops []operator.Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser1"))
 				ops = append(ops, newDummyJSON("json_parser3"))
@@ -262,7 +262,7 @@ func TestUpdateOutputIDs(t *testing.T) {
 		{
 			name: "one_op_rename",
 			ops: func() []operator.Config {
-				ops := []operator.Config{}
+				var ops []operator.Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser"))
 				return ops
@@ -276,7 +276,7 @@ func TestUpdateOutputIDs(t *testing.T) {
 		{
 			name: "multi_op_rename",
 			ops: func() []operator.Config {
-				ops := []operator.Config{}
+				var ops []operator.Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser"))
@@ -294,7 +294,7 @@ func TestUpdateOutputIDs(t *testing.T) {
 		{
 			name: "different_ops",
 			ops: func() []operator.Config {
-				ops := []operator.Config{}
+				var ops []operator.Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser"))
@@ -314,7 +314,7 @@ func TestUpdateOutputIDs(t *testing.T) {
 		{
 			name: "unordered",
 			ops: func() []operator.Config {
-				ops := []operator.Config{}
+				var ops []operator.Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyCopy("copy"))
 				ops = append(ops, newDummyJSON("json_parser"))
@@ -332,7 +332,7 @@ func TestUpdateOutputIDs(t *testing.T) {
 		{
 			name: "already_renamed",
 			ops: func() []operator.Config {
-				ops := []operator.Config{}
+				var ops []operator.Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser"))
@@ -352,7 +352,7 @@ func TestUpdateOutputIDs(t *testing.T) {
 		{
 			name: "one_op_rename",
 			ops: func() []operator.Config {
-				ops := []operator.Config{}
+				var ops []operator.Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser"))
 				return ops

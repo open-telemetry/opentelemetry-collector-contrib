@@ -85,7 +85,7 @@ func (m *metricRabbitmqConsumerCount) init() {
 	m.data.SetName("rabbitmq.consumer.count")
 	m.data.SetDescription("The number of consumers currently reading from the queue.")
 	m.data.SetUnit("{consumers}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -97,7 +97,7 @@ func (m *metricRabbitmqConsumerCount) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -136,7 +136,7 @@ func (m *metricRabbitmqMessageAcknowledged) init() {
 	m.data.SetName("rabbitmq.message.acknowledged")
 	m.data.SetDescription("The number of messages acknowledged by consumers.")
 	m.data.SetUnit("{messages}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -148,7 +148,7 @@ func (m *metricRabbitmqMessageAcknowledged) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -187,7 +187,7 @@ func (m *metricRabbitmqMessageCurrent) init() {
 	m.data.SetName("rabbitmq.message.current")
 	m.data.SetDescription("The total number of messages currently in the queue.")
 	m.data.SetUnit("{messages}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -200,8 +200,8 @@ func (m *metricRabbitmqMessageCurrent) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("state", messageStateAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("state", messageStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -240,7 +240,7 @@ func (m *metricRabbitmqMessageDelivered) init() {
 	m.data.SetName("rabbitmq.message.delivered")
 	m.data.SetDescription("The number of messages delivered to consumers.")
 	m.data.SetUnit("{messages}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -252,7 +252,7 @@ func (m *metricRabbitmqMessageDelivered) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -291,7 +291,7 @@ func (m *metricRabbitmqMessageDropped) init() {
 	m.data.SetName("rabbitmq.message.dropped")
 	m.data.SetDescription("The number of messages dropped as unroutable.")
 	m.data.SetUnit("{messages}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -303,7 +303,7 @@ func (m *metricRabbitmqMessageDropped) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -342,7 +342,7 @@ func (m *metricRabbitmqMessagePublished) init() {
 	m.data.SetName("rabbitmq.message.published")
 	m.data.SetDescription("The number of messages published to a queue.")
 	m.data.SetUnit("{messages}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -354,7 +354,7 @@ func (m *metricRabbitmqMessagePublished) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -442,21 +442,21 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithRabbitmqNodeName sets provided value as "rabbitmq.node.name" attribute for current resource.
 func WithRabbitmqNodeName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("rabbitmq.node.name", val)
+		rm.Resource().Attributes().PutStr("rabbitmq.node.name", val)
 	}
 }
 
 // WithRabbitmqQueueName sets provided value as "rabbitmq.queue.name" attribute for current resource.
 func WithRabbitmqQueueName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("rabbitmq.queue.name", val)
+		rm.Resource().Attributes().PutStr("rabbitmq.queue.name", val)
 	}
 }
 
 // WithRabbitmqVhostName sets provided value as "rabbitmq.vhost.name" attribute for current resource.
 func WithRabbitmqVhostName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("rabbitmq.vhost.name", val)
+		rm.Resource().Attributes().PutStr("rabbitmq.vhost.name", val)
 	}
 }
 
@@ -467,10 +467,10 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {

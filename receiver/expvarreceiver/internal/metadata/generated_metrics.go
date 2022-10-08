@@ -139,7 +139,7 @@ func (m *metricProcessRuntimeMemstatsBuckHashSys) init() {
 	m.data.SetName("process.runtime.memstats.buck_hash_sys")
 	m.data.SetDescription("Bytes of memory in profiling bucket hash tables.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -151,7 +151,7 @@ func (m *metricProcessRuntimeMemstatsBuckHashSys) recordDataPoint(start pcommon.
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -190,7 +190,7 @@ func (m *metricProcessRuntimeMemstatsFrees) init() {
 	m.data.SetName("process.runtime.memstats.frees")
 	m.data.SetDescription("Cumulative count of heap objects freed.")
 	m.data.SetUnit("{objects}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -202,7 +202,7 @@ func (m *metricProcessRuntimeMemstatsFrees) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -241,7 +241,7 @@ func (m *metricProcessRuntimeMemstatsGcCPUFraction) init() {
 	m.data.SetName("process.runtime.memstats.gc_cpu_fraction")
 	m.data.SetDescription("The fraction of this program's available CPU time used by the GC since the program started.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricProcessRuntimeMemstatsGcCPUFraction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -251,7 +251,7 @@ func (m *metricProcessRuntimeMemstatsGcCPUFraction) recordDataPoint(start pcommo
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -290,7 +290,7 @@ func (m *metricProcessRuntimeMemstatsGcSys) init() {
 	m.data.SetName("process.runtime.memstats.gc_sys")
 	m.data.SetDescription("Bytes of memory in garbage collection metadata.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -302,7 +302,7 @@ func (m *metricProcessRuntimeMemstatsGcSys) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -341,7 +341,7 @@ func (m *metricProcessRuntimeMemstatsHeapAlloc) init() {
 	m.data.SetName("process.runtime.memstats.heap_alloc")
 	m.data.SetDescription("Bytes of allocated heap objects.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -353,7 +353,7 @@ func (m *metricProcessRuntimeMemstatsHeapAlloc) recordDataPoint(start pcommon.Ti
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -392,7 +392,7 @@ func (m *metricProcessRuntimeMemstatsHeapIdle) init() {
 	m.data.SetName("process.runtime.memstats.heap_idle")
 	m.data.SetDescription("Bytes in idle (unused) spans.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -404,7 +404,7 @@ func (m *metricProcessRuntimeMemstatsHeapIdle) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -443,7 +443,7 @@ func (m *metricProcessRuntimeMemstatsHeapInuse) init() {
 	m.data.SetName("process.runtime.memstats.heap_inuse")
 	m.data.SetDescription("Bytes in in-use spans.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -455,7 +455,7 @@ func (m *metricProcessRuntimeMemstatsHeapInuse) recordDataPoint(start pcommon.Ti
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -494,7 +494,7 @@ func (m *metricProcessRuntimeMemstatsHeapObjects) init() {
 	m.data.SetName("process.runtime.memstats.heap_objects")
 	m.data.SetDescription("Number of allocated heap objects.")
 	m.data.SetUnit("{objects}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -506,7 +506,7 @@ func (m *metricProcessRuntimeMemstatsHeapObjects) recordDataPoint(start pcommon.
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -545,7 +545,7 @@ func (m *metricProcessRuntimeMemstatsHeapReleased) init() {
 	m.data.SetName("process.runtime.memstats.heap_released")
 	m.data.SetDescription("Bytes of physical memory returned to the OS.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -557,7 +557,7 @@ func (m *metricProcessRuntimeMemstatsHeapReleased) recordDataPoint(start pcommon
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -596,7 +596,7 @@ func (m *metricProcessRuntimeMemstatsHeapSys) init() {
 	m.data.SetName("process.runtime.memstats.heap_sys")
 	m.data.SetDescription("Bytes of heap memory obtained by the OS.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -608,7 +608,7 @@ func (m *metricProcessRuntimeMemstatsHeapSys) recordDataPoint(start pcommon.Time
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -647,7 +647,7 @@ func (m *metricProcessRuntimeMemstatsLastPause) init() {
 	m.data.SetName("process.runtime.memstats.last_pause")
 	m.data.SetDescription("The most recent stop-the-world pause time.")
 	m.data.SetUnit("ns")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricProcessRuntimeMemstatsLastPause) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -657,7 +657,7 @@ func (m *metricProcessRuntimeMemstatsLastPause) recordDataPoint(start pcommon.Ti
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -696,7 +696,7 @@ func (m *metricProcessRuntimeMemstatsLookups) init() {
 	m.data.SetName("process.runtime.memstats.lookups")
 	m.data.SetDescription("Number of pointer lookups performed by the runtime.")
 	m.data.SetUnit("{lookups}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -708,7 +708,7 @@ func (m *metricProcessRuntimeMemstatsLookups) recordDataPoint(start pcommon.Time
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -747,7 +747,7 @@ func (m *metricProcessRuntimeMemstatsMallocs) init() {
 	m.data.SetName("process.runtime.memstats.mallocs")
 	m.data.SetDescription("Cumulative count of heap objects allocated.")
 	m.data.SetUnit("{objects}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -759,7 +759,7 @@ func (m *metricProcessRuntimeMemstatsMallocs) recordDataPoint(start pcommon.Time
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -798,7 +798,7 @@ func (m *metricProcessRuntimeMemstatsMcacheInuse) init() {
 	m.data.SetName("process.runtime.memstats.mcache_inuse")
 	m.data.SetDescription("Bytes of allocated mcache structures.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -810,7 +810,7 @@ func (m *metricProcessRuntimeMemstatsMcacheInuse) recordDataPoint(start pcommon.
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -849,7 +849,7 @@ func (m *metricProcessRuntimeMemstatsMcacheSys) init() {
 	m.data.SetName("process.runtime.memstats.mcache_sys")
 	m.data.SetDescription("Bytes of memory obtained from the OS for mcache structures.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -861,7 +861,7 @@ func (m *metricProcessRuntimeMemstatsMcacheSys) recordDataPoint(start pcommon.Ti
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -900,7 +900,7 @@ func (m *metricProcessRuntimeMemstatsMspanInuse) init() {
 	m.data.SetName("process.runtime.memstats.mspan_inuse")
 	m.data.SetDescription("Bytes of allocated mspan structures.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -912,7 +912,7 @@ func (m *metricProcessRuntimeMemstatsMspanInuse) recordDataPoint(start pcommon.T
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -951,7 +951,7 @@ func (m *metricProcessRuntimeMemstatsMspanSys) init() {
 	m.data.SetName("process.runtime.memstats.mspan_sys")
 	m.data.SetDescription("Bytes of memory obtained from the OS for mspan structures.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -963,7 +963,7 @@ func (m *metricProcessRuntimeMemstatsMspanSys) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1002,7 +1002,7 @@ func (m *metricProcessRuntimeMemstatsNextGc) init() {
 	m.data.SetName("process.runtime.memstats.next_gc")
 	m.data.SetDescription("The target heap size of the next GC cycle.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1014,7 +1014,7 @@ func (m *metricProcessRuntimeMemstatsNextGc) recordDataPoint(start pcommon.Times
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1053,7 +1053,7 @@ func (m *metricProcessRuntimeMemstatsNumForcedGc) init() {
 	m.data.SetName("process.runtime.memstats.num_forced_gc")
 	m.data.SetDescription("Number of GC cycles that were forced by the application calling the GC function.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1065,7 +1065,7 @@ func (m *metricProcessRuntimeMemstatsNumForcedGc) recordDataPoint(start pcommon.
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1104,7 +1104,7 @@ func (m *metricProcessRuntimeMemstatsNumGc) init() {
 	m.data.SetName("process.runtime.memstats.num_gc")
 	m.data.SetDescription("Number of completed GC cycles.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1116,7 +1116,7 @@ func (m *metricProcessRuntimeMemstatsNumGc) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1155,7 +1155,7 @@ func (m *metricProcessRuntimeMemstatsOtherSys) init() {
 	m.data.SetName("process.runtime.memstats.other_sys")
 	m.data.SetDescription("Bytes of memory in miscellaneous off-heap runtime allocations.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1167,7 +1167,7 @@ func (m *metricProcessRuntimeMemstatsOtherSys) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1206,7 +1206,7 @@ func (m *metricProcessRuntimeMemstatsPauseTotal) init() {
 	m.data.SetName("process.runtime.memstats.pause_total")
 	m.data.SetDescription("The cumulative nanoseconds in GC stop-the-world pauses since the program started.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1218,7 +1218,7 @@ func (m *metricProcessRuntimeMemstatsPauseTotal) recordDataPoint(start pcommon.T
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1257,7 +1257,7 @@ func (m *metricProcessRuntimeMemstatsStackInuse) init() {
 	m.data.SetName("process.runtime.memstats.stack_inuse")
 	m.data.SetDescription("Bytes in stack spans.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1269,7 +1269,7 @@ func (m *metricProcessRuntimeMemstatsStackInuse) recordDataPoint(start pcommon.T
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1308,7 +1308,7 @@ func (m *metricProcessRuntimeMemstatsStackSys) init() {
 	m.data.SetName("process.runtime.memstats.stack_sys")
 	m.data.SetDescription("Bytes of stack memory obtained from the OS.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1320,7 +1320,7 @@ func (m *metricProcessRuntimeMemstatsStackSys) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1359,7 +1359,7 @@ func (m *metricProcessRuntimeMemstatsSys) init() {
 	m.data.SetName("process.runtime.memstats.sys")
 	m.data.SetDescription("Total bytes of memory obtained from the OS.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1371,7 +1371,7 @@ func (m *metricProcessRuntimeMemstatsSys) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1410,7 +1410,7 @@ func (m *metricProcessRuntimeMemstatsTotalAlloc) init() {
 	m.data.SetName("process.runtime.memstats.total_alloc")
 	m.data.SetDescription("Cumulative bytes allocated for heap objects.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1422,7 +1422,7 @@ func (m *metricProcessRuntimeMemstatsTotalAlloc) recordDataPoint(start pcommon.T
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1554,10 +1554,10 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {

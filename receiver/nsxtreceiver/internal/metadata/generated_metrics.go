@@ -171,7 +171,7 @@ func (m *metricNsxtNodeCPUUtilization) init() {
 	m.data.SetName("nsxt.node.cpu.utilization")
 	m.data.SetDescription("The average amount of CPU being used by the node.")
 	m.data.SetUnit("%")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -182,8 +182,8 @@ func (m *metricNsxtNodeCPUUtilization) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("class", classAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("class", classAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -222,7 +222,7 @@ func (m *metricNsxtNodeFilesystemUsage) init() {
 	m.data.SetName("nsxt.node.filesystem.usage")
 	m.data.SetDescription("The amount of storage space used by the node.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -235,8 +235,8 @@ func (m *metricNsxtNodeFilesystemUsage) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("state", diskStateAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("state", diskStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -275,7 +275,7 @@ func (m *metricNsxtNodeFilesystemUtilization) init() {
 	m.data.SetName("nsxt.node.filesystem.utilization")
 	m.data.SetDescription("The percentage of storage space utilized.")
 	m.data.SetUnit("%")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricNsxtNodeFilesystemUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -285,7 +285,7 @@ func (m *metricNsxtNodeFilesystemUtilization) recordDataPoint(start pcommon.Time
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -324,7 +324,7 @@ func (m *metricNsxtNodeMemoryCacheUsage) init() {
 	m.data.SetName("nsxt.node.memory.cache.usage")
 	m.data.SetDescription("The size of the node's memory cache.")
 	m.data.SetUnit("KBy")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -336,7 +336,7 @@ func (m *metricNsxtNodeMemoryCacheUsage) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -375,7 +375,7 @@ func (m *metricNsxtNodeMemoryUsage) init() {
 	m.data.SetName("nsxt.node.memory.usage")
 	m.data.SetDescription("The memory usage of the node.")
 	m.data.SetUnit("KBy")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -387,7 +387,7 @@ func (m *metricNsxtNodeMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -426,7 +426,7 @@ func (m *metricNsxtNodeNetworkIo) init() {
 	m.data.SetName("nsxt.node.network.io")
 	m.data.SetDescription("The number of bytes which have flowed through the network interface.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -439,8 +439,8 @@ func (m *metricNsxtNodeNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("direction", directionAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -479,7 +479,7 @@ func (m *metricNsxtNodeNetworkPacketCount) init() {
 	m.data.SetName("nsxt.node.network.packet.count")
 	m.data.SetDescription("The number of packets which have flowed through the network interface on the node.")
 	m.data.SetUnit("{packets}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -492,9 +492,9 @@ func (m *metricNsxtNodeNetworkPacketCount) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("direction", directionAttributeValue)
-	dp.Attributes().InsertString("type", packetTypeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
+	dp.Attributes().PutStr("type", packetTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -584,28 +584,28 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithDeviceID sets provided value as "device.id" attribute for current resource.
 func WithDeviceID(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("device.id", val)
+		rm.Resource().Attributes().PutStr("device.id", val)
 	}
 }
 
 // WithNsxtNodeID sets provided value as "nsxt.node.id" attribute for current resource.
 func WithNsxtNodeID(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("nsxt.node.id", val)
+		rm.Resource().Attributes().PutStr("nsxt.node.id", val)
 	}
 }
 
 // WithNsxtNodeName sets provided value as "nsxt.node.name" attribute for current resource.
 func WithNsxtNodeName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("nsxt.node.name", val)
+		rm.Resource().Attributes().PutStr("nsxt.node.name", val)
 	}
 }
 
 // WithNsxtNodeType sets provided value as "nsxt.node.type" attribute for current resource.
 func WithNsxtNodeType(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("nsxt.node.type", val)
+		rm.Resource().Attributes().PutStr("nsxt.node.type", val)
 	}
 }
 
@@ -616,10 +616,10 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {

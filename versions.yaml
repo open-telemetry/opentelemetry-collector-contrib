@@ -14,13 +14,13 @@
 
 module-sets:
   contrib-base:
-    version: v0.58.0
+    version: v0.61.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
-      - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/chloggen
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen
+      - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3mapprovider
       - github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/client
       - github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/server
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter
@@ -28,6 +28,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter
@@ -70,6 +71,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling
@@ -109,8 +111,9 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
-      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite
@@ -133,6 +136,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor
@@ -179,6 +183,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
@@ -193,8 +198,9 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/examples/federation/prom-counter
-      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver

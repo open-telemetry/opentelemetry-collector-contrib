@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 const (
@@ -36,8 +37,12 @@ type Config struct {
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 
-	// The Coralogix trace ingress endpoint
+	// Deprecated: [v0.60.0] Coralogix jaeger based trace endpoint
+	// will be removed in the next version
+	// Please use OTLP endpoint using traces.endpoint
 	configgrpc.GRPCClientSettings `mapstructure:",squash"`
+	// Coralogix traces ingress endpoint
+	Traces configgrpc.GRPCClientSettings `mapstructure:"traces"`
 
 	// The Coralogix metrics ingress endpoint
 	Metrics configgrpc.GRPCClientSettings `mapstructure:"metrics"`
@@ -48,13 +53,14 @@ type Config struct {
 	// Your Coralogix private key (sensitive) for authentication
 	PrivateKey string `mapstructure:"private_key"`
 
-	// Traces emitted by this OpenTelemetry exporter should be tagged
-	// in Coralogix with the following application and subsystem names
-	AppName string `mapstructure:"application_name"`
-
-	// Deprecated: [v0.47.0] SubSystem will remove in the next version
-	// You can remove 'subsystem_name' from your config file or leave it in this version.
-	// The subsystem will generate automatically according to the "service_name" of the trace batch.
+	// Ordered list of Resource attributes that are used for Coralogix
+	// AppName and SubSystem values. The first non-empty Resource attribute is used.
+	// Example: AppNameAttributes: ["k8s.namespace.name", "service.namespace"]
+	// Example: SubSystemAttributes: ["k8s.deployment.name", "k8s.daemonset.name", "service.name"]
+	AppNameAttributes   []string `mapstructure:"application_name_attributes"`
+	SubSystemAttributes []string `mapstructure:"subsystem_name_attributes"`
+	// Default Coralogix application and subsystem name values.
+	AppName   string `mapstructure:"application_name"`
 	SubSystem string `mapstructure:"subsystem_name"`
 }
 
@@ -65,11 +71,12 @@ func isEmpty(endpoint string) bool {
 	return false
 }
 func (c *Config) Validate() error {
-	// validate that atleast one endpoint is set up correctly
-	if isEmpty(c.GRPCClientSettings.Endpoint) &&
+	// validate that at least one endpoint is set up correctly
+	if isEmpty(c.Endpoint) &&
+		isEmpty(c.Traces.Endpoint) &&
 		isEmpty(c.Metrics.Endpoint) &&
 		isEmpty(c.Logs.Endpoint) {
-		return fmt.Errorf("`endpoint` or `metrics.endpoint` or `logs.endpoint` not specified, please fix the configuration file")
+		return fmt.Errorf("`traces.endpoint` or `metrics.endpoint` or `logs.endpoint` not specified, please fix the configuration file")
 	}
 	if c.PrivateKey == "" {
 		return fmt.Errorf("`privateKey` not specified, please fix the configuration file")
@@ -84,6 +91,34 @@ func (c *Config) Validate() error {
 	}
 	c.GRPCClientSettings.Headers["ACCESS_TOKEN"] = c.PrivateKey
 	c.GRPCClientSettings.Headers["appName"] = c.AppName
-
 	return nil
+}
+
+func (c *Config) getMetadataFromResource(res pcommon.Resource) (appName, subsystem string) {
+	// Example application name attributes: service.namespace, k8s.namespace.name
+	for _, appNameAttribute := range c.AppNameAttributes {
+		attr, ok := res.Attributes().Get(appNameAttribute)
+		if ok && attr.AsString() != "" {
+			appName = attr.AsString()
+			break
+		}
+	}
+
+	// Example subsystem name attributes: service.name, k8s.deployment.name, k8s.statefulset.name
+	for _, subSystemNameAttribute := range c.SubSystemAttributes {
+		attr, ok := res.Attributes().Get(subSystemNameAttribute)
+		if ok && attr.AsString() != "" {
+			subsystem = attr.AsString()
+			break
+		}
+	}
+
+	if appName == "" {
+		appName = c.AppName
+	}
+	if subsystem == "" {
+		subsystem = c.SubSystem
+	}
+
+	return appName, subsystem
 }

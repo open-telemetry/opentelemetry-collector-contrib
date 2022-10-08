@@ -80,7 +80,7 @@ func TestLogRecordToEnvelope(t *testing.T) {
 			require.NotNil(t, envelopeData.BaseData)
 
 			messageData := envelopeData.BaseData.(*contracts.MessageData)
-			assert.Equal(t, messageData.Message, logRecord.Body().StringVal())
+			assert.Equal(t, messageData.Message, logRecord.Body().Str())
 			assert.Equal(t, messageData.SeverityLevel, contracts.Information)
 
 			hexTraceID := logRecord.TraceID().HexString()

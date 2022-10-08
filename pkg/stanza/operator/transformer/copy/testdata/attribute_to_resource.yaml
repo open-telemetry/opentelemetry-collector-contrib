@@ -1,3 +1,0 @@
-type: copy
-from: attributes.key
-to: resource.key2

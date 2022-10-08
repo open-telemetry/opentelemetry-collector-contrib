@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -276,7 +276,7 @@ func loadTopAsMap() (bson.M, error) {
 }
 
 func loadIndexStatsAsMap(collectionName string) ([]bson.M, error) {
-	indexStats := []bson.M{}
+	var indexStats []bson.M
 	switch collectionName {
 	case "products":
 		indexStats0, _ := loadTestFileAsMap("./testdata/productsIndexStats0.json")

@@ -93,8 +93,9 @@ func (t *traceTransformer) Span(orig ptrace.Span) (span, error) {
 		tags[k] = v
 	}
 
-	if len(orig.TraceState()) > 0 {
-		tags[tracetranslator.TagW3CTraceState] = string(orig.TraceState())
+	traceState := orig.TraceState().AsRaw()
+	if orig.TraceState().AsRaw() != "" {
+		tags[tracetranslator.TagW3CTraceState] = traceState
 	}
 
 	return span{
@@ -227,11 +228,11 @@ func attributesToTagsReplaceSource(attributes ...pcommon.Map) map[string]string 
 }
 
 func newMap(tags map[string]string) pcommon.Map {
-	valueMap := make(map[string]interface{}, len(tags))
+	m := pcommon.NewMap()
 	for key, value := range tags {
-		valueMap[key] = value
+		m.PutStr(key, value)
 	}
-	return pcommon.NewMapFromRaw(valueMap)
+	return m
 }
 
 func errorTagsFromStatus(status ptrace.SpanStatus) map[string]string {
@@ -263,7 +264,7 @@ func traceIDtoUUID(id pcommon.TraceID) (uuid.UUID, error) {
 }
 
 func spanIDtoUUID(id pcommon.SpanID) (uuid.UUID, error) {
-	formatted, err := uuid.FromBytes(padTo16Bytes(id.Bytes()))
+	formatted, err := uuid.FromBytes(padTo16Bytes(id))
 	if err != nil || id.IsEmpty() {
 		return uuid.Nil, errInvalidSpanID
 	}
@@ -275,7 +276,7 @@ func parentSpanIDtoUUID(id pcommon.SpanID) uuid.UUID {
 		return uuid.Nil
 	}
 	// FromBytes only returns an error if the length is not 16 bytes, so the error case is unreachable
-	formatted, _ := uuid.FromBytes(padTo16Bytes(id.Bytes()))
+	formatted, _ := uuid.FromBytes(padTo16Bytes(id))
 	return formatted
 }
 

@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestConfig_Validate(t *testing.T) {
+func TestConfigValidate(t *testing.T) {
 	t.Run("Empty configuration", func(t *testing.T) {
 		c := &Config{}
 		err := c.Validate()
@@ -35,7 +35,15 @@ func TestConfig_Validate(t *testing.T) {
 		assert.Equal(t, "http://example.com/", c.Endpoint, "no Instana endpoint set")
 	})
 
-	t.Run("Invalid Endpoint", func(t *testing.T) {
+	t.Run("Invalid Endpoint Invalid URL", func(t *testing.T) {
+		c := &Config{Endpoint: "http://example.}~", AgentKey: "key1"}
+		err := c.Validate()
+		assert.Error(t, err)
+
+		assert.Equal(t, "http://example.}~", c.Endpoint, "endpoint must be a valid URL")
+	})
+
+	t.Run("Invalid Endpoint No Protocol", func(t *testing.T) {
 		c := &Config{Endpoint: "example.com", AgentKey: "key1"}
 		err := c.Validate()
 		assert.Error(t, err)

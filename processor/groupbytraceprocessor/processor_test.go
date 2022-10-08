@@ -126,7 +126,7 @@ func TestInternalCacheLimit(t *testing.T) {
 
 	// 6 iterations
 	for _, traceID := range traceIDs {
-		batch := simpleTracesWithID(pcommon.NewTraceID(traceID))
+		batch := simpleTracesWithID(pcommon.TraceID(traceID))
 		assert.NoError(t, p.ConsumeTraces(ctx, batch))
 	}
 
@@ -136,7 +136,7 @@ func TestInternalCacheLimit(t *testing.T) {
 	assert.Equal(t, 5, len(receivedTraceIDs))
 
 	for i := 5; i > 0; i-- { // last 5 traces
-		traceID := pcommon.NewTraceID(traceIDs[i])
+		traceID := pcommon.TraceID(traceIDs[i])
 		assert.Contains(t, receivedTraceIDs, traceID)
 	}
 
@@ -173,14 +173,14 @@ func TestProcessBatchDoesntFail(t *testing.T) {
 	st := newMemoryStorage()
 	next := &mockProcessor{}
 
-	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 
 	trace := ptrace.NewTraces()
 	rs := trace.ResourceSpans().AppendEmpty()
 	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
-	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4}))
+	span.SetSpanID([8]byte{1, 2, 3, 4})
 
 	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	assert.NotNil(t, p)
@@ -206,7 +206,7 @@ func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	require.NotNil(t, p)
 
-	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 	batch := simpleTracesWithID(traceID)
 
 	ctx := context.Background()
@@ -244,7 +244,7 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	require.NotNil(t, p)
 
-	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 	batch := simpleTracesWithID(traceID)
 
 	ctx := context.Background()
@@ -282,7 +282,7 @@ func TestTraceErrorFromStorageWhileProcessingTrace(t *testing.T) {
 	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	require.NotNil(t, p)
 
-	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 
 	trace := ptrace.NewTraces()
 	rss := trace.ResourceSpans()
@@ -290,7 +290,7 @@ func TestTraceErrorFromStorageWhileProcessingTrace(t *testing.T) {
 	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
-	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4}))
+	span.SetSpanID([8]byte{1, 2, 3, 4})
 
 	batch := batchpersignal.SplitTraces(trace)
 
@@ -331,7 +331,7 @@ func TestAddSpansToExistingTrace(t *testing.T) {
 		assert.NoError(t, p.Shutdown(ctx))
 	}()
 
-	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 
 	// test
 	first := simpleTracesWithID(traceID)
@@ -364,7 +364,7 @@ func TestTraceErrorFromStorageWhileProcessingSecondTrace(t *testing.T) {
 	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	require.NotNil(t, p)
 
-	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 
 	trace := ptrace.NewTraces()
 	rss := trace.ResourceSpans()
@@ -372,7 +372,7 @@ func TestTraceErrorFromStorageWhileProcessingSecondTrace(t *testing.T) {
 	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
-	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4}))
+	span.SetSpanID([8]byte{1, 2, 3, 4})
 
 	batch := batchpersignal.SplitTraces(trace)
 
@@ -412,7 +412,7 @@ func TestErrorFromStorageWhileRemovingTrace(t *testing.T) {
 	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	require.NotNil(t, p)
 
-	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 
 	// test
 	err := p.onTraceRemoved(traceID)
@@ -438,7 +438,7 @@ func TestTraceNotFoundWhileRemovingTrace(t *testing.T) {
 	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	require.NotNil(t, p)
 
-	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 
 	// test
 	err := p.onTraceRemoved(traceID)
@@ -475,7 +475,7 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 		assert.NoError(t, p.Shutdown(ctx))
 	}()
 
-	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 
 	firstTrace := ptrace.NewTraces()
 	firstRss := firstTrace.ResourceSpans()
@@ -484,7 +484,7 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 
-	secondTraceID := pcommon.NewTraceID([16]byte{2, 3, 4, 5})
+	secondTraceID := pcommon.TraceID([16]byte{2, 3, 4, 5})
 	secondTrace := ptrace.NewTraces()
 	secondRss := secondTrace.ResourceSpans()
 	secondResourceSpans := secondRss.AppendEmpty()
@@ -517,7 +517,7 @@ func TestErrorOnProcessResourceSpansContinuesProcessing(t *testing.T) {
 	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	require.NotNil(t, p)
 
-	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 
 	trace := ptrace.NewTraces()
 	rss := trace.ResourceSpans()
@@ -525,7 +525,7 @@ func TestErrorOnProcessResourceSpansContinuesProcessing(t *testing.T) {
 	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
-	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4}))
+	span.SetSpanID([8]byte{1, 2, 3, 4})
 
 	expectedError := errors.New("some unexpected error")
 	returnedError := false
@@ -581,7 +581,7 @@ func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 	}()
 
 	for n := 0; n < b.N; n++ {
-		traceID := pcommon.NewTraceID([16]byte{byte(1 + n), 2, 3, 4})
+		traceID := pcommon.TraceID([16]byte{byte(1 + n), 2, 3, 4})
 		trace := simpleTracesWithID(traceID)
 		assert.NoError(b, p.ConsumeTraces(context.Background(), trace))
 	}
@@ -668,7 +668,7 @@ func (b *blockingConsumer) ConsumeTraces(context.Context, ptrace.Traces) error {
 }
 
 func simpleTraces() ptrace.Traces {
-	return simpleTracesWithID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+	return simpleTracesWithID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
 }
 
 func simpleTracesWithID(traceID pcommon.TraceID) ptrace.Traces {

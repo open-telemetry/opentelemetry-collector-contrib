@@ -71,7 +71,7 @@ func TestHandleStartError(t *testing.T) {
 	factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
 
 	cfg := factory.CreateDefaultConfig().(*TestConfig)
-	cfg.Input = newUnstartableParams()
+	cfg.Input = NewUnstartableConfig()
 
 	receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
@@ -113,7 +113,7 @@ func BenchmarkReadLine(b *testing.B) {
   start_at: beginning`,
 		filePath)
 
-	operatorCfgs := []operator.Config{}
+	var operatorCfgs []operator.Config
 	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfgs))
 
 	emitter := NewLogEmitter(
@@ -180,7 +180,7 @@ func BenchmarkParseAndMap(b *testing.B) {
 
 	pipelineYaml := fmt.Sprintf("%s%s", fileInputYaml, regexParserYaml)
 
-	operatorCfgs := []operator.Config{}
+	var operatorCfgs []operator.Config
 	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfgs))
 
 	emitter := NewLogEmitter(

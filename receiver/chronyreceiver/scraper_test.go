@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -76,9 +76,8 @@ func TestChronyScraper(t *testing.T) {
 				m.SetName("ntp.skew")
 				m.SetUnit("ppm")
 				m.SetDescription("This is the estimated error bound on the frequency.")
-				m.SetDataType(pmetric.MetricDataTypeGauge)
-				g := m.Gauge().DataPoints().AppendEmpty()
-				g.SetDoubleVal(1000.300)
+				g := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				g.SetDoubleValue(1000.300)
 				g.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(100, 0)))
 				g.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(100, 0)))
 
@@ -86,10 +85,9 @@ func TestChronyScraper(t *testing.T) {
 				m.SetName("ntp.time.correction")
 				m.SetUnit("seconds")
 				m.SetDescription("The number of seconds difference between the system's clock and the reference clock")
-				m.SetDataType(pmetric.MetricDataTypeGauge)
-				g = m.Gauge().DataPoints().AppendEmpty()
-				g.Attributes().InsertString("leap.status", "normal")
-				g.SetDoubleVal(0.00043)
+				g = m.SetEmptyGauge().DataPoints().AppendEmpty()
+				g.Attributes().PutStr("leap.status", "normal")
+				g.SetDoubleValue(0.00043)
 				g.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(100, 0)))
 				g.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(100, 0)))
 
@@ -97,10 +95,9 @@ func TestChronyScraper(t *testing.T) {
 				m.SetName("ntp.time.last_offset")
 				m.SetUnit("seconds")
 				m.SetDescription("The estimated local offset on the last clock update")
-				m.SetDataType(pmetric.MetricDataTypeGauge)
-				g = m.Gauge().DataPoints().AppendEmpty()
-				g.Attributes().InsertString("leap.status", "normal")
-				g.SetDoubleVal(0.00034)
+				g = m.SetEmptyGauge().DataPoints().AppendEmpty()
+				g.Attributes().PutStr("leap.status", "normal")
+				g.SetDoubleValue(0.00034)
 				g.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(100, 0)))
 				g.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(100, 0)))
 				return metrics

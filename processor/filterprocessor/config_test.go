@@ -737,42 +737,42 @@ func TestLogSeverity_severityNumber(t *testing.T) {
 		{
 			name: "INFO severity",
 			sev:  logSeverity("INFO"),
-			num:  plog.SeverityNumberINFO,
+			num:  plog.SeverityNumberInfo,
 		},
 		{
 			name: "info severity",
 			sev:  logSeverity("info"),
-			num:  plog.SeverityNumberINFO,
+			num:  plog.SeverityNumberInfo,
 		},
 		{
 			name: "info3 severity",
 			sev:  logSeverity("info3"),
-			num:  plog.SeverityNumberINFO3,
+			num:  plog.SeverityNumberInfo3,
 		},
 		{
 			name: "DEBUG severity",
 			sev:  logSeverity("DEBUG"),
-			num:  plog.SeverityNumberDEBUG,
+			num:  plog.SeverityNumberDebug,
 		},
 		{
 			name: "ERROR severity",
 			sev:  logSeverity("ERROR"),
-			num:  plog.SeverityNumberERROR,
+			num:  plog.SeverityNumberError,
 		},
 		{
 			name: "WARN severity",
 			sev:  logSeverity("WARN"),
-			num:  plog.SeverityNumberWARN,
+			num:  plog.SeverityNumberWarn,
 		},
 		{
 			name: "unknown severity",
 			sev:  logSeverity("unknown"),
-			num:  plog.SeverityNumberUNDEFINED,
+			num:  plog.SeverityNumberUndefined,
 		},
 		{
 			name: "Numeric Severity",
 			sev:  logSeverity("9"),
-			num:  plog.SeverityNumberINFO,
+			num:  plog.SeverityNumberInfo,
 		},
 	}
 

@@ -25,9 +25,9 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
@@ -185,7 +185,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 		tags = append(tags, exp.cfg.HostMetadata.Tags...)
 	}
 	ms, sl := consumer.All(exp.getPushTime(), exp.params.BuildInfo, tags)
-	metrics.ProcessMetrics(ms)
+	ms = metrics.PrepareSystemMetrics(ms)
 
 	err = nil
 	if len(ms) > 0 {

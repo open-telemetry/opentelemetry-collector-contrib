@@ -185,11 +185,11 @@ func TestConvert(t *testing.T) {
 
 	if resAtts := rls.Resource().Attributes(); assert.Equal(t, 5, resAtts.Len()) {
 		m := pcommon.NewMap()
-		m.InsertBool("bool", true)
-		m.InsertInt("int", 123)
-		m.InsertDouble("double", 12.34)
-		m.InsertString("string", "hello")
-		m.Insert("object", pcommon.NewValueMap())
+		m.PutBool("bool", true)
+		m.PutInt("int", 123)
+		m.PutDouble("double", 12.34)
+		m.PutStr("string", "hello")
+		m.PutEmptyMap("object")
 		assert.EqualValues(t, m.Sort(), resAtts.Sort())
 	}
 
@@ -201,16 +201,16 @@ func TestConvert(t *testing.T) {
 
 	lr := logs.At(0)
 
-	assert.Equal(t, plog.SeverityNumberERROR, lr.SeverityNumber())
+	assert.Equal(t, plog.SeverityNumberError, lr.SeverityNumber())
 	assert.Equal(t, "E", lr.SeverityText())
 
 	if atts := lr.Attributes(); assert.Equal(t, 5, atts.Len()) {
 		m := pcommon.NewMap()
-		m.InsertBool("bool", true)
-		m.InsertInt("int", 123)
-		m.InsertDouble("double", 12.34)
-		m.InsertString("string", "hello")
-		m.Insert("object", pcommon.NewValueMap())
+		m.PutBool("bool", true)
+		m.PutInt("int", 123)
+		m.PutDouble("double", 12.34)
+		m.PutStr("string", "hello")
+		m.PutEmptyMap("object")
 		assert.EqualValues(t, m.Sort(), atts.Sort())
 	}
 
@@ -218,12 +218,12 @@ func TestConvert(t *testing.T) {
 		m := pcommon.NewMap()
 		// Don't include a nested object because AttributeValueMap sorting
 		// doesn't sort recursively.
-		m.InsertBool("bool", true)
-		m.InsertInt("int", 123)
-		m.InsertDouble("double", 12.34)
-		m.InsertString("string", "hello")
-		m.InsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("asdf")))
-		assert.EqualValues(t, m.Sort(), lr.Body().MapVal().Sort())
+		m.PutBool("bool", true)
+		m.PutInt("int", 123)
+		m.PutDouble("double", 12.34)
+		m.PutStr("string", "hello")
+		m.PutEmptyBytes("bytes").FromRaw([]byte("asdf"))
+		assert.EqualValues(t, m.Sort(), lr.Body().Map().Sort())
 	}
 }
 
@@ -548,68 +548,68 @@ func TestConvertMetadata(t *testing.T) {
 
 	attVal, ok := atts.Get("bool")
 	require.True(t, ok)
-	require.True(t, attVal.BoolVal())
+	require.True(t, attVal.Bool())
 
 	attVal, ok = atts.Get("int")
 	require.True(t, ok)
-	require.Equal(t, int64(123), attVal.IntVal())
+	require.Equal(t, int64(123), attVal.Int())
 
 	attVal, ok = atts.Get("double")
 	require.True(t, ok)
-	require.Equal(t, 12.34, attVal.DoubleVal())
+	require.Equal(t, 12.34, attVal.Double())
 
 	attVal, ok = atts.Get("string")
 	require.True(t, ok)
-	require.Equal(t, "hello", attVal.StringVal())
+	require.Equal(t, "hello", attVal.Str())
 
 	attVal, ok = atts.Get("object")
 	require.True(t, ok)
 
-	mapVal := attVal.MapVal()
+	mapVal := attVal.Map()
 	require.Equal(t, 4, mapVal.Len())
 
 	attVal, ok = mapVal.Get("bool")
 	require.True(t, ok)
-	require.True(t, attVal.BoolVal())
+	require.True(t, attVal.Bool())
 
 	attVal, ok = mapVal.Get("int")
 	require.True(t, ok)
-	require.Equal(t, int64(123), attVal.IntVal())
+	require.Equal(t, int64(123), attVal.Int())
 
 	attVal, ok = mapVal.Get("double")
 	require.True(t, ok)
-	require.Equal(t, 12.34, attVal.DoubleVal())
+	require.Equal(t, 12.34, attVal.Double())
 
 	attVal, ok = mapVal.Get("string")
 	require.True(t, ok)
-	require.Equal(t, "hello", attVal.StringVal())
+	require.Equal(t, "hello", attVal.Str())
 
 	bod := result.Body()
 	require.Equal(t, pcommon.ValueTypeBool, bod.Type())
-	require.True(t, bod.BoolVal())
+	require.True(t, bod.Bool())
 }
 
 func TestConvertSimpleBody(t *testing.T) {
-	require.True(t, anyToBody(true).BoolVal())
-	require.False(t, anyToBody(false).BoolVal())
+	require.True(t, anyToBody(true).Bool())
+	require.False(t, anyToBody(false).Bool())
 
-	require.Equal(t, "string", anyToBody("string").StringVal())
-	require.Equal(t, []byte("bytes"), anyToBody([]byte("bytes")).BytesVal().AsRaw())
+	require.Equal(t, "string", anyToBody("string").Str())
+	require.Equal(t, []byte("bytes"), anyToBody([]byte("bytes")).Bytes().AsRaw())
 
-	require.Equal(t, int64(1), anyToBody(1).IntVal())
-	require.Equal(t, int64(1), anyToBody(int8(1)).IntVal())
-	require.Equal(t, int64(1), anyToBody(int16(1)).IntVal())
-	require.Equal(t, int64(1), anyToBody(int32(1)).IntVal())
-	require.Equal(t, int64(1), anyToBody(int64(1)).IntVal())
+	require.Equal(t, int64(1), anyToBody(1).Int())
+	require.Equal(t, int64(1), anyToBody(int8(1)).Int())
+	require.Equal(t, int64(1), anyToBody(int16(1)).Int())
+	require.Equal(t, int64(1), anyToBody(int32(1)).Int())
+	require.Equal(t, int64(1), anyToBody(int64(1)).Int())
 
-	require.Equal(t, int64(1), anyToBody(uint(1)).IntVal())
-	require.Equal(t, int64(1), anyToBody(uint8(1)).IntVal())
-	require.Equal(t, int64(1), anyToBody(uint16(1)).IntVal())
-	require.Equal(t, int64(1), anyToBody(uint32(1)).IntVal())
-	require.Equal(t, int64(1), anyToBody(uint64(1)).IntVal())
+	require.Equal(t, int64(1), anyToBody(uint(1)).Int())
+	require.Equal(t, int64(1), anyToBody(uint8(1)).Int())
+	require.Equal(t, int64(1), anyToBody(uint16(1)).Int())
+	require.Equal(t, int64(1), anyToBody(uint32(1)).Int())
+	require.Equal(t, int64(1), anyToBody(uint64(1)).Int())
 
-	require.Equal(t, float64(1), anyToBody(float32(1)).DoubleVal())
-	require.Equal(t, float64(1), anyToBody(float64(1)).DoubleVal())
+	require.Equal(t, float64(1), anyToBody(float32(1)).Double())
+	require.Equal(t, float64(1), anyToBody(float64(1)).Double())
 }
 
 func TestConvertMapBody(t *testing.T) {
@@ -632,28 +632,28 @@ func TestConvertMapBody(t *testing.T) {
 		"float64": float64(1),
 	}
 
-	result := anyToBody(structuredBody).MapVal()
+	result := anyToBody(structuredBody).Map()
 
 	v, _ := result.Get("true")
-	require.True(t, v.BoolVal())
+	require.True(t, v.Bool())
 	v, _ = result.Get("false")
-	require.False(t, v.BoolVal())
+	require.False(t, v.Bool())
 
 	for _, k := range []string{"string"} {
 		v, _ = result.Get(k)
-		require.Equal(t, k, v.StringVal())
+		require.Equal(t, k, v.Str())
 	}
 	for _, k := range []string{"bytes"} {
 		v, _ = result.Get(k)
-		require.Equal(t, []byte(k), v.BytesVal().AsRaw())
+		require.Equal(t, []byte(k), v.Bytes().AsRaw())
 	}
 	for _, k := range []string{"int", "int8", "int16", "int32", "int64", "uint", "uint8", "uint16", "uint32", "uint64"} {
 		v, _ = result.Get(k)
-		require.Equal(t, int64(1), v.IntVal())
+		require.Equal(t, int64(1), v.Int())
 	}
 	for _, k := range []string{"float32", "float64"} {
 		v, _ = result.Get(k)
-		require.Equal(t, float64(1), v.DoubleVal())
+		require.Equal(t, float64(1), v.Double())
 	}
 }
 
@@ -679,41 +679,41 @@ func TestConvertArrayBody(t *testing.T) {
 		map[string]interface{}{"one": 1, "yes": true},
 	}
 
-	result := anyToBody(structuredBody).SliceVal()
+	result := anyToBody(structuredBody).Slice()
 
-	require.True(t, result.At(0).BoolVal())
-	require.False(t, result.At(1).BoolVal())
-	require.Equal(t, "string", result.At(2).StringVal())
-	require.Equal(t, []byte("bytes"), result.At(3).BytesVal().AsRaw())
+	require.True(t, result.At(0).Bool())
+	require.False(t, result.At(1).Bool())
+	require.Equal(t, "string", result.At(2).Str())
+	require.Equal(t, []byte("bytes"), result.At(3).Bytes().AsRaw())
 
-	require.Equal(t, int64(1), result.At(4).IntVal())  // int
-	require.Equal(t, int64(1), result.At(5).IntVal())  // int8
-	require.Equal(t, int64(1), result.At(6).IntVal())  // int16
-	require.Equal(t, int64(1), result.At(7).IntVal())  // int32
-	require.Equal(t, int64(1), result.At(8).IntVal())  // int64
-	require.Equal(t, int64(1), result.At(9).IntVal())  // uint
-	require.Equal(t, int64(1), result.At(10).IntVal()) // uint8
-	require.Equal(t, int64(1), result.At(11).IntVal()) // uint16
-	require.Equal(t, int64(1), result.At(12).IntVal()) // uint32
-	require.Equal(t, int64(1), result.At(13).IntVal()) // uint64
+	require.Equal(t, int64(1), result.At(4).Int())  // int
+	require.Equal(t, int64(1), result.At(5).Int())  // int8
+	require.Equal(t, int64(1), result.At(6).Int())  // int16
+	require.Equal(t, int64(1), result.At(7).Int())  // int32
+	require.Equal(t, int64(1), result.At(8).Int())  // int64
+	require.Equal(t, int64(1), result.At(9).Int())  // uint
+	require.Equal(t, int64(1), result.At(10).Int()) // uint8
+	require.Equal(t, int64(1), result.At(11).Int()) // uint16
+	require.Equal(t, int64(1), result.At(12).Int()) // uint32
+	require.Equal(t, int64(1), result.At(13).Int()) // uint64
 
-	require.Equal(t, float64(1), result.At(14).DoubleVal()) // float32
-	require.Equal(t, float64(1), result.At(15).DoubleVal()) // float64
+	require.Equal(t, float64(1), result.At(14).Double()) // float32
+	require.Equal(t, float64(1), result.At(15).Double()) // float64
 
-	nestedArr := result.At(16).SliceVal()
-	require.Equal(t, "string", nestedArr.At(0).StringVal())
-	require.Equal(t, int64(1), nestedArr.At(1).IntVal())
+	nestedArr := result.At(16).Slice()
+	require.Equal(t, "string", nestedArr.At(0).Str())
+	require.Equal(t, int64(1), nestedArr.At(1).Int())
 
-	nestedMap := result.At(17).MapVal()
+	nestedMap := result.At(17).Map()
 	v, _ := nestedMap.Get("one")
-	require.Equal(t, int64(1), v.IntVal())
+	require.Equal(t, int64(1), v.Int())
 	v, _ = nestedMap.Get("yes")
-	require.True(t, v.BoolVal())
+	require.True(t, v.Bool())
 }
 
 func TestConvertUnknownBody(t *testing.T) {
 	unknownType := map[string]int{"0": 0, "1": 1}
-	require.Equal(t, fmt.Sprintf("%v", unknownType), anyToBody(unknownType).StringVal())
+	require.Equal(t, fmt.Sprintf("%v", unknownType), anyToBody(unknownType).Str())
 }
 
 func TestConvertNestedMapBody(t *testing.T) {
@@ -725,22 +725,22 @@ func TestConvertNestedMapBody(t *testing.T) {
 		"unknown": unknownType,
 	}
 
-	result := anyToBody(structuredBody).MapVal()
+	result := anyToBody(structuredBody).Map()
 
 	arrayAttVal, _ := result.Get("array")
-	a := arrayAttVal.SliceVal()
-	require.Equal(t, int64(0), a.At(0).IntVal())
-	require.Equal(t, int64(1), a.At(1).IntVal())
+	a := arrayAttVal.Slice()
+	require.Equal(t, int64(0), a.At(0).Int())
+	require.Equal(t, int64(1), a.At(1).Int())
 
 	mapAttVal, _ := result.Get("map")
-	m := mapAttVal.MapVal()
+	m := mapAttVal.Map()
 	v, _ := m.Get("0")
-	require.Equal(t, int64(0), v.IntVal())
+	require.Equal(t, int64(0), v.Int())
 	v, _ = m.Get("1")
-	require.Equal(t, "one", v.StringVal())
+	require.Equal(t, "one", v.Str())
 
 	unknownAttVal, _ := result.Get("unknown")
-	require.Equal(t, fmt.Sprintf("%v", unknownType), unknownAttVal.StringVal())
+	require.Equal(t, fmt.Sprintf("%v", unknownType), unknownAttVal.Str())
 }
 
 func anyToBody(body interface{}) pcommon.Value {
@@ -760,83 +760,83 @@ func TestConvertSeverity(t *testing.T) {
 		expectedNumber plog.SeverityNumber
 		expectedText   string
 	}{
-		{entry.Default, "", plog.SeverityNumberUNDEFINED, ""},
-		{entry.Trace, "Trace", plog.SeverityNumberTRACE, "Trace"},
-		{entry.Trace2, "Trace2", plog.SeverityNumberTRACE2, "Trace2"},
-		{entry.Trace3, "Trace3", plog.SeverityNumberTRACE3, "Trace3"},
-		{entry.Trace4, "Trace4", plog.SeverityNumberTRACE4, "Trace4"},
-		{entry.Debug, "Debug", plog.SeverityNumberDEBUG, "Debug"},
-		{entry.Debug2, "Debug2", plog.SeverityNumberDEBUG2, "Debug2"},
-		{entry.Debug3, "Debug3", plog.SeverityNumberDEBUG3, "Debug3"},
-		{entry.Debug4, "Debug4", plog.SeverityNumberDEBUG4, "Debug4"},
-		{entry.Info, "Info", plog.SeverityNumberINFO, "Info"},
-		{entry.Info2, "Info2", plog.SeverityNumberINFO2, "Info2"},
-		{entry.Info3, "Info3", plog.SeverityNumberINFO3, "Info3"},
-		{entry.Info4, "Info4", plog.SeverityNumberINFO4, "Info4"},
-		{entry.Warn, "Warn", plog.SeverityNumberWARN, "Warn"},
-		{entry.Warn2, "Warn2", plog.SeverityNumberWARN2, "Warn2"},
-		{entry.Warn3, "Warn3", plog.SeverityNumberWARN3, "Warn3"},
-		{entry.Warn4, "Warn4", plog.SeverityNumberWARN4, "Warn4"},
-		{entry.Error, "Error", plog.SeverityNumberERROR, "Error"},
-		{entry.Error2, "Error2", plog.SeverityNumberERROR2, "Error2"},
-		{entry.Error3, "Error3", plog.SeverityNumberERROR3, "Error3"},
-		{entry.Error4, "Error4", plog.SeverityNumberERROR4, "Error4"},
-		{entry.Fatal, "Fatal", plog.SeverityNumberFATAL, "Fatal"},
-		{entry.Fatal2, "Fatal2", plog.SeverityNumberFATAL2, "Fatal2"},
-		{entry.Fatal3, "Fatal3", plog.SeverityNumberFATAL3, "Fatal3"},
-		{entry.Fatal4, "Fatal4", plog.SeverityNumberFATAL4, "Fatal4"},
+		{entry.Default, "", plog.SeverityNumberUndefined, ""},
+		{entry.Trace, "Trace", plog.SeverityNumberTrace, "Trace"},
+		{entry.Trace2, "Trace2", plog.SeverityNumberTrace2, "Trace2"},
+		{entry.Trace3, "Trace3", plog.SeverityNumberTrace3, "Trace3"},
+		{entry.Trace4, "Trace4", plog.SeverityNumberTrace4, "Trace4"},
+		{entry.Debug, "Debug", plog.SeverityNumberDebug, "Debug"},
+		{entry.Debug2, "Debug2", plog.SeverityNumberDebug2, "Debug2"},
+		{entry.Debug3, "Debug3", plog.SeverityNumberDebug3, "Debug3"},
+		{entry.Debug4, "Debug4", plog.SeverityNumberDebug4, "Debug4"},
+		{entry.Info, "Info", plog.SeverityNumberInfo, "Info"},
+		{entry.Info2, "Info2", plog.SeverityNumberInfo2, "Info2"},
+		{entry.Info3, "Info3", plog.SeverityNumberInfo3, "Info3"},
+		{entry.Info4, "Info4", plog.SeverityNumberInfo4, "Info4"},
+		{entry.Warn, "Warn", plog.SeverityNumberWarn, "Warn"},
+		{entry.Warn2, "Warn2", plog.SeverityNumberWarn2, "Warn2"},
+		{entry.Warn3, "Warn3", plog.SeverityNumberWarn3, "Warn3"},
+		{entry.Warn4, "Warn4", plog.SeverityNumberWarn4, "Warn4"},
+		{entry.Error, "Error", plog.SeverityNumberError, "Error"},
+		{entry.Error2, "Error2", plog.SeverityNumberError2, "Error2"},
+		{entry.Error3, "Error3", plog.SeverityNumberError3, "Error3"},
+		{entry.Error4, "Error4", plog.SeverityNumberError4, "Error4"},
+		{entry.Fatal, "Fatal", plog.SeverityNumberFatal, "Fatal"},
+		{entry.Fatal2, "Fatal2", plog.SeverityNumberFatal2, "Fatal2"},
+		{entry.Fatal3, "Fatal3", plog.SeverityNumberFatal3, "Fatal3"},
+		{entry.Fatal4, "Fatal4", plog.SeverityNumberFatal4, "Fatal4"},
 
 		// Original severity text should be preserved if present
-		{entry.Trace, "other", plog.SeverityNumberTRACE, "other"},
-		{entry.Trace2, "other", plog.SeverityNumberTRACE2, "other"},
-		{entry.Trace3, "other", plog.SeverityNumberTRACE3, "other"},
-		{entry.Trace4, "other", plog.SeverityNumberTRACE4, "other"},
-		{entry.Debug, "other", plog.SeverityNumberDEBUG, "other"},
-		{entry.Debug2, "other", plog.SeverityNumberDEBUG2, "other"},
-		{entry.Debug3, "other", plog.SeverityNumberDEBUG3, "other"},
-		{entry.Debug4, "other", plog.SeverityNumberDEBUG4, "other"},
-		{entry.Info, "other", plog.SeverityNumberINFO, "other"},
-		{entry.Info2, "other", plog.SeverityNumberINFO2, "other"},
-		{entry.Info3, "other", plog.SeverityNumberINFO3, "other"},
-		{entry.Info4, "other", plog.SeverityNumberINFO4, "other"},
-		{entry.Warn, "other", plog.SeverityNumberWARN, "other"},
-		{entry.Warn2, "other", plog.SeverityNumberWARN2, "other"},
-		{entry.Warn3, "other", plog.SeverityNumberWARN3, "other"},
-		{entry.Warn4, "other", plog.SeverityNumberWARN4, "other"},
-		{entry.Error, "other", plog.SeverityNumberERROR, "other"},
-		{entry.Error2, "other", plog.SeverityNumberERROR2, "other"},
-		{entry.Error3, "other", plog.SeverityNumberERROR3, "other"},
-		{entry.Error4, "other", plog.SeverityNumberERROR4, "other"},
-		{entry.Fatal, "other", plog.SeverityNumberFATAL, "other"},
-		{entry.Fatal2, "other", plog.SeverityNumberFATAL2, "other"},
-		{entry.Fatal3, "other", plog.SeverityNumberFATAL3, "other"},
-		{entry.Fatal4, "other", plog.SeverityNumberFATAL4, "other"},
+		{entry.Trace, "other", plog.SeverityNumberTrace, "other"},
+		{entry.Trace2, "other", plog.SeverityNumberTrace2, "other"},
+		{entry.Trace3, "other", plog.SeverityNumberTrace3, "other"},
+		{entry.Trace4, "other", plog.SeverityNumberTrace4, "other"},
+		{entry.Debug, "other", plog.SeverityNumberDebug, "other"},
+		{entry.Debug2, "other", plog.SeverityNumberDebug2, "other"},
+		{entry.Debug3, "other", plog.SeverityNumberDebug3, "other"},
+		{entry.Debug4, "other", plog.SeverityNumberDebug4, "other"},
+		{entry.Info, "other", plog.SeverityNumberInfo, "other"},
+		{entry.Info2, "other", plog.SeverityNumberInfo2, "other"},
+		{entry.Info3, "other", plog.SeverityNumberInfo3, "other"},
+		{entry.Info4, "other", plog.SeverityNumberInfo4, "other"},
+		{entry.Warn, "other", plog.SeverityNumberWarn, "other"},
+		{entry.Warn2, "other", plog.SeverityNumberWarn2, "other"},
+		{entry.Warn3, "other", plog.SeverityNumberWarn3, "other"},
+		{entry.Warn4, "other", plog.SeverityNumberWarn4, "other"},
+		{entry.Error, "other", plog.SeverityNumberError, "other"},
+		{entry.Error2, "other", plog.SeverityNumberError2, "other"},
+		{entry.Error3, "other", plog.SeverityNumberError3, "other"},
+		{entry.Error4, "other", plog.SeverityNumberError4, "other"},
+		{entry.Fatal, "other", plog.SeverityNumberFatal, "other"},
+		{entry.Fatal2, "other", plog.SeverityNumberFatal2, "other"},
+		{entry.Fatal3, "other", plog.SeverityNumberFatal3, "other"},
+		{entry.Fatal4, "other", plog.SeverityNumberFatal4, "other"},
 
 		// Sev text should be set to severity "Short Name" if not present
-		{entry.Trace, "", plog.SeverityNumberTRACE, "TRACE"},
-		{entry.Trace2, "", plog.SeverityNumberTRACE2, "TRACE2"},
-		{entry.Trace3, "", plog.SeverityNumberTRACE3, "TRACE3"},
-		{entry.Trace4, "", plog.SeverityNumberTRACE4, "TRACE4"},
-		{entry.Debug, "", plog.SeverityNumberDEBUG, "DEBUG"},
-		{entry.Debug2, "", plog.SeverityNumberDEBUG2, "DEBUG2"},
-		{entry.Debug3, "", plog.SeverityNumberDEBUG3, "DEBUG3"},
-		{entry.Debug4, "", plog.SeverityNumberDEBUG4, "DEBUG4"},
-		{entry.Info, "", plog.SeverityNumberINFO, "INFO"},
-		{entry.Info2, "", plog.SeverityNumberINFO2, "INFO2"},
-		{entry.Info3, "", plog.SeverityNumberINFO3, "INFO3"},
-		{entry.Info4, "", plog.SeverityNumberINFO4, "INFO4"},
-		{entry.Warn, "", plog.SeverityNumberWARN, "WARN"},
-		{entry.Warn2, "", plog.SeverityNumberWARN2, "WARN2"},
-		{entry.Warn3, "", plog.SeverityNumberWARN3, "WARN3"},
-		{entry.Warn4, "", plog.SeverityNumberWARN4, "WARN4"},
-		{entry.Error, "", plog.SeverityNumberERROR, "ERROR"},
-		{entry.Error2, "", plog.SeverityNumberERROR2, "ERROR2"},
-		{entry.Error3, "", plog.SeverityNumberERROR3, "ERROR3"},
-		{entry.Error4, "", plog.SeverityNumberERROR4, "ERROR4"},
-		{entry.Fatal, "", plog.SeverityNumberFATAL, "FATAL"},
-		{entry.Fatal2, "", plog.SeverityNumberFATAL2, "FATAL2"},
-		{entry.Fatal3, "", plog.SeverityNumberFATAL3, "FATAL3"},
-		{entry.Fatal4, "", plog.SeverityNumberFATAL4, "FATAL4"},
+		{entry.Trace, "", plog.SeverityNumberTrace, "TRACE"},
+		{entry.Trace2, "", plog.SeverityNumberTrace2, "TRACE2"},
+		{entry.Trace3, "", plog.SeverityNumberTrace3, "TRACE3"},
+		{entry.Trace4, "", plog.SeverityNumberTrace4, "TRACE4"},
+		{entry.Debug, "", plog.SeverityNumberDebug, "DEBUG"},
+		{entry.Debug2, "", plog.SeverityNumberDebug2, "DEBUG2"},
+		{entry.Debug3, "", plog.SeverityNumberDebug3, "DEBUG3"},
+		{entry.Debug4, "", plog.SeverityNumberDebug4, "DEBUG4"},
+		{entry.Info, "", plog.SeverityNumberInfo, "INFO"},
+		{entry.Info2, "", plog.SeverityNumberInfo2, "INFO2"},
+		{entry.Info3, "", plog.SeverityNumberInfo3, "INFO3"},
+		{entry.Info4, "", plog.SeverityNumberInfo4, "INFO4"},
+		{entry.Warn, "", plog.SeverityNumberWarn, "WARN"},
+		{entry.Warn2, "", plog.SeverityNumberWarn2, "WARN2"},
+		{entry.Warn3, "", plog.SeverityNumberWarn3, "WARN3"},
+		{entry.Warn4, "", plog.SeverityNumberWarn4, "WARN4"},
+		{entry.Error, "", plog.SeverityNumberError, "ERROR"},
+		{entry.Error2, "", plog.SeverityNumberError2, "ERROR2"},
+		{entry.Error3, "", plog.SeverityNumberError3, "ERROR3"},
+		{entry.Error4, "", plog.SeverityNumberError4, "ERROR4"},
+		{entry.Fatal, "", plog.SeverityNumberFatal, "FATAL"},
+		{entry.Fatal2, "", plog.SeverityNumberFatal2, "FATAL2"},
+		{entry.Fatal3, "", plog.SeverityNumberFatal3, "FATAL3"},
+		{entry.Fatal4, "", plog.SeverityNumberFatal4, "FATAL4"},
 	}
 
 	for _, tc := range cases {
@@ -863,15 +863,15 @@ func TestConvertTrace(t *testing.T) {
 			0x01,
 		}})
 
-	require.Equal(t, pcommon.NewTraceID(
+	require.Equal(t, pcommon.TraceID(
 		[16]byte{
 			0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
 		}), record.TraceID())
-	require.Equal(t, pcommon.NewSpanID(
+	require.Equal(t, pcommon.SpanID(
 		[8]byte{
 			0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
 		}), record.SpanID())
-	require.Equal(t, uint32(0x01), record.Flags())
+	require.Equal(t, uint32(0x01), uint32(record.Flags()))
 }
 
 func BenchmarkConverter(b *testing.B) {

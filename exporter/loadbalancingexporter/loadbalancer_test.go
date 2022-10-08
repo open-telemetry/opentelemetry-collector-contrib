@@ -110,6 +110,29 @@ func TestWithDNSResolver(t *testing.T) {
 	assert.True(t, ok)
 }
 
+func TestWithDNSResolverNoEndpoints(t *testing.T) {
+	// prepare
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			DNS: &DNSResolver{
+				Hostname: "service-1",
+			},
+		},
+	}
+	p, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, nil)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	// test
+	e := p.Endpoint([]byte{128, 128, 0, 0})
+
+	// verify
+	assert.Equal(t, "", e)
+}
+
 func TestMultipleResolvers(t *testing.T) {
 	cfg := &Config{
 		Resolver: ResolverSettings{
@@ -190,12 +213,14 @@ func TestOnBackendChanges(t *testing.T) {
 func TestRemoveExtraExporters(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	p, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, nil)
+	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+		return newNopMockExporter(), nil
+	}
+	p, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, componentFactory)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	p.exporters["endpoint-1"] = newNopMockExporter()
-	p.exporters["endpoint-2"] = newNopMockExporter()
+	p.addMissingExporters(context.Background(), []string{"endpoint-1", "endpoint-2"})
 	resolved := []string{"endpoint-1"}
 
 	// test
@@ -203,7 +228,7 @@ func TestRemoveExtraExporters(t *testing.T) {
 
 	// verify
 	assert.Len(t, p.exporters, 1)
-	assert.NotContains(t, p.exporters, "endpoint-2")
+	assert.NotContains(t, p.exporters, endpointWithPort("endpoint-2"))
 }
 
 func TestAddMissingExporters(t *testing.T) {
@@ -262,7 +287,7 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	p.exporters["endpoint-1"] = newNopMockExporter()
+	p.exporters["endpoint-1:4317"] = newNopMockExporter()
 	resolved := []string{"endpoint-1", "endpoint-2"}
 
 	// test
@@ -270,7 +295,7 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 
 	// verify
 	assert.Len(t, p.exporters, 1)
-	assert.NotContains(t, p.exporters, "endpoint-2")
+	assert.Contains(t, p.exporters, "endpoint-1:4317")
 }
 
 func TestEndpointFound(t *testing.T) {
@@ -334,10 +359,11 @@ func TestFailedExporterInRing(t *testing.T) {
 	// this is a case that we are not even sure that might happen, so, this test case is here to document
 	// this behavior. As the solution would require more locks/syncs/checks, we should probably wait to see
 	// if this is really a problem in the real world
-	delete(p.exporters, "endpoint-2")
+	resEndpoint := "endpoint-2"
+	delete(p.exporters, endpointWithPort(resEndpoint))
 
 	// sanity check
-	require.Contains(t, p.res.(*staticResolver).endpoints, "endpoint-2")
+	require.Contains(t, p.res.(*staticResolver).endpoints, resEndpoint)
 
 	// test
 	// this trace ID will reach the endpoint-2 -- see the consistent hashing tests for more info

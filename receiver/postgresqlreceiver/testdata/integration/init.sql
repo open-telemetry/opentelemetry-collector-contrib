@@ -1,5 +1,5 @@
-CREATE USER otel WITH PASSWORD 'otel';
-GRANT SELECT ON pg_stat_database TO otel;
+CREATE USER otelu WITH PASSWORD 'otelp';
+GRANT SELECT ON pg_stat_database TO otelu;
 
 CREATE TABLE table1 (
     id serial PRIMARY KEY

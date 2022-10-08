@@ -1,3 +1,0 @@
-type: move
-from: attributes["dotted.field.name"]
-to: resource.new

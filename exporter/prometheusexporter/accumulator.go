@@ -89,18 +89,18 @@ func (a *lastValueAccumulator) Accumulate(rm pmetric.ResourceMetrics) (n int) {
 func (a *lastValueAccumulator) addMetric(metric pmetric.Metric, il pcommon.InstrumentationScope, resourceAttrs pcommon.Map, now time.Time) int {
 	a.logger.Debug(fmt.Sprintf("accumulating metric: %s", metric.Name()))
 
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		return a.accumulateGauge(metric, il, resourceAttrs, now)
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		return a.accumulateSum(metric, il, resourceAttrs, now)
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		return a.accumulateDoubleHistogram(metric, il, resourceAttrs, now)
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		return a.accumulateSummary(metric, il, resourceAttrs, now)
 	default:
 		a.logger.With(
-			zap.String("data_type", string(metric.DataType())),
+			zap.String("data_type", string(metric.Type())),
 			zap.String("metric_name", metric.Name()),
 		).Error("failed to translate metric")
 	}
@@ -128,9 +128,9 @@ func (a *lastValueAccumulator) accumulateSummary(metric pmetric.Metric, il pcomm
 			continue
 		}
 
-		mm := createMetric(metric)
-		ip.CopyTo(mm.Summary().DataPoints().AppendEmpty())
-		a.registeredMetrics.Store(signature, &accumulatedValue{value: mm, resourceAttrs: resourceAttrs, scope: il, updated: now})
+		m := copyMetricMetadata(metric)
+		ip.CopyTo(m.SetEmptySummary().DataPoints().AppendEmpty())
+		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scope: il, updated: now})
 		n++
 	}
 
@@ -150,8 +150,8 @@ func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, il pcommon
 
 		v, ok := a.registeredMetrics.Load(signature)
 		if !ok {
-			m := createMetric(metric)
-			ip.CopyTo(m.Gauge().DataPoints().AppendEmpty())
+			m := copyMetricMetadata(metric)
+			ip.CopyTo(m.SetEmptyGauge().DataPoints().AppendEmpty())
 			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scope: il, updated: now})
 			n++
 			continue
@@ -163,8 +163,8 @@ func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, il pcommon
 			continue
 		}
 
-		m := createMetric(metric)
-		ip.CopyTo(m.Gauge().DataPoints().AppendEmpty())
+		m := copyMetricMetadata(metric)
+		ip.CopyTo(m.SetEmptyGauge().DataPoints().AppendEmpty())
 		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scope: il, updated: now})
 		n++
 	}
@@ -196,8 +196,8 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, il pcommon.I
 
 		v, ok := a.registeredMetrics.Load(signature)
 		if !ok {
-			m := createMetric(metric)
-			m.Sum().SetIsMonotonic(metric.Sum().IsMonotonic())
+			m := copyMetricMetadata(metric)
+			m.SetEmptySum().SetIsMonotonic(metric.Sum().IsMonotonic())
 			m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 			ip.CopyTo(m.Sum().DataPoints().AppendEmpty())
 			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scope: il, updated: now})
@@ -216,14 +216,14 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, il pcommon.I
 			ip.SetStartTimestamp(mv.value.Sum().DataPoints().At(0).StartTimestamp())
 			switch ip.ValueType() {
 			case pmetric.NumberDataPointValueTypeInt:
-				ip.SetIntVal(ip.IntVal() + mv.value.Sum().DataPoints().At(0).IntVal())
+				ip.SetIntValue(ip.IntValue() + mv.value.Sum().DataPoints().At(0).IntValue())
 			case pmetric.NumberDataPointValueTypeDouble:
-				ip.SetDoubleVal(ip.DoubleVal() + mv.value.Sum().DataPoints().At(0).DoubleVal())
+				ip.SetDoubleValue(ip.DoubleValue() + mv.value.Sum().DataPoints().At(0).DoubleValue())
 			}
 		}
 
-		m := createMetric(metric)
-		m.Sum().SetIsMonotonic(metric.Sum().IsMonotonic())
+		m := copyMetricMetadata(metric)
+		m.SetEmptySum().SetIsMonotonic(metric.Sum().IsMonotonic())
 		m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		ip.CopyTo(m.Sum().DataPoints().AppendEmpty())
 		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scope: il, updated: now})
@@ -252,8 +252,8 @@ func (a *lastValueAccumulator) accumulateDoubleHistogram(metric pmetric.Metric, 
 
 		v, ok := a.registeredMetrics.Load(signature)
 		if !ok {
-			m := createMetric(metric)
-			ip.CopyTo(m.Histogram().DataPoints().AppendEmpty())
+			m := copyMetricMetadata(metric)
+			ip.CopyTo(m.SetEmptyHistogram().DataPoints().AppendEmpty())
 			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scope: il, updated: now})
 			n++
 			continue
@@ -265,8 +265,8 @@ func (a *lastValueAccumulator) accumulateDoubleHistogram(metric pmetric.Metric, 
 			continue
 		}
 
-		m := createMetric(metric)
-		ip.CopyTo(m.Histogram().DataPoints().AppendEmpty())
+		m := copyMetricMetadata(metric)
+		ip.CopyTo(m.SetEmptyHistogram().DataPoints().AppendEmpty())
 		m.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scope: il, updated: now})
 		n++
@@ -300,7 +300,7 @@ func (a *lastValueAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map) {
 
 func timeseriesSignature(ilmName string, metric pmetric.Metric, attributes pcommon.Map, resourceAttrs pcommon.Map) string {
 	var b strings.Builder
-	b.WriteString(metric.DataType().String())
+	b.WriteString(metric.Type().String())
 	b.WriteString("*" + ilmName)
 	b.WriteString("*" + metric.Name())
 	attributes.Sort().Range(func(k string, v pcommon.Value) bool {
@@ -323,12 +323,11 @@ func timeseriesSignature(ilmName string, metric pmetric.Metric, attributes pcomm
 	return b.String()
 }
 
-func createMetric(metric pmetric.Metric) pmetric.Metric {
+func copyMetricMetadata(metric pmetric.Metric) pmetric.Metric {
 	m := pmetric.NewMetric()
 	m.SetName(metric.Name())
 	m.SetDescription(metric.Description())
 	m.SetUnit(metric.Unit())
-	m.SetDataType(metric.DataType())
 
 	return m
 }

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,51 +32,51 @@ func TestSeverityMatcher_MatchLogRecord(t *testing.T) {
 	}{
 		{
 			name:          "INFO matches if TRACE is min",
-			minSeverity:   plog.SeverityNumberTRACE,
-			inputSeverity: plog.SeverityNumberINFO,
+			minSeverity:   plog.SeverityNumberTrace,
+			inputSeverity: plog.SeverityNumberInfo,
 			matches:       true,
 		},
 		{
 			name:          "INFO matches if INFO is min",
-			minSeverity:   plog.SeverityNumberINFO,
-			inputSeverity: plog.SeverityNumberINFO,
+			minSeverity:   plog.SeverityNumberInfo,
+			inputSeverity: plog.SeverityNumberInfo,
 			matches:       true,
 		},
 		{
 			name:          "INFO does not match if WARN is min",
-			minSeverity:   plog.SeverityNumberWARN,
-			inputSeverity: plog.SeverityNumberINFO,
+			minSeverity:   plog.SeverityNumberWarn,
+			inputSeverity: plog.SeverityNumberInfo,
 			matches:       false,
 		},
 		{
 			name:          "INFO does not match if INFO2 is min",
-			minSeverity:   plog.SeverityNumberINFO2,
-			inputSeverity: plog.SeverityNumberINFO,
+			minSeverity:   plog.SeverityNumberInfo2,
+			inputSeverity: plog.SeverityNumberInfo,
 			matches:       false,
 		},
 		{
 			name:          "INFO2 matches if INFO is min",
-			minSeverity:   plog.SeverityNumberINFO,
-			inputSeverity: plog.SeverityNumberINFO2,
+			minSeverity:   plog.SeverityNumberInfo,
+			inputSeverity: plog.SeverityNumberInfo2,
 			matches:       true,
 		},
 		{
 			name:          "UNDEFINED does not match if TRACE is min",
-			minSeverity:   plog.SeverityNumberTRACE,
-			inputSeverity: plog.SeverityNumberUNDEFINED,
+			minSeverity:   plog.SeverityNumberTrace,
+			inputSeverity: plog.SeverityNumberUndefined,
 			matches:       false,
 		},
 		{
 			name:          "UNDEFINED does not match if UNDEFINED is min",
-			minSeverity:   plog.SeverityNumberUNDEFINED,
-			inputSeverity: plog.SeverityNumberUNDEFINED,
+			minSeverity:   plog.SeverityNumberUndefined,
+			inputSeverity: plog.SeverityNumberUndefined,
 			matches:       false,
 		},
 		{
 			name:           "UNDEFINED matches if matchUndefined is true",
-			minSeverity:    plog.SeverityNumberUNDEFINED,
+			minSeverity:    plog.SeverityNumberUndefined,
 			matchUndefined: true,
-			inputSeverity:  plog.SeverityNumberUNDEFINED,
+			inputSeverity:  plog.SeverityNumberUndefined,
 			matches:        true,
 		},
 	}

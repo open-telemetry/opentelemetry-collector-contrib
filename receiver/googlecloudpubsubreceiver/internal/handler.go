@@ -75,7 +75,6 @@ func NewHandler(
 		clientID:     clientID,
 		subscription: subscription,
 		pushMessage:  callback,
-		acks:         make([]string, 0),
 		ackBatchWait: 10 * time.Second,
 	}
 	return &handler, handler.initStream(ctx)
@@ -161,7 +160,7 @@ func (handler *StreamHandler) acknowledgeMessages() error {
 	request := pubsubpb.StreamingPullRequest{
 		AckIds: handler.acks,
 	}
-	handler.acks = make([]string, 0)
+	handler.acks = nil
 	return handler.stream.Send(&request)
 }
 

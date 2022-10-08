@@ -91,7 +91,7 @@
 //   - tag_name: l1 # extracts value of label from namespaces with key `label1` and inserts it as a tag with key `l1`
 //     key: label1
 //     from: namespace
-//   - tag_name: l2 # extracts value of label from pods with key `label1` with regexp and inserts it as a tag with key `l2`
+//   - tag_name: l2 # extracts value of label from pods with key `label2` with regexp and inserts it as a tag with key `l2`
 //     key: label2
 //     regex: field=(?P<value>.+)
 //     from: pod

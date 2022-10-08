@@ -729,7 +729,7 @@ func (m *metricSaphanaAlertCount) init() {
 	m.data.SetName("saphana.alert.count")
 	m.data.SetDescription("Number of current alerts.")
 	m.data.SetUnit("{alerts}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -742,8 +742,8 @@ func (m *metricSaphanaAlertCount) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("rating", alertRatingAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("rating", alertRatingAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -782,7 +782,7 @@ func (m *metricSaphanaBackupLatest) init() {
 	m.data.SetName("saphana.backup.latest")
 	m.data.SetDescription("The age of the latest backup by start time.")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSaphanaBackupLatest) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -792,7 +792,7 @@ func (m *metricSaphanaBackupLatest) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -831,7 +831,7 @@ func (m *metricSaphanaColumnMemoryUsed) init() {
 	m.data.SetName("saphana.column.memory.used")
 	m.data.SetDescription("The memory used in all columns.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -844,9 +844,9 @@ func (m *metricSaphanaColumnMemoryUsed) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("type", columnMemoryTypeAttributeValue)
-	dp.Attributes().InsertString("subtype", columnMemorySubtypeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("type", columnMemoryTypeAttributeValue)
+	dp.Attributes().PutStr("subtype", columnMemorySubtypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -885,7 +885,7 @@ func (m *metricSaphanaComponentMemoryUsed) init() {
 	m.data.SetName("saphana.component.memory.used")
 	m.data.SetDescription("The memory used in components.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -898,8 +898,8 @@ func (m *metricSaphanaComponentMemoryUsed) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("component", componentAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("component", componentAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -938,7 +938,7 @@ func (m *metricSaphanaConnectionCount) init() {
 	m.data.SetName("saphana.connection.count")
 	m.data.SetDescription("The number of current connections.")
 	m.data.SetUnit("{connections}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -951,8 +951,8 @@ func (m *metricSaphanaConnectionCount) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("status", connectionStatusAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("status", connectionStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -991,7 +991,7 @@ func (m *metricSaphanaCPUUsed) init() {
 	m.data.SetName("saphana.cpu.used")
 	m.data.SetDescription("Total CPU time spent.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1004,8 +1004,8 @@ func (m *metricSaphanaCPUUsed) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("type", cpuTypeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("type", cpuTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1044,7 +1044,7 @@ func (m *metricSaphanaDiskSizeCurrent) init() {
 	m.data.SetName("saphana.disk.size.current")
 	m.data.SetDescription("The disk size.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1057,10 +1057,10 @@ func (m *metricSaphanaDiskSizeCurrent) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("path", pathAttributeValue)
-	dp.Attributes().InsertString("usage_type", diskUsageTypeAttributeValue)
-	dp.Attributes().InsertString("state", diskStateUsedFreeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("path", pathAttributeValue)
+	dp.Attributes().PutStr("usage_type", diskUsageTypeAttributeValue)
+	dp.Attributes().PutStr("state", diskStateUsedFreeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1099,7 +1099,7 @@ func (m *metricSaphanaHostMemoryCurrent) init() {
 	m.data.SetName("saphana.host.memory.current")
 	m.data.SetDescription("The amount of physical memory on the host.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1112,8 +1112,8 @@ func (m *metricSaphanaHostMemoryCurrent) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("state", memoryStateUsedFreeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("state", memoryStateUsedFreeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1152,7 +1152,7 @@ func (m *metricSaphanaHostSwapCurrent) init() {
 	m.data.SetName("saphana.host.swap.current")
 	m.data.SetDescription("The amount of swap space on the host.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1165,8 +1165,8 @@ func (m *metricSaphanaHostSwapCurrent) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("state", hostSwapStateAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("state", hostSwapStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1205,7 +1205,7 @@ func (m *metricSaphanaInstanceCodeSize) init() {
 	m.data.SetName("saphana.instance.code_size")
 	m.data.SetDescription("The instance code size, including shared libraries of SAP HANA processes.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1217,7 +1217,7 @@ func (m *metricSaphanaInstanceCodeSize) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1256,7 +1256,7 @@ func (m *metricSaphanaInstanceMemoryCurrent) init() {
 	m.data.SetName("saphana.instance.memory.current")
 	m.data.SetDescription("The size of the memory pool for all SAP HANA processes.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1269,8 +1269,8 @@ func (m *metricSaphanaInstanceMemoryCurrent) recordDataPoint(start pcommon.Times
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("state", memoryStateUsedFreeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("state", memoryStateUsedFreeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1309,7 +1309,7 @@ func (m *metricSaphanaInstanceMemorySharedAllocated) init() {
 	m.data.SetName("saphana.instance.memory.shared.allocated")
 	m.data.SetDescription("The shared memory size of SAP HANA processes.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1321,7 +1321,7 @@ func (m *metricSaphanaInstanceMemorySharedAllocated) recordDataPoint(start pcomm
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1360,7 +1360,7 @@ func (m *metricSaphanaInstanceMemoryUsedPeak) init() {
 	m.data.SetName("saphana.instance.memory.used.peak")
 	m.data.SetDescription("The peak memory from the memory pool used by SAP HANA processes since the instance started (this is a sample-based value).")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1372,7 +1372,7 @@ func (m *metricSaphanaInstanceMemoryUsedPeak) recordDataPoint(start pcommon.Time
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1411,7 +1411,7 @@ func (m *metricSaphanaLicenseExpirationTime) init() {
 	m.data.SetName("saphana.license.expiration.time")
 	m.data.SetDescription("The amount of time remaining before license expiration.")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1422,9 +1422,9 @@ func (m *metricSaphanaLicenseExpirationTime) recordDataPoint(start pcommon.Times
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("system", systemAttributeValue)
-	dp.Attributes().InsertString("product", productAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("system", systemAttributeValue)
+	dp.Attributes().PutStr("product", productAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1462,8 +1462,8 @@ type metricSaphanaLicenseLimit struct {
 func (m *metricSaphanaLicenseLimit) init() {
 	m.data.SetName("saphana.license.limit")
 	m.data.SetDescription("The allowed product usage as specified by the license (for example, main memory).")
-	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetUnit("{licenses}")
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1476,9 +1476,9 @@ func (m *metricSaphanaLicenseLimit) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("system", systemAttributeValue)
-	dp.Attributes().InsertString("product", productAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("system", systemAttributeValue)
+	dp.Attributes().PutStr("product", productAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1516,8 +1516,8 @@ type metricSaphanaLicensePeak struct {
 func (m *metricSaphanaLicensePeak) init() {
 	m.data.SetName("saphana.license.peak")
 	m.data.SetDescription("The peak product usage value during last 13 months, measured periodically.")
-	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetUnit("{licenses}")
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1530,9 +1530,9 @@ func (m *metricSaphanaLicensePeak) recordDataPoint(start pcommon.Timestamp, ts p
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("system", systemAttributeValue)
-	dp.Attributes().InsertString("product", productAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("system", systemAttributeValue)
+	dp.Attributes().PutStr("product", productAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1571,7 +1571,7 @@ func (m *metricSaphanaNetworkRequestAverageTime) init() {
 	m.data.SetName("saphana.network.request.average_time")
 	m.data.SetDescription("The average response time calculated over recent requests")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSaphanaNetworkRequestAverageTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -1581,7 +1581,7 @@ func (m *metricSaphanaNetworkRequestAverageTime) recordDataPoint(start pcommon.T
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1620,7 +1620,7 @@ func (m *metricSaphanaNetworkRequestCount) init() {
 	m.data.SetName("saphana.network.request.count")
 	m.data.SetDescription("The number of active and pending service requests.")
 	m.data.SetUnit("{requests}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1633,8 +1633,8 @@ func (m *metricSaphanaNetworkRequestCount) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("state", activePendingRequestStateAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("state", activePendingRequestStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1673,7 +1673,7 @@ func (m *metricSaphanaNetworkRequestFinishedCount) init() {
 	m.data.SetName("saphana.network.request.finished.count")
 	m.data.SetDescription("The number of service requests that have completed.")
 	m.data.SetUnit("{requests}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1686,8 +1686,8 @@ func (m *metricSaphanaNetworkRequestFinishedCount) recordDataPoint(start pcommon
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("type", internalExternalRequestTypeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("type", internalExternalRequestTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1726,7 +1726,7 @@ func (m *metricSaphanaReplicationAverageTime) init() {
 	m.data.SetName("saphana.replication.average_time")
 	m.data.SetDescription("The average amount of time consumed replicating a log.")
 	m.data.SetUnit("us")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1737,11 +1737,11 @@ func (m *metricSaphanaReplicationAverageTime) recordDataPoint(start pcommon.Time
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("primary", primaryHostAttributeValue)
-	dp.Attributes().InsertString("secondary", secondaryHostAttributeValue)
-	dp.Attributes().InsertString("port", portAttributeValue)
-	dp.Attributes().InsertString("mode", replicationModeAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("primary", primaryHostAttributeValue)
+	dp.Attributes().PutStr("secondary", secondaryHostAttributeValue)
+	dp.Attributes().PutStr("port", portAttributeValue)
+	dp.Attributes().PutStr("mode", replicationModeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1780,7 +1780,7 @@ func (m *metricSaphanaReplicationBacklogSize) init() {
 	m.data.SetName("saphana.replication.backlog.size")
 	m.data.SetDescription("The current replication backlog size.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1793,11 +1793,11 @@ func (m *metricSaphanaReplicationBacklogSize) recordDataPoint(start pcommon.Time
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("primary", primaryHostAttributeValue)
-	dp.Attributes().InsertString("secondary", secondaryHostAttributeValue)
-	dp.Attributes().InsertString("port", portAttributeValue)
-	dp.Attributes().InsertString("mode", replicationModeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("primary", primaryHostAttributeValue)
+	dp.Attributes().PutStr("secondary", secondaryHostAttributeValue)
+	dp.Attributes().PutStr("port", portAttributeValue)
+	dp.Attributes().PutStr("mode", replicationModeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1836,7 +1836,7 @@ func (m *metricSaphanaReplicationBacklogTime) init() {
 	m.data.SetName("saphana.replication.backlog.time")
 	m.data.SetDescription("The current replication backlog.")
 	m.data.SetUnit("us")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1849,11 +1849,11 @@ func (m *metricSaphanaReplicationBacklogTime) recordDataPoint(start pcommon.Time
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("primary", primaryHostAttributeValue)
-	dp.Attributes().InsertString("secondary", secondaryHostAttributeValue)
-	dp.Attributes().InsertString("port", portAttributeValue)
-	dp.Attributes().InsertString("mode", replicationModeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("primary", primaryHostAttributeValue)
+	dp.Attributes().PutStr("secondary", secondaryHostAttributeValue)
+	dp.Attributes().PutStr("port", portAttributeValue)
+	dp.Attributes().PutStr("mode", replicationModeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1892,7 +1892,7 @@ func (m *metricSaphanaRowStoreMemoryUsed) init() {
 	m.data.SetName("saphana.row_store.memory.used")
 	m.data.SetDescription("The used memory for all row tables.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1905,8 +1905,8 @@ func (m *metricSaphanaRowStoreMemoryUsed) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("type", rowMemoryTypeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("type", rowMemoryTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1945,7 +1945,7 @@ func (m *metricSaphanaSchemaMemoryUsedCurrent) init() {
 	m.data.SetName("saphana.schema.memory.used.current")
 	m.data.SetDescription("The memory size for all tables in schema.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1958,9 +1958,9 @@ func (m *metricSaphanaSchemaMemoryUsedCurrent) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("schema", schemaAttributeValue)
-	dp.Attributes().InsertString("type", schemaMemoryTypeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("schema", schemaAttributeValue)
+	dp.Attributes().PutStr("type", schemaMemoryTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1999,7 +1999,7 @@ func (m *metricSaphanaSchemaMemoryUsedMax) init() {
 	m.data.SetName("saphana.schema.memory.used.max")
 	m.data.SetDescription("The estimated maximum memory consumption for all fully loaded tables in schema (data for open transactions is not included).")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2012,8 +2012,8 @@ func (m *metricSaphanaSchemaMemoryUsedMax) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("schema", schemaAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("schema", schemaAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2052,7 +2052,7 @@ func (m *metricSaphanaSchemaOperationCount) init() {
 	m.data.SetName("saphana.schema.operation.count")
 	m.data.SetDescription("The number of operations done on all tables in schema.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2065,9 +2065,9 @@ func (m *metricSaphanaSchemaOperationCount) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("schema", schemaAttributeValue)
-	dp.Attributes().InsertString("type", schemaOperationTypeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("schema", schemaAttributeValue)
+	dp.Attributes().PutStr("type", schemaOperationTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2106,7 +2106,7 @@ func (m *metricSaphanaSchemaRecordCompressedCount) init() {
 	m.data.SetName("saphana.schema.record.compressed.count")
 	m.data.SetDescription("The number of entries in main during the last optimize compression run for all tables in schema.")
 	m.data.SetUnit("{records}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2119,8 +2119,8 @@ func (m *metricSaphanaSchemaRecordCompressedCount) recordDataPoint(start pcommon
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("schema", schemaAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("schema", schemaAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2159,7 +2159,7 @@ func (m *metricSaphanaSchemaRecordCount) init() {
 	m.data.SetName("saphana.schema.record.count")
 	m.data.SetDescription("The number of records for all tables in schema.")
 	m.data.SetUnit("{records}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2172,9 +2172,9 @@ func (m *metricSaphanaSchemaRecordCount) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("schema", schemaAttributeValue)
-	dp.Attributes().InsertString("type", schemaRecordTypeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("schema", schemaAttributeValue)
+	dp.Attributes().PutStr("type", schemaRecordTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2213,7 +2213,7 @@ func (m *metricSaphanaServiceCodeSize) init() {
 	m.data.SetName("saphana.service.code_size")
 	m.data.SetDescription("The service code size, including shared libraries.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2226,8 +2226,8 @@ func (m *metricSaphanaServiceCodeSize) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("service", serviceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("service", serviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2266,7 +2266,7 @@ func (m *metricSaphanaServiceCount) init() {
 	m.data.SetName("saphana.service.count")
 	m.data.SetDescription("The number of services in a given status.")
 	m.data.SetUnit("{services}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2279,8 +2279,8 @@ func (m *metricSaphanaServiceCount) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("status", serviceStatusAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("status", serviceStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2319,7 +2319,7 @@ func (m *metricSaphanaServiceMemoryCompactorsAllocated) init() {
 	m.data.SetName("saphana.service.memory.compactors.allocated")
 	m.data.SetDescription("The part of the memory pool that can potentially (if unpinned) be freed during a memory shortage.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2332,8 +2332,8 @@ func (m *metricSaphanaServiceMemoryCompactorsAllocated) recordDataPoint(start pc
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("service", serviceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("service", serviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2372,7 +2372,7 @@ func (m *metricSaphanaServiceMemoryCompactorsFreeable) init() {
 	m.data.SetName("saphana.service.memory.compactors.freeable")
 	m.data.SetDescription("The memory that can be freed during a memory shortage.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2385,8 +2385,8 @@ func (m *metricSaphanaServiceMemoryCompactorsFreeable) recordDataPoint(start pco
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("service", serviceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("service", serviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2425,7 +2425,7 @@ func (m *metricSaphanaServiceMemoryEffectiveLimit) init() {
 	m.data.SetName("saphana.service.memory.effective_limit")
 	m.data.SetDescription("The effective maximum memory pool size, calculated considering the pool sizes of other processes.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2438,8 +2438,8 @@ func (m *metricSaphanaServiceMemoryEffectiveLimit) recordDataPoint(start pcommon
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("service", serviceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("service", serviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2478,7 +2478,7 @@ func (m *metricSaphanaServiceMemoryHeapCurrent) init() {
 	m.data.SetName("saphana.service.memory.heap.current")
 	m.data.SetDescription("The size of the heap portion of the memory pool.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2491,9 +2491,9 @@ func (m *metricSaphanaServiceMemoryHeapCurrent) recordDataPoint(start pcommon.Ti
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("service", serviceAttributeValue)
-	dp.Attributes().InsertString("state", memoryStateUsedFreeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("service", serviceAttributeValue)
+	dp.Attributes().PutStr("state", memoryStateUsedFreeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2532,7 +2532,7 @@ func (m *metricSaphanaServiceMemoryLimit) init() {
 	m.data.SetName("saphana.service.memory.limit")
 	m.data.SetDescription("The configured maximum memory pool size.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2545,8 +2545,8 @@ func (m *metricSaphanaServiceMemoryLimit) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("service", serviceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("service", serviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2585,7 +2585,7 @@ func (m *metricSaphanaServiceMemorySharedCurrent) init() {
 	m.data.SetName("saphana.service.memory.shared.current")
 	m.data.SetDescription("The size of the shared portion of the memory pool.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2598,9 +2598,9 @@ func (m *metricSaphanaServiceMemorySharedCurrent) recordDataPoint(start pcommon.
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("service", serviceAttributeValue)
-	dp.Attributes().InsertString("state", memoryStateUsedFreeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("service", serviceAttributeValue)
+	dp.Attributes().PutStr("state", memoryStateUsedFreeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2639,7 +2639,7 @@ func (m *metricSaphanaServiceMemoryUsed) init() {
 	m.data.SetName("saphana.service.memory.used")
 	m.data.SetDescription("The used memory from the operating system perspective.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2652,9 +2652,9 @@ func (m *metricSaphanaServiceMemoryUsed) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("service", serviceAttributeValue)
-	dp.Attributes().InsertString("type", serviceMemoryUsedTypeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("service", serviceAttributeValue)
+	dp.Attributes().PutStr("type", serviceMemoryUsedTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2693,7 +2693,7 @@ func (m *metricSaphanaServiceStackSize) init() {
 	m.data.SetName("saphana.service.stack_size")
 	m.data.SetDescription("The service stack size.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2706,8 +2706,8 @@ func (m *metricSaphanaServiceStackSize) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("service", serviceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("service", serviceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2746,7 +2746,7 @@ func (m *metricSaphanaServiceThreadCount) init() {
 	m.data.SetName("saphana.service.thread.count")
 	m.data.SetDescription("The number of service threads in a given status.")
 	m.data.SetUnit("{threads}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2759,8 +2759,8 @@ func (m *metricSaphanaServiceThreadCount) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("status", threadStatusAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("status", threadStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2799,7 +2799,7 @@ func (m *metricSaphanaTransactionBlocked) init() {
 	m.data.SetName("saphana.transaction.blocked")
 	m.data.SetDescription("The number of transactions waiting for a lock.")
 	m.data.SetUnit("{transactions}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2811,7 +2811,7 @@ func (m *metricSaphanaTransactionBlocked) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2850,7 +2850,7 @@ func (m *metricSaphanaTransactionCount) init() {
 	m.data.SetName("saphana.transaction.count")
 	m.data.SetDescription("The number of transactions.")
 	m.data.SetUnit("{transactions}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2863,8 +2863,8 @@ func (m *metricSaphanaTransactionCount) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("type", transactionTypeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("type", transactionTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2903,7 +2903,7 @@ func (m *metricSaphanaUptime) init() {
 	m.data.SetName("saphana.uptime")
 	m.data.SetDescription("The uptime of the database.")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2916,9 +2916,9 @@ func (m *metricSaphanaUptime) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("system", systemAttributeValue)
-	dp.Attributes().InsertString("database", databaseAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("system", systemAttributeValue)
+	dp.Attributes().PutStr("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2957,7 +2957,7 @@ func (m *metricSaphanaVolumeOperationCount) init() {
 	m.data.SetName("saphana.volume.operation.count")
 	m.data.SetDescription("The number of operations executed.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2970,10 +2970,10 @@ func (m *metricSaphanaVolumeOperationCount) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("path", pathAttributeValue)
-	dp.Attributes().InsertString("usage_type", diskUsageTypeAttributeValue)
-	dp.Attributes().InsertString("type", volumeOperationTypeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("path", pathAttributeValue)
+	dp.Attributes().PutStr("usage_type", diskUsageTypeAttributeValue)
+	dp.Attributes().PutStr("type", volumeOperationTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3012,7 +3012,7 @@ func (m *metricSaphanaVolumeOperationSize) init() {
 	m.data.SetName("saphana.volume.operation.size")
 	m.data.SetDescription("The size of operations executed.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -3025,10 +3025,10 @@ func (m *metricSaphanaVolumeOperationSize) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("path", pathAttributeValue)
-	dp.Attributes().InsertString("usage_type", diskUsageTypeAttributeValue)
-	dp.Attributes().InsertString("type", volumeOperationTypeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("path", pathAttributeValue)
+	dp.Attributes().PutStr("usage_type", diskUsageTypeAttributeValue)
+	dp.Attributes().PutStr("type", volumeOperationTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3067,7 +3067,7 @@ func (m *metricSaphanaVolumeOperationTime) init() {
 	m.data.SetName("saphana.volume.operation.time")
 	m.data.SetDescription("The time spent executing operations.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -3080,10 +3080,10 @@ func (m *metricSaphanaVolumeOperationTime) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("path", pathAttributeValue)
-	dp.Attributes().InsertString("usage_type", diskUsageTypeAttributeValue)
-	dp.Attributes().InsertString("type", volumeOperationTypeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("path", pathAttributeValue)
+	dp.Attributes().PutStr("usage_type", diskUsageTypeAttributeValue)
+	dp.Attributes().PutStr("type", volumeOperationTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3249,14 +3249,14 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithDbSystem sets provided value as "db.system" attribute for current resource.
 func WithDbSystem(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("db.system", val)
+		rm.Resource().Attributes().PutStr("db.system", val)
 	}
 }
 
 // WithSaphanaHost sets provided value as "saphana.host" attribute for current resource.
 func WithSaphanaHost(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("saphana.host", val)
+		rm.Resource().Attributes().PutStr("saphana.host", val)
 	}
 }
 
@@ -3267,10 +3267,10 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {

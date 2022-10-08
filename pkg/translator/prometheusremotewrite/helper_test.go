@@ -40,7 +40,7 @@ func Test_validateMetrics(t *testing.T) {
 		want   bool
 	}
 
-	tests := []combTest{}
+	var tests []combTest
 
 	// append true cases
 	for k, validMetric := range validMetrics1 {
@@ -129,8 +129,8 @@ func Test_addSample(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			addSample(tt.orig, &tt.testCase[0].sample, tt.testCase[0].labels, tt.testCase[0].metric.DataType().String())
-			addSample(tt.orig, &tt.testCase[1].sample, tt.testCase[1].labels, tt.testCase[1].metric.DataType().String())
+			addSample(tt.orig, &tt.testCase[0].sample, tt.testCase[0].labels, tt.testCase[0].metric.Type().String())
+			addSample(tt.orig, &tt.testCase[1].sample, tt.testCase[1].labels, tt.testCase[1].metric.Type().String())
 			assert.Exactly(t, tt.want, tt.orig)
 		})
 	}
@@ -149,33 +149,33 @@ func Test_timeSeriesSignature(t *testing.T) {
 			"int64_signature",
 			promLbs1,
 			validMetrics1[validIntGauge],
-			validMetrics1[validIntGauge].DataType().String() + lb1Sig,
+			validMetrics1[validIntGauge].Type().String() + lb1Sig,
 		},
 		{
 			"histogram_signature",
 			promLbs2,
 			validMetrics1[validHistogram],
-			validMetrics1[validHistogram].DataType().String() + lb2Sig,
+			validMetrics1[validHistogram].Type().String() + lb2Sig,
 		},
 		{
 			"unordered_signature",
 			getPromLabels(label22, value22, label21, value21),
 			validMetrics1[validHistogram],
-			validMetrics1[validHistogram].DataType().String() + lb2Sig,
+			validMetrics1[validHistogram].Type().String() + lb2Sig,
 		},
 		// descriptor type cannot be nil, as checked by validateMetrics
 		{
 			"nil_case",
 			nil,
 			validMetrics1[validHistogram],
-			validMetrics1[validHistogram].DataType().String(),
+			validMetrics1[validHistogram].Type().String(),
 		},
 	}
 
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.EqualValues(t, tt.want, timeSeriesSignature(tt.metric.DataType().String(), &tt.lbs))
+			assert.EqualValues(t, tt.want, timeSeriesSignature(tt.metric.Type().String(), &tt.lbs))
 		})
 	}
 }
@@ -193,7 +193,7 @@ func Test_createLabelSet(t *testing.T) {
 	}{
 		{
 			"labels_clean",
-			getResource(map[string]pcommon.Value{}),
+			pcommon.NewResource(),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32, value32},
@@ -201,10 +201,12 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"labels_with_resource",
-			getResource(map[string]pcommon.Value{
-				"service.name":        pcommon.NewValueString("prometheus"),
-				"service.instance.id": pcommon.NewValueString("127.0.0.1:8080"),
-			}),
+			func() pcommon.Resource {
+				res := pcommon.NewResource()
+				res.Attributes().PutStr("service.name", "prometheus")
+				res.Attributes().PutStr("service.instance.id", "127.0.0.1:8080")
+				return res
+			}(),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32, value32},
@@ -212,10 +214,12 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"labels_with_nonstring_resource",
-			getResource(map[string]pcommon.Value{
-				"service.name":        pcommon.NewValueInt(12345),
-				"service.instance.id": pcommon.NewValueBool(true),
-			}),
+			func() pcommon.Resource {
+				res := pcommon.NewResource()
+				res.Attributes().PutInt("service.name", 12345)
+				res.Attributes().PutBool("service.instance.id", true)
+				return res
+			}(),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32, value32},
@@ -223,7 +227,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"labels_duplicate_in_extras",
-			getResource(map[string]pcommon.Value{}),
+			pcommon.NewResource(),
 			lbs1,
 			map[string]string{},
 			[]string{label11, value31},
@@ -231,7 +235,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"labels_dirty",
-			getResource(map[string]pcommon.Value{}),
+			pcommon.NewResource(),
 			lbs1Dirty,
 			map[string]string{},
 			[]string{label31 + dirty1, value31, label32, value32},
@@ -239,7 +243,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"no_original_case",
-			getResource(map[string]pcommon.Value{}),
+			pcommon.NewResource(),
 			pcommon.NewMap(),
 			nil,
 			[]string{label31, value31, label32, value32},
@@ -247,7 +251,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"empty_extra_case",
-			getResource(map[string]pcommon.Value{}),
+			pcommon.NewResource(),
 			lbs1,
 			map[string]string{},
 			[]string{"", ""},
@@ -255,7 +259,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"single_left_over_case",
-			getResource(map[string]pcommon.Value{}),
+			pcommon.NewResource(),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32},
@@ -263,7 +267,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"valid_external_labels",
-			getResource(map[string]pcommon.Value{}),
+			pcommon.NewResource(),
 			lbs1,
 			exlbs1,
 			[]string{label31, value31, label32, value32},
@@ -271,7 +275,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"overwritten_external_labels",
-			getResource(map[string]pcommon.Value{}),
+			pcommon.NewResource(),
 			lbs1,
 			exlbs2,
 			[]string{label31, value31, label32, value32},
@@ -279,7 +283,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"colliding attributes",
-			getResource(map[string]pcommon.Value{}),
+			pcommon.NewResource(),
 			lbsColliding,
 			nil,
 			[]string{label31, value31, label32, value32},
@@ -287,7 +291,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"sanitize_labels_starts_with_underscore",
-			getResource(map[string]pcommon.Value{}),
+			pcommon.NewResource(),
 			lbs3,
 			exlbs1,
 			[]string{label31, value31, label32, value32},
@@ -380,7 +384,7 @@ func Test_getPromExemplars(t *testing.T) {
 	tnow := time.Now()
 	tests := []struct {
 		name      string
-		histogram *pmetric.HistogramDataPoint
+		histogram pmetric.HistogramDataPoint
 		expected  []prompb.Exemplar
 	}{
 		{
@@ -439,14 +443,14 @@ func Test_getPromExemplars(t *testing.T) {
 		},
 		{
 			"without_exemplar",
-			getHistogramDataPoint(),
+			pmetric.NewHistogramDataPoint(),
 			nil,
 		},
 	}
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			requests := getPromExemplars(*tt.histogram)
+			requests := getPromExemplars(tt.histogram)
 			assert.Exactly(t, tt.expected, requests)
 		})
 	}
@@ -459,10 +463,10 @@ func TestAddResourceTargetInfo(t *testing.T) {
 		conventions.AttributeServiceInstanceID: "service-instance-id",
 	}
 	resourceWithServiceAttrs := pcommon.NewResource()
-	pcommon.NewMapFromRaw(resourceAttrMap).CopyTo(resourceWithServiceAttrs.Attributes())
-	resourceWithServiceAttrs.Attributes().UpsertString("resource_attr", "resource-attr-val-1")
+	resourceWithServiceAttrs.Attributes().FromRaw(resourceAttrMap)
+	resourceWithServiceAttrs.Attributes().PutStr("resource_attr", "resource-attr-val-1")
 	resourceWithOnlyServiceAttrs := pcommon.NewResource()
-	pcommon.NewMapFromRaw(resourceAttrMap).CopyTo(resourceWithOnlyServiceAttrs.Attributes())
+	resourceWithOnlyServiceAttrs.Attributes().FromRaw(resourceAttrMap)
 	for _, tc := range []struct {
 		desc      string
 		resource  pcommon.Resource

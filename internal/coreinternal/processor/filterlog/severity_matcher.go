@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ func newSeverityNumberMatcher(minSeverity plog.SeverityNumber, matchUndefined bo
 
 func (snm severityNumberMatcher) MatchLogRecord(lr plog.LogRecord, _ pcommon.Resource, _ pcommon.InstrumentationScope) bool {
 	// behavior on SeverityNumberUNDEFINED is explicitly defined by matchUndefined
-	if lr.SeverityNumber() == plog.SeverityNumberUNDEFINED {
+	if lr.SeverityNumber() == plog.SeverityNumberUndefined {
 		return snm.matchUndefined
 	}
 

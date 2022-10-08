@@ -53,7 +53,7 @@ var skippedTests = map[string]struct{}{
 	"bad_timestamp_4": {}, "bad_timestamp_5": {}, "bad_timestamp_7": {}, "bad_unit_6": {}, "bad_unit_7": {},
 }
 
-func verifyPositiveTarget(t *testing.T, _ *testData, mds []*pmetric.ResourceMetrics) {
+func verifyPositiveTarget(t *testing.T, _ *testData, mds []pmetric.ResourceMetrics) {
 	require.Greater(t, len(mds), 0, "At least one resource metric should be present")
 	metrics := getMetrics(mds[0])
 	assertUp(t, 1, metrics)
@@ -65,7 +65,7 @@ func TestOpenMetricsPositive(t *testing.T) {
 		t.Skip("skipping test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10148")
 	}
 	targetsMap := getOpenMetricsTestData(false)
-	targets := make([]*testData, 0)
+	var targets []*testData
 	for k, v := range targetsMap {
 		testData := &testData{
 			name: k,
@@ -81,7 +81,7 @@ func TestOpenMetricsPositive(t *testing.T) {
 	testComponent(t, targets, false, "")
 }
 
-func verifyNegativeTarget(t *testing.T, td *testData, mds []*pmetric.ResourceMetrics) {
+func verifyNegativeTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetrics) {
 	// failing negative tests are skipped since prometheus scrape package is currently not fully
 	// compatible with OpenMetrics tests and successfully scrapes some invalid metrics
 	// see: https://github.com/prometheus/prometheus/issues/9699
@@ -98,7 +98,7 @@ func verifyNegativeTarget(t *testing.T, td *testData, mds []*pmetric.ResourceMet
 func TestOpenMetricsNegative(t *testing.T) {
 
 	targetsMap := getOpenMetricsTestData(true)
-	targets := make([]*testData, 0)
+	var targets []*testData
 	for k, v := range targetsMap {
 		testData := &testData{
 			name: k,
@@ -185,7 +185,7 @@ func TestInfoStatesetMetrics(t *testing.T) {
 
 }
 
-func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
+func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 

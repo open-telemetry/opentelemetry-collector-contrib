@@ -16,6 +16,7 @@ package instanaexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"errors"
+	"net/url"
 	"strings"
 
 	"go.opentelemetry.io/collector/config"
@@ -48,6 +49,10 @@ func (cfg *Config) Validate() error {
 
 	if !(strings.HasPrefix(cfg.Endpoint, "http://") || strings.HasPrefix(cfg.Endpoint, "https://")) {
 		return errors.New("endpoint must start with http:// or https://")
+	}
+	_, err := url.Parse(cfg.Endpoint)
+	if err != nil {
+		return errors.New("endpoint must be a valid URL")
 	}
 
 	return nil

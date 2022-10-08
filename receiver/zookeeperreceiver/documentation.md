@@ -39,8 +39,8 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| server.state | State of the Zookeeper server (leader, standalone or follower). | String |
-| zk.version | Zookeeper version of the instance. | String |
+| server.state | State of the Zookeeper server (leader, standalone or follower). | Str |
+| zk.version | Zookeeper version of the instance. | Str |
 
 ## Metric attributes
 

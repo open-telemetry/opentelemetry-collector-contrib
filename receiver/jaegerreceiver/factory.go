@@ -18,7 +18,6 @@ package jaegerreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
-	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -26,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
 )
 
 const (
@@ -40,11 +38,10 @@ const (
 	protoThriftCompact = "thrift_compact"
 
 	// Default endpoints to bind to.
-	defaultGRPCBindEndpoint                = "0.0.0.0:14250"
-	defaultHTTPBindEndpoint                = "0.0.0.0:14268"
-	defaultThriftCompactBindEndpoint       = "0.0.0.0:6831"
-	defaultThriftBinaryBindEndpoint        = "0.0.0.0:6832"
-	defaultAgentRemoteSamplingHTTPEndpoint = "0.0.0.0:5778"
+	defaultGRPCBindEndpoint          = "0.0.0.0:14250"
+	defaultHTTPBindEndpoint          = "0.0.0.0:14268"
+	defaultThriftCompactBindEndpoint = "0.0.0.0:6831"
+	defaultThriftBinaryBindEndpoint  = "0.0.0.0:6832"
 )
 
 // NewFactory creates a new Jaeger receiver factory.
@@ -94,7 +91,6 @@ func createTracesReceiver(
 	// Error handling for the conversion is done in the Validate function from the Config object itself.
 
 	rCfg := cfg.(*Config)
-	remoteSamplingConfig := rCfg.RemoteSampling
 
 	var config configuration
 	// Set ports
@@ -114,36 +110,6 @@ func createTracesReceiver(
 		config.AgentCompactThrift = *rCfg.ThriftCompact
 	}
 
-	if remoteSamplingConfig != nil {
-		logSamplingDeprecation(set.Logger)
-
-		config.RemoteSamplingClientSettings = remoteSamplingConfig.GRPCClientSettings
-		if config.RemoteSamplingClientSettings.Endpoint == "" {
-			config.RemoteSamplingClientSettings.Endpoint = defaultGRPCBindEndpoint
-		}
-
-		config.AgentHTTPEndpoint = remoteSamplingConfig.HostEndpoint
-		if config.AgentHTTPEndpoint == "" {
-			config.AgentHTTPEndpoint = defaultAgentRemoteSamplingHTTPEndpoint
-		}
-
-		// strategies are served over grpc so if grpc is not enabled and strategies are present return an error
-		if len(remoteSamplingConfig.StrategyFile) != 0 {
-			config.RemoteSamplingStrategyFile = remoteSamplingConfig.StrategyFile
-			config.RemoteSamplingStrategyFileReloadInterval = remoteSamplingConfig.StrategyFileReloadInterval
-		}
-	}
-
 	// Create the receiver.
 	return newJaegerReceiver(rCfg.ID(), &config, nextConsumer, set), nil
-}
-
-var once sync.Once
-
-func logSamplingDeprecation(logger *zap.Logger) {
-	once.Do(func() {
-		logger.Warn(
-			"Jaeger remote sampling support is deprecated and will be removed in release v0.61.0. Use the jaegerremotesampling extension instead.",
-		)
-	})
 }

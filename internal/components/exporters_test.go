@@ -39,6 +39,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
@@ -50,6 +51,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
@@ -259,6 +261,17 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
+			exporter: "azuredataexplorer",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["azuredataexplorer"].CreateDefaultConfig().(*azuredataexplorerexporter.Config)
+				cfg.ClusterURI = "http://" + endpoint
+				cfg.ApplicationID = "otel-app-id"
+				cfg.ApplicationKey = "otel-app-key"
+				cfg.TenantID = "otel-tenant-id"
+				return cfg
+			},
+		},
+		{
 			exporter: "azuremonitor",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["azuremonitor"].CreateDefaultConfig().(*azuremonitorexporter.Config)
@@ -287,7 +300,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "coralogix",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["coralogix"].CreateDefaultConfig().(*coralogixexporter.Config)
-				cfg.Endpoint = endpoint
+				cfg.Traces.Endpoint = endpoint
 				return cfg
 			},
 		},
@@ -351,6 +364,15 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["influxdb"].CreateDefaultConfig().(*influxdbexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "instana",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["instana"].CreateDefaultConfig().(*instanaexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				cfg.AgentKey = "Key1"
 				return cfg
 			},
 		},

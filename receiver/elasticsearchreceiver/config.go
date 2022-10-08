@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,6 +49,11 @@ type Config struct {
 	Nodes []string `mapstructure:"nodes"`
 	// SkipClusterMetrics indicates whether cluster level metrics from /_cluster/health should be scraped or not.
 	SkipClusterMetrics bool `mapstructure:"skip_cluster_metrics"`
+	// Indices defines the indices to scrape.
+	// See https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-stats.html#index-stats-api-path-params
+	// for which names are viable.
+	// If Indices is empty, no indices will be scraped.
+	Indices []string `mapstructure:"indices"`
 	// Username is the username used when making REST calls to elasticsearch. Must be specified if Password is. Not required.
 	Username string `mapstructure:"username"`
 	// Password is the password used when making REST calls to elasticsearch. Must be specified if Username is. Not required.

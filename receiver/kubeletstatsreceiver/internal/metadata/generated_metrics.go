@@ -261,7 +261,7 @@ func (m *metricContainerCPUTime) init() {
 	m.data.SetName("container.cpu.time")
 	m.data.SetDescription("Container CPU time")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -273,7 +273,7 @@ func (m *metricContainerCPUTime) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -312,7 +312,7 @@ func (m *metricContainerCPUUtilization) init() {
 	m.data.SetName("container.cpu.utilization")
 	m.data.SetDescription("Container CPU utilization")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -322,7 +322,7 @@ func (m *metricContainerCPUUtilization) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -361,7 +361,7 @@ func (m *metricContainerFilesystemAvailable) init() {
 	m.data.SetName("container.filesystem.available")
 	m.data.SetDescription("Container filesystem available")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerFilesystemAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -371,7 +371,7 @@ func (m *metricContainerFilesystemAvailable) recordDataPoint(start pcommon.Times
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -410,7 +410,7 @@ func (m *metricContainerFilesystemCapacity) init() {
 	m.data.SetName("container.filesystem.capacity")
 	m.data.SetDescription("Container filesystem capacity")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerFilesystemCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -420,7 +420,7 @@ func (m *metricContainerFilesystemCapacity) recordDataPoint(start pcommon.Timest
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -459,7 +459,7 @@ func (m *metricContainerFilesystemUsage) init() {
 	m.data.SetName("container.filesystem.usage")
 	m.data.SetDescription("Container filesystem usage")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerFilesystemUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -469,7 +469,7 @@ func (m *metricContainerFilesystemUsage) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -508,7 +508,7 @@ func (m *metricContainerMemoryAvailable) init() {
 	m.data.SetName("container.memory.available")
 	m.data.SetDescription("Container memory available")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerMemoryAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -518,7 +518,7 @@ func (m *metricContainerMemoryAvailable) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -557,7 +557,7 @@ func (m *metricContainerMemoryMajorPageFaults) init() {
 	m.data.SetName("container.memory.major_page_faults")
 	m.data.SetDescription("Container memory major_page_faults")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerMemoryMajorPageFaults) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -567,7 +567,7 @@ func (m *metricContainerMemoryMajorPageFaults) recordDataPoint(start pcommon.Tim
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -606,7 +606,7 @@ func (m *metricContainerMemoryPageFaults) init() {
 	m.data.SetName("container.memory.page_faults")
 	m.data.SetDescription("Container memory page_faults")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerMemoryPageFaults) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -616,7 +616,7 @@ func (m *metricContainerMemoryPageFaults) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -655,7 +655,7 @@ func (m *metricContainerMemoryRss) init() {
 	m.data.SetName("container.memory.rss")
 	m.data.SetDescription("Container memory rss")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerMemoryRss) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -665,7 +665,7 @@ func (m *metricContainerMemoryRss) recordDataPoint(start pcommon.Timestamp, ts p
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -704,7 +704,7 @@ func (m *metricContainerMemoryUsage) init() {
 	m.data.SetName("container.memory.usage")
 	m.data.SetDescription("Container memory usage")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -714,7 +714,7 @@ func (m *metricContainerMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -753,7 +753,7 @@ func (m *metricContainerMemoryWorkingSet) init() {
 	m.data.SetName("container.memory.working_set")
 	m.data.SetDescription("Container memory working_set")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerMemoryWorkingSet) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -763,7 +763,7 @@ func (m *metricContainerMemoryWorkingSet) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -802,7 +802,7 @@ func (m *metricK8sNodeCPUTime) init() {
 	m.data.SetName("k8s.node.cpu.time")
 	m.data.SetDescription("Node CPU time")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -814,7 +814,7 @@ func (m *metricK8sNodeCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -853,7 +853,7 @@ func (m *metricK8sNodeCPUUtilization) init() {
 	m.data.SetName("k8s.node.cpu.utilization")
 	m.data.SetDescription("Node CPU utilization")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sNodeCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -863,7 +863,7 @@ func (m *metricK8sNodeCPUUtilization) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -902,7 +902,7 @@ func (m *metricK8sNodeFilesystemAvailable) init() {
 	m.data.SetName("k8s.node.filesystem.available")
 	m.data.SetDescription("Node filesystem available")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sNodeFilesystemAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -912,7 +912,7 @@ func (m *metricK8sNodeFilesystemAvailable) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -951,7 +951,7 @@ func (m *metricK8sNodeFilesystemCapacity) init() {
 	m.data.SetName("k8s.node.filesystem.capacity")
 	m.data.SetDescription("Node filesystem capacity")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sNodeFilesystemCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -961,7 +961,7 @@ func (m *metricK8sNodeFilesystemCapacity) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1000,7 +1000,7 @@ func (m *metricK8sNodeFilesystemUsage) init() {
 	m.data.SetName("k8s.node.filesystem.usage")
 	m.data.SetDescription("Node filesystem usage")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sNodeFilesystemUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1010,7 +1010,7 @@ func (m *metricK8sNodeFilesystemUsage) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1049,7 +1049,7 @@ func (m *metricK8sNodeMemoryAvailable) init() {
 	m.data.SetName("k8s.node.memory.available")
 	m.data.SetDescription("Node memory available")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sNodeMemoryAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1059,7 +1059,7 @@ func (m *metricK8sNodeMemoryAvailable) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1098,7 +1098,7 @@ func (m *metricK8sNodeMemoryMajorPageFaults) init() {
 	m.data.SetName("k8s.node.memory.major_page_faults")
 	m.data.SetDescription("Node memory major_page_faults")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sNodeMemoryMajorPageFaults) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1108,7 +1108,7 @@ func (m *metricK8sNodeMemoryMajorPageFaults) recordDataPoint(start pcommon.Times
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1147,7 +1147,7 @@ func (m *metricK8sNodeMemoryPageFaults) init() {
 	m.data.SetName("k8s.node.memory.page_faults")
 	m.data.SetDescription("Node memory page_faults")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sNodeMemoryPageFaults) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1157,7 +1157,7 @@ func (m *metricK8sNodeMemoryPageFaults) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1196,7 +1196,7 @@ func (m *metricK8sNodeMemoryRss) init() {
 	m.data.SetName("k8s.node.memory.rss")
 	m.data.SetDescription("Node memory rss")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sNodeMemoryRss) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1206,7 +1206,7 @@ func (m *metricK8sNodeMemoryRss) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1245,7 +1245,7 @@ func (m *metricK8sNodeMemoryUsage) init() {
 	m.data.SetName("k8s.node.memory.usage")
 	m.data.SetDescription("Node memory usage")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sNodeMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1255,7 +1255,7 @@ func (m *metricK8sNodeMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts p
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1294,7 +1294,7 @@ func (m *metricK8sNodeMemoryWorkingSet) init() {
 	m.data.SetName("k8s.node.memory.working_set")
 	m.data.SetDescription("Node memory working_set")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sNodeMemoryWorkingSet) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1304,7 +1304,7 @@ func (m *metricK8sNodeMemoryWorkingSet) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1343,7 +1343,7 @@ func (m *metricK8sNodeNetworkErrors) init() {
 	m.data.SetName("k8s.node.network.errors")
 	m.data.SetDescription("Node network errors")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1356,9 +1356,9 @@ func (m *metricK8sNodeNetworkErrors) recordDataPoint(start pcommon.Timestamp, ts
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("interface", interfaceAttributeValue)
-	dp.Attributes().InsertString("direction", directionAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1397,7 +1397,7 @@ func (m *metricK8sNodeNetworkErrorsReceive) init() {
 	m.data.SetName("k8s.node.network.errors.receive")
 	m.data.SetDescription("Node network receive errors")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1410,8 +1410,8 @@ func (m *metricK8sNodeNetworkErrorsReceive) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("interface", interfaceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1450,7 +1450,7 @@ func (m *metricK8sNodeNetworkErrorsTransmit) init() {
 	m.data.SetName("k8s.node.network.errors.transmit")
 	m.data.SetDescription("Node network transmission errors")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1463,8 +1463,8 @@ func (m *metricK8sNodeNetworkErrorsTransmit) recordDataPoint(start pcommon.Times
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("interface", interfaceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1503,7 +1503,7 @@ func (m *metricK8sNodeNetworkIo) init() {
 	m.data.SetName("k8s.node.network.io")
 	m.data.SetDescription("Node network IO")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1516,9 +1516,9 @@ func (m *metricK8sNodeNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("interface", interfaceAttributeValue)
-	dp.Attributes().InsertString("direction", directionAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1557,7 +1557,7 @@ func (m *metricK8sNodeNetworkIoReceive) init() {
 	m.data.SetName("k8s.node.network.io.receive")
 	m.data.SetDescription("Node network IO received")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1570,8 +1570,8 @@ func (m *metricK8sNodeNetworkIoReceive) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("interface", interfaceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1610,7 +1610,7 @@ func (m *metricK8sNodeNetworkIoTransmit) init() {
 	m.data.SetName("k8s.node.network.io.transmit")
 	m.data.SetDescription("Node network IO transmitted")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1623,8 +1623,8 @@ func (m *metricK8sNodeNetworkIoTransmit) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("interface", interfaceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1663,7 +1663,7 @@ func (m *metricK8sPodCPUTime) init() {
 	m.data.SetName("k8s.pod.cpu.time")
 	m.data.SetDescription("Pod CPU time")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1675,7 +1675,7 @@ func (m *metricK8sPodCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1714,7 +1714,7 @@ func (m *metricK8sPodCPUUtilization) init() {
 	m.data.SetName("k8s.pod.cpu.utilization")
 	m.data.SetDescription("Pod CPU utilization")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sPodCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -1724,7 +1724,7 @@ func (m *metricK8sPodCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1763,7 +1763,7 @@ func (m *metricK8sPodFilesystemAvailable) init() {
 	m.data.SetName("k8s.pod.filesystem.available")
 	m.data.SetDescription("Pod filesystem available")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sPodFilesystemAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1773,7 +1773,7 @@ func (m *metricK8sPodFilesystemAvailable) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1812,7 +1812,7 @@ func (m *metricK8sPodFilesystemCapacity) init() {
 	m.data.SetName("k8s.pod.filesystem.capacity")
 	m.data.SetDescription("Pod filesystem capacity")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sPodFilesystemCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1822,7 +1822,7 @@ func (m *metricK8sPodFilesystemCapacity) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1861,7 +1861,7 @@ func (m *metricK8sPodFilesystemUsage) init() {
 	m.data.SetName("k8s.pod.filesystem.usage")
 	m.data.SetDescription("Pod filesystem usage")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sPodFilesystemUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1871,7 +1871,7 @@ func (m *metricK8sPodFilesystemUsage) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1910,7 +1910,7 @@ func (m *metricK8sPodMemoryAvailable) init() {
 	m.data.SetName("k8s.pod.memory.available")
 	m.data.SetDescription("Pod memory available")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sPodMemoryAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1920,7 +1920,7 @@ func (m *metricK8sPodMemoryAvailable) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1959,7 +1959,7 @@ func (m *metricK8sPodMemoryMajorPageFaults) init() {
 	m.data.SetName("k8s.pod.memory.major_page_faults")
 	m.data.SetDescription("Pod memory major_page_faults")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sPodMemoryMajorPageFaults) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1969,7 +1969,7 @@ func (m *metricK8sPodMemoryMajorPageFaults) recordDataPoint(start pcommon.Timest
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2008,7 +2008,7 @@ func (m *metricK8sPodMemoryPageFaults) init() {
 	m.data.SetName("k8s.pod.memory.page_faults")
 	m.data.SetDescription("Pod memory page_faults")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sPodMemoryPageFaults) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2018,7 +2018,7 @@ func (m *metricK8sPodMemoryPageFaults) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2057,7 +2057,7 @@ func (m *metricK8sPodMemoryRss) init() {
 	m.data.SetName("k8s.pod.memory.rss")
 	m.data.SetDescription("Pod memory rss")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sPodMemoryRss) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2067,7 +2067,7 @@ func (m *metricK8sPodMemoryRss) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2106,7 +2106,7 @@ func (m *metricK8sPodMemoryUsage) init() {
 	m.data.SetName("k8s.pod.memory.usage")
 	m.data.SetDescription("Pod memory usage")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sPodMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2116,7 +2116,7 @@ func (m *metricK8sPodMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2155,7 +2155,7 @@ func (m *metricK8sPodMemoryWorkingSet) init() {
 	m.data.SetName("k8s.pod.memory.working_set")
 	m.data.SetDescription("Pod memory working_set")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sPodMemoryWorkingSet) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2165,7 +2165,7 @@ func (m *metricK8sPodMemoryWorkingSet) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2204,7 +2204,7 @@ func (m *metricK8sPodNetworkErrors) init() {
 	m.data.SetName("k8s.pod.network.errors")
 	m.data.SetDescription("Pod network errors")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2217,9 +2217,9 @@ func (m *metricK8sPodNetworkErrors) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("interface", interfaceAttributeValue)
-	dp.Attributes().InsertString("direction", directionAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2258,7 +2258,7 @@ func (m *metricK8sPodNetworkErrorsReceive) init() {
 	m.data.SetName("k8s.pod.network.errors.receive")
 	m.data.SetDescription("Pod network receive errors")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2271,8 +2271,8 @@ func (m *metricK8sPodNetworkErrorsReceive) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("interface", interfaceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2311,7 +2311,7 @@ func (m *metricK8sPodNetworkErrorsTransmit) init() {
 	m.data.SetName("k8s.pod.network.errors.transmit")
 	m.data.SetDescription("Pod network transmission errors")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2324,8 +2324,8 @@ func (m *metricK8sPodNetworkErrorsTransmit) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("interface", interfaceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2364,7 +2364,7 @@ func (m *metricK8sPodNetworkIo) init() {
 	m.data.SetName("k8s.pod.network.io")
 	m.data.SetDescription("Pod network IO")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2377,9 +2377,9 @@ func (m *metricK8sPodNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("interface", interfaceAttributeValue)
-	dp.Attributes().InsertString("direction", directionAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2418,7 +2418,7 @@ func (m *metricK8sPodNetworkIoReceive) init() {
 	m.data.SetName("k8s.pod.network.io.receive")
 	m.data.SetDescription("Pod network IO received")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2431,8 +2431,8 @@ func (m *metricK8sPodNetworkIoReceive) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("interface", interfaceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2471,7 +2471,7 @@ func (m *metricK8sPodNetworkIoTransmit) init() {
 	m.data.SetName("k8s.pod.network.io.transmit")
 	m.data.SetDescription("Pod network IO transmitted")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2484,8 +2484,8 @@ func (m *metricK8sPodNetworkIoTransmit) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("interface", interfaceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2524,7 +2524,7 @@ func (m *metricK8sVolumeAvailable) init() {
 	m.data.SetName("k8s.volume.available")
 	m.data.SetDescription("The number of available bytes in the volume.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sVolumeAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2534,7 +2534,7 @@ func (m *metricK8sVolumeAvailable) recordDataPoint(start pcommon.Timestamp, ts p
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2573,7 +2573,7 @@ func (m *metricK8sVolumeCapacity) init() {
 	m.data.SetName("k8s.volume.capacity")
 	m.data.SetDescription("The total capacity in bytes of the volume.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sVolumeCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2583,7 +2583,7 @@ func (m *metricK8sVolumeCapacity) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2622,7 +2622,7 @@ func (m *metricK8sVolumeInodes) init() {
 	m.data.SetName("k8s.volume.inodes")
 	m.data.SetDescription("The total inodes in the filesystem.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sVolumeInodes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2632,7 +2632,7 @@ func (m *metricK8sVolumeInodes) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2671,7 +2671,7 @@ func (m *metricK8sVolumeInodesFree) init() {
 	m.data.SetName("k8s.volume.inodes.free")
 	m.data.SetDescription("The free inodes in the filesystem.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sVolumeInodesFree) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2681,7 +2681,7 @@ func (m *metricK8sVolumeInodesFree) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2720,7 +2720,7 @@ func (m *metricK8sVolumeInodesUsed) init() {
 	m.data.SetName("k8s.volume.inodes.used")
 	m.data.SetDescription("The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricK8sVolumeInodesUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2730,7 +2730,7 @@ func (m *metricK8sVolumeInodesUsed) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2906,105 +2906,105 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithAwsVolumeID sets provided value as "aws.volume.id" attribute for current resource.
 func WithAwsVolumeID(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("aws.volume.id", val)
+		rm.Resource().Attributes().PutStr("aws.volume.id", val)
 	}
 }
 
 // WithContainerID sets provided value as "container.id" attribute for current resource.
 func WithContainerID(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("container.id", val)
+		rm.Resource().Attributes().PutStr("container.id", val)
 	}
 }
 
 // WithFsType sets provided value as "fs.type" attribute for current resource.
 func WithFsType(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("fs.type", val)
+		rm.Resource().Attributes().PutStr("fs.type", val)
 	}
 }
 
 // WithGcePdName sets provided value as "gce.pd.name" attribute for current resource.
 func WithGcePdName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("gce.pd.name", val)
+		rm.Resource().Attributes().PutStr("gce.pd.name", val)
 	}
 }
 
 // WithGlusterfsEndpointsName sets provided value as "glusterfs.endpoints.name" attribute for current resource.
 func WithGlusterfsEndpointsName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("glusterfs.endpoints.name", val)
+		rm.Resource().Attributes().PutStr("glusterfs.endpoints.name", val)
 	}
 }
 
 // WithGlusterfsPath sets provided value as "glusterfs.path" attribute for current resource.
 func WithGlusterfsPath(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("glusterfs.path", val)
+		rm.Resource().Attributes().PutStr("glusterfs.path", val)
 	}
 }
 
 // WithK8sContainerName sets provided value as "k8s.container.name" attribute for current resource.
 func WithK8sContainerName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("k8s.container.name", val)
+		rm.Resource().Attributes().PutStr("k8s.container.name", val)
 	}
 }
 
 // WithK8sNamespaceName sets provided value as "k8s.namespace.name" attribute for current resource.
 func WithK8sNamespaceName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("k8s.namespace.name", val)
+		rm.Resource().Attributes().PutStr("k8s.namespace.name", val)
 	}
 }
 
 // WithK8sNodeName sets provided value as "k8s.node.name" attribute for current resource.
 func WithK8sNodeName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("k8s.node.name", val)
+		rm.Resource().Attributes().PutStr("k8s.node.name", val)
 	}
 }
 
 // WithK8sPersistentvolumeclaimName sets provided value as "k8s.persistentvolumeclaim.name" attribute for current resource.
 func WithK8sPersistentvolumeclaimName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("k8s.persistentvolumeclaim.name", val)
+		rm.Resource().Attributes().PutStr("k8s.persistentvolumeclaim.name", val)
 	}
 }
 
 // WithK8sPodName sets provided value as "k8s.pod.name" attribute for current resource.
 func WithK8sPodName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("k8s.pod.name", val)
+		rm.Resource().Attributes().PutStr("k8s.pod.name", val)
 	}
 }
 
 // WithK8sPodUID sets provided value as "k8s.pod.uid" attribute for current resource.
 func WithK8sPodUID(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("k8s.pod.uid", val)
+		rm.Resource().Attributes().PutStr("k8s.pod.uid", val)
 	}
 }
 
 // WithK8sVolumeName sets provided value as "k8s.volume.name" attribute for current resource.
 func WithK8sVolumeName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("k8s.volume.name", val)
+		rm.Resource().Attributes().PutStr("k8s.volume.name", val)
 	}
 }
 
 // WithK8sVolumeType sets provided value as "k8s.volume.type" attribute for current resource.
 func WithK8sVolumeType(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("k8s.volume.type", val)
+		rm.Resource().Attributes().PutStr("k8s.volume.type", val)
 	}
 }
 
 // WithPartition sets provided value as "partition" attribute for current resource.
 func WithPartition(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("partition", val)
+		rm.Resource().Attributes().PutStr("partition", val)
 	}
 }
 
@@ -3015,10 +3015,10 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {

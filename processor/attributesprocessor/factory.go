@@ -78,7 +78,7 @@ func createTracesProcessor(
 		return nil, err
 	}
 
-	return processorhelper.NewTracesProcessorWithCreateSettings(
+	return processorhelper.NewTracesProcessor(
 		ctx,
 		set,
 		cfg,
@@ -111,7 +111,7 @@ func createLogsProcessor(
 		return nil, err
 	}
 
-	return processorhelper.NewLogsProcessorWithCreateSettings(
+	return processorhelper.NewLogsProcessor(
 		ctx,
 		set,
 		cfg,
@@ -147,7 +147,7 @@ func createMetricsProcessor(
 		return nil, err
 	}
 
-	return processorhelper.NewMetricsProcessorWithCreateSettings(
+	return processorhelper.NewMetricsProcessor(
 		ctx,
 		set,
 		cfg,

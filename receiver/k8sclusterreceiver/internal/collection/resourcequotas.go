@@ -46,7 +46,7 @@ var resourceQuotaUsedMetric = &metricspb.MetricDescriptor{
 }
 
 func getMetricsForResourceQuota(rq *corev1.ResourceQuota) []*resourceMetrics {
-	metrics := make([]*metricspb.Metric, 0)
+	var metrics []*metricspb.Metric
 
 	for _, t := range []struct {
 		metric *metricspb.MetricDescriptor

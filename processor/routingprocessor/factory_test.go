@@ -132,7 +132,7 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	}
 	mp := &mockProcessor{}
 
-	next, err := processorhelper.NewTracesProcessorWithCreateSettings(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop(), mp.processTraces)
+	next, err := processorhelper.NewTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop(), mp.processTraces)
 	require.NoError(t, err)
 
 	// test
@@ -193,7 +193,7 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 			require.NoError(t, err)
 			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
 
-			exp := newProcessor(zap.NewNop(), cfg)
+			exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, cfg)
 			err = exp.Start(context.Background(), host)
 			// assert that no error is thrown due to multiple pipelines and exporters not using the routing processor
 			assert.NoError(t, err)
@@ -233,4 +233,21 @@ type mockProcessor struct{}
 
 func (mp *mockProcessor) processTraces(context.Context, ptrace.Traces) (ptrace.Traces, error) {
 	return ptrace.NewTraces(), nil
+}
+
+type mockHost struct {
+	component.Host
+	GetExportersFunc func() map[config.DataType]map[config.ComponentID]component.Exporter
+}
+
+func (m *mockHost) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
+	if m.GetExportersFunc != nil {
+		return m.GetExportersFunc()
+	}
+	return m.Host.GetExporters()
+}
+
+type mockComponent struct {
+	component.StartFunc
+	component.ShutdownFunc
 }
