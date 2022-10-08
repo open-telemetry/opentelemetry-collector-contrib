@@ -77,10 +77,10 @@ func (d Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL 
 	}
 
 	attr := res.Attributes()
-	attr.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attr.PutString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSElasticBeanstalk)
-	attr.PutString(conventions.AttributeServiceInstanceID, strconv.Itoa(ebmd.DeploymentID))
-	attr.PutString(conventions.AttributeDeploymentEnvironment, ebmd.EnvironmentName)
-	attr.PutString(conventions.AttributeServiceVersion, ebmd.VersionLabel)
+	attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attr.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSElasticBeanstalk)
+	attr.PutStr(conventions.AttributeServiceInstanceID, strconv.Itoa(ebmd.DeploymentID))
+	attr.PutStr(conventions.AttributeDeploymentEnvironment, ebmd.EnvironmentName)
+	attr.PutStr(conventions.AttributeServiceVersion, ebmd.VersionLabel)
 	return res, conventions.SchemaURL, nil
 }

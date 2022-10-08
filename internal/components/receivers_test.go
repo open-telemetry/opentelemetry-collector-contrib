@@ -222,6 +222,9 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // TODO: Usage of CMux doesn't allow proper shutdown.
 		},
 		{
+			receiver: "oracledb",
+		},
+		{
 			receiver: "otlp",
 		},
 		{
@@ -285,6 +288,9 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "skywalking",
+		},
+		{
+			receiver: "snmp",
 		},
 		{
 			receiver: "splunk_hec",

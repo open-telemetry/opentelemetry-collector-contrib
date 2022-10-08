@@ -66,12 +66,9 @@ func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulati
 
 // processMetrics implements the ProcessMetricsFunc type.
 func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
-	resourceMetricsSlice := md.ResourceMetrics()
-	resourceMetricsSlice.RemoveIf(func(rm pmetric.ResourceMetrics) bool {
-		ilms := rm.ScopeMetrics()
-		ilms.RemoveIf(func(ilm pmetric.ScopeMetrics) bool {
-			ms := ilm.Metrics()
-			ms.RemoveIf(func(m pmetric.Metric) bool {
+	md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
+		rm.ScopeMetrics().RemoveIf(func(ilm pmetric.ScopeMetrics) bool {
+			ilm.Metrics().RemoveIf(func(m pmetric.Metric) bool {
 				if !ctdp.shouldConvertMetric(m.Name()) {
 					return false
 				}

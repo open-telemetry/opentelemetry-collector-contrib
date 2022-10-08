@@ -115,7 +115,7 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	{{- else if eq (attributeInfo .).Type.Primitive "[]byte" }}
 	dp.Attributes().PutEmptyBytes("{{ attributeKey .}}").FromRaw({{ .RenderUnexported }}AttributeValue)
 	{{- else }}
-	dp.Attributes().PutString("{{ attributeKey .}}", {{ .RenderUnexported }}AttributeValue)
+	dp.Attributes().PutStr("{{ attributeKey .}}", {{ .RenderUnexported }}AttributeValue)
 	{{- end }}
 	{{- end }}
 }
@@ -202,7 +202,11 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // With{{ $name.Render }} sets provided value as "{{ $name }}" attribute for current resource.
 func With{{ $name.Render }}(val {{ $attr.Type.Primitive }}) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
+		{{- if eq $attr.Type.Primitive "string" }}
+		rm.Resource().Attributes().PutStr("{{ $name }}", val)
+		{{- else }}
 		rm.Resource().Attributes().Put{{ $attr.Type }}("{{ $name }}", val)
+		{{- end }}
 	}
 }
 {{ end }}

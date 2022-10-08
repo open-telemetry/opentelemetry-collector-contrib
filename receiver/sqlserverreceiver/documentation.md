@@ -42,7 +42,7 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| sqlserver.database.name | The name of the SQL Server database. | String |
+| sqlserver.database.name | The name of the SQL Server database. | Str |
 
 ## Metric attributes
 

@@ -32,10 +32,10 @@ func TestMetricDataToLogService(t *testing.T) {
 	md.ResourceMetrics().AppendEmpty() // Add an empty ResourceMetrics
 	rm := md.ResourceMetrics().AppendEmpty()
 
-	rm.Resource().Attributes().PutString("labelB", "valueB")
-	rm.Resource().Attributes().PutString("labelA", "valueA")
-	rm.Resource().Attributes().PutString("service.name", "unknown-service")
-	rm.Resource().Attributes().PutString("a", "b")
+	rm.Resource().Attributes().PutStr("labelB", "valueB")
+	rm.Resource().Attributes().PutStr("labelA", "valueA")
+	rm.Resource().Attributes().PutStr("service.name", "unknown-service")
+	rm.Resource().Attributes().PutStr("a", "b")
 	sms := rm.ScopeMetrics()
 	sms.AppendEmpty() // Add an empty ScopeMetrics
 	sm := sms.AppendEmpty()
@@ -53,7 +53,7 @@ func TestMetricDataToLogService(t *testing.T) {
 	intGauge := intGaugeMetric.SetEmptyGauge()
 	intGaugeDataPoints := intGauge.DataPoints()
 	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
-	intGaugeDataPoint.Attributes().PutString("innerLabel", "innerValue")
+	intGaugeDataPoint.Attributes().PutStr("innerLabel", "innerValue")
 	intGaugeDataPoint.SetIntValue(10)
 	intGaugeDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
 
@@ -62,7 +62,7 @@ func TestMetricDataToLogService(t *testing.T) {
 	doubleGauge := doubleGaugeMetric.SetEmptyGauge()
 	doubleGaugeDataPoints := doubleGauge.DataPoints()
 	doubleGaugeDataPoint := doubleGaugeDataPoints.AppendEmpty()
-	doubleGaugeDataPoint.Attributes().PutString("innerLabel", "innerValue")
+	doubleGaugeDataPoint.Attributes().PutStr("innerLabel", "innerValue")
 	doubleGaugeDataPoint.SetDoubleValue(10.1)
 	doubleGaugeDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
 
@@ -71,7 +71,7 @@ func TestMetricDataToLogService(t *testing.T) {
 	intSum := intSumMetric.SetEmptySum()
 	intSumDataPoints := intSum.DataPoints()
 	intSumDataPoint := intSumDataPoints.AppendEmpty()
-	intSumDataPoint.Attributes().PutString("innerLabel", "innerValue")
+	intSumDataPoint.Attributes().PutStr("innerLabel", "innerValue")
 	intSumDataPoint.SetIntValue(11)
 	intSumDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
 
@@ -80,7 +80,7 @@ func TestMetricDataToLogService(t *testing.T) {
 	doubleSum := doubleSumMetric.SetEmptySum()
 	doubleSumDataPoints := doubleSum.DataPoints()
 	doubleSumDataPoint := doubleSumDataPoints.AppendEmpty()
-	doubleSumDataPoint.Attributes().PutString("innerLabel", "innerValue")
+	doubleSumDataPoint.Attributes().PutStr("innerLabel", "innerValue")
 	doubleSumDataPoint.SetDoubleValue(10.1)
 	doubleSumDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
 
@@ -89,7 +89,7 @@ func TestMetricDataToLogService(t *testing.T) {
 	doubleHistogram := doubleHistogramMetric.SetEmptyHistogram()
 	doubleHistogramDataPoints := doubleHistogram.DataPoints()
 	doubleHistogramDataPoint := doubleHistogramDataPoints.AppendEmpty()
-	doubleHistogramDataPoint.Attributes().PutString("innerLabel", "innerValue")
+	doubleHistogramDataPoint.Attributes().PutStr("innerLabel", "innerValue")
 	doubleHistogramDataPoint.SetCount(2)
 	doubleHistogramDataPoint.SetSum(10.1)
 	doubleHistogramDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
@@ -104,7 +104,7 @@ func TestMetricDataToLogService(t *testing.T) {
 	doubleSummaryDataPoint.SetCount(2)
 	doubleSummaryDataPoint.SetSum(10.1)
 	doubleSummaryDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
-	doubleSummaryDataPoint.Attributes().PutString("innerLabel", "innerValue")
+	doubleSummaryDataPoint.Attributes().PutStr("innerLabel", "innerValue")
 	quantileVal := doubleSummaryDataPoint.QuantileValues().AppendEmpty()
 	quantileVal.SetValue(10.2)
 	quantileVal.SetQuantile(0.9)

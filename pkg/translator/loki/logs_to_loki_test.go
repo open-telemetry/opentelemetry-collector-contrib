@@ -90,9 +90,9 @@ func TestLogsToLoki(t *testing.T) {
 
 			// we can't use copy here, as the value (Value) will be used as string lookup later, so, we need to convert it to string now
 			for k, v := range tC.hints {
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString(k, fmt.Sprintf("%v", v))
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutString(k, fmt.Sprintf("%v", v))
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).Attributes().PutString(k, fmt.Sprintf("%v", v))
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr(k, fmt.Sprintf("%v", v))
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr(k, fmt.Sprintf("%v", v))
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).Attributes().PutStr(k, fmt.Sprintf("%v", v))
 			}
 
 			// test

@@ -62,16 +62,16 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 		}
 
 		if event.Host != "" {
-			logRecord.Attributes().PutString(config.HecToOtelAttrs.Host, event.Host)
+			logRecord.Attributes().PutStr(config.HecToOtelAttrs.Host, event.Host)
 		}
 		if event.Source != "" {
-			logRecord.Attributes().PutString(config.HecToOtelAttrs.Source, event.Source)
+			logRecord.Attributes().PutStr(config.HecToOtelAttrs.Source, event.Source)
 		}
 		if event.SourceType != "" {
-			logRecord.Attributes().PutString(config.HecToOtelAttrs.SourceType, event.SourceType)
+			logRecord.Attributes().PutStr(config.HecToOtelAttrs.SourceType, event.SourceType)
 		}
 		if event.Index != "" {
-			logRecord.Attributes().PutString(config.HecToOtelAttrs.Index, event.Index)
+			logRecord.Attributes().PutStr(config.HecToOtelAttrs.Index, event.Index)
 		}
 		if resourceCustomizer != nil {
 			resourceCustomizer(rl.Resource())

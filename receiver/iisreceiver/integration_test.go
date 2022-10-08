@@ -54,5 +54,7 @@ func TestIisIntegration(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues()))
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics,
+		scrapertest.IgnoreResourceAttributeValue("iis.application_pool"),
+		scrapertest.IgnoreMetricValues()))
 }

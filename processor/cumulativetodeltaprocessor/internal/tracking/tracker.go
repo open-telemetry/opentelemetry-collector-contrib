@@ -37,7 +37,6 @@ var identityBufferPool = sync.Pool{
 
 type State struct {
 	sync.Mutex
-	Identity  MetricIdentity
 	PrevPoint ValuePoint
 }
 
@@ -86,7 +85,6 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 	var ok bool
 	if s, ok = t.states.Load(hashableID); !ok {
 		s, ok = t.states.LoadOrStore(hashableID, &State{
-			Identity:  metricID,
 			PrevPoint: metricPoint,
 		})
 	}

@@ -362,8 +362,8 @@ func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbat
 	for _, alert := range alerts {
 		resourceLogs := logs.ResourceLogs().AppendEmpty()
 		resourceAttrs := resourceLogs.Resource().Attributes()
-		resourceAttrs.PutString("mongodbatlas.group.id", alert.GroupID)
-		resourceAttrs.PutString("mongodbatlas.alert.config.id", alert.AlertConfigID)
+		resourceAttrs.PutStr("mongodbatlas.group.id", alert.GroupID)
+		resourceAttrs.PutStr("mongodbatlas.alert.config.id", alert.AlertConfigID)
 		putStringToMapNotNil(resourceAttrs, "mongodbatlas.cluster.name", &alert.ClusterName)
 		putStringToMapNotNil(resourceAttrs, "mongodbatlas.replica_set.name", &alert.ReplicaSetName)
 
@@ -391,12 +391,12 @@ func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbat
 
 		attrs := logRecord.Attributes()
 		// These attributes are always present
-		attrs.PutString("event.domain", "mongodbatlas")
-		attrs.PutString("event.name", alert.EventTypeName)
-		attrs.PutString("status", alert.Status)
-		attrs.PutString("created", alert.Created)
-		attrs.PutString("updated", alert.Updated)
-		attrs.PutString("id", alert.ID)
+		attrs.PutStr("event.domain", "mongodbatlas")
+		attrs.PutStr("event.name", alert.EventTypeName)
+		attrs.PutStr("status", alert.Status)
+		attrs.PutStr("created", alert.Created)
+		attrs.PutStr("updated", alert.Updated)
+		attrs.PutStr("id", alert.ID)
 
 		// These attributes are optional and may not be present, depending on the alert type.
 		putStringToMapNotNil(attrs, "metric.name", &alert.MetricName)
@@ -409,7 +409,7 @@ func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbat
 
 		if alert.CurrentValue != nil {
 			attrs.PutDouble("metric.value", *alert.CurrentValue.Number)
-			attrs.PutString("metric.units", alert.CurrentValue.Units)
+			attrs.PutStr("metric.units", alert.CurrentValue.Units)
 		}
 
 		host, portStr, err := net.SplitHostPort(alert.HostnameAndPort)
@@ -424,7 +424,7 @@ func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbat
 			continue
 		}
 
-		attrs.PutString("net.peer.name", host)
+		attrs.PutStr("net.peer.name", host)
 		attrs.PutInt("net.peer.port", port)
 	}
 	return logs, errs
@@ -466,20 +466,20 @@ func payloadToLogs(now time.Time, payload []byte) (plog.Logs, error) {
 	logRecord.Body().SetStr(string(payload))
 
 	resourceAttrs := resourceLogs.Resource().Attributes()
-	resourceAttrs.PutString("mongodbatlas.group.id", alert.GroupID)
-	resourceAttrs.PutString("mongodbatlas.alert.config.id", alert.AlertConfigID)
+	resourceAttrs.PutStr("mongodbatlas.group.id", alert.GroupID)
+	resourceAttrs.PutStr("mongodbatlas.alert.config.id", alert.AlertConfigID)
 	putStringToMapNotNil(resourceAttrs, "mongodbatlas.cluster.name", alert.ClusterName)
 	putStringToMapNotNil(resourceAttrs, "mongodbatlas.replica_set.name", alert.ReplicaSetName)
 
 	attrs := logRecord.Attributes()
 	// These attributes are always present
-	attrs.PutString("event.domain", "mongodbatlas")
-	attrs.PutString("event.name", alert.EventType)
-	attrs.PutString("message", alert.HumanReadable)
-	attrs.PutString("status", alert.Status)
-	attrs.PutString("created", alert.Created)
-	attrs.PutString("updated", alert.Updated)
-	attrs.PutString("id", alert.ID)
+	attrs.PutStr("event.domain", "mongodbatlas")
+	attrs.PutStr("event.name", alert.EventType)
+	attrs.PutStr("message", alert.HumanReadable)
+	attrs.PutStr("status", alert.Status)
+	attrs.PutStr("created", alert.Created)
+	attrs.PutStr("updated", alert.Updated)
+	attrs.PutStr("id", alert.ID)
 
 	// These attributes are optional and may not be present, depending on the alert type.
 	putStringToMapNotNil(attrs, "metric.name", alert.MetricName)
@@ -493,7 +493,7 @@ func payloadToLogs(now time.Time, payload []byte) (plog.Logs, error) {
 
 	if alert.CurrentValue != nil {
 		attrs.PutDouble("metric.value", alert.CurrentValue.Number)
-		attrs.PutString("metric.units", alert.CurrentValue.Units)
+		attrs.PutStr("metric.units", alert.CurrentValue.Units)
 	}
 
 	if alert.HostNameAndPort != nil {
@@ -507,7 +507,7 @@ func payloadToLogs(now time.Time, payload []byte) (plog.Logs, error) {
 			return plog.Logs{}, fmt.Errorf("failed to parse port %s: %w", portStr, err)
 		}
 
-		attrs.PutString("net.peer.name", host)
+		attrs.PutStr("net.peer.name", host)
 		attrs.PutInt("net.peer.port", port)
 
 	}
@@ -638,6 +638,6 @@ func severityFromAPIAlert(a string) plog.SeverityNumber {
 
 func putStringToMapNotNil(m pcommon.Map, k string, v *string) {
 	if v != nil {
-		m.PutString(k, *v)
+		m.PutStr(k, *v)
 	}
 }

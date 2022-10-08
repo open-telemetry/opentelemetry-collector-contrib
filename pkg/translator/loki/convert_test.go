@@ -116,7 +116,7 @@ func TestConvertAttributesToLabels(t *testing.T) {
 			attrsAvailable: map[string]interface{}{
 				"host.name": "guarana",
 			},
-			attrsToSelect: pcommon.NewValueString("host.name"),
+			attrsToSelect: pcommon.NewValueStr("host.name"),
 			expected: model.LabelSet{
 				"host.name": "guarana",
 			},
@@ -127,7 +127,7 @@ func TestConvertAttributesToLabels(t *testing.T) {
 				"host.name": "guarana",
 				"pod.name":  "pod-123",
 			},
-			attrsToSelect: pcommon.NewValueString("host.name, pod.name"),
+			attrsToSelect: pcommon.NewValueStr("host.name, pod.name"),
 			expected: model.LabelSet{
 				"host.name": "guarana",
 				"pod.name":  "pod-123",

@@ -80,7 +80,7 @@ func TestStatusCodeSampling(t *testing.T) {
 			}
 
 			trace := &TraceData{
-				ReceivedBatches: []ptrace.Traces{traces},
+				ReceivedBatches: traces,
 			}
 
 			statusCodeFilter, err := NewStatusCodeFilter(zap.NewNop(), c.StatusCodesToFilterOn)

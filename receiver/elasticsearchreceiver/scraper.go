@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
 )
 
 const (
@@ -81,6 +82,7 @@ type elasticsearchScraper struct {
 	cfg                                  *Config
 	mb                                   *metadata.MetricsBuilder
 	version                              *version.Version
+	clusterName                          string
 	emitMetricsWithDirectionAttribute    bool
 	emitMetricsWithoutDirectionAttribute bool
 }
@@ -108,22 +110,25 @@ func (r *elasticsearchScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	r.getVersion(ctx, errs)
+	r.getClusterMetadata(ctx, errs)
 	r.scrapeNodeMetrics(ctx, now, errs)
 	r.scrapeClusterMetrics(ctx, now, errs)
+	r.scrapeIndicesMetrics(ctx, now, errs)
 
 	return r.mb.Emit(), errs.Combine()
 }
 
 // scrapeVersion gets and assigns the elasticsearch version number
-func (r *elasticsearchScraper) getVersion(ctx context.Context, errs *scrapererror.ScrapeErrors) {
-	versionResponse, err := r.client.Version(ctx)
+func (r *elasticsearchScraper) getClusterMetadata(ctx context.Context, errs *scrapererror.ScrapeErrors) {
+	response, err := r.client.ClusterMetadata(ctx)
 	if err != nil {
 		errs.AddPartial(2, err)
 		return
 	}
 
-	esVersion, err := version.NewVersion(versionResponse.Version.Number)
+	r.clusterName = response.ClusterName
+
+	esVersion, err := version.NewVersion(response.Version.Number)
 	if err != nil {
 		errs.AddPartial(2, err)
 		return
@@ -362,4 +367,42 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pco
 	}
 
 	r.mb.EmitForResource(metadata.WithElasticsearchClusterName(clusterHealth.ClusterName))
+}
+
+func (r *elasticsearchScraper) scrapeIndicesMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	if len(r.cfg.Indices) == 0 {
+		return
+	}
+
+	indexStats, err := r.client.IndexStats(ctx, r.cfg.Indices)
+
+	if err != nil {
+		errs.AddPartial(4, err)
+		return
+	}
+
+	// The metrics for all indices are queried by using "_all" name and hence its the name used for labeling them.
+	r.scrapeOneIndexMetrics(now, "_all", &indexStats.All)
+
+	for name, stats := range indexStats.Indices {
+		r.scrapeOneIndexMetrics(now, name, stats)
+	}
+}
+
+func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name string, stats *model.IndexStatsIndexInfo) {
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Total.SearchOperations.FetchTotal, metadata.AttributeOperationFetch, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Total.SearchOperations.QueryTotal, metadata.AttributeOperationQuery, metadata.AttributeIndexAggregationTypeTotal,
+	)
+
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Total.SearchOperations.FetchTimeInMs, metadata.AttributeOperationFetch, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Total.SearchOperations.QueryTimeInMs, metadata.AttributeOperationQuery, metadata.AttributeIndexAggregationTypeTotal,
+	)
+
+	r.mb.EmitForResource(metadata.WithElasticsearchIndexName(name), metadata.WithElasticsearchClusterName(r.clusterName))
 }

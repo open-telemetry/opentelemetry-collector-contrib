@@ -62,10 +62,10 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
 
 	// Attributes related to the object causing the event.
-	resourceAttrs.PutString("mongodb_atlas.org", pc.orgName)
-	resourceAttrs.PutString("mongodb_atlas.project", pc.Project.Name)
-	resourceAttrs.PutString("mongodb_atlas.cluster", clusterName)
-	resourceAttrs.PutString("mongodb_atlas.host.name", hostname)
+	resourceAttrs.PutStr("mongodb_atlas.org", pc.orgName)
+	resourceAttrs.PutStr("mongodb_atlas.project", pc.Project.Name)
+	resourceAttrs.PutStr("mongodb_atlas.cluster", clusterName)
+	resourceAttrs.PutStr("mongodb_atlas.host.name", hostname)
 
 	for _, log := range logs {
 		lr := sl.LogRecords().AppendEmpty()
@@ -87,10 +87,10 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 		attrs := lr.Attributes()
 		attrs.EnsureCapacity(totalAuditLogAttributes)
 
-		attrs.PutString("atype", log.Type)
+		attrs.PutStr("atype", log.Type)
 
 		if log.Local.IP != nil {
-			attrs.PutString("local.ip", *log.Local.IP)
+			attrs.PutStr("local.ip", *log.Local.IP)
 		}
 
 		if log.Local.Port != nil {
@@ -102,11 +102,11 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 		}
 
 		if log.Local.UnixSocket != nil {
-			attrs.PutString("local.unix", *log.Local.UnixSocket)
+			attrs.PutStr("local.unix", *log.Local.UnixSocket)
 		}
 
 		if log.Remote.IP != nil {
-			attrs.PutString("remote.ip", *log.Remote.IP)
+			attrs.PutStr("remote.ip", *log.Remote.IP)
 		}
 
 		if log.Remote.Port != nil {
@@ -118,12 +118,12 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 		}
 
 		if log.Remote.UnixSocket != nil {
-			attrs.PutString("remote.unix", *log.Remote.UnixSocket)
+			attrs.PutStr("remote.unix", *log.Remote.UnixSocket)
 		}
 
 		if log.ID != nil {
-			attrs.PutString("uuid.binary", log.ID.Binary)
-			attrs.PutString("uuid.type", log.ID.Type)
+			attrs.PutStr("uuid.binary", log.ID.Binary)
+			attrs.PutStr("uuid.type", log.ID.Type)
 		}
 
 		attrs.PutInt("result", int64(log.Result))
@@ -142,7 +142,7 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 			roles.Pdata().CopyTo(rolesSlice.AppendEmpty().SetEmptyMap())
 		}
 
-		attrs.PutString("log_name", logName)
+		attrs.PutStr("log_name", logName)
 	}
 
 	return ld
@@ -158,10 +158,10 @@ func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc Project
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
 
 	// Attributes related to the object causing the event.
-	resourceAttrs.PutString("mongodb_atlas.org", pc.orgName)
-	resourceAttrs.PutString("mongodb_atlas.project", pc.Project.Name)
-	resourceAttrs.PutString("mongodb_atlas.cluster", clusterName)
-	resourceAttrs.PutString("mongodb_atlas.host.name", hostname)
+	resourceAttrs.PutStr("mongodb_atlas.org", pc.orgName)
+	resourceAttrs.PutStr("mongodb_atlas.project", pc.Project.Name)
+	resourceAttrs.PutStr("mongodb_atlas.cluster", clusterName)
+	resourceAttrs.PutStr("mongodb_atlas.host.name", hostname)
 
 	logTsFormat := tsLayout(clusterMajorVersion)
 
@@ -188,14 +188,14 @@ func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc Project
 		attrs := lr.Attributes()
 		attrs.EnsureCapacity(totalLogAttributes)
 		attrs.FromRaw(log.Attributes)
-		attrs.PutString("message", log.Message)
-		attrs.PutString("component", log.Component)
-		attrs.PutString("context", log.Context)
+		attrs.PutStr("message", log.Message)
+		attrs.PutStr("component", log.Component)
+		attrs.PutStr("context", log.Context)
 		// log ID is not present on MongoDB 4.2 systems
 		if clusterMajorVersion != mongoDBMajorVersion4_2 {
 			attrs.PutInt("id", log.ID)
 		}
-		attrs.PutString("log_name", logName)
+		attrs.PutStr("log_name", logName)
 	}
 
 	return ld

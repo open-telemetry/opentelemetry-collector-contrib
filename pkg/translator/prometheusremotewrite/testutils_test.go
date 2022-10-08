@@ -161,7 +161,7 @@ var (
 func getAttributes(labels ...string) pcommon.Map {
 	attributeMap := pcommon.NewMap()
 	for i := 0; i < len(labels); i += 2 {
-		attributeMap.PutString(labels[i], labels[i+1])
+		attributeMap.PutStr(labels[i], labels[i+1])
 	}
 	return attributeMap
 }
@@ -220,7 +220,7 @@ func getHistogramDataPointWithExemplars(t *testing.T, time time.Time, value floa
 	e := h.Exemplars().AppendEmpty()
 	e.SetDoubleValue(value)
 	e.SetTimestamp(pcommon.NewTimestampFromTime(time))
-	e.FilteredAttributes().PutString(attributeKey, attributeValue)
+	e.FilteredAttributes().PutStr(attributeKey, attributeValue)
 
 	if traceID != "" {
 		var traceIDBytes [16]byte
