@@ -333,12 +333,12 @@ func (p *processor) updateDurationMetrics(key string, duration float64) {
 
 func buildDimensions(e *store.Edge) pcommon.Map {
 	dims := pcommon.NewMap()
-	dims.PutString("client", e.ClientService)
-	dims.PutString("server", e.ServerService)
-	dims.PutString("connection_type", string(e.ConnectionType))
+	dims.PutStr("client", e.ClientService)
+	dims.PutStr("server", e.ServerService)
+	dims.PutStr("connection_type", string(e.ConnectionType))
 	dims.PutBool("failed", e.Failed)
 	for k, v := range e.Dimensions {
-		dims.PutString(k, v)
+		dims.PutStr(k, v)
 	}
 	return dims
 }

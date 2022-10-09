@@ -25,17 +25,17 @@ import (
 )
 
 type Processor struct {
-	queries []ottl.Statement[ottllogs.TransformContext]
+	statements []ottl.Statement[ottllogs.TransformContext]
 }
 
 func NewProcessor(statements []string, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
 	ottlp := ottllogs.NewParser(functions, settings)
-	queries, err := ottlp.ParseStatements(statements)
+	parsedStatements, err := ottlp.ParseStatements(statements)
 	if err != nil {
 		return nil, err
 	}
 	return &Processor{
-		queries: queries,
+		statements: parsedStatements,
 	}, nil
 }
 
@@ -47,7 +47,7 @@ func (p *Processor) ProcessLogs(_ context.Context, td plog.Logs) (plog.Logs, err
 			logs := slogs.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				ctx := ottllogs.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
-				for _, statement := range p.queries {
+				for _, statement := range p.statements {
 					if statement.Condition(ctx) {
 						statement.Function(ctx)
 					}

@@ -26,7 +26,7 @@ import (
 
 func Test_keepKeys(t *testing.T) {
 	input := pcommon.NewMap()
-	input.PutString("test", "hello world")
+	input.PutStr("test", "hello world")
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
@@ -35,7 +35,6 @@ func Test_keepKeys(t *testing.T) {
 			return ctx
 		},
 		Setter: func(ctx pcommon.Map, val interface{}) {
-			ctx.Clear()
 			val.(pcommon.Map).CopyTo(ctx)
 		},
 	}
@@ -51,8 +50,7 @@ func Test_keepKeys(t *testing.T) {
 			target: target,
 			keys:   []string{"test"},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 			},
 		},
 		{
@@ -60,8 +58,7 @@ func Test_keepKeys(t *testing.T) {
 			target: target,
 			keys:   []string{"test", "test2"},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutInt("test2", 3)
 			},
 		},
@@ -69,25 +66,19 @@ func Test_keepKeys(t *testing.T) {
 			name:   "keep none",
 			target: target,
 			keys:   []string{},
-			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-			},
+			want:   func(expectedMap pcommon.Map) {},
 		},
 		{
 			name:   "no match",
 			target: target,
 			keys:   []string{"no match"},
-			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-			},
+			want:   func(expectedMap pcommon.Map) {},
 		},
 		{
 			name:   "input is not a pcommon.Map",
 			target: target,
 			keys:   []string{"no match"},
-			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-			},
+			want:   func(expectedMap pcommon.Map) {},
 		},
 	}
 	for _, tt := range tests {
@@ -108,7 +99,7 @@ func Test_keepKeys(t *testing.T) {
 }
 
 func Test_keepKeys_bad_input(t *testing.T) {
-	input := pcommon.NewValueString("not a map")
+	input := pcommon.NewValueStr("not a map")
 	target := &ottl.StandardGetSetter[interface{}]{
 		Getter: func(ctx interface{}) interface{} {
 			return ctx
@@ -124,7 +115,7 @@ func Test_keepKeys_bad_input(t *testing.T) {
 	require.NoError(t, err)
 	exprFunc(input)
 
-	assert.Equal(t, pcommon.NewValueString("not a map"), input)
+	assert.Equal(t, pcommon.NewValueStr("not a map"), input)
 }
 
 func Test_keepKeys_get_nil(t *testing.T) {

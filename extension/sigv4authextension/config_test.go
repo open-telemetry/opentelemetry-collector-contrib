@@ -47,6 +47,7 @@ func TestLoadConfig(t *testing.T) {
 		Service:           "service",
 		AssumeRole: AssumeRole{
 			SessionName: "role_session_name",
+			STSRegion:   "region",
 		},
 		// Ensure creds are the same for load config test; tested in extension_test.go
 		credsProvider: cfg.(*Config).credsProvider,

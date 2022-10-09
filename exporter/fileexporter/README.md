@@ -22,7 +22,7 @@ This intended for primarily for debugging Collector without setting up backends.
 
 The following settings are required:
 
-- `path` (no default): where to write information.
+- `path` [no default]: where to write information.
 
 The following settings are optional:
 
@@ -37,8 +37,11 @@ The following settings are optional:
 - `compression`[no default]: the compression algorithm used when exporting telemetry data to file. Supported compression algorithms:`zstd`
 
 ## File Rotation
+Telemetry data is exported to a single file by default.
+`fileexporter` only enables file rotation when the user specifies `rotation:` in the config. However, if specified, related default settings would apply.
 
-Telemetry is first written to a file that exactly matches the `path` setting. When the file size exceeds `max_megabytes` or age exceeds `max_days`, the file will be rotated.
+Telemetry is first written to a file that exactly matches the `path` setting. 
+When the file size exceeds `max_megabytes` or age exceeds `max_days`, the file will be rotated.
 
 When a file is rotated, **it is renamed by putting the current time in a timestamp**
 in the name immediately before the file's extension (or the end of the filename if there's no extension).
@@ -65,18 +68,15 @@ Otherwise, when using `proto` format or any kind of encoding, each encoded objec
 
 ```yaml
 exporters:
-  file:
-    path: ./file
-    format: json
-  file/2:
-    path: ./filename.json
+  file/no_rotation:
+    path: ./foo
+
+  file/rotation_with_default_settings:
+    path: ./foo
     rotation:
-      max_megabytes: 10
-      max_days: 3
-      max_backups: 3
-      localtime: true
-  file/3:
-    path: ./filename
+
+  file/rotation_with_custom_settings:
+    path: ./foo
     rotation:
       max_megabytes: 10
       max_days: 3

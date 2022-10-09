@@ -12,16 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ottlconfig // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlconfig"
+package model // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
 
-// Config configures the OTTL queries to execute against traces, metrics, and logs.
-type Config struct {
-	Traces  SignalConfig `mapstructure:"traces"`
-	Metrics SignalConfig `mapstructure:"metrics"`
-	Logs    SignalConfig `mapstructure:"logs"`
-}
-
-// SignalConfig configures OTTL queries to execute.
-type SignalConfig struct {
-	Queries []string `mapstructure:"queries"`
+type ClusterMetadataResponse struct {
+	ClusterName string `json:"cluster_name"`
+	Version     struct {
+		Number string `json:"number"`
+	} `json:"version"`
 }

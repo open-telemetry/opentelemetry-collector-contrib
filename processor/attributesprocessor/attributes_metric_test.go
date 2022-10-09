@@ -52,7 +52,7 @@ func runIndividualMetricTestCase(t *testing.T, mt metricTestCase, mp component.M
 func generateMetricData(resourceName string, attrs map[string]interface{}) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	res := md.ResourceMetrics().AppendEmpty()
-	res.Resource().Attributes().PutString("name", resourceName)
+	res.Resource().Attributes().PutStr("name", resourceName)
 	sl := res.ScopeMetrics().AppendEmpty()
 	m := sl.Metrics().AppendEmpty()
 
