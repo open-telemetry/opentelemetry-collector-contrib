@@ -2106,5 +2106,41 @@ var (
 			},
 			out: []*metricspb.Metric{},
 		},
+		{
+			name:       "simple_convert_to_snake_case",
+			spipOCTest: true,
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric"},
+					Action:              ConvertSnakeCase,
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metricTest").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric_test").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			},
+		},
+		{
+			name:       "complex_convert_to_snake_case",
+			spipOCTest: true,
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric"},
+					Action:              ConvertSnakeCase,
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("Base_MetricTest").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("base_metric_test").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			},
+		},
 	}
 )
