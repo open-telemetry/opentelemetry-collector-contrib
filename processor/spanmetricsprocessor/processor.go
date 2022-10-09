@@ -17,6 +17,7 @@ package spanmetricsprocessor // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
 	"sort"
 	"strings"
 	"sync"
@@ -37,6 +38,7 @@ import (
 )
 
 const (
+	collectorIDKey     = "collector.id"
 	serviceNameKey     = conventions.AttributeServiceName
 	operationKey       = "operation"   // OpenTelemetry non-standard constant.
 	spanKindKey        = "span.kind"   // OpenTelemetry non-standard constant.
@@ -87,6 +89,10 @@ type processorImp struct {
 	// An LRU cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "operation": "/bar", "status_code": "OK" }}
 	metricKeyToDimensions *cache.Cache
+
+	// collectorID is a unique identifier for this collector, with the primary use
+	// case of including this value as another dimension to the generated span metrics.
+	collectorID string
 }
 
 func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer consumer.Traces) (*processorImp, error) {
@@ -113,6 +119,11 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		return nil, err
 	}
 
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return nil, err
+	}
+
 	return &processorImp{
 		logger:                logger,
 		config:                *pConfig,
@@ -126,6 +137,7 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		nextConsumer:          nextConsumer,
 		dimensions:            pConfig.Dimensions,
 		metricKeyToDimensions: metricKeyToDimensionsCache,
+		collectorID:           id.String(),
 	}, nil
 }
 
@@ -440,6 +452,7 @@ func (p *processorImp) updateLatencyMetrics(key metricKey, latency float64, inde
 
 func (p *processorImp) buildDimensionKVs(serviceName string, span ptrace.Span, optionalDims []Dimension, resourceAttrs pcommon.Map) pcommon.Map {
 	dims := pcommon.NewMap()
+	dims.PutStr(collectorIDKey, p.collectorID)
 	dims.PutStr(serviceNameKey, serviceName)
 	dims.PutStr(operationKey, span.Name())
 	dims.PutStr(spanKindKey, span.Kind().String())

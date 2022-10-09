@@ -17,6 +17,7 @@ package spanmetricsprocessor
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
 	"testing"
 	"time"
 
@@ -42,6 +43,7 @@ import (
 )
 
 const (
+	collectorIDAttrName    = "collector.id"
 	stringAttrName         = "stringAttrName"
 	intAttrName            = "intAttrName"
 	doubleAttrName         = "doubleAttrName"
@@ -54,6 +56,7 @@ const (
 	regionResourceAttrName = "region"
 	DimensionsCacheSize    = 2
 
+	sampleCollectorID     = "fake collector ID"
 	sampleRegion          = "us-east-1"
 	sampleLatency         = float64(11)
 	sampleLatencyDuration = time.Duration(sampleLatency) * time.Millisecond
@@ -142,6 +145,32 @@ func TestProcessorShutdown(t *testing.T) {
 
 	// Verify
 	assert.NoError(t, err)
+}
+
+func TestCollectorID(t *testing.T) {
+	t.Parallel()
+
+	// Prepare
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+
+	// Test
+	next := new(consumertest.TracesSink)
+	p0, err := newProcessor(zaptest.NewLogger(t), cfg, next)
+	require.NoError(t, err)
+
+	// Verify
+	assert.NotZero(t, p0.collectorID)
+	assert.NotZero(t, uuid.MustParse(p0.collectorID))
+
+	// Creating a new processor should generate a different ID.
+	p1, err := newProcessor(zaptest.NewLogger(t), cfg, next)
+	require.NoError(t, err)
+
+	// Verify
+	assert.NotZero(t, p1.collectorID)
+	assert.NotEqual(t, p0.collectorID, p1.collectorID)
+	assert.NotZero(t, uuid.MustParse(p1.collectorID))
 }
 
 func TestConfigureLatencyBounds(t *testing.T) {
@@ -403,6 +432,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 			{regionResourceAttrName, nil},
 		},
 		metricKeyToDimensions: metricKeyToDimensions,
+		collectorID:           sampleCollectorID,
 	}
 }
 
@@ -518,6 +548,7 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metricID]bool) {
 	mID := metricID{}
 	wantDimensions := map[string]pcommon.Value{
+		collectorIDAttrName:    pcommon.NewValueStr(sampleCollectorID),
 		stringAttrName:         pcommon.NewValueStr("stringAttrValue"),
 		intAttrName:            pcommon.NewValueInt(99),
 		doubleAttrName:         pcommon.NewValueDouble(99.99),
