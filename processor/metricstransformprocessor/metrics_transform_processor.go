@@ -33,6 +33,7 @@ type internalTransform struct {
 	MetricIncludeFilter internalFilter
 	Action              ConfigAction
 	NewName             string
+	ConvertSnakeCase    bool
 	GroupResourceLabels map[string]string
 	AggregationType     AggregationType
 	SubmatchCase        SubmatchCase

@@ -170,6 +170,8 @@ const (
 
 	// Group groups mutiple metrics matching the predicate into multiple ResourceMetrics messages
 	Group ConfigAction = "group"
+
+	ConvertSnakeCase ConfigAction = "convert_snake_case"
 )
 
 var actions = []ConfigAction{Insert, Update, Combine, Group}

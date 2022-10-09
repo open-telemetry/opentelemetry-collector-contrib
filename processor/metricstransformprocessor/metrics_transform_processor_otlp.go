@@ -293,7 +293,14 @@ func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetr
 						// Drop the metric if all the data points were dropped after transformations.
 						return !transformMetric(metric, transform)
 					})
+				case ConvertSnakeCase:
+					mLen := metrics.Len()
+					for i := 0; i < mLen; i++ {
+						metric := metrics.At(i)
+						ToSnakeCase(metric)
+					}
 				}
+
 			}
 
 			return metrics.Len() == 0
