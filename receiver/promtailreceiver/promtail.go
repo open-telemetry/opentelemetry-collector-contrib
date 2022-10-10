@@ -38,6 +38,7 @@ func init() {
 	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
+// PromtailInput implements stanza.Operator interface
 type PromtailInput struct {
 	helper.InputOperator
 	config *Config
@@ -103,6 +104,7 @@ func (p *PromtailInput) Stop() error {
 	return nil
 }
 
+// parsePromtailEntry creates new stanza.Entry from promtail entry
 func (p *PromtailInput) parsePromtailEntry(inputEntry api.Entry) (*entry.Entry, error) {
 	outputEntry, err := p.NewEntry(inputEntry.Entry.Line)
 	if err != nil {
