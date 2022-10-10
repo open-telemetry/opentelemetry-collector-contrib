@@ -46,7 +46,6 @@ type logsExporter struct {
 
 	logExporter plogotlp.GRPCClient
 	clientConn  *grpc.ClientConn
-	metadata    metadata.MD
 	callOptions []grpc.CallOption
 
 	settings component.TelemetrySettings
@@ -67,11 +66,11 @@ func (e *logsExporter) start(ctx context.Context, host component.Host) (err erro
 	}
 
 	e.logExporter = plogotlp.NewClient(e.clientConn)
-	headers := e.config.Logs.Headers
-	headers["CX-Application-Name"] = e.config.AppName
-	headers["CX-Subsystem-Name"] = e.config.SubSystem
-	headers["Authorization"] = "Bearer " + e.config.PrivateKey
-	e.metadata = metadata.New(headers)
+	if e.config.Logs.Headers == nil {
+		e.config.Logs.Headers = make(map[string]string)
+	}
+	e.config.Logs.Headers["Authorization"] = "Bearer " + e.config.PrivateKey
+
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.Logs.WaitForReady),
 	}
@@ -84,15 +83,33 @@ func (e *logsExporter) shutdown(context.Context) error {
 }
 
 func (e *logsExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
-	req := plogotlp.NewRequestFromLogs(ld)
 
-	_, err := e.logExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	return processError(err)
+	rss := ld.ResourceLogs()
+	for i := 0; i < rss.Len(); i++ {
+		resourceLog := rss.At(i)
+		appName, subsystem := e.config.getMetadataFromResource(resourceLog.Resource())
+
+		ld := plog.NewLogs()
+		newRss := ld.ResourceLogs().AppendEmpty()
+		resourceLog.CopyTo(newRss)
+
+		req := plogotlp.NewRequestFromLogs(ld)
+		_, err := e.logExporter.Export(e.enhanceContext(ctx, appName, subsystem), req, e.callOptions...)
+		if err != nil {
+			return processError(err)
+		}
+	}
+	return nil
 }
 
-func (e *logsExporter) enhanceContext(ctx context.Context) context.Context {
-	if e.metadata.Len() > 0 {
-		return metadata.NewOutgoingContext(ctx, e.metadata)
+func (e *logsExporter) enhanceContext(ctx context.Context, appName, subSystemName string) context.Context {
+	headers := make(map[string]string)
+	for k, v := range e.config.Logs.Headers {
+		headers[k] = v
 	}
-	return ctx
+
+	headers["CX-Application-Name"] = appName
+	headers["CX-Subsystem-Name"] = subSystemName
+
+	return metadata.NewOutgoingContext(ctx, metadata.New(headers))
 }

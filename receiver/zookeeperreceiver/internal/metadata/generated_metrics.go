@@ -422,7 +422,7 @@ func (m *metricZookeeperFollowerCount) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("state", stateAttributeValue)
+	dp.Attributes().PutStr("state", stateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -673,7 +673,7 @@ func (m *metricZookeeperPacketCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("direction", directionAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1089,14 +1089,14 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithServerState sets provided value as "server.state" attribute for current resource.
 func WithServerState(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("server.state", val)
+		rm.Resource().Attributes().PutStr("server.state", val)
 	}
 }
 
 // WithZkVersion sets provided value as "zk.version" attribute for current resource.
 func WithZkVersion(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("zk.version", val)
+		rm.Resource().Attributes().PutStr("zk.version", val)
 	}
 }
 

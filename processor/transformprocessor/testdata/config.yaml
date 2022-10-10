@@ -1,49 +1,49 @@
 transform:
   traces:
-    queries:
+    statements:
       - set(name, "bear") where attributes["http.path"] == "/animal"
       - keep_keys(attributes, "http.method", "http.path")
   metrics:
-    queries:
+    statements:
       - set(metric.name, "bear") where attributes["http.path"] == "/animal"
       - keep_keys(attributes, "http.method", "http.path")
   logs:
-    queries:
+    statements:
       - set(body, "bear") where attributes["http.path"] == "/animal"
       - keep_keys(attributes, "http.method", "http.path")
 
 transform/bad_syntax_log:
   logs:
-    queries:
+    statements:
       - set(body, "bear" where attributes["http.path"] == "/animal"
       - keep_keys(attributes, "http.method", "http.path")
 
 transform/bad_syntax_metric:
   metrics:
-    queries:
+    statements:
       - set(name, "bear" where attributes["http.path"] == "/animal"
       - keep_keys(attributes, "http.method", "http.path")
 
 transform/bad_syntax_trace:
   traces:
-    queries:
+    statements:
       - set(name, "bear" where attributes["http.path"] == "/animal"
       - keep_keys(attributes, "http.method", "http.path")
 
 transform/unknown_function_log:
   logs:
-    queries:
+    statements:
       - set(body, "bear") where attributes["http.path"] == "/animal"
       - not_a_function(attributes, "http.method", "http.path")
 
 transform/unknown_function_metric:
   metrics:
-    queries:
+    statements:
       - set(metric.name, "bear") where attributes["http.path"] == "/animal"
       - not_a_function(attributes, "http.method", "http.path")
 
 transform/unknown_function_trace:
   traces:
-    queries:
+    statements:
       - set(name, "bear") where attributes["http.path"] == "/animal"
       - not_a_function(attributes, "http.method", "http.path")

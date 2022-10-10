@@ -40,8 +40,8 @@ func Test_FromMetrics(t *testing.T) {
 		"k1": "v1",
 	}
 	attrMap := pcommon.NewMap()
-	attrMap.PutString("k0", "v0")
-	attrMap.PutString("k1", "v1")
+	attrMap.PutStr("k0", "v0")
+	attrMap.PutStr("k1", "v1")
 
 	ts := pcommon.NewTimestampFromTime(time.Unix(unixSecs, unixNSecs))
 
@@ -201,10 +201,10 @@ func Test_FromMetrics(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().PutString("k_r0", "v_r0")
-				res.Attributes().PutString("k_r1", "v_r1")
-				res.Attributes().PutString("k_n0", "v_n0")
-				res.Attributes().PutString("k_n1", "v_n1")
+				res.Attributes().PutStr("k_r0", "v_r0")
+				res.Attributes().PutStr("k_r1", "v_r1")
+				res.Attributes().PutStr("k_n0", "v_n0")
+				res.Attributes().PutStr("k_n1", "v_n1")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(2)

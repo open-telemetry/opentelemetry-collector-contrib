@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -111,13 +110,7 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 // Method to exercise the prometheus file discovery behavior to ensure there are no errors
 // - reference https://github.com/prometheus/prometheus/blob/c0c22ed04200a8d24d1d5719f605c85710f0d008/discovery/file/file.go#L372
 func checkSDFile(filename string) error {
-	fd, err := os.Open(filename)
-	if err != nil {
-		return err
-	}
-	defer fd.Close()
-
-	content, err := io.ReadAll(fd)
+	content, err := os.ReadFile(filepath.Clean(filename))
 	if err != nil {
 		return err
 	}
@@ -165,8 +158,8 @@ func (cfg *Config) Validate() error {
 }
 
 func (cfg *Config) validatePromConfig(promConfig *promconfig.Config) error {
-	if len(promConfig.ScrapeConfigs) == 0 {
-		return errors.New("no Prometheus scrape_configs")
+	if len(promConfig.ScrapeConfigs) == 0 && cfg.TargetAllocator == nil {
+		return errors.New("no Prometheus scrape_configs or target_allocator set")
 	}
 
 	// Reject features that Prometheus supports but that the receiver doesn't support:
