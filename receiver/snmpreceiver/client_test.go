@@ -75,7 +75,7 @@ func TestNewClient(t *testing.T) {
 
 	for _, tc := range testCase {
 		t.Run(tc.desc, func(t *testing.T) {
-			ac, err := newClient(tc.cfg, tc.host, tc.settings, tc.logger)
+			ac, err := newClient(tc.cfg, tc.logger)
 			if tc.expectError != nil {
 				require.Nil(t, ac)
 				require.Contains(t, err.Error(), tc.expectError.Error())

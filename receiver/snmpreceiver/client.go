@@ -19,9 +19,9 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gosnmp/gosnmp"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 )
@@ -73,19 +73,19 @@ var _ client = (*snmpClient)(nil)
 
 // newClient creates an initialized client
 // Relies on config being validated thoroughly
-func newClient(cfg *Config, _ component.Host, _ component.TelemetrySettings, logger *zap.Logger) (client, error) {
+func newClient(cfg *Config, logger *zap.Logger) (client, error) {
 	// Create goSNMP client
 	goSNMP := newGoSNMPWrapper()
-	goSNMP.SetTimeout(cfg.CollectionInterval)
+	goSNMP.SetTimeout(5 * time.Second)
 
 	// Set goSNMP version based on config
 	switch cfg.Version {
 	case "v3":
 		goSNMP.SetVersion(gosnmp.Version3)
-	case "v2c":
-		goSNMP.SetVersion(gosnmp.Version2c)
 	case "v1":
 		goSNMP.SetVersion(gosnmp.Version1)
+	default:
+		goSNMP.SetVersion(gosnmp.Version2c)
 	}
 
 	// Checked in config
@@ -134,8 +134,6 @@ func setV3ClientConfigs(client goSNMPWrapper, cfg *Config) {
 	}
 	// Set goSNMP security level & auth/privacy details based on config
 	switch strings.ToUpper(cfg.SecurityLevel) {
-	case "NO_AUTH_NO_PRIV":
-		client.SetMsgFlags(gosnmp.NoAuthNoPriv)
 	case "AUTH_NO_PRIV":
 		client.SetMsgFlags(gosnmp.AuthNoPriv)
 		protocol := getAuthProtocol(cfg.AuthType)
@@ -151,52 +149,46 @@ func setV3ClientConfigs(client goSNMPWrapper, cfg *Config) {
 		privProtocol := getPrivacyProtocol(cfg.PrivacyType)
 		securityParams.PrivacyProtocol = privProtocol
 		securityParams.PrivacyPassphrase = cfg.PrivacyPassword
+	default:
+		client.SetMsgFlags(gosnmp.NoAuthNoPriv)
 	}
 	client.SetSecurityParameters(securityParams)
 }
 
 // getAuthProtocol gets gosnmp auth protocol based on config auth type
 func getAuthProtocol(authType string) gosnmp.SnmpV3AuthProtocol {
-	var authProtocol gosnmp.SnmpV3AuthProtocol
-
 	switch strings.ToUpper(authType) {
-	case "MD5":
-		authProtocol = gosnmp.MD5
 	case "SHA":
-		authProtocol = gosnmp.SHA
+		return gosnmp.SHA
 	case "SHA224":
-		authProtocol = gosnmp.SHA224
+		return gosnmp.SHA224
 	case "SHA256":
-		authProtocol = gosnmp.SHA256
+		return gosnmp.SHA256
 	case "SHA384":
-		authProtocol = gosnmp.SHA384
+		return gosnmp.SHA384
 	case "SHA512":
-		authProtocol = gosnmp.SHA512
+		return gosnmp.SHA512
+	default:
+		return gosnmp.MD5
 	}
-
-	return authProtocol
 }
 
 // getPrivacyProtocol gets gosnmp privacy protocol based on config privacy type
 func getPrivacyProtocol(privacyType string) gosnmp.SnmpV3PrivProtocol {
-	var privacyProtocol gosnmp.SnmpV3PrivProtocol
-
 	switch strings.ToUpper(privacyType) {
-	case "DES":
-		privacyProtocol = gosnmp.DES
 	case "AES":
-		privacyProtocol = gosnmp.AES
+		return gosnmp.AES
 	case "AES192":
-		privacyProtocol = gosnmp.AES192
+		return gosnmp.AES192
 	case "AES192C":
-		privacyProtocol = gosnmp.AES192C
+		return gosnmp.AES192C
 	case "AES256":
-		privacyProtocol = gosnmp.AES256
+		return gosnmp.AES256
 	case "AES256C":
-		privacyProtocol = gosnmp.AES256C
+		return gosnmp.AES256C
+	default:
+		return gosnmp.DES
 	}
-
-	return privacyProtocol
 }
 
 // Connect uses the goSNMP client's connect
@@ -354,15 +346,7 @@ func (c *snmpClient) convertSnmpPDUToSnmpData(pdu gosnmp.SnmpPDU) snmpData {
 	// Condense gosnmp data types to our client's simplified data types
 	switch pdu.Type {
 	// Integer types
-	case gosnmp.Counter32:
-		fallthrough
-	case gosnmp.Gauge32:
-		fallthrough
-	case gosnmp.Uinteger32:
-		fallthrough
-	case gosnmp.TimeTicks:
-		fallthrough
-	case gosnmp.Integer:
+	case gosnmp.Counter32, gosnmp.Gauge32, gosnmp.Uinteger32, gosnmp.TimeTicks, gosnmp.Integer:
 		value, err := c.toInt64(pdu.Name, pdu.Value)
 		if err != nil {
 			clientSNMPData.valueType = notSupportedVal
@@ -375,19 +359,13 @@ func (c *snmpClient) convertSnmpPDUToSnmpData(pdu gosnmp.SnmpPDU) snmpData {
 		return clientSNMPData
 
 	// String types
-	case gosnmp.IPAddress:
-		fallthrough
-	case gosnmp.ObjectIdentifier:
-		fallthrough
-	case gosnmp.OctetString:
+	case gosnmp.IPAddress, gosnmp.ObjectIdentifier, gosnmp.OctetString:
 		clientSNMPData.valueType = stringVal
 		clientSNMPData.value = toString(pdu.Value)
 		return clientSNMPData
 
 	// Float types
-	case gosnmp.OpaqueFloat:
-		fallthrough
-	case gosnmp.OpaqueDouble:
+	case gosnmp.OpaqueFloat, gosnmp.OpaqueDouble:
 		value, err := c.toFloat64(pdu.Name, pdu.Value)
 		if err != nil {
 			clientSNMPData.valueType = notSupportedVal
@@ -401,28 +379,6 @@ func (c *snmpClient) convertSnmpPDUToSnmpData(pdu gosnmp.SnmpPDU) snmpData {
 
 	// Not supported types either because gosnmp doesn't support them
 	// or they are a type that doesn't translate well to OTEL
-	case gosnmp.UnknownType:
-		fallthrough
-	case gosnmp.Counter64:
-		fallthrough
-	case gosnmp.NsapAddress:
-		fallthrough
-	case gosnmp.ObjectDescription:
-		fallthrough
-	case gosnmp.BitString:
-		fallthrough
-	case gosnmp.NoSuchObject:
-		fallthrough
-	case gosnmp.NoSuchInstance:
-		fallthrough
-	case gosnmp.EndOfMibView:
-		fallthrough
-	case gosnmp.Opaque:
-		fallthrough
-	case gosnmp.Null:
-		fallthrough
-	case gosnmp.Boolean:
-		fallthrough
 	default:
 		clientSNMPData.valueType = notSupportedVal
 		clientSNMPData.value = pdu.Value
@@ -437,32 +393,28 @@ func (c *snmpClient) convertSnmpPDUToSnmpData(pdu gosnmp.SnmpPDU) snmpData {
 // reduces the need for type assertions. A int64 is convenient, as SNMP can
 // return int32, uint32, and int64.
 func (c snmpClient) toInt64(name string, value interface{}) (int64, error) {
-	var val int64
-
 	switch value := value.(type) { // shadow
-	case int:
-		val = int64(value)
-	case int8:
-		val = int64(value)
-	case int16:
-		val = int64(value)
-	case int32:
-		val = int64(value)
-	case int64:
-		val = value
 	case uint:
-		val = int64(value)
+		return int64(value), nil
+	case int:
+		return int64(value), nil
+	case int8:
+		return int64(value), nil
+	case int16:
+		return int64(value), nil
+	case int32:
+		return int64(value), nil
+	case int64:
+		return value, nil
 	case uint8:
-		val = int64(value)
+		return int64(value), nil
 	case uint16:
-		val = int64(value)
+		return int64(value), nil
 	case uint32:
-		val = int64(value)
+		return int64(value), nil
 	default:
 		return 0, fmt.Errorf("incompatible type while converting OID '%s' data to int64", name)
 	}
-
-	return val, nil
 }
 
 // toFloat64 converts SnmpPDU.Value to float64, or returns an error for non
@@ -472,24 +424,22 @@ func (c snmpClient) toInt64(name string, value interface{}) (int64, error) {
 // reduces the need for type assertions. A float64 is convenient, as SNMP can
 // return float32 and float64.
 func (c snmpClient) toFloat64(name string, value interface{}) (float64, error) {
-	var val float64
-
-	switch value := value.(type) {
+	switch value := value.(type) { // shadow
 	case float32:
-		val = float64(value)
+		return float64(value), nil
 	case float64:
-		val = value
+		return value, nil
 	case string:
 		// for testing and other apps - numbers may appear as strings
-		var err error
-		if val, err = strconv.ParseFloat(value, 64); err != nil {
+		val, err := strconv.ParseFloat(value, 64)
+		if err != nil {
 			return 0, fmt.Errorf("problem converting OID '%s' data to float64: %w", name, err)
 		}
+
+		return val, nil
 	default:
 		return 0, fmt.Errorf("incompatible type while converting OID '%s' data to float64", name)
 	}
-
-	return val, nil
 }
 
 // toString converts SnmpPDU.Value to string
@@ -497,16 +447,12 @@ func (c snmpClient) toFloat64(name string, value interface{}) (float64, error) {
 // This is a convenience function to make working with SnmpPDU's easier - it
 // reduces the need for type assertions.
 func toString(value interface{}) string {
-	var val string
-
-	switch value := value.(type) {
+	switch value := value.(type) { // shadow
 	case []byte:
-		val = string(value)
+		return string(value)
 	case string:
-		val = value
+		return value
 	default:
-		val = fmt.Sprintf("%v", value)
+		return fmt.Sprintf("%v", value)
 	}
-
-	return val
 }
