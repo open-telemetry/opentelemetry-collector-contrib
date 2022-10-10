@@ -38,6 +38,7 @@ import (
 func TestStart(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Region = "us-west-1"
+	cfg.Logs.Groups.AutodiscoverConfig = nil
 
 	sink := &consumertest.LogsSink{}
 	alertRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)

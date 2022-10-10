@@ -52,7 +52,11 @@ func createDefaultConfig() config.Receiver {
 		Logs: LogsConfig{
 			PollInterval:        defaultPollInterval,
 			MaxEventsPerRequest: defaultEventLimit,
-			Groups:              GroupConfig{},
+			Groups: GroupConfig{
+				AutodiscoverConfig: &AutodiscoverConfig{
+					Limit: defaultLogGroupLimit,
+				},
+			},
 		},
 	}
 }

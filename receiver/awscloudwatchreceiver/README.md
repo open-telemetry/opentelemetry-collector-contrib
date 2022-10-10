@@ -16,19 +16,20 @@ This receiver uses the [AWS SDK Profiles](https://docs.aws.amazon.com/cli/latest
 
 ### Top Level Parameters
 
-| Parameter | Notes      | type   | Description                                                                                                |
-| --------- | ---------- | ------ | ---------------------------------------------------------------------------------------------------------- |
-| `region`  | *required* | string | The AWS recognized region string                                                                           |
-| `profile` | *optional* | string | The AWS profile used to authenticate, if none is specified the default is chosen from the list of profiles |
-| `logs`    | *optional* | `Logs` | Configuration for Logs ingestion of this receiver                                                          |
+| Parameter       | Notes      | type   | Description                                                                                                                                                                                                                                                                       |
+| --------------- | ---------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `region`        | *required* | string | The AWS recognized region string                                                                                                                                                                                                                                                  |
+| `profile`       | *optional* | string | The AWS profile used to authenticate, if none is specified the default is chosen from the list of profiles                                                                                                                                                                        |
+| `imds_endpoint` | *optional* | string | A way of specifying a custom URL to be used by the EC2 IMDS client to validate the session. If unset, and the environment variable `AWS_EC2_METADATA_SERVICE_ENDPOINT` has a value the client will use the value of the environment variable as the endpoint for operation calls. |
+| `logs`          | *optional* | `Logs` | Configuration for Logs ingestion of this receiver                                                                                                                                                                                                                                 |
 
 ### Logs Parameters
 
 | Parameter                | Notes        | type                   | Description                                                                                |
 | ------------------------ | ------------ | ---------------------- | ------------------------------------------------------------------------------------------ |
-| `polling_interval`       | `default=1m` | duration               | The duration waiting in between requests.                                                  |
+| `poll_interval`       | `default=1m` | duration               | The duration waiting in between requests.                                                  |
 | `max_events_per_request` | `default=50` | int                    | The maximum number of events to process per request to Cloudwatch                          |
-| Groups                   | *optional*   | `See Group Parameters` | Configuration for Log Groups, by default all Log Groups and Log Streams will be collected. |
+| `groups`                 | *optional*   | `See Group Parameters` | Configuration for Log Groups, by default all Log Groups and Log Streams will be collected. |
 
 ### Group Parameters
 
@@ -51,9 +52,9 @@ This receiver uses the [AWS SDK Profiles](https://docs.aws.amazon.com/cli/latest
 
 ```yaml
 awscloudwatch:
-  polling_interval: 1m
   region: us-west-1
   logs:
+    poll_interval: 1m
     groups:
       autodiscover:
         limit: 100
@@ -66,9 +67,9 @@ awscloudwatch:
 
 ```yaml
 awscloudwatch:
-  polling_interval: 5m
   region: us-west-1
   logs:
+    poll_interval: 5m
     groups:
       named:
         /aws/eks/dev-0/cluster: 
@@ -108,4 +109,3 @@ This receiver has a number of sample configs for reference.
    - Specifies the names of the log groups to collect
    - Does not attempt autodiscovery
    - Only collects from log streams matching a prefix
-

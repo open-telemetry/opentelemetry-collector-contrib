@@ -16,6 +16,8 @@ package awscloudwatchreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"errors"
+	"fmt"
+	"net/url"
 	"time"
 
 	"go.opentelemetry.io/collector/config"
@@ -33,6 +35,7 @@ type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"`
 	Region                  string     `mapstructure:"region"`
 	Profile                 string     `mapstructure:"profile"`
+	IMDSEndpoint            string     `mapstructure:"imds_endpoint"`
 	Logs                    LogsConfig `mapstructure:"logs"`
 }
 
@@ -74,6 +77,13 @@ var (
 func (c *Config) Validate() error {
 	if c.Region == "" {
 		return errNoRegion
+	}
+
+	if c.IMDSEndpoint != "" {
+		_, err := url.ParseRequestURI(c.IMDSEndpoint)
+		if err != nil {
+			return fmt.Errorf("unable to parse URI for imds_endpoint: %w", err)
+		}
 	}
 
 	var errs error

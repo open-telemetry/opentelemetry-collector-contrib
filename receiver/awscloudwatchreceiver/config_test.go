@@ -15,10 +15,14 @@
 package awscloudwatchreceiver
 
 import (
+	"errors"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestValidate(t *testing.T) {
@@ -86,6 +90,21 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: errInvalidAutodiscoverLimit,
 		},
+		{
+			name: "Invalid IMDS Endpoint",
+			config: Config{
+				Region:       "us-east-1",
+				IMDSEndpoint: "xyz",
+				Logs: LogsConfig{
+					MaxEventsPerRequest: defaultEventLimit,
+					PollInterval:        defaultPollInterval,
+					Groups: GroupConfig{
+						AutodiscoverConfig: nil,
+					},
+				},
+			},
+			expectedErr: errors.New("unable to parse URI for imds_endpoint"),
+		},
 	}
 
 	for _, tc := range cases {
@@ -98,4 +117,22 @@ func TestValidate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+
+	expected := factory.CreateDefaultConfig().(*Config)
+	expected.Region = "us-west-1"
+	expected.Logs.PollInterval = time.Minute
+
+	require.Equal(t, expected, cfg)
 }

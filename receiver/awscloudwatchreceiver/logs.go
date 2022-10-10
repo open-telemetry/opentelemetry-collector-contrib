@@ -34,6 +34,7 @@ import (
 type logsReceiver struct {
 	region              string
 	profile             string
+	imdsEndpoint        string
 	pollInterval        time.Duration
 	maxEventsPerRequest int64
 	namedPolls          []namesPollConfig
@@ -106,12 +107,19 @@ func newLogsReceiver(cfg *Config, logger *zap.Logger, consumer consumer.Logs) *l
 		})
 	}
 
+	// safeguard from using both
+	autodiscover := cfg.Logs.Groups.AutodiscoverConfig
+	if len(cfg.Logs.Groups.NamedConfigs) > 0 {
+		autodiscover = nil
+	}
+
 	return &logsReceiver{
 		region:              cfg.Region,
 		profile:             cfg.Profile,
 		consumer:            consumer,
 		maxEventsPerRequest: cfg.Logs.MaxEventsPerRequest,
-		autodiscover:        cfg.Logs.Groups.AutodiscoverConfig,
+		imdsEndpoint:        cfg.IMDSEndpoint,
+		autodiscover:        autodiscover,
 		pollInterval:        cfg.Logs.PollInterval,
 		namedPolls:          namedPolls,
 		prefixedPolls:       prefixedPolls,
@@ -133,12 +141,14 @@ func (l *logsReceiver) Start(ctx context.Context, host component.Host) error {
 		l.prefixedPolls = prefixedPolls
 	}
 
-	for _, np := range l.namedPolls {
+	for i := range l.namedPolls {
+		np := l.namedPolls[i]
 		l.wg.Add(1)
 		go l.poll(ctx, np.logGroup, &np)
 	}
 
-	for _, pp := range l.prefixedPolls {
+	for i := range l.prefixedPolls {
+		pp := l.prefixedPolls[i]
 		l.wg.Add(1)
 		go l.poll(ctx, pp.logGroup, &pp)
 	}
