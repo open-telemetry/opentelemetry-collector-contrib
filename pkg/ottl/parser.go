@@ -27,7 +27,11 @@ type Parser[K any] struct {
 	telemetrySettings component.TelemetrySettings
 }
 
+// Statement is an interface that represents a parsed OTTL Statement
 type Statement[K any] interface {
+	// Execute is a function that will execute the statement's function if the statement's condition is met.
+	// Returns true if the function was run, returns false otherwise.
+	// If the statement contains no condition, the function will run and true will be returned.
 	Execute(ctx K) bool
 }
 
