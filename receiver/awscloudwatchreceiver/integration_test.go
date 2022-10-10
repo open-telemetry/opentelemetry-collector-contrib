@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build integration
+
 package awscloudwatchreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver"
 
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -85,7 +87,7 @@ var (
 func loadLogGroups(t *testing.T) *cloudwatchlogs.DescribeLogGroupsOutput {
 	var output []*cloudwatchlogs.LogGroup
 	for _, lg := range logGroupFiles {
-		bytes, err := ioutil.ReadFile(lg)
+		bytes, err := os.ReadFile(lg)
 		require.NoError(t, err)
 		var logGroup cloudwatchlogs.LogGroup
 		err = json.Unmarshal(bytes, &logGroup)
@@ -102,7 +104,7 @@ func loadLogGroups(t *testing.T) *cloudwatchlogs.DescribeLogGroupsOutput {
 func loadLogEvents(t *testing.T) *cloudwatchlogs.FilterLogEventsOutput {
 	var output []*cloudwatchlogs.FilteredLogEvent
 	for _, lg := range logEventsFiles {
-		bytes, err := ioutil.ReadFile(lg)
+		bytes, err := os.ReadFile(lg)
 		require.NoError(t, err)
 		var event cloudwatchlogs.FilteredLogEvent
 		err = json.Unmarshal(bytes, &event)
