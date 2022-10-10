@@ -26,8 +26,8 @@ import (
 
 var (
 	defaultPollInterval  = time.Minute
-	defaultEventLimit    = int64(1000)
-	defaultLogGroupLimit = int64(50)
+	defaultEventLimit    = 1000
+	defaultLogGroupLimit = 50
 )
 
 // Config is the overall config structure for the awscloudwatchreceiver
@@ -42,7 +42,7 @@ type Config struct {
 // LogsConfig is the configuration for the logs portion of this receiver
 type LogsConfig struct {
 	PollInterval        time.Duration `mapstructure:"poll_interval"`
-	MaxEventsPerRequest int64         `mapstructure:"max_events_per_request"`
+	MaxEventsPerRequest int           `mapstructure:"max_events_per_request"`
 	Groups              GroupConfig   `mapstructure:"groups"`
 }
 
@@ -55,7 +55,7 @@ type GroupConfig struct {
 // AutodiscoverConfig is the configuration for the autodiscovery functionality of log groups
 type AutodiscoverConfig struct {
 	Prefix  string       `mapstructure:"prefix"`
-	Limit   int64        `mapstructure:"limit"`
+	Limit   int          `mapstructure:"limit"`
 	Streams StreamConfig `mapstructure:"streams"`
 }
 
@@ -69,7 +69,7 @@ var (
 	errNoRegion                       = errors.New("no region was specified")
 	errInvalidEventLimit              = errors.New("event limit is improperly configured, value must be greater than 0")
 	errInvalidPollInterval            = errors.New("poll interval is incorrect, it must be a duration greater than one second")
-	errInvalidAutodiscoverLimit       = errors.New("the limit of autodiscovery of log groups is improperly configured, value must be greater than 0 and less than or equal to 50")
+	errInvalidAutodiscoverLimit       = errors.New("the limit of autodiscovery of log groups is improperly configured, value must be greater than 0")
 	errAutodiscoverAndNamedConfigured = errors.New("both autodiscover and named configs are configured, Only one or the other is permitted")
 )
 
@@ -120,7 +120,7 @@ func (c *GroupConfig) validate() error {
 }
 
 func validateAutodiscover(cfg AutodiscoverConfig) error {
-	if cfg.Limit <= 0 || cfg.Limit > 50 {
+	if cfg.Limit <= 0 {
 		return errInvalidAutodiscoverLimit
 	}
 	return nil

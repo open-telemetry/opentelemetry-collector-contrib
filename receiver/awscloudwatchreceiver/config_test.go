@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -85,7 +86,7 @@ func TestValidate(t *testing.T) {
 					PollInterval:        defaultPollInterval,
 					Groups: GroupConfig{
 						AutodiscoverConfig: &AutodiscoverConfig{
-							Limit: 10000,
+							Limit: -10000,
 						},
 					}},
 			},
@@ -124,16 +125,136 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
+	cases := []struct {
+		name           string
+		expectedConfig config.Receiver
+	}{
+		{
+			name: "default",
+			expectedConfig: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				Region:           "us-west-1",
+				Logs: &LogsConfig{
+					PollInterval:        time.Minute,
+					MaxEventsPerRequest: defaultEventLimit,
+					Groups: GroupConfig{
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit: defaultLogGroupLimit,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "prefix-log-group-autodiscover",
+			expectedConfig: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				Region:           "us-west-1",
+				Logs: &LogsConfig{
+					PollInterval:        time.Minute,
+					MaxEventsPerRequest: defaultEventLimit,
+					Groups: GroupConfig{
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit:  100,
+							Prefix: "/aws/eks/",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "autodiscover-filter-streams",
+			expectedConfig: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				Region:           "us-west-1",
+				Logs: &LogsConfig{
+					PollInterval:        time.Minute,
+					MaxEventsPerRequest: defaultEventLimit,
+					Groups: GroupConfig{
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit: 100,
+							Streams: StreamConfig{
+								Prefixes: []*string{aws.String("kube-api-controller")},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "autodiscover-filter-streams",
+			expectedConfig: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				Region:           "us-west-1",
+				Logs: &LogsConfig{
+					PollInterval:        time.Minute,
+					MaxEventsPerRequest: defaultEventLimit,
+					Groups: GroupConfig{
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit: 100,
+							Streams: StreamConfig{
+								Prefixes: []*string{aws.String("kube-api-controller")},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "named-prefix",
+			expectedConfig: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				Profile:          "my-profile",
+				Region:           "us-west-1",
+				Logs: &LogsConfig{
+					PollInterval:        5 * time.Minute,
+					MaxEventsPerRequest: defaultEventLimit,
+					Groups: GroupConfig{
+						// this is ignored since named configs are present
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit: defaultLogGroupLimit,
+						},
+						NamedConfigs: map[string]StreamConfig{
+							"/aws/eks/dev-0/cluster": {},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "named-prefix-with-streams",
+			expectedConfig: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				Profile:          "my-profile",
+				Region:           "us-west-1",
+				Logs: &LogsConfig{
+					PollInterval:        5 * time.Minute,
+					MaxEventsPerRequest: defaultEventLimit,
+					Groups: GroupConfig{
+						// this is ignored since named configs are present
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit: defaultLogGroupLimit,
+						},
+						NamedConfigs: map[string]StreamConfig{
+							"/aws/eks/dev-0/cluster": {
+								Names: []*string{aws.String("kube-apiserver-ea9c831555adca1815ae04b87661klasdj")},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
-	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
 
-	expected := factory.CreateDefaultConfig().(*Config)
-	expected.Region = "us-west-1"
-	expected.Logs.PollInterval = time.Minute
-
-	require.Equal(t, expected, cfg)
+			loaded, err := cm.Sub(config.NewComponentIDWithName(typeStr, tc.name).String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalReceiver(loaded, cfg))
+			require.Equal(t, cfg, tc.expectedConfig)
+		})
+	}
 }
