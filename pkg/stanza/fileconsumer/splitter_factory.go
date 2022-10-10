@@ -55,8 +55,5 @@ func (factory *multilineSplitterFactory) Build(maxLogSize int) (bufio.SplitFunc,
 	if err != nil {
 		return nil, err
 	}
-	if flusher != nil {
-		splitter = flusher.SplitFunc(splitter)
-	}
 	return splitter, nil
 }
