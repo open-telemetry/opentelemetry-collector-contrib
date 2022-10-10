@@ -126,13 +126,16 @@ type Config struct {
 	// Only valid for version “v3” and if "auth_priv" is selected for SecurityLevel
 	PrivacyPassword string `mapstructure:"privacy_password"`
 
-	// ResourceAttributes defines what resource attributes will be used for this receiver
+	// ResourceAttributes defines what resource attributes will be used for this receiver and is composed
+	// of resource attribute names along with their resource attribute configurations
 	ResourceAttributes map[string]*ResourceAttributeConfig `mapstructure:"resource_attributes"`
 
-	// Attributes defines what attributes will be used on metrics for this receiver
+	// Attributes defines what attributes will be used on metrics for this receiver and is composed of
+	// attribute names along with their attribute configurations
 	Attributes map[string]*AttributeConfig `mapstructure:"attributes"`
 
-	// Metrics defines what SNMP metrics will be collected for this receiver
+	// Metrics defines what SNMP metrics will be collected for this receiver and is composed of metric
+	// names along with their metric configurations
 	Metrics map[string]*MetricConfig `mapstructure:"metrics"`
 }
 
@@ -141,18 +144,21 @@ type ResourceAttributeConfig struct {
 	// Description is optional and describes what the resource attribute represents
 	Description string `mapstructure:"description"`
 	// OID is required only if IndexedValuePrefix is not defined.
-	// This is the column OID which will provide indexed values to be used for this resource attribute (alongside a metric with ColumnOIDs)
-	// in order to create multiple "resources" for each indexed metric value
+	// This is the column OID which will provide indexed values to be used for this resource attribute. These indexed values
+	// will ultimately each be associated with a different "resource" as an attribute on that resource. Indexed metric values
+	// will then be used to associate metric datapoints to the matching "resource" (based on matching indexes).
 	OID string `mapstructure:"oid"`
 	// IndexedValuePrefix is required only if OID is not defined.
-	// This is used alongside metrics with ColumnOIDs to assign resource attribute values using this prefix + the OID index of the metric value.
-	// This will result in multiple "resources" being created for each indexed metric value
+	// This will be used alongside indexed metric values for this resource attribute. The prefix value concatenated with
+	// specific indexes of metric indexed values (Ex: prefix.1.2) will ultimately each be associated with a different "resource"
+	// as an attribute on that resource. The related indexed metric values will then be used to associate metric datapoints to
+	// those resources.
 	IndexedValuePrefix string `mapstructure:"indexed_value_prefix"` // required and valid if no oid field
 }
 
 // AttributeConfig contains config info about all of the metric attributes that will be used by this receiver.
 type AttributeConfig struct {
-	// Value is optional, and will allow for a different attribute key value other than the attribute name
+	// Value is optional, and will allow for a different attribute key other than the attribute name
 	Value string `mapstructure:"value"`
 	// Description is optional and describes what the attribute represents
 	Description string `mapstructure:"description"`
@@ -400,16 +406,12 @@ func validateMetricConfigs(cfg *Config) error {
 			combinedErr = multierr.Append(combinedErr, validateSum(metricName, metricCfg.Sum))
 		}
 
-		if len(metricCfg.ScalarOIDs) > 0 {
-			for _, scalarOID := range metricCfg.ScalarOIDs {
-				combinedErr = multierr.Append(combinedErr, validateScalarOID(metricName, scalarOID, cfg))
-			}
+		for _, scalarOID := range metricCfg.ScalarOIDs {
+			combinedErr = multierr.Append(combinedErr, validateScalarOID(metricName, scalarOID, cfg))
 		}
 
-		if len(metricCfg.ColumnOIDs) > 0 {
-			for _, columnOID := range metricCfg.ColumnOIDs {
-				combinedErr = multierr.Append(combinedErr, validateColumnOID(metricName, columnOID, cfg))
-			}
+		for _, columnOID := range metricCfg.ColumnOIDs {
+			combinedErr = multierr.Append(combinedErr, validateColumnOID(metricName, columnOID, cfg))
 		}
 	}
 
