@@ -177,13 +177,13 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 	for i := range l.namedPolls {
 		np := l.namedPolls[i]
 		if err := l.pollForLogs(ctx, np.logGroup, &np); err != nil {
-			multierr.Append(errs, err)
+			errs = multierr.Append(errs, err)
 		}
 	}
 	for i := range l.prefixedPolls {
 		pp := l.prefixedPolls[i]
 		if err := l.pollForLogs(ctx, pp.logGroup, &pp); err != nil {
-			multierr.Append(errs, err)
+			errs = multierr.Append(errs, err)
 		}
 	}
 	return errs
