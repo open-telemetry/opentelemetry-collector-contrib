@@ -5,7 +5,7 @@ change_type: bug_fix
 component: mysqlreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix sql queries
+note: Fix sql queries for scraping table and index metrics.
 
 # One or more tracking issues related to the change
 issues: [14138]
