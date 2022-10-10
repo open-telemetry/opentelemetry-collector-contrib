@@ -76,7 +76,7 @@ func TestLoadConfig(t *testing.T) {
 
 	t.Run("valid config without ca_file", func(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
-		sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "valid").String())
+		sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "valid_no_ca_file").String())
 		require.NoError(t, err)
 		require.NoError(t, config.UnmarshalExporter(sub, cfg))
 
