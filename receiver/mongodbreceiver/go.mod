@@ -12,7 +12,7 @@ require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.61.0
 	github.com/testcontainers/testcontainers-go v0.14.0
-	go.mongodb.org/mongo-driver v1.10.2
+	go.mongodb.org/mongo-driver v1.10.3
 	go.opentelemetry.io/collector/pdata v0.61.1-0.20221006231412-05d1c5f5572d
 	go.uber.org/zap v1.23.0
 )
