@@ -250,7 +250,7 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 }
 
 func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverConfig) ([]namesPollConfig, []prefixPollConfig, error) {
-	l.logger.Debug("attempting to discover log groups.", zap.Int64("limit", l.maxEventsPerRequest))
+	l.logger.Debug("attempting to discover log groups.", zap.Int64("limit", auto.Limit))
 
 	newNamedPolls := []namesPollConfig{}
 	newPrefixedPolls := []prefixPollConfig{}
