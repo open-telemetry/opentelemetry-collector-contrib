@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awscloudwatchreceiver
+package awscloudwatchreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver"
 
 import (
 	"context"
@@ -77,7 +77,7 @@ func TestPrefixedConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	logs := sink.AllLogs()[0]
-	expected, err := readLogs(filepath.Join("testdata", "events", "prefixed.json"))
+	expected, err := readLogs(filepath.Join("testdata", "processed", "prefixed.json"))
 	require.NoError(t, err)
 	require.NoError(t, compareLogs(expected, logs))
 }
