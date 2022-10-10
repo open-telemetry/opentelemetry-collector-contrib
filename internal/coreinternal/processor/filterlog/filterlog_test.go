@@ -196,7 +196,7 @@ func TestLogRecord_Matching_True(t *testing.T) {
 	}
 
 	lr := plog.NewLogRecord()
-	lr.Attributes().PutString("abc", "def")
+	lr.Attributes().PutStr("abc", "def")
 	lr.Body().SetStr("AUTHENTICATION FAILED")
 	lr.SetSeverityText("debug")
 	lr.SetSeverityNumber(plog.SeverityNumberDebug)

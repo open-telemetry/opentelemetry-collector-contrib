@@ -52,7 +52,6 @@ type exporter struct {
 
 	metricExporter pmetricotlp.GRPCClient
 	clientConn     *grpc.ClientConn
-	metadata       metadata.MD
 	callOptions    []grpc.CallOption
 
 	settings component.TelemetrySettings
@@ -73,11 +72,11 @@ func (e *exporter) start(_ context.Context, host component.Host) (err error) {
 	}
 
 	e.metricExporter = pmetricotlp.NewClient(e.clientConn)
-	headers := e.config.Metrics.Headers
-	headers["ApplicationName"] = e.config.AppName
-	headers["ApiName"] = e.config.SubSystem
-	headers["Authorization"] = "Bearer " + e.config.PrivateKey
-	e.metadata = metadata.New(headers)
+	if e.config.Metrics.Headers == nil {
+		e.config.Metrics.Headers = make(map[string]string)
+	}
+	e.config.Metrics.Headers["Authorization"] = "Bearer " + e.config.PrivateKey
+
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.Metrics.WaitForReady),
 	}
@@ -86,19 +85,40 @@ func (e *exporter) start(_ context.Context, host component.Host) (err error) {
 }
 
 func (e *exporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
-	req := pmetricotlp.NewRequestFromMetrics(md)
-	_, err := e.metricExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	return processError(err)
+
+	rss := md.ResourceMetrics()
+	for i := 0; i < rss.Len(); i++ {
+		resourceMetric := rss.At(i)
+		appName, subsystem := e.config.getMetadataFromResource(resourceMetric.Resource())
+
+		md := pmetric.NewMetrics()
+		newRss := md.ResourceMetrics().AppendEmpty()
+		resourceMetric.CopyTo(newRss)
+
+		req := pmetricotlp.NewRequestFromMetrics(md)
+		_, err := e.metricExporter.Export(e.enhanceContext(ctx, appName, subsystem), req, e.callOptions...)
+		if err != nil {
+			return processError(err)
+		}
+	}
+
+	return nil
 }
+
 func (e *exporter) shutdown(context.Context) error {
 	return e.clientConn.Close()
 }
 
-func (e *exporter) enhanceContext(ctx context.Context) context.Context {
-	if e.metadata.Len() > 0 {
-		return metadata.NewOutgoingContext(ctx, e.metadata)
+func (e *exporter) enhanceContext(ctx context.Context, appName, subSystemName string) context.Context {
+	headers := make(map[string]string)
+	for k, v := range e.config.Metrics.Headers {
+		headers[k] = v
 	}
-	return ctx
+
+	headers["ApplicationName"] = appName
+	headers["ApiName"] = subSystemName
+
+	return metadata.NewOutgoingContext(ctx, metadata.New(headers))
 }
 
 // Send a trace or metrics request to the server. "perform" function is expected to make

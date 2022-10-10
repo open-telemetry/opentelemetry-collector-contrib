@@ -211,9 +211,9 @@ func assertInt64DiskMetricValid(t *testing.T, metric pmetric.Metric, expectDirec
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
 	if expectDirectionLabels {
 		internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction",
-			pcommon.NewValueString(metadata.AttributeDirectionRead.String()))
+			pcommon.NewValueStr(metadata.AttributeDirectionRead.String()))
 		internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction",
-			pcommon.NewValueString(metadata.AttributeDirectionWrite.String()))
+			pcommon.NewValueStr(metadata.AttributeDirectionWrite.String()))
 	}
 }
 
@@ -231,9 +231,9 @@ func assertDoubleDiskMetricValid(t *testing.T, metric pmetric.Metric, expectDire
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
 	if expectDirectionLabels {
 		internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction",
-			pcommon.NewValueString(metadata.AttributeDirectionRead.String()))
+			pcommon.NewValueStr(metadata.AttributeDirectionRead.String()))
 		internal.AssertSumMetricHasAttributeValue(t, metric, metric.Sum().DataPoints().Len()-1, "direction",
-			pcommon.NewValueString(metadata.AttributeDirectionWrite.String()))
+			pcommon.NewValueStr(metadata.AttributeDirectionWrite.String()))
 	}
 }
 

@@ -128,6 +128,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 			},
 			fromBeginning:  startAtBeginning,
 			splitterConfig: c.Splitter,
+			encodingConfig: c.Splitter.EncodingConfig,
 		},
 		finder:        c.Finder,
 		roller:        newRoller(),
