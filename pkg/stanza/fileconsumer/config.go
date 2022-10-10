@@ -101,7 +101,8 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 	}
 
 	// Ensure that splitter is buildable
-	_, err := c.Splitter.Build(false, int(c.MaxLogSize))
+	factory := newMultilineSplitterFactory(c.Splitter.EncodingConfig, c.Splitter.Flusher, c.Splitter.Multiline)
+	_, err := factory.Build(int(c.MaxLogSize))
 	if err != nil {
 		return nil, err
 	}
@@ -126,9 +127,9 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 				maxLogSize:      int(c.MaxLogSize),
 				emit:            emit,
 			},
-			fromBeginning:  startAtBeginning,
-			splitterConfig: c.Splitter,
-			encodingConfig: c.Splitter.EncodingConfig,
+			fromBeginning:   startAtBeginning,
+			splitterFactory: factory,
+			encodingConfig:  c.Splitter.EncodingConfig,
 		},
 		finder:        c.Finder,
 		roller:        newRoller(),
