@@ -84,8 +84,13 @@ func TestLoadConfig(t *testing.T) {
 	})
 
 	t.Run("non https endpoint", func(t *testing.T) {
-		nonHTTPSEndpointConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "non_https_endpoint")].(*Config)
-		err = nonHTTPSEndpointConfig.Validate()
+		cfg := factory.CreateDefaultConfig()
+		sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "non_https_endpoint").String())
+
+		require.NoError(t, err)
+		require.NoError(t, config.UnmarshalExporter(sub, cfg))
+
+		err = cfg.Validate()
 		require.Error(t, err)
 	})
 
