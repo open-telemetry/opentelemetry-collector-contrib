@@ -41,7 +41,6 @@ func (c *SplitterConfig) Build(flushAtEOF bool, maxLogSize int) (*Splitter, erro
 
 	flusher := c.Flusher.Build()
 	splitFunc, err := c.Multiline.Build(enc.Encoding, flushAtEOF, flusher, maxLogSize)
-
 	if err != nil {
 		return nil, err
 	}
