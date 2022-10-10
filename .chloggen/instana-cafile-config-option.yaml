@@ -5,7 +5,7 @@ change_type: enhancement
 component: instanaexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Added a new configuration option ca_file that accepts a CA certificate that allows the exporter to make HTTPS requests to a self signed backend 
+note: Added a new configuration option ca_file which takes the certificate authority file for an Instana backend with a self signed certificate
 
 # One or more tracking issues related to the change
 issues: [14602]

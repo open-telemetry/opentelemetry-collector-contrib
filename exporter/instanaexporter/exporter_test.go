@@ -16,6 +16,7 @@ package instanaexporter
 
 import (
 	"context"
+	"encoding/base64"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -76,7 +77,10 @@ func TestSelfSignedBackend(t *testing.T) {
 	server := httptest.NewTLSServer(handler)
 	defer server.Close()
 
-	err = os.WriteFile(caFile, server.Certificate().Raw, os.FileMode(0600))
+	s := base64.StdEncoding.EncodeToString(server.Certificate().Raw)
+	wholeCert := "-----BEGIN CERTIFICATE-----\n" + s + "\n-----END CERTIFICATE-----"
+
+	err = os.WriteFile(caFile, []byte(wholeCert), os.FileMode(0600))
 	defer func() {
 		assert.NoError(t, os.Remove(caFile))
 	}()

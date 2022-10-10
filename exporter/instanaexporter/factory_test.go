@@ -70,6 +70,28 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Endpoint: "http://example.com/api/",
 			AgentKey: "key1",
+		}, cfg)
+	})
+
+	t.Run("valid config with ca_file", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig()
+		sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "valid_with_ca_file").String())
+		require.NoError(t, err)
+		require.NoError(t, config.UnmarshalExporter(sub, cfg))
+
+		err = cfg.Validate()
+
+		require.NoError(t, err)
+		assert.Equal(t, &Config{
+			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint:        "http://example.com/api/",
+				Timeout:         30 * time.Second,
+				Headers:         map[string]string{},
+				WriteBufferSize: 512 * 1024,
+			},
+			Endpoint: "http://example.com/api/",
+			AgentKey: "key1",
 			CAFile:   "ca.crt",
 		}, cfg)
 	})
