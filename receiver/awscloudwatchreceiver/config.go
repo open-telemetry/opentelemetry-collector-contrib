@@ -25,7 +25,7 @@ import (
 )
 
 var (
-	defaultPollInterval  = 1 * time.Minute
+	defaultPollInterval  = time.Minute
 	defaultEventLimit    = int64(1000)
 	defaultLogGroupLimit = int64(50)
 )
