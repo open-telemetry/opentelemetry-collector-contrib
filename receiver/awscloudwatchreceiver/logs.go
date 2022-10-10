@@ -314,15 +314,16 @@ func (l *logsReceiver) ensureSession() error {
 		return nil
 	}
 	awsConfig := aws.NewConfig().WithRegion(l.region)
-	if l.profile != "" {
-		s, err := session.NewSessionWithOptions(session.Options{
-			Config:  *awsConfig,
-			Profile: l.profile,
-		})
-		l.client = cloudwatchlogs.New(s)
-		return err
+	options := session.Options{
+		Config: *awsConfig,
 	}
-	s, err := session.NewSession(awsConfig)
+	if l.imdsEndpoint != "" {
+		options.EC2IMDSEndpoint = l.imdsEndpoint
+	}
+	if l.profile != "" {
+		options.Profile = l.profile
+	}
+	s, err := session.NewSessionWithOptions(options)
 	l.client = cloudwatchlogs.New(s)
 	return err
 }
