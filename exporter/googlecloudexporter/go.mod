@@ -15,7 +15,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.61.1-0.20221006231412-05d1c5f5572d
 	google.golang.org/api v0.98.0
 	google.golang.org/genproto v0.0.0-20220915135415-7fd63a7952de
-	google.golang.org/grpc v1.49.0
+	google.golang.org/grpc v1.50.0
 	google.golang.org/protobuf v1.28.1
 )
 
