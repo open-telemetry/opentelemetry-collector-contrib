@@ -75,6 +75,7 @@ func TestDefaultReceivers(t *testing.T) {
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["awscloudwatch"].CreateDefaultConfig().(*awscloudwatchreceiver.Config)
 				cfg.Region = "us-west-2"
+				cfg.Logs = &awscloudwatchreceiver.LogsConfig{Groups: awscloudwatchreceiver.GroupConfig{AutodiscoverConfig: nil}}
 				return cfg
 			},
 		},

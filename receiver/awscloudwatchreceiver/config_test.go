@@ -35,12 +35,13 @@ func TestValidate(t *testing.T) {
 			name: "Valid Config",
 			config: Config{
 				Region: "us-west-2",
-				Logs: LogsConfig{
+				Logs: &LogsConfig{
 					MaxEventsPerRequest: defaultEventLimit,
 					PollInterval:        defaultPollInterval,
 					Groups: GroupConfig{
 						AutodiscoverConfig: nil,
-					}},
+					},
+				},
 			},
 		},
 		{
@@ -54,7 +55,7 @@ func TestValidate(t *testing.T) {
 			name: "Invalid Event Limit",
 			config: Config{
 				Region: "us-west-2",
-				Logs: LogsConfig{
+				Logs: &LogsConfig{
 					MaxEventsPerRequest: -1,
 					PollInterval:        defaultPollInterval,
 				},
@@ -65,7 +66,7 @@ func TestValidate(t *testing.T) {
 			name: "Invalid Poll Interval",
 			config: Config{
 				Region: "us-west-2",
-				Logs: LogsConfig{
+				Logs: &LogsConfig{
 					MaxEventsPerRequest: defaultEventLimit,
 					PollInterval:        100 * time.Millisecond,
 					Groups: GroupConfig{
@@ -79,7 +80,7 @@ func TestValidate(t *testing.T) {
 			name: "Invalid Log Group Limit",
 			config: Config{
 				Region: "us-east-1",
-				Logs: LogsConfig{
+				Logs: &LogsConfig{
 					MaxEventsPerRequest: defaultEventLimit,
 					PollInterval:        defaultPollInterval,
 					Groups: GroupConfig{
@@ -95,7 +96,7 @@ func TestValidate(t *testing.T) {
 			config: Config{
 				Region:       "us-east-1",
 				IMDSEndpoint: "xyz",
-				Logs: LogsConfig{
+				Logs: &LogsConfig{
 					MaxEventsPerRequest: defaultEventLimit,
 					PollInterval:        defaultPollInterval,
 					Groups: GroupConfig{
@@ -125,6 +126,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
+	cfg.(*Config).Logs.MaxEventsPerRequest = defaultEventLimit
 
 	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
 	require.NoError(t, err)

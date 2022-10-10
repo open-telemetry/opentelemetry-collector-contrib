@@ -49,7 +49,8 @@ func createLogsReceiver(
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		Logs: LogsConfig{
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		Logs: &LogsConfig{
 			PollInterval:        defaultPollInterval,
 			MaxEventsPerRequest: defaultEventLimit,
 			Groups: GroupConfig{

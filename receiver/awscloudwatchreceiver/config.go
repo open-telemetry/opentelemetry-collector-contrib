@@ -33,10 +33,10 @@ var (
 // Config is the overall config structure for the awscloudwatchreceiver
 type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"`
-	Region                  string     `mapstructure:"region"`
-	Profile                 string     `mapstructure:"profile"`
-	IMDSEndpoint            string     `mapstructure:"imds_endpoint"`
-	Logs                    LogsConfig `mapstructure:"logs"`
+	Region                  string      `mapstructure:"region"`
+	Profile                 string      `mapstructure:"profile"`
+	IMDSEndpoint            string      `mapstructure:"imds_endpoint"`
+	Logs                    *LogsConfig `mapstructure:"logs"`
 }
 
 // LogsConfig is the configuration for the logs portion of this receiver
@@ -93,6 +93,10 @@ func (c *Config) Validate() error {
 }
 
 func (c *Config) validateLogsConfig() error {
+	if c.Logs == nil {
+		return nil
+	}
+
 	if c.Logs.MaxEventsPerRequest <= 0 {
 		return errInvalidEventLimit
 	}
