@@ -470,6 +470,22 @@ The number of slow queries.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | 1 | Sum | Int | Cumulative | true |
 
+### mysql.replica.sql_delay
+
+The number of seconds that the replica must lag the source.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Int | Cumulative | false |
+
+### mysql.replica.time_behind_source
+
+This field is an indication of how “late” the replica is.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Int | Cumulative | false |
+
 ### mysql.statement_event.count
 
 Summary of current and recent statement events.
