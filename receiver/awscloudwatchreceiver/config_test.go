@@ -126,7 +126,6 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).Logs.MaxEventsPerRequest = defaultEventLimit
 
 	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
 	require.NoError(t, err)
