@@ -47,7 +47,7 @@ func Test_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 					{Key: "key", Value: 1},
 				},
 			},
-			errorString: `error creating attribute filters: match_type=regexp for "key" only supports STRING, but found INT`,
+			errorString: `error creating attribute filters: match_type=regexp for "key" only supports Str, but found Int`,
 		},
 		{
 			name: "unknown_attribute_value",

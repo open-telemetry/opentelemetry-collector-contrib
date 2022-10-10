@@ -230,14 +230,14 @@ func TestCompareMetrics(t *testing.T) {
 		{
 			name: "data-point-aggregation-expect-delta",
 			withoutOptions: expectation{
-				err:    errors.New("metric AggregationTemporality does not match expected: AGGREGATION_TEMPORALITY_DELTA, actual: AGGREGATION_TEMPORALITY_CUMULATIVE"),
+				err:    errors.New("metric AggregationTemporality does not match expected: Delta, actual: Cumulative"),
 				reason: "A data point with the wrong aggregation temporality should cause a failure.",
 			},
 		},
 		{
 			name: "data-point-aggregation-expect-cumulative",
 			withoutOptions: expectation{
-				err:    errors.New("metric AggregationTemporality does not match expected: AGGREGATION_TEMPORALITY_CUMULATIVE, actual: AGGREGATION_TEMPORALITY_DELTA"),
+				err:    errors.New("metric AggregationTemporality does not match expected: Cumulative, actual: Delta"),
 				reason: "A data point with the wrong aggregation temporality should cause a failure.",
 			},
 		},

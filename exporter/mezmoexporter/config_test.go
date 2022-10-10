@@ -21,67 +21,65 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
 )
 
-func TestLoadDefaultConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+func TestLoadConfig(t *testing.T) {
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
-	// Verify the "default"/required values-only configuration
-	e := cfg.Exporters[config.NewComponentID(typeStr)]
-
-	// Our expected default configuration should use the defaultIngestURL
-	defaultCfg := factory.CreateDefaultConfig().(*Config)
+	defaultCfg := createDefaultConfig().(*Config)
 	defaultCfg.IngestURL = defaultIngestURL
 	defaultCfg.IngestKey = "00000000000000000000000000000000"
-	assert.Equal(t, defaultCfg, e)
-}
 
-func TestLoadAllSettingsConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	// Verify values from the config override the default configuration
-	e := cfg.Exporters[config.NewComponentIDWithName(typeStr, "allsettings")]
-
-	// Our expected default configuration should use the defaultIngestURL
-	expectedCfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "allsettings")),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Timeout: 5 * time.Second,
+	tests := []struct {
+		id       config.ComponentID
+		expected config.Exporter
+	}{
+		{
+			id:       config.NewComponentIDWithName(typeStr, ""),
+			expected: defaultCfg,
 		},
-		RetrySettings: exporterhelper.RetrySettings{
-			Enabled:         false,
-			InitialInterval: 99 * time.Second,
-			MaxInterval:     199 * time.Second,
-			MaxElapsedTime:  299 * time.Minute,
+		{
+			id: config.NewComponentIDWithName(typeStr, "allsettings"),
+			expected: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Timeout: 5 * time.Second,
+				},
+				RetrySettings: exporterhelper.RetrySettings{
+					Enabled:         false,
+					InitialInterval: 99 * time.Second,
+					MaxInterval:     199 * time.Second,
+					MaxElapsedTime:  299 * time.Minute,
+				},
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      false,
+					NumConsumers: 7,
+					QueueSize:    17,
+				},
+				IngestURL: "https://alternate.mezmo.com/otel/ingest/rest",
+				IngestKey: "1234509876",
+			},
 		},
-		QueueSettings: exporterhelper.QueueSettings{
-			Enabled:      false,
-			NumConsumers: 7,
-			QueueSize:    17,
-		},
-		IngestURL: "https://alternate.mezmo.com/otel/ingest/rest",
-		IngestKey: "1234509876",
 	}
-	assert.Equal(t, &expectedCfg, e)
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalExporter(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }

@@ -18,14 +18,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.61.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.61.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.61.1-0.20221004012633-7cb544d3be36
-	go.opentelemetry.io/collector/pdata v0.61.1-0.20221004012633-7cb544d3be36
-	go.opentelemetry.io/collector/semconv v0.61.1-0.20221004012633-7cb544d3be36
+	go.opentelemetry.io/collector v0.61.1-0.20221006231412-05d1c5f5572d
+	go.opentelemetry.io/collector/pdata v0.61.1-0.20221006231412-05d1c5f5572d
+	go.opentelemetry.io/collector/semconv v0.61.1-0.20221006231412-05d1c5f5572d
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -118,6 +117,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
+	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.4.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.22.9 // indirect
@@ -177,7 +177,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/reso
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => ../../receiver/hostmetricsreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../../pkg/translator/opencensus
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor => ../../processor/metricstransformprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => ../../internal/scrapertest

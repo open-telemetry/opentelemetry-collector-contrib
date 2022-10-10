@@ -78,11 +78,14 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 	// omit logical (virtual) filesystems (not relevant for windows)
 	partitions, err := s.partitions( /*all=*/ false)
+	var errors scrapererror.ScrapeErrors
 	if err != nil {
-		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
+		if len(partitions) == 0 {
+			return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
+		}
+		errors.AddPartial(0, fmt.Errorf("failed collecting partitions information: %w", err))
 	}
 
-	var errors scrapererror.ScrapeErrors
 	usages := make([]*deviceUsage, 0, len(partitions))
 	for _, partition := range partitions {
 		if !s.fsFilter.includePartition(partition) {
