@@ -101,6 +101,9 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	// collect global status metrics.
 	m.scrapeGlobalStats(now, errs)
 
+	// colect replicas status metrics.
+	m.scrapeReplicaStatusStats(now, errs)
+
 	m.mb.EmitForResource(metadata.WithMysqlInstanceEndpoint(m.config.Endpoint))
 
 	return m.mb.Emit(), errs.Combine()
@@ -362,6 +365,26 @@ func (m *mySQLScraper) scrapeIndexIoWaitsStats(now pcommon.Timestamp, errs *scra
 		m.mb.RecordMysqlIndexIoWaitTimeDataPoint(
 			now, s.timeUpdate/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsUpdate, s.name, s.schema, s.index,
 		)
+	}
+}
+
+func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	replicaStatusStats, err := m.sqlclient.getReplicaStatusStats()
+	if err != nil {
+		m.logger.Error("Failed to fetch replica status stats", zap.Error(err))
+		errs.AddPartial(8, err)
+		return
+	}
+
+	for i := 0; i < len(replicaStatusStats); i++ {
+		s := replicaStatusStats[i]
+
+		val, _ := s.secondsBehindSource.Value()
+		if val != nil {
+			m.mb.RecordMysqlReplicaTimeBehindSourceDataPoint(now, val.(int64))
+		}
+
+		m.mb.RecordMysqlReplicaSQLDelayDataPoint(now, s.sqlDelay)
 	}
 }
 

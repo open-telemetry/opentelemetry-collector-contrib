@@ -1,0 +1,1 @@
+Waiting for source to send event	mysql-master	repl_user	3306	1	mysql-bin.000005	157	mysql-relay-bin.000011	373	mysql-bin.000005	Yes	Yes	a	b	c	d	e	f	2	g	3	157	799	None	h	4	No	i	j	k	l	m	5	No	6	n	7	o	p	695	11b5eeeb-4565-11ed-9d38-0242ac140002	mysql.slave_master_info	8	113	Replica has read all relay log; waiting for more updates	86400	q	r	s	t	u	v	w	9	x	y	z	aa	10	ab
