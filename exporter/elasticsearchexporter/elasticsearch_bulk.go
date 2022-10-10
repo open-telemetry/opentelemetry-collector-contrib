@@ -207,8 +207,8 @@ func pushDocuments(ctx context.Context, logger *zap.Logger, index string, docume
 				zap.NamedError("reason", err))
 
 			attempts++
-			body.Seek(0, io.SeekStart)
-			bulkIndexer.Add(ctx, item)
+			_, _ = body.Seek(0, io.SeekStart)
+			_ = bulkIndexer.Add(ctx, item)
 
 		case resp.Status == 0 && err != nil:
 			// Encoding error. We didn't even attempt to send the event
