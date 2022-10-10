@@ -42,6 +42,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver"
@@ -291,6 +292,19 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "snmp",
+			getConfigFn: func() config.Receiver {
+				cfg := rcvrFactories["snmp"].CreateDefaultConfig().(*snmpreceiver.Config)
+				cfg.Metrics = map[string]*snmpreceiver.MetricConfig{
+					"m1": {
+						Unit:  "1",
+						Gauge: &snmpreceiver.GaugeMetric{ValueType: "int"},
+						ScalarOIDs: []snmpreceiver.ScalarOID{{
+							OID: ".1",
+						}},
+					},
+				}
+				return cfg
+			},
 		},
 		{
 			receiver: "splunk_hec",
