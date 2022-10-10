@@ -16,6 +16,7 @@ package fileconsumer
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"testing"
 	"time"
 
@@ -109,6 +110,9 @@ func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 			},
 		},
 		fromBeginning: true,
+		splitterFactory: newMultilineSplitterFactory(
+			helper.NewEncodingConfig(), helper.NewFlusherConfig(), helper.NewMultilineConfig()),
+		encodingConfig: helper.NewEncodingConfig(),
 	}, emitChan
 }
 
