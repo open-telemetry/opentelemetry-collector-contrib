@@ -175,7 +175,7 @@ func createLogData(numberOfLogs int) plog.Logs {
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := ill.LogRecords().AppendEmpty()
-		logRecord.Body().SetStringVal("mylog")
+		logRecord.Body().SetStr("mylog")
 		logRecord.Attributes().PutString("my-label", "myapp-type")
 		logRecord.Attributes().PutString("custom", "custom")
 		logRecord.SetTimestamp(ts)

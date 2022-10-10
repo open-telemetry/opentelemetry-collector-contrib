@@ -91,12 +91,12 @@ func (e *logExporter) PushLogData(ctx context.Context, lg plog.Logs) (er error) 
 				attributesMap := log.Attributes()
 				attributesMap.Range(func(key string, value pcommon.Value) bool {
 					if key == hostname {
-						resourceMapperMap[hostnameProperty] = value.StringVal()
+						resourceMapperMap[hostnameProperty] = value.Str()
 					}
-					logMetadataMap[key] = value.StringVal()
+					logMetadataMap[key] = value.Str()
 					return true
 				})
-				err := e.logIngestClient.SendLogs(ctx, log.Body().StringVal(), resourceMapperMap, logMetadataMap)
+				err := e.logIngestClient.SendLogs(ctx, log.Body().Str(), resourceMapperMap, logMetadataMap)
 				if err != nil {
 					e.logger.Error("error while sending logs ", zap.Error(err))
 				}
@@ -109,21 +109,21 @@ func (e *logExporter) PushLogData(ctx context.Context, lg plog.Logs) (er error) 
 func (e *logExporter) mergeAttributes(k string, value pcommon.Value, logAttr pcommon.Map) {
 	switch value.Type() {
 	case pcommon.ValueTypeInt:
-		logAttr.PutInt(k, value.IntVal())
+		logAttr.PutInt(k, value.Int())
 	case pcommon.ValueTypeBool:
-		logAttr.PutBool(k, value.BoolVal())
+		logAttr.PutBool(k, value.Bool())
 	case pcommon.ValueTypeDouble:
-		logAttr.PutDouble(k, value.DoubleVal())
-	case pcommon.ValueTypeString:
-		logAttr.PutString(k, value.StringVal())
+		logAttr.PutDouble(k, value.Double())
+	case pcommon.ValueTypeStr:
+		logAttr.PutString(k, value.Str())
 	case pcommon.ValueTypeMap:
 		values := map[string]interface{}{}
-		value.MapVal().Range(func(k string, v pcommon.Value) bool {
+		value.Map().Range(func(k string, v pcommon.Value) bool {
 			values[k] = v
 			return true
 		})
 	case pcommon.ValueTypeSlice:
-		arrayVal := value.SliceVal()
+		arrayVal := value.Slice()
 		values := make([]interface{}, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {
 			values[i] = arrayVal.At(i)
