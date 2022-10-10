@@ -151,13 +151,6 @@ type Field struct {
 	MapKey *string `parser:"( '[' @String ']' )?"`
 }
 
-// Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
-// invocation and the expression to match telemetry for invoking the function.
-type Statement[K any] struct {
-	Function  ExprFunc[K]
-	Condition boolExpressionEvaluator[K]
-}
-
 // byteSlice type for capturing byte slices
 type byteSlice []byte
 

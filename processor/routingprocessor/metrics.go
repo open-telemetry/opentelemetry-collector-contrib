@@ -103,11 +103,11 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 
 		matchCount := len(p.router.routes)
 		for key, route := range p.router.routes {
-			if !route.expression.Condition(mtx) {
+			isMatch := route.expression.Execute(mtx)
+			if !isMatch {
 				matchCount--
 				continue
 			}
-			route.expression.Function(mtx)
 			p.group(key, groups, route.exporters, rmetrics)
 		}
 

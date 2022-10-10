@@ -27,6 +27,23 @@ type Parser[K any] struct {
 	telemetrySettings component.TelemetrySettings
 }
 
+type Statement[K any] interface {
+	Execute(ctx K) bool
+}
+
+type standardStatement[K any] struct {
+	function  ExprFunc[K]
+	condition boolExpressionEvaluator[K]
+}
+
+func (s standardStatement[K]) Execute(ctx K) bool {
+	condition := s.condition(ctx)
+	if condition {
+		s.function(ctx)
+	}
+	return condition
+}
+
 func NewParser[K any](functions map[string]interface{}, pathParser PathExpressionParser[K], enumParser EnumParser, telemetrySettings component.TelemetrySettings) Parser[K] {
 	return Parser[K]{
 		functions:         functions,
@@ -56,9 +73,9 @@ func (p *Parser[K]) ParseStatements(statements []string) ([]Statement[K], error)
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		parsedStatements = append(parsedStatements, Statement[K]{
-			Function:  function,
-			Condition: expression,
+		parsedStatements = append(parsedStatements, standardStatement[K]{
+			function:  function,
+			condition: expression,
 		})
 	}
 
