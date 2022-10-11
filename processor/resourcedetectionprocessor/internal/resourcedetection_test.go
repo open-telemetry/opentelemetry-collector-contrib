@@ -255,9 +255,9 @@ func TestFilterAttributes_Match(t *testing.T) {
 		"host.id":   {},
 	}
 	attr := pcommon.NewMap()
-	attr.PutString("host.name", "test")
-	attr.PutString("host.id", "test")
-	attr.PutString("drop.this", "test")
+	attr.PutStr("host.name", "test")
+	attr.PutStr("host.id", "test")
+	attr.PutStr("drop.this", "test")
 
 	droppedAttributes := filterAttributes(attr, m)
 
@@ -278,8 +278,8 @@ func TestFilterAttributes_NoMatch(t *testing.T) {
 		"cloud.region": {},
 	}
 	attr := pcommon.NewMap()
-	attr.PutString("host.name", "test")
-	attr.PutString("host.id", "test")
+	attr.PutStr("host.name", "test")
+	attr.PutStr("host.id", "test")
 
 	droppedAttributes := filterAttributes(attr, m)
 
@@ -295,8 +295,8 @@ func TestFilterAttributes_NoMatch(t *testing.T) {
 func TestFilterAttributes_NilAttributes(t *testing.T) {
 	var m map[string]struct{}
 	attr := pcommon.NewMap()
-	attr.PutString("host.name", "test")
-	attr.PutString("host.id", "test")
+	attr.PutStr("host.name", "test")
+	attr.PutStr("host.id", "test")
 
 	droppedAttributes := filterAttributes(attr, m)
 
@@ -312,8 +312,8 @@ func TestFilterAttributes_NilAttributes(t *testing.T) {
 func TestFilterAttributes_NoAttributes(t *testing.T) {
 	m := make(map[string]struct{})
 	attr := pcommon.NewMap()
-	attr.PutString("host.name", "test")
-	attr.PutString("host.id", "test")
+	attr.PutStr("host.name", "test")
+	attr.PutStr("host.id", "test")
 
 	droppedAttributes := filterAttributes(attr, m)
 
@@ -341,11 +341,11 @@ func TestAttributesToMap(t *testing.T) {
 		},
 	}
 	attr := pcommon.NewMap()
-	attr.PutString("str", "a")
+	attr.PutStr("str", "a")
 	attr.PutInt("int", 5)
 	attr.PutDouble("double", 5.0)
 	attr.PutBool("bool", true)
-	attr.PutEmptyMap("map").PutString("inner", "val")
+	attr.PutEmptyMap("map").PutStr("inner", "val")
 
 	arrayAttr := attr.PutEmptySlice("array")
 	arrayAttr.EnsureCapacity(2)

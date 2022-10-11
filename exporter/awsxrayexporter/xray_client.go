@@ -28,8 +28,6 @@ import (
 	"go.uber.org/zap"
 )
 
-var collectorDistribution = "opentelemetry-collector-contrib"
-
 // xrayClient represents X-Ray client.
 type xrayClient struct {
 	xRay *xray.XRay
@@ -73,6 +71,6 @@ func newXRay(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.Buil
 func newCollectorUserAgentHandler(buildInfo component.BuildInfo) request.NamedHandler {
 	return request.NamedHandler{
 		Name: "otel.collector.UserAgentHandler",
-		Fn:   request.MakeAddToUserAgentHandler(collectorDistribution, buildInfo.Version),
+		Fn:   request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version),
 	}
 }

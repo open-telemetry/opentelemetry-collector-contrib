@@ -27,10 +27,11 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 // Test that the factory creates the default configuration
@@ -341,7 +342,7 @@ func TestOverrideEndpoints(t *testing.T) {
 }
 
 func TestCreateAPIMetricsExporter(t *testing.T) {
-	server := testutils.DatadogServerMock()
+	server := testutil.DatadogServerMock()
 	defer server.Close()
 
 	factories, err := componenttest.NopFactories()
@@ -371,7 +372,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 }
 
 func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
-	server := testutils.DatadogServerMock(testutils.ValidateAPIKeyEndpointInvalid)
+	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
 	defer server.Close()
 
 	factories, err := componenttest.NopFactories()
@@ -447,7 +448,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 }
 
 func TestCreateAPILogsExporter(t *testing.T) {
-	server := testutils.DatadogLogServerMock()
+	server := testutil.DatadogLogServerMock()
 	defer server.Close()
 
 	factories, err := componenttest.NopFactories()
@@ -477,7 +478,7 @@ func TestCreateAPILogsExporter(t *testing.T) {
 }
 
 func TestOnlyMetadata(t *testing.T) {
-	server := testutils.DatadogServerMock()
+	server := testutil.DatadogServerMock()
 	defer server.Close()
 
 	factories, err := componenttest.NopFactories()
@@ -526,7 +527,9 @@ func TestOnlyMetadata(t *testing.T) {
 		assert.NoError(t, expTraces.Shutdown(ctx))
 	}()
 
-	err = expTraces.ConsumeTraces(ctx, testutils.TestTraces.Clone())
+	testTraces := ptrace.NewTraces()
+	testutil.TestTraces.CopyTo(testTraces)
+	err = expTraces.ConsumeTraces(ctx, testTraces)
 	require.NoError(t, err)
 
 	body := <-server.MetadataChan

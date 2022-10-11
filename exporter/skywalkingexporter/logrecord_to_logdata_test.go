@@ -27,23 +27,23 @@ import (
 
 func fillComplexAttributeValueMap(m pcommon.Map) {
 	m.PutBool("result", true)
-	m.PutString("status", "ok")
+	m.PutStr("status", "ok")
 	m.PutDouble("value", 1.3)
 	m.PutInt("code", 200)
 	m.PutEmpty("null")
 	m.PutEmptySlice("array").AppendEmpty().SetStr("array")
-	m.PutEmptyMap("map").PutString("data", "hello world")
-	m.PutString("status", "ok")
+	m.PutEmptyMap("map").PutStr("data", "hello world")
+	m.PutStr("status", "ok")
 }
 
 func createLogData(numberOfLogs int) plog.Logs {
 	logs := plog.NewLogs()
 	logs.ResourceLogs().AppendEmpty()
 	rl := logs.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutString("resourceKey", "resourceValue")
-	rl.Resource().Attributes().PutString(conventions.AttributeServiceName, "test-service")
-	rl.Resource().Attributes().PutString(conventions.AttributeHostName, "test-host")
-	rl.Resource().Attributes().PutString(conventions.AttributeServiceInstanceID, "test-instance")
+	rl.Resource().Attributes().PutStr("resourceKey", "resourceValue")
+	rl.Resource().Attributes().PutStr(conventions.AttributeServiceName, "test-service")
+	rl.Resource().Attributes().PutStr(conventions.AttributeHostName, "test-host")
+	rl.Resource().Attributes().PutStr(conventions.AttributeServiceInstanceID, "test-instance")
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.Scope().SetName("collector")
 	sl.Scope().SetVersion("v0.1.0")
@@ -76,7 +76,7 @@ func createLogData(numberOfLogs int) plog.Logs {
 		default:
 			logRecord.Body().SetStr("log contents")
 		}
-		logRecord.Attributes().PutString("custom", "custom")
+		logRecord.Attributes().PutStr("custom", "custom")
 	}
 
 	return logs

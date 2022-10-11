@@ -3,12 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influx
 go 1.18
 
 require (
-	github.com/influxdata/influxdb-observability/common v0.2.28-0.20220915142310-adbee7fb8146
-	github.com/influxdata/influxdb-observability/otel2influx v0.2.28-0.20220915142310-adbee7fb8146
+	github.com/influxdata/influxdb-observability/common v0.2.28
+	github.com/influxdata/influxdb-observability/otel2influx v0.2.28
 	github.com/influxdata/line-protocol/v2 v2.2.1
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.61.0
-	go.opentelemetry.io/collector/pdata v0.61.0
+	go.opentelemetry.io/collector v0.61.1-0.20221006231412-05d1c5f5572d
+	go.opentelemetry.io/collector/pdata v0.61.1-0.20221006231412-05d1c5f5572d
 	go.uber.org/zap v1.23.0
 
 )
@@ -25,7 +25,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.15.10 // indirect
+	github.com/klauspost/compress v1.15.11 // indirect
 	github.com/knadh/koanf v1.4.3 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect

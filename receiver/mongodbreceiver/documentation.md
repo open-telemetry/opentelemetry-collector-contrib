@@ -44,7 +44,7 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| database | The name of a database. | String |
+| database | The name of a database. | Str |
 
 ## Metric attributes
 

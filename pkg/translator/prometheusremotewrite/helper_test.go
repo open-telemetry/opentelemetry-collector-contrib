@@ -203,8 +203,8 @@ func Test_createLabelSet(t *testing.T) {
 			"labels_with_resource",
 			func() pcommon.Resource {
 				res := pcommon.NewResource()
-				res.Attributes().PutString("service.name", "prometheus")
-				res.Attributes().PutString("service.instance.id", "127.0.0.1:8080")
+				res.Attributes().PutStr("service.name", "prometheus")
+				res.Attributes().PutStr("service.instance.id", "127.0.0.1:8080")
 				return res
 			}(),
 			lbs1,
@@ -464,7 +464,7 @@ func TestAddResourceTargetInfo(t *testing.T) {
 	}
 	resourceWithServiceAttrs := pcommon.NewResource()
 	resourceWithServiceAttrs.Attributes().FromRaw(resourceAttrMap)
-	resourceWithServiceAttrs.Attributes().PutString("resource_attr", "resource-attr-val-1")
+	resourceWithServiceAttrs.Attributes().PutStr("resource_attr", "resource-attr-val-1")
 	resourceWithOnlyServiceAttrs := pcommon.NewResource()
 	resourceWithOnlyServiceAttrs.Attributes().FromRaw(resourceAttrMap)
 	for _, tc := range []struct {

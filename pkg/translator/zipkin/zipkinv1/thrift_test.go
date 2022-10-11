@@ -236,7 +236,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 			wantAttributes: func() pcommon.Map {
 				ret := pcommon.NewMap()
 				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
-				ret.PutString(tracetranslator.TagHTTPStatusMsg, "NotFound")
+				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
 			wantStatus: func() ptrace.SpanStatus {
@@ -274,7 +274,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 			wantAttributes: func() pcommon.Map {
 				ret := pcommon.NewMap()
 				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
-				ret.PutString(tracetranslator.TagHTTPStatusMsg, "NotFound")
+				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
 			wantStatus: func() ptrace.SpanStatus {
@@ -307,7 +307,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 			wantAttributes: func() pcommon.Map {
 				ret := pcommon.NewMap()
 				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
-				ret.PutString(tracetranslator.TagHTTPStatusMsg, "NotFound")
+				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
 			wantStatus: func() ptrace.SpanStatus {
@@ -338,7 +338,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 			wantAttributes: func() pcommon.Map {
 				ret := pcommon.NewMap()
 				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
-				ret.PutString(tracetranslator.TagHTTPStatusMsg, "NotFound")
+				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
 			wantStatus: func() ptrace.SpanStatus {
@@ -409,7 +409,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 			wantAttributes: func() pcommon.Map {
 				ret := pcommon.NewMap()
 				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
-				ret.PutString(tracetranslator.TagHTTPStatusMsg, "NotFound")
+				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
 			wantStatus: func() ptrace.SpanStatus {

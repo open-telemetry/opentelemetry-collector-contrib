@@ -150,10 +150,9 @@ func jProcessToInternalResource(process *model.Process, dest pcommon.Resource) {
 	}
 
 	attrs := dest.Attributes()
-	attrs.Clear()
 	if serviceName != "" {
 		attrs.EnsureCapacity(len(tags) + 1)
-		attrs.PutString(conventions.AttributeServiceName, serviceName)
+		attrs.PutStr(conventions.AttributeServiceName, serviceName)
 	} else {
 		attrs.EnsureCapacity(len(tags))
 	}
@@ -179,7 +178,7 @@ func translateJaegerVersionAttr(attrs pcommon.Map) {
 	jaegerVersion, jaegerVersionFound := attrs.Get("jaeger.version")
 	_, exporterVersionFound := attrs.Get(occonventions.AttributeExporterVersion)
 	if jaegerVersionFound && !exporterVersionFound {
-		attrs.PutString(occonventions.AttributeExporterVersion, "Jaeger-"+jaegerVersion.Str())
+		attrs.PutStr(occonventions.AttributeExporterVersion, "Jaeger-"+jaegerVersion.Str())
 		attrs.Remove("jaeger.version")
 	}
 }
@@ -244,7 +243,7 @@ func jTagsToInternalAttributes(tags []model.KeyValue, dest pcommon.Map) {
 	for _, tag := range tags {
 		switch tag.GetVType() {
 		case model.ValueType_STRING:
-			dest.PutString(tag.Key, tag.GetVStr())
+			dest.PutStr(tag.Key, tag.GetVStr())
 		case model.ValueType_BOOL:
 			dest.PutBool(tag.Key, tag.GetVBool())
 		case model.ValueType_INT64:
@@ -252,9 +251,9 @@ func jTagsToInternalAttributes(tags []model.KeyValue, dest pcommon.Map) {
 		case model.ValueType_FLOAT64:
 			dest.PutDouble(tag.Key, tag.GetVFloat64())
 		case model.ValueType_BINARY:
-			dest.PutString(tag.Key, base64.StdEncoding.EncodeToString(tag.GetVBinary()))
+			dest.PutStr(tag.Key, base64.StdEncoding.EncodeToString(tag.GetVBinary()))
 		default:
-			dest.PutString(tag.Key, fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
+			dest.PutStr(tag.Key, fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
 		}
 	}
 }
@@ -400,7 +399,6 @@ func jLogsToSpanEvents(logs []model.Log, dest ptrace.SpanEventSlice) {
 		}
 
 		attrs := event.Attributes()
-		attrs.Clear()
 		attrs.EnsureCapacity(len(log.Fields))
 		jTagsToInternalAttributes(log.Fields, attrs)
 		if name, ok := attrs.Get(eventNameAttr); ok {

@@ -36,8 +36,8 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| aerospike.namespace | Name of the Aerospike namespace | String |
-| aerospike.node.name | Name of the Aerospike node collected from | String |
+| aerospike.namespace | Name of the Aerospike namespace | Str |
+| aerospike.node.name | Name of the Aerospike node collected from | Str |
 
 ## Metric attributes
 
