@@ -104,7 +104,7 @@ func constructSQLSpan(attributes map[string]pcommon.Value) ptrace.Span {
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 
-	status := ptrace.NewSpanStatus()
+	status := ptrace.NewStatus()
 	status.SetCode(0)
 	status.SetMessage("OK")
 	status.CopyTo(span.Status())

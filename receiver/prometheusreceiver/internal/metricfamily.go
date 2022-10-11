@@ -55,7 +55,7 @@ type metricGroup struct {
 func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *zap.Logger) *metricFamily {
 	metadata, familyName := metadataForMetric(metricName, mc)
 	mtype, isMonotonic := convToMetricType(metadata.Type)
-	if mtype == pmetric.MetricTypeNone {
+	if mtype == pmetric.MetricTypeEmpty {
 		logger.Debug(fmt.Sprintf("Unknown-typed metric : %s %+v", metricName, metadata))
 	}
 
@@ -125,7 +125,7 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	point := dest.AppendEmpty()
 
 	if pointIsStale {
-		point.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+		point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 	} else {
 		point.SetCount(uint64(mg.count))
 		if mg.hasSum {
@@ -156,7 +156,7 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 	point := dest.AppendEmpty()
 	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
 	if pointIsStale {
-		point.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+		point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 	} else {
 		if mg.hasSum {
 			point.SetSum(mg.sum)
@@ -196,7 +196,7 @@ func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
 	}
 	point.SetTimestamp(tsNanos)
 	if value.IsStaleNaN(mg.value) {
-		point.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+		point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 	} else {
 		point.SetDoubleValue(mg.value)
 	}
@@ -279,7 +279,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) {
 	switch mf.mtype {
 	case pmetric.MetricTypeHistogram:
 		histogram := metric.SetEmptyHistogram()
-		histogram.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		histogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		hdpL := histogram.DataPoints()
 		for _, mg := range mf.groupOrders {
 			mg.toDistributionPoint(hdpL)
@@ -296,7 +296,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) {
 
 	case pmetric.MetricTypeSum:
 		sum := metric.SetEmptySum()
-		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		sum.SetIsMonotonic(mf.isMonotonic)
 		sdpL := sum.DataPoints()
 		for _, mg := range mf.groupOrders {

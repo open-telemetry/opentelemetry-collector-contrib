@@ -386,7 +386,7 @@ func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {
 	// Histogram (delta)
 	met = metricsArray.AppendEmpty()
 	met.SetName("double.histogram")
-	met.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+	met.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 	dpsDoubleHist := met.Histogram().DataPoints()
 	dpDoubleHist := dpsDoubleHist.AppendEmpty()
 	dpDoubleHist.SetCount(20)

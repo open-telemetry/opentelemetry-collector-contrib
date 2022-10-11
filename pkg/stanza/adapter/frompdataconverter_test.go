@@ -212,7 +212,7 @@ func TestConvertFromSeverity(t *testing.T) {
 		expectedSeverity entry.Severity
 		severityNumber   plog.SeverityNumber
 	}{
-		{entry.Default, plog.SeverityNumberUndefined},
+		{entry.Default, plog.SeverityNumberUnspecified},
 		{entry.Trace, plog.SeverityNumberTrace},
 		{entry.Trace2, plog.SeverityNumberTrace2},
 		{entry.Trace3, plog.SeverityNumberTrace3},

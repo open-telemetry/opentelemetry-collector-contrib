@@ -77,7 +77,7 @@ func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {
 
 func requireMetricOk(t *testing.T, m pmetric.Metric) {
 	require.NotZero(t, m.Name())
-	require.NotEqual(t, pmetric.MetricTypeNone, m.Type())
+	require.NotEqual(t, pmetric.MetricTypeEmpty, m.Type())
 	switch m.Type() {
 	case pmetric.MetricTypeGauge:
 		gauge := m.Gauge()
@@ -89,7 +89,7 @@ func requireMetricOk(t *testing.T, m pmetric.Metric) {
 	case pmetric.MetricTypeSum:
 		sum := m.Sum()
 		require.True(t, sum.IsMonotonic())
-		require.Equal(t, pmetric.MetricAggregationTemporalityCumulative, sum.AggregationTemporality())
+		require.Equal(t, pmetric.AggregationTemporalityCumulative, sum.AggregationTemporality())
 		for i := 0; i < sum.DataPoints().Len(); i++ {
 			dp := sum.DataPoints().At(i)
 			// Start time is required for cumulative metrics. Make assertions
@@ -104,7 +104,7 @@ func requireMetricOk(t *testing.T, m pmetric.Metric) {
 
 func requirePointOk(t *testing.T, point pmetric.NumberDataPoint) {
 	require.NotZero(t, point.Timestamp())
-	require.NotEqual(t, pmetric.NumberDataPointValueTypeNone, point.ValueType())
+	require.NotEqual(t, pmetric.NumberDataPointValueTypeEmpty, point.ValueType())
 }
 
 func requireResourceOk(t *testing.T, resource pcommon.Resource) {

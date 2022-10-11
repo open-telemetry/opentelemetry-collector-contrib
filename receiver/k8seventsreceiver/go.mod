@@ -5,9 +5,9 @@ go 1.18
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.61.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.61.1-0.20221006231412-05d1c5f5572d
-	go.opentelemetry.io/collector/pdata v0.61.1-0.20221006231412-05d1c5f5572d
-	go.opentelemetry.io/collector/semconv v0.61.1-0.20221006231412-05d1c5f5572d
+	go.opentelemetry.io/collector v0.61.1-0.20221011194806-6e554f2d823b
+	go.opentelemetry.io/collector/pdata v0.61.1-0.20221011194806-6e554f2d823b
+	go.opentelemetry.io/collector/semconv v0.61.1-0.20221011194806-6e554f2d823b
 	go.uber.org/zap v1.23.0
 	k8s.io/api v0.25.2
 	k8s.io/apimachinery v0.25.2

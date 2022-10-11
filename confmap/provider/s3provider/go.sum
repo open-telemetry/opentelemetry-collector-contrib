@@ -278,8 +278,8 @@ github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1
 go.etcd.io/etcd/api/v3 v3.5.4/go.mod h1:5GB2vv4A4AOn3yk7MftYGHkUfGtDHnEraIjym4dYz5A=
 go.etcd.io/etcd/client/pkg/v3 v3.5.4/go.mod h1:IJHfcCEKxYu1Os13ZdwCwIUTUVGYTSAM3YSwc9/Ac1g=
 go.etcd.io/etcd/client/v3 v3.5.4/go.mod h1:ZaRkVgBZC+L+dLCjTcF1hRXpgZXQPOvnA/Ak/gq3kiY=
-go.opentelemetry.io/collector v0.61.1-0.20221006231412-05d1c5f5572d h1:TqJLqgWNuGtF1P7omygn26p9hvrEcYOUUQ4VHGnnLnA=
-go.opentelemetry.io/collector v0.61.1-0.20221006231412-05d1c5f5572d/go.mod h1:TaURV/Ub8t2JC12w7WDdWNyToyytXBqfsVF+FmROIhc=
+go.opentelemetry.io/collector v0.61.1-0.20221011194806-6e554f2d823b h1:VY4WAEfcmq+Lu7M8sZJytuoEeJlLR9P8G25/ZJZCpM0=
+go.opentelemetry.io/collector v0.61.1-0.20221011194806-6e554f2d823b/go.mod h1:Cjiqlf6G4a3hzNpePrBOMx10AjO/ye4r7TnvyCqOgQk=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
 go.uber.org/atomic v1.10.0 h1:9qC72Qh0+3MqyJbAn8YU5xVq1frD8bn3JtD2oXtafVQ=
 go.uber.org/atomic v1.10.0/go.mod h1:LUxbIzbOniOlMKjJjyPfpl4v+PKK2cNJn91OQbhoJI0=

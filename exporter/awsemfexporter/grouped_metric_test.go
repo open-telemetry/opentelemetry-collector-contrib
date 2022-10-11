@@ -424,7 +424,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			{
 				Entry: zapcore.Entry{Level: zap.WarnLevel, Message: "Unhandled metric data type."},
 				Context: []zapcore.Field{
-					zap.String("DataType", "None"),
+					zap.String("DataType", "Empty"),
 					zap.String("Name", "foo"),
 					zap.String("Unit", "Count"),
 				},
