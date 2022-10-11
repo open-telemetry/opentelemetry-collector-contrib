@@ -41,7 +41,7 @@ func TestStart(t *testing.T) {
 	cfg.Logs.Groups.AutodiscoverConfig = nil
 
 	sink := &consumertest.LogsSink{}
-	alertRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
+	logsRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
 
 	err := alertRcvr.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)

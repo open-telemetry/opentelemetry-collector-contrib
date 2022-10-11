@@ -38,8 +38,7 @@ type logsReceiver struct {
 	imdsEndpoint        string
 	pollInterval        time.Duration
 	maxEventsPerRequest int
-	namedPolls          []groupNames
-	prefixedPolls       []groupPrefix
+	group          map[string]groupRequest
 	autodiscover        *AutodiscoverConfig
 	logger              *zap.Logger
 	client              client
@@ -54,20 +53,17 @@ type client interface {
 	FilterLogEventsWithContext(ctx context.Context, input *cloudwatchlogs.FilterLogEventsInput, opts ...request.Option) (*cloudwatchlogs.FilterLogEventsOutput, error)
 }
 
-type groupNames struct {
-	logGroup    string
-	streamNames []*string
-}
+type streamNames []string
 
-func (gn *groupNames) request(limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
+func (sn streamNames) request(groupName string, limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
 	base := &cloudwatchlogs.FilterLogEventsInput{
-		LogGroupName: &gn.logGroup,
+		LogGroupName: &groupName,
 		StartTime:    aws.Int64(st.UnixMilli()),
 		EndTime:      aws.Int64(et.UnixMilli()),
 		Limit:        aws.Int64(int64(limit)),
 	}
-	if len(gn.streamNames) > 0 {
-		base.LogStreamNames = gn.streamNames
+	if len(sn) > 0 {
+		base.LogStreamNames = sn
 	}
 	if nextToken != "" {
 		base.NextToken = aws.String(nextToken)
@@ -75,18 +71,15 @@ func (gn *groupNames) request(limit int, nextToken string, st, et *time.Time) *c
 	return base
 }
 
-type groupPrefix struct {
-	logGroup string
-	prefix   *string
-}
+type streamPrefix string
 
-func (gp *groupPrefix) request(limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
+func (sp *streamPrefix) request(groupName string, limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
 	base := &cloudwatchlogs.FilterLogEventsInput{
-		LogGroupName:        &gp.logGroup,
+		LogGroupName:        &groupName,
 		StartTime:           aws.Int64(st.UnixMilli()),
 		EndTime:             aws.Int64(et.UnixMilli()),
 		Limit:               aws.Int64(int64(limit)),
-		LogStreamNamePrefix: gp.prefix,
+		LogStreamNamePrefix: sp,
 	}
 	if nextToken != "" {
 		base.NextToken = aws.String(nextToken)
@@ -94,25 +87,19 @@ func (gp *groupPrefix) request(limit int, nextToken string, st, et *time.Time) *
 	return base
 }
 
-type pollConfig interface {
-	request(limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput
+type groupRequest interface {
+	request(groupName string, limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput
 }
 
 func newLogsReceiver(cfg *Config, logger *zap.Logger, consumer consumer.Logs) *logsReceiver {
-	namedPolls := []groupNames{}
-	prefixedPolls := []groupPrefix{}
+	// map[groupName]groupRequest
+	groups := make(map[string]groupRequest)
 	for logGroupName, sc := range cfg.Logs.Groups.NamedConfigs {
 		for _, prefix := range sc.Prefixes {
-			prefixedPolls = append(prefixedPolls, groupPrefix{
-				logGroup: logGroupName,
-				prefix:   prefix,
-			})
+			groups[logGroupName] = prefix
 		}
 
-		namedPolls = append(namedPolls, groupNames{
-			logGroup:    logGroupName,
-			streamNames: sc.Names,
-		})
+		groups[logGroupName] = sc.Names
 	}
 
 	// safeguard from using both
@@ -181,15 +168,8 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 
 func (l *logsReceiver) poll(ctx context.Context) error {
 	var errs error
-	for i := range l.namedPolls {
-		np := l.namedPolls[i]
-		if err := l.pollForLogs(ctx, np.logGroup, &np); err != nil {
-			errs = multierr.Append(errs, err)
-		}
-	}
-	for i := range l.prefixedPolls {
-		pp := l.prefixedPolls[i]
-		if err := l.pollForLogs(ctx, pp.logGroup, &pp); err != nil {
+	for groupName, request := range l.groupRequests {
+		if err := l.pollForLogs(ctx, groupName, &request); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
@@ -269,7 +249,7 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 	return logs
 }
 
-func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverConfig) ([]groupNames, []groupPrefix, error) {
+func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverConfig) (map[string]groupRequest, error) {
 	l.logger.Debug("attempting to discover log groups.", zap.Int("limit", auto.Limit))
 
 	newNamedPolls := []groupNames{}
