@@ -35,6 +35,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 )
 
@@ -124,7 +125,7 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 	}, nil
 }
 
-func (exp *metricsExporter) pushSketches(ctx context.Context, sl metrics.SketchSeriesList) error {
+func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.SketchSeriesList) error {
 	payload, err := sl.Marshal()
 	if err != nil {
 		return fmt.Errorf("failed to marshal sketches: %w", err)
@@ -132,7 +133,7 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl metrics.SketchS
 
 	req, err := http.NewRequestWithContext(ctx,
 		http.MethodPost,
-		exp.cfg.Metrics.TCPAddr.Endpoint+metrics.SketchSeriesEndpoint,
+		exp.cfg.Metrics.TCPAddr.Endpoint+sketches.SketchSeriesEndpoint,
 		bytes.NewBuffer(payload),
 	)
 	if err != nil {
@@ -149,7 +150,7 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl metrics.SketchS
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("error when sending payload to %s: %s", metrics.SketchSeriesEndpoint, resp.Status)
+		return fmt.Errorf("error when sending payload to %s: %s", sketches.SketchSeriesEndpoint, resp.Status)
 	}
 	return nil
 }

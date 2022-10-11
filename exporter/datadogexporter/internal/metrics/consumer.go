@@ -19,6 +19,7 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 	"github.com/DataDog/datadog-agent/pkg/quantile"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 	"go.opentelemetry.io/collector/component"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 )
@@ -30,7 +31,7 @@ var _ translator.TagsConsumer = (*Consumer)(nil)
 // Consumer is the metrics Consumer.
 type Consumer struct {
 	ms        []datadog.Metric
-	sl        SketchSeriesList
+	sl        sketches.SketchSeriesList
 	seenHosts map[string]struct{}
 	seenTags  map[string]struct{}
 }
@@ -77,7 +78,7 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 }
 
 // All gets all metrics (consumed metrics and running metrics).
-func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string) ([]datadog.Metric, SketchSeriesList) {
+func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string) ([]datadog.Metric, sketches.SketchSeriesList) {
 	series := c.ms
 	series = append(series, c.runningMetrics(timestamp, buildInfo)...)
 	if len(tags) == 0 {
@@ -113,12 +114,12 @@ func (c *Consumer) ConsumeSketch(
 	timestamp uint64,
 	sketch *quantile.Sketch,
 ) {
-	c.sl = append(c.sl, SketchSeries{
+	c.sl = append(c.sl, sketches.SketchSeries{
 		Name:     dims.Name(),
 		Tags:     dims.Tags(),
 		Host:     dims.Host(),
 		Interval: 1,
-		Points: []SketchPoint{{
+		Points: []sketches.SketchPoint{{
 			Ts:     int64(timestamp / 1e9),
 			Sketch: sketch,
 		}},
