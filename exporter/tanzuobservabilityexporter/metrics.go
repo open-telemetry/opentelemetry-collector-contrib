@@ -115,10 +115,10 @@ func (c *metricsConsumer) Consume(ctx context.Context, md pmetric.Metrics) error
 			ms := ilms.At(j).Metrics()
 			for k := 0; k < ms.Len(); k++ {
 				m := ms.At(k)
-				resAttrsMap := make(map[string]string)
-				if c.config.IncludeResourceAttrs {
+				var resAttrsMap map[string]string
+				if c.config.ResourceAttrsIncluded {
 					resAttrsMap = attributesToTags(resAttrs)
-				} else if !c.config.ExcludeAppTags {
+				} else if !c.config.AppTagsExcluded {
 					resAttrsMap = appAttributesToTags(resAttrs)
 				}
 				mi := metricInfo{Metric: m, Source: source, SourceKey: sourceKey, ResourceAttrs: resAttrsMap}

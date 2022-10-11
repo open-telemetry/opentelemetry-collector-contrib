@@ -69,13 +69,13 @@ func TestConfigIncludeResAttrs(t *testing.T) {
 		Metrics: MetricsConfig{},
 	}
 	assert.NoError(t, c.Validate())
-	assert.False(t, c.Metrics.IncludeResourceAttrs)
+	assert.False(t, c.Metrics.ResourceAttrsIncluded)
 
 	c = &Config{
 		Metrics: MetricsConfig{
-			IncludeResourceAttrs: true,
+			ResourceAttrsIncluded: true,
 		},
 	}
 	assert.NoError(t, c.Validate())
-	assert.True(t, c.Metrics.IncludeResourceAttrs)
+	assert.True(t, c.Metrics.ResourceAttrsIncluded)
 }

@@ -37,7 +37,7 @@ func TestEndToEndGaugeConsumer(t *testing.T) {
 	dataPoints.EnsureCapacity(1)
 	exporterConfig := createDefaultConfig()
 	tobsConfig := exporterConfig.(*Config)
-	// Here we test what happens with default config. IncludeResourceAttrs = false ExcludeAppTags = false
+	// Here we test what happens with default config. ResourceAttrsIncluded = false AppTagsExcluded = false
 	addDataPoint(
 		432.25,
 		1640123456,
@@ -88,8 +88,8 @@ func TestEndToEndGaugeConsumerWithResAttrsIncluded(t *testing.T) {
 	dataPoints.EnsureCapacity(1)
 	exporterConfig := createDefaultConfig()
 	tobsConfig := exporterConfig.(*Config)
-	tobsConfig.Metrics.IncludeResourceAttrs = true
-	// Here we test what happens if IncludeResourceAttrs = true
+	tobsConfig.Metrics.ResourceAttrsIncluded = true
+	// Here we test what happens if ResourceAttrsIncluded = true
 	addDataPoint(
 		432.25,
 		1640123456,
@@ -140,8 +140,8 @@ func TestEndToEndGaugeConsumerWithAppResAttrsExcluded(t *testing.T) {
 	dataPoints.EnsureCapacity(1)
 	exporterConfig := createDefaultConfig()
 	tobsConfig := exporterConfig.(*Config)
-	tobsConfig.Metrics.ExcludeAppTags = true
-	// Here we test what happens if IncludeResourceAttrs = false ExcludeAppTags = false
+	tobsConfig.Metrics.AppTagsExcluded = true
+	// Here we test what happens if ResourceAttrsIncluded = false AppTagsExcluded = true
 	addDataPoint(
 		432.25,
 		1640123456,
@@ -489,7 +489,7 @@ func TestSumConsumerErrorOnSend(t *testing.T) {
 	deltaMetric := newMetric(
 		"test.delta.metric", pmetric.MetricTypeSum)
 	sum := deltaMetric.Sum()
-	mi := metricInfo{Metric: deltaMetric, Source: "test_source", SourceKey: "host.name", ResourceAttrs: map[string]string{"res_attr_key": "res_attr_value"}}
+	mi := metricInfo{Metric: deltaMetric, Source: "test_source", SourceKey: "host.name"}
 	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 	dataPoints := sum.DataPoints()
 	dataPoints.EnsureCapacity(2)
@@ -497,7 +497,7 @@ func TestSumConsumerErrorOnSend(t *testing.T) {
 		35,
 		1635205001,
 		map[string]interface{}{
-			"env": "dev", "res_attr_key": "res_attr_value",
+			"env": "dev",
 		},
 		dataPoints,
 	)
@@ -505,7 +505,7 @@ func TestSumConsumerErrorOnSend(t *testing.T) {
 		52.375,
 		1635205002,
 		map[string]interface{}{
-			"env": "prod", "res_attr_key": "res_attr_value",
+			"env": "prod",
 		},
 		dataPoints,
 	)
