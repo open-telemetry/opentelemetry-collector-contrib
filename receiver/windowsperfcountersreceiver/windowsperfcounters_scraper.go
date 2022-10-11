@@ -125,9 +125,9 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 			switch metricCfg.Sum.Aggregation {
 			case "cumulative":
-				builtMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				builtMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			case "delta":
-				builtMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				builtMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 			}
 		} else {
 			builtMetric.SetEmptyGauge()

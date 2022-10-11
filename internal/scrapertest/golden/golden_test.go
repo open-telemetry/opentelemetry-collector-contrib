@@ -106,7 +106,7 @@ func testMetrics() pmetric.MetricSlice {
 
 	// Delta Sum with two int dps
 	metric = slice.AppendEmpty()
-	initSum(metric, "test delta sum multi", "multi sum", "s", pmetric.MetricAggregationTemporalityDelta, false)
+	initSum(metric, "test delta sum multi", "multi sum", "s", pmetric.AggregationTemporalityDelta, false)
 	dps = metric.Sum().DataPoints()
 
 	dp = dps.AppendEmpty()
@@ -121,7 +121,7 @@ func testMetrics() pmetric.MetricSlice {
 
 	// Cumulative Sum with one double dp
 	metric = slice.AppendEmpty()
-	initSum(metric, "test cumulative sum single", "single sum", "1/s", pmetric.MetricAggregationTemporalityCumulative, true)
+	initSum(metric, "test cumulative sum single", "single sum", "1/s", pmetric.AggregationTemporalityCumulative, true)
 	dps = metric.Sum().DataPoints()
 
 	dp = dps.AppendEmpty()
@@ -149,7 +149,7 @@ func initGauge(metric pmetric.Metric, name, desc, unit string) {
 	metric.SetEmptyGauge()
 }
 
-func initSum(metric pmetric.Metric, name, desc, unit string, aggr pmetric.MetricAggregationTemporality, isMonotonic bool) {
+func initSum(metric pmetric.Metric, name, desc, unit string, aggr pmetric.AggregationTemporality, isMonotonic bool) {
 	metric.SetDescription(desc)
 	metric.SetName(name)
 	metric.SetUnit(unit)
