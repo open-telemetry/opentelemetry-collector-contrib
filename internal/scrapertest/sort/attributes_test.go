@@ -34,13 +34,13 @@ func TestCompareValues(t *testing.T) {
 
 var pTypes ascendingValues = []pcommon.Value{
 	pcommon.NewValueEmpty(),
-	pcommon.NewValueString(""),
+	pcommon.NewValueStr(""),
 	pcommon.NewValueInt(0),
 	pcommon.NewValueDouble(0),
 	pcommon.NewValueBool(false),
 	pcommon.NewValueMap(),
 	pcommon.NewValueSlice(),
-	pcommon.NewValueBytes(pcommon.NewImmutableByteSlice([]byte(""))),
+	byteSlice(""),
 }
 
 var pBools ascendingValues = []pcommon.Value{
@@ -49,29 +49,29 @@ var pBools ascendingValues = []pcommon.Value{
 }
 
 var pStrings ascendingValues = []pcommon.Value{
-	pcommon.NewValueString(""),
-	pcommon.NewValueString(" "),
-	pcommon.NewValueString("A"),
-	pcommon.NewValueString("AA"),
-	pcommon.NewValueString("_"),
-	pcommon.NewValueString("a"),
-	pcommon.NewValueString("aa"),
-	pcommon.NewValueString("b"),
-	pcommon.NewValueString("long"),
-	pcommon.NewValueString("z"),
+	pcommon.NewValueStr(""),
+	pcommon.NewValueStr(" "),
+	pcommon.NewValueStr("A"),
+	pcommon.NewValueStr("AA"),
+	pcommon.NewValueStr("_"),
+	pcommon.NewValueStr("a"),
+	pcommon.NewValueStr("aa"),
+	pcommon.NewValueStr("b"),
+	pcommon.NewValueStr("long"),
+	pcommon.NewValueStr("z"),
 }
 
 var pBytes ascendingValues = []pcommon.Value{
-	pcommon.NewValueBytes(pcommon.NewImmutableByteSlice([]byte(""))),
-	pcommon.NewValueBytes(pcommon.NewImmutableByteSlice([]byte(" "))),
-	pcommon.NewValueBytes(pcommon.NewImmutableByteSlice([]byte("A"))),
-	pcommon.NewValueBytes(pcommon.NewImmutableByteSlice([]byte("AA"))),
-	pcommon.NewValueBytes(pcommon.NewImmutableByteSlice([]byte("_"))),
-	pcommon.NewValueBytes(pcommon.NewImmutableByteSlice([]byte("a"))),
-	pcommon.NewValueBytes(pcommon.NewImmutableByteSlice([]byte("aa"))),
-	pcommon.NewValueBytes(pcommon.NewImmutableByteSlice([]byte("b"))),
-	pcommon.NewValueBytes(pcommon.NewImmutableByteSlice([]byte("long"))),
-	pcommon.NewValueBytes(pcommon.NewImmutableByteSlice([]byte("z"))),
+	byteSlice(""),
+	byteSlice(" "),
+	byteSlice("A"),
+	byteSlice("AA"),
+	byteSlice("_"),
+	byteSlice("a"),
+	byteSlice("aa"),
+	byteSlice("b"),
+	byteSlice("long"),
+	byteSlice("z"),
 }
 
 var pInts ascendingValues = []pcommon.Value{
@@ -97,60 +97,57 @@ var pMaps ascendingValues = []pcommon.Value{
 	pcommon.NewValueMap(),
 	func() pcommon.Value {
 		v := pcommon.NewValueMap()
-		m := v.SetEmptyMapVal()
-		m.InsertString("a", "")
+		m := v.SetEmptyMap()
+		m.PutString("a", "")
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueMap()
-		m := v.SetEmptyMapVal()
-		m.InsertInt("a", 123)
+		m := v.SetEmptyMap()
+		m.PutInt("a", 123)
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueMap()
-		m := v.SetEmptyMapVal()
-		m.InsertInt("b", 100)
+		m := v.SetEmptyMap()
+		m.PutInt("b", 100)
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueMap()
-		m := v.SetEmptyMapVal()
-		m.InsertString("c", "")
+		m := v.SetEmptyMap()
+		m.PutString("c", "")
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueMap()
-		m := v.SetEmptyMapVal()
-		m.InsertString("a", "")
-		m.InsertString("b", "")
+		m := v.SetEmptyMap()
+		m.PutString("a", "")
+		m.PutString("b", "")
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueMap()
-		m := v.SetEmptyMapVal()
-		m.InsertString("a", "")
-		mv := pcommon.NewValueMap()
-		m.Insert("m", mv)
+		m := v.SetEmptyMap()
+		m.PutString("a", "")
+		m.PutEmptyMap("m")
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueMap()
-		m := v.SetEmptyMapVal()
-		m.InsertString("a", "")
-		mv := pcommon.NewValueMap()
-		mv.MapVal().InsertInt("i", 0)
-		m.Insert("m", mv)
+		m := v.SetEmptyMap()
+		m.PutString("a", "")
+		mv := m.PutEmptyMap("m")
+		mv.PutInt("i", 0)
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueMap()
-		m := v.SetEmptyMapVal()
-		m.InsertString("a", "")
-		vs := pcommon.NewValueSlice()
-		s := vs.SetEmptySliceVal()
-		s.AppendEmpty().SetDoubleVal(100)
-		m.Insert("s", vs)
+		m := v.SetEmptyMap()
+		m.PutString("a", "")
+		vs := m.PutEmptySlice("s")
+		d := vs.AppendEmpty()
+		d.SetDouble(100)
 		return v
 	}(),
 }
@@ -160,129 +157,129 @@ var pSlices ascendingValues = []pcommon.Value{
 	pcommon.NewValueSlice(),
 	func() pcommon.Value {
 		v := pcommon.NewValueSlice()
-		s := v.SetEmptySliceVal()
-		s.AppendEmpty().SetStringVal("")
+		s := v.SetEmptySlice()
+		s.AppendEmpty().SetStr("")
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueSlice()
-		s := v.SetEmptySliceVal()
-		s.AppendEmpty().SetIntVal(100)
+		s := v.SetEmptySlice()
+		s.AppendEmpty().SetInt(100)
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueSlice()
-		s := v.SetEmptySliceVal()
-		s.AppendEmpty().SetDoubleVal(100)
+		s := v.SetEmptySlice()
+		s.AppendEmpty().SetDouble(100)
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueSlice()
-		s := v.SetEmptySliceVal()
-		s.AppendEmpty().SetBoolVal(true)
+		s := v.SetEmptySlice()
+		s.AppendEmpty().SetBool(true)
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueSlice()
-		s := v.SetEmptySliceVal()
-		s.AppendEmpty().SetEmptyMapVal()
+		s := v.SetEmptySlice()
+		s.AppendEmpty().SetEmptyMap()
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueSlice()
-		s := v.SetEmptySliceVal()
-		m := s.AppendEmpty().SetEmptyMapVal()
-		m.InsertString("a", "")
+		s := v.SetEmptySlice()
+		m := s.AppendEmpty().SetEmptyMap()
+		m.PutString("a", "")
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueSlice()
-		s := v.SetEmptySliceVal()
-		m := s.AppendEmpty().SetEmptyMapVal()
-		m.InsertString("b", "")
+		s := v.SetEmptySlice()
+		m := s.AppendEmpty().SetEmptyMap()
+		m.PutString("b", "")
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueSlice()
-		s := v.SetEmptySliceVal()
-		s.AppendEmpty().SetEmptySliceVal()
+		s := v.SetEmptySlice()
+		s.AppendEmpty().SetEmptySlice()
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueSlice()
-		s := v.SetEmptySliceVal()
-		ns := s.AppendEmpty().SetEmptySliceVal()
-		ns.AppendEmpty().SetStringVal("")
+		s := v.SetEmptySlice()
+		ns := s.AppendEmpty().SetEmptySlice()
+		ns.AppendEmpty().SetStr("")
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueSlice()
-		s := v.SetEmptySliceVal()
-		s.AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte("A")))
+		s := v.SetEmptySlice()
+		s.AppendEmpty().SetEmptyBytes().Append([]byte("A")...)
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueSlice()
-		s := v.SetEmptySliceVal()
-		s.AppendEmpty().SetStringVal("")
-		s.AppendEmpty().SetStringVal("a")
+		s := v.SetEmptySlice()
+		s.AppendEmpty().SetStr("")
+		s.AppendEmpty().SetStr("a")
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueSlice()
-		s := v.SetEmptySliceVal()
-		s.AppendEmpty().SetStringVal("")
-		s.AppendEmpty().SetBoolVal(false)
+		s := v.SetEmptySlice()
+		s.AppendEmpty().SetStr("")
+		s.AppendEmpty().SetBool(false)
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueSlice()
-		s := v.SetEmptySliceVal()
-		s.AppendEmpty().SetIntVal(0)
-		s.AppendEmpty().SetBoolVal(true)
+		s := v.SetEmptySlice()
+		s.AppendEmpty().SetInt(0)
+		s.AppendEmpty().SetBool(true)
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueSlice()
-		s := v.SetEmptySliceVal()
-		s.AppendEmpty().SetIntVal(100)
-		s.AppendEmpty().SetIntVal(0)
+		s := v.SetEmptySlice()
+		s.AppendEmpty().SetInt(100)
+		s.AppendEmpty().SetInt(0)
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueSlice()
-		s := v.SetEmptySliceVal()
-		s.AppendEmpty().SetIntVal(100)
-		s.AppendEmpty().SetDoubleVal(0)
+		s := v.SetEmptySlice()
+		s.AppendEmpty().SetInt(100)
+		s.AppendEmpty().SetDouble(0)
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueSlice()
-		s := v.SetEmptySliceVal()
-		s.AppendEmpty().SetBoolVal(false)
-		s.AppendEmpty().SetBoolVal(true)
+		s := v.SetEmptySlice()
+		s.AppendEmpty().SetBool(false)
+		s.AppendEmpty().SetBool(true)
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueSlice()
-		s := v.SetEmptySliceVal()
-		s.AppendEmpty().SetBoolVal(true)
-		s.AppendEmpty().SetBoolVal(false)
+		s := v.SetEmptySlice()
+		s.AppendEmpty().SetBool(true)
+		s.AppendEmpty().SetBool(false)
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueSlice()
-		s := v.SetEmptySliceVal()
-		s.AppendEmpty().SetBoolVal(true)
-		s.AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte("A")))
+		s := v.SetEmptySlice()
+		s.AppendEmpty().SetBool(true)
+		s.AppendEmpty().SetEmptyBytes().Append([]byte("A")...)
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueSlice()
-		s := v.SetEmptySliceVal()
-		s.AppendEmpty().SetStringVal("")
-		s.AppendEmpty().SetStringVal("")
-		s.AppendEmpty().SetStringVal("")
+		s := v.SetEmptySlice()
+		s.AppendEmpty().SetStr("")
+		s.AppendEmpty().SetStr("")
+		s.AppendEmpty().SetStr("")
 		return v
 	}(),
 }
@@ -303,4 +300,10 @@ func (a ascendingValues) test(t *testing.T) {
 			require.Positive(t, compareValues(a[j], a[i]), "expected '%s' > '%s'", a[i].AsString(), a[j].AsString())
 		}
 	}
+}
+
+func byteSlice(str string) pcommon.Value {
+	val := pcommon.NewValueBytes()
+	val.SetEmptyBytes().Append([]byte(str)...)
+	return val
 }
