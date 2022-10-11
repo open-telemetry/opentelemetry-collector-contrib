@@ -11,7 +11,7 @@ require (
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.61.1-0.20221006231412-05d1c5f5572d
 	go.opentelemetry.io/collector/pdata v0.61.1-0.20221006231412-05d1c5f5572d
-	google.golang.org/grpc v1.49.0
+	google.golang.org/grpc v1.50.0
 )
 
 require (
