@@ -53,6 +53,14 @@ func TestValidate(t *testing.T) {
 			expectedErr: errNoRegion,
 		},
 		{
+			name: "Nil Logs",
+			config: Config{
+				Region: "us-west-2",
+				Logs:   nil,
+			},
+			expectedErr: errNoLogsConfigured,
+		},
+		{
 			name: "Invalid Event Limit",
 			config: Config{
 				Region: "us-west-2",
