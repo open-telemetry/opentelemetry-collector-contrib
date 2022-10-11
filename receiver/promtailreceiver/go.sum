@@ -382,8 +382,6 @@ github.com/cznic/ql v1.2.0/go.mod h1:FbpzhyZrqr0PVlK6ury+PoW3T0ODUV22OeWIxcaOrSE
 github.com/cznic/sortutil v0.0.0-20150617083342-4c7342852e65/go.mod h1:q2w6Bg5jeox1B+QkJ6Wp/+Vn0G/bo3f1uY7Fn3vivIQ=
 github.com/cznic/strutil v0.0.0-20171016134553-529a34b1c186/go.mod h1:AHHPPPXTw0h6pVabbcbyGRK1DckRn7r/STdZEeIDzZc=
 github.com/cznic/zappy v0.0.0-20160723133515-2533cb5b45cc/go.mod h1:Y1SNZ4dRUOKXshKUbwUapqNncRrho4mkjQebgEHZLj8=
-github.com/dannykopping/go-kit-log v0.2.2-0.20221002180827-5591c1641b6b h1:G8g9mAKEj9O3RsU6Hd/ow6lIcHarlcUl5omV6sFKEOU=
-github.com/dannykopping/go-kit-log v0.2.2-0.20221002180827-5591c1641b6b/go.mod h1:NwTd00d/i8cPZ3xOwwiv2PO5MOcx78fFErGNcVmBjv0=
 github.com/davecgh/go-spew v0.0.0-20151105211317-5215b55f46b2/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v0.0.0-20161028175848-04cdfd42973b/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -521,6 +519,10 @@ github.com/go-kit/kit v0.9.0/go.mod h1:xBxKIO96dXMWWy0MnWVtmwkA9/13aqxPnvrjFYMA2
 github.com/go-kit/kit v0.10.0/go.mod h1:xUsJbQ/Fp4kEt7AFgCuvyX4a71u8h9jB8tj/ORgOZ7o=
 github.com/go-kit/kit v0.12.0 h1:e4o3o3IsBfAKQh5Qbbiqyfu97Ku7jrO/JbohvztANh4=
 github.com/go-kit/kit v0.12.0/go.mod h1:lHd+EkCZPIwYItmGDDRdhinkzX2A1sj+M9biaEaizzs=
+github.com/go-kit/log v0.1.0/go.mod h1:zbhenjAZHb184qTLMA9ZjW7ThYL0H2mk7Q6pNt4vbaY=
+github.com/go-kit/log v0.2.0/go.mod h1:NwTd00d/i8cPZ3xOwwiv2PO5MOcx78fFErGNcVmBjv0=
+github.com/go-kit/log v0.2.1 h1:MRVx0/zhvdseW+Gza6N9rVzU/IVzaeE1SFI4raAhmBU=
+github.com/go-kit/log v0.2.1/go.mod h1:NwTd00d/i8cPZ3xOwwiv2PO5MOcx78fFErGNcVmBjv0=
 github.com/go-ldap/ldap v3.0.2+incompatible/go.mod h1:qfd9rJvER9Q0/D/Sqn1DfHRoBp40uXYvFoEVrNEPqRc=
 github.com/go-logfmt/logfmt v0.3.0/go.mod h1:Qt1PoO58o5twSAckw1HlFXLmHsOX5/0LbT9GBnD5lWE=
 github.com/go-logfmt/logfmt v0.4.0/go.mod h1:3RMwSq7FuexP4Kalkev3ejPJsZTpXXBr9+V4qmtdjCk=
@@ -883,8 +885,8 @@ github.com/grafana/gomemcache v0.0.0-20220812141859-1e3ae89e91a7 h1:EKJ/x3CNzKFt
 github.com/grafana/gomemcache v0.0.0-20220812141859-1e3ae89e91a7/go.mod h1:H0wQNHz2YrLsuXOZozoeDmnHXkNCRmMW0gwFWDfEZDA=
 github.com/grafana/groupcache_exporter v0.0.0-20220629095919-59a8c6428a43 h1:yOw0zAMMp/GXp6eQ2hc5c9w6RcZ44u+QeyNeeAVoV7w=
 github.com/grafana/groupcache_exporter v0.0.0-20220629095919-59a8c6428a43/go.mod h1:hgtvYpo9DY0PnOJHQTlV12Uecz0jbDK/o0L9Vz4WvLs=
-github.com/grafana/loki v1.6.2-0.20221004074821-dcd2d06823e2 h1:6WUNTejbTbuTTx1mvkALlyQyB4zw18TgB6/Z2bgyC2k=
-github.com/grafana/loki v1.6.2-0.20221004074821-dcd2d06823e2/go.mod h1:Q2Yy5cfPzv3YfJvMzChN0utCYT6WZcCO7JW8N1Yazyo=
+github.com/grafana/loki v1.6.2-0.20221004103251-a8d1839b2245 h1:Q/CIT9O/tEQHEAQmMmyQgtP/NK0KUS94ehrD0ofPnEo=
+github.com/grafana/loki v1.6.2-0.20221004103251-a8d1839b2245/go.mod h1:Q2Yy5cfPzv3YfJvMzChN0utCYT6WZcCO7JW8N1Yazyo=
 github.com/grafana/regexp v0.0.0-20220304095617-2e8d9baf4ac2/go.mod h1:M5qHK+eWfAv8VR/265dIuEpL3fNfeC21tXXp9itM24A=
 github.com/grafana/regexp v0.0.0-20220304100321-149c8afcd6cb h1:wwzNkyaQwcXCzQuKoWz3lwngetmcyg+EhW0fF5lz73M=
 github.com/grafana/regexp v0.0.0-20220304100321-149c8afcd6cb/go.mod h1:M5qHK+eWfAv8VR/265dIuEpL3fNfeC21tXXp9itM24A=

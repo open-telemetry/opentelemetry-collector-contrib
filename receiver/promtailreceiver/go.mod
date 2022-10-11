@@ -5,7 +5,7 @@ go 1.19
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
 
 require (
-	github.com/grafana/loki v1.6.2-0.20221004074821-dcd2d06823e2
+	github.com/grafana/loki v1.6.2-0.20221004103251-a8d1839b2245
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.60.0
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.61.1-0.20221004012633-7cb544d3be36
@@ -244,6 +244,3 @@ replace github.com/cloudflare/cloudflare-go => github.com/cyriltovena/cloudflare
 
 // using fork for custom dialer support - see https://github.com/bradfitz/gomemcache/pull/86
 replace github.com/bradfitz/gomemcache => github.com/grafana/gomemcache v0.0.0-20220812141859-1e3ae89e91a7
-
-// Fork containing a line-buffered logger which should improve logging performance.
-replace github.com/go-kit/log => github.com/dannykopping/go-kit-log v0.2.2-0.20221002180827-5591c1641b6b

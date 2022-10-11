@@ -395,7 +395,7 @@ require (
 	github.com/grafana/dskit v0.0.0-20220928083349-b1b307db4f30 // indirect
 	github.com/grafana/go-gelf/v2 v2.0.1 // indirect
 	github.com/grafana/groupcache_exporter v0.0.0-20220629095919-59a8c6428a43 // indirect
-	github.com/grafana/loki v1.6.2-0.20221004074821-dcd2d06823e2 // indirect
+	github.com/grafana/loki v1.6.2-0.20221004103251-a8d1839b2245 // indirect
 	github.com/grafana/regexp v0.0.0-20220304100321-149c8afcd6cb // indirect
 	github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
@@ -1082,6 +1082,3 @@ replace github.com/cloudflare/cloudflare-go => github.com/cyriltovena/cloudflare
 
 // using fork for custom dialer support - see https://github.com/bradfitz/gomemcache/pull/86
 replace github.com/bradfitz/gomemcache => github.com/grafana/gomemcache v0.0.0-20220812141859-1e3ae89e91a7
-
-// Fork containing a line-buffered logger which should improve logging performance.
-replace github.com/go-kit/log => github.com/dannykopping/go-kit-log v0.2.2-0.20221002180827-5591c1641b6b
