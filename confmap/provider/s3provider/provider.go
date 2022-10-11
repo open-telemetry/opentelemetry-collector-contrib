@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package s3mapprovider // import "github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3mapprovider"
+package s3provider // import "github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider"
 
 import (
 	"context"

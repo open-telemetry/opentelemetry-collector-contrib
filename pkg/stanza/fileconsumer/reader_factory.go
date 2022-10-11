@@ -25,10 +25,10 @@ import (
 
 type readerFactory struct {
 	*zap.SugaredLogger
-	readerConfig   *readerConfig
-	fromBeginning  bool
-	splitterConfig helper.SplitterConfig
-	encodingConfig helper.EncodingConfig
+	readerConfig    *readerConfig
+	fromBeginning   bool
+	splitterFactory splitterFactory
+	encodingConfig  helper.EncodingConfig
 }
 
 func (f *readerFactory) newReader(file *os.File, fp *Fingerprint) (*Reader, error) {
@@ -94,12 +94,10 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 		Offset:       b.offset,
 	}
 
-	var splitter *helper.Splitter
 	if b.splitFunc != nil {
 		r.splitFunc = b.splitFunc
 	} else {
-		splitter, err = b.splitterConfig.Build(false, b.readerConfig.maxLogSize)
-		r.splitFunc = splitter.SplitFunc
+		r.splitFunc, err = b.splitterFactory.Build(b.readerConfig.maxLogSize)
 		if err != nil {
 			return
 		}

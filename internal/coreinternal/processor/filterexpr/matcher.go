@@ -15,6 +15,8 @@
 package filterexpr // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterexpr"
 
 import (
+	"fmt"
+
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -151,5 +153,12 @@ func (m *Matcher) match(env env) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return result.(bool), nil
+
+	v, ok := result.(bool)
+	if !ok {
+		return false, fmt.Errorf("filter returned non-boolean value type=%T result=%v metric=%s, attributes=%v",
+			result, result, env.MetricName, env.attributes.AsRaw())
+	}
+
+	return v, nil
 }
