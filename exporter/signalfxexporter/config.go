@@ -187,11 +187,6 @@ func (cfg *Config) getAPIURL() (*url.URL, error) {
 }
 
 func (cfg *Config) Unmarshal(componentParser *confmap.Conf) (err error) {
-	if componentParser == nil {
-		// Nothing to do if there is no config given.
-		return nil
-	}
-
 	if err = componentParser.Unmarshal(cfg); err != nil {
 		return err
 	}

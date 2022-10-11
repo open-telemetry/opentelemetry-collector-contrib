@@ -112,11 +112,6 @@ func getMapFromSlice(collect []kubelet.MetricGroup) (map[kubelet.MetricGroup]boo
 }
 
 func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
-	if componentParser == nil {
-		// Nothing to do if there is no config given.
-		return nil
-	}
-
 	if err := componentParser.Unmarshal(cfg, confmap.WithErrorUnused()); err != nil {
 		return err
 	}

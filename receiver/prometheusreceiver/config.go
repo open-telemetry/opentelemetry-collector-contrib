@@ -256,9 +256,6 @@ func (cfg *Config) validateTargetAllocatorConfig() error {
 
 // Unmarshal a config.Parser into the config struct.
 func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
-	if componentParser == nil {
-		return nil
-	}
 	// We need custom unmarshaling because prometheus "config" subkey defines its own
 	// YAML unmarshaling routines so we need to do it explicitly.
 

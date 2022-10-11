@@ -50,11 +50,6 @@ type Config struct {
 }
 
 func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
-	if componentParser == nil {
-		// The section is empty nothing to do, using the default config.
-		return nil
-	}
-
 	// Unmarshal but not exact yet so the different keys under config do not
 	// trigger errors, this is needed so that the types of protocol and transport
 	// are read.

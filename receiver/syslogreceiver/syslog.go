@@ -73,11 +73,6 @@ func (f ReceiverType) InputConfig(cfg component.ReceiverConfig) operator.Config 
 }
 
 func (cfg *SysLogConfig) Unmarshal(componentParser *confmap.Conf) error {
-	if componentParser == nil {
-		// Nothing to do if there is no config given.
-		return nil
-	}
-
 	if componentParser.IsSet("tcp") {
 		cfg.InputConfig.TCP = &tcp.NewConfig().BaseConfig
 	} else if componentParser.IsSet("udp") {

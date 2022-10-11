@@ -185,7 +185,7 @@ func TestFailedLoadConfig(t *testing.T) {
 	sub, err = cm.Sub(component.NewIDWithName(typeStr, "empty").String())
 	require.NoError(t, err)
 	err = component.UnmarshalReceiverConfig(sub, cfg)
-	assert.EqualError(t, err, "empty config for Jaeger receiver")
+	assert.EqualError(t, err, "empty \"protocols\" config for Jaeger receiver")
 }
 
 func TestInvalidConfig(t *testing.T) {

@@ -89,9 +89,6 @@ func (cfg *Config) Validate() error {
 
 // Unmarshal a confmap.Conf into the config struct.
 func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
-	if componentParser == nil {
-		return errors.New("empty config for file exporter")
-	}
 	// first load the config normally
 	err := componentParser.Unmarshal(cfg, confmap.WithErrorUnused())
 	if err != nil {

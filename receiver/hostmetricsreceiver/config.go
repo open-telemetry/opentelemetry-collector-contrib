@@ -53,10 +53,6 @@ func (cfg *Config) Validate() error {
 
 // Unmarshal a config.Parser into the config struct.
 func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
-	if componentParser == nil {
-		return nil
-	}
-
 	// load the non-dynamic config normally
 	err := componentParser.Unmarshal(cfg)
 	if err != nil {
