@@ -905,3 +905,12 @@ metrics:
       value_type: int
     attributes: [cache_name, index_aggregation_type]
     enabled: false
+  elasticsearch.index.documents:
+    description: The number of documents for an index.
+    unit: "{documents}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [document_state, index_aggregation_type]
+    enabled: false
