@@ -180,7 +180,6 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 }
 
 func (l *logsReceiver) poll(ctx context.Context) error {
-	l.logger.Info("this is the number of named polls", zap.Int("number", len(l.namedPolls)))
 	var errs error
 	for i := range l.namedPolls {
 		np := l.namedPolls[i]
