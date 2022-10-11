@@ -34,12 +34,6 @@ func MetricsToPRW(namespace string, externalLabels map[string]string, md pmetric
 	return tsMap, md.MetricCount() - len(tsMap), err
 }
 
-type Settings struct {
-	Namespace         string
-	ExternalLabels    map[string]string
-	DisableTargetInfo bool
-}
-
 // FromMetrics converts pmetric.Metrics to prometheus remote write format.
 func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*prompb.TimeSeries, errs error) {
 	tsMap = make(map[string]*prompb.TimeSeries)

@@ -49,6 +49,9 @@ var (
 	value41            = "test_value41"
 	label51            = "_test_label51"
 	value51            = "test_value51"
+	value61            = "test_value61_count"
+	value71            = "test_value71_sum"
+	value81            = "test_value81_bytes"
 	dirty1             = "%"
 	dirty2             = "?"
 	traceIDValue1      = "4303853f086f4f8c86cf198b6551df84"
@@ -124,10 +127,10 @@ var (
 	// valid metrics as input should not return error
 	validMetrics1 = map[string]pmetric.Metric{
 		validIntGauge:    getIntGaugeMetric(validIntGauge, lbs1, intVal1, time1),
-		validDoubleGauge: getDoubleGaugeMetric(validDoubleGauge, lbs1, floatVal1, time1),
+		validDoubleGauge: getDoubleGaugeMetric(validDoubleGauge, "", lbs1, floatVal1, time1),
 		validIntSum:      getIntSumMetric(validIntSum, lbs1, intVal1, time1),
 		suffixedCounter:  getIntSumMetric(suffixedCounter, lbs1, intVal1, time1),
-		validSum:         getSumMetric(validSum, lbs1, floatVal1, time1),
+		validSum:         getSumMetric(validSum, "", false, lbs1, floatVal1, time1),
 		validHistogram:   getHistogramMetric(validHistogram, lbs1, time1, floatVal1, uint64(intVal1), bounds, buckets),
 		validSummary:     getSummaryMetric(validSummary, lbs1, time1, floatVal1, uint64(intVal1), quantiles),
 	}
@@ -275,9 +278,10 @@ func getIntGaugeMetric(name string, attributes pcommon.Map, value int64, ts uint
 	return metric
 }
 
-func getDoubleGaugeMetric(name string, attributes pcommon.Map, value float64, ts uint64) pmetric.Metric {
+func getDoubleGaugeMetric(name string, unit string, attributes pcommon.Map, value float64, ts uint64) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
+	metric.SetUnit(unit)
 	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 	if strings.HasPrefix(name, "staleNaN") {
 		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
@@ -320,9 +324,11 @@ func getEmptyCumulativeSumMetric(name string) pmetric.Metric {
 	return metric
 }
 
-func getSumMetric(name string, attributes pcommon.Map, value float64, ts uint64) pmetric.Metric {
+func getSumMetric(name string, unit string, monotonic bool, attributes pcommon.Map, value float64, ts uint64) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
+	metric.SetUnit(unit)
+	metric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	metric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	dp := metric.Sum().DataPoints().AppendEmpty()
 	if strings.HasPrefix(name, "staleNaN") {
@@ -333,6 +339,13 @@ func getSumMetric(name string, attributes pcommon.Map, value float64, ts uint64)
 
 	dp.SetStartTimestamp(pcommon.Timestamp(0))
 	dp.SetTimestamp(pcommon.Timestamp(ts))
+	metric.Sum().SetIsMonotonic(monotonic)
+	return metric
+}
+
+func getNoneMetric(name string) pmetric.Metric {
+	metric := pmetric.NewMetric()
+	metric.SetName(name)
 	return metric
 }
 
