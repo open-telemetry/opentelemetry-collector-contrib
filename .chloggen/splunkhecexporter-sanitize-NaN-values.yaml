@@ -8,4 +8,4 @@ component: splunkhecexporter
 note: "Santitized value returned from `SummaryDataPoint.Sum` and `HistogramDataPoint.Sum` as it may return `NaN` value."
 
 # One or more tracking issues related to the change
-issues: []
+issues: [14877]
