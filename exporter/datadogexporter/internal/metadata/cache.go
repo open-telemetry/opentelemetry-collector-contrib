@@ -12,33 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 
 import (
-	"net/http"
-	"testing"
+	"time"
 
-	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	gocache "github.com/patrickmn/go-cache"
 )
 
-var (
-	buildInfo = component.BuildInfo{
-		Command: "otelcontribcol",
-		Version: "1.0",
-	}
+const (
+	// cacheKeyHostname specifies the cache key for storing hostnames.
+	cacheKeyHostname = "canonical_hostname"
 )
 
-func TestUserAgent(t *testing.T) {
-
-	assert.Equal(t, UserAgent(buildInfo), "otelcontribcol/1.0")
-}
-
-func TestDDHeaders(t *testing.T) {
-	header := http.Header{}
-	apiKey := "apikey"
-	SetDDHeaders(header, buildInfo, apiKey)
-	assert.Equal(t, header.Get("DD-Api-Key"), apiKey)
-	assert.Equal(t, header.Get("USer-Agent"), "otelcontribcol/1.0")
-
-}
+// hostnameCache specifies a cache used for storing hostname resolution outcomes.
+var hostnameCache = gocache.New(20*time.Minute, 10*time.Minute)
