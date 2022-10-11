@@ -63,7 +63,7 @@ func getTestGaugeMetric() pmetric.Metric {
 
 func getTestAttributes() pcommon.Map {
 	attrs := pcommon.NewMap()
-	attrs.PutString("test", "hello world")
+	attrs.PutStr("test", "hello world")
 	attrs.PutInt("test2", 3)
 	attrs.PutBool("test3", true)
 	return attrs

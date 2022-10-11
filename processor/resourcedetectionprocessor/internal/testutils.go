@@ -41,7 +41,7 @@ func fillAttributeMap(mp map[string]interface{}, attr pcommon.Map) {
 		case float64:
 			attr.PutDouble(k, t)
 		case string:
-			attr.PutString(k, t)
+			attr.PutStr(k, t)
 		}
 	}
 }

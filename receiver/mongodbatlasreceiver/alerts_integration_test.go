@@ -27,7 +27,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -88,11 +87,7 @@ func TestAlertsReceiver(t *testing.T) {
 				require.NoError(t, recv.Shutdown(context.Background()))
 			}()
 
-			payloadFile, err := os.Open(filepath.Join("testdata", "alerts", "sample-payloads", payloadName))
-			require.NoError(t, err)
-			defer payloadFile.Close()
-
-			payload, err := io.ReadAll(payloadFile)
+			payload, err := os.ReadFile(filepath.Join("testdata", "alerts", "sample-payloads", payloadName))
 			require.NoError(t, err)
 
 			req, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%s", testPort), bytes.NewBuffer(payload))
@@ -162,11 +157,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 				require.NoError(t, recv.Shutdown(context.Background()))
 			}()
 
-			payloadFile, err := os.Open(filepath.Join("testdata", "alerts", "sample-payloads", payloadName))
-			require.NoError(t, err)
-			defer payloadFile.Close()
-
-			payload, err := io.ReadAll(payloadFile)
+			payload, err := os.ReadFile(filepath.Join("testdata", "alerts", "sample-payloads", payloadName))
 			require.NoError(t, err)
 
 			req, err := http.NewRequest("POST", fmt.Sprintf("https://localhost:%s", testPort), bytes.NewBuffer(payload))
@@ -286,13 +277,7 @@ func calculateHMACb64(secret string, payload []byte) (string, error) {
 }
 
 func readLogs(path string) (plog.Logs, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return plog.Logs{}, err
-	}
-	defer f.Close()
-
-	b, err := io.ReadAll(f)
+	b, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return plog.Logs{}, err
 	}
@@ -301,13 +286,7 @@ func readLogs(path string) (plog.Logs, error) {
 }
 
 func clientWithCert(path string) (*http.Client, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	b, err := io.ReadAll(f)
+	b, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, err
 	}

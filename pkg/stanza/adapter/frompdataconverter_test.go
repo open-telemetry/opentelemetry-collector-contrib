@@ -54,7 +54,7 @@ func fillBaseMap(m pcommon.Map) {
 	m.PutBool("bool", true)
 	m.PutInt("int", 123)
 	m.PutDouble("double", 12.34)
-	m.PutString("string", "hello")
+	m.PutStr("string", "hello")
 	m.PutEmptyBytes("bytes").FromRaw([]byte{0xa1, 0xf0, 0x02, 0xff})
 }
 
@@ -68,7 +68,7 @@ func complexPdataForNDifferentHosts(count int, n int) plog.Logs {
 		resource := rls.Resource()
 		fillBaseMap(resource.Attributes())
 		fillBaseMap(resource.Attributes().PutEmptyMap("object"))
-		resource.Attributes().PutString("host", fmt.Sprintf("host-%d", i%n))
+		resource.Attributes().PutStr("host", fmt.Sprintf("host-%d", i%n))
 
 		scopeLog := rls.ScopeLogs().AppendEmpty()
 		scopeLog.Scope().SetName("myScope")

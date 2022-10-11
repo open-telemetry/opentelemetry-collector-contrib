@@ -34,7 +34,6 @@ type tracesExporter struct {
 
 	traceExporter ptraceotlp.GRPCClient
 	clientConn    *grpc.ClientConn
-	metadata      metadata.MD
 	callOptions   []grpc.CallOption
 
 	settings component.TelemetrySettings
@@ -73,11 +72,8 @@ func (e *tracesExporter) start(_ context.Context, host component.Host) error {
 	if e.config.Traces.Headers == nil {
 		e.config.Traces.Headers = make(map[string]string)
 	}
-	headers := e.config.Traces.Headers
-	headers["CX-Application-Name"] = e.config.AppName
-	headers["CX-Subsystem-Name"] = e.config.SubSystem
-	headers["Authorization"] = "Bearer " + e.config.PrivateKey
-	e.metadata = metadata.New(headers)
+	e.config.Traces.Headers["Authorization"] = "Bearer " + e.config.PrivateKey
+
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.Traces.WaitForReady),
 	}
@@ -86,17 +82,37 @@ func (e *tracesExporter) start(_ context.Context, host component.Host) error {
 }
 
 func (e *tracesExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
-	req := ptraceotlp.NewRequestFromTraces(td)
 
-	_, err := e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	return processError(err)
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		resourceSpan := rss.At(i)
+		appName, subsystem := e.config.getMetadataFromResource(resourceSpan.Resource())
+
+		tr := ptrace.NewTraces()
+		newRss := tr.ResourceSpans().AppendEmpty()
+		resourceSpan.CopyTo(newRss)
+		req := ptraceotlp.NewRequestFromTraces(tr)
+
+		_, err := e.traceExporter.Export(e.enhanceContext(ctx, appName, subsystem), req, e.callOptions...)
+		if err != nil {
+			return processError(err)
+		}
+	}
+
+	return nil
 }
 func (e *tracesExporter) shutdown(context.Context) error {
 	return e.clientConn.Close()
 }
-func (e *tracesExporter) enhanceContext(ctx context.Context) context.Context {
-	if e.metadata.Len() > 0 {
-		return metadata.NewOutgoingContext(ctx, e.metadata)
+
+func (e *tracesExporter) enhanceContext(ctx context.Context, appName, subSystemName string) context.Context {
+	headers := make(map[string]string)
+	for k, v := range e.config.Traces.Headers {
+		headers[k] = v
 	}
-	return ctx
+
+	headers["CX-Application-Name"] = appName
+	headers["CX-Subsystem-Name"] = subSystemName
+
+	return metadata.NewOutgoingContext(ctx, metadata.New(headers))
 }

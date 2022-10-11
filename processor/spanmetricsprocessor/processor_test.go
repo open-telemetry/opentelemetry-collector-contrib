@@ -518,15 +518,15 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metricID]bool) {
 	mID := metricID{}
 	wantDimensions := map[string]pcommon.Value{
-		stringAttrName:         pcommon.NewValueString("stringAttrValue"),
+		stringAttrName:         pcommon.NewValueStr("stringAttrValue"),
 		intAttrName:            pcommon.NewValueInt(99),
 		doubleAttrName:         pcommon.NewValueDouble(99.99),
 		boolAttrName:           pcommon.NewValueBool(true),
 		nullAttrName:           pcommon.NewValueEmpty(),
 		arrayAttrName:          pcommon.NewValueSlice(),
 		mapAttrName:            pcommon.NewValueMap(),
-		notInSpanAttrName0:     pcommon.NewValueString("defaultNotInSpanAttrVal"),
-		regionResourceAttrName: pcommon.NewValueString(sampleRegion),
+		notInSpanAttrName0:     pcommon.NewValueStr("defaultNotInSpanAttrVal"),
+		regionResourceAttrName: pcommon.NewValueStr(sampleRegion),
 	}
 	dp.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch k {
@@ -604,10 +604,10 @@ func buildSampleTrace() ptrace.Traces {
 
 func initServiceSpans(serviceSpans serviceSpans, spans ptrace.ResourceSpans) {
 	if serviceSpans.serviceName != "" {
-		spans.Resource().Attributes().PutString(conventions.AttributeServiceName, serviceSpans.serviceName)
+		spans.Resource().Attributes().PutStr(conventions.AttributeServiceName, serviceSpans.serviceName)
 	}
 
-	spans.Resource().Attributes().PutString(regionResourceAttrName, sampleRegion)
+	spans.Resource().Attributes().PutStr(regionResourceAttrName, sampleRegion)
 
 	ils := spans.ScopeSpans().AppendEmpty()
 	for _, span := range serviceSpans.spans {
@@ -622,7 +622,7 @@ func initSpan(span span, s ptrace.Span) {
 	now := time.Now()
 	s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
 	s.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(sampleLatencyDuration)))
-	s.Attributes().PutString(stringAttrName, "stringAttrValue")
+	s.Attributes().PutStr(stringAttrName, "stringAttrValue")
 	s.Attributes().PutInt(intAttrName, 99)
 	s.Attributes().PutDouble(doubleAttrName, 99.99)
 	s.Attributes().PutBool(boolAttrName, true)

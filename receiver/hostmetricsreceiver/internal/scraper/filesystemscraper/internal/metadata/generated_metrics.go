@@ -92,11 +92,11 @@ func (m *metricSystemFilesystemInodesUsage) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("device", deviceAttributeValue)
-	dp.Attributes().PutString("mode", modeAttributeValue)
-	dp.Attributes().PutString("mountpoint", mountpointAttributeValue)
-	dp.Attributes().PutString("type", typeAttributeValue)
-	dp.Attributes().PutString("state", stateAttributeValue)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("mode", modeAttributeValue)
+	dp.Attributes().PutStr("mountpoint", mountpointAttributeValue)
+	dp.Attributes().PutStr("type", typeAttributeValue)
+	dp.Attributes().PutStr("state", stateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -149,11 +149,11 @@ func (m *metricSystemFilesystemUsage) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("device", deviceAttributeValue)
-	dp.Attributes().PutString("mode", modeAttributeValue)
-	dp.Attributes().PutString("mountpoint", mountpointAttributeValue)
-	dp.Attributes().PutString("type", typeAttributeValue)
-	dp.Attributes().PutString("state", stateAttributeValue)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("mode", modeAttributeValue)
+	dp.Attributes().PutStr("mountpoint", mountpointAttributeValue)
+	dp.Attributes().PutStr("type", typeAttributeValue)
+	dp.Attributes().PutStr("state", stateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -204,10 +204,10 @@ func (m *metricSystemFilesystemUtilization) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutString("device", deviceAttributeValue)
-	dp.Attributes().PutString("mode", modeAttributeValue)
-	dp.Attributes().PutString("mountpoint", mountpointAttributeValue)
-	dp.Attributes().PutString("type", typeAttributeValue)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("mode", modeAttributeValue)
+	dp.Attributes().PutStr("mountpoint", mountpointAttributeValue)
+	dp.Attributes().PutStr("type", typeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

@@ -21,60 +21,72 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfigNewExporter(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
-	assert.Equal(t, 2, len(cfg.Exporters))
-
-	actualCfg := cfg.Exporters[config.NewComponentIDWithName(typeStr, "allsettings")].(*Config)
-	expectedCfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "allsettings")),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Headers: map[string]string{
-				"X-Custom-Header": "loki_rocks",
-			},
-			Endpoint: "https://loki:3100/loki/api/v1/push",
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
-					CAFile:   "/var/lib/mycert.pem",
-					CertFile: "certfile",
-					KeyFile:  "keyfile",
+	tests := []struct {
+		id       config.ComponentID
+		expected config.Exporter
+	}{
+		{
+			id: config.NewComponentIDWithName(typeStr, "allsettings"),
+			expected: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Headers: map[string]string{
+						"X-Custom-Header": "loki_rocks",
+					},
+					Endpoint: "https://loki:3100/loki/api/v1/push",
+					TLSSetting: configtls.TLSClientSetting{
+						TLSSetting: configtls.TLSSetting{
+							CAFile:   "/var/lib/mycert.pem",
+							CertFile: "certfile",
+							KeyFile:  "keyfile",
+						},
+						Insecure: true,
+					},
+					ReadBufferSize:  123,
+					WriteBufferSize: 345,
+					Timeout:         time.Second * 10,
 				},
-				Insecure: true,
+				RetrySettings: exporterhelper.RetrySettings{
+					Enabled:         true,
+					InitialInterval: 10 * time.Second,
+					MaxInterval:     1 * time.Minute,
+					MaxElapsedTime:  10 * time.Minute,
+				},
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: 2,
+					QueueSize:    10,
+				},
 			},
-			ReadBufferSize:  123,
-			WriteBufferSize: 345,
-			Timeout:         time.Second * 10,
-		},
-		RetrySettings: exporterhelper.RetrySettings{
-			Enabled:         true,
-			InitialInterval: 10 * time.Second,
-			MaxInterval:     1 * time.Minute,
-			MaxElapsedTime:  10 * time.Minute,
-		},
-		QueueSettings: exporterhelper.QueueSettings{
-			Enabled:      true,
-			NumConsumers: 2,
-			QueueSize:    10,
 		},
 	}
-	require.Equal(t, &expectedCfg, actualCfg)
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalExporter(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
 
 func TestIsLegacy(t *testing.T) {

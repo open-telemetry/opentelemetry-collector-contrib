@@ -71,7 +71,7 @@ func TestAttributesMapToOC(t *testing.T) {
 		DroppedAttributesCount: 234,
 	}
 	attrs := pcommon.NewMap()
-	attrs.PutString("abc", "def")
+	attrs.PutStr("abc", "def")
 	assert.EqualValues(t, ocAttrs, attributesMapToOCSpanAttributes(attrs, 234))
 
 	ocAttrs.AttributeMap["intval"] = &octrace.AttributeValue{

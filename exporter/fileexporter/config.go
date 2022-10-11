@@ -18,6 +18,12 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
+)
+
+const (
+	rotationFieldName = "rotation"
+	backupsFieldName  = "max_backups"
 )
 
 // Config defines configuration for file exporter.
@@ -28,7 +34,7 @@ type Config struct {
 	Path string `mapstructure:"path"`
 
 	// Rotation defines an option about rotation of telemetry files
-	Rotation Rotation `mapstructure:"rotation"`
+	Rotation *Rotation `mapstructure:"rotation"`
 
 	// FormatType define the data format of encoded telemetry data
 	// Options:
@@ -78,4 +84,37 @@ func (cfg *Config) Validate() error {
 		return errors.New("compression is not supported")
 	}
 	return nil
+}
+
+// Unmarshal a confmap.Conf into the config struct.
+func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
+	if componentParser == nil {
+		return errors.New("empty config for file exporter")
+	}
+	// first load the config normally
+	err := componentParser.UnmarshalExact(cfg)
+	if err != nil {
+		return err
+	}
+
+	// next manually search for protocols in the confmap.Conf,
+	// if rotation is not present it means it is disabled.
+	if !componentParser.IsSet(rotationFieldName) {
+		return nil
+	}
+	rotationConfmap, err := componentParser.Sub(rotationFieldName)
+	if err != nil {
+		return err
+	}
+	rotationCfg := newDefaultRotationConfig()
+	err = rotationConfmap.UnmarshalExact(rotationCfg)
+	if err != nil {
+		return err
+	}
+	cfg.Rotation = rotationCfg
+	return nil
+}
+
+func newDefaultRotationConfig() *Rotation {
+	return &Rotation{MaxBackups: defaultMaxBackups}
 }

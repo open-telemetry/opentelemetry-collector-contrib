@@ -230,7 +230,7 @@ func attributesToTagsReplaceSource(attributes ...pcommon.Map) map[string]string 
 func newMap(tags map[string]string) pcommon.Map {
 	m := pcommon.NewMap()
 	for key, value := range tags {
-		m.PutString(key, value)
+		m.PutStr(key, value)
 	}
 	return m
 }

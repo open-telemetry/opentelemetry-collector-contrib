@@ -825,7 +825,7 @@ func populateAttributes(t *testing.T, attrMap pcommon.Map, attributes map[string
 	for key, val := range attributes {
 		switch casted := val.(type) {
 		case string:
-			attrMap.PutString(key, casted)
+			attrMap.PutStr(key, casted)
 		case int64:
 			attrMap.PutInt(key, casted)
 		case int:
