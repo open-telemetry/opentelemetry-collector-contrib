@@ -161,7 +161,6 @@ In order to facilitate proper label usage and to empower Code Owners, you are ab
 |--------------------|--------------------|
 | `good first issue` | /good-first-issue  |
 | `help wanted`      | /help-wanted       |
-| `never stale`      | /never-stale       |
 
 Currently, labels can only be created via comment, not deleted.  You must make a new comment; you cannot edit an existing comment.
 
