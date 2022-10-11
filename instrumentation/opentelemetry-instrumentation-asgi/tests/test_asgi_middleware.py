@@ -300,6 +300,20 @@ class TestAsgiApplication(AsgiTestBase):
                 span.resource.attributes["service-test-key"], "value"
             )
 
+    def test_no_op_tracer_provider_otel_asgi(self):
+        app = otel_asgi.OpenTelemetryMiddleware(
+            simple_asgi, tracer_provider=trace_api.NoOpTracerProvider()
+        )
+        self.seed_app(app)
+        self.send_default_request()
+
+        response_start, response_body, *_ = self.get_all_output()
+        self.assertEqual(response_body["body"], b"*")
+        self.assertEqual(response_start["status"], 200)
+
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 0)
+
     def test_behavior_with_scope_server_as_none(self):
         """Test that middleware is ok when server is none in scope."""
 
