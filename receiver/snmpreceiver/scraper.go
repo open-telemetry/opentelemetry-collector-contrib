@@ -99,21 +99,18 @@ func newScraper(logger *zap.Logger, cfg *Config, settings component.ReceiverCrea
 
 // start gets the client ready
 func (s *snmpScraper) start(_ context.Context, host component.Host) (err error) {
-	s.client, err = newClient(s.cfg, host, s.settings.TelemetrySettings, s.logger)
-	if err != nil {
-		return err
-	}
+	s.client, err = newClient(s.cfg, s.logger)
 
-	return s.client.Connect()
-}
-
-// shutdown closes the client
-func (s *snmpScraper) shutdown(_ context.Context, _ component.Host) error {
-	return s.client.Close()
+	return err
 }
 
 // scrape collects and creates OTEL metrics from a SNMP environment
 func (s *snmpScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+	if err := s.client.Connect(); err != nil {
+		return pmetric.NewMetrics(), fmt.Errorf("problem connecting to SNMP host: %w", err)
+	}
+	defer s.client.Close()
+
 	// Get a basic ResourceMetrics prepped for metrics with no resource attributes
 	resourceMetrics := pmetric.NewResourceMetrics()
 	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
@@ -426,37 +423,6 @@ func indexedDataToMetric(
 			metric.MoveTo(resourceMetric)
 			metricsByResource.putMetric(resourceKey, metricName, &resourceMetric)
 		}
-
-		// // Set attributes for this metric's datapoint based on the previously gathered attributes.
-		// // Keys will be determined from the related attribute config and values will come a few
-		// // different places.
-		// // Enum attribute value - comes from the metric config's attribute data
-		// // Indexed prefix attribute value - comes from the current SNMP data's index and the attribute
-		// // config's prefix value
-		// // Indexed OID attribute value - comes from the previously collected indexed attribute data
-		// // using the current index and attribute config to access the correct value
-		// dataPoint := pmetric.NewNumberDataPoint()
-		// for _, attribute := range metricAttributes {
-		// 	attributeCfg := cfg.Attributes[attribute.Name]
-		// 	attributeKey := attribute.Name
-		// 	if attributeCfg.Value != "" {
-		// 		attributeKey = attributeCfg.Value
-		// 	}
-		// 	attributeValue := attribute.Value
-		// 	if attributeCfg.IndexedValuePrefix != "" {
-		// 		attributeValue = attributeCfg.IndexedValuePrefix + indexString
-		// 	} else if attributeCfg.OID != "" {
-		// 		attrKey := indexedAttributeKey{
-		// 			parentOID: attributeCfg.OID,
-		// 			oidIndex:  indexString,
-		// 		}
-		// 		attributeValue = indexedAttributeValues[attrKey]
-		// 		if attributeValue == "" {
-		// 			return fmt.Errorf("not creating indexed metric '%s' or resource as metric OID attribute value is blank", metricName)
-		// 		}
-		// 	}
-		// 	dataPoint.Attributes().PutString(attributeKey, attributeValue)
-		// }
 
 		return nil
 	}

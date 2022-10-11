@@ -115,49 +115,6 @@ func TestStart(t *testing.T) {
 	}
 }
 
-func TestShutdown(t *testing.T) {
-	testCases := []struct {
-		desc     string
-		testFunc func(*testing.T)
-	}{
-		{
-			desc: "Client has error closing",
-			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				expectedErr := errors.New("Problem closing")
-				mockClient.On("Close", mock.Anything).Return(expectedErr)
-
-				scraper := &snmpScraper{
-					cfg:      &Config{},
-					settings: componenttest.NewNopReceiverCreateSettings(),
-					client:   mockClient,
-				}
-				err := scraper.shutdown(context.Background(), componenttest.NewNopHost())
-				require.ErrorIs(t, err, expectedErr)
-			},
-		},
-		{
-			desc: "Client closes fine",
-			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				mockClient.On("Close", mock.Anything).Return(nil)
-
-				scraper := &snmpScraper{
-					cfg:      &Config{},
-					settings: componenttest.NewNopReceiverCreateSettings(),
-					client:   mockClient,
-				}
-				err := scraper.shutdown(context.Background(), componenttest.NewNopHost())
-				require.NoError(t, err)
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.desc, tc.testFunc)
-	}
-}
-
 func TestScrape(t *testing.T) {
 	testCases := []struct {
 		desc     string
@@ -168,7 +125,8 @@ func TestScrape(t *testing.T) {
 			desc: "No Metric Configs returns no metrics with no error",
 			testFunc: func(t *testing.T) {
 				mockClient := new(MockClient)
-
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				scraper := &snmpScraper{
 					cfg:      &Config{},
 					settings: componenttest.NewNopReceiverCreateSettings(),
@@ -185,6 +143,8 @@ func TestScrape(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				mockClient := new(MockClient)
 				clientErr := errors.New("problem getting scrape data")
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything, mock.Anything).Run(
 					func(args mock.Arguments) {
 						scraperErrors := args.Get(2).(*scrapererror.ScrapeErrors)
@@ -224,6 +184,8 @@ func TestScrape(t *testing.T) {
 				}
 				expectedProccessFnErr := fmt.Errorf(errMsgBadValueType, "1")
 				expectedScrapeErr := errors.New("scrape error")
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything, mock.Anything).Run(
 					func(args mock.Arguments) {
 						processFn := args.Get(1).(processFunc)
@@ -263,6 +225,8 @@ func TestScrape(t *testing.T) {
 					value:     int64(1),
 					valueType: integerVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(clientSNMPData)
@@ -312,6 +276,8 @@ func TestScrape(t *testing.T) {
 					value:     int64(1),
 					valueType: integerVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(clientSNMPData)
@@ -361,6 +327,8 @@ func TestScrape(t *testing.T) {
 					value:     float64(1.0),
 					valueType: floatVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(clientSNMPData)
@@ -412,6 +380,8 @@ func TestScrape(t *testing.T) {
 					value:     int64(1),
 					valueType: integerVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(clientSNMPData)
@@ -468,6 +438,8 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData1)
@@ -531,6 +503,8 @@ func TestScrape(t *testing.T) {
 					value:     int64(1),
 					valueType: integerVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(clientSNMPData)
@@ -604,6 +578,8 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData1)
@@ -671,6 +647,8 @@ func TestScrape(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				mockClient := new(MockClient)
 				clientErr := errors.New("problem getting data")
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(
 					func(args mock.Arguments) {
 						scraperErrors := args.Get(2).(*scrapererror.ScrapeErrors)
@@ -717,6 +695,8 @@ func TestScrape(t *testing.T) {
 				expectedScrapeErr1 := errors.New("scrape error1")
 				expectedScrapeErr2 := errors.New("scrape error2")
 				var expectedScrapeErr error
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(
 					func(args mock.Arguments) {
 						processFn := args.Get(1).(processFunc)
@@ -767,6 +747,8 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData1)
@@ -835,6 +817,8 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData1)
@@ -903,6 +887,8 @@ func TestScrape(t *testing.T) {
 					value:     float64(2.0),
 					valueType: floatVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData1)
@@ -973,6 +959,8 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData1)
@@ -1048,6 +1036,8 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
@@ -1145,6 +1135,8 @@ func TestScrape(t *testing.T) {
 					value:     int64(3),
 					valueType: integerVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
@@ -1246,6 +1238,8 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
@@ -1336,6 +1330,8 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(
 					func(args mock.Arguments) {
 						scraperErrors := args.Get(2).(*scrapererror.ScrapeErrors)
@@ -1421,6 +1417,8 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				expectedErr1 := "returned attribute SNMP data type for OID '.0.1' from column OID '.0' is not supported"
 				expectedErr2 := "returned attribute SNMP data type for OID '.0.2' from column OID '.0' is not supported"
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
@@ -1512,6 +1510,8 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
@@ -1599,6 +1599,8 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
@@ -1686,6 +1688,8 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
@@ -1773,6 +1777,8 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
@@ -1860,6 +1866,8 @@ func TestScrape(t *testing.T) {
 					value:     float64(2.0),
 					valueType: floatVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
@@ -1942,6 +1950,8 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(
 					func(args mock.Arguments) {
 						scraperErrors := args.Get(2).(*scrapererror.ScrapeErrors)
@@ -2022,6 +2032,8 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				expectedErr1 := fmt.Sprintf(errMsgIndexedAttributesBadValueType, ".0.1", ".0")
 				expectedErr2 := fmt.Sprintf(errMsgIndexedAttributesBadValueType, ".0.2", ".0")
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
@@ -2120,6 +2132,8 @@ func TestScrape(t *testing.T) {
 					value:     float64(2.0),
 					valueType: floatVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
@@ -2232,6 +2246,8 @@ func TestScrape(t *testing.T) {
 					value:     float64(2.0),
 					valueType: floatVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
@@ -2332,6 +2348,8 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
 				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
