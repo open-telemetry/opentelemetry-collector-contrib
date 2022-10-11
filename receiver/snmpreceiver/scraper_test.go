@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
@@ -64,32 +65,19 @@ func (_m *MockClient) Connect() error {
 	return r0
 }
 
-// GetIndexedData provides a mock function with given fields: oids, processFn
-func (_m *MockClient) GetIndexedData(oids []string, processFn processFunc) error {
-	ret := _m.Called(oids, processFn)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func([]string, processFunc) error); ok {
-		r0 = rf(oids, processFn)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
+// GetIndexedData provides a mock function with given fields: oids, processFn, scraperErrors
+func (_m *MockClient) GetIndexedData(oids []string, processFn processFunc, scraperErrors *scrapererror.ScrapeErrors) {
+	_m.Called(oids, processFn, scraperErrors)
 }
 
-// GetScalarData provides a mock function with given fields: oids, processFn
-func (_m *MockClient) GetScalarData(oids []string, processFn processFunc) error {
-	ret := _m.Called(oids, processFn)
+// GetScalarData provides a mock function with given fields: oids, processFn, scraperErrors
+func (_m *MockClient) GetScalarData(oids []string, processFn processFunc, scraperErrors *scrapererror.ScrapeErrors) {
+	_m.Called(oids, processFn, scraperErrors)
+}
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func([]string, processFunc) error); ok {
-		r0 = rf(oids, processFn)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
+type newClientT interface {
+	mock.TestingT
+	Cleanup(func())
 }
 
 func TestStart(t *testing.T) {
@@ -176,7 +164,8 @@ func TestScrape(t *testing.T) {
 		testFunc func(*testing.T)
 	}{
 		{
-			desc: "No Metric Configs returns error",
+			// Config is responsible for making sure this would never happen
+			desc: "No Metric Configs returns no metrics with no error",
 			testFunc: func(t *testing.T) {
 				mockClient := new(MockClient)
 
@@ -187,16 +176,21 @@ func TestScrape(t *testing.T) {
 					logger:   zap.NewNop(),
 				}
 				metrics, err := scraper.scrape(context.Background())
-				require.ErrorIs(t, err, errScrape)
+				require.NoError(t, err)
 				require.Equal(t, metrics.MetricCount(), 0)
 			},
 		},
 		{
-			desc: "Scalar scrape errors and no indexed metric configs returns error",
+			desc: "Scalar scrape errors and no indexed metric configs adds error",
 			testFunc: func(t *testing.T) {
 				mockClient := new(MockClient)
-				clientErr := errors.New("problem getting data")
-				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return(clientErr)
+				clientErr := errors.New("problem getting scrape data")
+				mockClient.On("GetScalarData", mock.Anything, mock.Anything, mock.Anything).Run(
+					func(args mock.Arguments) {
+						scraperErrors := args.Get(2).(*scrapererror.ScrapeErrors)
+						scraperErrors.AddPartial(1, clientErr)
+					},
+				)
 
 				scraper := &snmpScraper{
 					cfg: &Config{
@@ -215,7 +209,7 @@ func TestScrape(t *testing.T) {
 					logger:   zap.NewNop(),
 				}
 				metrics, err := scraper.scrape(context.Background())
-				require.ErrorIs(t, err, errScrape)
+				require.EqualError(t, err, clientErr.Error())
 				require.Equal(t, metrics.MetricCount(), 0)
 			},
 		},
@@ -228,11 +222,17 @@ func TestScrape(t *testing.T) {
 					value:     "test",
 					valueType: stringVal,
 				}
-				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
-					processFn := args.Get(1).(processFunc)
-					returnErr := processFn(clientSNMPData)
-					require.EqualError(t, returnErr, fmt.Sprintf(errMsgBadValueType, "1"))
-				}).Return(errNoProcessGetOIDs)
+				expectedProccessFnErr := fmt.Errorf(errMsgBadValueType, "1")
+				expectedScrapeErr := errors.New("scrape error")
+				mockClient.On("GetScalarData", mock.Anything, mock.Anything, mock.Anything).Run(
+					func(args mock.Arguments) {
+						processFn := args.Get(1).(processFunc)
+						scraperErrors := args.Get(2).(*scrapererror.ScrapeErrors)
+						returnErr := processFn(clientSNMPData)
+						require.EqualError(t, returnErr, expectedProccessFnErr.Error())
+						scraperErrors.AddPartial(1, expectedScrapeErr)
+					},
+				)
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Metrics: map[string]*MetricConfig{
@@ -250,7 +250,7 @@ func TestScrape(t *testing.T) {
 					logger:   zap.NewNop(),
 				}
 				metrics, err := scraper.scrape(context.Background())
-				require.ErrorIs(t, err, errScrape)
+				require.EqualError(t, err, expectedScrapeErr.Error())
 				require.Equal(t, metrics.MetricCount(), 0)
 			},
 		},
@@ -263,7 +263,7 @@ func TestScrape(t *testing.T) {
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetScalarData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(clientSNMPData)
 					require.NoError(t, returnErr)
@@ -312,7 +312,7 @@ func TestScrape(t *testing.T) {
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetScalarData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(clientSNMPData)
 					require.NoError(t, returnErr)
@@ -361,7 +361,7 @@ func TestScrape(t *testing.T) {
 					value:     float64(1.0),
 					valueType: floatVal,
 				}
-				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetScalarData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(clientSNMPData)
 					require.NoError(t, returnErr)
@@ -412,7 +412,7 @@ func TestScrape(t *testing.T) {
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetScalarData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(clientSNMPData)
 					require.NoError(t, returnErr)
@@ -468,7 +468,7 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
-				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetScalarData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData1)
 					require.NoError(t, returnErr)
@@ -531,7 +531,7 @@ func TestScrape(t *testing.T) {
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetScalarData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(clientSNMPData)
 					require.NoError(t, returnErr)
@@ -604,7 +604,7 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
-				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetScalarData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData1)
 					require.NoError(t, returnErr)
@@ -667,12 +667,16 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "Indexed scrape errors and no scalar metric configs returns error",
+			desc: "Indexed scrape errors and no scalar metric configs adds error",
 			testFunc: func(t *testing.T) {
 				mockClient := new(MockClient)
 				clientErr := errors.New("problem getting data")
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return(clientErr)
-
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(
+					func(args mock.Arguments) {
+						scraperErrors := args.Get(2).(*scrapererror.ScrapeErrors)
+						scraperErrors.AddPartial(1, clientErr)
+					},
+				)
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Metrics: map[string]*MetricConfig{
@@ -690,7 +694,7 @@ func TestScrape(t *testing.T) {
 					logger:   zap.NewNop(),
 				}
 				metrics, err := scraper.scrape(context.Background())
-				require.ErrorIs(t, err, errScrape)
+				require.EqualError(t, err, clientErr.Error())
 				require.Equal(t, metrics.MetricCount(), 0)
 			},
 		},
@@ -710,13 +714,22 @@ func TestScrape(t *testing.T) {
 					value:     "test2",
 					valueType: stringVal,
 				}
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
-					processFn := args.Get(1).(processFunc)
-					returnErr := processFn(snmpData1)
-					require.EqualError(t, returnErr, fmt.Sprintf(errMsgIndexedBadValueType, ".1.1", ".1"))
-					returnErr = processFn(snmpData2)
-					require.EqualError(t, returnErr, fmt.Sprintf(errMsgIndexedBadValueType, ".1.2", ".1"))
-				}).Return(errNoProcessGetOIDs)
+				expectedScrapeErr1 := errors.New("scrape error1")
+				expectedScrapeErr2 := errors.New("scrape error2")
+				var expectedScrapeErr error
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(
+					func(args mock.Arguments) {
+						processFn := args.Get(1).(processFunc)
+						scraperErrors := args.Get(2).(*scrapererror.ScrapeErrors)
+						returnErr := processFn(snmpData1)
+						require.EqualError(t, returnErr, fmt.Sprintf(errMsgIndexedBadValueType, ".1.1", ".1"))
+						returnErr = processFn(snmpData2)
+						scraperErrors.AddPartial(1, expectedScrapeErr1)
+						require.EqualError(t, returnErr, fmt.Sprintf(errMsgIndexedBadValueType, ".1.2", ".1"))
+						scraperErrors.AddPartial(1, expectedScrapeErr2)
+						expectedScrapeErr = scraperErrors.Combine()
+					},
+				)
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Metrics: map[string]*MetricConfig{
@@ -734,7 +747,7 @@ func TestScrape(t *testing.T) {
 					logger:   zap.NewNop(),
 				}
 				metrics, err := scraper.scrape(context.Background())
-				require.ErrorIs(t, err, errScrape)
+				require.EqualError(t, err, expectedScrapeErr.Error())
 				require.Equal(t, metrics.MetricCount(), 0)
 			},
 		},
@@ -754,7 +767,7 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData1)
 					require.NoError(t, returnErr)
@@ -822,7 +835,7 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData1)
 					require.NoError(t, returnErr)
@@ -890,7 +903,7 @@ func TestScrape(t *testing.T) {
 					value:     float64(2.0),
 					valueType: floatVal,
 				}
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData1)
 					require.NoError(t, returnErr)
@@ -960,7 +973,7 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData1)
 					require.NoError(t, returnErr)
@@ -1035,12 +1048,12 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
-				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetScalarData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
 					require.NoError(t, returnErr)
 				}).Return(nil)
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData1)
 					require.NoError(t, returnErr)
@@ -1132,7 +1145,7 @@ func TestScrape(t *testing.T) {
 					value:     int64(3),
 					valueType: integerVal,
 				}
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
 					require.NoError(t, returnErr)
@@ -1233,14 +1246,14 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
 					require.NoError(t, returnErr)
 					returnErr = processFn(snmpData1)
 					require.NoError(t, returnErr)
 				}).Return(nil).Once()
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData2)
 					require.NoError(t, returnErr)
@@ -1307,11 +1320,42 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "Indexed attribute scrape error does not create metric",
+			desc: "Indexed attribute scrape error does not create metric datapoints",
 			testFunc: func(t *testing.T) {
 				mockClient := new(MockClient)
 				clientErr := errors.New("problem getting data")
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return(clientErr)
+				snmpData0 := snmpData{
+					parentOID: ".1",
+					oid:       ".1.1",
+					value:     int64(1),
+					valueType: integerVal,
+				}
+				snmpData1 := snmpData{
+					parentOID: ".1",
+					oid:       ".1.2",
+					value:     int64(2),
+					valueType: integerVal,
+				}
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(
+					func(args mock.Arguments) {
+						scraperErrors := args.Get(2).(*scrapererror.ScrapeErrors)
+						scraperErrors.AddPartial(1, clientErr)
+					},
+				).Once()
+				metricName := "metric1"
+				expectedErr := fmt.Sprintf(errMsgOIDAttributeEmptyValue, metricName)
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(
+					func(args mock.Arguments) {
+						scraperErrors := args.Get(2).(*scrapererror.ScrapeErrors)
+						processFn := args.Get(1).(processFunc)
+						returnErr := processFn(snmpData0)
+						require.EqualError(t, returnErr, expectedErr)
+						scraperErrors.AddPartial(1, returnErr)
+						returnErr = processFn(snmpData1)
+						require.EqualError(t, returnErr, expectedErr)
+						scraperErrors.AddPartial(1, returnErr)
+					},
+				).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Attributes: map[string]*AttributeConfig{
@@ -1345,12 +1389,12 @@ func TestScrape(t *testing.T) {
 				}
 
 				metrics, err := scraper.scrape(context.Background())
-				require.ErrorIs(t, err, errScrape)
+				require.EqualError(t, err, fmt.Sprintf("%s; %s; %s", clientErr, expectedErr, expectedErr))
 				require.Equal(t, metrics.MetricCount(), 0)
 			},
 		},
 		{
-			desc: "Indexed attribute scrape returning bad value type does not create metric",
+			desc: "Indexed attribute scrape returning bad value type does not create metric data points",
 			testFunc: func(t *testing.T) {
 				mockClient := new(MockClient)
 				snmpData0 := snmpData{
@@ -1365,13 +1409,44 @@ func TestScrape(t *testing.T) {
 					value:     false,
 					valueType: notSupportedVal,
 				}
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				snmpData2 := snmpData{
+					parentOID: ".1",
+					oid:       ".1.1",
+					value:     int64(1),
+					valueType: integerVal,
+				}
+				snmpData3 := snmpData{
+					parentOID: ".1",
+					oid:       ".1.2",
+					value:     int64(2),
+					valueType: integerVal,
+				}
+				expectedErr1 := "returned attribute SNMP data type for OID '.0.1' from column OID '.0' is not supported"
+				expectedErr2 := "returned attribute SNMP data type for OID '.0.2' from column OID '.0' is not supported"
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+					scraperErrors := args.Get(2).(*scrapererror.ScrapeErrors)
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
-					require.EqualError(t, returnErr, fmt.Sprintf(errMsgIndexedAttributesBadValueType, ".0.1", ".0"))
+					require.EqualError(t, returnErr, expectedErr1)
+					scraperErrors.AddPartial(1, returnErr)
 					returnErr = processFn(snmpData1)
-					require.EqualError(t, returnErr, fmt.Sprintf(errMsgIndexedAttributesBadValueType, ".0.2", ".0"))
-				}).Return(errNoWalkOIDs)
+					require.EqualError(t, returnErr, expectedErr2)
+					scraperErrors.AddPartial(1, returnErr)
+				}).Once()
+				metricName := "metric1"
+				expectedErr := fmt.Sprintf(errMsgOIDAttributeEmptyValue, metricName)
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(
+					func(args mock.Arguments) {
+						scraperErrors := args.Get(2).(*scrapererror.ScrapeErrors)
+						processFn := args.Get(1).(processFunc)
+						returnErr := processFn(snmpData2)
+						require.EqualError(t, returnErr, expectedErr)
+						scraperErrors.AddPartial(1, returnErr)
+						returnErr = processFn(snmpData3)
+						require.EqualError(t, returnErr, expectedErr)
+						scraperErrors.AddPartial(1, returnErr)
+					},
+				).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Attributes: map[string]*AttributeConfig{
@@ -1405,7 +1480,7 @@ func TestScrape(t *testing.T) {
 				}
 
 				metrics, err := scraper.scrape(context.Background())
-				require.ErrorIs(t, err, errScrape)
+				require.EqualError(t, err, fmt.Sprintf("%s; %s; %s; %s", expectedErr1, expectedErr2, expectedErr, expectedErr))
 				require.Equal(t, metrics.MetricCount(), 0)
 			},
 		},
@@ -1437,14 +1512,14 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
-				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
 					require.NoError(t, returnErr)
 					returnErr = processFn(snmpData1)
 					require.NoError(t, returnErr)
 				}).Return(nil).Once()
-				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData2)
 					require.NoError(t, returnErr)
@@ -1524,14 +1599,14 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
-				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
 					require.NoError(t, returnErr)
 					returnErr = processFn(snmpData1)
 					require.NoError(t, returnErr)
 				}).Return(nil).Once()
-				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData2)
 					require.NoError(t, returnErr)
@@ -1611,14 +1686,14 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
-				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
 					require.NoError(t, returnErr)
 					returnErr = processFn(snmpData1)
 					require.NoError(t, returnErr)
 				}).Return(nil).Once()
-				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData2)
 					require.NoError(t, returnErr)
@@ -1698,14 +1773,14 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
-				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
 					require.NoError(t, returnErr)
 					returnErr = processFn(snmpData1)
 					require.NoError(t, returnErr)
 				}).Return(nil).Once()
-				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData2)
 					require.NoError(t, returnErr)
@@ -1785,7 +1860,7 @@ func TestScrape(t *testing.T) {
 					value:     float64(2.0),
 					valueType: floatVal,
 				}
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
 					require.NoError(t, returnErr)
@@ -1851,11 +1926,41 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "Indexed resource attribute scrape error does not create metric",
+			desc: "Indexed resource attribute scrape error will not create metrics or resources",
 			testFunc: func(t *testing.T) {
 				mockClient := new(MockClient)
 				clientErr := errors.New("problem getting data")
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return(clientErr)
+				snmpData0 := snmpData{
+					parentOID: ".1",
+					oid:       ".1.1",
+					value:     int64(1),
+					valueType: integerVal,
+				}
+				snmpData1 := snmpData{
+					parentOID: ".1",
+					oid:       ".1.2",
+					value:     int64(2),
+					valueType: integerVal,
+				}
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(
+					func(args mock.Arguments) {
+						scraperErrors := args.Get(2).(*scrapererror.ScrapeErrors)
+						scraperErrors.AddPartial(1, clientErr)
+					},
+				).Once()
+				expectedErr := "not creating indexed metric 'metric1' or resource as related resource attribute value is blank"
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(
+					func(args mock.Arguments) {
+						scraperErrors := args.Get(2).(*scrapererror.ScrapeErrors)
+						processFn := args.Get(1).(processFunc)
+						returnErr := processFn(snmpData0)
+						require.EqualError(t, returnErr, expectedErr)
+						scraperErrors.AddPartial(1, returnErr)
+						returnErr = processFn(snmpData1)
+						require.EqualError(t, returnErr, expectedErr)
+						scraperErrors.AddPartial(1, returnErr)
+					},
+				).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						ResourceAttributes: map[string]*ResourceAttributeConfig{
@@ -1885,12 +1990,12 @@ func TestScrape(t *testing.T) {
 				}
 
 				metrics, err := scraper.scrape(context.Background())
-				require.ErrorIs(t, err, errScrape)
+				require.EqualError(t, err, fmt.Sprintf("%s; %s; %s", clientErr, expectedErr, expectedErr))
 				require.Equal(t, metrics.MetricCount(), 0)
 			},
 		},
 		{
-			desc: "Indexed resource attribute scrape returning bad value type does not create metric",
+			desc: "Indexed resource attribute scrape returning bad value type will not create metrics or resources",
 			testFunc: func(t *testing.T) {
 				mockClient := new(MockClient)
 				snmpData0 := snmpData{
@@ -1905,13 +2010,43 @@ func TestScrape(t *testing.T) {
 					value:     false,
 					valueType: notSupportedVal,
 				}
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				snmpData2 := snmpData{
+					parentOID: ".1",
+					oid:       ".1.1",
+					value:     int64(1),
+					valueType: integerVal,
+				}
+				snmpData3 := snmpData{
+					parentOID: ".1",
+					oid:       ".1.2",
+					value:     int64(2),
+					valueType: integerVal,
+				}
+				expectedErr1 := fmt.Sprintf(errMsgIndexedAttributesBadValueType, ".0.1", ".0")
+				expectedErr2 := fmt.Sprintf(errMsgIndexedAttributesBadValueType, ".0.2", ".0")
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+					scraperErrors := args.Get(2).(*scrapererror.ScrapeErrors)
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
-					require.EqualError(t, returnErr, fmt.Sprintf(errMsgIndexedAttributesBadValueType, ".0.1", ".0"))
+					require.EqualError(t, returnErr, expectedErr1)
+					scraperErrors.AddPartial(1, returnErr)
 					returnErr = processFn(snmpData1)
-					require.EqualError(t, returnErr, fmt.Sprintf(errMsgIndexedAttributesBadValueType, ".0.2", ".0"))
-				}).Return(errNoWalkOIDs)
+					require.EqualError(t, returnErr, expectedErr2)
+					scraperErrors.AddPartial(1, returnErr)
+				}).Once()
+				expectedErr := "not creating indexed metric 'metric1' or resource as related resource attribute value is blank"
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(
+					func(args mock.Arguments) {
+						scraperErrors := args.Get(2).(*scrapererror.ScrapeErrors)
+						processFn := args.Get(1).(processFunc)
+						returnErr := processFn(snmpData2)
+						require.EqualError(t, returnErr, expectedErr)
+						scraperErrors.AddPartial(1, returnErr)
+						returnErr = processFn(snmpData3)
+						require.EqualError(t, returnErr, expectedErr)
+						scraperErrors.AddPartial(1, returnErr)
+					},
+				).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						ResourceAttributes: map[string]*ResourceAttributeConfig{
@@ -1928,12 +2063,8 @@ func TestScrape(t *testing.T) {
 								},
 								ColumnOIDs: []ColumnOID{
 									{
-										OID: ".1",
-										Attributes: []Attribute{
-											{
-												Name: "rattr1",
-											},
-										},
+										OID:                ".1",
+										ResourceAttributes: []string{"rattr1"},
 									},
 								},
 							},
@@ -1945,7 +2076,7 @@ func TestScrape(t *testing.T) {
 				}
 
 				metrics, err := scraper.scrape(context.Background())
-				require.ErrorIs(t, err, errScrape)
+				require.EqualError(t, err, fmt.Sprintf("%s; %s; %s; %s", expectedErr1, expectedErr2, expectedErr, expectedErr))
 				require.Equal(t, metrics.MetricCount(), 0)
 			},
 		},
@@ -1989,14 +2120,14 @@ func TestScrape(t *testing.T) {
 					value:     float64(2.0),
 					valueType: floatVal,
 				}
-				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
 					require.NoError(t, returnErr)
 					returnErr = processFn(snmpData1)
 					require.NoError(t, returnErr)
 				}).Return(nil).Once()
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData2)
 					require.NoError(t, returnErr)
@@ -2101,14 +2232,14 @@ func TestScrape(t *testing.T) {
 					value:     float64(2.0),
 					valueType: floatVal,
 				}
-				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
 					require.NoError(t, returnErr)
 					returnErr = processFn(snmpData1)
 					require.NoError(t, returnErr)
 				}).Return(nil).Once()
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData2)
 					require.NoError(t, returnErr)
@@ -2201,14 +2332,14 @@ func TestScrape(t *testing.T) {
 					value:     int64(2),
 					valueType: integerVal,
 				}
-				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData0)
 					require.NoError(t, returnErr)
 					returnErr = processFn(snmpData1)
 					require.NoError(t, returnErr)
 				}).Return(nil).Once()
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 					processFn := args.Get(1).(processFunc)
 					returnErr := processFn(snmpData2)
 					require.NoError(t, returnErr)

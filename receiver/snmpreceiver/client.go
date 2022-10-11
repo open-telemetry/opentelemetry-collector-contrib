@@ -15,7 +15,6 @@
 package snmpreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver"
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -23,14 +22,8 @@ import (
 
 	"github.com/gosnmp/gosnmp"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
-)
-
-// Custom errors
-var (
-	errNoGetOIDs        = errors.New(`all GET OIDs requests have failed`)
-	errNoProcessGetOIDs = errors.New(`all attempts to process GET OIDs have failed`)
-	errNoWalkOIDs       = errors.New(`all WALK OIDs requests have failed`)
 )
 
 type oidDataType byte
@@ -59,10 +52,10 @@ type processFunc func(data snmpData) error
 type client interface {
 	// GetScalarData retrieves SNMP scalar data from a list of passed in OIDS,
 	// then the passed in function is performed on each piece of data
-	GetScalarData(oids []string, processFn processFunc) error
+	GetScalarData(oids []string, processFn processFunc, scraperErrors *scrapererror.ScrapeErrors)
 	// GetIndexedData retrieves SNMP indexed data from a list of passed in OIDS,
 	// then the passed in function is performed on each piece of data
-	GetIndexedData(oids []string, processFn processFunc) error
+	GetIndexedData(oids []string, processFn processFunc, scraperErrors *scrapererror.ScrapeErrors)
 	// Connect makes a connection to the SNMP host
 	Connect() error
 	// Close closes a connection to the SNMP host
@@ -219,90 +212,77 @@ func (c *snmpClient) Close() error {
 // GetScalarData retrieves scalar metrics from passed in scalar OIDs. The returned data
 // is then also passed into the provided function.
 // Note: These OIDs must all end in ".0" for the SNMP GET to work correctly
-func (c *snmpClient) GetScalarData(oids []string, processFn processFunc) error {
+func (c *snmpClient) GetScalarData(oids []string, processFn processFunc, scraperErrors *scrapererror.ScrapeErrors) {
 	// Nothing to do if there are no OIDs
 	if len(oids) == 0 {
-		return nil
+		return
 	}
 
 	// Group OIDs into chunks based on the max amount allowed in a single SNMP GET
 	chunkedOIDs := chunkArray(oids, c.client.GetMaxOids())
-	getOIDsSuccess := false
-	processOIDSuccess := false
 
 	// For each group of OIDs
-	for _, oids := range chunkedOIDs {
+	for _, oidChunk := range chunkedOIDs {
 		// Note: Not implementing GetBulk as I don't think it would work correctly for the current design
-		packets, err := c.client.Get(oids)
+		packets, err := c.client.Get(oidChunk)
 		if err != nil {
-			c.logger.Warn("Problem with GET OIDs", zap.Error(err))
+			scraperErrors.AddPartial(len(oidChunk), fmt.Errorf("problem with getting scalar data: problem with SNMP GET for OIDs '%v': %w", oidChunk, err))
 			// Prevent getting stuck in a failure where we can't recover
 			if strings.Contains(err.Error(), "request timeout (after ") {
 				if err = c.Close(); err != nil {
 					c.logger.Warn("Problem with closing connection while trying to reset it", zap.Error(err))
 				}
 				if err = c.Connect(); err != nil {
-					return fmt.Errorf("Problem connecting while trying to reset connection: %w", err)
+					scraperErrors.AddPartial(len(oidChunk), fmt.Errorf("problem with getting scalar data: problem connecting while trying to reset connection: %w", err))
+					return
 				}
 			}
 			continue
 		}
-		// Keep track of if at least one GET successfully returned data
-		getOIDsSuccess = true
 
 		// For each piece of data in a returned packet
 		for _, data := range packets.Variables {
 			// If there is no value, then ignore
 			if data.Value == nil {
-				c.logger.Warn("Data for OID not found", zap.String("OID", data.Name))
+				scraperErrors.AddPartial(1, fmt.Errorf("problem with getting scalar data: data for OID '%s' not found", data.Name))
 				continue
 			}
 			// Convert data into the more simplified data type
 			clientSNMPData := c.convertSnmpPDUToSnmpData(data)
 			// If the value type is not supported, then ignore
 			if clientSNMPData.valueType == notSupportedVal {
-				c.logger.Warn("Data for OID not a supported type", zap.String("OID", data.Name))
+				scraperErrors.AddPartial(1, fmt.Errorf("problem with getting scalar data: data for OID '%s' not a supported type", data.Name))
 				continue
 			}
 			// Process the data
 			if err := processFn(clientSNMPData); err != nil {
-				c.logger.Warn("Problem with processing data for OID", zap.String("OID", data.Name), zap.Error(err))
+				scraperErrors.AddPartial(1, fmt.Errorf("problem with getting scalar data: problem with processing data for OID '%s': %w", data.Name, err))
 				continue
 			}
-			// Keep track of if at least one set of GET data was successfully processed
-			processOIDSuccess = true
 		}
 	}
-
-	// Return specialized error messages if we failed to retrieve or process any data here.
-	if !getOIDsSuccess {
-		return errNoGetOIDs
-	}
-
-	if !processOIDSuccess {
-		return errNoProcessGetOIDs
-	}
-
-	return nil
 }
 
 // GetIndexedData retrieves indexed metrics from passed in column OIDs. The returned data
 // is then also passed into the provided function.
-func (c *snmpClient) GetIndexedData(oids []string, processFn processFunc) error {
+func (c *snmpClient) GetIndexedData(oids []string, processFn processFunc, scraperErrors *scrapererror.ScrapeErrors) {
 	// Nothing to do if there are no OIDs
 	if len(oids) == 0 {
-		return nil
+		return
 	}
-
-	walkOIDsSuccess := false
 
 	// For each column based OID
 	for _, oid := range oids {
+		// Because BulkWalk and Walk do not return errors if the given OID doesn't exist, we need to keep track of whether
+		// BulkWalk called the walkFn or not. This will allow us to know if there was a problem with given OID
+		walkFnCalled := false
 		// Create a walkFunc which is a required argument for the gosnmp Walk functions
 		walkFn := func(data gosnmp.SnmpPDU) error {
+			walkFnCalled = true
 			// If there is no value, then stop processing
 			if data.Value == nil {
-				return fmt.Errorf("data for OID: %s not found", data.Name)
+				scraperErrors.AddPartial(1, fmt.Errorf("problem with getting indexed data: data for OID '%s' not found", data.Name))
+				return nil
 			}
 			// Convert data into the more simplified data type
 			clientSNMPData := c.convertSnmpPDUToSnmpData(data)
@@ -310,11 +290,16 @@ func (c *snmpClient) GetIndexedData(oids []string, processFn processFunc) error 
 			clientSNMPData.parentOID = oid
 			// If the value type is not supported, then ignore
 			if clientSNMPData.valueType == notSupportedVal {
-				return fmt.Errorf("data for OID: %s not a supported type", data.Name)
+				scraperErrors.AddPartial(1, fmt.Errorf("problem with getting indexed data: data for OID '%s' not a supported type", data.Name))
+				return nil
 			}
 
-			// Process the data with the provided function
-			return processFn(clientSNMPData)
+			// Process the data
+			if err := processFn(clientSNMPData); err != nil {
+				scraperErrors.AddPartial(1, fmt.Errorf("problem with getting indexed data: problem with processing data for OID '%s': %w", data.Name, err))
+			}
+
+			return nil
 		}
 
 		// Call the correct gosnmp Walk function based on SNMP version
@@ -325,29 +310,21 @@ func (c *snmpClient) GetIndexedData(oids []string, processFn processFunc) error 
 			err = c.client.BulkWalk(oid, walkFn)
 		}
 		if err != nil {
-			c.logger.Warn("Problem with WALK OID", zap.Error(err))
+			scraperErrors.AddPartial(1, fmt.Errorf("problem with getting indexed data: problem with SNMP WALK for OID '%v': %w", oid, err))
 			// Allows for quicker recovery rather than timing out for each WALK OID and waiting for the next GET to fix it
 			if strings.Contains(err.Error(), "request timeout (after ") {
 				if err = c.Close(); err != nil {
 					c.logger.Warn("Problem with closing connection while trying to reset it", zap.Error(err))
 				}
 				if err = c.Connect(); err != nil {
-					return fmt.Errorf("Problem connecting while trying to reset connection: %w", err)
+					scraperErrors.AddPartial(len(oids), fmt.Errorf("problem with getting indexed data: problem connecting while trying to reset connection: %w", err))
+					return
 				}
 			}
-			continue
-		} else {
-			// Keep track of if at least one set of GET data was successfully processed
-			walkOIDsSuccess = true
+		} else if !walkFnCalled {
+			scraperErrors.AddPartial(1, fmt.Errorf("problem with getting indexed data: problem with SNMP WALK for OID '%v': Could not find any data for given OID", oid))
 		}
 	}
-
-	// Return specialized error messages if we failed to retrieve or process any data here.
-	if !walkOIDsSuccess {
-		return errNoWalkOIDs
-	}
-
-	return nil
 }
 
 // chunkArray takes an initial array and splits it into a number of smaller
@@ -386,8 +363,15 @@ func (c *snmpClient) convertSnmpPDUToSnmpData(pdu gosnmp.SnmpPDU) snmpData {
 	case gosnmp.TimeTicks:
 		fallthrough
 	case gosnmp.Integer:
+		value, err := c.toInt64(pdu.Name, pdu.Value)
+		if err != nil {
+			clientSNMPData.valueType = notSupportedVal
+			clientSNMPData.value = value
+			return clientSNMPData
+		}
+
 		clientSNMPData.valueType = integerVal
-		clientSNMPData.value = c.toInt64(pdu.Name, pdu.Value)
+		clientSNMPData.value = value
 		return clientSNMPData
 
 	// String types
@@ -404,8 +388,15 @@ func (c *snmpClient) convertSnmpPDUToSnmpData(pdu gosnmp.SnmpPDU) snmpData {
 	case gosnmp.OpaqueFloat:
 		fallthrough
 	case gosnmp.OpaqueDouble:
+		value, err := c.toFloat64(pdu.Name, pdu.Value)
+		if err != nil {
+			clientSNMPData.valueType = notSupportedVal
+			clientSNMPData.value = value
+			return clientSNMPData
+		}
+
 		clientSNMPData.valueType = floatVal
-		clientSNMPData.value = c.toFloat64(pdu.Name, pdu.Value)
+		clientSNMPData.value = value
 		return clientSNMPData
 
 	// Not supported types either because gosnmp doesn't support them
@@ -439,13 +430,13 @@ func (c *snmpClient) convertSnmpPDUToSnmpData(pdu gosnmp.SnmpPDU) snmpData {
 	}
 }
 
-// toInt64 converts SnmpPDU.Value to int64, or returns a zero int64 for
-// non int-like types (eg strings) or a uint64.
+// toInt64 converts SnmpPDU.Value to int64, or returns an error for
+// non int-like types or a uint64.
 //
 // This is a convenience function to make working with SnmpPDU's easier - it
 // reduces the need for type assertions. A int64 is convenient, as SNMP can
 // return int32, uint32, and int64.
-func (c snmpClient) toInt64(name string, value interface{}) int64 {
+func (c snmpClient) toInt64(name string, value interface{}) (int64, error) {
 	var val int64
 
 	switch value := value.(type) { // shadow
@@ -468,23 +459,22 @@ func (c snmpClient) toInt64(name string, value interface{}) int64 {
 	case uint32:
 		val = int64(value)
 	default:
-		c.logger.Warn("Unexpected type while converting OID data to int64. Returning 0", zap.String("OID", name))
-		val = 0
+		return 0, fmt.Errorf("incompatible type while converting OID '%s' data to int64", name)
 	}
 
-	return val
+	return val, nil
 }
 
-// toFloat64 converts SnmpPDU.Value to float64, or returns a zero float64 for
-// non float-like types (eg strings).
+// toFloat64 converts SnmpPDU.Value to float64, or returns an error for non
+// float like types.
 //
 // This is a convenience function to make working with SnmpPDU's easier - it
 // reduces the need for type assertions. A float64 is convenient, as SNMP can
 // return float32 and float64.
-func (c snmpClient) toFloat64(name string, value interface{}) float64 {
+func (c snmpClient) toFloat64(name string, value interface{}) (float64, error) {
 	var val float64
 
-	switch value := value.(type) { // shadow
+	switch value := value.(type) {
 	case float32:
 		val = float64(value)
 	case float64:
@@ -493,15 +483,13 @@ func (c snmpClient) toFloat64(name string, value interface{}) float64 {
 		// for testing and other apps - numbers may appear as strings
 		var err error
 		if val, err = strconv.ParseFloat(value, 64); err != nil {
-			c.logger.Warn("Problem converting OID data to float64. Returning 0", zap.String("OID", name), zap.Error(err))
-			val = 0
+			return 0, fmt.Errorf("problem converting OID '%s' data to float64: %w", name, err)
 		}
 	default:
-		c.logger.Warn("Unexpected type while converting OID data to float64. Returning 0", zap.String("OID", name))
-		val = 0
+		return 0, fmt.Errorf("incompatible type while converting OID '%s' data to float64", name)
 	}
 
-	return val
+	return val, nil
 }
 
 // toString converts SnmpPDU.Value to string
@@ -511,7 +499,7 @@ func (c snmpClient) toFloat64(name string, value interface{}) float64 {
 func toString(value interface{}) string {
 	var val string
 
-	switch value := value.(type) { // shadow
+	switch value := value.(type) {
 	case []byte:
 		val = string(value)
 	case string:
