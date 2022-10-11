@@ -21,50 +21,43 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 )
 
-func watchEventToLogData(event watch.Event) plog.Logs {
+func watchEventToLogData(event *watch.Event) plog.Logs {
 	udata := event.Object.(*unstructured.Unstructured)
-	out := plog.NewLogs()
-	rl := out.ResourceLogs().AppendEmpty()
-	sl := rl.ScopeLogs().AppendEmpty()
-	lr := sl.LogRecords().AppendEmpty()
-	dest := lr.Body()
-
-	attrs := lr.Attributes()
-	attrs.EnsureCapacity(3)
-
-	attrs.PutString("event.domain", "k8s")
-	attrs.PutString("event.name", udata.GetKind())
-
-	if namespace := udata.GetNamespace(); namespace != "" {
-		attrs.PutString(semconv.AttributeK8SNamespaceName, namespace)
+	ul := unstructured.UnstructuredList{
+		Items: []unstructured.Unstructured{{
+			Object: map[string]interface{}{
+				"type":   string(event.Type),
+				"object": udata.Object,
+			},
+		}},
 	}
-
-	destMap := dest.SetEmptyMap()
-	obj := map[string]interface{}{
-		"type":   string(event.Type),
-		"object": udata.Object,
-	}
-	destMap.FromRaw(obj)
-	return out
+	return unstructuredListToLogData(&ul)
 }
 
 func unstructuredListToLogData(event *unstructured.UnstructuredList) plog.Logs {
 	out := plog.NewLogs()
-	rl := out.ResourceLogs().AppendEmpty()
-	sl := rl.ScopeLogs().AppendEmpty()
+	resourceLogs := out.ResourceLogs()
+	namespaceResourceMap := make(map[string]plog.LogRecordSlice)
 
-	logSlice := sl.LogRecords()
-	logSlice.EnsureCapacity(len(event.Items))
 	for _, e := range event.Items {
+		logSlice, ok := namespaceResourceMap[e.GetNamespace()]
+		if !ok {
+			rl := resourceLogs.AppendEmpty()
+			resourceAttrs := rl.Resource().Attributes()
+			if namespace := e.GetNamespace(); namespace != "" {
+				resourceAttrs.PutString(semconv.AttributeK8SNamespaceName, namespace)
+			}
+			sl := rl.ScopeLogs().AppendEmpty()
+			logSlice = sl.LogRecords()
+			namespaceResourceMap[e.GetNamespace()] = logSlice
+		}
 		record := logSlice.AppendEmpty()
-		attrs := record.Attributes()
-		attrs.EnsureCapacity(3)
 
+		attrs := record.Attributes()
+		attrs.EnsureCapacity(2)
 		attrs.PutString("event.domain", "k8s")
 		attrs.PutString("event.name", e.GetKind())
-		if namespace := e.GetNamespace(); namespace != "" {
-			attrs.PutString(semconv.AttributeK8SNamespaceName, namespace)
-		}
+
 		dest := record.Body()
 		destMap := dest.SetEmptyMap()
 		destMap.FromRaw(e.Object)

@@ -142,7 +142,7 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 	for {
 		select {
 		case data := <-res:
-			logs := watchEventToLogData(data)
+			logs := watchEventToLogData(&data)
 
 			obsCtx := kr.obsrecv.StartLogsOp(ctx)
 			err := kr.consumer.ConsumeLogs(obsCtx, logs)
