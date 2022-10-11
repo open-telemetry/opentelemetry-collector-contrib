@@ -39,6 +39,7 @@ This receiver uses the [AWS SDK Profiles](https://docs.aws.amazon.com/cli/latest
   - `limit`: (optional; default = 50) Limits the number of discovered log groups.
   - `prefix`: (optional) A prefix for log groups to limit the number of log groups discovered.
     - if omitted, all log streams up to the limit are collected from
+  - `discover_interval`: (optional; default = 30min) How often the receiver should check the CloudWatch API for new log groups/streams that match the configuration.
   - `streams`: (optional) If `streams` is omitted, then all streams will be attempted to retrieve events from.
     - `names`: A list of full log stream names to filter the discovered log groups to collect from.
     - `prefixes`: A list of prefixes to filter the discovered log groups to collect from.

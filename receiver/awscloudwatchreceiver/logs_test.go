@@ -43,10 +43,10 @@ func TestStart(t *testing.T) {
 	sink := &consumertest.LogsSink{}
 	logsRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
 
-	err := alertRcvr.Start(context.Background(), componenttest.NewNopHost())
+	err := logsRcvr.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	err = alertRcvr.Shutdown(context.Background())
+	err = logsRcvr.Shutdown(context.Background())
 	require.NoError(t, err)
 }
 
@@ -58,6 +58,38 @@ func TestPrefixedConfig(t *testing.T) {
 		NamedConfigs: map[string]StreamConfig{
 			testLogGroupName: {
 				Names: []*string{&testLogStreamName},
+			},
+		},
+	}
+
+	sink := &consumertest.LogsSink{}
+	alertRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
+	alertRcvr.client = defaultMockClient()
+
+	err := alertRcvr.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() > 0
+	}, 2*time.Second, 10*time.Millisecond)
+
+	err = alertRcvr.Shutdown(context.Background())
+	require.NoError(t, err)
+
+	logs := sink.AllLogs()[0]
+	expected, err := readLogs(filepath.Join("testdata", "processed", "prefixed.json"))
+	require.NoError(t, err)
+	require.NoError(t, compareLogs(expected, logs))
+}
+
+func TestPrefixedNamedStreamsConfig(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+	cfg.Logs.PollInterval = 1 * time.Second
+	cfg.Logs.Groups = GroupConfig{
+		NamedConfigs: map[string]StreamConfig{
+			testLogGroupName: {
+				Prefixes: []*string{&testLogStreamPrefix},
 			},
 		},
 	}
@@ -97,21 +129,20 @@ func TestDiscovery(t *testing.T) {
 	}
 
 	sink := &consumertest.LogsSink{}
-	alertRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
-	alertRcvr.client = defaultMockClient()
+	logsRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
+	logsRcvr.client = defaultMockClient()
 
-	err := alertRcvr.Start(context.Background(), componenttest.NewNopHost())
+	err := logsRcvr.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	require.Equal(t, len(alertRcvr.namedPolls), 1)
-	require.Equal(t, len(alertRcvr.prefixedPolls), 1)
+	require.Equal(t, len(logsRcvr.groupRequests), 2)
 
-	require.NoError(t, alertRcvr.Shutdown(context.Background()))
+	require.NoError(t, logsRcvr.Shutdown(context.Background()))
 }
 
 // Test to ensure that mid collection while streaming results we will
 // return early if Shutdown is called
-func TestShutdownWhilePolling(t *testing.T) {
+func TestShutdownWhileCollecting(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Region = "us-west-1"
 	cfg.Logs.PollInterval = 1 * time.Second
