@@ -15,6 +15,7 @@
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
+	"context"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -26,12 +27,12 @@ func TruncateAll[K any](target ottl.GetSetter[K], limit int64) (ottl.ExprFunc[K]
 	if limit < 0 {
 		return nil, fmt.Errorf("invalid limit for truncate_all function, %d cannot be negative", limit)
 	}
-	return func(ctx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		if limit < 0 {
 			return nil, nil
 		}
 
-		val, err := target.Get(ctx)
+		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -53,7 +54,7 @@ func TruncateAll[K any](target ottl.GetSetter[K], limit int64) (ottl.ExprFunc[K]
 			}
 			return true
 		})
-		err = target.Set(ctx, updated)
+		err = target.Set(ctx, tCtx, updated)
 		if err != nil {
 			return nil, err
 		}
