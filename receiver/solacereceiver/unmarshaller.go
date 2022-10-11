@@ -59,6 +59,7 @@ type solaceTracesUnmarshaller struct {
 var (
 	errUnknownTraceMessgeVersion = errors.New("unsupported trace message version")
 	errUnknownTraceMessgeType    = errors.New("bad trace message")
+	errEmptyPayload              = errors.New("no binary attachment")
 )
 
 // unmarshal will unmarshal an *solaceMessage into ptrace.Traces.
@@ -106,8 +107,12 @@ func (u *solaceMessageUnmarshallerV1) unmarshal(message *inboundMessage) (ptrace
 // unmarshalToSpanData will consume an solaceMessage and unmarshal it into a SpanData.
 // Returns an error if one occurred.
 func (u *solaceMessageUnmarshallerV1) unmarshalToSpanData(message *inboundMessage) (*model_v1.SpanData, error) {
+	var data = message.GetData()
+	if len(data) == 0 {
+		return nil, errEmptyPayload
+	}
 	var spanData model_v1.SpanData
-	if err := proto.Unmarshal(message.GetData(), &spanData); err != nil {
+	if err := proto.Unmarshal(data, &spanData); err != nil {
 		return nil, err
 	}
 	return &spanData, nil

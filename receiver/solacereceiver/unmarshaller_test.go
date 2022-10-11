@@ -77,6 +77,16 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 			err: errUnknownTraceMessgeType,
 		},
 		{
+			name: "Empty Message Data",
+			message: &amqp.Message{
+				Data: [][]byte{{}},
+				Properties: &amqp.MessageProperties{
+					To: &validTopicVersion,
+				},
+			},
+			err: errEmptyPayload,
+		},
+		{
 			name: "Invalid Message Data",
 			message: &amqp.Message{
 				Data: [][]byte{{1, 2, 3, 4, 5}},
