@@ -15,7 +15,9 @@
 // Parts of this package are based on the code from the datadog-agent,
 // https://github.com/DataDog/datadog-agent/blob/main/pkg/metrics/sketch_series.go
 
-package sketches // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/sketches"
+// Package sketches is a copy of part from github.com/DataDog/datadog-agent/pkg/metrics.
+// TODO(mx-psi): import pkg/metrics from datadog-agent directly
+package sketches // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 
 import (
 	"github.com/DataDog/agent-payload/v5/gogen"
