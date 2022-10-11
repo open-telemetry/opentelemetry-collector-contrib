@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package s3mapprovider
+package s3provider
 
 import (
 	"bytes"
@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// A s3 client mocking s3mapprovider works in normal cases
+// A s3 client mocking s3provider works in normal cases
 type testClient struct{}
 
 // Implement GetObject() for testClient in normal cases
@@ -41,15 +41,15 @@ func (client *testClient) GetObject(context.Context, *s3.GetObjectInput, ...func
 	return &s3.GetObjectOutput{Body: io.NopCloser(bytes.NewReader(f)), ContentLength: (int64)(len(f))}, nil
 }
 
-// Create a provider mocking s3mapprovider works in normal cases
+// Create a provider mocking s3provider works in normal cases
 func NewTestProvider() confmap.Provider {
 	return &provider{client: &testClient{}}
 }
 
-// A s3 client mocking s3mapprovider works when there is no corresponding config file according to the given s3-uri
+// A s3 client mocking s3provider works when there is no corresponding config file according to the given s3-uri
 type testNonExistClient struct{}
 
-// Create a provider mocking s3mapprovider works when there is no corresponding config file according to the given s3-uri
+// Create a provider mocking s3provider works when there is no corresponding config file according to the given s3-uri
 func NewTestNonExistProvider() confmap.Provider {
 	return &provider{client: &testNonExistClient{}}
 }
@@ -64,10 +64,10 @@ func (client *testNonExistClient) GetObject(context.Context, *s3.GetObjectInput,
 	return &s3.GetObjectOutput{Body: io.NopCloser(bytes.NewReader(f)), ContentLength: (int64)(len(f))}, nil
 }
 
-// A s3 client mocking s3mapprovider works when the returned config file is invalid
+// A s3 client mocking s3provider works when the returned config file is invalid
 type testInvalidClient struct{}
 
-// Create a provider mocking s3mapprovider works when the returned config file is invalid
+// Create a provider mocking s3provider works when the returned config file is invalid
 func NewTestInvalidProvider() confmap.Provider {
 	return &provider{client: &testInvalidClient{}}
 }
