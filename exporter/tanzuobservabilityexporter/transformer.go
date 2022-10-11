@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"golang.org/x/exp/slices"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
@@ -217,24 +216,28 @@ func attributesToTags(attributes ...pcommon.Map) map[string]string {
 	return tags
 }
 
-func appAttributesToTags(attributes ...pcommon.Map) map[string]string {
+func appAttributesToTags(attributes pcommon.Map) map[string]string {
 	tags := map[string]string{}
-	for _, att := range attributes {
-		att.Range(func(k string, v pcommon.Value) bool {
-			if slices.Contains(appResAttrsKeys, k) {
-				if k == conventions.AttributeServiceName {
-					if _, ok := tags[labelService]; !ok {
-						tags[labelService] = v.AsString()
-					}
-				} else {
-					tags[k] = v.AsString()
-				}
-			} else if k == labelService {
-				tags[k] = v.AsString()
-			}
-			return true
-		})
+
+	// Resource attr `service` will take preference over `service.name`
+	if resAttrVal, ok := attributes.Get(labelService); ok {
+		tags[labelService] = resAttrVal.AsString()
 	}
+
+	for _, resAttrsKey := range appResAttrsKeys {
+		if resAttrVal, ok := attributes.Get(resAttrsKey); ok {
+			if resAttrsKey == conventions.AttributeServiceName {
+				// check if we have already got `service` value
+				if _, ok := tags[labelService]; !ok {
+					// Change `service.name` key to `service`
+					tags[labelService] = resAttrVal.AsString()
+				}
+			} else {
+				tags[resAttrsKey] = resAttrVal.AsString()
+			}
+		}
+	}
+
 	return tags
 }
 
