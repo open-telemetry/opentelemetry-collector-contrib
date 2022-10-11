@@ -59,7 +59,7 @@ type groupNames struct {
 	streamNames []*string
 }
 
-func (gn *groupNames) request(limit int, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
+func (gn *groupNames) request(limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
 	base := &cloudwatchlogs.FilterLogEventsInput{
 		LogGroupName: &gn.logGroup,
 		StartTime:    aws.Int64(st.UnixMilli()),
@@ -69,6 +69,9 @@ func (gn *groupNames) request(limit int, st, et *time.Time) *cloudwatchlogs.Filt
 	if len(gn.streamNames) > 0 {
 		base.LogStreamNames = gn.streamNames
 	}
+	if nextToken != "" {
+		base.NextToken = aws.String(nextToken)
+	}
 	return base
 }
 
@@ -77,18 +80,22 @@ type groupPrefix struct {
 	prefix   *string
 }
 
-func (gp *groupPrefix) request(limit int, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
-	return &cloudwatchlogs.FilterLogEventsInput{
+func (gp *groupPrefix) request(limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
+	base := &cloudwatchlogs.FilterLogEventsInput{
 		LogGroupName:        &gp.logGroup,
 		StartTime:           aws.Int64(st.UnixMilli()),
 		EndTime:             aws.Int64(et.UnixMilli()),
 		Limit:               aws.Int64(int64(limit)),
 		LogStreamNamePrefix: gp.prefix,
 	}
+	if nextToken != "" {
+		base.NextToken = aws.String(nextToken)
+	}
+	return base
 }
 
 type pollConfig interface {
-	request(limit int, startTime, endTime *time.Time) *cloudwatchlogs.FilterLogEventsInput
+	request(limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput
 }
 
 func newLogsReceiver(cfg *Config, logger *zap.Logger, consumer consumer.Logs) *logsReceiver {
@@ -173,6 +180,7 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 }
 
 func (l *logsReceiver) poll(ctx context.Context) error {
+	l.logger.Info("this is the number of named polls", zap.Int("number", len(l.namedPolls)))
 	var errs error
 	for i := range l.namedPolls {
 		np := l.namedPolls[i]
@@ -195,6 +203,8 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, logGroup string, pc poll
 		return err
 	}
 	nextToken := aws.String("")
+	startTime := time.Now().Add(-l.pollInterval)
+	endTime := time.Now()
 	for nextToken != nil {
 		select {
 		// if done, we want to stop processing paginated stream of events
@@ -203,9 +213,7 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, logGroup string, pc poll
 				return nil
 			}
 		default:
-			startTime := time.Now().Add(-l.pollInterval)
-			endTime := time.Now().Add(-time.Second)
-			input := pc.request(l.maxEventsPerRequest, &startTime, &endTime)
+			input := pc.request(l.maxEventsPerRequest, *nextToken, &startTime, &endTime)
 			resp, err := l.client.FilterLogEventsWithContext(ctx, input)
 			if err != nil {
 				l.logger.Error("unable to retrieve logs from cloudwatch", zap.String("log group", logGroup), zap.Error(err))
