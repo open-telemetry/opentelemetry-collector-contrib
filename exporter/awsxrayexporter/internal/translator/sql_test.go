@@ -17,9 +17,11 @@ package translator
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
@@ -32,8 +34,9 @@ func TestClientSpanWithStatementAttribute(t *testing.T) {
 	attributes[conventions.AttributeDBConnectionString] = pcommon.NewValueStr("mysql://db.example.com:3306")
 	attributes[conventions.AttributeNetPeerName] = pcommon.NewValueStr("db.example.com")
 	attributes[conventions.AttributeNetPeerPort] = pcommon.NewValueStr("3306")
+	span := constructSQLSpan(attributes)
 
-	filtered, sqlData := makeSQL(attributes)
+	filtered, sqlData := makeSQL(span, attributes)
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, sqlData)
@@ -56,8 +59,9 @@ func TestClientSpanWithNonSQLDatabase(t *testing.T) {
 	attributes[conventions.AttributeDBConnectionString] = pcommon.NewValueStr("redis://db.example.com:3306")
 	attributes[conventions.AttributeNetPeerName] = pcommon.NewValueStr("db.example.com")
 	attributes[conventions.AttributeNetPeerPort] = pcommon.NewValueStr("3306")
+	span := constructSQLSpan(attributes)
 
-	filtered, sqlData := makeSQL(attributes)
+	filtered, sqlData := makeSQL(span, attributes)
 	assert.Nil(t, sqlData)
 	assert.NotNil(t, filtered)
 }
@@ -71,9 +75,40 @@ func TestClientSpanWithoutDBurlAttribute(t *testing.T) {
 	attributes[conventions.AttributeDBConnectionString] = pcommon.NewValueStr("")
 	attributes[conventions.AttributeNetPeerName] = pcommon.NewValueStr("db.example.com")
 	attributes[conventions.AttributeNetPeerPort] = pcommon.NewValueStr("3306")
-	filtered, sqlData := makeSQL(attributes)
+	span := constructSQLSpan(attributes)
+
+	filtered, sqlData := makeSQL(span, attributes)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, sqlData)
 
-	assert.Equal(t, "localhost/customers", *sqlData.URL)
+	assert.Equal(t, "users.findUnique", *sqlData.URL)
+}
+
+func constructSQLSpan(attributes map[string]pcommon.Value) ptrace.Span {
+	endTime := time.Now().Round(time.Second)
+	startTime := endTime.Add(-90 * time.Second)
+
+	// constructSpanAttributes() in segment_test accepts a map of interfaces...
+	interfaceAttributes := make(map[string]interface{})
+	for k, v := range attributes {
+		interfaceAttributes[k] = v
+	}
+	spanAttributes := constructSpanAttributes(interfaceAttributes)
+
+	span := ptrace.NewSpan()
+	span.SetTraceID(newTraceID())
+	span.SetSpanID(newSegmentID())
+	span.SetParentSpanID(newSegmentID())
+	span.SetName("users.findUnique")
+	span.SetKind(ptrace.SpanKindClient)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
+
+	status := ptrace.NewSpanStatus()
+	status.SetCode(0)
+	status.SetMessage("OK")
+	status.CopyTo(span.Status())
+
+	spanAttributes.CopyTo(span.Attributes())
+	return span
 }
