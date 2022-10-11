@@ -42,10 +42,10 @@ func Test_traceDataToSplunk(t *testing.T) {
 			traceDataFn: func() ptrace.Traces {
 				traces := ptrace.NewTraces()
 				rs := traces.ResourceSpans().AppendEmpty()
-				rs.Resource().Attributes().PutString("com.splunk.source", "myservice")
-				rs.Resource().Attributes().PutString("host.name", "myhost")
-				rs.Resource().Attributes().PutString("com.splunk.sourcetype", "mysourcetype")
-				rs.Resource().Attributes().PutString("com.splunk.index", "myindex")
+				rs.Resource().Attributes().PutStr("com.splunk.source", "myservice")
+				rs.Resource().Attributes().PutStr("host.name", "myhost")
+				rs.Resource().Attributes().PutStr("com.splunk.sourcetype", "mysourcetype")
+				rs.Resource().Attributes().PutStr("com.splunk.index", "myindex")
 				ils := rs.ScopeSpans().AppendEmpty()
 				initSpan("myspan", ts, ils.Spans().AppendEmpty())
 				return traces
@@ -60,10 +60,10 @@ func Test_traceDataToSplunk(t *testing.T) {
 			traceDataFn: func() ptrace.Traces {
 				traces := ptrace.NewTraces()
 				rs := traces.ResourceSpans().AppendEmpty()
-				rs.Resource().Attributes().PutString("mysource", "myservice")
-				rs.Resource().Attributes().PutString("myhost", "myhost")
-				rs.Resource().Attributes().PutString("mysourcetype", "othersourcetype")
-				rs.Resource().Attributes().PutString("myindex", "mysourcetype")
+				rs.Resource().Attributes().PutStr("mysource", "myservice")
+				rs.Resource().Attributes().PutStr("myhost", "myhost")
+				rs.Resource().Attributes().PutStr("mysourcetype", "othersourcetype")
+				rs.Resource().Attributes().PutStr("myindex", "mysourcetype")
 				ils := rs.ScopeSpans().AppendEmpty()
 				initSpan("myspan", ts, ils.Spans().AppendEmpty())
 				return traces
@@ -100,7 +100,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 }
 
 func initSpan(name string, ts pcommon.Timestamp, span ptrace.Span) {
-	span.Attributes().PutString("foo", "bar")
+	span.Attributes().PutStr("foo", "bar")
 	span.SetName(name)
 	span.SetStartTimestamp(ts)
 	spanLink := span.Links().AppendEmpty()
@@ -120,7 +120,7 @@ func initSpan(name string, ts pcommon.Timestamp, span ptrace.Span) {
 	foobarContents.AppendEmpty().SetStr("b")
 
 	spanEvent := span.Events().AppendEmpty()
-	spanEvent.Attributes().PutString("foo", "bar")
+	spanEvent.Attributes().PutStr("foo", "bar")
 	spanEvent.SetName("myEvent")
 	spanEvent.SetTimestamp(ts + 3)
 }

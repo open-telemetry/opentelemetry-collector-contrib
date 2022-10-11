@@ -257,7 +257,7 @@ func (m *metricFlinkJobCheckpointCount) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("checkpoint", checkpointAttributeValue)
+	dp.Attributes().PutStr("checkpoint", checkpointAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -663,7 +663,7 @@ func (m *metricFlinkJvmGcCollectionsCount) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("name", garbageCollectorNameAttributeValue)
+	dp.Attributes().PutStr("name", garbageCollectorNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -716,7 +716,7 @@ func (m *metricFlinkJvmGcCollectionsTime) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("name", garbageCollectorNameAttributeValue)
+	dp.Attributes().PutStr("name", garbageCollectorNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1585,8 +1585,8 @@ func (m *metricFlinkOperatorRecordCount) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("name", operatorNameAttributeValue)
-	dp.Attributes().PutString("record", recordAttributeValue)
+	dp.Attributes().PutStr("name", operatorNameAttributeValue)
+	dp.Attributes().PutStr("record", recordAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1639,7 +1639,7 @@ func (m *metricFlinkOperatorWatermarkOutput) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("name", operatorNameAttributeValue)
+	dp.Attributes().PutStr("name", operatorNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1692,7 +1692,7 @@ func (m *metricFlinkTaskRecordCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("record", recordAttributeValue)
+	dp.Attributes().PutStr("record", recordAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1826,42 +1826,42 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithFlinkJobName sets provided value as "flink.job.name" attribute for current resource.
 func WithFlinkJobName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("flink.job.name", val)
+		rm.Resource().Attributes().PutStr("flink.job.name", val)
 	}
 }
 
 // WithFlinkResourceType sets provided value as "flink.resource.type" attribute for current resource.
 func WithFlinkResourceType(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("flink.resource.type", val)
+		rm.Resource().Attributes().PutStr("flink.resource.type", val)
 	}
 }
 
 // WithFlinkSubtaskIndex sets provided value as "flink.subtask.index" attribute for current resource.
 func WithFlinkSubtaskIndex(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("flink.subtask.index", val)
+		rm.Resource().Attributes().PutStr("flink.subtask.index", val)
 	}
 }
 
 // WithFlinkTaskName sets provided value as "flink.task.name" attribute for current resource.
 func WithFlinkTaskName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("flink.task.name", val)
+		rm.Resource().Attributes().PutStr("flink.task.name", val)
 	}
 }
 
 // WithFlinkTaskmanagerID sets provided value as "flink.taskmanager.id" attribute for current resource.
 func WithFlinkTaskmanagerID(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("flink.taskmanager.id", val)
+		rm.Resource().Attributes().PutStr("flink.taskmanager.id", val)
 	}
 }
 
 // WithHostName sets provided value as "host.name" attribute for current resource.
 func WithHostName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("host.name", val)
+		rm.Resource().Attributes().PutStr("host.name", val)
 	}
 }
 

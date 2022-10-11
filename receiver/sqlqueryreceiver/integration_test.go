@@ -164,7 +164,6 @@ var skip = func(t *testing.T, why string) {
 // This test ensures the collector can connect to an Oracle DB, and properly get metrics. It's not intended to
 // test the receiver itself.
 func TestOracleDBIntegration(t *testing.T) {
-	skip(t, "Flaky test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/12332")
 	externalPort := "51521"
 	internalPort := "1521"
 

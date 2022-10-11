@@ -30,7 +30,7 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| couchdb.node.name | The name of the node. | String |
+| couchdb.node.name | The name of the node. | Str |
 
 ## Metric attributes
 

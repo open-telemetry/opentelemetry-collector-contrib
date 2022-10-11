@@ -845,7 +845,7 @@ func populateAttributes(t *testing.T, attrMap pcommon.Map, attributes map[string
 	for key, val := range attributes {
 		switch casted := val.(type) {
 		case string:
-			attrMap.PutString(key, casted)
+			attrMap.PutStr(key, casted)
 		case int64:
 			attrMap.PutInt(key, casted)
 		case int:
@@ -1010,23 +1010,23 @@ func TestUnmarshallerInsertUserProperty(t *testing.T) {
 		},
 		{
 			&model_v1.SpanData_UserPropertyValue_CharacterValue{CharacterValue: 0x61},
-			pcommon.ValueTypeString,
+			pcommon.ValueTypeStr,
 			func(val pcommon.Value) {
-				assert.Equal(t, "a", val.StringVal())
+				assert.Equal(t, "a", val.Str())
 			},
 		},
 		{
 			&model_v1.SpanData_UserPropertyValue_CharacterValue{CharacterValue: 0xe68080},
-			pcommon.ValueTypeString,
+			pcommon.ValueTypeStr,
 			func(val pcommon.Value) {
-				assert.Equal(t, string(rune(0xe68080)), val.StringVal())
+				assert.Equal(t, string(rune(0xe68080)), val.Str())
 			},
 		},
 		{
 			&model_v1.SpanData_UserPropertyValue_CharacterValue{CharacterValue: 0xf09f92a9},
-			pcommon.ValueTypeString,
+			pcommon.ValueTypeStr,
 			func(val pcommon.Value) {
-				assert.Equal(t, string(rune(emojiVal)), val.StringVal())
+				assert.Equal(t, string(rune(emojiVal)), val.Str())
 			},
 		},
 	}

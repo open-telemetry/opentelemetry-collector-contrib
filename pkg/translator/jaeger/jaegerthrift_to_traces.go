@@ -64,10 +64,9 @@ func jThriftProcessToInternalResource(process *jaeger.Process, dest pcommon.Reso
 	}
 
 	attrs := dest.Attributes()
-	attrs.Clear()
 	if serviceName != "" {
 		attrs.EnsureCapacity(len(tags) + 1)
-		attrs.PutString(conventions.AttributeServiceName, serviceName)
+		attrs.PutStr(conventions.AttributeServiceName, serviceName)
 	} else {
 		attrs.EnsureCapacity(len(tags))
 	}
@@ -127,7 +126,7 @@ func jThriftTagsToInternalAttributes(tags []*jaeger.Tag, dest pcommon.Map) {
 	for _, tag := range tags {
 		switch tag.GetVType() {
 		case jaeger.TagType_STRING:
-			dest.PutString(tag.Key, tag.GetVStr())
+			dest.PutStr(tag.Key, tag.GetVStr())
 		case jaeger.TagType_BOOL:
 			dest.PutBool(tag.Key, tag.GetVBool())
 		case jaeger.TagType_LONG:
@@ -135,9 +134,9 @@ func jThriftTagsToInternalAttributes(tags []*jaeger.Tag, dest pcommon.Map) {
 		case jaeger.TagType_DOUBLE:
 			dest.PutDouble(tag.Key, tag.GetVDouble())
 		case jaeger.TagType_BINARY:
-			dest.PutString(tag.Key, base64.StdEncoding.EncodeToString(tag.GetVBinary()))
+			dest.PutStr(tag.Key, base64.StdEncoding.EncodeToString(tag.GetVBinary()))
 		default:
-			dest.PutString(tag.Key, fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
+			dest.PutStr(tag.Key, fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
 		}
 	}
 }
@@ -158,7 +157,6 @@ func jThriftLogsToSpanEvents(logs []*jaeger.Log, dest ptrace.SpanEventSlice) {
 		}
 
 		attrs := event.Attributes()
-		attrs.Clear()
 		attrs.EnsureCapacity(len(log.Fields))
 		jThriftTagsToInternalAttributes(log.Fields, attrs)
 		if name, ok := attrs.Get(eventNameAttr); ok {

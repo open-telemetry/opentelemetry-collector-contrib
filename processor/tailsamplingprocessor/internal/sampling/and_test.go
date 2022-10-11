@@ -42,7 +42,7 @@ func TestAndEvaluatorNotSampled(t *testing.T) {
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
 	trace := &TraceData{
-		ReceivedBatches: []ptrace.Traces{traces},
+		ReceivedBatches: traces,
 	}
 	decision, err := and.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
@@ -64,13 +64,13 @@ func TestAndEvaluatorSampled(t *testing.T) {
 	ils := rs.ScopeSpans().AppendEmpty()
 
 	span := ils.Spans().AppendEmpty()
-	span.Attributes().PutString("attribute_name", "attribute_value")
+	span.Attributes().PutStr("attribute_name", "attribute_value")
 	span.Status().SetCode(ptrace.StatusCodeError)
 	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
 	trace := &TraceData{
-		ReceivedBatches: []ptrace.Traces{traces},
+		ReceivedBatches: traces,
 	}
 	decision, err := and.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
@@ -92,13 +92,13 @@ func TestAndEvaluatorStringInvertSampled(t *testing.T) {
 	ils := rs.ScopeSpans().AppendEmpty()
 
 	span := ils.Spans().AppendEmpty()
-	span.Attributes().PutString("attribute_name", "attribute_value")
+	span.Attributes().PutStr("attribute_name", "attribute_value")
 	span.Status().SetCode(ptrace.StatusCodeError)
 	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
 	trace := &TraceData{
-		ReceivedBatches: []ptrace.Traces{traces},
+		ReceivedBatches: traces,
 	}
 	decision, err := and.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
@@ -120,13 +120,13 @@ func TestAndEvaluatorStringInvertNotSampled(t *testing.T) {
 	ils := rs.ScopeSpans().AppendEmpty()
 
 	span := ils.Spans().AppendEmpty()
-	span.Attributes().PutString("attribute_name", "attribute_value")
+	span.Attributes().PutStr("attribute_name", "attribute_value")
 	span.Status().SetCode(ptrace.StatusCodeError)
 	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
 	trace := &TraceData{
-		ReceivedBatches: []ptrace.Traces{traces},
+		ReceivedBatches: traces,
 	}
 	decision, err := and.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)

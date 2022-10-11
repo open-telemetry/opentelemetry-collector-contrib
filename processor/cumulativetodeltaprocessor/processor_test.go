@@ -456,7 +456,7 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 	m := ilms.Metrics().AppendEmpty()
 	m.SetEmptySum().SetIsMonotonic(true)
 	dp := m.Sum().DataPoints().AppendEmpty()
-	dp.Attributes().PutString("tag", "value")
+	dp.Attributes().PutStr("tag", "value")
 
 	reset := func() {
 		m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)

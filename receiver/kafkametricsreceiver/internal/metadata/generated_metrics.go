@@ -140,8 +140,8 @@ func (m *metricKafkaConsumerGroupLag) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("group", groupAttributeValue)
-	dp.Attributes().PutString("topic", topicAttributeValue)
+	dp.Attributes().PutStr("group", groupAttributeValue)
+	dp.Attributes().PutStr("topic", topicAttributeValue)
 	dp.Attributes().PutInt("partition", partitionAttributeValue)
 }
 
@@ -193,8 +193,8 @@ func (m *metricKafkaConsumerGroupLagSum) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("group", groupAttributeValue)
-	dp.Attributes().PutString("topic", topicAttributeValue)
+	dp.Attributes().PutStr("group", groupAttributeValue)
+	dp.Attributes().PutStr("topic", topicAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -245,7 +245,7 @@ func (m *metricKafkaConsumerGroupMembers) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("group", groupAttributeValue)
+	dp.Attributes().PutStr("group", groupAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -296,8 +296,8 @@ func (m *metricKafkaConsumerGroupOffset) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("group", groupAttributeValue)
-	dp.Attributes().PutString("topic", topicAttributeValue)
+	dp.Attributes().PutStr("group", groupAttributeValue)
+	dp.Attributes().PutStr("topic", topicAttributeValue)
 	dp.Attributes().PutInt("partition", partitionAttributeValue)
 }
 
@@ -349,8 +349,8 @@ func (m *metricKafkaConsumerGroupOffsetSum) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("group", groupAttributeValue)
-	dp.Attributes().PutString("topic", topicAttributeValue)
+	dp.Attributes().PutStr("group", groupAttributeValue)
+	dp.Attributes().PutStr("topic", topicAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -401,7 +401,7 @@ func (m *metricKafkaPartitionCurrentOffset) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("topic", topicAttributeValue)
+	dp.Attributes().PutStr("topic", topicAttributeValue)
 	dp.Attributes().PutInt("partition", partitionAttributeValue)
 }
 
@@ -453,7 +453,7 @@ func (m *metricKafkaPartitionOldestOffset) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("topic", topicAttributeValue)
+	dp.Attributes().PutStr("topic", topicAttributeValue)
 	dp.Attributes().PutInt("partition", partitionAttributeValue)
 }
 
@@ -505,7 +505,7 @@ func (m *metricKafkaPartitionReplicas) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("topic", topicAttributeValue)
+	dp.Attributes().PutStr("topic", topicAttributeValue)
 	dp.Attributes().PutInt("partition", partitionAttributeValue)
 }
 
@@ -557,7 +557,7 @@ func (m *metricKafkaPartitionReplicasInSync) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("topic", topicAttributeValue)
+	dp.Attributes().PutStr("topic", topicAttributeValue)
 	dp.Attributes().PutInt("partition", partitionAttributeValue)
 }
 
@@ -609,7 +609,7 @@ func (m *metricKafkaTopicPartitions) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("topic", topicAttributeValue)
+	dp.Attributes().PutStr("topic", topicAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

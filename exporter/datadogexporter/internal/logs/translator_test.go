@@ -48,7 +48,7 @@ func TestTransform(t *testing.T) {
 			args: args{
 				lr: func() plog.LogRecord {
 					l := plog.NewLogRecord()
-					l.Attributes().PutString("app", "test")
+					l.Attributes().PutStr("app", "test")
 					l.SetSeverityNumber(5)
 					return l
 				}(),
@@ -69,13 +69,13 @@ func TestTransform(t *testing.T) {
 			args: args{
 				lr: func() plog.LogRecord {
 					l := plog.NewLogRecord()
-					l.Attributes().PutString("app", "test")
+					l.Attributes().PutStr("app", "test")
 					l.SetSeverityNumber(5)
 					return l
 				}(),
 				res: func() pcommon.Resource {
 					r := pcommon.NewResource()
-					r.Attributes().PutString(conventions.AttributeServiceName, "otlp_col")
+					r.Attributes().PutStr(conventions.AttributeServiceName, "otlp_col")
 					return r
 				}(),
 			},
@@ -96,8 +96,8 @@ func TestTransform(t *testing.T) {
 			args: args{
 				lr: func() plog.LogRecord {
 					l := plog.NewLogRecord()
-					l.Attributes().PutString("app", "test")
-					l.Attributes().PutString(conventions.AttributeServiceName, "otlp_col")
+					l.Attributes().PutStr("app", "test")
+					l.Attributes().PutStr(conventions.AttributeServiceName, "otlp_col")
 					l.SetSeverityNumber(5)
 					return l
 				}(),
@@ -122,10 +122,10 @@ func TestTransform(t *testing.T) {
 			args: args{
 				lr: func() plog.LogRecord {
 					l := plog.NewLogRecord()
-					l.Attributes().PutString("app", "test")
+					l.Attributes().PutStr("app", "test")
 					l.SetSpanID(spanID)
 					l.SetTraceID(traceID)
-					l.Attributes().PutString(conventions.AttributeServiceName, "otlp_col")
+					l.Attributes().PutStr(conventions.AttributeServiceName, "otlp_col")
 					l.SetSeverityNumber(5)
 					return l
 				}(),
@@ -155,10 +155,10 @@ func TestTransform(t *testing.T) {
 			args: args{
 				lr: func() plog.LogRecord {
 					l := plog.NewLogRecord()
-					l.Attributes().PutString("app", "test")
+					l.Attributes().PutStr("app", "test")
 					l.SetSpanID(spanID)
 					l.SetTraceID(traceID)
-					l.Attributes().PutString(conventions.AttributeServiceName, "otlp_col")
+					l.Attributes().PutStr(conventions.AttributeServiceName, "otlp_col")
 					l.SetSeverityText("alert")
 					l.SetSeverityNumber(5)
 					return l
@@ -189,10 +189,10 @@ func TestTransform(t *testing.T) {
 			args: args{
 				lr: func() plog.LogRecord {
 					l := plog.NewLogRecord()
-					l.Attributes().PutString("app", "test")
+					l.Attributes().PutStr("app", "test")
 					l.SetSpanID(spanID)
 					l.SetTraceID(traceID)
-					l.Attributes().PutString(conventions.AttributeServiceName, "otlp_col")
+					l.Attributes().PutStr(conventions.AttributeServiceName, "otlp_col")
 					l.SetSeverityNumber(13)
 					l.Body().SetStr("This is log")
 					return l
@@ -223,11 +223,11 @@ func TestTransform(t *testing.T) {
 			args: args{
 				lr: func() plog.LogRecord {
 					l := plog.NewLogRecord()
-					l.Attributes().PutString("app", "test")
+					l.Attributes().PutStr("app", "test")
 					l.SetSpanID(spanID)
 					l.SetTraceID(traceID)
-					l.Attributes().PutString(conventions.AttributeServiceName, "otlp_col")
-					l.Attributes().PutString("level", "error")
+					l.Attributes().PutStr(conventions.AttributeServiceName, "otlp_col")
+					l.Attributes().PutStr("level", "error")
 					l.Body().SetStr("This is log")
 					return l
 				}(),

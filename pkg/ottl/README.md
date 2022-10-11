@@ -2,7 +2,7 @@
 
 The OpenTelemetry Transformation Language is a language for transforming open telemetry data based on the [OpenTelemetry Collector Processing Exploration](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md).
 
-This package reads in OTTL queries and converts them to invokable Booleans and functions based on the OTTL's grammar.
+This package reads in OTTL statements and converts them to invokable Booleans and functions based on the OTTL's grammar.
 
 The OTTL is signal agnostic; it is not aware of the type of telemetry on which it will operate.  Instead, the Booleans and functions returned by the package must be passed a `TransformContext`, which provide access to the signal's telemetry. Telemetry data can be accessed and updated through [Getters and Setters](#getters-and-setters).
 

@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/plog"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
@@ -72,7 +72,7 @@ func TestLogsExporter(t *testing.T) {
 				ld: func() plog.Logs {
 					lrr := testdata.GenerateLogsOneLogRecord()
 					ldd := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-					ldd.Attributes().PutString("message", "hello")
+					ldd.Attributes().PutStr("message", "hello")
 					return lrr
 				}(),
 			},
@@ -97,7 +97,7 @@ func TestLogsExporter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := testutils.DatadogLogServerMock()
+			server := testutil.DatadogLogServerMock()
 			defer server.Close()
 			cfg := &Config{
 				Metrics: MetricsConfig{

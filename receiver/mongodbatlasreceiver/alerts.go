@@ -60,12 +60,14 @@ const (
 	alertCacheKey   = "last_recorded_alert"
 
 	defaultAlertsPollInterval = 5 * time.Minute
-	defaultMaxAlerts          = 1000
+	// defaults were based off API docs https://www.mongodb.com/docs/atlas/reference/api/alerts-get-all-alerts/
+	defaultAlertsPageSize = 100
+	defaultAlertsMaxPages = 10
 )
 
 type alertsClient interface {
 	GetProject(ctx context.Context, groupID string) (*mongodbatlas.Project, error)
-	GetAlerts(ctx context.Context, groupID string, maxAlerts int64) ([]mongodbatlas.Alert, error)
+	GetAlerts(ctx context.Context, groupID string, opts *internal.AlertPollOptions) ([]mongodbatlas.Alert, bool, error)
 }
 
 type alertsReceiver struct {
@@ -86,7 +88,8 @@ type alertsReceiver struct {
 	retrySettings exporterhelper.RetrySettings
 	pollInterval  time.Duration
 	record        *alertRecord
-	maxAlerts     int64
+	pageSize      int64
+	maxPages      int64
 	doneChan      chan bool
 	id            config.ComponentID  // ID of the receiver component
 	storageID     *config.ComponentID // ID of the storage extension component
@@ -122,7 +125,8 @@ func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer
 		privateKey:    baseConfig.PrivateKey,
 		wg:            &sync.WaitGroup{},
 		pollInterval:  baseConfig.Alerts.PollInterval,
-		maxAlerts:     baseConfig.Alerts.MaxAlertProcessing,
+		maxPages:      baseConfig.Alerts.MaxPages,
+		pageSize:      baseConfig.Alerts.PageSize,
 		doneChan:      make(chan bool, 1),
 		logger:        logger,
 		id:            baseConfig.ID(),
@@ -182,30 +186,46 @@ func (a *alertsReceiver) startPolling(ctx context.Context, host component.Host) 
 }
 
 func (a *alertsReceiver) retrieveAndProcessAlerts(ctx context.Context) error {
-	var alerts []mongodbatlas.Alert
 	for _, p := range a.projects {
 		project, err := a.client.GetProject(ctx, p.Name)
 		if err != nil {
 			a.logger.Error("error retrieving project "+p.Name+":", zap.Error(err))
 			continue
 		}
-		projectAlerts, err := a.client.GetAlerts(ctx, project.ID, a.maxAlerts)
-		if err != nil {
-			a.logger.Error("unable to get alerts for project", zap.Error(err))
-			continue
-		}
-		filteredAlerts := a.applyFilters(p, projectAlerts)
-		alerts = append(alerts, filteredAlerts...)
-	}
-	now := pcommon.NewTimestampFromTime(time.Now())
-	logs, err := a.convertAlerts(now, alerts)
-	if err != nil {
-		return err
-	}
-	if logs.LogRecordCount() > 0 {
-		return a.consumer.ConsumeLogs(ctx, logs)
+		a.pollAndProcess(ctx, p, project)
 	}
 	return a.writeCheckpoint(ctx)
+}
+
+func (a *alertsReceiver) pollAndProcess(ctx context.Context, pc *ProjectConfig, project *mongodbatlas.Project) {
+	for pageNum := 1; pageNum <= int(a.maxPages); pageNum++ {
+		projectAlerts, hasNext, err := a.client.GetAlerts(ctx, project.ID, &internal.AlertPollOptions{
+			PageNum:  pageNum,
+			PageSize: int(a.pageSize),
+		})
+		if err != nil {
+			a.logger.Error("unable to get alerts for project", zap.Error(err))
+			break
+		}
+
+		filteredAlerts := a.applyFilters(pc, projectAlerts)
+		now := pcommon.NewTimestampFromTime(time.Now())
+		logs, err := a.convertAlerts(now, filteredAlerts)
+		if err != nil {
+			a.logger.Error("error processing alerts", zap.Error(err))
+			break
+		}
+
+		if logs.LogRecordCount() > 0 {
+			if err = a.consumer.ConsumeLogs(ctx, logs); err != nil {
+				a.logger.Error("error consuming alerts", zap.Error(err))
+				break
+			}
+		}
+		if !hasNext {
+			break
+		}
+	}
 }
 
 func (a *alertsReceiver) startListening(ctx context.Context, host component.Host) error {
@@ -342,8 +362,8 @@ func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbat
 	for _, alert := range alerts {
 		resourceLogs := logs.ResourceLogs().AppendEmpty()
 		resourceAttrs := resourceLogs.Resource().Attributes()
-		resourceAttrs.PutString("mongodbatlas.group.id", alert.GroupID)
-		resourceAttrs.PutString("mongodbatlas.alert.config.id", alert.AlertConfigID)
+		resourceAttrs.PutStr("mongodbatlas.group.id", alert.GroupID)
+		resourceAttrs.PutStr("mongodbatlas.alert.config.id", alert.AlertConfigID)
 		putStringToMapNotNil(resourceAttrs, "mongodbatlas.cluster.name", &alert.ClusterName)
 		putStringToMapNotNil(resourceAttrs, "mongodbatlas.replica_set.name", &alert.ReplicaSetName)
 
@@ -371,12 +391,12 @@ func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbat
 
 		attrs := logRecord.Attributes()
 		// These attributes are always present
-		attrs.PutString("event.domain", "mongodbatlas")
-		attrs.PutString("event.name", alert.EventTypeName)
-		attrs.PutString("status", alert.Status)
-		attrs.PutString("created", alert.Created)
-		attrs.PutString("updated", alert.Updated)
-		attrs.PutString("id", alert.ID)
+		attrs.PutStr("event.domain", "mongodbatlas")
+		attrs.PutStr("event.name", alert.EventTypeName)
+		attrs.PutStr("status", alert.Status)
+		attrs.PutStr("created", alert.Created)
+		attrs.PutStr("updated", alert.Updated)
+		attrs.PutStr("id", alert.ID)
 
 		// These attributes are optional and may not be present, depending on the alert type.
 		putStringToMapNotNil(attrs, "metric.name", &alert.MetricName)
@@ -389,7 +409,7 @@ func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbat
 
 		if alert.CurrentValue != nil {
 			attrs.PutDouble("metric.value", *alert.CurrentValue.Number)
-			attrs.PutString("metric.units", alert.CurrentValue.Units)
+			attrs.PutStr("metric.units", alert.CurrentValue.Units)
 		}
 
 		host, portStr, err := net.SplitHostPort(alert.HostnameAndPort)
@@ -404,7 +424,7 @@ func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbat
 			continue
 		}
 
-		attrs.PutString("net.peer.name", host)
+		attrs.PutStr("net.peer.name", host)
 		attrs.PutInt("net.peer.port", port)
 	}
 	return logs, errs
@@ -446,20 +466,20 @@ func payloadToLogs(now time.Time, payload []byte) (plog.Logs, error) {
 	logRecord.Body().SetStr(string(payload))
 
 	resourceAttrs := resourceLogs.Resource().Attributes()
-	resourceAttrs.PutString("mongodbatlas.group.id", alert.GroupID)
-	resourceAttrs.PutString("mongodbatlas.alert.config.id", alert.AlertConfigID)
+	resourceAttrs.PutStr("mongodbatlas.group.id", alert.GroupID)
+	resourceAttrs.PutStr("mongodbatlas.alert.config.id", alert.AlertConfigID)
 	putStringToMapNotNil(resourceAttrs, "mongodbatlas.cluster.name", alert.ClusterName)
 	putStringToMapNotNil(resourceAttrs, "mongodbatlas.replica_set.name", alert.ReplicaSetName)
 
 	attrs := logRecord.Attributes()
 	// These attributes are always present
-	attrs.PutString("event.domain", "mongodbatlas")
-	attrs.PutString("event.name", alert.EventType)
-	attrs.PutString("message", alert.HumanReadable)
-	attrs.PutString("status", alert.Status)
-	attrs.PutString("created", alert.Created)
-	attrs.PutString("updated", alert.Updated)
-	attrs.PutString("id", alert.ID)
+	attrs.PutStr("event.domain", "mongodbatlas")
+	attrs.PutStr("event.name", alert.EventType)
+	attrs.PutStr("message", alert.HumanReadable)
+	attrs.PutStr("status", alert.Status)
+	attrs.PutStr("created", alert.Created)
+	attrs.PutStr("updated", alert.Updated)
+	attrs.PutStr("id", alert.ID)
 
 	// These attributes are optional and may not be present, depending on the alert type.
 	putStringToMapNotNil(attrs, "metric.name", alert.MetricName)
@@ -473,7 +493,7 @@ func payloadToLogs(now time.Time, payload []byte) (plog.Logs, error) {
 
 	if alert.CurrentValue != nil {
 		attrs.PutDouble("metric.value", alert.CurrentValue.Number)
-		attrs.PutString("metric.units", alert.CurrentValue.Units)
+		attrs.PutStr("metric.units", alert.CurrentValue.Units)
 	}
 
 	if alert.HostNameAndPort != nil {
@@ -487,7 +507,7 @@ func payloadToLogs(now time.Time, payload []byte) (plog.Logs, error) {
 			return plog.Logs{}, fmt.Errorf("failed to parse port %s: %w", portStr, err)
 		}
 
-		attrs.PutString("net.peer.name", host)
+		attrs.PutStr("net.peer.name", host)
 		attrs.PutInt("net.peer.port", port)
 
 	}
@@ -618,6 +638,6 @@ func severityFromAPIAlert(a string) plog.SeverityNumber {
 
 func putStringToMapNotNil(m pcommon.Map, k string, v *string) {
 	if v != nil {
-		m.PutString(k, *v)
+		m.PutStr(k, *v)
 	}
 }
