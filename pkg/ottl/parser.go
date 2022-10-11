@@ -32,7 +32,8 @@ type Statement[K any] interface {
 	// Execute is a function that will execute the statement's function if the statement's condition is met.
 	// Returns true if the function was run, returns false otherwise.
 	// If the statement contains no condition, the function will run and true will be returned.
-	Execute(ctx K) bool
+	// In addition, the functions return value is returned.
+	Execute(ctx K) (bool, any)
 }
 
 type standardStatement[K any] struct {
@@ -40,12 +41,13 @@ type standardStatement[K any] struct {
 	condition boolExpressionEvaluator[K]
 }
 
-func (s standardStatement[K]) Execute(ctx K) bool {
+func (s standardStatement[K]) Execute(ctx K) (bool, any) {
 	condition := s.condition(ctx)
+	var result any
 	if condition {
-		s.function(ctx)
+		result = s.function(ctx)
 	}
-	return condition
+	return condition, result
 }
 
 func NewParser[K any](functions map[string]interface{}, pathParser PathExpressionParser[K], enumParser EnumParser, telemetrySettings component.TelemetrySettings) Parser[K] {
