@@ -43,8 +43,9 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a file input operator
 type Config struct {
-	helper.InputConfig  `mapstructure:",squash"`
-	fileconsumer.Config `mapstructure:",squash"`
+	helper.InputConfig     `mapstructure:",squash"`
+	fileconsumer.Config    `mapstructure:",squash"`
+	helper.MultilineConfig `mapstructure:"multiline,omitempty"`
 }
 
 // Build will build a file input operator from the supplied configuration
@@ -71,7 +72,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	var toBody toBodyFunc = func(token []byte) interface{} {
 		return string(token)
 	}
-	if helper.IsNop(c.Config.Splitter.EncodingConfig.Encoding) {
+	if helper.IsNop(c.Config.EncodingConfig.Encoding) {
 		toBody = func(token []byte) interface{} {
 			return token
 		}

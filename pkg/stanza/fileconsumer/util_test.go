@@ -177,10 +177,18 @@ func expectNoTokensUntil(t *testing.T, c chan *emitParams, d time.Duration) {
 	}
 }
 
-const mockOperatorType = "mock"
+const (
+	mockOperatorType          = "mock"
+	mockMultilineOperatorType = "mockMultiline"
+)
 
 func init() {
-	operator.Register(mockOperatorType, func() operator.Builder { return newMockOperatorConfig(NewConfig()) })
+	operator.Register(mockOperatorType, func() operator.Builder {
+		return newMockOperatorConfig(NewConfig())
+	})
+	operator.Register(mockMultilineOperatorType, func() operator.Builder {
+		return newMockMultilineOperatorConfig(NewConfig(), helper.NewMultilineConfig())
+	})
 }
 
 type mockOperatorConfig struct {
@@ -198,5 +206,25 @@ func newMockOperatorConfig(cfg *Config) *mockOperatorConfig {
 // This function is impelmented for compatibility with operatortest
 // but is not meant to be used directly
 func (h *mockOperatorConfig) Build(*zap.SugaredLogger) (operator.Operator, error) {
+	panic("not impelemented")
+}
+
+type mockMultilineOperatorConfig struct {
+	helper.BasicConfig     `mapstructure:",squash"`
+	*Config                `mapstructure:",squash"`
+	helper.MultilineConfig `mapstructure:"multiline,omitempty"`
+}
+
+func newMockMultilineOperatorConfig(cfg *Config, multiline helper.MultilineConfig) *mockMultilineOperatorConfig {
+	return &mockMultilineOperatorConfig{
+		BasicConfig:     helper.NewBasicConfig(mockMultilineOperatorType, mockMultilineOperatorType),
+		Config:          cfg,
+		MultilineConfig: multiline,
+	}
+}
+
+// This function is impelmented for compatibility with operatortest
+// but is not meant to be used directly
+func (h *mockMultilineOperatorConfig) Build(*zap.SugaredLogger) (operator.Operator, error) {
 	panic("not impelemented")
 }

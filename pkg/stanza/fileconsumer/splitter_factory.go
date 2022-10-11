@@ -18,6 +18,7 @@ import (
 	"bufio"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"golang.org/x/text/encoding"
 )
 
 type splitterFactory interface {
@@ -56,4 +57,40 @@ func (factory *multilineSplitterFactory) Build(maxLogSize int) (bufio.SplitFunc,
 		return nil, err
 	}
 	return splitter, nil
+}
+
+type defaultSplitterFactory struct {
+	EncodingConfig helper.EncodingConfig
+	Flusher        helper.FlusherConfig
+}
+
+var _ splitterFactory = (*defaultSplitterFactory)(nil)
+
+func newDefaultSplitterFactory(
+	encoding helper.EncodingConfig,
+	flusher helper.FlusherConfig) *defaultSplitterFactory {
+	return &defaultSplitterFactory{
+		EncodingConfig: encoding,
+		Flusher:        flusher,
+	}
+}
+
+// Build builds default Splitter struct
+func (factory *defaultSplitterFactory) Build(maxLogSize int) (bufio.SplitFunc, error) {
+	enc, err := factory.EncodingConfig.Build()
+	if err != nil {
+		return nil, err
+	}
+	if enc.Encoding == encoding.Nop {
+		return helper.SplitNone(maxLogSize), nil
+	}
+	splitFunc, err := helper.NewNewlineSplitFunc(enc.Encoding, false)
+	if err != nil {
+		return nil, err
+	}
+	flusher := factory.Flusher.Build()
+	if flusher != nil {
+		splitFunc = flusher.SplitFunc(splitFunc)
+	}
+	return splitFunc, nil
 }

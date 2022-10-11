@@ -37,7 +37,8 @@ func NewConfig() *Config {
 		IncludeFileNameResolved: false,
 		IncludeFilePathResolved: false,
 		PollInterval:            200 * time.Millisecond,
-		Splitter:                helper.NewSplitterConfig(),
+		EncodingConfig:          helper.NewEncodingConfig(),
+		Flusher:                 helper.NewFlusherConfig(),
 		StartAt:                 "end",
 		FingerprintSize:         DefaultFingerprintSize,
 		MaxLogSize:              defaultMaxLogSize,
@@ -57,11 +58,12 @@ type Config struct {
 	FingerprintSize         helper.ByteSize       `mapstructure:"fingerprint_size,omitempty"`
 	MaxLogSize              helper.ByteSize       `mapstructure:"max_log_size,omitempty"`
 	MaxConcurrentFiles      int                   `mapstructure:"max_concurrent_files,omitempty"`
-	Splitter                helper.SplitterConfig `mapstructure:",squash,omitempty"`
+	EncodingConfig          helper.EncodingConfig `mapstructure:",squash,omitempty"`
+	Flusher                 helper.FlusherConfig  `mapstructure:",squash,omitempty"`
 }
 
 // Build will build a file input operator from the supplied configuration
-func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error) {
+func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc, opts ...FactoryOption) (*Manager, error) {
 	if emit == nil {
 		return nil, fmt.Errorf("must provide emit function")
 	}
@@ -101,7 +103,11 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 	}
 
 	// Ensure that splitter is buildable
-	factory := newMultilineSplitterFactory(c.Splitter.EncodingConfig, c.Splitter.Flusher, c.Splitter.Multiline)
+	var factory splitterFactory
+	factory = newDefaultSplitterFactory(c.EncodingConfig, c.Flusher)
+	for _, opt := range opts {
+		factory = opt()
+	}
 	_, err := factory.Build(int(c.MaxLogSize))
 	if err != nil {
 		return nil, err
@@ -129,7 +135,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 			},
 			fromBeginning:   startAtBeginning,
 			splitterFactory: factory,
-			encodingConfig:  c.Splitter.EncodingConfig,
+			encodingConfig:  c.EncodingConfig,
 		},
 		finder:        c.Finder,
 		roller:        newRoller(),
@@ -138,4 +144,14 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 		knownFiles:    make([]*Reader, 0, 10),
 		seenPaths:     make(map[string]struct{}, 100),
 	}, nil
+}
+
+type FactoryOption func() splitterFactory
+
+func WithMultilineFactory(multiline helper.MultilineConfig) func(encoding helper.EncodingConfig,
+	flusher helper.FlusherConfig) splitterFactory {
+	return func(encoding helper.EncodingConfig,
+		flusher helper.FlusherConfig) splitterFactory {
+		return newMultilineSplitterFactory(encoding, flusher, multiline)
+	}
 }
