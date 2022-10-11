@@ -375,7 +375,6 @@
 ### 🚀 New components 🚀
 
 - `s3mapprovider`: A new implementation of ConfigMapProvider for Amazon S3 (s3mapprovider) allows OTEL Collector the ability to load configuration for itself by fetching and reading config files stored in Amazon S3. (#12939)
-- `promtailreceiver`: Add a new receiver that scrapes logs using Promtail client` (#14632)
 
 ### 💡 Enhancements 💡
 
