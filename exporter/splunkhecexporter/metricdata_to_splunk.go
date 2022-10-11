@@ -118,7 +118,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 			{
 				fields := cloneMap(commonFields)
 				populateAttributes(fields, dataPt.Attributes())
-				fields[metricFieldName+sumSuffix] = dataPt.Sum()
+				fields[metricFieldName+sumSuffix] = sanitizeFloat(dataPt.Sum())
 				fields[splunkMetricTypeKey] = pmetric.MetricTypeHistogram.String()
 				splunkMetrics = append(splunkMetrics, createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields))
 			}
@@ -185,7 +185,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 			{
 				fields := cloneMap(commonFields)
 				populateAttributes(fields, dataPt.Attributes())
-				fields[metricFieldName+sumSuffix] = dataPt.Sum()
+				fields[metricFieldName+sumSuffix] = sanitizeFloat(dataPt.Sum())
 				fields[splunkMetricTypeKey] = pmetric.MetricTypeSummary.String()
 				sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 				splunkMetrics = append(splunkMetrics, sm)
