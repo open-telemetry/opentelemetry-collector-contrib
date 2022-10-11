@@ -15,6 +15,6 @@ jobs:
           days-before-pr-stale: 14
           days-before-issue-stale: 60
           days-before-pr-close: 14
-          days-before-issue-close: -1
+          days-before-issue-close: 365
           exempt-issue-labels: 'never stale'
 
