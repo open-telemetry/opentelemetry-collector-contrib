@@ -480,7 +480,7 @@ func TestGenerateTagsFromAttributes(t *testing.T) {
 type SpanStatusCase struct {
 	testName string
 	// input
-	spanStatus ptrace.SpanStatus
+	spanStatus ptrace.Status
 	// output
 	status  sentry.SpanStatus
 	message string
@@ -491,15 +491,15 @@ func TestStatusFromSpanStatus(t *testing.T) {
 	testCases := []SpanStatusCase{
 		{
 			testName:   "with empty status",
-			spanStatus: ptrace.NewSpanStatus(),
+			spanStatus: ptrace.NewStatus(),
 			status:     sentry.SpanStatusOK,
 			message:    "",
 			tags:       map[string]string{},
 		},
 		{
 			testName: "with status code",
-			spanStatus: func() ptrace.SpanStatus {
-				spanStatus := ptrace.NewSpanStatus()
+			spanStatus: func() ptrace.Status {
+				spanStatus := ptrace.NewStatus()
 				spanStatus.SetMessage("message")
 				spanStatus.SetCode(ptrace.StatusCodeError)
 
@@ -511,8 +511,8 @@ func TestStatusFromSpanStatus(t *testing.T) {
 		},
 		{
 			testName: "with unimplemented status code",
-			spanStatus: func() ptrace.SpanStatus {
-				spanStatus := ptrace.NewSpanStatus()
+			spanStatus: func() ptrace.Status {
+				spanStatus := ptrace.NewStatus()
 				spanStatus.SetMessage("message")
 				spanStatus.SetCode(ptrace.StatusCode(1337))
 
@@ -524,8 +524,8 @@ func TestStatusFromSpanStatus(t *testing.T) {
 		},
 		{
 			testName: "with ok status code",
-			spanStatus: func() ptrace.SpanStatus {
-				spanStatus := ptrace.NewSpanStatus()
+			spanStatus: func() ptrace.Status {
+				spanStatus := ptrace.NewStatus()
 				spanStatus.SetMessage("message")
 				spanStatus.SetCode(ptrace.StatusCodeOk)
 
@@ -537,8 +537,8 @@ func TestStatusFromSpanStatus(t *testing.T) {
 		},
 		{
 			testName: "with 400 http status code",
-			spanStatus: func() ptrace.SpanStatus {
-				spanStatus := ptrace.NewSpanStatus()
+			spanStatus: func() ptrace.Status {
+				spanStatus := ptrace.NewStatus()
 				spanStatus.SetMessage("message")
 				spanStatus.SetCode(ptrace.StatusCodeError)
 
@@ -552,8 +552,8 @@ func TestStatusFromSpanStatus(t *testing.T) {
 		},
 		{
 			testName: "with canceled grpc status code",
-			spanStatus: func() ptrace.SpanStatus {
-				spanStatus := ptrace.NewSpanStatus()
+			spanStatus: func() ptrace.Status {
+				spanStatus := ptrace.NewStatus()
 				spanStatus.SetMessage("message")
 				spanStatus.SetCode(ptrace.StatusCodeError)
 

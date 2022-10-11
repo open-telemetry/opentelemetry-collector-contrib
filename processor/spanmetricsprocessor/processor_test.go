@@ -408,7 +408,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 
 // verifyConsumeMetricsInputCumulative expects one accumulation of metrics, and marked as cumulative
 func verifyConsumeMetricsInputCumulative(t testing.TB, input pmetric.Metrics) bool {
-	return verifyConsumeMetricsInput(t, input, pmetric.MetricAggregationTemporalityCumulative, 1)
+	return verifyConsumeMetricsInput(t, input, pmetric.AggregationTemporalityCumulative, 1)
 }
 
 func verifyBadMetricsOkay(t testing.TB, input pmetric.Metrics) bool {
@@ -417,7 +417,7 @@ func verifyBadMetricsOkay(t testing.TB, input pmetric.Metrics) bool {
 
 // verifyConsumeMetricsInputDelta expects one accumulation of metrics, and marked as delta
 func verifyConsumeMetricsInputDelta(t testing.TB, input pmetric.Metrics) bool {
-	return verifyConsumeMetricsInput(t, input, pmetric.MetricAggregationTemporalityDelta, 1)
+	return verifyConsumeMetricsInput(t, input, pmetric.AggregationTemporalityDelta, 1)
 }
 
 // verifyMultipleCumulativeConsumptions expects the amount of accumulations as kept track of by numCumulativeConsumptions.
@@ -426,13 +426,13 @@ func verifyMultipleCumulativeConsumptions() func(t testing.TB, input pmetric.Met
 	numCumulativeConsumptions := 0
 	return func(t testing.TB, input pmetric.Metrics) bool {
 		numCumulativeConsumptions++
-		return verifyConsumeMetricsInput(t, input, pmetric.MetricAggregationTemporalityCumulative, numCumulativeConsumptions)
+		return verifyConsumeMetricsInput(t, input, pmetric.AggregationTemporalityCumulative, numCumulativeConsumptions)
 	}
 }
 
 // verifyConsumeMetricsInput verifies the input of the ConsumeMetrics call from this processor.
 // This is the best point to verify the computed metrics from spans are as expected.
-func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemporality pmetric.MetricAggregationTemporality, numCumulativeConsumptions int) bool {
+func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemporality pmetric.AggregationTemporality, numCumulativeConsumptions int) bool {
 	require.Equal(t, 6, input.MetricCount(),
 		"Should be 3 for each of call count and latency. Each group of 3 metrics is made of: "+
 			"service-a (server kind) -> service-a (client kind) -> service-b (service kind)",
