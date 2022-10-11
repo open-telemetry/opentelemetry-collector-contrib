@@ -184,11 +184,13 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 
 func (l *logsReceiver) poll(ctx context.Context) error {
 	var errs error
+	l.mu.Lock()
 	for _, r := range l.groupRequests {
 		if err := l.pollForLogs(ctx, r); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
+	l.mu.Unlock()
 	return errs
 }
 
@@ -281,11 +283,13 @@ func (l *logsReceiver) startDiscovering(ctx context.Context, auto *AutodiscoverC
 		case <-ctx.Done():
 			return
 		case <-t.C:
+			l.mu.Lock()
 			group, err := l.discoverGroups(ctx, auto)
 			if err != nil {
 				l.logger.Error("unable to perform discovery of log groups", zap.Error(err))
 			}
 			l.groupRequests = group
+			l.mu.Unlock()
 		}
 	}
 }
