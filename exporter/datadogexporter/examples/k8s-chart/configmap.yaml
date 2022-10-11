@@ -93,4 +93,4 @@ data:
         logs:
           receivers: [filelog]
           processors: [batch ]
-          exporters: [datadog[
+          exporters: [datadog]
