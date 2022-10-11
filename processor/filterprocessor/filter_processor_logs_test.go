@@ -207,7 +207,7 @@ var (
 		},
 		{
 			logNames:       []string{"log4"},
-			severityNumber: plog.SeverityNumberUndefined,
+			severityNumber: plog.SeverityNumberUnspecified,
 		},
 	}
 

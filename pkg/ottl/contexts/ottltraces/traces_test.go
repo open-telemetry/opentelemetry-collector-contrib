@@ -46,7 +46,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	newLinks := ptrace.NewSpanLinkSlice()
 	newLinks.AppendEmpty().SetSpanID(spanID2)
 
-	newStatus := ptrace.NewSpanStatus()
+	newStatus := ptrace.NewStatus()
 	newStatus.SetMessage("new status")
 
 	tests := []struct {

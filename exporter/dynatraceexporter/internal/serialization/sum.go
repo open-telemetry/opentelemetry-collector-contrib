@@ -26,14 +26,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
-func serializeSumPoint(name, prefix string, dims dimensions.NormalizedDimensionList, t pmetric.MetricAggregationTemporality, dp pmetric.NumberDataPoint, prev *ttlmap.TTLMap) (string, error) {
+func serializeSumPoint(name, prefix string, dims dimensions.NormalizedDimensionList, t pmetric.AggregationTemporality, dp pmetric.NumberDataPoint, prev *ttlmap.TTLMap) (string, error) {
 	switch t {
-	case pmetric.MetricAggregationTemporalityCumulative:
+	case pmetric.AggregationTemporalityCumulative:
 		return serializeCumulativeCounter(name, prefix, dims, dp, prev)
 	// for now unspecified is treated as delta
-	case pmetric.MetricAggregationTemporalityUnspecified:
+	case pmetric.AggregationTemporalityUnspecified:
 		fallthrough
-	case pmetric.MetricAggregationTemporalityDelta:
+	case pmetric.AggregationTemporalityDelta:
 		return serializeDeltaCounter(name, prefix, dims, dp)
 	}
 
@@ -43,7 +43,7 @@ func serializeSumPoint(name, prefix string, dims dimensions.NormalizedDimensionL
 func serializeSum(logger *zap.Logger, prefix string, metric pmetric.Metric, defaultDimensions dimensions.NormalizedDimensionList, staticDimensions dimensions.NormalizedDimensionList, prev *ttlmap.TTLMap, metricLines []string) []string {
 	sum := metric.Sum()
 
-	if !sum.IsMonotonic() && sum.AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta {
+	if !sum.IsMonotonic() && sum.AggregationTemporality() == pmetric.AggregationTemporalityDelta {
 		logger.Warn(
 			"dropping delta non-monotonic sum",
 			zap.String("name", metric.Name()),
@@ -109,7 +109,7 @@ func serializeDeltaCounter(name, prefix string, dims dimensions.NormalizedDimens
 	var valueOpt dtMetric.MetricOption
 
 	switch dp.ValueType() {
-	case pmetric.NumberDataPointValueTypeNone:
+	case pmetric.NumberDataPointValueTypeEmpty:
 		return "", fmt.Errorf("unsupported value type none")
 	case pmetric.NumberDataPointValueTypeInt:
 		valueOpt = dtMetric.WithIntCounterValueDelta(dp.IntValue())
@@ -209,7 +209,7 @@ func metricValueTypeToString(t pmetric.NumberDataPointValueType) string {
 		return "MetricValueTypeDouble"
 	case pmetric.NumberDataPointValueTypeInt:
 		return "MericValueTypeInt"
-	case pmetric.NumberDataPointValueTypeNone:
+	case pmetric.NumberDataPointValueTypeEmpty:
 		return "MericValueTypeNone"
 	default:
 		return "MetricValueTypeUnknown"

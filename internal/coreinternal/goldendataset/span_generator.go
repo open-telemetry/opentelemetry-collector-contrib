@@ -191,7 +191,7 @@ func appendSpanAttributes(spanTypeID PICTInputAttributes, statusStr PICTInputSta
 	}
 }
 
-func fillStatus(statusStr PICTInputStatus, spanStatus ptrace.SpanStatus) {
+func fillStatus(statusStr PICTInputStatus, spanStatus ptrace.Status) {
 	if statusStr == SpanStatusUnset {
 		return
 	}

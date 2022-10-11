@@ -152,7 +152,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			want: func() pmetric.HistogramDataPoint {
 				point := pmetric.NewHistogramDataPoint()
 				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
-				point.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 				point.ExplicitBounds().FromRaw([]float64{0.75, 2.75})
 				point.BucketCounts().FromRaw([]uint64{0, 0, 0})
 				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
@@ -356,7 +356,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				point := pmetric.NewSummaryDataPoint()
 				qtL := point.QuantileValues()
 				qn0 := qtL.AppendEmpty()
-				point.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 				qn0.SetQuantile(0)
 				qn0.SetValue(0)
 				qn50 := qtL.AppendEmpty()

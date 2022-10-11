@@ -90,7 +90,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	event.SetName("client-event")
 	event.CopyTo(clientSpan.Events().AppendEmpty())
 
-	status := ptrace.NewSpanStatus()
+	status := ptrace.NewStatus()
 	status.SetCode(ptrace.StatusCodeError)
 	status.SetMessage("an error event occurred")
 	status.CopyTo(clientSpan.Status())

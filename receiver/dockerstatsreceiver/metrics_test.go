@@ -77,7 +77,7 @@ func metricsData(
 		switch m.mtype {
 		case MetricTypeCumulative:
 			mdMetric.SetEmptySum().SetIsMonotonic(true)
-			mdMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+			mdMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			dps = mdMetric.Sum().DataPoints()
 		case MetricTypeGauge, MetricTypeDoubleGauge:
 			dps = mdMetric.SetEmptyGauge().DataPoints()

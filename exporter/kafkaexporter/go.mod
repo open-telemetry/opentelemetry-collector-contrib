@@ -11,9 +11,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.61.0
 	github.com/stretchr/testify v1.8.0
 	github.com/xdg-go/scram v1.1.1
-	go.opentelemetry.io/collector v0.61.1-0.20221006231412-05d1c5f5572d
-	go.opentelemetry.io/collector/pdata v0.61.1-0.20221006231412-05d1c5f5572d
-	go.opentelemetry.io/collector/semconv v0.61.1-0.20221006231412-05d1c5f5572d
+	go.opentelemetry.io/collector v0.61.1-0.20221011194806-6e554f2d823b
+	go.opentelemetry.io/collector/pdata v0.61.1-0.20221011194806-6e554f2d823b
+	go.opentelemetry.io/collector/semconv v0.61.1-0.20221011194806-6e554f2d823b
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 )
