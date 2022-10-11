@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkae
 go 1.18
 
 require (
-	github.com/Shopify/sarama v1.37.0
-	github.com/aws/aws-sdk-go v1.44.110
+	github.com/Shopify/sarama v1.37.2
+	github.com/aws/aws-sdk-go v1.44.114
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger v1.38.0
+	github.com/jaegertracing/jaeger v1.38.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.61.0
 	github.com/stretchr/testify v1.8.0
@@ -62,7 +62,7 @@ require (
 	golang.org/x/sys v0.0.0-20220909162455-aba9fc2a8ff2 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20220822174746-9e6da59bd2fc // indirect
-	google.golang.org/grpc v1.49.0 // indirect
+	google.golang.org/grpc v1.50.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
