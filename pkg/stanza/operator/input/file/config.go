@@ -84,7 +84,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		preEmitOptions: preEmitOptions,
 	}
 
-	input.fileConsumer, err = c.Config.Build(logger, input.emit)
+	input.fileConsumer, err = c.Config.Build(logger, input.emit, fileconsumer.WithMultilineFactory(c.MultilineConfig))
 	if err != nil {
 		return nil, err
 	}

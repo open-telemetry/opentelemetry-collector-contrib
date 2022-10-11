@@ -106,7 +106,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc, opts ...FactoryO
 	var factory splitterFactory
 	factory = newDefaultSplitterFactory(c.EncodingConfig, c.Flusher)
 	for _, opt := range opts {
-		factory = opt()
+		factory = opt(c.EncodingConfig, c.Flusher)
 	}
 	_, err := factory.Build(int(c.MaxLogSize))
 	if err != nil {
@@ -146,7 +146,8 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc, opts ...FactoryO
 	}, nil
 }
 
-type FactoryOption func() splitterFactory
+type FactoryOption func(encoding helper.EncodingConfig,
+	flusher helper.FlusherConfig) splitterFactory
 
 func WithMultilineFactory(multiline helper.MultilineConfig) func(encoding helper.EncodingConfig,
 	flusher helper.FlusherConfig) splitterFactory {
