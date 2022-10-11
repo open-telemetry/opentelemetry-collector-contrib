@@ -204,7 +204,7 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, logGroup string, pc poll
 			}
 		default:
 			startTime := time.Now().Add(-l.pollInterval)
-			endTime := time.Now()
+			endTime := time.Now().Add(-time.Second)
 			input := pc.request(l.maxEventsPerRequest, &startTime, &endTime)
 			resp, err := l.client.FilterLogEventsWithContext(ctx, input)
 			if err != nil {
