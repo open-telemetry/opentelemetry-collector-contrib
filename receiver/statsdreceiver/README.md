@@ -125,13 +125,11 @@ receivers:
     is_monotonic_counter: false # default
     timer_histogram_mapping:
       - statsd_type: "histogram"
-        observer_type: "gauge"
+        observer_type: "histogram"
         histogram:
           max_size: 50
       - statsd_type: "timing"
-        observer_type: "gauge"
-        histogram:
-          max_size: 100
+        observer_type: "summary"
 
 exporters:
   file:
