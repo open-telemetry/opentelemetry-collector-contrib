@@ -38,7 +38,7 @@ type logsReceiver struct {
 	imdsEndpoint        string
 	pollInterval        time.Duration
 	maxEventsPerRequest int
-	lastRecordedTime    time.Time
+	lastRecordedTime    *time.Time
 	groupRequests       []groupRequest
 	autodiscover        *AutodiscoverConfig
 	logger              *zap.Logger
@@ -130,7 +130,7 @@ func newLogsReceiver(cfg *Config, logger *zap.Logger, consumer consumer.Logs) *l
 		imdsEndpoint:        cfg.IMDSEndpoint,
 		autodiscover:        autodiscover,
 		pollInterval:        cfg.Logs.PollInterval,
-		lastRecordedTime:    pcommon.Timestamp(0).AsTime(),
+		lastRecordedTime:    nil,
 		groupRequests:       groups,
 		logger:              logger,
 		wg:                  &sync.WaitGroup{},
@@ -185,29 +185,38 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 func (l *logsReceiver) poll(ctx context.Context) error {
 	var errs error
 	var latestTime time.Time
+	// lock discovery until poll is complete
 	l.mu.Lock()
 	for _, r := range l.groupRequests {
 		t, err := l.pollForLogs(ctx, r)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 		}
-		latestTime = t
+		if t.After(latestTime) {
+			latestTime = t
+		}
 	}
 	l.mu.Unlock()
-	if latestTime.After(l.lastRecordedTime) {
-		l.lastRecordedTime = latestTime
+
+	if l.lastRecordedTime == nil || latestTime.After(*l.lastRecordedTime) {
+		l.lastRecordedTime = &latestTime
 	}
 	return errs
 }
 
 func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest) (time.Time, error) {
+	latestInPayload := pcommon.Timestamp(0).AsTime()
 	err := l.ensureSession()
-	latestInPayload := l.lastRecordedTime
 	if err != nil {
-		return time.Time{}, err
+		return latestInPayload, err
 	}
 	nextToken := aws.String("")
-	startTime := l.lastRecordedTime
+
+	startTime := time.Now().Add(-l.pollInterval)
+	if l.lastRecordedTime != nil {
+		startTime = *l.lastRecordedTime
+	}
+
 	endTime := time.Now()
 	for nextToken != nil {
 		select {
@@ -225,14 +234,14 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest) (time.T
 			}
 			observedTime := pcommon.NewTimestampFromTime(time.Now())
 			logs, latestTime := l.processEvents(observedTime, pc.groupName(), resp)
-			if latestTime.After(latestInPayload) {
-				latestInPayload = latestTime
-			}
 			if logs.LogRecordCount() > 0 {
 				if err = l.consumer.ConsumeLogs(ctx, logs); err != nil {
 					l.logger.Error("unable to consume logs", zap.Error(err))
 					break
 				}
+			}
+			if latestTime.After(latestInPayload) {
+				latestInPayload = latestTime
 			}
 			nextToken = resp.NextToken
 		}
@@ -272,7 +281,7 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 		ts := time.UnixMilli(*e.Timestamp)
 		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 
-		if ts.After(l.lastRecordedTime) {
+		if ts.After(lastOfThisBundle) {
 			lastOfThisBundle = ts
 		}
 
@@ -295,6 +304,7 @@ func (l *logsReceiver) startDiscovering(ctx context.Context, auto *AutodiscoverC
 			return
 		case <-t.C:
 			l.mu.Lock()
+			l.logger.Debug("discovering new groups")
 			group, err := l.discoverGroups(ctx, auto)
 			if err != nil {
 				l.logger.Error("unable to perform discovery of log groups", zap.Error(err))
