@@ -885,7 +885,7 @@ func Test_Execute(t *testing.T) {
 				function:  tt.function,
 			}
 
-			condition, result := statement.Execute(nil)
+			result, condition := statement.Execute(nil)
 
 			assert.Equal(t, tt.expectedCondition, condition)
 			assert.Equal(t, tt.expectedResult, result)
