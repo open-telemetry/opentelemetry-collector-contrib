@@ -165,6 +165,22 @@ processors:
         - ^ec2.tag.subsystem$
 ```
 
+**_NOTE:_** In order to fetch EC2 tags, the IAM role assigned to the EC2 instance must have a policy that includes the `ec2:DescribeTags` permission.
+
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": "ec2:DescribeTags",
+            "Resource": "*"
+        }
+    ]
+}
+```
+
 You can configure Coralogix Exporter:
 
 ```
