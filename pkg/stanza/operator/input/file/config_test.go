@@ -327,9 +327,10 @@ func TestUnmarshal(t *testing.T) {
 				ExpectErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
-					newSplit := helper.NewSplitterConfig()
-					newSplit.Multiline.LineStartPattern = "Start"
-					cfg.Splitter = newSplit
+					cfg.EncodingConfig = helper.NewEncodingConfig()
+					cfg.Flusher = helper.NewFlusherConfig()
+					cfg.MultilineConfig = helper.NewMultilineConfig()
+					cfg.MultilineConfig.LineStartPattern = "Start"
 					return cfg
 				}(),
 			},
@@ -338,9 +339,10 @@ func TestUnmarshal(t *testing.T) {
 				ExpectErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
-					newSplit := helper.NewSplitterConfig()
-					newSplit.Multiline.LineStartPattern = "%"
-					cfg.Splitter = newSplit
+					cfg.EncodingConfig = helper.NewEncodingConfig()
+					cfg.Flusher = helper.NewFlusherConfig()
+					cfg.MultilineConfig = helper.NewMultilineConfig()
+					cfg.MultilineConfig.LineStartPattern = "%"
 					return cfg
 				}(),
 			},
@@ -349,9 +351,10 @@ func TestUnmarshal(t *testing.T) {
 				ExpectErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
-					newSplit := helper.NewSplitterConfig()
-					newSplit.Multiline.LineEndPattern = "Start"
-					cfg.Splitter = newSplit
+					cfg.EncodingConfig = helper.NewEncodingConfig()
+					cfg.Flusher = helper.NewFlusherConfig()
+					cfg.MultilineConfig = helper.NewMultilineConfig()
+					cfg.MultilineConfig.LineEndPattern = "Start"
 					return cfg
 				}(),
 			},
@@ -360,9 +363,10 @@ func TestUnmarshal(t *testing.T) {
 				ExpectErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
-					newSplit := helper.NewSplitterConfig()
-					newSplit.Multiline.LineEndPattern = "%"
-					cfg.Splitter = newSplit
+					cfg.EncodingConfig = helper.NewEncodingConfig()
+					cfg.Flusher = helper.NewFlusherConfig()
+					cfg.MultilineConfig = helper.NewMultilineConfig()
+					cfg.MultilineConfig.LineEndPattern = "%"
 					return cfg
 				}(),
 			},
@@ -425,7 +429,7 @@ func TestUnmarshal(t *testing.T) {
 				ExpectErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
-					cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "utf-16le"}
+					cfg.EncodingConfig = helper.EncodingConfig{Encoding: "utf-16le"}
 					return cfg
 				}(),
 			},
@@ -434,7 +438,7 @@ func TestUnmarshal(t *testing.T) {
 				ExpectErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
-					cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-16lE"}
+					cfg.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-16lE"}
 					return cfg
 				}(),
 			},
@@ -556,8 +560,9 @@ func TestBuild(t *testing.T) {
 		{
 			"MultilineConfiguredStartAndEndPatterns",
 			func(f *Config) {
-				f.Splitter = helper.NewSplitterConfig()
-				f.Splitter.Multiline = helper.MultilineConfig{
+				f.EncodingConfig = helper.NewEncodingConfig()
+				f.Flusher = helper.NewFlusherConfig()
+				f.MultilineConfig = helper.MultilineConfig{
 					LineEndPattern:   "Exists",
 					LineStartPattern: "Exists",
 				}
@@ -568,8 +573,9 @@ func TestBuild(t *testing.T) {
 		{
 			"MultilineConfiguredStartPattern",
 			func(f *Config) {
-				f.Splitter = helper.NewSplitterConfig()
-				f.Splitter.Multiline = helper.MultilineConfig{
+				f.EncodingConfig = helper.NewEncodingConfig()
+				f.Flusher = helper.NewFlusherConfig()
+				f.MultilineConfig = helper.MultilineConfig{
 					LineStartPattern: "START.*",
 				}
 			},
@@ -579,8 +585,9 @@ func TestBuild(t *testing.T) {
 		{
 			"MultilineConfiguredEndPattern",
 			func(f *Config) {
-				f.Splitter = helper.NewSplitterConfig()
-				f.Splitter.Multiline = helper.MultilineConfig{
+				f.EncodingConfig = helper.NewEncodingConfig()
+				f.Flusher = helper.NewFlusherConfig()
+				f.MultilineConfig = helper.MultilineConfig{
 					LineEndPattern: "END.*",
 				}
 			},
@@ -590,7 +597,7 @@ func TestBuild(t *testing.T) {
 		{
 			"InvalidEncoding",
 			func(f *Config) {
-				f.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-3233"}
+				f.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-3233"}
 			},
 			require.Error,
 			nil,
@@ -598,8 +605,9 @@ func TestBuild(t *testing.T) {
 		{
 			"LineStartAndEnd",
 			func(f *Config) {
-				f.Splitter = helper.NewSplitterConfig()
-				f.Splitter.Multiline = helper.MultilineConfig{
+				f.EncodingConfig = helper.NewEncodingConfig()
+				f.Flusher = helper.NewFlusherConfig()
+				f.MultilineConfig = helper.MultilineConfig{
 					LineStartPattern: ".*",
 					LineEndPattern:   ".*",
 				}
@@ -610,8 +618,9 @@ func TestBuild(t *testing.T) {
 		{
 			"NoLineStartOrEnd",
 			func(f *Config) {
-				f.Splitter = helper.NewSplitterConfig()
-				f.Splitter.Multiline = helper.MultilineConfig{}
+				f.EncodingConfig = helper.NewEncodingConfig()
+				f.Flusher = helper.NewFlusherConfig()
+				f.MultilineConfig = helper.MultilineConfig{}
 			},
 			require.NoError,
 			func(t *testing.T, f *Input) {},
@@ -619,8 +628,9 @@ func TestBuild(t *testing.T) {
 		{
 			"InvalidLineStartRegex",
 			func(f *Config) {
-				f.Splitter = helper.NewSplitterConfig()
-				f.Splitter.Multiline = helper.MultilineConfig{
+				f.EncodingConfig = helper.NewEncodingConfig()
+				f.Flusher = helper.NewFlusherConfig()
+				f.MultilineConfig = helper.MultilineConfig{
 					LineStartPattern: "(",
 				}
 			},
@@ -630,8 +640,9 @@ func TestBuild(t *testing.T) {
 		{
 			"InvalidLineEndRegex",
 			func(f *Config) {
-				f.Splitter = helper.NewSplitterConfig()
-				f.Splitter.Multiline = helper.MultilineConfig{
+				f.EncodingConfig = helper.NewEncodingConfig()
+				f.Flusher = helper.NewFlusherConfig()
+				f.MultilineConfig = helper.MultilineConfig{
 					LineEndPattern: "(",
 				}
 			},

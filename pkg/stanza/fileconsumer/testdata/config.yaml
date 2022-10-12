@@ -119,26 +119,6 @@ max_log_size_mib_lower:
 max_log_size_mib_upper:
   type: mock
   max_log_size: 1MiB
-multiline_extra_field:
-  type: mockMultiline
-  multiline:
-    that_random_field: "this should go nowhere"
-multiline_line_end_special:
-  type: mockMultiline
-  multiline:
-    line_end_pattern: '%'
-multiline_line_end_string:
-  type: mockMultiline
-  multiline:
-    line_end_pattern: 'Start'
-multiline_line_start_special:
-  type: mockMultiline
-  multiline:
-    line_start_pattern: '%'
-multiline_line_start_string:
-  type: mockMultiline
-  multiline:
-    line_start_pattern: 'Start'
 poll_interval_1000ms:
   type: mock
   poll_interval: 1000ms
