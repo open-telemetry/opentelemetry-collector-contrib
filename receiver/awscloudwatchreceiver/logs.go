@@ -184,20 +184,27 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 
 func (l *logsReceiver) poll(ctx context.Context) error {
 	var errs error
+	var latestTime time.Time
 	l.mu.Lock()
 	for _, r := range l.groupRequests {
-		if err := l.pollForLogs(ctx, r); err != nil {
+		t, err := l.pollForLogs(ctx, r)
+		if err != nil {
 			errs = multierr.Append(errs, err)
 		}
+		latestTime = t
 	}
 	l.mu.Unlock()
+	if latestTime.After(l.lastRecordedTime) {
+		l.lastRecordedTime = latestTime
+	}
 	return errs
 }
 
-func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest) error {
+func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest) (time.Time, error) {
 	err := l.ensureSession()
+	latestInPayload := l.lastRecordedTime
 	if err != nil {
-		return err
+		return time.Time{}, err
 	}
 	nextToken := aws.String("")
 	startTime := l.lastRecordedTime
@@ -207,7 +214,7 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest) error {
 		// if done, we want to stop processing paginated stream of events
 		case _, ok := <-l.doneChan:
 			if !ok {
-				return nil
+				return latestInPayload, nil
 			}
 		default:
 			input := pc.request(l.maxEventsPerRequest, *nextToken, &startTime, &endTime)
@@ -217,7 +224,10 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest) error {
 				break
 			}
 			observedTime := pcommon.NewTimestampFromTime(time.Now())
-			logs := l.processEvents(observedTime, pc.groupName(), resp)
+			logs, latestTime := l.processEvents(observedTime, pc.groupName(), resp)
+			if latestTime.After(latestInPayload) {
+				latestInPayload = latestTime
+			}
 			if logs.LogRecordCount() > 0 {
 				if err = l.consumer.ConsumeLogs(ctx, logs); err != nil {
 					l.logger.Error("unable to consume logs", zap.Error(err))
@@ -227,11 +237,12 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest) error {
 			nextToken = resp.NextToken
 		}
 	}
-	return nil
+	return latestInPayload, nil
 }
 
-func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string, output *cloudwatchlogs.FilterLogEventsOutput) plog.Logs {
+func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string, output *cloudwatchlogs.FilterLogEventsOutput) (plog.Logs, time.Time) {
 	logs := plog.NewLogs()
+	lastOfThisBundle := pcommon.Timestamp(0).AsTime()
 	for _, e := range output.Events {
 		if e.Timestamp == nil {
 			l.logger.Error("unable to determine timestamp of event as the timestamp is nil")
@@ -262,13 +273,13 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 
 		if ts.After(l.lastRecordedTime) {
-			l.lastRecordedTime = ts
+			lastOfThisBundle = ts
 		}
 
 		logRecord.Body().SetStr(*e.Message)
 		logRecord.Attributes().PutString("id", *e.EventId)
 	}
-	return logs
+	return logs, lastOfThisBundle
 }
 
 func (l *logsReceiver) startDiscovering(ctx context.Context, auto *AutodiscoverConfig) {
