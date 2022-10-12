@@ -1333,8 +1333,7 @@ func TestScrape(t *testing.T) {
 						scraperErrors.AddPartial(1, clientErr)
 					},
 				).Once()
-				metricName := "metric1"
-				expectedErr := fmt.Sprintf(errMsgOIDAttributeEmptyValue, metricName)
+				expectedErr := "not creating indexed metric 'metric1' datapoint: metric OID attribute value is blank"
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(
 					func(args mock.Arguments) {
 						scraperErrors := args.Get(2).(*scrapererror.ScrapeErrors)
@@ -1426,8 +1425,7 @@ func TestScrape(t *testing.T) {
 					require.EqualError(t, returnErr, expectedErr2)
 					scraperErrors.AddPartial(1, returnErr)
 				}).Once()
-				metricName := "metric1"
-				expectedErr := fmt.Sprintf(errMsgOIDAttributeEmptyValue, metricName)
+				expectedErr := "not creating indexed metric 'metric1' datapoint: metric OID attribute value is blank"
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(
 					func(args mock.Arguments) {
 						scraperErrors := args.Get(2).(*scrapererror.ScrapeErrors)
@@ -1953,7 +1951,7 @@ func TestScrape(t *testing.T) {
 						scraperErrors.AddPartial(1, clientErr)
 					},
 				).Once()
-				expectedErr := "not creating indexed metric 'metric1' or resource as related resource attribute value is blank"
+				expectedErr := "not creating indexed metric 'metric1' or resource: related resource attribute value is blank"
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(
 					func(args mock.Arguments) {
 						scraperErrors := args.Get(2).(*scrapererror.ScrapeErrors)
@@ -2041,7 +2039,7 @@ func TestScrape(t *testing.T) {
 					require.EqualError(t, returnErr, expectedErr2)
 					scraperErrors.AddPartial(1, returnErr)
 				}).Once()
-				expectedErr := "not creating indexed metric 'metric1' or resource as related resource attribute value is blank"
+				expectedErr := "not creating indexed metric 'metric1' or resource: related resource attribute value is blank"
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything, mock.Anything).Run(
 					func(args mock.Arguments) {
 						scraperErrors := args.Get(2).(*scrapererror.ScrapeErrors)
