@@ -235,7 +235,7 @@ func newMap(tags map[string]string) pcommon.Map {
 	return m
 }
 
-func errorTagsFromStatus(status ptrace.SpanStatus) map[string]string {
+func errorTagsFromStatus(status ptrace.Status) map[string]string {
 	tags := make(map[string]string)
 
 	if status.Code() != ptrace.StatusCodeError {

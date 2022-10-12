@@ -6,7 +6,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/mongodb-forks/digest v1.0.4
 	go.mongodb.org/atlas v0.17.0
-	go.opentelemetry.io/collector v0.61.1-0.20221006231412-05d1c5f5572d
+	go.opentelemetry.io/collector v0.61.1-0.20221011194806-6e554f2d823b
 	go.uber.org/zap v1.23.0
 )
 
@@ -41,7 +41,7 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	gonum.org/v1/gonum v0.12.0 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
-	google.golang.org/grpc v1.49.0 // indirect
+	google.golang.org/grpc v1.50.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
@@ -50,7 +50,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.61.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector/pdata v0.61.1-0.20221006231412-05d1c5f5572d
+	go.opentelemetry.io/collector/pdata v0.61.1-0.20221011194806-6e554f2d823b
 	go.uber.org/multierr v1.8.0
 )
 

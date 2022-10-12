@@ -216,7 +216,7 @@ func (m *metricCouchdbDatabaseOpen) init() {
 	m.data.SetUnit("{databases}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricCouchdbDatabaseOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -267,7 +267,7 @@ func (m *metricCouchdbDatabaseOperations) init() {
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -320,7 +320,7 @@ func (m *metricCouchdbFileDescriptorOpen) init() {
 	m.data.SetUnit("{files}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricCouchdbFileDescriptorOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -371,7 +371,7 @@ func (m *metricCouchdbHttpdBulkRequests) init() {
 	m.data.SetUnit("{requests}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricCouchdbHttpdBulkRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -422,7 +422,7 @@ func (m *metricCouchdbHttpdRequests) init() {
 	m.data.SetUnit("{requests}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -475,7 +475,7 @@ func (m *metricCouchdbHttpdResponses) init() {
 	m.data.SetUnit("{responses}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -528,7 +528,7 @@ func (m *metricCouchdbHttpdViews) init() {
 	m.data.SetUnit("{views}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 

@@ -172,7 +172,7 @@ func spanToZipkinSpan(
 	return zs, nil
 }
 
-func populateStatus(status ptrace.SpanStatus, zs *zipkinmodel.SpanModel, tags map[string]string) {
+func populateStatus(status ptrace.Status, zs *zipkinmodel.SpanModel, tags map[string]string) {
 	if status.Code() == ptrace.StatusCodeError {
 		tags[tracetranslator.TagError] = "true"
 	} else {

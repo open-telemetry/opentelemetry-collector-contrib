@@ -68,7 +68,7 @@ func histogramPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestam
 
 func histogramPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.HistogramDataPoint {
 	hdp := histogramPointRaw(attributes, startTimestamp, timestamp)
-	hdp.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+	hdp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 
 	return hdp
 }
@@ -77,7 +77,7 @@ func histogramMetric(name string, points ...pmetric.HistogramDataPoint) pmetric.
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	histogram := metric.SetEmptyHistogram()
-	histogram.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	histogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 	destPointL := histogram.DataPoints()
 	// By default the AggregationTemporality is Cumulative until it'll be changed by the caller.
@@ -109,7 +109,7 @@ func doublePoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, 
 
 func doublePointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.NumberDataPoint {
 	ndp := doublePointRaw(attributes, startTimestamp, timestamp)
-	ndp.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+	ndp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 	return ndp
 }
 
@@ -129,7 +129,7 @@ func sumMetric(name string, points ...pmetric.NumberDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	sum := metric.SetEmptySum()
-	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	sum.SetIsMonotonic(true)
 
 	destPointL := sum.DataPoints()
@@ -170,7 +170,7 @@ func summaryPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp,
 
 func summaryPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.SummaryDataPoint {
 	sdp := summaryPointRaw(attributes, startTimestamp, timestamp)
-	sdp.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+	sdp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 
 	return sdp
 }

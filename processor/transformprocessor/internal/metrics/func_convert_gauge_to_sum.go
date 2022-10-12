@@ -24,12 +24,12 @@ import (
 )
 
 func convertGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottldatapoints.TransformContext], error) {
-	var aggTemp pmetric.MetricAggregationTemporality
+	var aggTemp pmetric.AggregationTemporality
 	switch stringAggTemp {
 	case "delta":
-		aggTemp = pmetric.MetricAggregationTemporalityDelta
+		aggTemp = pmetric.AggregationTemporalityDelta
 	case "cumulative":
-		aggTemp = pmetric.MetricAggregationTemporalityCumulative
+		aggTemp = pmetric.AggregationTemporalityCumulative
 	default:
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
 	}

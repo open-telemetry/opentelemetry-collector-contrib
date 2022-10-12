@@ -92,7 +92,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		return errors.New("empty config for file exporter")
 	}
 	// first load the config normally
-	err := componentParser.UnmarshalExact(cfg)
+	err := componentParser.Unmarshal(cfg, confmap.WithErrorUnused())
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		return err
 	}
 	rotationCfg := newDefaultRotationConfig()
-	err = rotationConfmap.UnmarshalExact(rotationCfg)
+	err = rotationConfmap.Unmarshal(rotationCfg, confmap.WithErrorUnused())
 	if err != nil {
 		return err
 	}

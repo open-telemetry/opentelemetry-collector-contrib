@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.110
+	github.com/aws/aws-sdk-go v1.44.114
 	github.com/google/cadvisor v0.45.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.61.0
@@ -13,8 +13,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.61.0
 	github.com/shirou/gopsutil/v3 v3.22.9
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.61.1-0.20221006231412-05d1c5f5572d
-	go.opentelemetry.io/collector/pdata v0.61.1-0.20221006231412-05d1c5f5572d
+	go.opentelemetry.io/collector v0.61.1-0.20221011194806-6e554f2d823b
+	go.opentelemetry.io/collector/pdata v0.61.1-0.20221011194806-6e554f2d823b
 	go.uber.org/zap v1.23.0
 	k8s.io/api v0.25.2
 	k8s.io/apimachinery v0.25.2
@@ -117,7 +117,7 @@ require (
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
-	google.golang.org/grpc v1.49.0 // indirect
+	google.golang.org/grpc v1.50.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

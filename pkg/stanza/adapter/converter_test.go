@@ -760,7 +760,7 @@ func TestConvertSeverity(t *testing.T) {
 		expectedNumber plog.SeverityNumber
 		expectedText   string
 	}{
-		{entry.Default, "", plog.SeverityNumberUndefined, ""},
+		{entry.Default, "", plog.SeverityNumberUnspecified, ""},
 		{entry.Trace, "Trace", plog.SeverityNumberTrace, "Trace"},
 		{entry.Trace2, "Trace2", plog.SeverityNumberTrace2, "Trace2"},
 		{entry.Trace3, "Trace3", plog.SeverityNumberTrace3, "Trace3"},

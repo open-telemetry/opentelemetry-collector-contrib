@@ -18,17 +18,17 @@ import "go.opentelemetry.io/collector/pdata/pmetric"
 
 type MetricType interface {
 	MetricType() pmetric.MetricType
-	AggregationTemporality() pmetric.MetricAggregationTemporality
+	AggregationTemporality() pmetric.AggregationTemporality
 	IsMonotonic() bool
 }
 
 type metricValueDataType struct {
 	dataType               pmetric.MetricType
-	aggregationTemporality pmetric.MetricAggregationTemporality
+	aggregationTemporality pmetric.AggregationTemporality
 	isMonotonic            bool
 }
 
-func NewMetricType(dataType pmetric.MetricType, aggregationTemporality pmetric.MetricAggregationTemporality,
+func NewMetricType(dataType pmetric.MetricType, aggregationTemporality pmetric.AggregationTemporality,
 	isMonotonic bool) MetricType {
 	return metricValueDataType{
 		dataType:               dataType,
@@ -41,7 +41,7 @@ func (metricValueDataType metricValueDataType) MetricType() pmetric.MetricType {
 	return metricValueDataType.dataType
 }
 
-func (metricValueDataType metricValueDataType) AggregationTemporality() pmetric.MetricAggregationTemporality {
+func (metricValueDataType metricValueDataType) AggregationTemporality() pmetric.AggregationTemporality {
 	return metricValueDataType.aggregationTemporality
 }
 
