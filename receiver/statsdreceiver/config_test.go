@@ -156,5 +156,4 @@ func TestValidate(t *testing.T) {
 			require.EqualError(t, test.cfg.validate(), test.expectedErr)
 		})
 	}
-
 }

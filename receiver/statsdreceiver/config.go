@@ -37,7 +37,6 @@ type Config struct {
 }
 
 func (c *Config) validate() error {
-
 	var errs error
 
 	if c.AggregationInterval <= 0 {
