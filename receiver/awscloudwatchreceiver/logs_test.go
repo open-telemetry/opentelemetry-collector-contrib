@@ -132,11 +132,11 @@ func TestDiscovery(t *testing.T) {
 	logsRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
 	logsRcvr.client = defaultMockClient()
 
-	err := logsRcvr.Start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
-
+	require.NoError(t, logsRcvr.Start(context.Background(), componenttest.NewNopHost()))
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() > 0
+	}, 2*time.Second, 10*time.Millisecond)
 	require.Equal(t, len(logsRcvr.groupRequests), 2)
-
 	require.NoError(t, logsRcvr.Shutdown(context.Background()))
 }
 

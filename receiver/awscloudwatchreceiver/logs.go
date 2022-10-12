@@ -38,14 +38,13 @@ type logsReceiver struct {
 	imdsEndpoint        string
 	pollInterval        time.Duration
 	maxEventsPerRequest int
-	lastRecordedTime    *time.Time
+	nextStartTime       time.Time
 	groupRequests       []groupRequest
 	autodiscover        *AutodiscoverConfig
 	logger              *zap.Logger
 	client              client
 	consumer            consumer.Logs
 	wg                  *sync.WaitGroup
-	mu                  sync.Mutex
 	doneChan            chan bool
 }
 
@@ -130,7 +129,7 @@ func newLogsReceiver(cfg *Config, logger *zap.Logger, consumer consumer.Logs) *l
 		imdsEndpoint:        cfg.IMDSEndpoint,
 		autodiscover:        autodiscover,
 		pollInterval:        cfg.Logs.PollInterval,
-		lastRecordedTime:    nil,
+		nextStartTime:       time.Now().Add(cfg.Logs.PollInterval),
 		groupRequests:       groups,
 		logger:              logger,
 		wg:                  &sync.WaitGroup{},
@@ -140,17 +139,6 @@ func newLogsReceiver(cfg *Config, logger *zap.Logger, consumer consumer.Logs) *l
 
 func (l *logsReceiver) Start(ctx context.Context, host component.Host) error {
 	l.logger.Debug("starting to poll for Cloudwatch logs")
-
-	if l.autodiscover != nil {
-		group, err := l.discoverGroups(ctx, l.autodiscover)
-		if err != nil {
-			l.logger.Error("unable to auto discover log groups using prefix", zap.Error(err))
-		}
-		l.groupRequests = group
-		l.wg.Add(1)
-		go l.startDiscovering(ctx, l.autodiscover)
-	}
-
 	l.wg.Add(1)
 	go l.startPolling(ctx)
 	return nil
@@ -174,6 +162,15 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 		case <-l.doneChan:
 			return
 		case <-t.C:
+			if l.autodiscover != nil {
+				group, err := l.discoverGroups(ctx, l.autodiscover)
+				if err != nil {
+					l.logger.Error("unable to perform discovery of log groups", zap.Error(err))
+					continue
+				}
+				l.groupRequests = group
+			}
+
 			err := l.poll(ctx)
 			if err != nil {
 				l.logger.Error("there was an error during the poll", zap.Error(err))
@@ -184,46 +181,30 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 
 func (l *logsReceiver) poll(ctx context.Context) error {
 	var errs error
-	var latestTime time.Time
-	// lock discovery until poll is complete
-	l.mu.Lock()
+	startTime := l.nextStartTime
+	endTime := time.Now()
 	for _, r := range l.groupRequests {
-		t, err := l.pollForLogs(ctx, r)
-		if err != nil {
+		if err := l.pollForLogs(ctx, r, startTime, endTime); err != nil {
 			errs = multierr.Append(errs, err)
 		}
-		if t.After(latestTime) {
-			latestTime = t
-		}
 	}
-	l.mu.Unlock()
-
-	if l.lastRecordedTime == nil || latestTime.After(*l.lastRecordedTime) {
-		l.lastRecordedTime = &latestTime
-	}
+	l.nextStartTime = endTime
 	return errs
 }
 
-func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest) (time.Time, error) {
-	latestInPayload := pcommon.Timestamp(0).AsTime()
+func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTime, endTime time.Time) error {
 	err := l.ensureSession()
 	if err != nil {
-		return latestInPayload, err
+		return err
 	}
 	nextToken := aws.String("")
 
-	startTime := time.Now().Add(-l.pollInterval)
-	if l.lastRecordedTime != nil {
-		startTime = *l.lastRecordedTime
-	}
-
-	endTime := time.Now()
 	for nextToken != nil {
 		select {
 		// if done, we want to stop processing paginated stream of events
 		case _, ok := <-l.doneChan:
 			if !ok {
-				return latestInPayload, nil
+				return nil
 			}
 		default:
 			input := pc.request(l.maxEventsPerRequest, *nextToken, &startTime, &endTime)
@@ -233,25 +214,21 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest) (time.T
 				break
 			}
 			observedTime := pcommon.NewTimestampFromTime(time.Now())
-			logs, latestTime := l.processEvents(observedTime, pc.groupName(), resp)
+			logs := l.processEvents(observedTime, pc.groupName(), resp)
 			if logs.LogRecordCount() > 0 {
 				if err = l.consumer.ConsumeLogs(ctx, logs); err != nil {
 					l.logger.Error("unable to consume logs", zap.Error(err))
 					break
 				}
 			}
-			if latestTime.After(latestInPayload) {
-				latestInPayload = latestTime
-			}
 			nextToken = resp.NextToken
 		}
 	}
-	return latestInPayload, nil
+	return nil
 }
 
-func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string, output *cloudwatchlogs.FilterLogEventsOutput) (plog.Logs, time.Time) {
+func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string, output *cloudwatchlogs.FilterLogEventsOutput) plog.Logs {
 	logs := plog.NewLogs()
-	lastOfThisBundle := pcommon.Timestamp(0).AsTime()
 	for _, e := range output.Events {
 		if e.Timestamp == nil {
 			l.logger.Error("unable to determine timestamp of event as the timestamp is nil")
@@ -280,39 +257,10 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 		logRecord.SetObservedTimestamp(now)
 		ts := time.UnixMilli(*e.Timestamp)
 		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
-
-		if ts.After(lastOfThisBundle) {
-			lastOfThisBundle = ts
-		}
-
 		logRecord.Body().SetStr(*e.Message)
 		logRecord.Attributes().PutString("id", *e.EventId)
 	}
-	return logs, lastOfThisBundle
-}
-
-func (l *logsReceiver) startDiscovering(ctx context.Context, auto *AutodiscoverConfig) {
-	defer l.wg.Done()
-	t := time.NewTicker(l.pollInterval)
-	for {
-		select {
-		case _, ok := <-l.doneChan:
-			if !ok {
-				return
-			}
-		case <-ctx.Done():
-			return
-		case <-t.C:
-			l.mu.Lock()
-			l.logger.Debug("discovering new groups")
-			group, err := l.discoverGroups(ctx, auto)
-			if err != nil {
-				l.logger.Error("unable to perform discovery of log groups", zap.Error(err))
-			}
-			l.groupRequests = group
-			l.mu.Unlock()
-		}
-	}
+	return logs
 }
 
 func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverConfig) ([]groupRequest, error) {
