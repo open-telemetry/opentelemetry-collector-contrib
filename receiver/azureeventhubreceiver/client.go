@@ -126,7 +126,7 @@ func (c *client) handle(ctx context.Context, event *eventhub.Event) error {
 	c.obsrecv.StartLogsOp(ctx)
 	l := plog.NewLogs()
 	lr := l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	slice := lr.Body().SetEmptyBytesVal()
+	slice := lr.Body().SetEmptyBytes()
 	slice.Append(event.Data...)
 	lr.Attributes().FromRaw(event.Properties)
 	if event.SystemProperties.EnqueuedTime != nil {
