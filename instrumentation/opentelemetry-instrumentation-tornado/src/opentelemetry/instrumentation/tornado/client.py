@@ -41,7 +41,18 @@ def _normalize_request(args, kwargs):
     return (new_args, new_kwargs)
 
 
-def fetch_async(tracer, request_hook, response_hook, func, _, args, kwargs):
+def fetch_async(
+    tracer,
+    request_hook,
+    response_hook,
+    duration_histogram,
+    request_size_histogram,
+    response_size_histogram,
+    func,
+    _,
+    args,
+    kwargs,
+):
     start_time = time_ns()
 
     # Return immediately if no args were provided (error)
@@ -78,21 +89,34 @@ def fetch_async(tracer, request_hook, response_hook, func, _, args, kwargs):
                 _finish_tracing_callback,
                 span=span,
                 response_hook=response_hook,
+                duration_histogram=duration_histogram,
+                request_size_histogram=request_size_histogram,
+                response_size_histogram=response_size_histogram,
             )
         )
         return future
 
 
-def _finish_tracing_callback(future, span, response_hook):
+def _finish_tracing_callback(
+    future,
+    span,
+    response_hook,
+    duration_histogram,
+    request_size_histogram,
+    response_size_histogram,
+):
     status_code = None
     description = None
     exc = future.exception()
+
+    response = future.result()
+
     if span.is_recording() and exc:
         if isinstance(exc, HTTPError):
             status_code = exc.code
         description = f"{type(exc).__name__}: {exc}"
     else:
-        status_code = future.result().code
+        status_code = response.code
 
     if status_code is not None:
         span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, status_code)
@@ -102,6 +126,27 @@ def _finish_tracing_callback(future, span, response_hook):
                 description=description,
             )
         )
+
+    metric_attributes = _create_metric_attributes(response)
+    request_size = int(response.request.headers.get("Content-Length", 0))
+    response_size = int(response.headers.get("Content-Length", 0))
+
+    duration_histogram.record(
+        response.request_time, attributes=metric_attributes
+    )
+    request_size_histogram.record(request_size, attributes=metric_attributes)
+    response_size_histogram.record(response_size, attributes=metric_attributes)
+
     if response_hook:
         response_hook(span, future)
     span.end()
+
+
+def _create_metric_attributes(response):
+    metric_attributes = {
+        SpanAttributes.HTTP_STATUS_CODE: response.code,
+        SpanAttributes.HTTP_URL: remove_url_credentials(response.request.url),
+        SpanAttributes.HTTP_METHOD: response.request.method,
+    }
+
+    return metric_attributes

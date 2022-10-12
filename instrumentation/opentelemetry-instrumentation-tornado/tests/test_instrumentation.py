@@ -55,12 +55,12 @@ class TornadoTest(AsyncHTTPTestCase, TestBase):
         return app
 
     def setUp(self):
+        super().setUp()
         TornadoInstrumentor().instrument(
             server_request_hook=getattr(self, "server_request_hook", None),
             client_request_hook=getattr(self, "client_request_hook", None),
             client_response_hook=getattr(self, "client_response_hook", None),
         )
-        super().setUp()
         # pylint: disable=protected-access
         self.env_patch = patch.dict(
             "os.environ",
@@ -110,9 +110,9 @@ class TestTornadoInstrumentor(TornadoTest):
 
     def test_patch_applied_only_once(self):
         tracer = trace.get_tracer(__name__)
-        self.assertTrue(patch_handler_class(tracer, AsyncHandler))
-        self.assertFalse(patch_handler_class(tracer, AsyncHandler))
-        self.assertFalse(patch_handler_class(tracer, AsyncHandler))
+        self.assertTrue(patch_handler_class(tracer, {}, AsyncHandler))
+        self.assertFalse(patch_handler_class(tracer, {}, AsyncHandler))
+        self.assertFalse(patch_handler_class(tracer, {}, AsyncHandler))
         unpatch_handler_class(AsyncHandler)
 
 
