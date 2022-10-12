@@ -18,11 +18,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"time"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/trace"
-	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 type SpanContext interface {
