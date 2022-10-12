@@ -16,6 +16,7 @@ package s3provider // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -51,38 +52,38 @@ type provider struct {
 // Examples:
 // `s3://DOC-EXAMPLE-BUCKET.s3.us-west-2.amazonaws.com/photos/puppy.jpg` - (unix, windows)
 func New() confmap.Provider {
-	return &provider{client: nil}
+	return &provider{}
 }
 
-func (fmp *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+func (p *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 	if !strings.HasPrefix(uri, schemeName+":") {
 		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
 	}
 
 	// initialize the s3 client in the first call of Retrieve
-	if fmp.client == nil {
+	if p.client == nil {
 		cfg, err := config.LoadDefaultConfig(context.Background())
 		if err != nil {
 			return nil, fmt.Errorf("failed to load configurations to initialize an AWS SDK client, error: %w", err)
 		}
-		fmp.client = s3.NewFromConfig(cfg)
+		p.client = s3.NewFromConfig(cfg)
 	}
 
 	// Split the uri and get [BUCKET], [REGION], [KEY]
-	bucket, region, key, err := s3URISplit(uri)
+	bucket, region, key, err := splitS3URI(uri)
 	if err != nil {
 		return nil, fmt.Errorf("%q uri is not valid s3-url: %w", uri, err)
 	}
 
 	// s3 downloading
-	resp, err := fmp.client.GetObject(ctx, &s3.GetObjectInput{
+	resp, err := p.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	}, func(o *s3.Options) {
 		o.Region = region
 	})
 	if err != nil {
-		return nil, fmt.Errorf("file in S3 failed to fetch uri %q: %w", uri, err)
+		return nil, fmt.Errorf("failed to fetch file from s3-uri %q: %w", uri, err)
 	}
 
 	// read config from response body
@@ -104,35 +105,35 @@ func (*provider) Shutdown(context.Context) error {
 	return nil
 }
 
-// S3URISplit splits the s3 uri and get the [BUCKET], [REGION], [KEY] in it
+// splitS3URI splits the s3 uri and returns the [BUCKET], [REGION], [KEY]
 // INPUT : s3 uri (like s3://[BUCKET].s3.[REGION].amazonaws.com/[KEY])
 // OUTPUT :
 //   - [BUCKET] : The name of a bucket in Amazon S3.
 //   - [REGION] : Where are servers from, e.g. us-west-2.
 //   - [KEY]    : The key exists in a given bucket, can be used to retrieve a file.
-func s3URISplit(uri string) (string, string, string, error) {
+func splitS3URI(uri string) (string, string, string, error) {
 	// check whether the pattern of s3-uri is correct
 	matched, err := regexp.MatchString(`s3:\/\/(.*)\.s3\.(.*).amazonaws\.com\/(.*)`, uri)
 	if !matched || err != nil {
-		return "", "", "", fmt.Errorf("invalid s3-uri using a wrong pattern")
+		return "", "", "", errors.New("invalid s3-uri format")
 	}
 	// parse the uri as [scheme:][//[userinfo@]host][/]path[?query][#fragment], then extract components from
 	u, err := url.Parse(uri)
 	if err != nil {
-		return "", "", "", fmt.Errorf("failed to change the s3-uri to url.URL: %w", err)
+		return "", "", "", fmt.Errorf("failed to parse the s3-uri to url.URL: %w", err)
 	}
 	// extract components
 	key := strings.TrimPrefix(u.Path, "/")
 	host := u.Host
-	hostSplitted := strings.Split(host, ".")
-	if len(hostSplitted) < 5 {
+	hostSplit := strings.Split(host, ".")
+	if len(hostSplit) < 5 {
 		return "", "", "", fmt.Errorf("invalid host in the s3-uri")
 	}
-	bucket := hostSplitted[0]
-	region := hostSplitted[2]
+	bucket := hostSplit[0]
+	region := hostSplit[2]
 	// check empty fields
 	if bucket == "" || region == "" || key == "" {
-		return "", "", "", fmt.Errorf("invalid s3-uri with empty fields")
+		return "", "", "", errors.New("invalid s3-uri with empty fields")
 	}
 	return bucket, region, key, nil
 }

@@ -28,54 +28,68 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// A s3 client mocking s3provider works in normal cases
+// testClient is an s3 client mocking s3provider works in normal cases
 type testClient struct{}
 
-// Implement GetObject() for testClient in normal cases
+// NewTestProvider returns a mock provider for "normal working" tests
+func NewTestProvider() confmap.Provider {
+	return &provider{client: &testClient{}}
+}
+
+// GetObject implements s3client for `testClient`
 func (client *testClient) GetObject(context.Context, *s3.GetObjectInput, ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
 	// read local config file and return
 	f, err := os.ReadFile("./testdata/otel-config.yaml")
 	if err != nil {
-		return &s3.GetObjectOutput{}, err
+		return nil, err
 	}
 	return &s3.GetObjectOutput{Body: io.NopCloser(bytes.NewReader(f)), ContentLength: (int64)(len(f))}, nil
-}
-
-// Create a provider mocking s3provider works in normal cases
-func NewTestProvider() confmap.Provider {
-	return &provider{client: &testClient{}}
 }
 
 // A s3 client mocking s3provider works when there is no corresponding config file according to the given s3-uri
 type testNonExistClient struct{}
 
-// Create a provider mocking s3provider works when there is no corresponding config file according to the given s3-uri
+// NewTestNonExistProvider returns a mock provider for "non-existing configuration file" tests
 func NewTestNonExistProvider() confmap.Provider {
 	return &provider{client: &testNonExistClient{}}
 }
 
-// Implement GetObject() for testClient when there is no corresponding config file according to the given s3-uri
+// GetObject implements s3client for `testNonExistClient`
 func (client *testNonExistClient) GetObject(context.Context, *s3.GetObjectInput, ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
 	// read local config file and return
 	f, err := os.ReadFile("./testdata/nonexist-otel-config.yaml")
 	if err != nil {
-		return &s3.GetObjectOutput{}, err
+		return nil, err
 	}
 	return &s3.GetObjectOutput{Body: io.NopCloser(bytes.NewReader(f)), ContentLength: (int64)(len(f))}, nil
+}
+
+// A s3 client mocking s3provider works when the fetch fails
+type testInvalidFetchClient struct{}
+
+// NewTestInvalidFetchProvider returns a mock provider for "s3 fetch failed" tests
+func NewTestInvalidFetchProvider() confmap.Provider {
+	return &provider{client: &testInvalidFetchClient{}}
+}
+
+// GetObject implements s3client for `testInvalidFetchClient`
+func (client *testInvalidFetchClient) GetObject(context.Context, *s3.GetObjectInput, ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+	return nil, fmt.Errorf("network error")
 }
 
 // A s3 client mocking s3provider works when the returned config file is invalid
 type testInvalidClient struct{}
 
-// Create a provider mocking s3provider works when the returned config file is invalid
+// NewTestInvalidProvider returns a mock provider for "invalid configuration file" tests
 func NewTestInvalidProvider() confmap.Provider {
 	return &provider{client: &testInvalidClient{}}
 }
 
-// Implement GetObject() for testClient when the returned config file is invalid
+// GetObject implements s3client for `testInvalidClient`
 func (client *testInvalidClient) GetObject(context.Context, *s3.GetObjectInput, ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
-	// read local config file and return
-	return &s3.GetObjectOutput{}, fmt.Errorf("the downloaded config file")
+	buff := new(bytes.Buffer)
+	_, _ = buff.Write([]byte("invalid yaml"))
+	return &s3.GetObjectOutput{Body: io.NopCloser(buff), ContentLength: (int64)(buff.Len())}, nil
 }
 
 func TestFunctionalityDownloadFileS3(t *testing.T) {
@@ -85,9 +99,9 @@ func TestFunctionalityDownloadFileS3(t *testing.T) {
 	assert.NoError(t, fp.Shutdown(context.Background()))
 }
 
-func TestFunctionalityS3URISplit(t *testing.T) {
+func TestSplitS3URI(t *testing.T) {
 	fp := NewTestProvider()
-	bucket, region, key, err := s3URISplit("s3://bucket.s3.region.amazonaws.com/key")
+	bucket, region, key, err := splitS3URI("s3://bucket.s3.region.amazonaws.com/key")
 	assert.NoError(t, err)
 	assert.Equal(t, "bucket", bucket)
 	assert.Equal(t, "region", region)
@@ -95,13 +109,20 @@ func TestFunctionalityS3URISplit(t *testing.T) {
 	assert.NoError(t, fp.Shutdown(context.Background()))
 }
 
-func TestInvalidS3URISplit(t *testing.T) {
+func TestSplitS3URI_Invalid(t *testing.T) {
 	fp := NewTestProvider()
 	_, err := fp.Retrieve(context.Background(), "s3://bucket.s3.region.amazonaws", nil)
 	assert.Error(t, err)
 	_, err = fp.Retrieve(context.Background(), "s3://bucket.s3.region.aws.com/key", nil)
 	assert.Error(t, err)
+	_, err = fp.Retrieve(context.Background(), "s3://bucket.s3.region.amazonaws.co.uk/key", nil)
+	assert.Error(t, err)
+	_, err = fp.Retrieve(context.Background(), "s3://h?.s3.region.amazonaws.com/key", nil)
+	assert.Error(t, err)
+	_, err = fp.Retrieve(context.Background(), "s3://h^.s3.region.amazonaws.com/key", nil)
+	assert.Error(t, err)
 	require.NoError(t, fp.Shutdown(context.Background()))
+
 }
 
 func TestUnsupportedScheme(t *testing.T) {
@@ -132,6 +153,13 @@ func TestNonExistent(t *testing.T) {
 	_, err = fp.Retrieve(context.Background(), "s3://bucket.s3.region.amazonaws.com/non-exist-key.yaml", nil)
 	assert.Error(t, err)
 	_, err = fp.Retrieve(context.Background(), "s3://bucket.s3.non-exist-region.amazonaws.com/key", nil)
+	assert.Error(t, err)
+	require.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func TestS3FetchFail(t *testing.T) {
+	fp := NewTestInvalidFetchProvider()
+	_, err := fp.Retrieve(context.Background(), "s3://bucket.s3.region.amazonaws.com/key", nil)
 	assert.Error(t, err)
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
