@@ -5,7 +5,7 @@ change_type: enhancement
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add new Instrumentation Scope context to allow for efficient transformation of resource telemetry.
+note: Add new Instrumentation Scope context to allow for efficient transformation of Instrumentation Scope telemetry.
 
 # One or more tracking issues related to the change
 issues: [14892]
