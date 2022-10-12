@@ -138,14 +138,6 @@ func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetri
 		for i := uint32(0); i < in.Len(); i++ {
 			out.BucketCounts().Append(in.At(i))
 		}
-		// Note: The copy being made could be avoided if this
-		// code base would use an interface to access buckets
-		// instead of a slice.
-		cpy := make([]uint64, in.Len())
-		for i := range cpy {
-			cpy[i] = in.At(uint32(i))
-		}
-		out.BucketCounts().FromRaw(cpy)
 	}
 }
 
