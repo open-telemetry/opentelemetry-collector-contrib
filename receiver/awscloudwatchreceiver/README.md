@@ -27,7 +27,7 @@ This receiver uses the [AWS SDK Profiles](https://docs.aws.amazon.com/cli/latest
 
 | Parameter                | Notes        | type                   | Description                                                                                |
 | ------------------------ | ------------ | ---------------------- | ------------------------------------------------------------------------------------------ |
-| `poll_interval`       | `default=1m` | duration               | The duration waiting in between requests.                                                  |
+| `poll_interval`          | `default=1m` | duration               | The duration waiting in between requests.                                                  |
 | `max_events_per_request` | `default=50` | int                    | The maximum number of events to process per request to Cloudwatch                          |
 | `groups`                 | *optional*   | `See Group Parameters` | Configuration for Log Groups, by default all Log Groups and Log Streams will be collected. |
 
@@ -39,7 +39,6 @@ This receiver uses the [AWS SDK Profiles](https://docs.aws.amazon.com/cli/latest
   - `limit`: (optional; default = 50) Limits the number of discovered log groups.
   - `prefix`: (optional) A prefix for log groups to limit the number of log groups discovered.
     - if omitted, all log streams up to the limit are collected from
-  - `discover_interval`: (optional; default = 30min) How often the receiver should check the CloudWatch API for new log groups/streams that match the configuration.
   - `streams`: (optional) If `streams` is omitted, then all streams will be attempted to retrieve events from.
     - `names`: A list of full log stream names to filter the discovered log groups to collect from.
     - `prefixes`: A list of prefixes to filter the discovered log groups to collect from.

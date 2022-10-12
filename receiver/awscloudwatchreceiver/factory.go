@@ -55,8 +55,7 @@ func createDefaultConfig() config.Receiver {
 			MaxEventsPerRequest: defaultEventLimit,
 			Groups: GroupConfig{
 				AutodiscoverConfig: &AutodiscoverConfig{
-					Limit:             defaultLogGroupLimit,
-					DiscoveryInterval: defaultDiscoveryInterval,
+					Limit: defaultLogGroupLimit,
 				},
 			},
 		},

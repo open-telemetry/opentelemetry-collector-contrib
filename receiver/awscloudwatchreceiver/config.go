@@ -25,10 +25,9 @@ import (
 )
 
 var (
-	defaultPollInterval      = time.Minute
-	defaultEventLimit        = 1000
-	defaultLogGroupLimit     = 50
-	defaultDiscoveryInterval = 30 * time.Minute
+	defaultPollInterval  = time.Minute
+	defaultEventLimit    = 1000
+	defaultLogGroupLimit = 50
 )
 
 // Config is the overall config structure for the awscloudwatchreceiver
@@ -55,10 +54,9 @@ type GroupConfig struct {
 
 // AutodiscoverConfig is the configuration for the autodiscovery functionality of log groups
 type AutodiscoverConfig struct {
-	Prefix            string        `mapstructure:"prefix"`
-	Limit             int           `mapstructure:"limit"`
-	DiscoveryInterval time.Duration `mapstructure:"discovery_interval"`
-	Streams           StreamConfig  `mapstructure:"streams"`
+	Prefix  string       `mapstructure:"prefix"`
+	Limit   int          `mapstructure:"limit"`
+	Streams StreamConfig `mapstructure:"streams"`
 }
 
 // StreamConfig represents the configuration for the log stream filtering

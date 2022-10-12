@@ -147,8 +147,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxEventsPerRequest: defaultEventLimit,
 					Groups: GroupConfig{
 						AutodiscoverConfig: &AutodiscoverConfig{
-							DiscoveryInterval: defaultDiscoveryInterval,
-							Limit:             defaultLogGroupLimit,
+							Limit: defaultLogGroupLimit,
 						},
 					},
 				},
@@ -164,9 +163,8 @@ func TestLoadConfig(t *testing.T) {
 					MaxEventsPerRequest: defaultEventLimit,
 					Groups: GroupConfig{
 						AutodiscoverConfig: &AutodiscoverConfig{
-							DiscoveryInterval: defaultDiscoveryInterval,
-							Limit:             100,
-							Prefix:            "/aws/eks/",
+							Limit:  100,
+							Prefix: "/aws/eks/",
 						},
 					},
 				},
@@ -182,8 +180,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxEventsPerRequest: defaultEventLimit,
 					Groups: GroupConfig{
 						AutodiscoverConfig: &AutodiscoverConfig{
-							Limit:             100,
-							DiscoveryInterval: defaultDiscoveryInterval,
+							Limit: 100,
 							Streams: StreamConfig{
 								Prefixes: []*string{aws.String("kube-api-controller")},
 							},
@@ -202,8 +199,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxEventsPerRequest: defaultEventLimit,
 					Groups: GroupConfig{
 						AutodiscoverConfig: &AutodiscoverConfig{
-							Limit:             100,
-							DiscoveryInterval: defaultDiscoveryInterval,
+							Limit: 100,
 							Streams: StreamConfig{
 								Prefixes: []*string{aws.String("kube-api-controller")},
 							},
@@ -224,8 +220,7 @@ func TestLoadConfig(t *testing.T) {
 					Groups: GroupConfig{
 						// this is ignored since named configs are present
 						AutodiscoverConfig: &AutodiscoverConfig{
-							Limit:             defaultLogGroupLimit,
-							DiscoveryInterval: defaultDiscoveryInterval,
+							Limit: defaultLogGroupLimit,
 						},
 						NamedConfigs: map[string]StreamConfig{
 							"/aws/eks/dev-0/cluster": {},
@@ -246,8 +241,7 @@ func TestLoadConfig(t *testing.T) {
 					Groups: GroupConfig{
 						// this is ignored since named configs are present
 						AutodiscoverConfig: &AutodiscoverConfig{
-							Limit:             defaultLogGroupLimit,
-							DiscoveryInterval: defaultDiscoveryInterval,
+							Limit: defaultLogGroupLimit,
 						},
 						NamedConfigs: map[string]StreamConfig{
 							"/aws/eks/dev-0/cluster": {
