@@ -1014,16 +1014,6 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 	// histogram size to a small number and then setting the maximum range
 	// to test at scale 0, which is easy to reason about.  The tests use
 	// max size 10, so tests w/ a range of 2**10 appear below.
-
-	// Note: The structure here uses the mapping functions from
-	// OTel-Go sdk/metric/aggregator/exponential/mapping, which
-	// are the state of the OTel specification before the
-	// inclusivity adjustment here:
-	// https://github.com/open-telemetry/opentelemetry-specification/pull/2633,
-	// Tests that use exact powers-of-two will shift by one after
-	// this change which is the reason we avoid using exact powers
-	// of two (or anything near an exact power of two).
-
 	normalMapping := []TimerHistogramMapping{
 		{
 			StatsdType:   "timer",
