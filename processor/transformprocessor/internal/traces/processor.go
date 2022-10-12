@@ -48,9 +48,7 @@ func (p *Processor) ProcessTraces(_ context.Context, td ptrace.Traces) (ptrace.T
 			for k := 0; k < spans.Len(); k++ {
 				ctx := ottltraces.NewTransformContext(spans.At(k), sspan.Scope(), rspans.Resource())
 				for _, statement := range p.statements {
-					if statement.Condition(ctx) {
-						statement.Function(ctx)
-					}
+					statement.Execute(ctx)
 				}
 			}
 		}

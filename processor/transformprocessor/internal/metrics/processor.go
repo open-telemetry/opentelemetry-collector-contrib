@@ -96,8 +96,6 @@ func (p *Processor) handleSummaryDataPoints(dps pmetric.SummaryDataPointSlice, m
 
 func (p *Processor) callFunctions(ctx ottldatapoints.TransformContext) {
 	for _, statement := range p.statements {
-		if statement.Condition(ctx) {
-			statement.Function(ctx)
-		}
+		statement.Execute(ctx)
 	}
 }
