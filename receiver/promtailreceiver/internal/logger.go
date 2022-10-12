@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/promtailreceiver/internal"
 
 import (
 	"github.com/go-kit/log"
@@ -114,6 +114,8 @@ func matchLogLevel(key interface{}, val interface{}) (level.Value, bool) {
 	}
 	return levelVal, true
 }
+
+//revive:disable:error-return
 
 // check if a given key-value pair represents an error and return it
 func matchError(key interface{}, val interface{}) (error, bool) {

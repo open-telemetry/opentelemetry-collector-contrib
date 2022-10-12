@@ -19,26 +19,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/weaveworks/common/server"
-
-	"github.com/prometheus/prometheus/discovery"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
-
-	"github.com/prometheus/prometheus/discovery/targetgroup"
-
-	"github.com/grafana/loki/clients/pkg/promtail/targets/file"
-
 	"github.com/grafana/loki/clients/pkg/promtail/positions"
 	"github.com/grafana/loki/clients/pkg/promtail/scrapeconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
+	"github.com/grafana/loki/clients/pkg/promtail/targets/file"
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/discovery"
+	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/weaveworks/common/server"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func TestLoadConfig(t *testing.T) {

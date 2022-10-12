@@ -19,15 +19,14 @@ import (
 	"path"
 
 	"github.com/go-kit/log"
-
 	"github.com/grafana/loki/clients/pkg/promtail/api"
 	"github.com/grafana/loki/clients/pkg/promtail/targets"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/promtailreceiver/internal"
 )
 
 const (
@@ -51,7 +50,7 @@ type app struct {
 	client  api.EntryHandler
 	entries chan api.Entry
 	logger  log.Logger
-	reg     prometheus.Registerer
+	reg     *internal.Unregisterer
 }
 
 func (a *app) Shutdown() {
@@ -59,6 +58,10 @@ func (a *app) Shutdown() {
 		a.manager.Stop()
 	}
 	a.client.Stop()
+
+	// Unregister all prometheus metrics that were registered on Start by
+	// targets.NewTargetManagers
+	a.reg.UnregisterAll()
 }
 
 func (p *PromtailInput) Start(_ operator.Persister) error {

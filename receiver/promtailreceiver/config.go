@@ -18,19 +18,19 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/promtailreceiver/internal"
-	"go.opentelemetry.io/collector/confmap"
-
 	"github.com/grafana/loki/clients/pkg/promtail/api"
 	"github.com/grafana/loki/clients/pkg/promtail/positions"
 	"github.com/grafana/loki/clients/pkg/promtail/scrapeconfig"
 	"github.com/grafana/loki/clients/pkg/promtail/targets/file"
+	"github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/collector/confmap"
+	"go.uber.org/zap"
+	"gopkg.in/yaml.v2"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
-	"gopkg.in/yaml.v2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/promtailreceiver/internal"
 )
 
 // PromtailConfig defines configuration for the promtail receiver
@@ -94,7 +94,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 			client:  api.NewEntryHandler(entries, func() { close(entries) }),
 			entries: entries,
 			logger:  internal.NewZapToGokitLogAdapter(logger.Desugar()),
-			reg:     prometheus.DefaultRegisterer,
+			reg:     internal.WrapWithUnregisterer(prometheus.DefaultRegisterer),
 		},
 	}, nil
 }
