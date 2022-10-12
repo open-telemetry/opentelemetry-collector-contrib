@@ -129,7 +129,7 @@ func newLogsReceiver(cfg *Config, logger *zap.Logger, consumer consumer.Logs) *l
 		imdsEndpoint:        cfg.IMDSEndpoint,
 		autodiscover:        autodiscover,
 		pollInterval:        cfg.Logs.PollInterval,
-		nextStartTime:       time.Now().Add(cfg.Logs.PollInterval),
+		nextStartTime:       time.Now().Add(-cfg.Logs.PollInterval),
 		groupRequests:       groups,
 		logger:              logger,
 		wg:                  &sync.WaitGroup{},
