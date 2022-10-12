@@ -25,7 +25,7 @@ import (
 )
 
 type Processor struct {
-	statements []ottl.Statement[ottllogs.TransformContext]
+	statements []*ottl.Statement[ottllogs.TransformContext]
 }
 
 func NewProcessor(statements []string, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
