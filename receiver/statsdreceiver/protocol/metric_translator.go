@@ -111,6 +111,10 @@ func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetri
 
 	dp.SetCount(agg.Count())
 	dp.SetSum(agg.Sum())
+	if agg.Count() != 0 {
+		dp.SetMin(agg.Min())
+		dp.SetMax(agg.Max())
+	}
 
 	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))

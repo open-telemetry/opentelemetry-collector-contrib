@@ -235,6 +235,8 @@ func diffExponentialHistogramPt(
 	diffs = diffMetricAttrs(diffs, expected.Attributes(), actual.Attributes())
 	diffs = diff(diffs, expected.Count(), actual.Count(), "ExponentialHistogramDataPoint Count")
 	diffs = diff(diffs, expected.Sum(), actual.Sum(), "ExponentialHistogramDataPoint Sum")
+	diffs = diff(diffs, expected.Min(), actual.Min(), "ExponentialHistogramDataPoint Min")
+	diffs = diff(diffs, expected.Max(), actual.Max(), "ExponentialHistogramDataPoint Max")
 	diffs = diff(diffs, expected.ZeroCount(), actual.ZeroCount(), "ExponentialHistogramDataPoint ZeroCount")
 	diffs = diff(diffs, expected.Scale(), actual.Scale(), "ExponentialHistogramDataPoint Scale")
 
