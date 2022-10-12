@@ -27,21 +27,17 @@ type Parser[K any] struct {
 	telemetrySettings component.TelemetrySettings
 }
 
-// Statement is an interface that represents a parsed OTTL Statement
-type Statement[K any] interface {
-	// Execute is a function that will execute the statement's function if the statement's condition is met.
-	// Returns true if the function was run, returns false otherwise.
-	// If the statement contains no condition, the function will run and true will be returned.
-	// In addition, the functions return value is always returned.
-	Execute(ctx K) (any, bool)
-}
-
-type standardStatement[K any] struct {
+// Statement holds a top level statement for processing telemetry data.
+type Statement[K any] struct {
 	function  ExprFunc[K]
 	condition boolExpressionEvaluator[K]
 }
 
-func (s standardStatement[K]) Execute(ctx K) (any, bool) {
+// Execute is a function that will execute the statement's function if the statement's condition is met.
+// Returns true if the function was run, returns false otherwise.
+// If the statement contains no condition, the function will run and true will be returned.
+// In addition, the functions return value is always returned.
+func (s *Statement[K]) Execute(ctx K) (any, bool) {
 	condition := s.condition(ctx)
 	var result any
 	if condition {
@@ -79,7 +75,7 @@ func (p *Parser[K]) ParseStatements(statements []string) ([]Statement[K], error)
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		parsedStatements = append(parsedStatements, standardStatement[K]{
+		parsedStatements = append(parsedStatements, Statement[K]{
 			function:  function,
 			condition: expression,
 		})
