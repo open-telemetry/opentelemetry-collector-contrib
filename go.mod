@@ -158,7 +158,7 @@ require (
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.61.1-0.20221011194806-6e554f2d823b
 	go.uber.org/multierr v1.8.0
-	golang.org/x/sys v0.0.0-20221006211917-84dc82d7e875
+	golang.org/x/sys v0.0.0-20221010170243-090e33056c14
 )
 
 require (
@@ -200,7 +200,7 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/ClickHouse/ch-go v0.47.3 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.3.0 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.29 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.34 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.40.0-rc.2.0.20220930142800-72e24cd2e404 // indirect
 	github.com/DataDog/datadog-agent/pkg/otlp/model v0.40.0-rc.2.0.20220930142800-72e24cd2e404 // indirect
 	github.com/DataDog/datadog-agent/pkg/quantile v0.40.0-rc.2.0.20220930142800-72e24cd2e404 // indirect
@@ -493,7 +493,7 @@ require (
 	github.com/opentracing-contrib/go-grpc v0.0.0-20210225150812-73cb765af46e // indirect
 	github.com/opentracing-contrib/go-stdlib v1.0.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
-	github.com/openzipkin/zipkin-go v0.4.0 // indirect
+	github.com/openzipkin/zipkin-go v0.4.1 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/paulmach/orb v0.7.1 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
@@ -542,7 +542,7 @@ require (
 	github.com/stretchr/objx v0.4.0 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.510 // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.512 // indirect
 	github.com/tg123/go-htpasswd v1.2.0 // indirect
 	github.com/theupdateframework/go-tuf v0.3.0 // indirect
 	github.com/tidwall/gjson v1.14.3 // indirect
@@ -594,21 +594,21 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/goleak v1.2.0 // indirect
 	go.uber.org/zap v1.23.0 // indirect
-	golang.org/x/crypto v0.0.0-20221005025214-4161e89ecf1b // indirect
+	golang.org/x/crypto v0.0.0-20221010152910-d6f0a8c073c2 // indirect
 	golang.org/x/exp v0.0.0-20221006183845-316c7553db56 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
-	golang.org/x/net v0.0.0-20220927171203-f486391704dc // indirect
+	golang.org/x/net v0.0.0-20221004154528-8021a29435af // indirect
 	golang.org/x/oauth2 v0.0.0-20220909003341-f21342109be1 // indirect
 	golang.org/x/sync v0.0.0-20220923202941-7f9b1623fab7 // indirect
 	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467 // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/text v0.3.8 // indirect
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9 // indirect
 	golang.org/x/tools v0.1.12 // indirect
 	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
 	gonum.org/v1/gonum v0.12.0 // indirect
 	google.golang.org/api v0.98.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220916134934-764224ccc2d1 // indirect
+	google.golang.org/genproto v0.0.0-20221010155953-15ba04fc1c0e // indirect
 	google.golang.org/grpc v1.50.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
