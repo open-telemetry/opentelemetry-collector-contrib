@@ -152,7 +152,7 @@ func testMetricsFromDataPointBuilderBuild(t *testing.T, metricDataType pmetric.M
 				dataPoint = ilMetric.Gauge().DataPoints().At(dataPointIndex)
 			} else {
 				assert.NotNil(t, ilMetric.Sum())
-				assert.Equal(t, pmetric.MetricAggregationTemporalityDelta, ilMetric.Sum().AggregationTemporality())
+				assert.Equal(t, pmetric.AggregationTemporalityDelta, ilMetric.Sum().AggregationTemporality())
 				assert.True(t, ilMetric.Sum().IsMonotonic())
 				assert.Equal(t, len(expectedDataPoints), ilMetric.Sum().DataPoints().Len())
 				dataPoint = ilMetric.Sum().DataPoints().At(dataPointIndex)

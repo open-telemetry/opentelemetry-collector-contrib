@@ -84,14 +84,14 @@ func testMetrics() pmetric.MetricSlice {
 
 	dp := dps.AppendEmpty()
 	attributes := pcommon.NewMap()
-	attributes.PutString("testKey1", "teststringvalue1")
-	attributes.PutString("testKey2", "testvalue1")
+	attributes.PutStr("testKey1", "teststringvalue1")
+	attributes.PutStr("testKey2", "testvalue1")
 	setDPDoubleVal(dp, 2, attributes, time.Time{})
 
 	dp = dps.AppendEmpty()
 	attributes = pcommon.NewMap()
-	attributes.PutString("testKey1", "teststringvalue2")
-	attributes.PutString("testKey2", "testvalue2")
+	attributes.PutStr("testKey1", "teststringvalue2")
+	attributes.PutStr("testKey2", "testvalue2")
 	setDPDoubleVal(dp, 2, attributes, time.Time{})
 
 	// Gauge with one int dp
@@ -101,27 +101,27 @@ func testMetrics() pmetric.MetricSlice {
 
 	dp = dps.AppendEmpty()
 	attributes = pcommon.NewMap()
-	attributes.PutString("testKey2", "teststringvalue2")
+	attributes.PutStr("testKey2", "teststringvalue2")
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	// Delta Sum with two int dps
 	metric = slice.AppendEmpty()
-	initSum(metric, "test delta sum multi", "multi sum", "s", pmetric.MetricAggregationTemporalityDelta, false)
+	initSum(metric, "test delta sum multi", "multi sum", "s", pmetric.AggregationTemporalityDelta, false)
 	dps = metric.Sum().DataPoints()
 
 	dp = dps.AppendEmpty()
 	attributes = pcommon.NewMap()
-	attributes.PutString("testKey2", "teststringvalue2")
+	attributes.PutStr("testKey2", "teststringvalue2")
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	dp = dps.AppendEmpty()
 	attributes = pcommon.NewMap()
-	attributes.PutString("testKey2", "teststringvalue2")
+	attributes.PutStr("testKey2", "teststringvalue2")
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	// Cumulative Sum with one double dp
 	metric = slice.AppendEmpty()
-	initSum(metric, "test cumulative sum single", "single sum", "1/s", pmetric.MetricAggregationTemporalityCumulative, true)
+	initSum(metric, "test cumulative sum single", "single sum", "1/s", pmetric.AggregationTemporalityCumulative, true)
 	dps = metric.Sum().DataPoints()
 
 	dp = dps.AppendEmpty()
@@ -149,7 +149,7 @@ func initGauge(metric pmetric.Metric, name, desc, unit string) {
 	metric.SetEmptyGauge()
 }
 
-func initSum(metric pmetric.Metric, name, desc, unit string, aggr pmetric.MetricAggregationTemporality, isMonotonic bool) {
+func initSum(metric pmetric.Metric, name, desc, unit string, aggr pmetric.AggregationTemporality, isMonotonic bool) {
 	metric.SetDescription(desc)
 	metric.SetName(name)
 	metric.SetUnit(unit)

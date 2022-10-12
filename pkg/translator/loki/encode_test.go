@@ -27,13 +27,13 @@ func exampleLog() (plog.LogRecord, pcommon.Resource) {
 	buffer := plog.NewLogRecord()
 	buffer.Body().SetStr("Example log")
 	buffer.SetSeverityText("error")
-	buffer.Attributes().PutString("attr1", "1")
-	buffer.Attributes().PutString("attr2", "2")
+	buffer.Attributes().PutStr("attr1", "1")
+	buffer.Attributes().PutStr("attr2", "2")
 	buffer.SetTraceID([16]byte{1, 2, 3, 4})
 	buffer.SetSpanID([8]byte{5, 6, 7, 8})
 
 	resource := pcommon.NewResource()
-	resource.Attributes().PutString("host.name", "something")
+	resource.Attributes().PutStr("host.name", "something")
 
 	return buffer, resource
 }
@@ -51,8 +51,8 @@ func TestConvertWithMapBody(t *testing.T) {
 
 	log, resource := exampleLog()
 	mapVal := pcommon.NewValueMap()
-	mapVal.Map().PutString("key1", "value")
-	mapVal.Map().PutString("key2", "value")
+	mapVal.Map().PutStr("key1", "value")
+	mapVal.Map().PutStr("key2", "value")
 	mapVal.CopyTo(log.Body())
 
 	out, err := Encode(log, resource)
@@ -67,10 +67,10 @@ func TestSerializeBody(t *testing.T) {
 	arrayval.Slice().AppendEmpty().SetStr("b")
 
 	simplemap := pcommon.NewValueMap()
-	simplemap.Map().PutString("key", "val")
+	simplemap.Map().PutStr("key", "val")
 
 	complexmap := pcommon.NewValueMap()
-	complexmap.Map().PutString("keystr", "val")
+	complexmap.Map().PutStr("keystr", "val")
 	complexmap.Map().PutInt("keyint", 1)
 	complexmap.Map().PutDouble("keyint", 1)
 	complexmap.Map().PutBool("keybool", true)

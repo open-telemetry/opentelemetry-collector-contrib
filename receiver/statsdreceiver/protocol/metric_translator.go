@@ -37,7 +37,7 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, time
 		nm.SetUnit(parsedMetric.unit)
 	}
 
-	nm.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+	nm.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 	nm.Sum().SetIsMonotonic(isMonotonicCounter)
 
 	dp := nm.Sum().DataPoints().AppendEmpty()
@@ -45,7 +45,7 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, time
 	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(lastIntervalTime))
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	for i := parsedMetric.description.attrs.Iter(); i.Next(); {
-		dp.Attributes().PutString(string(i.Attribute().Key), i.Attribute().Value.AsString())
+		dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}
 
 	return ilm
@@ -62,7 +62,7 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pmetric.Scop
 	dp.SetDoubleValue(parsedMetric.gaugeValue())
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	for i := parsedMetric.description.attrs.Iter(); i.Next(); {
-		dp.Attributes().PutString(string(i.Attribute().Key), i.Attribute().Value.AsString())
+		dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}
 
 	return ilm
@@ -88,7 +88,7 @@ func buildSummaryMetric(desc statsDMetricDescription, summary summaryMetric, sta
 	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	for i := desc.attrs.Iter(); i.Next(); {
-		dp.Attributes().PutString(string(i.Attribute().Key), i.Attribute().Value.AsString())
+		dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}
 
 	sort.Sort(dualSorter{summary.points, summary.weights})

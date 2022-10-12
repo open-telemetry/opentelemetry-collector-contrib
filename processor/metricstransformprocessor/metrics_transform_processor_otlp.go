@@ -311,7 +311,7 @@ func initResourceMetrics(dest pmetric.ResourceMetrics, resource pcommon.Resource
 	resource.CopyTo(dest.Resource())
 
 	for k, v := range transform.GroupResourceLabels {
-		dest.Resource().Attributes().PutString(k, v)
+		dest.Resource().Attributes().PutStr(k, v)
 	}
 
 	sm := dest.ScopeMetrics().AppendEmpty()
@@ -437,7 +437,7 @@ func combine(transform internalTransform, metrics pmetric.MetricSlice) pmetric.M
 					submatch := metric.Name()[submatches[2*i]:submatches[2*i+1]]
 					submatch = replaceCaseOfSubmatch(transform.SubmatchCase, submatch)
 					if submatch != "" {
-						m.PutString(reAttrKeys[i], submatch)
+						m.PutStr(reAttrKeys[i], submatch)
 					}
 				}
 				return true

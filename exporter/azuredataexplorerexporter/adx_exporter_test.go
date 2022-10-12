@@ -202,7 +202,7 @@ func createMetricsData(numberOfDataPoints int) pmetric.Metrics {
 	doubleVal := 1234.5678
 	metrics := pmetric.NewMetrics()
 	rm := metrics.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutString("k0", "v0")
+	rm.Resource().Attributes().PutStr("k0", "v0")
 	for i := 0; i < numberOfDataPoints; i++ {
 		tsUnix := time.Unix(time.Now().Unix(), time.Now().UnixNano())
 		ilm := rm.ScopeMetrics().AppendEmpty()
@@ -222,13 +222,13 @@ func createLogsData() plog.Logs {
 
 	logs := plog.NewLogs()
 	rm := logs.ResourceLogs().AppendEmpty()
-	rm.Resource().Attributes().PutString("k0", "v0")
+	rm.Resource().Attributes().PutStr("k0", "v0")
 	ism := rm.ScopeLogs().AppendEmpty()
 	ism.Scope().SetName("scopename")
 	ism.Scope().SetVersion("1.0")
 	log := ism.LogRecords().AppendEmpty()
 	log.Body().SetStr("mylogsample")
-	log.Attributes().PutString("test", "value")
+	log.Attributes().PutStr("test", "value")
 	log.SetTimestamp(ts)
 	log.SetSpanID(pcommon.SpanID(spanID))
 	log.SetTraceID(pcommon.TraceID(traceID))
@@ -244,7 +244,7 @@ func createTracesData() ptrace.Traces {
 
 	traces := ptrace.NewTraces()
 	rm := traces.ResourceSpans().AppendEmpty()
-	rm.Resource().Attributes().PutString("host", "test")
+	rm.Resource().Attributes().PutStr("host", "test")
 	ism := rm.ScopeSpans().AppendEmpty()
 	ism.Scope().SetName("Scopename")
 	ism.Scope().SetVersion("1.0")
@@ -256,6 +256,6 @@ func createTracesData() ptrace.Traces {
 	span.SetSpanID(pcommon.SpanID(spanID))
 	span.SetTraceID(pcommon.TraceID(traceID))
 	span.TraceState().FromRaw("")
-	span.Attributes().PutString("key", "val")
+	span.Attributes().PutStr("key", "val")
 	return traces
 }

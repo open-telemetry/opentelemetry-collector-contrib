@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -109,6 +110,9 @@ func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 			},
 		},
 		fromBeginning: true,
+		splitterFactory: newMultilineSplitterFactory(
+			helper.NewEncodingConfig(), helper.NewFlusherConfig(), helper.NewMultilineConfig()),
+		encodingConfig: helper.NewEncodingConfig(),
 	}, emitChan
 }
 

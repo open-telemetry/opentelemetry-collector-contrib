@@ -95,7 +95,7 @@ func (g *metricGenerator) genMetricFromCfg(cfg MetricsCfg) pmetric.Metrics {
 		rm := rms.AppendEmpty()
 		resource := rm.Resource()
 		for j := 0; j < cfg.NumResourceAttrs; j++ {
-			resource.Attributes().PutString(
+			resource.Attributes().PutStr(
 				fmt.Sprintf("resource-attr-name-%d", j),
 				fmt.Sprintf("resource-attr-val-%d", j),
 			)
@@ -126,15 +126,15 @@ func (g *metricGenerator) populateMetrics(cfg MetricsCfg, ilm pmetric.ScopeMetri
 		case pmetric.MetricTypeSum:
 			sum := metric.SetEmptySum()
 			sum.SetIsMonotonic(cfg.IsMonotonicSum)
-			sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+			sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			populateNumberPoints(cfg, sum.DataPoints())
 		case pmetric.MetricTypeHistogram:
 			histo := metric.SetEmptyHistogram()
-			histo.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+			histo.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			populateDoubleHistogram(cfg, histo)
 		case pmetric.MetricTypeExponentialHistogram:
 			histo := metric.SetEmptyExponentialHistogram()
-			histo.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+			histo.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			populateExpoHistogram(cfg, histo)
 		}
 	}
@@ -207,7 +207,7 @@ func populatePtAttributes(cfg MetricsCfg, lm pcommon.Map) {
 	for i := 0; i < cfg.NumPtLabels; i++ {
 		k := fmt.Sprintf("pt-label-key-%d", i)
 		v := fmt.Sprintf("pt-label-val-%d", i)
-		lm.PutString(k, v)
+		lm.PutStr(k, v)
 	}
 }
 

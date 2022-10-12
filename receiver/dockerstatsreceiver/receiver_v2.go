@@ -99,14 +99,14 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 	for k, label := range r.config.EnvVarsToMetricLabels {
 		if v := container.EnvMap[k]; v != "" {
 			resourceMetricsOptions = append(resourceMetricsOptions, func(rm pmetric.ResourceMetrics) {
-				rm.Resource().Attributes().PutString(label, v)
+				rm.Resource().Attributes().PutStr(label, v)
 			})
 		}
 	}
 	for k, label := range r.config.ContainerLabelsToMetricLabels {
 		if v := container.Config.Labels[k]; v != "" {
 			resourceMetricsOptions = append(resourceMetricsOptions, func(rm pmetric.ResourceMetrics) {
-				rm.Resource().Attributes().PutString(label, v)
+				rm.Resource().Attributes().PutStr(label, v)
 			})
 		}
 	}

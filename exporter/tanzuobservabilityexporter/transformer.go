@@ -230,12 +230,12 @@ func attributesToTagsReplaceSource(attributes ...pcommon.Map) map[string]string 
 func newMap(tags map[string]string) pcommon.Map {
 	m := pcommon.NewMap()
 	for key, value := range tags {
-		m.PutString(key, value)
+		m.PutStr(key, value)
 	}
 	return m
 }
 
-func errorTagsFromStatus(status ptrace.SpanStatus) map[string]string {
+func errorTagsFromStatus(status ptrace.Status) map[string]string {
 	tags := make(map[string]string)
 
 	if status.Code() != ptrace.StatusCodeError {
