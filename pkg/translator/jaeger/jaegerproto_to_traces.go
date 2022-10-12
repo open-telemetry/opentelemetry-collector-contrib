@@ -258,7 +258,7 @@ func jTagsToInternalAttributes(tags []model.KeyValue, dest pcommon.Map) {
 	}
 }
 
-func setInternalSpanStatus(attrs pcommon.Map, dest ptrace.SpanStatus) {
+func setInternalSpanStatus(attrs pcommon.Map, dest ptrace.Status) {
 	statusCode := ptrace.StatusCodeUnset
 	statusMessage := ""
 	statusExists := false

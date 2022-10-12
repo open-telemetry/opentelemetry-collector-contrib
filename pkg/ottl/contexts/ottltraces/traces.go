@@ -415,7 +415,7 @@ func accessStatus() ottl.StandardGetSetter[TransformContext] {
 			return ctx.GetSpan().Status()
 		},
 		Setter: func(ctx TransformContext, val interface{}) {
-			if status, ok := val.(ptrace.SpanStatus); ok {
+			if status, ok := val.(ptrace.Status); ok {
 				status.CopyTo(ctx.GetSpan().Status())
 			}
 		},

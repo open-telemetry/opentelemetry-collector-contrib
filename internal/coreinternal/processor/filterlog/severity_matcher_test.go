@@ -63,20 +63,20 @@ func TestSeverityMatcher_MatchLogRecord(t *testing.T) {
 		{
 			name:          "UNDEFINED does not match if TRACE is min",
 			minSeverity:   plog.SeverityNumberTrace,
-			inputSeverity: plog.SeverityNumberUndefined,
+			inputSeverity: plog.SeverityNumberUnspecified,
 			matches:       false,
 		},
 		{
 			name:          "UNDEFINED does not match if UNDEFINED is min",
-			minSeverity:   plog.SeverityNumberUndefined,
-			inputSeverity: plog.SeverityNumberUndefined,
+			minSeverity:   plog.SeverityNumberUnspecified,
+			inputSeverity: plog.SeverityNumberUnspecified,
 			matches:       false,
 		},
 		{
 			name:           "UNDEFINED matches if matchUndefined is true",
-			minSeverity:    plog.SeverityNumberUndefined,
+			minSeverity:    plog.SeverityNumberUnspecified,
 			matchUndefined: true,
-			inputSeverity:  plog.SeverityNumberUndefined,
+			inputSeverity:  plog.SeverityNumberUnspecified,
 			matches:        true,
 		},
 	}
