@@ -391,7 +391,7 @@ func generateTagsFromAttributes(attrs pcommon.Map) map[string]string {
 	return tags
 }
 
-func statusFromSpanStatus(spanStatus ptrace.SpanStatus, tags map[string]string) (status sentry.SpanStatus, message string) {
+func statusFromSpanStatus(spanStatus ptrace.Status, tags map[string]string) (status sentry.SpanStatus, message string) {
 	code := spanStatus.Code()
 	if code < 0 || int(code) > 2 {
 		return sentry.SpanStatusUnknown, fmt.Sprintf("error code %d", code)

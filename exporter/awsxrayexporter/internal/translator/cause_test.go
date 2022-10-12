@@ -282,7 +282,7 @@ func constructExceptionServerSpan(attributes map[string]interface{}, statuscode 
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 
-	status := ptrace.NewSpanStatus()
+	status := ptrace.NewStatus()
 	status.SetCode(statuscode)
 	status.CopyTo(span.Status())
 
