@@ -176,7 +176,7 @@ func loadConfig(bytes []byte) (Config, error) {
 		return cfg, err
 	}
 
-	if err := confmap.NewFromStringMap(data).UnmarshalExact(&cfg); err != nil {
+	if err := confmap.NewFromStringMap(data).Unmarshal(&cfg, confmap.WithErrorUnused()); err != nil {
 		return cfg, fmt.Errorf("failed to load default exclude metrics: %w", err)
 	}
 

@@ -51,12 +51,12 @@ type statusMapper struct {
 	fromErrorTagUnknown status
 }
 
-// status fills the given ptrace.SpanStatus from the best possible extraction source.
+// status fills the given ptrace.Status from the best possible extraction source.
 // It'll first try to return status extracted from "census.status_code" to account for zipkin
 // then fallback on code extracted from "status.code" tags
 // and finally fallback on code extracted and translated from "http.status_code"
 // status must be called after all tags/attributes are processed with the `fromAttribute` method.
-func (m *statusMapper) status(dest ptrace.SpanStatus) {
+func (m *statusMapper) status(dest ptrace.Status) {
 	var s status
 	switch {
 	case m.fromCensus.codePtr != nil:

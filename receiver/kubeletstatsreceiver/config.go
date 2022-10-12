@@ -117,7 +117,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		return nil
 	}
 
-	if err := componentParser.UnmarshalExact(cfg); err != nil {
+	if err := componentParser.Unmarshal(cfg, confmap.WithErrorUnused()); err != nil {
 		return err
 	}
 

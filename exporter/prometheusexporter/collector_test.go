@@ -299,7 +299,7 @@ func TestCollectMetrics(t *testing.T) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
 				metric.SetEmptySum().SetIsMonotonic(false)
-				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntValue(42)
@@ -318,7 +318,7 @@ func TestCollectMetrics(t *testing.T) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
 				metric.SetEmptySum().SetIsMonotonic(false)
-				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleValue(42.42)
@@ -337,7 +337,7 @@ func TestCollectMetrics(t *testing.T) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
 				metric.SetEmptySum().SetIsMonotonic(true)
-				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntValue(42)
@@ -356,7 +356,7 @@ func TestCollectMetrics(t *testing.T) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
 				metric.SetEmptySum().SetIsMonotonic(true)
-				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleValue(42.42)
@@ -472,7 +472,7 @@ func TestAccumulateHistograms(t *testing.T) {
 			metric: func(ts time.Time) (metric pmetric.Metric) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Histogram().DataPoints().AppendEmpty()
 				dp.BucketCounts().FromRaw([]uint64{5, 2})
@@ -550,7 +550,7 @@ func TestAccumulateHistograms(t *testing.T) {
 }
 
 func TestAccumulateSummary(t *testing.T) {
-	fillQuantileValue := func(pN, value float64, dest pmetric.ValueAtQuantile) {
+	fillQuantileValue := func(pN, value float64, dest pmetric.SummaryDataPointValueAtQuantile) {
 		dest.SetQuantile(pN)
 		dest.SetValue(value)
 	}

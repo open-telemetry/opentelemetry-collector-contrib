@@ -89,7 +89,7 @@ type summaryInfo struct {
 type timeseriesKey struct {
 	name           string
 	attributes     string
-	aggTemporality pmetric.MetricAggregationTemporality
+	aggTemporality pmetric.AggregationTemporality
 }
 
 // timeseriesMap maps from a timeseries instance (metric * label values) to the timeseries info for
@@ -305,7 +305,7 @@ func (ma *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 
 func adjustMetricHistogram(tsm *timeseriesMap, current pmetric.Metric) {
 	histogram := current.Histogram()
-	if histogram.AggregationTemporality() != pmetric.MetricAggregationTemporalityCumulative {
+	if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 		// Only dealing with CumulativeDistributions.
 		return
 	}

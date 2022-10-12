@@ -80,13 +80,13 @@ func setMetricFields(cfg MetricCfg, dest pmetric.Metric) pmetric.NumberDataPoint
 	return out
 }
 
-func cfgToAggregationTemporality(agg MetricAggregation) pmetric.MetricAggregationTemporality {
-	var out pmetric.MetricAggregationTemporality
+func cfgToAggregationTemporality(agg MetricAggregation) pmetric.AggregationTemporality {
+	var out pmetric.AggregationTemporality
 	switch agg {
 	case MetricAggregationUnspecified, MetricAggregationCumulative:
-		out = pmetric.MetricAggregationTemporalityCumulative
+		out = pmetric.AggregationTemporalityCumulative
 	case MetricAggregationDelta:
-		out = pmetric.MetricAggregationTemporalityDelta
+		out = pmetric.AggregationTemporalityDelta
 	}
 	return out
 }

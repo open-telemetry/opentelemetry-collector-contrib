@@ -259,8 +259,8 @@ func TestScraper_MultiResults_CumulativeSum(t *testing.T) {
 			}},
 		},
 	}
-	assertTransactionCount(t, scrpr, 42, pmetric.MetricAggregationTemporalityCumulative)
-	assertTransactionCount(t, scrpr, 43, pmetric.MetricAggregationTemporalityCumulative)
+	assertTransactionCount(t, scrpr, 42, pmetric.AggregationTemporalityCumulative)
+	assertTransactionCount(t, scrpr, 43, pmetric.AggregationTemporalityCumulative)
 }
 
 func TestScraper_MultiResults_DeltaSum(t *testing.T) {
@@ -282,11 +282,11 @@ func TestScraper_MultiResults_DeltaSum(t *testing.T) {
 			}},
 		},
 	}
-	assertTransactionCount(t, scrpr, 42, pmetric.MetricAggregationTemporalityDelta)
-	assertTransactionCount(t, scrpr, 43, pmetric.MetricAggregationTemporalityDelta)
+	assertTransactionCount(t, scrpr, 42, pmetric.AggregationTemporalityDelta)
+	assertTransactionCount(t, scrpr, 43, pmetric.AggregationTemporalityDelta)
 }
 
-func assertTransactionCount(t *testing.T, scrpr scraper, expected int, agg pmetric.MetricAggregationTemporality) {
+func assertTransactionCount(t *testing.T, scrpr scraper, expected int, agg pmetric.AggregationTemporality) {
 	metrics, err := scrpr.Scrape(context.Background())
 	require.NoError(t, err)
 	metric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
