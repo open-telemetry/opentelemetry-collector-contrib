@@ -15,10 +15,12 @@
 package ottlcommon
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"testing"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func Test_MetricPathGetSetter(t *testing.T) {

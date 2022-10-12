@@ -16,8 +16,10 @@ package ottlcommon // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 type MetricContext interface {
