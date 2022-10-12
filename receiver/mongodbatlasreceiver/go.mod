@@ -6,7 +6,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/mongodb-forks/digest v1.0.4
 	go.mongodb.org/atlas v0.17.0
-	go.opentelemetry.io/collector v0.61.1-0.20221011194806-6e554f2d823b
+	go.opentelemetry.io/collector v0.61.1-0.20221011233510-806ba4cac52e
 	go.uber.org/zap v1.23.0
 )
 
@@ -50,7 +50,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.61.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector/pdata v0.61.1-0.20221011194806-6e554f2d823b
+	go.opentelemetry.io/collector/pdata v0.61.1-0.20221011233510-806ba4cac52e
 	go.uber.org/multierr v1.8.0
 )
 
