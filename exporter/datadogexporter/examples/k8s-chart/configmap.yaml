@@ -38,8 +38,7 @@ data:
         include_file_path: true
         poll_interval: 500ms
         include:
-          # This will send collector logs to DataDog.
-          # Add paths of the service to be included.
+          # This will ensure that logs from the following path are collected.
           - /var/log/**/*otel-collector*/*.log
       # # Comment out this block below to get access to system metrics regarding
       # # the OpenTelemetry Collector and its environment, such as spans or metrics
@@ -74,7 +73,7 @@ data:
         send_batch_size: 100
         timeout: 10s
     service:
-      # This will enable otel collector to log in json format
+      # This will make the collector output logs in JSON format
       telemetry:
         logs:
           encoding: "json"

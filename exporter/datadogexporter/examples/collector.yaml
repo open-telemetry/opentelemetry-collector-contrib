@@ -53,13 +53,13 @@ receivers:
     include_file_path: true
     poll_interval: 500ms
     include:
-      # This should be valid file path from which we need to collect logs .
+      # Logs will be collected from the below file path. Please ensure it is correct or edit as needed.
       # filelog receiver by default ends from end of the file.
       - /var/log/**/*example*/*.log
-     # Depending on the format of logs, it is recommended, that we setup the parser. Parsers are set of operators that you can setup.
-     # For example in case of json formatted logs, you can use json_parser.
-     # It is essential to extract trace_id and span_id from the logs to ensure logs-traces correlation works.
-     # In below example, json_parser would parse body to attributes, and then trace_parser extracts trace_id and span_id.
+     # Depending on the format of the logs it may be recommended to set up a parser.
+     # For example, in the case of JSON formatted logs, json_parser should be used.
+     # It is essential to extract trace_id and span_id from the logs in order to ensure that logs / traces correlation works.
+     # In the below example, json_parser will parse the body into attributes, while trace_parser will extract the trace_id and span_id.
      # Read more about operators here https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/stanza/docs/operators
      # operators:
      #  - id : parse_body
@@ -294,7 +294,7 @@ service:
     # Pipelines starting with `logs` or `logs/` define a logs pipeline.
     logs:
       # This pipeline has an OTLP receiver , filelog receiver , a batch processor and a Datadog exporter.
-      receivers: [otlp,filelog]
+      receivers: [otlp, filelog]
       processors: [batch]
       exporters: [datadog]
 
