@@ -91,9 +91,9 @@ func Test_replaceAllPatterns(t *testing.T) {
 			replacement: "foo",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.PutString("test", "hello world")
-				expectedMap.PutString("foo", "hello")
-				expectedMap.PutString("test3", "goodbye world1 and world2")
+				expectedMap.PutStr("test", "hello world")
+				expectedMap.PutStr("foo", "hello")
+				expectedMap.PutStr("test3", "goodbye world1 and world2")
 			},
 		},
 		{
@@ -104,9 +104,9 @@ func Test_replaceAllPatterns(t *testing.T) {
 			replacement: "nothing {matches}",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.PutString("test", "hello world")
-				expectedMap.PutString("test2", "hello")
-				expectedMap.PutString("test3", "goodbye world1 and world2")
+				expectedMap.PutStr("test", "hello world")
+				expectedMap.PutStr("test2", "hello")
+				expectedMap.PutStr("test3", "goodbye world1 and world2")
 			},
 		},
 		{
@@ -117,9 +117,9 @@ func Test_replaceAllPatterns(t *testing.T) {
 			replacement: "test.",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.PutString("test.", "hello world")
-				expectedMap.PutString("test.2", "hello")
-				expectedMap.PutString("test.3", "goodbye world1 and world2")
+				expectedMap.PutStr("test.", "hello world")
+				expectedMap.PutStr("test.2", "hello")
+				expectedMap.PutStr("test.3", "goodbye world1 and world2")
 			},
 		},
 	}
