@@ -112,7 +112,7 @@ func TestScaperScrape(t *testing.T) {
 			expectedErr: nil,
 			compareOptions: []scrapertest.CompareOption{
 				scrapertest.IgnoreMetricAttributeValue("http.url"),
-				scrapertest.IgnoreMetricValues(),
+				scrapertest.IgnoreMetricValues("httpcheck.duration"),
 			},
 		},
 		{
@@ -127,7 +127,7 @@ func TestScaperScrape(t *testing.T) {
 			expectedErr: nil,
 			compareOptions: []scrapertest.CompareOption{
 				scrapertest.IgnoreMetricAttributeValue("http.url"),
-				scrapertest.IgnoreMetricValues(),
+				scrapertest.IgnoreMetricValues("httpcheck.duration"),
 			},
 		},
 		{
@@ -141,7 +141,7 @@ func TestScaperScrape(t *testing.T) {
 			},
 			expectedErr: nil,
 			compareOptions: []scrapertest.CompareOption{
-				scrapertest.IgnoreMetricValues(),
+				scrapertest.IgnoreMetricValues("httpcheck.duration"),
 			},
 		},
 	}

@@ -27,7 +27,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver/internal/metadata"
 )
 
-var errClientNotInit = errors.New("client not initialized")
+var (
+	errClientNotInit    = errors.New("client not initialized")
+	httpResponseClasses = map[string]int{"1xx": 1, "2xx": 2, "3xx": 3, "4xx": 4, "5xx": 5}
+)
 
 type httpcheckScraper struct {
 	client   *http.Client
@@ -59,15 +62,20 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	resp, err := h.client.Do(req)
 	h.mb.RecordHttpcheckDurationDataPoint(now, time.Since(start).Milliseconds(), h.cfg.Endpoint)
 
-	success := 0
 	statusCode := -1
 	if err == nil {
-		if resp.StatusCode == http.StatusOK { // change this to use configurable status codes
-			success = 1
-		}
 		statusCode = resp.StatusCode
 	}
-	h.mb.RecordHttpcheckStatusDataPoint(now, int64(success), h.cfg.Endpoint, int64(statusCode), req.Method)
+
+	for class, intVal := range httpResponseClasses {
+		if statusCode/100 == intVal {
+			h.mb.RecordHttpcheckStatusDataPoint(now, int64(1), h.cfg.Endpoint, int64(statusCode), req.Method, class)
+		} else {
+			h.mb.RecordHttpcheckStatusDataPoint(now, int64(0), h.cfg.Endpoint, int64(statusCode), req.Method, class)
+		}
+
+	}
+
 	return h.mb.Emit(), nil
 }
 

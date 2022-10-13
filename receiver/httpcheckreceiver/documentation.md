@@ -9,7 +9,7 @@ These are the metrics available for this scraper.
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
 | **httpcheck.duration** | Measures the duration of the HTTP check. | ms | Gauge(Int) | <ul> <li>http.url</li> </ul> |
-| **httpcheck.status** | 1 if the endpoint resulted in status http.status_code, otherwise 0. | 1 | Sum(Int) | <ul> <li>http.url</li> <li>http.status_code</li> <li>http.method</li> </ul> |
+| **httpcheck.status** | 1 if the endpoint resulted in status http.status_code, otherwise 0. | 1 | Sum(Int) | <ul> <li>http.url</li> <li>http.status_code</li> <li>http.method</li> <li>http.status_class</li> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:
@@ -25,5 +25,6 @@ metrics:
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | http.method | HTTP request method |  |
+| http.status_class | HTTP response status class |  |
 | http.status_code | HTTP response status code |  |
 | http.url | Full HTTP request URL. |  |

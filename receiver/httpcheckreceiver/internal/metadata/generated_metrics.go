@@ -96,11 +96,11 @@ func (m *metricHttpcheckStatus) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricHttpcheckStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string, httpStatusCodeAttributeValue int64, httpMethodAttributeValue string) {
+func (m *metricHttpcheckStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string, httpStatusCodeAttributeValue int64, httpMethodAttributeValue string, httpStatusClassAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -111,6 +111,7 @@ func (m *metricHttpcheckStatus) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
 	dp.Attributes().PutInt("http.status_code", httpStatusCodeAttributeValue)
 	dp.Attributes().PutStr("http.method", httpMethodAttributeValue)
+	dp.Attributes().PutStr("http.status_class", httpStatusClassAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -246,8 +247,8 @@ func (mb *MetricsBuilder) RecordHttpcheckDurationDataPoint(ts pcommon.Timestamp,
 }
 
 // RecordHttpcheckStatusDataPoint adds a data point to httpcheck.status metric.
-func (mb *MetricsBuilder) RecordHttpcheckStatusDataPoint(ts pcommon.Timestamp, val int64, httpURLAttributeValue string, httpStatusCodeAttributeValue int64, httpMethodAttributeValue string) {
-	mb.metricHttpcheckStatus.recordDataPoint(mb.startTime, ts, val, httpURLAttributeValue, httpStatusCodeAttributeValue, httpMethodAttributeValue)
+func (mb *MetricsBuilder) RecordHttpcheckStatusDataPoint(ts pcommon.Timestamp, val int64, httpURLAttributeValue string, httpStatusCodeAttributeValue int64, httpMethodAttributeValue string, httpStatusClassAttributeValue string) {
+	mb.metricHttpcheckStatus.recordDataPoint(mb.startTime, ts, val, httpURLAttributeValue, httpStatusCodeAttributeValue, httpMethodAttributeValue, httpStatusClassAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

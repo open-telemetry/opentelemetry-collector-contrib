@@ -12,6 +12,9 @@ attributes:
   http.method:
     description: HTTP request method
     type: string
+  http.status_class:
+    description: HTTP response status class
+    type: string
 
 metrics:
   httpcheck.status:
@@ -22,7 +25,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
     unit: 1
-    attributes: [http.url, http.status_code, http.method]
+    attributes: [http.url, http.status_code, http.method, http.status_class]
   httpcheck.duration:
     description: Measures the duration of the HTTP check.
     enabled: true
