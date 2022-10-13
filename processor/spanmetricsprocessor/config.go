@@ -70,11 +70,11 @@ var dropSanitizationGate = featuregate.Gate{
 	Description: "Controls whether to change labels starting with '_' to 'key_'",
 }
 
-// GetAggregationTemporality converts the string value given in the config into a MetricAggregationTemporality.
+// GetAggregationTemporality converts the string value given in the config into a AggregationTemporality.
 // Returns cumulative, unless delta is correctly specified.
-func (c Config) GetAggregationTemporality() pmetric.MetricAggregationTemporality {
+func (c Config) GetAggregationTemporality() pmetric.AggregationTemporality {
 	if c.AggregationTemporality == delta {
-		return pmetric.MetricAggregationTemporalityDelta
+		return pmetric.AggregationTemporalityDelta
 	}
-	return pmetric.MetricAggregationTemporalityCumulative
+	return pmetric.AggregationTemporalityCumulative
 }

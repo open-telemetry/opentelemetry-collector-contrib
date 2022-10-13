@@ -306,7 +306,7 @@ func (s *sumConsumer) Type() pmetric.MetricType {
 
 func (s *sumConsumer) Consume(mi metricInfo, errs *[]error) {
 	sum := mi.Sum()
-	isDelta := sum.AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta
+	isDelta := sum.AggregationTemporality() == pmetric.AggregationTemporalityDelta
 	numberDataPoints := sum.DataPoints()
 	for i := 0; i < numberDataPoints.Len(); i++ {
 		// If sum is a delta type, send it to tanzu observability as a
@@ -420,9 +420,9 @@ func (h *histogramConsumer) Consume(mi metricInfo, errs *[]error) {
 	aggregationTemporality := h.spec.AggregationTemporality(mi.Metric)
 	var consumer histogramDataPointConsumer
 	switch aggregationTemporality {
-	case pmetric.MetricAggregationTemporalityDelta:
+	case pmetric.AggregationTemporalityDelta:
 		consumer = h.delta
-	case pmetric.MetricAggregationTemporalityCumulative:
+	case pmetric.AggregationTemporalityCumulative:
 		consumer = h.cumulative
 	default:
 		h.reporting.LogNoAggregationTemporality(mi.Metric)
@@ -702,7 +702,7 @@ func (b *bucketHistogramDataPoint) centroidValue(index int) float64 {
 
 type histogramSpecification interface {
 	Type() pmetric.MetricType
-	AggregationTemporality(metric pmetric.Metric) pmetric.MetricAggregationTemporality
+	AggregationTemporality(metric pmetric.Metric) pmetric.AggregationTemporality
 	DataPoints(metric pmetric.Metric) []bucketHistogramDataPoint
 }
 
@@ -714,7 +714,7 @@ func (regularHistogramSpecification) Type() pmetric.MetricType {
 }
 
 func (regularHistogramSpecification) AggregationTemporality(
-	metric pmetric.Metric) pmetric.MetricAggregationTemporality {
+	metric pmetric.Metric) pmetric.AggregationTemporality {
 	return metric.Histogram().AggregationTemporality()
 }
 
@@ -730,7 +730,7 @@ func (exponentialHistogramSpecification) Type() pmetric.MetricType {
 }
 
 func (exponentialHistogramSpecification) AggregationTemporality(
-	metric pmetric.Metric) pmetric.MetricAggregationTemporality {
+	metric pmetric.Metric) pmetric.AggregationTemporality {
 	return metric.ExponentialHistogram().AggregationTemporality()
 }
 

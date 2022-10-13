@@ -84,5 +84,5 @@ func (cfg *SysLogConfig) Unmarshal(componentParser *confmap.Conf) error {
 		cfg.InputConfig.UDP = &udp.NewConfig().BaseConfig
 	}
 
-	return componentParser.UnmarshalExact(cfg)
+	return componentParser.Unmarshal(cfg, confmap.WithErrorUnused())
 }

@@ -246,8 +246,8 @@ func diffExponentialHistogramPt(
 
 func diffExponentialHistogramPtBuckets(
 	diffs []*MetricDiff,
-	expected pmetric.Buckets,
-	actual pmetric.Buckets,
+	expected pmetric.ExponentialHistogramDataPointBuckets,
+	actual pmetric.ExponentialHistogramDataPointBuckets,
 ) []*MetricDiff {
 	diffs = diff(diffs, expected.Offset(), actual.Offset(), "ExponentialHistogramDataPoint Buckets Offset")
 	exC := expected.BucketCounts()

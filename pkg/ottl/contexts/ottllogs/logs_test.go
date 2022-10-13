@@ -470,7 +470,7 @@ func Test_ParseEnum(t *testing.T) {
 	}{
 		{
 			name: "SEVERITY_NUMBER_UNSPECIFIED",
-			want: ottl.Enum(plog.SeverityNumberUndefined),
+			want: ottl.Enum(plog.SeverityNumberUnspecified),
 		},
 		{
 			name: "SEVERITY_NUMBER_TRACE",

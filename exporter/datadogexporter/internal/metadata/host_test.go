@@ -22,14 +22,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils/cache"
 )
 
 func TestHost(t *testing.T) {
 	// Start with a fresh cache, the following test would fail
 	// if the cache key is already set.
-	cache.Cache.Delete(cache.CanonicalHostnameKey)
+	hostnameCache.Delete(cacheKeyHostname)
 
 	p, err := buildCurrentProvider(componenttest.NewNopTelemetrySettings(), "test-host")
 	require.NoError(t, err)

@@ -32,11 +32,11 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/sketches"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
 type metricsExporter struct {
@@ -46,7 +46,7 @@ type metricsExporter struct {
 	client         *datadog.Client
 	tr             *translator.Translator
 	scrubber       scrub.Scrubber
-	retrier        *utils.Retrier
+	retrier        *clientutil.Retrier
 	onceMetadata   *sync.Once
 	sourceProvider source.Provider
 	// getPushTime returns a Unix time in nanoseconds, representing the time pushing metrics.
@@ -97,11 +97,11 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 }
 
 func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*metricsExporter, error) {
-	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
-	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.BuildInfo)
-	client.HttpClient = utils.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
+	client := clientutil.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
+	client.ExtraHeader["User-Agent"] = clientutil.UserAgent(params.BuildInfo)
+	client.HttpClient = clientutil.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
 
-	if err := utils.ValidateAPIKey(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
+	if err := clientutil.ValidateAPIKey(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
 		return nil, err
 	}
 
@@ -118,7 +118,7 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 		client:         client,
 		tr:             tr,
 		scrubber:       scrubber,
-		retrier:        utils.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
+		retrier:        clientutil.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
 		onceMetadata:   onceMetadata,
 		sourceProvider: sourceProvider,
 		getPushTime:    func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
@@ -140,8 +140,8 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 		return fmt.Errorf("failed to build sketches HTTP request: %w", err)
 	}
 
-	utils.SetDDHeaders(req.Header, exp.params.BuildInfo, exp.cfg.API.Key)
-	utils.SetExtraHeaders(req.Header, utils.ProtobufHeaders)
+	clientutil.SetDDHeaders(req.Header, exp.params.BuildInfo, exp.cfg.API.Key)
+	clientutil.SetExtraHeaders(req.Header, clientutil.ProtobufHeaders)
 	resp, err := exp.client.HttpClient.Do(req)
 
 	if err != nil {

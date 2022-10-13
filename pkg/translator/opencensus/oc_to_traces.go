@@ -161,7 +161,7 @@ func spanIDToInternal(spanID []byte) pcommon.SpanID {
 	return pcommon.SpanID(sid)
 }
 
-func ocStatusToInternal(ocStatus *octrace.Status, ocAttrs *octrace.Span_Attributes, dest ptrace.SpanStatus) {
+func ocStatusToInternal(ocStatus *octrace.Status, ocAttrs *octrace.Span_Attributes, dest ptrace.Status) {
 	if ocStatus == nil {
 		return
 	}

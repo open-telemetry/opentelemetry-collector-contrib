@@ -33,8 +33,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils/cache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 var (
@@ -64,7 +63,7 @@ var (
 )
 
 func TestFillHostMetadata(t *testing.T) {
-	cache.Cache.Flush()
+	hostnameCache.Flush()
 	params := componenttest.NewNopExporterCreateSettings()
 	params.BuildInfo = mockBuildInfo
 
@@ -108,7 +107,7 @@ func TestMetadataFromAttributes(t *testing.T) {
 	}{
 		{
 			name: "AWS (exporter.datadog.hostname.preview = false)",
-			attrs: testutils.NewAttributeMap(map[string]string{
+			attrs: testutil.NewAttributeMap(map[string]string{
 				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
 				conventions.AttributeHostID:        "host-id",
 				conventions.AttributeHostName:      "ec2amaz-host-name",
@@ -127,7 +126,7 @@ func TestMetadataFromAttributes(t *testing.T) {
 		},
 		{
 			name: "AWS (exporter.datadog.hostname.preview = true)",
-			attrs: testutils.NewAttributeMap(map[string]string{
+			attrs: testutil.NewAttributeMap(map[string]string{
 				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
 				conventions.AttributeHostID:        "host-id",
 				conventions.AttributeHostName:      "ec2amaz-host-name",
@@ -147,7 +146,7 @@ func TestMetadataFromAttributes(t *testing.T) {
 		},
 		{
 			name: "GCP (exporter.datadog.hostname.preview = false)",
-			attrs: testutils.NewAttributeMap(map[string]string{
+			attrs: testutil.NewAttributeMap(map[string]string{
 				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
 				conventions.AttributeHostID:                "host-id",
 				conventions.AttributeCloudAccountID:        "project-id",
@@ -168,7 +167,7 @@ func TestMetadataFromAttributes(t *testing.T) {
 		},
 		{
 			name: "GCP (exporter.datadog.hostname.preview = true)",
-			attrs: testutils.NewAttributeMap(map[string]string{
+			attrs: testutil.NewAttributeMap(map[string]string{
 				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
 				conventions.AttributeHostID:                "host-id",
 				conventions.AttributeCloudAccountID:        "project-id",
@@ -189,7 +188,7 @@ func TestMetadataFromAttributes(t *testing.T) {
 		},
 		{
 			name: "Azure (exporter.datadog.hostname.preview = false)",
-			attrs: testutils.NewAttributeMap(map[string]string{
+			attrs: testutil.NewAttributeMap(map[string]string{
 				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderAzure,
 				conventions.AttributeHostName:       "azure-host-name",
 				conventions.AttributeCloudRegion:    "location",
@@ -208,7 +207,7 @@ func TestMetadataFromAttributes(t *testing.T) {
 		},
 		{
 			name: "Azure (exporter.datadog.hostname.preview = true)",
-			attrs: testutils.NewAttributeMap(map[string]string{
+			attrs: testutil.NewAttributeMap(map[string]string{
 				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderAzure,
 				conventions.AttributeHostName:       "azure-host-name",
 				conventions.AttributeCloudRegion:    "location",
@@ -227,7 +226,7 @@ func TestMetadataFromAttributes(t *testing.T) {
 		},
 		{
 			name: "Custom name",
-			attrs: testutils.NewAttributeMap(map[string]string{
+			attrs: testutil.NewAttributeMap(map[string]string{
 				attributes.AttributeDatadogHostname: "custom-name",
 			}),
 			expected: &HostMetadata{
@@ -307,13 +306,13 @@ func TestPusher(t *testing.T) {
 	hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "")
 	require.NoError(t, err)
 
-	attrs := testutils.NewAttributeMap(map[string]string{
+	attrs := testutil.NewAttributeMap(map[string]string{
 		attributes.AttributeDatadogHostname: "datadog-hostname",
 	})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	server := testutils.DatadogServerMock()
+	server := testutil.DatadogServerMock()
 	defer server.Close()
 	pcfg.MetricsEndpoint = server.URL
 

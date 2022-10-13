@@ -107,9 +107,9 @@ func TestProcess(t *testing.T) {
 		{
 			statements: []string{`set(metric.aggregation_temporality, AGGREGATION_TEMPORALITY_DELTA) where metric.aggregation_temporality == 0`},
 			want: func(td pmetric.Metrics) {
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 			},
 		},
 		{
@@ -228,7 +228,7 @@ func TestProcess(t *testing.T) {
 
 				sumMetric.SetDescription(summaryMetric.Description())
 				sumMetric.SetName(summaryMetric.Name() + "_count")
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(true)
 				sumMetric.SetUnit(summaryMetric.Unit())
 
@@ -250,7 +250,7 @@ func TestProcess(t *testing.T) {
 
 				sumMetric.SetDescription(summaryMetric.Description())
 				sumMetric.SetName(summaryMetric.Name() + "_sum")
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(true)
 				sumMetric.SetUnit(summaryMetric.Unit())
 
@@ -275,7 +275,7 @@ func TestProcess(t *testing.T) {
 
 				sumMetric.SetDescription(summaryMetric.Description())
 				sumMetric.SetName(summaryMetric.Name() + "_sum")
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(true)
 				sumMetric.SetUnit("new unit")
 
