@@ -1039,7 +1039,7 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 		ep.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 		dp := ep.DataPoints().AppendEmpty()
 
-		dp.Attributes().PutString("mykey", "myvalue")
+		dp.Attributes().PutStr("mykey", "myvalue")
 		return data, dp
 	}
 

@@ -119,7 +119,7 @@ func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetri
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 
 	for i := desc.attrs.Iter(); i.Next(); {
-		dp.Attributes().PutString(string(i.Attribute().Key), i.Attribute().Value.AsString())
+		dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}
 
 	dp.SetZeroCount(agg.ZeroCount())
