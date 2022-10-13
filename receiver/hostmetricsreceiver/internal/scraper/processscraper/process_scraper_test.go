@@ -63,7 +63,7 @@ func TestScrape(t *testing.T) {
 	}
 	testCases := []testCase{
 		{
-			name: "Standard",
+			name: "Default set of metrics",
 		},
 		{
 			name: "Enable Linux-only metrics",

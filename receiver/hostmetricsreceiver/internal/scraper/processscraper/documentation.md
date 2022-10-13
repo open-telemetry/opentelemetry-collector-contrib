@@ -11,8 +11,10 @@ These are the metrics available for this scraper.
 | process.context_switches | Number of times the process has been context switched. | {count} | Sum(Int) | <ul> <li>context_switch_type</li> </ul> |
 | **process.cpu.time** | Total CPU seconds broken down by different states. | s | Sum(Double) | <ul> <li>state</li> </ul> |
 | **process.disk.io** | Disk bytes transferred. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
-| **process.memory.physical_usage** | The amount of physical memory in use | By | Sum(Int) | <ul> </ul> |
-| **process.memory.virtual_usage** | Virtual memory size. | By | Sum(Int) | <ul> </ul> |
+| **process.memory.physical_usage** | Deprecated: use `process.memory.usage` metric instead. The amount of physical memory in use. | By | Sum(Int) | <ul> </ul> |
+| process.memory.usage | The amount of physical memory in use. | By | Sum(Int) | <ul> </ul> |
+| process.memory.virtual | Virtual memory size. | By | Sum(Int) | <ul> </ul> |
+| **process.memory.virtual_usage** | Deprecated: Use `process.memory.virtual` metric instead. Virtual memory size. | By | Sum(Int) | <ul> </ul> |
 | process.open_file_descriptors | Number of file descriptors in use by the process. | {count} | Sum(Int) | <ul> </ul> |
 | process.paging.faults | Number of page faults the process has made. This metric is only available on Linux. | {faults} | Sum(Int) | <ul> <li>paging_fault_type</li> </ul> |
 | process.threads | Process threads count. | {threads} | Sum(Int) | <ul> </ul> |
