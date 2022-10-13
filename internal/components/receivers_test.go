@@ -103,6 +103,7 @@ func TestDefaultReceivers(t *testing.T) {
 				cfg.Connection = "Endpoint=sb://example.com/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
 				return cfg
 			},
+			skipLifecyle: true, // Requires Azure event hub to run
 		},
 		{
 			receiver: "bigip",
