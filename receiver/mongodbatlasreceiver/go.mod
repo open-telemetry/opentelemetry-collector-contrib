@@ -47,8 +47,8 @@ require (
 )
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.61.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.62.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.62.0
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector/pdata v0.62.0
 	go.uber.org/multierr v1.8.0
@@ -57,3 +57,5 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
