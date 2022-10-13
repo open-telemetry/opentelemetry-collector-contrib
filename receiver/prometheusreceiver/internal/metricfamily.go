@@ -362,7 +362,7 @@ func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 			if err == nil {
 				e.SetTraceID(tid)
 			} else {
-				e.FilteredAttributes().PutString(lb.Name, lb.Value)
+				e.FilteredAttributes().PutStr(lb.Name, lb.Value)
 			}
 		case spanIDKey:
 			var sid [8]byte
@@ -370,10 +370,10 @@ func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 			if err == nil {
 				e.SetSpanID(sid)
 			} else {
-				e.FilteredAttributes().PutString(lb.Name, lb.Value)
+				e.FilteredAttributes().PutStr(lb.Name, lb.Value)
 			}
 		default:
-			e.FilteredAttributes().PutString(lb.Name, lb.Value)
+			e.FilteredAttributes().PutStr(lb.Name, lb.Value)
 		}
 	}
 }
