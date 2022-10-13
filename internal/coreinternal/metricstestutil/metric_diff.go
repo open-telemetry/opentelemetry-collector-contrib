@@ -206,6 +206,7 @@ func diffHistogramPt(
 	diffs = diffMetricAttrs(diffs, expected.Attributes(), actual.Attributes())
 	diffs = diff(diffs, expected.Count(), actual.Count(), "HistogramDataPoint Count")
 	diffs = diff(diffs, expected.Sum(), actual.Sum(), "HistogramDataPoint Sum")
+	// TODO: HasSum, Min, HasMin, Max, HasMax are not covered in tests.
 	diffs = diff(diffs, expected.BucketCounts(), actual.BucketCounts(), "HistogramDataPoint BucketCounts")
 	diffs = diff(diffs, expected.ExplicitBounds(), actual.ExplicitBounds(), "HistogramDataPoint ExplicitBounds")
 	return diffExemplars(diffs, expected.Exemplars(), actual.Exemplars())
@@ -234,6 +235,9 @@ func diffExponentialHistogramPt(
 ) []*MetricDiff {
 	diffs = diffMetricAttrs(diffs, expected.Attributes(), actual.Attributes())
 	diffs = diff(diffs, expected.Count(), actual.Count(), "ExponentialHistogramDataPoint Count")
+	diffs = diff(diffs, expected.HasSum(), actual.HasSum(), "ExponentialHistogramDataPoint HasSum")
+	diffs = diff(diffs, expected.HasMin(), actual.HasMin(), "ExponentialHistogramDataPoint HasMin")
+	diffs = diff(diffs, expected.HasMax(), actual.HasMax(), "ExponentialHistogramDataPoint HasMax")
 	diffs = diff(diffs, expected.Sum(), actual.Sum(), "ExponentialHistogramDataPoint Sum")
 	diffs = diff(diffs, expected.Min(), actual.Min(), "ExponentialHistogramDataPoint Min")
 	diffs = diff(diffs, expected.Max(), actual.Max(), "ExponentialHistogramDataPoint Max")
