@@ -21,11 +21,10 @@ import (
 
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.uber.org/zap"
 )
 
 type mockHubWrapper struct {
