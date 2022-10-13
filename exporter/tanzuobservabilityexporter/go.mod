@@ -4,13 +4,13 @@ go 1.18
 
 require (
 	github.com/google/uuid v1.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.61.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.62.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.62.0
 	github.com/stretchr/testify v1.8.0
 	github.com/wavefronthq/wavefront-sdk-go v0.10.4
-	go.opentelemetry.io/collector v0.61.1-0.20221011194806-6e554f2d823b
-	go.opentelemetry.io/collector/pdata v0.61.1-0.20221011194806-6e554f2d823b
-	go.opentelemetry.io/collector/semconv v0.61.1-0.20221011194806-6e554f2d823b
+	go.opentelemetry.io/collector v0.62.0
+	go.opentelemetry.io/collector/pdata v0.62.0
+	go.opentelemetry.io/collector/semconv v0.62.0
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0

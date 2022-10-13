@@ -1,4 +1,0 @@
-change_type: enhancement
-component: pkg/telemetryquerylanguage
-note: Add the Int factory function to the transform processor
-issues: [11810]

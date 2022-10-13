@@ -1,5 +1,0 @@
-change_type: enhancement
-component: elasticsearchreceiver
-note: Add scraping index stats and generate search metrics
-issues: [14635]
-
