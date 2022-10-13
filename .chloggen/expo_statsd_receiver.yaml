@@ -1,4 +1,4 @@
 change_type: enhancement
 component: receiver/statsdreceiver
-note: "Add OTLP v0.11 exponential histogram aggregator support."
+note: "Add OTLP exponential histogram aggregator support for high-resolution histogram and timing metrics"
 issues: [5742]
