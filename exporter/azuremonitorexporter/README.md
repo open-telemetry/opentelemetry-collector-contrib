@@ -1,6 +1,6 @@
 # Azure Monitor Exporter
 
-This exporter sends logs and trace data to [Azure Monitor](https://docs.microsoft.com/azure/azure-monitor/).
+This exporter sends logs, traces and metrics to [Azure Monitor](https://docs.microsoft.com/azure/azure-monitor/).
 
 ## Configuration
 
@@ -58,3 +58,6 @@ All attributes are also mapped to custom properties if they are booleans or stri
 ### Logs
 This exporter saves log records to Application Insights `traces` table.
 [TraceId](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-traceid) is mapped to `operation_id` column and [SpanId](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-spanid) is mapped to `operation_parentId` column.
+
+### Traces
+This exporter saves traces to Application Insights `customMetrics` table.

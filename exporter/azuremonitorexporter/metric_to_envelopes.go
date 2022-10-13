@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
@@ -26,24 +27,30 @@ type metricPacker struct {
 	logger *zap.Logger
 }
 
-type metricDataPoint interface {
-	getDataPoints() []*contracts.DataPoint
+type timedMetricDataPoint struct {
+	dataPoint *contracts.DataPoint
+	timestamp pcommon.Timestamp
+}
+
+type metricTimedData interface {
+	getTimedDataPoints() []*timedMetricDataPoint
 }
 
 func (packer *metricPacker) MetricToEnvelopes(metric pmetric.Metric) []*contracts.Envelope {
 	var envelopes []*contracts.Envelope
 
-	mdp := packer.getMetricDataPoint(metric)
+	mtd := packer.getMetricTimedData(metric)
 
-	if mdp != nil {
+	if mtd != nil {
 
-		for _, dataPoint := range mdp.getDataPoints() {
+		for _, timedDataPoint := range mtd.getTimedDataPoints() {
 
 			envelope := contracts.NewEnvelope()
 			envelope.Tags = make(map[string]string)
-			envelope.Time = time.Now().Format(time.RFC3339Nano)
+			envelope.Time = toTime(timedDataPoint.timestamp).Format(time.RFC3339Nano)
 
 			metricData := contracts.NewMetricData()
+			dataPoint := timedDataPoint.dataPoint
 			metricData.Metrics = []*contracts.DataPoint{dataPoint}
 			metricData.Properties = make(map[string]string)
 
@@ -81,7 +88,7 @@ func newMetricPacker(logger *zap.Logger) *metricPacker {
 	return packer
 }
 
-func (packer metricPacker) getMetricDataPoint(metric pmetric.Metric) metricDataPoint {
+func (packer metricPacker) getMetricTimedData(metric pmetric.Metric) metricTimedData {
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		return newScalarMetric(metric.Name(), metric.Gauge().DataPoints())
@@ -111,8 +118,8 @@ func newScalarMetric(name string, dataPointSlice pmetric.NumberDataPointSlice) *
 	}
 }
 
-func (m scalarMetric) getDataPoints() []*contracts.DataPoint {
-	dataPoints := make([]*contracts.DataPoint, m.dataPointSlice.Len())
+func (m scalarMetric) getTimedDataPoints() []*timedMetricDataPoint {
+	timedDataPoints := make([]*timedMetricDataPoint, m.dataPointSlice.Len())
 	for i := 0; i < m.dataPointSlice.Len(); i++ {
 		numberDataPoint := m.dataPointSlice.At(i)
 		dataPoint := contracts.NewDataPoint()
@@ -120,9 +127,12 @@ func (m scalarMetric) getDataPoints() []*contracts.DataPoint {
 		dataPoint.Value = numberDataPoint.DoubleValue()
 		dataPoint.Count = 1
 		dataPoint.Kind = contracts.Measurement
-		dataPoints[i] = dataPoint
+		timedDataPoints[i] = &timedMetricDataPoint{
+			dataPoint: dataPoint,
+			timestamp: numberDataPoint.Timestamp(),
+		}
 	}
-	return dataPoints
+	return timedDataPoints
 }
 
 type histogramMetric struct {
@@ -137,8 +147,8 @@ func newHistogramMetric(name string, dataPointSlice pmetric.HistogramDataPointSl
 	}
 }
 
-func (m histogramMetric) getDataPoints() []*contracts.DataPoint {
-	dataPoints := make([]*contracts.DataPoint, m.dataPointSlice.Len())
+func (m histogramMetric) getTimedDataPoints() []*timedMetricDataPoint {
+	timedDataPoints := make([]*timedMetricDataPoint, m.dataPointSlice.Len())
 	for i := 0; i < m.dataPointSlice.Len(); i++ {
 		histogramDataPoint := m.dataPointSlice.At(i)
 		dataPoint := contracts.NewDataPoint()
@@ -149,9 +159,13 @@ func (m histogramMetric) getDataPoints() []*contracts.DataPoint {
 		dataPoint.Max = histogramDataPoint.Max()
 		dataPoint.Count = int(histogramDataPoint.Count())
 
-		dataPoints[i] = dataPoint
+		timedDataPoints[i] = &timedMetricDataPoint{
+			dataPoint: dataPoint,
+			timestamp: histogramDataPoint.Timestamp(),
+		}
+
 	}
-	return dataPoints
+	return timedDataPoints
 }
 
 type exponentialHistogramMetric struct {
@@ -166,8 +180,8 @@ func newExponentialHistogramMetric(name string, dataPointSlice pmetric.Exponenti
 	}
 }
 
-func (m exponentialHistogramMetric) getDataPoints() []*contracts.DataPoint {
-	dataPoints := make([]*contracts.DataPoint, m.dataPointSlice.Len())
+func (m exponentialHistogramMetric) getTimedDataPoints() []*timedMetricDataPoint {
+	timedDataPoints := make([]*timedMetricDataPoint, m.dataPointSlice.Len())
 	for i := 0; i < m.dataPointSlice.Len(); i++ {
 		exponentialHistogramDataPoint := m.dataPointSlice.At(i)
 		dataPoint := contracts.NewDataPoint()
@@ -178,9 +192,12 @@ func (m exponentialHistogramMetric) getDataPoints() []*contracts.DataPoint {
 		dataPoint.Max = exponentialHistogramDataPoint.Max()
 		dataPoint.Count = int(exponentialHistogramDataPoint.Count())
 
-		dataPoints[i] = dataPoint
+		timedDataPoints[i] = &timedMetricDataPoint{
+			dataPoint: dataPoint,
+			timestamp: exponentialHistogramDataPoint.Timestamp(),
+		}
 	}
-	return dataPoints
+	return timedDataPoints
 }
 
 type summaryMetric struct {
@@ -195,8 +212,8 @@ func newSummaryMetric(name string, dataPointSlice pmetric.SummaryDataPointSlice)
 	}
 }
 
-func (m summaryMetric) getDataPoints() []*contracts.DataPoint {
-	dataPoints := make([]*contracts.DataPoint, m.dataPointSlice.Len())
+func (m summaryMetric) getTimedDataPoints() []*timedMetricDataPoint {
+	timedDataPoints := make([]*timedMetricDataPoint, m.dataPointSlice.Len())
 	for i := 0; i < m.dataPointSlice.Len(); i++ {
 		summaryDataPoint := m.dataPointSlice.At(i)
 		dataPoint := contracts.NewDataPoint()
@@ -205,7 +222,11 @@ func (m summaryMetric) getDataPoints() []*contracts.DataPoint {
 		dataPoint.Kind = contracts.Aggregation
 		dataPoint.Count = int(summaryDataPoint.Count())
 
-		dataPoints[i] = dataPoint
+		timedDataPoints[i] = &timedMetricDataPoint{
+			dataPoint: dataPoint,
+			timestamp: summaryDataPoint.Timestamp(),
+		}
+
 	}
-	return dataPoints
+	return timedDataPoints
 }
