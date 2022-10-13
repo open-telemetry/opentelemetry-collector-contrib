@@ -110,6 +110,7 @@ appropriate rule for collecting other objects.
 ```bash
 <<EOF | kubectl apply -f -
 apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
 metadata:
   name: otelcontribcol
   labels:
@@ -149,6 +150,7 @@ EOF
 ### Deployment
 
 Create a [Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) to deploy the collector.
+Note: This receiver must be deployed as one replica, otherwise it'll be producing duplicated data.
 
 ```bash
 <<EOF | kubectl apply -f -

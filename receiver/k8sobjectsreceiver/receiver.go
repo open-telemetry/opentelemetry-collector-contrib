@@ -141,7 +141,11 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 	res := watch.ResultChan()
 	for {
 		select {
-		case data := <-res:
+		case data, ok := <-res:
+			if !ok {
+				kr.setting.Logger.Warn("Watch channel closed unexpectedly", zap.String("resource", config.gvr.String()))
+				return
+			}
 			logs := watchEventToLogData(&data)
 
 			obsCtx := kr.obsrecv.StartLogsOp(ctx)
