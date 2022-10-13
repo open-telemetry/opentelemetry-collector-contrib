@@ -40,69 +40,77 @@ func Test_parse(t *testing.T) {
 			name:      "invocation with string",
 			statement: `set("foo")`,
 			expected: &parsedStatement{
-				Invocation: invocation{
-					Function: "set",
-					Arguments: []value{
-						{
-							String: ottltest.Strp("foo"),
+				TransformationStatement: &transformationStatement{
+					Invocation: invocation{
+						Function: "set",
+						Arguments: []value{
+							{
+								String: ottltest.Strp("foo"),
+							},
 						},
 					},
+					WhereClause: nil,
 				},
-				WhereClause: nil,
 			},
 		},
 		{
 			name:      "invocation with float",
 			statement: `met(1.2)`,
 			expected: &parsedStatement{
-				Invocation: invocation{
-					Function: "met",
-					Arguments: []value{
-						{
-							Float: ottltest.Floatp(1.2),
+				TransformationStatement: &transformationStatement{
+					Invocation: invocation{
+						Function: "met",
+						Arguments: []value{
+							{
+								Float: ottltest.Floatp(1.2),
+							},
 						},
 					},
+					WhereClause: nil,
 				},
-				WhereClause: nil,
 			},
 		},
 		{
 			name:      "invocation with int",
 			statement: `fff(12)`,
 			expected: &parsedStatement{
-				Invocation: invocation{
-					Function: "fff",
-					Arguments: []value{
-						{
-							Int: ottltest.Intp(12),
+				TransformationStatement: &transformationStatement{
+					Invocation: invocation{
+						Function: "fff",
+						Arguments: []value{
+							{
+								Int: ottltest.Intp(12),
+							},
 						},
 					},
+					WhereClause: nil,
 				},
-				WhereClause: nil,
 			},
 		},
 		{
 			name:      "complex invocation",
 			statement: `set("foo", getSomething(bear.honey))`,
 			expected: &parsedStatement{
-				Invocation: invocation{
-					Function: "set",
-					Arguments: []value{
-						{
-							String: ottltest.Strp("foo"),
-						},
-						{
-							Invocation: &invocation{
-								Function: "getSomething",
-								Arguments: []value{
-									{
-										Path: &Path{
-											Fields: []Field{
-												{
-													Name: "bear",
-												},
-												{
-													Name: "honey",
+				TransformationStatement: &transformationStatement{
+					Invocation: invocation{
+						Function: "set",
+						Arguments: []value{
+							{
+								String: ottltest.Strp("foo"),
+							},
+							{
+								Invocation: &invocation{
+									Function: "getSomething",
+									Arguments: []value{
+										{
+											Path: &Path{
+												Fields: []Field{
+													{
+														Name: "bear",
+													},
+													{
+														Name: "honey",
+													},
 												},
 											},
 										},
@@ -111,85 +119,89 @@ func Test_parse(t *testing.T) {
 							},
 						},
 					},
+					WhereClause: nil,
 				},
-				WhereClause: nil,
 			},
 		},
 		{
 			name:      "complex path",
 			statement: `set(foo.attributes["bar"].cat, "dog")`,
 			expected: &parsedStatement{
-				Invocation: invocation{
-					Function: "set",
-					Arguments: []value{
-						{
-							Path: &Path{
-								Fields: []Field{
-									{
-										Name: "foo",
-									},
-									{
-										Name:   "attributes",
-										MapKey: ottltest.Strp("bar"),
-									},
-									{
-										Name: "cat",
+				TransformationStatement: &transformationStatement{
+					Invocation: invocation{
+						Function: "set",
+						Arguments: []value{
+							{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "foo",
+										},
+										{
+											Name:   "attributes",
+											MapKey: ottltest.Strp("bar"),
+										},
+										{
+											Name: "cat",
+										},
 									},
 								},
 							},
-						},
-						{
-							String: ottltest.Strp("dog"),
+							{
+								String: ottltest.Strp("dog"),
+							},
 						},
 					},
+					WhereClause: nil,
 				},
-				WhereClause: nil,
 			},
 		},
 		{
 			name:      "where == clause",
 			statement: `set(foo.attributes["bar"].cat, "dog") where name == "fido"`,
 			expected: &parsedStatement{
-				Invocation: invocation{
-					Function: "set",
-					Arguments: []value{
-						{
-							Path: &Path{
-								Fields: []Field{
-									{
-										Name: "foo",
-									},
-									{
-										Name:   "attributes",
-										MapKey: ottltest.Strp("bar"),
-									},
-									{
-										Name: "cat",
-									},
-								},
-							},
-						},
-						{
-							String: ottltest.Strp("dog"),
-						},
-					},
-				},
-				WhereClause: &booleanExpression{
-					Left: &term{
-						Left: &booleanValue{
-							Comparison: &comparison{
-								Left: value{
-									Path: &Path{
-										Fields: []Field{
-											{
-												Name: "name",
-											},
+				TransformationStatement: &transformationStatement{
+					Invocation: invocation{
+						Function: "set",
+						Arguments: []value{
+							{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "foo",
+										},
+										{
+											Name:   "attributes",
+											MapKey: ottltest.Strp("bar"),
+										},
+										{
+											Name: "cat",
 										},
 									},
 								},
-								Op: EQ,
-								Right: value{
-									String: ottltest.Strp("fido"),
+							},
+							{
+								String: ottltest.Strp("dog"),
+							},
+						},
+					},
+					WhereClause: &booleanExpression{
+						Left: &term{
+							Left: &booleanValue{
+								Comparison: &comparison{
+									Left: value{
+										Path: &Path{
+											Fields: []Field{
+												{
+													Name: "name",
+												},
+											},
+										},
+									},
+									Op: EQ,
+									Right: value{
+										String: ottltest.Strp("fido"),
+									},
 								},
 							},
 						},
@@ -201,46 +213,48 @@ func Test_parse(t *testing.T) {
 			name:      "where != clause",
 			statement: `set(foo.attributes["bar"].cat, "dog") where name != "fido"`,
 			expected: &parsedStatement{
-				Invocation: invocation{
-					Function: "set",
-					Arguments: []value{
-						{
-							Path: &Path{
-								Fields: []Field{
-									{
-										Name: "foo",
-									},
-									{
-										Name:   "attributes",
-										MapKey: ottltest.Strp("bar"),
-									},
-									{
-										Name: "cat",
-									},
-								},
-							},
-						},
-						{
-							String: ottltest.Strp("dog"),
-						},
-					},
-				},
-				WhereClause: &booleanExpression{
-					Left: &term{
-						Left: &booleanValue{
-							Comparison: &comparison{
-								Left: value{
-									Path: &Path{
-										Fields: []Field{
-											{
-												Name: "name",
-											},
+				TransformationStatement: &transformationStatement{
+					Invocation: invocation{
+						Function: "set",
+						Arguments: []value{
+							{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "foo",
+										},
+										{
+											Name:   "attributes",
+											MapKey: ottltest.Strp("bar"),
+										},
+										{
+											Name: "cat",
 										},
 									},
 								},
-								Op: NE,
-								Right: value{
-									String: ottltest.Strp("fido"),
+							},
+							{
+								String: ottltest.Strp("dog"),
+							},
+						},
+					},
+					WhereClause: &booleanExpression{
+						Left: &term{
+							Left: &booleanValue{
+								Comparison: &comparison{
+									Left: value{
+										Path: &Path{
+											Fields: []Field{
+												{
+													Name: "name",
+												},
+											},
+										},
+									},
+									Op: NE,
+									Right: value{
+										String: ottltest.Strp("fido"),
+									},
 								},
 							},
 						},
@@ -252,46 +266,48 @@ func Test_parse(t *testing.T) {
 			name:      "ignore extra spaces",
 			statement: `set  ( foo.attributes[ "bar"].cat,   "dog")   where name=="fido"`,
 			expected: &parsedStatement{
-				Invocation: invocation{
-					Function: "set",
-					Arguments: []value{
-						{
-							Path: &Path{
-								Fields: []Field{
-									{
-										Name: "foo",
-									},
-									{
-										Name:   "attributes",
-										MapKey: ottltest.Strp("bar"),
-									},
-									{
-										Name: "cat",
-									},
-								},
-							},
-						},
-						{
-							String: ottltest.Strp("dog"),
-						},
-					},
-				},
-				WhereClause: &booleanExpression{
-					Left: &term{
-						Left: &booleanValue{
-							Comparison: &comparison{
-								Left: value{
-									Path: &Path{
-										Fields: []Field{
-											{
-												Name: "name",
-											},
+				TransformationStatement: &transformationStatement{
+					Invocation: invocation{
+						Function: "set",
+						Arguments: []value{
+							{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "foo",
+										},
+										{
+											Name:   "attributes",
+											MapKey: ottltest.Strp("bar"),
+										},
+										{
+											Name: "cat",
 										},
 									},
 								},
-								Op: EQ,
-								Right: value{
-									String: ottltest.Strp("fido"),
+							},
+							{
+								String: ottltest.Strp("dog"),
+							},
+						},
+					},
+					WhereClause: &booleanExpression{
+						Left: &term{
+							Left: &booleanValue{
+								Comparison: &comparison{
+									Left: value{
+										Path: &Path{
+											Fields: []Field{
+												{
+													Name: "name",
+												},
+											},
+										},
+									},
+									Op: EQ,
+									Right: value{
+										String: ottltest.Strp("fido"),
+									},
 								},
 							},
 						},
@@ -303,126 +319,138 @@ func Test_parse(t *testing.T) {
 			name:      "handle quotes",
 			statement: `set("fo\"o")`,
 			expected: &parsedStatement{
-				Invocation: invocation{
-					Function: "set",
-					Arguments: []value{
-						{
-							String: ottltest.Strp("fo\"o"),
+				TransformationStatement: &transformationStatement{
+					Invocation: invocation{
+						Function: "set",
+						Arguments: []value{
+							{
+								String: ottltest.Strp("fo\"o"),
+							},
 						},
 					},
+					WhereClause: nil,
 				},
-				WhereClause: nil,
 			},
 		},
 		{
 			name:      "invocation with boolean false",
 			statement: `convert_gauge_to_sum("cumulative", false)`,
 			expected: &parsedStatement{
-				Invocation: invocation{
-					Function: "convert_gauge_to_sum",
-					Arguments: []value{
-						{
-							String: ottltest.Strp("cumulative"),
-						},
-						{
-							Bool: (*boolean)(ottltest.Boolp(false)),
+				TransformationStatement: &transformationStatement{
+					Invocation: invocation{
+						Function: "convert_gauge_to_sum",
+						Arguments: []value{
+							{
+								String: ottltest.Strp("cumulative"),
+							},
+							{
+								Bool: (*boolean)(ottltest.Boolp(false)),
+							},
 						},
 					},
+					WhereClause: nil,
 				},
-				WhereClause: nil,
 			},
 		},
 		{
 			name:      "invocation with boolean true",
 			statement: `convert_gauge_to_sum("cumulative", true)`,
 			expected: &parsedStatement{
-				Invocation: invocation{
-					Function: "convert_gauge_to_sum",
-					Arguments: []value{
-						{
-							String: ottltest.Strp("cumulative"),
-						},
-						{
-							Bool: (*boolean)(ottltest.Boolp(true)),
+				TransformationStatement: &transformationStatement{
+					Invocation: invocation{
+						Function: "convert_gauge_to_sum",
+						Arguments: []value{
+							{
+								String: ottltest.Strp("cumulative"),
+							},
+							{
+								Bool: (*boolean)(ottltest.Boolp(true)),
+							},
 						},
 					},
+					WhereClause: nil,
 				},
-				WhereClause: nil,
 			},
 		},
 		{
 			name:      "invocation with bytes",
 			statement: `set(attributes["bytes"], 0x0102030405060708)`,
 			expected: &parsedStatement{
-				Invocation: invocation{
-					Function: "set",
-					Arguments: []value{
-						{
-							Path: &Path{
-								Fields: []Field{
-									{
-										Name:   "attributes",
-										MapKey: ottltest.Strp("bytes"),
+				TransformationStatement: &transformationStatement{
+					Invocation: invocation{
+						Function: "set",
+						Arguments: []value{
+							{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name:   "attributes",
+											MapKey: ottltest.Strp("bytes"),
+										},
 									},
 								},
 							},
-						},
-						{
-							Bytes: (*byteSlice)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+							{
+								Bytes: (*byteSlice)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+							},
 						},
 					},
+					WhereClause: nil,
 				},
-				WhereClause: nil,
 			},
 		},
 		{
 			name:      "invocation with nil",
 			statement: `set(attributes["test"], nil)`,
 			expected: &parsedStatement{
-				Invocation: invocation{
-					Function: "set",
-					Arguments: []value{
-						{
-							Path: &Path{
-								Fields: []Field{
-									{
-										Name:   "attributes",
-										MapKey: ottltest.Strp("test"),
+				TransformationStatement: &transformationStatement{
+					Invocation: invocation{
+						Function: "set",
+						Arguments: []value{
+							{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name:   "attributes",
+											MapKey: ottltest.Strp("test"),
+										},
 									},
 								},
 							},
-						},
-						{
-							IsNil: (*isNil)(ottltest.Boolp(true)),
+							{
+								IsNil: (*isNil)(ottltest.Boolp(true)),
+							},
 						},
 					},
+					WhereClause: nil,
 				},
-				WhereClause: nil,
 			},
 		},
 		{
 			name:      "invocation with Enum",
 			statement: `set(attributes["test"], TEST_ENUM)`,
 			expected: &parsedStatement{
-				Invocation: invocation{
-					Function: "set",
-					Arguments: []value{
-						{
-							Path: &Path{
-								Fields: []Field{
-									{
-										Name:   "attributes",
-										MapKey: ottltest.Strp("test"),
+				TransformationStatement: &transformationStatement{
+					Invocation: invocation{
+						Function: "set",
+						Arguments: []value{
+							{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name:   "attributes",
+											MapKey: ottltest.Strp("test"),
+										},
 									},
 								},
 							},
-						},
-						{
-							Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM")),
+							{
+								Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM")),
+							},
 						},
 					},
+					WhereClause: nil,
 				},
-				WhereClause: nil,
 			},
 		},
 	}
@@ -481,31 +509,6 @@ func testParsePath(val *Path) (GetSetter[interface{}], error) {
 	return nil, fmt.Errorf("bad path %v", val)
 }
 
-// Helper for test cases where the WHERE clause is all that matters.
-// Parse string should start with `set(name, "test") where`...
-func setNameTest(b *booleanExpression) *parsedStatement {
-	return &parsedStatement{
-		Invocation: invocation{
-			Function: "set",
-			Arguments: []value{
-				{
-					Path: &Path{
-						Fields: []Field{
-							{
-								Name: "name",
-							},
-						},
-					},
-				},
-				{
-					String: ottltest.Strp("test"),
-				},
-			},
-		},
-		WhereClause: b,
-	}
-}
-
 func Test_parseWhere(t *testing.T) {
 	tests := []struct {
 		statement string
@@ -513,161 +516,189 @@ func Test_parseWhere(t *testing.T) {
 	}{
 		{
 			statement: `true`,
-			expected: setNameTest(&booleanExpression{
-				Left: &term{
-					Left: &booleanValue{
-						ConstExpr: booleanp(true),
+			expected: &parsedStatement{
+				ConditionStatement: &conditionStatement{
+					&booleanExpression{
+						Left: &term{
+							Left: &booleanValue{
+								ConstExpr: booleanp(true),
+							},
+						},
 					},
 				},
-			}),
+			},
 		},
 		{
 			statement: `true and false`,
-			expected: setNameTest(&booleanExpression{
-				Left: &term{
-					Left: &booleanValue{
-						ConstExpr: booleanp(true),
-					},
-					Right: []*opAndBooleanValue{
-						{
-							Operator: "and",
-							Value: &booleanValue{
-								ConstExpr: booleanp(false),
+			expected: &parsedStatement{
+				ConditionStatement: &conditionStatement{
+					&booleanExpression{
+						Left: &term{
+							Left: &booleanValue{
+								ConstExpr: booleanp(true),
+							},
+							Right: []*opAndBooleanValue{
+								{
+									Operator: "and",
+									Value: &booleanValue{
+										ConstExpr: booleanp(false),
+									},
+								},
 							},
 						},
 					},
 				},
-			}),
+			},
 		},
 		{
 			statement: `true and true and false`,
-			expected: setNameTest(&booleanExpression{
-				Left: &term{
-					Left: &booleanValue{
-						ConstExpr: booleanp(true),
-					},
-					Right: []*opAndBooleanValue{
-						{
-							Operator: "and",
-							Value: &booleanValue{
+			expected: &parsedStatement{
+				ConditionStatement: &conditionStatement{
+					&booleanExpression{
+						Left: &term{
+							Left: &booleanValue{
 								ConstExpr: booleanp(true),
 							},
-						},
-						{
-							Operator: "and",
-							Value: &booleanValue{
-								ConstExpr: booleanp(false),
+							Right: []*opAndBooleanValue{
+								{
+									Operator: "and",
+									Value: &booleanValue{
+										ConstExpr: booleanp(true),
+									},
+								},
+								{
+									Operator: "and",
+									Value: &booleanValue{
+										ConstExpr: booleanp(false),
+									},
+								},
 							},
 						},
 					},
 				},
-			}),
+			},
 		},
 		{
 			statement: `true or false`,
-			expected: setNameTest(&booleanExpression{
-				Left: &term{
-					Left: &booleanValue{
-						ConstExpr: booleanp(true),
-					},
-				},
-				Right: []*opOrTerm{
-					{
-						Operator: "or",
-						Term: &term{
+			expected: &parsedStatement{
+				ConditionStatement: &conditionStatement{
+					&booleanExpression{
+						Left: &term{
 							Left: &booleanValue{
-								ConstExpr: booleanp(false),
-							},
-						},
-					},
-				},
-			}),
-		},
-		{
-			statement: `false and true or false`,
-			expected: setNameTest(&booleanExpression{
-				Left: &term{
-					Left: &booleanValue{
-						ConstExpr: booleanp(false),
-					},
-					Right: []*opAndBooleanValue{
-						{
-							Operator: "and",
-							Value: &booleanValue{
 								ConstExpr: booleanp(true),
 							},
 						},
-					},
-				},
-				Right: []*opOrTerm{
-					{
-						Operator: "or",
-						Term: &term{
-							Left: &booleanValue{
-								ConstExpr: booleanp(false),
+						Right: []*opOrTerm{
+							{
+								Operator: "or",
+								Term: &term{
+									Left: &booleanValue{
+										ConstExpr: booleanp(false),
+									},
+								},
 							},
 						},
 					},
 				},
-			}),
+			},
+		},
+		{
+			statement: `false and true or false`,
+			expected: &parsedStatement{
+				ConditionStatement: &conditionStatement{
+					&booleanExpression{
+						Left: &term{
+							Left: &booleanValue{
+								ConstExpr: booleanp(false),
+							},
+							Right: []*opAndBooleanValue{
+								{
+									Operator: "and",
+									Value: &booleanValue{
+										ConstExpr: booleanp(true),
+									},
+								},
+							},
+						},
+						Right: []*opOrTerm{
+							{
+								Operator: "or",
+								Term: &term{
+									Left: &booleanValue{
+										ConstExpr: booleanp(false),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 		{
 			statement: `(false and true) or false`,
-			expected: setNameTest(&booleanExpression{
-				Left: &term{
-					Left: &booleanValue{
-						SubExpr: &booleanExpression{
-							Left: &term{
-								Left: &booleanValue{
-									ConstExpr: booleanp(false),
-								},
-								Right: []*opAndBooleanValue{
-									{
-										Operator: "and",
-										Value: &booleanValue{
-											ConstExpr: booleanp(true),
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				Right: []*opOrTerm{
-					{
-						Operator: "or",
-						Term: &term{
+			expected: &parsedStatement{
+				ConditionStatement: &conditionStatement{
+					&booleanExpression{
+						Left: &term{
 							Left: &booleanValue{
-								ConstExpr: booleanp(false),
-							},
-						},
-					},
-				},
-			}),
-		},
-		{
-			statement: `false and (true or false)`,
-			expected: setNameTest(&booleanExpression{
-				Left: &term{
-					Left: &booleanValue{
-						ConstExpr: booleanp(false),
-					},
-					Right: []*opAndBooleanValue{
-						{
-							Operator: "and",
-							Value: &booleanValue{
 								SubExpr: &booleanExpression{
 									Left: &term{
 										Left: &booleanValue{
-											ConstExpr: booleanp(true),
+											ConstExpr: booleanp(false),
+										},
+										Right: []*opAndBooleanValue{
+											{
+												Operator: "and",
+												Value: &booleanValue{
+													ConstExpr: booleanp(true),
+												},
+											},
 										},
 									},
-									Right: []*opOrTerm{
-										{
-											Operator: "or",
-											Term: &term{
+								},
+							},
+						},
+						Right: []*opOrTerm{
+							{
+								Operator: "or",
+								Term: &term{
+									Left: &booleanValue{
+										ConstExpr: booleanp(false),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			statement: `false and (true or false)`,
+			expected: &parsedStatement{
+				ConditionStatement: &conditionStatement{
+					&booleanExpression{
+						Left: &term{
+							Left: &booleanValue{
+								ConstExpr: booleanp(false),
+							},
+							Right: []*opAndBooleanValue{
+								{
+									Operator: "and",
+									Value: &booleanValue{
+										SubExpr: &booleanExpression{
+											Left: &term{
 												Left: &booleanValue{
-													ConstExpr: booleanp(false),
+													ConstExpr: booleanp(true),
+												},
+											},
+											Right: []*opOrTerm{
+												{
+													Operator: "or",
+													Term: &term{
+														Left: &booleanValue{
+															ConstExpr: booleanp(false),
+														},
+													},
 												},
 											},
 										},
@@ -677,33 +708,15 @@ func Test_parseWhere(t *testing.T) {
 						},
 					},
 				},
-			}),
+			},
 		},
 		{
 			statement: `name != "foo" and name != "bar"`,
-			expected: setNameTest(&booleanExpression{
-				Left: &term{
-					Left: &booleanValue{
-						Comparison: &comparison{
-							Left: value{
-								Path: &Path{
-									Fields: []Field{
-										{
-											Name: "name",
-										},
-									},
-								},
-							},
-							Op: NE,
-							Right: value{
-								String: ottltest.Strp("foo"),
-							},
-						},
-					},
-					Right: []*opAndBooleanValue{
-						{
-							Operator: "and",
-							Value: &booleanValue{
+			expected: &parsedStatement{
+				ConditionStatement: &conditionStatement{
+					&booleanExpression{
+						Left: &term{
+							Left: &booleanValue{
 								Comparison: &comparison{
 									Left: value{
 										Path: &Path{
@@ -716,41 +729,43 @@ func Test_parseWhere(t *testing.T) {
 									},
 									Op: NE,
 									Right: value{
-										String: ottltest.Strp("bar"),
+										String: ottltest.Strp("foo"),
 									},
 								},
 							},
-						},
-					},
-				},
-			}),
-		},
-		{
-			statement: `name == "foo" or name == "bar"`,
-			expected: setNameTest(&booleanExpression{
-				Left: &term{
-					Left: &booleanValue{
-						Comparison: &comparison{
-							Left: value{
-								Path: &Path{
-									Fields: []Field{
-										{
-											Name: "name",
+							Right: []*opAndBooleanValue{
+								{
+									Operator: "and",
+									Value: &booleanValue{
+										Comparison: &comparison{
+											Left: value{
+												Path: &Path{
+													Fields: []Field{
+														{
+															Name: "name",
+														},
+													},
+												},
+											},
+											Op: NE,
+											Right: value{
+												String: ottltest.Strp("bar"),
+											},
 										},
 									},
 								},
 							},
-							Op: EQ,
-							Right: value{
-								String: ottltest.Strp("foo"),
-							},
 						},
 					},
 				},
-				Right: []*opOrTerm{
-					{
-						Operator: "or",
-						Term: &term{
+			},
+		},
+		{
+			statement: `name == "foo" or name == "bar"`,
+			expected: &parsedStatement{
+				ConditionStatement: &conditionStatement{
+					&booleanExpression{
+						Left: &term{
 							Left: &booleanValue{
 								Comparison: &comparison{
 									Left: value{
@@ -764,14 +779,38 @@ func Test_parseWhere(t *testing.T) {
 									},
 									Op: EQ,
 									Right: value{
-										String: ottltest.Strp("bar"),
+										String: ottltest.Strp("foo"),
+									},
+								},
+							},
+						},
+						Right: []*opOrTerm{
+							{
+								Operator: "or",
+								Term: &term{
+									Left: &booleanValue{
+										Comparison: &comparison{
+											Left: value{
+												Path: &Path{
+													Fields: []Field{
+														{
+															Name: "name",
+														},
+													},
+												},
+											},
+											Op: EQ,
+											Right: value{
+												String: ottltest.Strp("bar"),
+											},
+										},
 									},
 								},
 							},
 						},
 					},
 				},
-			}),
+			},
 		},
 	}
 
@@ -780,8 +819,7 @@ func Test_parseWhere(t *testing.T) {
 	for _, tt := range tests {
 		name := pat.ReplaceAllString(tt.statement, "_")
 		t.Run(name, func(t *testing.T) {
-			statement := `set(name, "test") where ` + tt.statement
-			parsed, err := parseStatement(statement)
+			parsed, err := parseStatement(tt.statement)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, parsed)
 		})
@@ -880,7 +918,7 @@ func Test_Execute(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			statement := Statement[interface{}]{
+			statement := standardTransformationStatement[interface{}]{
 				condition: tt.condition,
 				function:  tt.function,
 			}

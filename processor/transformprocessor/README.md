@@ -29,32 +29,30 @@ Example configuration:
 ```yaml
 transform:
   traces:
-    statements:
-      - set(status.code, 1) where attributes["http.path"] == "/health"
-      - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region", "process.command_line")
-      - set(name, attributes["http.route"])
-      - replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")
-      - replace_pattern(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")
-      - limit(attributes, 100)
-      - limit(resource.attributes, 100)
-      - truncate_all(attributes, 4096)
-      - truncate_all(resource.attributes, 4096)
+    resourceStatements:
+      - set(attributes["host"], "new value")
+    instrumentationScopeStatements:
+      - set(name, "new value")
+    spanStatements:
+      - set(name, "new value")
+    spanEventStatements:
+      - set(name, "new value")
   metrics:
-    statements:
-      - set(metric.description, "Sum") where metric.type == "Sum"
-      - keep_keys(resource.attributes, "host.name")
-      - limit(attributes, 100, "host.name")
-      - truncate_all(attributes, 4096)
-      - truncate_all(resource.attributes, 4096)
-      - convert_sum_to_gauge() where metric.name == "system.processes.count"
-      - convert_gauge_to_sum("cumulative", false) where metric.name == "prometheus_metric"
+    resourceStatements:
+      - set(attributes["host"], "new value")
+    instrumentationScopeStatements:
+      - set(name, "new value")
+    metricStatements:
+      - set(name, "new value")
+    datapointStatements:
+      - set(attributes["name"], "new value")
   logs:
-    statements:
-      - set(severity_text, "FAIL") where body == "request failed"
-      - replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
-      - replace_all_patterns(attributes, "/account/\\d{4}", "/account/{accountId}")
-      - set(body, attributes["http.route"])
-      - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
+    resourceStatements:
+      - set(attributes["host"], "new value")
+    instrumentationScopeStatements:
+      - set(name, "new value")
+    logsStatements:
+      - set(body, "new value")
 ```
 ## Grammar
 

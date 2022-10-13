@@ -78,24 +78,21 @@ func (p *Parser[K]) ParseStatements(statements []string) ([]*Statement[K], error
 			continue
 		}
 
-		if parsed.TransformationStatement != nil {
+		switch {
+		case parsed.TransformationStatement != nil:
 			tStatement, err := p.parseTransformationStatement(parsed.TransformationStatement)
 			if err != nil {
 				errors = multierr.Append(errors, err)
 				continue
 			}
 			parsedStatements = append(parsedStatements, &tStatement)
-			continue
-		}
-
-		if parsed.ConditionStatement != nil {
+		case parsed.ConditionStatement != nil:
 			cStatement, err := p.parseConditionStatement(parsed.ConditionStatement)
 			if err != nil {
 				errors = multierr.Append(errors, err)
 				continue
 			}
 			parsedStatements = append(parsedStatements, &cStatement)
-			continue
 		}
 	}
 
