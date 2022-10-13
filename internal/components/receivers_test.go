@@ -100,7 +100,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "azureeventhub",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["azureeventhub"].CreateDefaultConfig().(*azureeventhubreceiver.Config)
-				cfg.Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
+				cfg.Connection = "Endpoint=sb://example.com/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
 				return cfg
 			},
 		},
