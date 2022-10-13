@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -81,7 +81,9 @@ func (mc *metricsConsumer) Consume(ctx context.Context, records [][]byte, common
 		for i := 0; i < md.ResourceMetrics().Len(); i++ {
 			rm := md.ResourceMetrics().At(i)
 			for k, v := range commonAttributes {
-				rm.Resource().Attributes().InsertString(k, v)
+				if _, found := rm.Resource().Attributes().Get(k); !found {
+					rm.Resource().Attributes().PutStr(k, v)
+				}
 			}
 		}
 	}

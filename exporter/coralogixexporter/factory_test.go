@@ -78,7 +78,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			name: "UseSecure",
 			config: Config{
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
 						Insecure: false,
@@ -90,7 +90,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			name: "Keepalive",
 			config: Config{
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					Keepalive: &configgrpc.KeepaliveClientConfig{
 						Time:                30 * time.Second,
@@ -104,7 +104,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			name: "NoneCompression",
 			config: Config{
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
 					Compression: "none",
 				},
@@ -114,7 +114,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			name: "GzipCompression",
 			config: Config{
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
 					Compression: configcompression.Gzip,
 				},
@@ -123,7 +123,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "SnappyCompression",
 			config: Config{
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
 					Compression: configcompression.Snappy,
 				},
@@ -132,7 +132,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "ZstdCompression",
 			config: Config{
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
 					Compression: configcompression.Zstd,
 				},
@@ -142,7 +142,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			name: "Headers",
 			config: Config{
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					Headers: map[string]string{
 						"hdr1": "val1",
@@ -155,7 +155,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			name: "NumConsumers",
 			config: Config{
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 				},
 			},
@@ -164,7 +164,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			name: "CertPemFileError",
 			config: Config{
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{

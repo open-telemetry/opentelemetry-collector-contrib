@@ -36,7 +36,7 @@ func TestPushMetricsDataErrorOnSend(t *testing.T) {
 }
 
 func verifyPushMetricsData(t *testing.T, errorOnSend bool) error {
-	metric := newMetric("test.metric", pmetric.MetricDataTypeGauge)
+	metric := newMetric("test.metric", pmetric.MetricTypeGauge)
 	dataPoints := metric.Gauge().DataPoints()
 	dataPoints.EnsureCapacity(1)
 	addDataPoint(
@@ -63,7 +63,7 @@ func createMockMetricsExporter(
 	ourConfig := cfg.(*Config)
 	ourConfig.Metrics.Endpoint = "http://localhost:2878"
 	creator := func(
-		hostName string, port int, settings component.TelemetrySettings, otelVersion string) (*metricsConsumer, error) {
+		endpoint string, settings component.TelemetrySettings, otelVersion string) (*metricsConsumer, error) {
 		return newMetricsConsumer(
 			[]typedMetricConsumer{
 				newGaugeConsumer(sender, settings),
@@ -78,8 +78,9 @@ func createMockMetricsExporter(
 		return nil, err
 	}
 	return exporterhelper.NewMetricsExporter(
-		cfg,
+		context.Background(),
 		componenttest.NewNopExporterCreateSettings(),
+		cfg,
 		exp.pushMetricsData,
 		exporterhelper.WithShutdown(exp.shutdown),
 	)

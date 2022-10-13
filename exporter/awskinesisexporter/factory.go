@@ -64,14 +64,15 @@ func createDefaultConfig() config.Exporter {
 }
 
 func NewTracesExporter(ctx context.Context, params component.ExporterCreateSettings, conf config.Exporter) (component.TracesExporter, error) {
-	exp, err := createExporter(conf, params.Logger)
+	exp, err := createExporter(ctx, conf, params.Logger)
 	if err != nil {
 		return nil, err
 	}
 	c := conf.(*Config)
 	return exporterhelper.NewTracesExporter(
-		conf,
+		ctx,
 		params,
+		conf,
 		exp.ConsumeTraces,
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithRetry(c.RetrySettings),
@@ -80,14 +81,15 @@ func NewTracesExporter(ctx context.Context, params component.ExporterCreateSetti
 }
 
 func NewMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, conf config.Exporter) (component.MetricsExporter, error) {
-	exp, err := createExporter(conf, params.Logger)
+	exp, err := createExporter(ctx, conf, params.Logger)
 	if err != nil {
 		return nil, err
 	}
 	c := conf.(*Config)
 	return exporterhelper.NewMetricsExporter(
-		c,
+		ctx,
 		params,
+		c,
 		exp.ConsumeMetrics,
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithRetry(c.RetrySettings),
@@ -96,14 +98,15 @@ func NewMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 }
 
 func NewLogsExporter(ctx context.Context, params component.ExporterCreateSettings, conf config.Exporter) (component.LogsExporter, error) {
-	exp, err := createExporter(conf, params.Logger)
+	exp, err := createExporter(ctx, conf, params.Logger)
 	if err != nil {
 		return nil, err
 	}
 	c := conf.(*Config)
 	return exporterhelper.NewLogsExporter(
-		c,
+		ctx,
 		params,
+		c,
 		exp.ConsumeLogs,
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithRetry(c.RetrySettings),

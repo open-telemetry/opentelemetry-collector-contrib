@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,53 +18,47 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 )
 
 type Processor struct {
-	queries []tql.Query
-	logger  *zap.Logger
+	statements []ottl.Statement[ottldatapoints.TransformContext]
 }
 
-func NewProcessor(statements []string, functions map[string]interface{}, settings component.ProcessorCreateSettings) (*Processor, error) {
-	queries, err := tql.ParseQueries(statements, functions, tqlmetrics.ParsePath, tqlmetrics.ParseEnum)
+func NewProcessor(statements []string, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
+	ottlp := ottldatapoints.NewParser(functions, settings)
+	parsedStatements, err := ottlp.ParseStatements(statements)
 	if err != nil {
 		return nil, err
 	}
 	return &Processor{
-		queries: queries,
-		logger:  settings.Logger,
+		statements: parsedStatements,
 	}, nil
 }
 
 func (p *Processor) ProcessMetrics(_ context.Context, td pmetric.Metrics) (pmetric.Metrics, error) {
-	ctx := tqlmetrics.MetricTransformContext{}
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
 		rmetrics := td.ResourceMetrics().At(i)
-		ctx.Resource = rmetrics.Resource()
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
 			smetrics := rmetrics.ScopeMetrics().At(j)
-			ctx.InstrumentationScope = smetrics.Scope()
 			metrics := smetrics.Metrics()
-			ctx.Metrics = metrics
 			for k := 0; k < metrics.Len(); k++ {
-				ctx.Metric = metrics.At(k)
-				switch ctx.Metric.DataType() {
-				case pmetric.MetricDataTypeSum:
-					p.handleNumberDataPoints(ctx, ctx.Metric.Sum().DataPoints())
-				case pmetric.MetricDataTypeGauge:
-					p.handleNumberDataPoints(ctx, ctx.Metric.Gauge().DataPoints())
-				case pmetric.MetricDataTypeHistogram:
-					p.handleHistogramDataPoints(ctx, ctx.Metric.Histogram().DataPoints())
-				case pmetric.MetricDataTypeExponentialHistogram:
-					p.handleExponetialHistogramDataPoints(ctx, ctx.Metric.ExponentialHistogram().DataPoints())
-				case pmetric.MetricDataTypeSummary:
-					p.handleSummaryDataPoints(ctx, ctx.Metric.Summary().DataPoints())
+				metric := metrics.At(k)
+				switch metric.Type() {
+				case pmetric.MetricTypeSum:
+					p.handleNumberDataPoints(metric.Sum().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
+				case pmetric.MetricTypeGauge:
+					p.handleNumberDataPoints(metric.Gauge().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
+				case pmetric.MetricTypeHistogram:
+					p.handleHistogramDataPoints(metric.Histogram().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
+				case pmetric.MetricTypeExponentialHistogram:
+					p.handleExponetialHistogramDataPoints(metric.ExponentialHistogram().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
+				case pmetric.MetricTypeSummary:
+					p.handleSummaryDataPoints(metric.Summary().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
 				}
 			}
 		}
@@ -72,38 +66,36 @@ func (p *Processor) ProcessMetrics(_ context.Context, td pmetric.Metrics) (pmetr
 	return td, nil
 }
 
-func (p *Processor) handleNumberDataPoints(ctx tqlmetrics.MetricTransformContext, dps pmetric.NumberDataPointSlice) {
+func (p *Processor) handleNumberDataPoints(dps pmetric.NumberDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) {
 	for i := 0; i < dps.Len(); i++ {
-		ctx.DataPoint = dps.At(i)
+		ctx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		p.callFunctions(ctx)
 	}
 }
 
-func (p *Processor) handleHistogramDataPoints(ctx tqlmetrics.MetricTransformContext, dps pmetric.HistogramDataPointSlice) {
+func (p *Processor) handleHistogramDataPoints(dps pmetric.HistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) {
 	for i := 0; i < dps.Len(); i++ {
-		ctx.DataPoint = dps.At(i)
+		ctx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		p.callFunctions(ctx)
 	}
 }
 
-func (p *Processor) handleExponetialHistogramDataPoints(ctx tqlmetrics.MetricTransformContext, dps pmetric.ExponentialHistogramDataPointSlice) {
+func (p *Processor) handleExponetialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) {
 	for i := 0; i < dps.Len(); i++ {
-		ctx.DataPoint = dps.At(i)
+		ctx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		p.callFunctions(ctx)
 	}
 }
 
-func (p *Processor) handleSummaryDataPoints(ctx tqlmetrics.MetricTransformContext, dps pmetric.SummaryDataPointSlice) {
+func (p *Processor) handleSummaryDataPoints(dps pmetric.SummaryDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) {
 	for i := 0; i < dps.Len(); i++ {
-		ctx.DataPoint = dps.At(i)
+		ctx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		p.callFunctions(ctx)
 	}
 }
 
-func (p *Processor) callFunctions(ctx tqlmetrics.MetricTransformContext) {
-	for _, statement := range p.queries {
-		if statement.Condition(ctx) {
-			statement.Function(ctx)
-		}
+func (p *Processor) callFunctions(ctx ottldatapoints.TransformContext) {
+	for _, statement := range p.statements {
+		statement.Execute(ctx)
 	}
 }

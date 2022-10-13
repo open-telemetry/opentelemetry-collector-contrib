@@ -54,21 +54,19 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 		l := logSlice.AppendEmpty()
 		l.SetTimestamp(pcommon.NewTimestampFromTime(now.Truncate(time.Millisecond)))
 		attrs := l.Attributes()
-		attrs.InsertString("com.splunk.signalfx.event_type", "shutdown")
-		attrs.InsertString("k0", "v0")
-		attrs.InsertString("k1", "v1")
-		attrs.InsertString("k2", "v2")
+		attrs.PutStr("com.splunk.signalfx.event_type", "shutdown")
+		attrs.PutStr("k0", "v0")
+		attrs.PutStr("k1", "v1")
+		attrs.PutStr("k2", "v2")
+		attrs.PutInt("com.splunk.signalfx.event_category", int64(sfxpb.EventCategory_USER_DEFINED))
 
-		propMapVal := pcommon.NewValueMap()
-		propMap := propMapVal.MapVal()
-		propMap.InsertString("env", "prod")
-		propMap.InsertBool("isActive", true)
-		propMap.InsertInt("rack", 5)
-		propMap.InsertDouble("temp", 40.5)
-		propMap.InsertNull("nullProp")
+		propMap := attrs.PutEmptyMap("com.splunk.signalfx.event_properties")
+		propMap.PutStr("env", "prod")
+		propMap.PutBool("isActive", true)
+		propMap.PutInt("rack", 5)
+		propMap.PutDouble("temp", 40.5)
+		propMap.PutEmpty("nullProp")
 		propMap.Sort()
-		attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
-		attrs.Insert("com.splunk.signalfx.event_category", pcommon.NewValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
 
 		l.Attributes().Sort()
 		return logSlice
@@ -93,7 +91,7 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 			}(),
 			expected: func() plog.LogRecordSlice {
 				lrs := buildDefaultLogs()
-				lrs.At(0).Attributes().Upsert("com.splunk.signalfx.event_category", pcommon.NewValueEmpty())
+				lrs.At(0).Attributes().PutEmpty("com.splunk.signalfx.event_category")
 				return lrs
 			}(),
 		},

@@ -1,5 +1,0 @@
-change_type: enhancement
-component: observers
-note: Adds multiple observer.Notify subscriber support to observer.EndpointWatcher for multiple Endpoint event consumers.
-issues: [10830, 11541, 11544]
-

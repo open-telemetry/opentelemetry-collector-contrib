@@ -19,8 +19,9 @@ import (
 	"fmt"
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
+	gocache "github.com/patrickmn/go-cache"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/service/featuregate"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/azure"
@@ -31,7 +32,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils/cache"
 )
 
 const (
@@ -39,7 +39,7 @@ const (
 )
 
 var (
-	hostnamePreviewGate = featuregate.Gate{
+	HostnamePreviewGate = featuregate.Gate{
 		ID:          HostnamePreviewFeatureGate,
 		Description: "Use the 'preview' hostname resolution rules, which are consistent with Datadog cloud integration hostname resolution rules, and set 'host_metadata::hostname_source' to 'config_or_system' by default.",
 		Enabled:     true,
@@ -47,7 +47,7 @@ var (
 )
 
 func init() {
-	featuregate.GetRegistry().MustRegister(hostnamePreviewGate)
+	featuregate.GetRegistry().MustRegister(HostnamePreviewGate)
 }
 
 func buildPreviewProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
@@ -143,7 +143,7 @@ func (c *currentProvider) hostname(ctx context.Context) string {
 		return c.configHostname
 	}
 
-	if cacheVal, ok := cache.Cache.Get(cache.CanonicalHostnameKey); ok {
+	if cacheVal, ok := hostnameCache.Get(cacheKeyHostname); ok {
 		return cacheVal.(string)
 	}
 
@@ -167,7 +167,7 @@ func (c *currentProvider) hostname(ctx context.Context) string {
 	}
 
 	c.logger.Debug("Canonical hostname automatically set", zap.String("hostname", hostname))
-	cache.Cache.Set(cache.CanonicalHostnameKey, hostname, cache.NoExpiration)
+	hostnameCache.Set(cacheKeyHostname, hostname, gocache.NoExpiration)
 	return hostname
 }
 

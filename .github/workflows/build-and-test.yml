@@ -1,16 +1,19 @@
 name: build-and-test
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
   pull_request:
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
+  # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
+  # Cache downloads for this workflow consistently run in under 1 minute
+  SEGMENT_DOWNLOAD_TIMEOUT_MIN: 5
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
 jobs:
   setup-environment:
@@ -32,6 +35,8 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: "10"
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -84,6 +89,8 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: "10"
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -95,6 +102,8 @@ jobs:
         with:
           path: ~/.cache/go-build
           key: go-lint-build-${{ matrix.group }}-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: "10"
       - name: Lint
         run: make -j2 golint GROUP=${{ matrix.group }}
   lint:
@@ -131,6 +140,8 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: "10"
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -141,7 +152,7 @@ jobs:
         run: make checkdoc
       - name: Porto
         run: |
-          make goporto
+          make -j2 goporto
           git diff --exit-code || (echo 'Porto links are out of date, please run "make goporto" and commit the changes in this PR.' && exit 1)
       - name: Check for go mod dependency changes
         run: |
@@ -151,6 +162,9 @@ jobs:
         run: |
           make generate
           git diff --exit-code ':!*go.sum' || (echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.' && exit 1)
+      - name: Impi
+        run: |
+          make -j2 goimpi
       - name: MultimodVerify
         run: make multimod-verify
   unittest-matrix:
@@ -182,6 +196,8 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: "10"
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -193,6 +209,8 @@ jobs:
         with:
           path: ~/.cache/go-build
           key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: "10"
       - name: Run Unit Tests
         run: make gotest GROUP=${{ matrix.group }}
   unittest:
@@ -233,6 +251,8 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: "10"
       - name: Run Integration Tests
         run: make integration-tests-with-cover
 
@@ -254,6 +274,8 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: "10"
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -280,6 +302,8 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: "10"
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -341,6 +365,8 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: "10"
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -421,6 +447,8 @@ jobs:
           path: |
             "C:\Program Files (x86)\WiX Toolset v3.11"
           key: wix-3.11
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: "10"
       - name: Install Wix Toolset
         if: steps.wix-cache.outputs.cache-hit != 'true'
         run: .\internal\buildscripts\packaging\msi\make.ps1 Install-Tools
@@ -477,6 +505,8 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: "10"
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -502,14 +532,14 @@ jobs:
       - name: Build Docker Image
         if: steps.check.outputs.passed == 'true'
         run: |
-            make docker-otelcontribcol
-            docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA
-            docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:latest
+          make docker-otelcontribcol
+          docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA
+          docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:latest
       - name: Validate Docker Image
         if: steps.check.outputs.passed == 'true'
         run: |
-            docker run otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA --version
-            docker run otel/opentelemetry-collector-contrib-dev:latest --version
+          docker run otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA --version
+          docker run otel/opentelemetry-collector-contrib-dev:latest --version
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -518,8 +548,8 @@ jobs:
       - name: Push Docker Image
         if: steps.check.outputs.passed == 'true'
         run: |
-            docker push otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA
-            docker push otel/opentelemetry-collector-contrib-dev:latest
+          docker push otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA
+          docker push otel/opentelemetry-collector-contrib-dev:latest
   publish-stable:
     runs-on: ubuntu-latest
     needs: [lint, unittest, integration-tests, build-package]
@@ -542,6 +572,8 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: "10"
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload

@@ -37,7 +37,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
@@ -215,7 +215,7 @@ func TestDefaultExtensions(t *testing.T) {
 		{
 			extension: "headers_setter",
 			getConfigFn: func() config.Extension {
-				cfg := extFactories["headers_setter"].CreateDefaultConfig().(*headerssetter.Config)
+				cfg := extFactories["headers_setter"].CreateDefaultConfig().(*headerssetterextension.Config)
 				return cfg
 			},
 		},

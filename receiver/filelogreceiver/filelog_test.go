@@ -24,21 +24,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-
 	"github.com/observiq/nanojack"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -49,25 +50,25 @@ func TestDefaultConfig(t *testing.T) {
 }
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(config.NewComponentID("filelog").String())
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
 
-	assert.Equal(t, len(cfg.Receivers), 1)
-
-	assert.Equal(t, testdataConfigYaml(), cfg.Receivers[config.NewComponentID("filelog")])
+	assert.NoError(t, cfg.Validate())
+	assert.Equal(t, testdataConfigYaml(), cfg)
 }
 
 func TestCreateWithInvalidInputConfig(t *testing.T) {
 	t.Parallel()
 
 	cfg := testdataConfigYaml()
-	cfg.StartAt = "middle"
+	cfg.InputConfig.StartAt = "middle"
 
 	_, err := NewFactory().CreateLogsReceiver(
 		context.Background(),
@@ -259,17 +260,22 @@ func testdataConfigYaml() *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators: adapter.OperatorConfigs{
-				map[string]interface{}{
-					"type":  "regex_parser",
-					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
-					"severity": map[string]interface{}{
-						"parse_from": "attributes.sev",
-					},
-					"timestamp": map[string]interface{}{
-						"layout":     "%Y-%m-%d",
-						"parse_from": "attributes.time",
-					},
+			Operators: []operator.Config{
+				{
+					Builder: func() *regex.Config {
+						cfg := regex.NewConfig()
+						cfg.Regex = "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$"
+						sevField := entry.NewAttributeField("sev")
+						sevCfg := helper.NewSeverityConfig()
+						sevCfg.ParseFrom = &sevField
+						cfg.SeverityConfig = &sevCfg
+						timeField := entry.NewAttributeField("time")
+						timeCfg := helper.NewTimeParser()
+						timeCfg.Layout = "%Y-%m-%d"
+						timeCfg.ParseFrom = &timeField
+						cfg.TimeParser = &timeCfg
+						return cfg
+					}(),
 				},
 			},
 			Converter: adapter.ConverterConfig{
@@ -277,8 +283,8 @@ func testdataConfigYaml() *FileLogConfig {
 				FlushInterval: 100 * time.Millisecond,
 			},
 		},
-		Config: func() file.Config {
-			c := file.NewConfig("file_input")
+		InputConfig: func() file.Config {
+			c := file.NewConfig()
 			c.Include = []string{"testdata/simple.log"}
 			c.StartAt = "beginning"
 			return *c
@@ -290,23 +296,27 @@ func rotationTestConfig(tempDir string) *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators: adapter.OperatorConfigs{
-				map[string]interface{}{
-					"type":  "regex_parser",
-					"regex": "^(?P<ts>\\d{4}-\\d{2}-\\d{2}) (?P<msg>[^\n]+)",
-					"timestamp": map[interface{}]interface{}{
-						"layout":     "%Y-%m-%d",
-						"parse_from": "body.ts",
-					},
+			Operators: []operator.Config{
+				{
+					Builder: func() *regex.Config {
+						cfg := regex.NewConfig()
+						cfg.Regex = "^(?P<ts>\\d{4}-\\d{2}-\\d{2}) (?P<msg>[^\n]+)"
+						timeField := entry.NewAttributeField("ts")
+						timeCfg := helper.NewTimeParser()
+						timeCfg.Layout = "%Y-%m-%d"
+						timeCfg.ParseFrom = &timeField
+						cfg.TimeParser = &timeCfg
+						return cfg
+					}(),
 				},
 			},
 			Converter: adapter.ConverterConfig{},
 		},
-		Config: func() file.Config {
-			c := file.NewConfig("file_input")
+		InputConfig: func() file.Config {
+			c := file.NewConfig()
 			c.Include = []string{fmt.Sprintf("%s/*", tempDir)}
 			c.StartAt = "beginning"
-			c.PollInterval = helper.Duration{Duration: 10 * time.Millisecond}
+			c.PollInterval = 10 * time.Millisecond
 			c.IncludeFileName = false
 			return *c
 		}(),

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
 const (
@@ -43,16 +44,14 @@ func NewFactory() component.ReceiverFactory {
 
 type JournaldConfig struct {
 	adapter.BaseConfig `mapstructure:",squash"`
-	Input              adapter.InputConfig `mapstructure:",remain"`
 }
 
 func createDefaultConfig() config.Receiver {
 	return &JournaldConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
+			Operators:        []operator.Config{},
 		},
-		Input: adapter.InputConfig{},
 	}
 }
 
@@ -62,6 +61,5 @@ func createLogsReceiver(
 	cfg config.Receiver,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
-
 	return nil, fmt.Errorf("journald is only supported on linux")
 }

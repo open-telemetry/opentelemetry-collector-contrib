@@ -59,18 +59,18 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return res, "", nil
 	}
 
-	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
-	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureVM)
-	attrs.InsertString(conventions.AttributeHostName, compute.Name)
-	attrs.InsertString(conventions.AttributeCloudRegion, compute.Location)
-	attrs.InsertString(conventions.AttributeHostID, compute.VMID)
-	attrs.InsertString(conventions.AttributeCloudAccountID, compute.SubscriptionID)
+	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+	attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureVM)
+	attrs.PutStr(conventions.AttributeHostName, compute.Name)
+	attrs.PutStr(conventions.AttributeCloudRegion, compute.Location)
+	attrs.PutStr(conventions.AttributeHostID, compute.VMID)
+	attrs.PutStr(conventions.AttributeCloudAccountID, compute.SubscriptionID)
 	// Also save compute.Name in "azure.vm.name" as host.id (AttributeHostName) is
 	// used by system detector.
-	attrs.InsertString("azure.vm.name", compute.Name)
-	attrs.InsertString("azure.vm.size", compute.VMSize)
-	attrs.InsertString("azure.vm.scaleset.name", compute.VMScaleSetName)
-	attrs.InsertString("azure.resourcegroup.name", compute.ResourceGroupName)
+	attrs.PutStr("azure.vm.name", compute.Name)
+	attrs.PutStr("azure.vm.size", compute.VMSize)
+	attrs.PutStr("azure.vm.scaleset.name", compute.VMScaleSetName)
+	attrs.PutStr("azure.resourcegroup.name", compute.ResourceGroupName)
 
 	return res, conventions.SchemaURL, nil
 }

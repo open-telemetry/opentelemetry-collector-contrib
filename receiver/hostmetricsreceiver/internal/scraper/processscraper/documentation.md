@@ -14,6 +14,7 @@ These are the metrics available for this scraper.
 | **process.disk.io.write** | Disk bytes written. | By | Sum(Int) | <ul> </ul> |
 | **process.memory.physical_usage** | The amount of physical memory in use. | By | Sum(Int) | <ul> </ul> |
 | **process.memory.virtual_usage** | Virtual memory size. | By | Sum(Int) | <ul> </ul> |
+| process.threads | Process threads count. | {threads} | Sum(Int) | <ul> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:
@@ -28,11 +29,11 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| process.command | The command used to launch the process (i.e. the command name). On Linux based systems, can be set to the zeroth string in proc/[pid]/cmdline. On Windows, can be set to the first parameter extracted from GetCommandLineW. | String |
-| process.command_line | The full command used to launch the process as a single string representing the full command. On Windows, can be set to the result of GetCommandLineW. Do not set this if you have to assemble it just for monitoring; use process.command_args instead. | String |
-| process.executable.name | The name of the process executable. On Linux based systems, can be set to the Name in proc/[pid]/status. On Windows, can be set to the base name of GetProcessImageFileNameW. | String |
-| process.executable.path | The full path to the process executable. On Linux based systems, can be set to the target of proc/[pid]/exe. On Windows, can be set to the result of GetProcessImageFileNameW. | String |
-| process.owner | The username of the user that owns the process. | String |
+| process.command | The command used to launch the process (i.e. the command name). On Linux based systems, can be set to the zeroth string in proc/[pid]/cmdline. On Windows, can be set to the first parameter extracted from GetCommandLineW. | Str |
+| process.command_line | The full command used to launch the process as a single string representing the full command. On Windows, can be set to the result of GetCommandLineW. Do not set this if you have to assemble it just for monitoring; use process.command_args instead. | Str |
+| process.executable.name | The name of the process executable. On Linux based systems, can be set to the Name in proc/[pid]/status. On Windows, can be set to the base name of GetProcessImageFileNameW. | Str |
+| process.executable.path | The full path to the process executable. On Linux based systems, can be set to the target of proc/[pid]/exe. On Windows, can be set to the result of GetProcessImageFileNameW. | Str |
+| process.owner | The username of the user that owns the process. | Str |
 | process.parent_pid | Parent Process identifier (PPID). | Int |
 | process.pid | Process identifier (PID). | Int |
 

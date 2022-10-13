@@ -35,7 +35,14 @@ const (
 	defaultResTimeout  = time.Second
 )
 
-var errNoHostname = errors.New("no hostname specified to resolve the backends")
+var (
+	errNoHostname = errors.New("no hostname specified to resolve the backends")
+
+	resolverMutator = tag.Upsert(tag.MustNewKey("resolver"), "dns")
+
+	resolverSuccessTrueMutators  = []tag.Mutator{resolverMutator, successTrueMutator}
+	resolverSuccessFalseMutators = []tag.Mutator{resolverMutator, successFalseMutator}
+)
 
 type dnsResolver struct {
 	logger *zap.Logger
@@ -59,9 +66,15 @@ type netResolver interface {
 	LookupIPAddr(ctx context.Context, host string) ([]net.IPAddr, error)
 }
 
-func newDNSResolver(logger *zap.Logger, hostname string, port string) (*dnsResolver, error) {
+func newDNSResolver(logger *zap.Logger, hostname string, port string, interval time.Duration, timeout time.Duration) (*dnsResolver, error) {
 	if len(hostname) == 0 {
 		return nil, errNoHostname
+	}
+	if interval == 0 {
+		interval = defaultResInterval
+	}
+	if timeout == 0 {
+		timeout = defaultResTimeout
 	}
 
 	return &dnsResolver{
@@ -69,8 +82,8 @@ func newDNSResolver(logger *zap.Logger, hostname string, port string) (*dnsResol
 		hostname:    hostname,
 		port:        port,
 		resolver:    &net.Resolver{},
-		resInterval: defaultResInterval,
-		resTimeout:  defaultResTimeout,
+		resInterval: interval,
+		resTimeout:  timeout,
 		stopCh:      make(chan struct{}),
 	}, nil
 }
@@ -82,6 +95,9 @@ func (r *dnsResolver) start(ctx context.Context) error {
 
 	go r.periodicallyResolve()
 
+	r.logger.Debug("DNS resolver started",
+		zap.String("hostname", r.hostname), zap.String("port", r.port),
+		zap.Duration("interval", r.resInterval), zap.Duration("timeout", r.resTimeout))
 	return nil
 }
 
@@ -104,6 +120,8 @@ func (r *dnsResolver) periodicallyResolve() {
 			ctx, cancel := context.WithTimeout(context.Background(), r.resTimeout)
 			if _, err := r.resolve(ctx); err != nil {
 				r.logger.Warn("failed to resolve", zap.Error(err))
+			} else {
+				r.logger.Debug("resolved successfully")
 			}
 			cancel()
 		case <-r.stopCh:
@@ -116,19 +134,13 @@ func (r *dnsResolver) resolve(ctx context.Context) ([]string, error) {
 	r.shutdownWg.Add(1)
 	defer r.shutdownWg.Done()
 
-	// the context to use for all metrics in this function
-	mCtx, _ := tag.New(ctx, tag.Upsert(tag.MustNewKey("resolver"), "dns"))
-
 	addrs, err := r.resolver.LookupIPAddr(ctx, r.hostname)
 	if err != nil {
-		failedCtx, _ := tag.New(mCtx, tag.Upsert(tag.MustNewKey("success"), "false"))
-		stats.Record(failedCtx, mNumResolutions.M(1))
+		_ = stats.RecordWithTags(ctx, resolverSuccessFalseMutators, mNumResolutions.M(1))
 		return nil, err
 	}
 
-	// from this point, we don't fail anymore
-	successCtx, _ := tag.New(mCtx, tag.Upsert(tag.MustNewKey("success"), "true"))
-	stats.Record(successCtx, mNumResolutions.M(1))
+	_ = stats.RecordWithTags(ctx, resolverSuccessTrueMutators, mNumResolutions.M(1))
 
 	var backends []string
 	for _, ip := range addrs {
@@ -159,7 +171,7 @@ func (r *dnsResolver) resolve(ctx context.Context) ([]string, error) {
 	r.updateLock.Lock()
 	r.endpoints = backends
 	r.updateLock.Unlock()
-	stats.Record(mCtx, mNumBackends.M(int64(len(backends))))
+	_ = stats.RecordWithTags(ctx, resolverSuccessTrueMutators, mNumBackends.M(int64(len(backends))))
 
 	// propagate the change
 	r.changeCallbackLock.RLock()

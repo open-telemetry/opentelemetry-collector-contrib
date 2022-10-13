@@ -139,15 +139,15 @@ func TestDetector_Detect(t *testing.T) {
 			want: func() pcommon.Resource {
 				res := pcommon.NewResource()
 				attr := res.Attributes()
-				attr.InsertString("cloud.account.id", "account1234")
-				attr.InsertString("cloud.provider", "aws")
-				attr.InsertString("cloud.platform", "aws_ec2")
-				attr.InsertString("cloud.region", "us-west-2")
-				attr.InsertString("cloud.availability_zone", "us-west-2a")
-				attr.InsertString("host.id", "i-abcd1234")
-				attr.InsertString("host.image.id", "abcdef")
-				attr.InsertString("host.type", "c4.xlarge")
-				attr.InsertString("host.name", "example-hostname")
+				attr.PutStr("cloud.account.id", "account1234")
+				attr.PutStr("cloud.provider", "aws")
+				attr.PutStr("cloud.platform", "aws_ec2")
+				attr.PutStr("cloud.region", "us-west-2")
+				attr.PutStr("cloud.availability_zone", "us-west-2a")
+				attr.PutStr("host.id", "i-abcd1234")
+				attr.PutStr("host.image.id", "abcdef")
+				attr.PutStr("host.type", "c4.xlarge")
+				attr.PutStr("host.name", "example-hostname")
 				return res
 			}()},
 		{
@@ -157,10 +157,8 @@ func TestDetector_Detect(t *testing.T) {
 				retErrIDDoc: errors.New("should not be called"),
 				isAvailable: false,
 			}},
-			args: args{ctx: context.Background()},
-			want: func() pcommon.Resource {
-				return pcommon.NewResource()
-			}(),
+			args:    args{ctx: context.Background()},
+			want:    pcommon.NewResource(),
 			wantErr: false},
 		{
 			name: "get fails",
@@ -169,10 +167,8 @@ func TestDetector_Detect(t *testing.T) {
 				retErrIDDoc: errors.New("get failed"),
 				isAvailable: true,
 			}},
-			args: args{ctx: context.Background()},
-			want: func() pcommon.Resource {
-				return pcommon.NewResource()
-			}(),
+			args:    args{ctx: context.Background()},
+			want:    pcommon.NewResource(),
 			wantErr: true},
 		{
 			name: "hostname fails",
@@ -182,10 +178,8 @@ func TestDetector_Detect(t *testing.T) {
 				retErrHostname: errors.New("hostname failed"),
 				isAvailable:    true,
 			}},
-			args: args{ctx: context.Background()},
-			want: func() pcommon.Resource {
-				return pcommon.NewResource()
-			}(),
+			args:    args{ctx: context.Background()},
+			want:    pcommon.NewResource(),
 			wantErr: true},
 	}
 	for _, tt := range tests {

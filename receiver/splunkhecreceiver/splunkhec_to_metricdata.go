@@ -40,16 +40,16 @@ func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 		}
 		attrs := resourceMetrics.Resource().Attributes()
 		if event.Host != "" {
-			attrs.InsertString(config.HecToOtelAttrs.Host, event.Host)
+			attrs.PutStr(config.HecToOtelAttrs.Host, event.Host)
 		}
 		if event.Source != "" {
-			attrs.InsertString(config.HecToOtelAttrs.Source, event.Source)
+			attrs.PutStr(config.HecToOtelAttrs.Source, event.Source)
 		}
 		if event.SourceType != "" {
-			attrs.InsertString(config.HecToOtelAttrs.SourceType, event.SourceType)
+			attrs.PutStr(config.HecToOtelAttrs.SourceType, event.SourceType)
 		}
 		if event.Index != "" {
-			attrs.InsertString(config.HecToOtelAttrs.Index, event.Index)
+			attrs.PutStr(config.HecToOtelAttrs.Index, event.Index)
 		}
 
 		values := event.GetMetricValues()
@@ -107,20 +107,18 @@ func convertString(logger *zap.Logger, numDroppedTimeSeries *int, metrics pmetri
 func addIntGauge(metrics pmetric.MetricSlice, metricName string, value int64, ts pcommon.Timestamp, attributes pcommon.Map) {
 	metric := metrics.AppendEmpty()
 	metric.SetName(metricName)
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
-	intPt := metric.Gauge().DataPoints().AppendEmpty()
+	intPt := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 	intPt.SetTimestamp(ts)
-	intPt.SetIntVal(value)
+	intPt.SetIntValue(value)
 	attributes.CopyTo(intPt.Attributes())
 }
 
 func addDoubleGauge(metrics pmetric.MetricSlice, metricName string, value float64, ts pcommon.Timestamp, attributes pcommon.Map) {
 	metric := metrics.AppendEmpty()
 	metric.SetName(metricName)
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
-	doublePt := metric.Gauge().DataPoints().AppendEmpty()
+	doublePt := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 	doublePt.SetTimestamp(ts)
-	doublePt.SetDoubleVal(value)
+	doublePt.SetDoubleValue(value)
 	attributes.CopyTo(doublePt.Attributes())
 }
 
@@ -145,7 +143,7 @@ func buildAttributes(dimensions map[string]interface{}) pcommon.Map {
 			// TODO: Log or metric for this odd ball?
 			continue
 		}
-		attributes.InsertString(key, fmt.Sprintf("%v", val))
+		attributes.PutStr(key, fmt.Sprintf("%v", val))
 	}
 	return attributes
 }

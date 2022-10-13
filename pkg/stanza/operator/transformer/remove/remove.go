@@ -25,22 +25,29 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "remove"
+
 func init() {
-	operator.Register("remove", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
 // NewConfig creates a new remove operator config with default values
-func NewConfig(operatorID string) *Config {
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new remove operator config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		TransformerConfig: helper.NewTransformerConfig(operatorID, "remove"),
+		TransformerConfig: helper.NewTransformerConfig(operatorID, operatorType),
 	}
 }
 
 // Config is the configuration of a remove operator
 type Config struct {
-	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
+	helper.TransformerConfig `mapstructure:",squash"`
 
-	Field rootableField `mapstructure:"field"  json:"field" yaml:"field"`
+	Field rootableField `mapstructure:"field"`
 }
 
 // Build will build a Remove operator from the supplied configuration

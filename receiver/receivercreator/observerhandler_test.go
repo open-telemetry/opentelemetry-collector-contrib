@@ -49,7 +49,8 @@ var _ runner = (*mockRunner)(nil)
 
 func TestOnAdd(t *testing.T) {
 	runner := &mockRunner{}
-	rcvrCfg := receiverConfig{id: config.NewComponentIDWithName("name", "1"), config: userConfigMap{"foo": "bar"}}
+
+	rcvrCfg := receiverConfig{id: config.NewComponentIDWithName("name", "1"), config: userConfigMap{"foo": "bar"}, endpointID: portEndpoint.ID}
 	cfg := createDefaultConfig().(*Config)
 	cfg.receiverTemplates = map[string]receiverTemplate{
 		"name/1": {rcvrCfg, "", map[string]interface{}{}, newRuleOrPanic(`type == "port"`)},
@@ -99,7 +100,7 @@ func TestOnRemove(t *testing.T) {
 
 func TestOnChange(t *testing.T) {
 	runner := &mockRunner{}
-	rcvrCfg := receiverConfig{id: config.NewComponentIDWithName("name", "1"), config: userConfigMap{"foo": "bar"}}
+	rcvrCfg := receiverConfig{id: config.NewComponentIDWithName("name", "1"), config: userConfigMap{"foo": "bar"}, endpointID: portEndpoint.ID}
 	oldRcvr := &nopWithEndpointReceiver{}
 	newRcvr := &nopWithEndpointReceiver{}
 	cfg := createDefaultConfig().(*Config)
@@ -135,7 +136,7 @@ func TestDynamicConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.receiverTemplates = map[string]receiverTemplate{
 		"name/1": {
-			receiverConfig: receiverConfig{id: config.NewComponentIDWithName("name", "1"), config: userConfigMap{"endpoint": "`endpoint`:6379"}},
+			receiverConfig: receiverConfig{id: config.NewComponentIDWithName("name", "1"), config: userConfigMap{"endpoint": "`endpoint`:6379"}, endpointID: podEndpoint.ID},
 			Rule:           `type == "pod"`,
 			rule:           newRuleOrPanic("type == \"pod\""),
 		},
@@ -149,8 +150,9 @@ func TestDynamicConfig(t *testing.T) {
 	runner.On(
 		"start",
 		receiverConfig{
-			id:     config.NewComponentIDWithName("name", "1"),
-			config: userConfigMap{endpointConfigKey: "localhost:6379"},
+			id:         config.NewComponentIDWithName("name", "1"),
+			config:     userConfigMap{endpointConfigKey: "localhost:6379"},
+			endpointID: podEndpoint.ID,
 		},
 		userConfigMap{},
 		mock.IsType(&resourceEnhancer{}),

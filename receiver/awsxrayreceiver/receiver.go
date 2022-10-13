@@ -124,7 +124,7 @@ func (x *xrayReceiver) start() {
 			continue
 		}
 
-		err = x.consumer.ConsumeTraces(ctx, *traces)
+		err = x.consumer.ConsumeTraces(ctx, traces)
 		if err != nil {
 			x.settings.Logger.Warn("Trace consumer errored out", zap.Error(err))
 			x.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, totalSpanCount, err)

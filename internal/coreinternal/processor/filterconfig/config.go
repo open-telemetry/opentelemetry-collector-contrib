@@ -16,6 +16,11 @@ package filterconfig // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"errors"
+	"fmt"
+	"sort"
+
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
@@ -100,6 +105,9 @@ type MatchProperties struct {
 	// against.
 	LogSeverityTexts []string `mapstructure:"log_severity_texts"`
 
+	// LogSeverityNumber defines how to match against a log record's SeverityNumber, if defined.
+	LogSeverityNumber *LogSeverityNumberMatchProperties `mapstructure:"log_severity_number"`
+
 	// MetricNames is a list of strings to match metric name against.
 	// A match occurs if metric name matches at least one item in the list.
 	// This field is optional.
@@ -120,7 +128,26 @@ type MatchProperties struct {
 	// A match occurs if the span's implementation library matches at least one item in this list.
 	// This is an optional field.
 	Libraries []InstrumentationLibrary `mapstructure:"libraries"`
+
+	// SpanKinds specify the list of items to match the span kind against.
+	// A match occurs if the span's span kind matches at least one item in this list.
+	// This is an optional field
+	SpanKinds []string `mapstructure:"span_kinds"`
 }
+
+var (
+	ErrMissingRequiredField    = errors.New(`at least one of "attributes", "libraries",  or "resources" field must be specified`)
+	ErrInvalidLogField         = errors.New("services, span_names, and span_kinds are not valid for log records")
+	ErrMissingRequiredLogField = errors.New(`at least one of "attributes", "libraries", "span_kinds", "resources", "log_bodies", "log_severity_texts" or "log_severity_number" field must be specified`)
+
+	spanKinds = map[string]bool{
+		ptrace.SpanKindInternal.String(): true,
+		ptrace.SpanKindClient.String():   true,
+		ptrace.SpanKindServer.String():   true,
+		ptrace.SpanKindConsumer.String(): true,
+		ptrace.SpanKindProducer.String(): true,
+	}
+)
 
 // ValidateForSpans validates properties for spans.
 func (mp *MatchProperties) ValidateForSpans() error {
@@ -132,9 +159,26 @@ func (mp *MatchProperties) ValidateForSpans() error {
 		return errors.New("log_severity_texts should not be specified for trace spans")
 	}
 
+	if mp.LogSeverityNumber != nil {
+		return errors.New("log_severity_number should not be specified for trace spans")
+	}
+
 	if len(mp.Services) == 0 && len(mp.SpanNames) == 0 && len(mp.Attributes) == 0 &&
-		len(mp.Libraries) == 0 && len(mp.Resources) == 0 {
-		return errors.New(`at least one of "services", "span_names", "attributes", "libraries" or "resources" field must be specified`)
+		len(mp.Libraries) == 0 && len(mp.Resources) == 0 && len(mp.SpanKinds) == 0 {
+		return ErrMissingRequiredField
+	}
+
+	if len(mp.SpanKinds) > 0 && mp.MatchType == "strict" {
+		for _, kind := range mp.SpanKinds {
+			if !spanKinds[kind] {
+				validSpanKinds := make([]string, len(spanKinds))
+				for k := range spanKinds {
+					validSpanKinds = append(validSpanKinds, k)
+				}
+				sort.Strings(validSpanKinds)
+				return fmt.Errorf("span_kinds string must match one of the standard span kinds when match_type=strict: %v", validSpanKinds)
+			}
+		}
 	}
 
 	return nil
@@ -142,12 +186,15 @@ func (mp *MatchProperties) ValidateForSpans() error {
 
 // ValidateForLogs validates properties for logs.
 func (mp *MatchProperties) ValidateForLogs() error {
-	if len(mp.SpanNames) > 0 || len(mp.Services) > 0 {
-		return errors.New("neither services nor span_names should be specified for log records")
+	if len(mp.SpanNames) > 0 || len(mp.Services) > 0 || len(mp.SpanKinds) > 0 {
+		return ErrInvalidLogField
 	}
 
-	if len(mp.Attributes) == 0 && len(mp.Libraries) == 0 && len(mp.Resources) == 0 && len(mp.LogBodies) == 0 && len(mp.LogSeverityTexts) == 0 {
-		return errors.New(`at least one of "attributes", "libraries", "resources", "log_bodies" or "log_severity_texts" field must be specified`)
+	if len(mp.Attributes) == 0 && len(mp.Libraries) == 0 &&
+		len(mp.Resources) == 0 && len(mp.LogBodies) == 0 &&
+		len(mp.LogSeverityTexts) == 0 && mp.LogSeverityNumber == nil &&
+		len(mp.SpanKinds) == 0 {
+		return ErrMissingRequiredLogField
 	}
 
 	return nil
@@ -175,4 +222,15 @@ type InstrumentationLibrary struct {
 	//  1        <blank> no
 	//  1        1       yes
 	Version *string `mapstructure:"version"`
+}
+
+// LogSeverityNumberMatchProperties defines how to match based on a log record's SeverityNumber field.
+type LogSeverityNumberMatchProperties struct {
+	// Min is the lowest severity that may be matched.
+	// e.g. if this is plog.SeverityNumberInfo, INFO, WARN, ERROR, and FATAL logs will match.
+	Min plog.SeverityNumber `mapstructure:"min"`
+
+	// MatchUndefined controls whether logs with "undefined" severity matches.
+	// If this is true, entries with undefined severity will match.
+	MatchUndefined bool `mapstructure:"match_undefined"`
 }

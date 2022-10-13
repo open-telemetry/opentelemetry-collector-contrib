@@ -37,10 +37,9 @@ func TestSerializeMetric(t *testing.T) {
 
 	t.Run("correctly creates a gauge", func(t *testing.T) {
 		metric := pmetric.NewMetric()
-		metric.SetDataType(pmetric.MetricDataTypeGauge)
 		metric.SetName("metric_name")
-		gaugeDp := metric.Gauge().DataPoints().AppendEmpty()
-		gaugeDp.SetIntVal(3)
+		gaugeDp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+		gaugeDp.SetIntValue(3)
 
 		prev := ttlmap.New(1, 1)
 
@@ -55,13 +54,12 @@ func TestSerializeMetric(t *testing.T) {
 	t.Run("correctly creates a counter from a sum", func(t *testing.T) {
 		// more in-depth tests for the different sum serializations are in sum_test.go
 		metric := pmetric.NewMetric()
-		metric.SetDataType(pmetric.MetricDataTypeSum)
 		metric.SetName("metric_name")
-		sum := metric.Sum()
+		sum := metric.SetEmptySum()
 		sum.SetIsMonotonic(true)
-		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 		sumDp := sum.DataPoints().AppendEmpty()
-		sumDp.SetIntVal(4)
+		sumDp.SetIntValue(4)
 
 		prev := ttlmap.New(1, 1)
 
@@ -75,10 +73,9 @@ func TestSerializeMetric(t *testing.T) {
 
 	t.Run("correctly creates a summary from histogram", func(t *testing.T) {
 		metric := pmetric.NewMetric()
-		metric.SetDataType(pmetric.MetricDataTypeHistogram)
 		metric.SetName("metric_name")
-		hist := metric.Histogram()
-		hist.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+		hist := metric.SetEmptyHistogram()
+		hist.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 		dp := hist.DataPoints().AppendEmpty()
 		dp.SetMin(1)
 		dp.SetMax(3)
@@ -104,8 +101,8 @@ func Test_makeCombinedDimensions(t *testing.T) {
 		dimensions.NewDimension("c", "default"),
 	)
 	attributes := pcommon.NewMap()
-	attributes.Insert("a", pcommon.NewValueString("attribute"))
-	attributes.Insert("b", pcommon.NewValueString("attribute"))
+	attributes.PutStr("a", "attribute")
+	attributes.PutStr("b", "attribute")
 	staticDims := dimensions.NewNormalizedDimensionList(
 		dimensions.NewDimension("a", "static"),
 	)

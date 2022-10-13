@@ -385,15 +385,14 @@ func testResourceMetrics(mwrs []metricWithResource) pmetric.Metrics {
 
 	for _, mwr := range mwrs {
 		rm := md.ResourceMetrics().AppendEmpty()
-		pcommon.NewMapFromRaw(mwr.resourceAttributes).CopyTo(rm.Resource().Attributes())
+		rm.Resource().Attributes().FromRaw(mwr.resourceAttributes)
 		ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 		for _, name := range mwr.metricNames {
 			m := ms.AppendEmpty()
 			m.SetName(name)
-			m.SetDataType(pmetric.MetricDataTypeGauge)
-			dp := m.Gauge().DataPoints().AppendEmpty()
+			dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(10 * time.Second)))
-			dp.SetDoubleVal(123)
+			dp.SetDoubleValue(123)
 		}
 	}
 	return md
@@ -458,7 +457,7 @@ func metricSlice(numMetrics int) []pmetric.Metrics {
 
 func pdm(prefix string, size int) pmetric.Metrics {
 	c := goldendataset.MetricsCfg{
-		MetricDescriptorType: pmetric.MetricDataTypeGauge,
+		MetricDescriptorType: pmetric.MetricTypeGauge,
 		MetricValueType:      pmetric.NumberDataPointValueTypeInt,
 		MetricNamePrefix:     prefix,
 		NumILMPerResource:    size,

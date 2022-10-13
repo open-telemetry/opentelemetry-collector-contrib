@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package metadata is responsible for collecting host metadata from different providers
+// such as EC2, ECS, AWS, etc and pushing it to Datadog.
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 
 import (
@@ -28,16 +30,16 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes/gcp"
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/gohai"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
 // HostMetadata includes metadata about the host tags,
@@ -121,16 +123,16 @@ func metadataFromAttributesWithRegistry(registry *featuregate.Registry, attrs pc
 	// AWS EC2 resource metadata
 	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
 	switch {
-	case ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAWS:
+	case ok && cloudProvider.Str() == conventions.AttributeCloudProviderAWS:
 		ec2HostInfo := ec2Attributes.HostInfoFromAttributes(attrs)
 		hm.Meta.InstanceID = ec2HostInfo.InstanceID
 		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
 		hm.Tags.OTel = append(hm.Tags.OTel, ec2HostInfo.EC2Tags...)
-	case ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderGCP:
+	case ok && cloudProvider.Str() == conventions.AttributeCloudProviderGCP:
 		gcpHostInfo := gcp.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
 		hm.Tags.GCP = gcpHostInfo.GCPTags
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, gcpHostInfo.HostAliases...)
-	case ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure:
+	case ok && cloudProvider.Str() == conventions.AttributeCloudProviderAzure:
 		azureHostInfo := azure.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, azureHostInfo.HostAliases...)
 	}
@@ -179,9 +181,9 @@ func pushMetadata(pcfg PusherConfig, params component.ExporterCreateSettings, me
 	path := pcfg.MetricsEndpoint + "/intake"
 	buf, _ := json.Marshal(metadata)
 	req, _ := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(buf))
-	utils.SetDDHeaders(req.Header, params.BuildInfo, pcfg.APIKey)
-	utils.SetExtraHeaders(req.Header, utils.JSONHeaders)
-	client := utils.NewHTTPClient(pcfg.TimeoutSettings, pcfg.InsecureSkipVerify)
+	clientutil.SetDDHeaders(req.Header, params.BuildInfo, pcfg.APIKey)
+	clientutil.SetExtraHeaders(req.Header, clientutil.JSONHeaders)
+	client := clientutil.NewHTTPClient(pcfg.TimeoutSettings, pcfg.InsecureSkipVerify)
 	resp, err := client.Do(req)
 
 	if err != nil {
@@ -201,7 +203,7 @@ func pushMetadata(pcfg PusherConfig, params component.ExporterCreateSettings, me
 	return nil
 }
 
-func pushMetadataWithRetry(retrier *utils.Retrier, params component.ExporterCreateSettings, pcfg PusherConfig, hostMetadata *HostMetadata) {
+func pushMetadataWithRetry(retrier *clientutil.Retrier, params component.ExporterCreateSettings, pcfg PusherConfig, hostMetadata *HostMetadata) {
 	params.Logger.Debug("Sending host metadata payload", zap.Any("payload", hostMetadata))
 
 	err := retrier.DoWithRetries(context.Background(), func(context.Context) error {
@@ -222,7 +224,7 @@ func Pusher(ctx context.Context, params component.ExporterCreateSettings, pcfg P
 	ticker := time.NewTicker(30 * time.Minute)
 	defer ticker.Stop()
 	defer params.Logger.Debug("Shut down host metadata routine")
-	retrier := utils.NewRetrier(params.Logger, pcfg.RetrySettings, scrub.NewScrubber())
+	retrier := clientutil.NewRetrier(params.Logger, pcfg.RetrySettings, scrub.NewScrubber())
 
 	// Get host metadata from resources and fill missing info using our exporter.
 	// Currently we only retrieve it once but still send the same payload

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,14 +16,12 @@ package expvarreceiver
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -95,9 +93,7 @@ var (
 )
 
 func newMockServer(tb testing.TB, responseBodyFile string) *httptest.Server {
-	file, err := os.Open(responseBodyFile)
-	assert.NoError(tb, err)
-	fileContents, err := io.ReadAll(file)
+	fileContents, err := os.ReadFile(filepath.Clean(responseBodyFile))
 	require.NoError(tb, err)
 	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == defaultPath {

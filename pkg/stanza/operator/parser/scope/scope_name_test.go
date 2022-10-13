@@ -39,7 +39,7 @@ func TestScopeNameParser(t *testing.T) {
 		{
 			name: "root_string",
 			config: func() *Config {
-				cfg := NewConfig("test")
+				cfg := NewConfigWithID("test")
 				cfg.ParseFrom = entry.NewBodyField()
 				return cfg
 			}(),
@@ -60,7 +60,7 @@ func TestScopeNameParser(t *testing.T) {
 		{
 			name: "nondestructive_error",
 			config: func() *Config {
-				cfg := NewConfig("test")
+				cfg := NewConfigWithID("test")
 				cfg.ParseFrom = entry.NewBodyField()
 				return cfg
 			}(),
@@ -81,7 +81,7 @@ func TestScopeNameParser(t *testing.T) {
 		{
 			name: "nonroot_string",
 			config: func() *Config {
-				cfg := NewConfig("test")
+				cfg := NewConfigWithID("test")
 				cfg.ParseFrom = entry.NewBodyField("logger")
 				return cfg
 			}(),

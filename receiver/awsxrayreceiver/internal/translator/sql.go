@@ -24,7 +24,7 @@ import (
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func addSQLToSpan(sql *awsxray.SQLData, attrs *pcommon.Map) error {
+func addSQLToSpan(sql *awsxray.SQLData, attrs pcommon.Map) error {
 	if sql == nil {
 		return nil
 	}
@@ -35,8 +35,8 @@ func addSQLToSpan(sql *awsxray.SQLData, attrs *pcommon.Map) error {
 		if err != nil {
 			return err
 		}
-		attrs.UpsertString(conventions.AttributeDBConnectionString, dbURL)
-		attrs.UpsertString(conventions.AttributeDBName, dbName)
+		attrs.PutStr(conventions.AttributeDBConnectionString, dbURL)
+		attrs.PutStr(conventions.AttributeDBName, dbName)
 	}
 	// not handling sql.ConnectionString for now because the X-Ray exporter
 	// does not support it

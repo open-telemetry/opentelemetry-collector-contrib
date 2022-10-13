@@ -62,10 +62,10 @@ func setDataTypeAndPoints(sfxDataPoint *model.DataPoint, ms pmetric.MetricSlice,
 	if ok && sfxMetricType < numMetricTypes && idxs[sfxMetricType] != 0 {
 		m := ms.At(idxs[sfxMetricType] - 1)
 		// Only emit gauge and sum.
-		switch m.DataType() {
-		case pmetric.MetricDataTypeGauge:
+		switch m.Type() {
+		case pmetric.MetricTypeGauge:
 			fillNumberDataPoint(sfxDataPoint, m.Gauge().DataPoints())
-		case pmetric.MetricDataTypeSum:
+		case pmetric.MetricTypeSum:
 			fillNumberDataPoint(sfxDataPoint, m.Sum().DataPoints())
 		}
 		return nil
@@ -76,20 +76,17 @@ func setDataTypeAndPoints(sfxDataPoint *model.DataPoint, ms pmetric.MetricSlice,
 	case model.MetricType_GAUGE:
 		m = ms.AppendEmpty()
 		// Numerical: Periodic, instantaneous measurement of some state.
-		m.SetDataType(pmetric.MetricDataTypeGauge)
-		fillNumberDataPoint(sfxDataPoint, m.Gauge().DataPoints())
+		fillNumberDataPoint(sfxDataPoint, m.SetEmptyGauge().DataPoints())
 
 	case model.MetricType_COUNTER:
 		m = ms.AppendEmpty()
-		m.SetDataType(pmetric.MetricDataTypeSum)
-		m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+		m.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 		m.Sum().SetIsMonotonic(true)
 		fillNumberDataPoint(sfxDataPoint, m.Sum().DataPoints())
 
 	case model.MetricType_CUMULATIVE_COUNTER:
 		m = ms.AppendEmpty()
-		m.SetDataType(pmetric.MetricDataTypeSum)
-		m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		m.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		m.Sum().SetIsMonotonic(true)
 		fillNumberDataPoint(sfxDataPoint, m.Sum().DataPoints())
 
@@ -108,15 +105,14 @@ func fillNumberDataPoint(sfxDataPoint *model.DataPoint, dps pmetric.NumberDataPo
 	dp.SetTimestamp(toTimestamp(sfxDataPoint.GetTimestamp()))
 	switch {
 	case sfxDataPoint.Value.IntValue != nil:
-		dp.SetIntVal(*sfxDataPoint.Value.IntValue)
+		dp.SetIntValue(*sfxDataPoint.Value.IntValue)
 	case sfxDataPoint.Value.DoubleValue != nil:
-		dp.SetDoubleVal(*sfxDataPoint.Value.DoubleValue)
+		dp.SetDoubleValue(*sfxDataPoint.Value.DoubleValue)
 	}
 	fillInAttributes(sfxDataPoint.Dimensions, dp.Attributes())
 }
 
 func fillInAttributes(dimensions []*model.Dimension, attributes pcommon.Map) {
-	attributes.Clear()
 	attributes.EnsureCapacity(len(dimensions))
 
 	for _, dim := range dimensions {
@@ -124,6 +120,6 @@ func fillInAttributes(dimensions []*model.Dimension, attributes pcommon.Map) {
 			// TODO: Log or metric for this odd ball?
 			continue
 		}
-		attributes.InsertString(dim.Key, dim.Value)
+		attributes.PutStr(dim.Key, dim.Value)
 	}
 }

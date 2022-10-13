@@ -37,8 +37,9 @@ func newMetricsExporter(set component.ExporterCreateSettings, cfg config.Exporte
 	}
 
 	return exporterhelper.NewMetricsExporter(
-		cfg,
+		context.TODO(),
 		set,
+		cfg,
 		l.pushMetricsData)
 }
 

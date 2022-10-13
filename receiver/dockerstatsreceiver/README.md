@@ -69,7 +69,7 @@ with detailed sample configurations [here](./testdata/config.yaml).
 
 ## Feature Gates
 
-See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/service/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
+See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
 
 **ALPHA**: `receiver.dockerstats.useScraperV2`
 

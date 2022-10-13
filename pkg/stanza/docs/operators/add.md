@@ -260,7 +260,7 @@ Add a value to resource using an expression
 ```json
 {
   "resource": {
-    "key2": "val_suffix"
+    "key2": "val1_suffix"
   },
   "attributes": { },
   "body": {

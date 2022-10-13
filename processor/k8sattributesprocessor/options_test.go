@@ -32,7 +32,7 @@ func TestWithAPIConfig(t *testing.T) {
 	apiConfig := k8sconfig.APIConfig{AuthType: "test-auth-type"}
 	err := withAPIConfig(apiConfig)(p)
 	assert.Error(t, err)
-	assert.Equal(t, err.Error(), "invalid authType for kubernetes: test-auth-type")
+	assert.Equal(t, "invalid authType for kubernetes: test-auth-type", err.Error())
 
 	apiConfig = k8sconfig.APIConfig{AuthType: "kubeConfig"}
 	err = withAPIConfig(apiConfig)(p)
@@ -43,22 +43,22 @@ func TestWithAPIConfig(t *testing.T) {
 func TestWithFilterNamespace(t *testing.T) {
 	p := &kubernetesprocessor{}
 	assert.NoError(t, withFilterNamespace("testns")(p))
-	assert.Equal(t, p.filters.Namespace, "testns")
+	assert.Equal(t, "testns", p.filters.Namespace)
 }
 
 func TestWithFilterNode(t *testing.T) {
 	p := &kubernetesprocessor{}
 	assert.NoError(t, withFilterNode("testnode", "")(p))
-	assert.Equal(t, p.filters.Node, "testnode")
+	assert.Equal(t, "testnode", p.filters.Node)
 
 	p = &kubernetesprocessor{}
 	assert.NoError(t, withFilterNode("testnode", "NODE_NAME")(p))
-	assert.Equal(t, p.filters.Node, "")
+	assert.Equal(t, "", p.filters.Node)
 
 	t.Setenv("NODE_NAME", "nodefromenv")
 	p = &kubernetesprocessor{}
 	assert.NoError(t, withFilterNode("testnode", "NODE_NAME")(p))
-	assert.Equal(t, p.filters.Node, "nodefromenv")
+	assert.Equal(t, "nodefromenv", p.filters.Node)
 }
 
 func TestWithPassthrough(t *testing.T) {
@@ -77,7 +77,7 @@ func TestWithExtractAnnotations(t *testing.T) {
 		{
 			"empty",
 			[]FieldExtractConfig{},
-			[]kube.FieldExtractionRule{},
+			nil,
 			"",
 		},
 		{
@@ -143,7 +143,7 @@ func TestWithExtractAnnotations(t *testing.T) {
 			[]kube.FieldExtractionRule{
 				{
 					Name:     "tag1",
-					KeyRegex: regexp.MustCompile("key*"),
+					KeyRegex: regexp.MustCompile("^(?:key*)$"),
 					From:     kube.MetadataFromPod,
 				},
 			},
@@ -161,7 +161,7 @@ func TestWithExtractAnnotations(t *testing.T) {
 			[]kube.FieldExtractionRule{
 				{
 					Name:     "tag1",
-					KeyRegex: regexp.MustCompile("key*"),
+					KeyRegex: regexp.MustCompile("^(?:key*)$"),
 					From:     kube.MetadataFromNamespace,
 				},
 			},
@@ -177,13 +177,11 @@ func TestWithExtractAnnotations(t *testing.T) {
 				assert.NoError(t, err)
 			} else {
 				assert.Error(t, err)
-				assert.Equal(t, err.Error(), tt.wantError)
+				assert.Equal(t, tt.wantError, err.Error())
 				return
 			}
 			got := p.rules.Annotations
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("WithExtractAnnotations() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -198,7 +196,7 @@ func TestWithExtractLabels(t *testing.T) {
 		{
 			"empty",
 			[]FieldExtractConfig{},
-			[]kube.FieldExtractionRule{},
+			nil,
 			"",
 		},
 		{
@@ -262,7 +260,7 @@ func TestWithExtractLabels(t *testing.T) {
 			[]kube.FieldExtractionRule{
 				{
 					Name:     "tag1",
-					KeyRegex: regexp.MustCompile("key*"),
+					KeyRegex: regexp.MustCompile("^(?:key*)$"),
 					From:     kube.MetadataFromPod,
 				},
 			},
@@ -280,7 +278,7 @@ func TestWithExtractLabels(t *testing.T) {
 			[]kube.FieldExtractionRule{
 				{
 					Name:     "tag1",
-					KeyRegex: regexp.MustCompile("key*"),
+					KeyRegex: regexp.MustCompile("^(?:key*)$"),
 					From:     kube.MetadataFromNamespace,
 				},
 			},
@@ -296,7 +294,7 @@ func TestWithExtractLabels(t *testing.T) {
 				assert.NoError(t, err)
 			} else {
 				assert.Error(t, err)
-				assert.Equal(t, err.Error(), tt.wantError)
+				assert.Equal(t, tt.wantError, err.Error())
 				return
 			}
 			got := p.rules.Labels
@@ -320,7 +318,7 @@ func TestWithExtractMetadata(t *testing.T) {
 	p = &kubernetesprocessor{}
 	err := withExtractMetadata("randomfield")(p)
 	assert.Error(t, err)
-	assert.Equal(t, err.Error(), `"randomfield" is not a supported metadata field`)
+	assert.Equal(t, `"randomfield" is not a supported metadata field`, err.Error())
 
 	p = &kubernetesprocessor{}
 	assert.NoError(t, withExtractMetadata(conventions.AttributeK8SNamespaceName, conventions.AttributeK8SPodName, conventions.AttributeK8SPodUID)(p))
@@ -342,7 +340,7 @@ func TestWithFilterLabels(t *testing.T) {
 		{
 			"empty",
 			[]FieldFilterConfig{},
-			[]kube.FieldFilter{},
+			nil,
 			"",
 		},
 		{
@@ -452,7 +450,7 @@ func TestWithFilterLabels(t *testing.T) {
 				assert.NoError(t, err)
 			} else {
 				assert.Error(t, err)
-				assert.Equal(t, err.Error(), tt.error)
+				assert.Equal(t, tt.error, err.Error())
 				return
 			}
 			got := p.filters.Labels
@@ -474,7 +472,7 @@ func TestWithFilterFields(t *testing.T) {
 		{
 			"empty",
 			[]FieldFilterConfig{},
-			[]kube.FieldFilter{},
+			nil,
 			"",
 		},
 		{
@@ -584,7 +582,7 @@ func TestWithFilterFields(t *testing.T) {
 				assert.NoError(t, err)
 			} else {
 				assert.Error(t, err)
-				assert.Equal(t, err.Error(), tt.error)
+				assert.Equal(t, tt.error, err.Error())
 				return
 			}
 			got := p.filters.Fields
@@ -651,7 +649,7 @@ func Test_extractFieldRules(t *testing.T) {
 					From:    kube.MetadataFromPod,
 				},
 			}},
-			[]kube.FieldExtractionRule{},
+			nil,
 			true,
 		},
 		{
@@ -664,7 +662,7 @@ func Test_extractFieldRules(t *testing.T) {
 					From:    kube.MetadataFromPod,
 				},
 			}},
-			[]kube.FieldExtractionRule{},
+			nil,
 			true,
 		},
 		{
@@ -679,7 +677,7 @@ func Test_extractFieldRules(t *testing.T) {
 			[]kube.FieldExtractionRule{
 				{
 					Name:                 "$0-$1-$2",
-					KeyRegex:             regexp.MustCompile("(key)(.*)"),
+					KeyRegex:             regexp.MustCompile("^(?:(key)(.*))$"),
 					HasKeyRegexReference: true,
 					From:                 kube.MetadataFromPod,
 				},

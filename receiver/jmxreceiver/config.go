@@ -162,7 +162,7 @@ func testLevel(logger *zap.Logger, level zapcore.Level) bool {
 
 // parseClasspath creates a classpath string with the JMX Gatherer JAR at the beginning
 func (c *Config) parseClasspath() string {
-	classPathElems := make([]string, 0)
+	var classPathElems []string
 
 	// Add JMX JAR to classpath
 	classPathElems = append(classPathElems, c.JARPath)

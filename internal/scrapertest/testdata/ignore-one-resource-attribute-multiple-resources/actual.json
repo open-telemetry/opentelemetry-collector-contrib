@@ -11,9 +11,9 @@
                     }
                 ]
             },
-            "instrumentationLibraryMetrics": [
+            "scopeMetrics": [
                 {
-                    "instrumentationLibrary": {
+                    "scope": {
                         "name": "otelcol/aerospikereceiver"
                     },
                     "metrics": [
@@ -212,9 +212,9 @@
                     }
                 ]
             },
-            "instrumentationLibraryMetrics": [
+            "scopeMetrics": [
                 {
-                    "instrumentationLibrary": {
+                    "scope": {
                         "name": "otelcol/aerospikereceiver"
                     },
                     "metrics": [
@@ -562,9 +562,9 @@
                     }
                 ]
             },
-            "instrumentationLibraryMetrics": [
+            "scopeMetrics": [
                 {
-                    "instrumentationLibrary": {
+                    "scope": {
                         "name": "otelcol/aerospikereceiver"
                     },
                     "metrics": [
@@ -763,9 +763,9 @@
                     }
                 ]
             },
-            "instrumentationLibraryMetrics": [
+            "scopeMetrics": [
                 {
-                    "instrumentationLibrary": {
+                    "scope": {
                         "name": "otelcol/aerospikereceiver"
                     },
                     "metrics": [
@@ -1113,9 +1113,9 @@
                     }
                 ]
             },
-            "instrumentationLibraryMetrics": [
+            "scopeMetrics": [
                 {
-                    "instrumentationLibrary": {
+                    "scope": {
                         "name": "otelcol/aerospikereceiver"
                     },
                     "metrics": [
@@ -1314,9 +1314,9 @@
                     }
                 ]
             },
-            "instrumentationLibraryMetrics": [
+            "scopeMetrics": [
                 {
-                    "instrumentationLibrary": {
+                    "scope": {
                         "name": "otelcol/aerospikereceiver"
                     },
                     "metrics": [

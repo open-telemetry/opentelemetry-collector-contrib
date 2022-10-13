@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,5 +25,7 @@ type ClusterHealth struct {
 	UnassignedShards   int64  `json:"unassigned_shards"`
 	NodeCount          int64  `json:"number_of_nodes"`
 	DataNodeCount      int64  `json:"number_of_data_nodes"`
+	PendingTasksCount  int64  `json:"number_of_pending_tasks"`
+	InFlightFetchCount int64  `json:"number_of_in_flight_fetch"`
 	Status             string `json:"status"`
 }

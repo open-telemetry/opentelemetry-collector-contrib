@@ -23,16 +23,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func newTestParser(t *testing.T, regex string, cacheSize uint16) *Parser {
-	cfg := NewConfig("test")
+	cfg := NewConfigWithID("test")
 	cfg.Regex = regex
 	if cacheSize > 0 {
 		cfg.Cache.Size = cacheSize
@@ -43,7 +41,7 @@ func newTestParser(t *testing.T, regex string, cacheSize uint16) *Parser {
 }
 
 func TestParserBuildFailure(t *testing.T) {
-	cfg := NewConfig("test")
+	cfg := NewConfigWithID("test")
 	cfg.OnError = "invalid_on_error"
 	_, err := cfg.Build(testutil.Logger(t))
 	require.Error(t, err)
@@ -141,7 +139,7 @@ func TestParserRegex(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := NewConfig("test")
+			cfg := NewConfigWithID("test")
 			cfg.OutputIDs = []string{"fake"}
 			tc.configure(cfg)
 
@@ -165,7 +163,7 @@ func TestParserRegex(t *testing.T) {
 
 func TestBuildParserRegex(t *testing.T) {
 	newBasicParser := func() *Config {
-		cfg := NewConfig("test")
+		cfg := NewConfigWithID("test")
 		cfg.OutputIDs = []string{"test"}
 		cfg.Regex = "(?P<all>.*)"
 		return cfg
@@ -208,42 +206,6 @@ func TestBuildParserRegex(t *testing.T) {
 	})
 }
 
-func TestConfig(t *testing.T) {
-	expect := NewConfig("test")
-	expect.Regex = "test123"
-	expect.ParseFrom = entry.NewBodyField("from")
-	expect.ParseTo = entry.NewBodyField("to")
-
-	t.Run("mapstructure", func(t *testing.T) {
-		input := map[string]interface{}{
-			"id":         "test",
-			"type":       "regex_parser",
-			"regex":      "test123",
-			"parse_from": "body.from",
-			"parse_to":   "body.to",
-			"on_error":   "send",
-		}
-		var actual Config
-		err := helper.UnmarshalMapstructure(input, &actual)
-		require.NoError(t, err)
-		require.Equal(t, expect, &actual)
-	})
-
-	t.Run("yaml", func(t *testing.T) {
-		input := `
-type: regex_parser
-id: test
-on_error: "send"
-regex: "test123"
-parse_from: body.from
-parse_to: body.to`
-		var actual Config
-		err := yaml.Unmarshal([]byte(input), &actual)
-		require.NoError(t, err)
-		require.Equal(t, expect, &actual)
-	})
-}
-
 // return 100 unique file names, example:
 // dafplsjfbcxoeff-5644d7b6d9-mzngq_kube-system_coredns-901f7510281180a402936c92f5bc0f3557f5a21ccb5a4591c5bf98f3ddbffdd6.log
 // rswxpldnjobcsnv-5644d7b6d9-mzngq_kube-system_coredns-901f7510281180a402936c92f5bc0f3557f5a21ccb5a4591c5bf98f3ddbffdd6.log
@@ -269,7 +231,7 @@ const benchParsePattern = `^(?P<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9
 var benchParsePatterns = benchParseInput()
 
 func newTestBenchParser(t *testing.T, cacheSize uint16) *Parser {
-	cfg := NewConfig("bench")
+	cfg := NewConfigWithID("bench")
 	cfg.Regex = benchParsePattern
 	cfg.Cache.Size = cacheSize
 

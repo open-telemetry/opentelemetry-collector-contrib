@@ -76,8 +76,9 @@ func newSAPMTracesExporter(cfg *Config, set component.ExporterCreateSettings) (c
 	}
 
 	te, err := exporterhelper.NewTracesExporter(
-		cfg,
+		context.TODO(),
 		set,
+		cfg,
 		se.pushTraceData,
 		exporterhelper.WithShutdown(se.Shutdown),
 		exporterhelper.WithQueue(cfg.QueueSettings),
@@ -147,7 +148,7 @@ func (se *sapmExporter) retrieveAccessToken(md ptrace.ResourceSpans) string {
 
 	attrs := md.Resource().Attributes()
 	if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok {
-		return accessToken.StringVal()
+		return accessToken.Str()
 	}
 	return ""
 }

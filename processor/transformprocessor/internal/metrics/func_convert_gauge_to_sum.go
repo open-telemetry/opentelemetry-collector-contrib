@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,37 +19,30 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 )
 
-func convertGaugeToSum(stringAggTemp string, monotonic bool) (tql.ExprFunc, error) {
-	var aggTemp pmetric.MetricAggregationTemporality
+func convertGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottldatapoints.TransformContext], error) {
+	var aggTemp pmetric.AggregationTemporality
 	switch stringAggTemp {
 	case "delta":
-		aggTemp = pmetric.MetricAggregationTemporalityDelta
+		aggTemp = pmetric.AggregationTemporalityDelta
 	case "cumulative":
-		aggTemp = pmetric.MetricAggregationTemporalityCumulative
+		aggTemp = pmetric.AggregationTemporalityCumulative
 	default:
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
 	}
 
-	return func(ctx tql.TransformContext) interface{} {
-		mtc, ok := ctx.(tqlmetrics.MetricTransformContext)
-		if !ok {
-			return nil
-		}
-
-		metric := mtc.GetMetric()
-		if metric.DataType() != pmetric.MetricDataTypeGauge {
+	return func(ctx ottldatapoints.TransformContext) interface{} {
+		metric := ctx.GetMetric()
+		if metric.Type() != pmetric.MetricTypeGauge {
 			return nil
 		}
 
 		dps := metric.Gauge().DataPoints()
 
-		metric.SetDataType(pmetric.MetricDataTypeSum)
-		metric.Sum().SetAggregationTemporality(aggTemp)
+		metric.SetEmptySum().SetAggregationTemporality(aggTemp)
 		metric.Sum().SetIsMonotonic(monotonic)
 
 		// Setting the data type removed all the data points, so we must copy them back to the metric.

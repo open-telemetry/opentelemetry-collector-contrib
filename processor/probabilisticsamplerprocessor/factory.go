@@ -16,9 +16,12 @@ package probabilisticsamplerprocessor // import "github.com/open-telemetry/opent
 
 import (
 	"context"
+	"sync"
 
+	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -29,8 +32,15 @@ const (
 	stability = component.StabilityLevelBeta
 )
 
+var onceMetrics sync.Once
+
 // NewFactory returns a new factory for the Probabilistic sampler processor.
 func NewFactory() component.ProcessorFactory {
+	onceMetrics.Do(func() {
+		// TODO: Handle this err
+		_ = view.Register(SamplingProcessorMetricViews(configtelemetry.LevelNormal)...)
+	})
+
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
@@ -45,10 +55,10 @@ func createDefaultConfig() config.Processor {
 
 // createTracesProcessor creates a trace processor based on this config.
 func createTracesProcessor(
-	_ context.Context,
-	_ component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
-	return newTracesProcessor(nextConsumer, cfg.(*Config))
+	return newTracesProcessor(ctx, set, cfg.(*Config), nextConsumer)
 }

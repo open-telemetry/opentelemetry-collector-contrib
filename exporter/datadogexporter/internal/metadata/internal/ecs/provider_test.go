@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
-
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"

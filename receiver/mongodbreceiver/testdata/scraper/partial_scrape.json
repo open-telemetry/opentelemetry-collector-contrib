@@ -1,0 +1,32 @@
+{
+   "resourceMetrics": [
+      {
+         "resource": {},
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "The number of existing databases.",
+                     "name": "mongodb.database.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "startTimeUnixNano": "1660587887969146000",
+                              "timeUnixNano": "1660587887969460000"
+                           }
+                        ]
+                     },
+                     "unit": "{databases}"
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/mongodbreceiver",
+                  "version": "latest"
+               }
+            }
+         ]
+      }
+   ]
+}

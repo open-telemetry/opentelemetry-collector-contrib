@@ -24,12 +24,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 type testProvider string
@@ -54,15 +53,15 @@ func TestRunningMetrics(t *testing.T) {
 
 	rm := rms.AppendEmpty()
 	resAttrs := rm.Resource().Attributes()
-	resAttrs.Insert(attributes.AttributeDatadogHostname, pcommon.NewValueString("resource-hostname-1"))
+	resAttrs.PutStr(attributes.AttributeDatadogHostname, "resource-hostname-1")
 
 	rm = rms.AppendEmpty()
 	resAttrs = rm.Resource().Attributes()
-	resAttrs.Insert(attributes.AttributeDatadogHostname, pcommon.NewValueString("resource-hostname-1"))
+	resAttrs.PutStr(attributes.AttributeDatadogHostname, "resource-hostname-1")
 
 	rm = rms.AppendEmpty()
 	resAttrs = rm.Resource().Attributes()
-	resAttrs.Insert(attributes.AttributeDatadogHostname, pcommon.NewValueString("resource-hostname-2"))
+	resAttrs.PutStr(attributes.AttributeDatadogHostname, "resource-hostname-2")
 
 	rms.AppendEmpty()
 
@@ -73,7 +72,7 @@ func TestRunningMetrics(t *testing.T) {
 	consumer := NewConsumer()
 	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
 
-	runningHostnames := []string{}
+	var runningHostnames []string
 	for _, metric := range consumer.runningMetrics(0, component.BuildInfo{}) {
 		if metric.Host != nil {
 			runningHostnames = append(runningHostnames, *metric.Host)
@@ -92,7 +91,7 @@ func TestTagsMetrics(t *testing.T) {
 	rms := ms.ResourceMetrics()
 
 	rm := rms.AppendEmpty()
-	baseAttrs := testutils.NewAttributeMap(map[string]string{
+	baseAttrs := testutil.NewAttributeMap(map[string]string{
 		conventions.AttributeCloudProvider:      conventions.AttributeCloudProviderAWS,
 		conventions.AttributeCloudPlatform:      conventions.AttributeCloudPlatformAWSECS,
 		conventions.AttributeAWSECSTaskFamily:   "example-task-family",
@@ -100,15 +99,15 @@ func TestTagsMetrics(t *testing.T) {
 		conventions.AttributeAWSECSLaunchtype:   conventions.AttributeAWSECSLaunchtypeFargate,
 	})
 	baseAttrs.CopyTo(rm.Resource().Attributes())
-	rm.Resource().Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "task-arn-1")
+	rm.Resource().Attributes().PutStr(conventions.AttributeAWSECSTaskARN, "task-arn-1")
 
 	rm = rms.AppendEmpty()
 	baseAttrs.CopyTo(rm.Resource().Attributes())
-	rm.Resource().Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "task-arn-2")
+	rm.Resource().Attributes().PutStr(conventions.AttributeAWSECSTaskARN, "task-arn-2")
 
 	rm = rms.AppendEmpty()
 	baseAttrs.CopyTo(rm.Resource().Attributes())
-	rm.Resource().Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "task-arn-3")
+	rm.Resource().Attributes().PutStr(conventions.AttributeAWSECSTaskARN, "task-arn-3")
 
 	logger, _ := zap.NewProduction()
 	tr := newTranslator(t, logger)
@@ -118,8 +117,8 @@ func TestTagsMetrics(t *testing.T) {
 	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
 
 	runningMetrics := consumer.runningMetrics(0, component.BuildInfo{})
-	runningTags := []string{}
-	runningHostnames := []string{}
+	var runningTags []string
+	var runningHostnames []string
 	for _, metric := range runningMetrics {
 		runningTags = append(runningTags, metric.Tags...)
 		if metric.Host != nil {

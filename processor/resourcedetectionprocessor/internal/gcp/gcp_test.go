@@ -415,7 +415,7 @@ func TestDeduplicateDetectors(t *testing.T) {
 	}{
 		{
 			desc:     "empty",
-			expected: []string{},
+			expected: nil,
 		},
 		{
 			desc:     "single gcp",

@@ -36,7 +36,7 @@ type Config struct {
 }
 
 var _ config.Receiver = (*Config)(nil)
-var _ config.Unmarshallable = (*Config)(nil)
+var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
@@ -79,7 +79,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		if err != nil {
 			return err
 		}
-		err = collectorViperSection.UnmarshalExact(collectorCfg)
+		err = collectorViperSection.Unmarshal(collectorCfg, confmap.WithErrorUnused())
 		if err != nil {
 			return fmt.Errorf("error reading settings for scraper type %q: %w", key, err)
 		}

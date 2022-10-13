@@ -33,10 +33,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"google.golang.org/grpc"
@@ -141,7 +138,7 @@ func (*mockSamplingHandler) GetSamplingStrategy(context.Context, *api_v2.Samplin
 }
 
 func TestJaegerHTTP(t *testing.T) {
-	s, addr := initializeGRPCTestServer(t, func(s *grpc.Server) {
+	s, _ := initializeGRPCTestServer(t, func(s *grpc.Server) {
 		api_v2.RegisterSamplingManagerServer(s, &mockSamplingHandler{})
 	})
 	defer s.GracefulStop()
@@ -149,12 +146,6 @@ func TestJaegerHTTP(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	config := &configuration{
 		AgentHTTPEndpoint: endpoint,
-		RemoteSamplingClientSettings: configgrpc.GRPCClientSettings{
-			Endpoint: addr.String(),
-			TLSSetting: configtls.TLSClientSetting{
-				Insecure: true,
-			},
-		},
 	}
 	set := componenttest.NewNopReceiverCreateSettings()
 	jr := newJaegerReceiver(jaegerAgent, config, nil, set)
@@ -175,20 +166,10 @@ func TestJaegerHTTP(t *testing.T) {
 	resp, err := http.Get(fmt.Sprintf("http://%s/sampling?service=test", endpoint))
 	assert.NoError(t, err, "should not have failed to make request")
 	if resp != nil {
-		assert.Equal(t, 200, resp.StatusCode, "should have returned 200")
+		assert.Equal(t, 500, resp.StatusCode, "should have returned 200")
+		return
 	}
-
-	resp, err = http.Get(fmt.Sprintf("http://%s/sampling?service=test", endpoint))
-	assert.NoError(t, err, "should not have failed to make request")
-	if resp != nil {
-		assert.Equal(t, 200, resp.StatusCode, "should have returned 200")
-	}
-
-	resp, err = http.Get(fmt.Sprintf("http://%s/baggageRestrictions?service=test", endpoint))
-	assert.NoError(t, err, "should not have failed to make request")
-	if resp != nil {
-		assert.Equal(t, 200, resp.StatusCode, "should have returned 200")
-	}
+	t.Fail()
 }
 
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configuration) {
@@ -248,10 +229,10 @@ func newClientUDP(hostPort string, binary bool) (*agent.AgentClient, error) {
 func generateTraceData() ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().UpsertString(conventions.AttributeServiceName, "test")
+	rs.Resource().Attributes().PutStr(conventions.AttributeServiceName, "test")
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7}))
-	span.SetTraceID(pcommon.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0}))
+	span.SetSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
+	span.SetTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0})
 	span.SetStartTimestamp(1581452772000000000)
 	span.SetEndTimestamp(1581452773000000000)
 	return td

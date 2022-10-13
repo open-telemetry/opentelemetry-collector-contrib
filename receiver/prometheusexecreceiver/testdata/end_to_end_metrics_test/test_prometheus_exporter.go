@@ -31,7 +31,8 @@ func main() {
 
 // server serves one route "./metrics" and will shutdown the server as soon as it is scraped once, to allow for the next subprocess to be run
 func server() {
-	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte(fmt.Sprintf("# HELP timestamp_now Unix timestamp\n# TYPE timestamp_now gauge\ntimestamp_now %v", strconv.FormatInt(time.Now().UnixNano(), 10))))
 		if err != nil {
@@ -45,6 +46,12 @@ func server() {
 		}()
 	})
 
-	err := http.ListenAndServe(fmt.Sprintf(":%v", os.Args[1]), nil)
-	log.Fatal(err)
+	server := &http.Server{
+		Addr:    fmt.Sprintf(":%v", os.Args[1]),
+		Handler: mux,
+	}
+
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		panic(err)
+	}
 }

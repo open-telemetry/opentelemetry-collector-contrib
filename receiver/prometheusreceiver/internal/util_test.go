@@ -15,16 +15,17 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
 import (
+	"testing"
+	"time"
+
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/textparse"
 	"github.com/prometheus/prometheus/scrape"
-)
-
-const (
-	startTs                 = int64(1555366610000)
-	interval                = int64(15 * 1000)
-	defaultBuilderStartTime = float64(1.0)
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 var testMetadata = map[string]scrape.MetricMetadata{
@@ -45,37 +46,145 @@ var testMetadata = map[string]scrape.MetricMetadata{
 		Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
 	"process_start_time_seconds": {Metric: "process_start_time_seconds",
 		Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
-	"badprocess_start_time_seconds": {Metric: "badprocess_start_time_seconds",
+	"subprocess_start_time_seconds": {Metric: "subprocess_start_time_seconds",
 		Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
 }
 
-type testDataPoint struct {
-	lb labels.Labels
-	t  int64
-	v  float64
+func TestTimestampFromMs(t *testing.T) {
+	assert.Equal(t, pcommon.Timestamp(0), timestampFromMs(0))
+	assert.Equal(t, pcommon.NewTimestampFromTime(time.UnixMilli(1662679535432)), timestampFromMs(1662679535432))
 }
 
-type testScrapedPage struct {
-	pts []*testDataPoint
+func TestTimestampFromFloat64(t *testing.T) {
+	assert.Equal(t, pcommon.Timestamp(0), timestampFromFloat64(0))
+	// Because of float64 conversion, we check only that we are within 100ns error.
+	assert.InEpsilon(t, uint64(1662679535040000000), uint64(timestampFromFloat64(1662679535.040)), 100)
 }
 
-func createLabels(mFamily string, tagPairs ...string) labels.Labels {
-	lm := make(map[string]string)
-	lm[model.MetricNameLabel] = mFamily
-	if len(tagPairs)%2 != 0 {
-		panic("tag pairs is not even")
+func TestConvToMetricType(t *testing.T) {
+	tests := []struct {
+		name          string
+		mtype         textparse.MetricType
+		want          pmetric.MetricType
+		wantMonotonic bool
+	}{
+		{
+			name:          "textparse.counter",
+			mtype:         textparse.MetricTypeCounter,
+			want:          pmetric.MetricTypeSum,
+			wantMonotonic: true,
+		},
+		{
+			name:          "textparse.gauge",
+			mtype:         textparse.MetricTypeGauge,
+			want:          pmetric.MetricTypeGauge,
+			wantMonotonic: false,
+		},
+		{
+			name:          "textparse.unknown",
+			mtype:         textparse.MetricTypeUnknown,
+			want:          pmetric.MetricTypeGauge,
+			wantMonotonic: false,
+		},
+		{
+			name:          "textparse.histogram",
+			mtype:         textparse.MetricTypeHistogram,
+			want:          pmetric.MetricTypeHistogram,
+			wantMonotonic: true,
+		},
+		{
+			name:          "textparse.summary",
+			mtype:         textparse.MetricTypeSummary,
+			want:          pmetric.MetricTypeSummary,
+			wantMonotonic: true,
+		},
+		{
+			name:          "textparse.metric_type_info",
+			mtype:         textparse.MetricTypeInfo,
+			want:          pmetric.MetricTypeSum,
+			wantMonotonic: false,
+		},
+		{
+			name:          "textparse.metric_state_set",
+			mtype:         textparse.MetricTypeStateset,
+			want:          pmetric.MetricTypeSum,
+			wantMonotonic: false,
+		},
+		{
+			name:          "textparse.metric_gauge_hostogram",
+			mtype:         textparse.MetricTypeGaugeHistogram,
+			want:          pmetric.MetricTypeEmpty,
+			wantMonotonic: false,
+		},
 	}
 
-	for i := 0; i < len(tagPairs); i += 2 {
-		lm[tagPairs[i]] = tagPairs[i+1]
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			got, monotonic := convToMetricType(tt.mtype)
+			require.Equal(t, got.String(), tt.want.String())
+			require.Equal(t, monotonic, tt.wantMonotonic)
+		})
 	}
-
-	return labels.FromMap(lm)
 }
 
-func createDataPoint(mname string, value float64, tagPairs ...string) *testDataPoint {
-	return &testDataPoint{
-		lb: createLabels(mname, tagPairs...),
-		v:  value,
+func TestGetBoundary(t *testing.T) {
+	tests := []struct {
+		name      string
+		mtype     pmetric.MetricType
+		labels    labels.Labels
+		wantValue float64
+		wantErr   error
+	}{
+		{
+			name:      "cumulative histogram with bucket label",
+			mtype:     pmetric.MetricTypeHistogram,
+			labels:    labels.FromStrings(model.BucketLabel, "0.256"),
+			wantValue: 0.256,
+		},
+		{
+			name:      "gauge histogram with bucket label",
+			mtype:     pmetric.MetricTypeHistogram,
+			labels:    labels.FromStrings(model.BucketLabel, "11.71"),
+			wantValue: 11.71,
+		},
+		{
+			name:    "summary with bucket label",
+			mtype:   pmetric.MetricTypeSummary,
+			labels:  labels.FromStrings(model.BucketLabel, "11.71"),
+			wantErr: errEmptyQuantileLabel,
+		},
+		{
+			name:      "summary with quantile label",
+			mtype:     pmetric.MetricTypeSummary,
+			labels:    labels.FromStrings(model.QuantileLabel, "92.88"),
+			wantValue: 92.88,
+		},
+		{
+			name:    "gauge histogram mismatched with bucket label",
+			mtype:   pmetric.MetricTypeSummary,
+			labels:  labels.FromStrings(model.BucketLabel, "11.71"),
+			wantErr: errEmptyQuantileLabel,
+		},
+		{
+			name:    "other data types without matches",
+			mtype:   pmetric.MetricTypeGauge,
+			labels:  labels.FromStrings(model.BucketLabel, "11.71"),
+			wantErr: errNoBoundaryLabel,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			value, err := getBoundary(tt.mtype, tt.labels)
+			if tt.wantErr != nil {
+				assert.ErrorIs(t, err, tt.wantErr)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.Equal(t, value, tt.wantValue)
+		})
 	}
 }

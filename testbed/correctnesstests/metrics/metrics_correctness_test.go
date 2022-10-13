@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/correctnesstests"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
@@ -107,7 +108,7 @@ func newDiffAccumulator() *diffAccumulator {
 	return &diffAccumulator{}
 }
 
-func (d *diffAccumulator) accept(metricName string, diffs []*MetricDiff) {
+func (d *diffAccumulator) accept(metricName string, diffs []*metricstestutil.MetricDiff) {
 	if len(diffs) > 0 {
 		d.numDiffs++
 		log.Printf("Found diffs for [%v]\n%v", metricName, diffs)

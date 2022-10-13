@@ -42,25 +42,25 @@ func isDiscernibleHost(host string) bool {
 	return true
 }
 
-// CreateNodeAndResource creates the resource data added to OTLP payloads.
-func CreateNodeAndResource(job, instance string, serviceDiscoveryLabels labels.Labels) *pcommon.Resource {
+// CreateResource creates the resource data added to OTLP payloads.
+func CreateResource(job, instance string, serviceDiscoveryLabels labels.Labels) pcommon.Resource {
 	host, port, err := net.SplitHostPort(instance)
 	if err != nil {
 		host = instance
 	}
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
-	attrs.UpsertString(conventions.AttributeServiceName, job)
+	attrs.PutStr(conventions.AttributeServiceName, job)
 	if isDiscernibleHost(host) {
-		attrs.UpsertString(conventions.AttributeNetHostName, host)
+		attrs.PutStr(conventions.AttributeNetHostName, host)
 	}
-	attrs.UpsertString(conventions.AttributeServiceInstanceID, instance)
-	attrs.UpsertString(conventions.AttributeNetHostPort, port)
-	attrs.UpsertString(conventions.AttributeHTTPScheme, serviceDiscoveryLabels.Get(model.SchemeLabel))
+	attrs.PutStr(conventions.AttributeServiceInstanceID, instance)
+	attrs.PutStr(conventions.AttributeNetHostPort, port)
+	attrs.PutStr(conventions.AttributeHTTPScheme, serviceDiscoveryLabels.Get(model.SchemeLabel))
 
 	addKubernetesResource(attrs, serviceDiscoveryLabels)
 
-	return &resource
+	return resource
 }
 
 // kubernetesDiscoveryToResourceAttributes maps from metadata labels discovered
@@ -82,7 +82,7 @@ var kubernetesDiscoveryToResourceAttributes = map[string]string{
 func addKubernetesResource(attrs pcommon.Map, serviceDiscoveryLabels labels.Labels) {
 	for sdKey, attributeKey := range kubernetesDiscoveryToResourceAttributes {
 		if attr := serviceDiscoveryLabels.Get(sdKey); attr != "" {
-			attrs.UpsertString(attributeKey, attr)
+			attrs.PutStr(attributeKey, attr)
 		}
 	}
 	controllerName := serviceDiscoveryLabels.Get("__meta_kubernetes_pod_controller_name")
@@ -90,15 +90,15 @@ func addKubernetesResource(attrs pcommon.Map, serviceDiscoveryLabels labels.Labe
 	if controllerKind != "" && controllerName != "" {
 		switch controllerKind {
 		case "ReplicaSet":
-			attrs.UpsertString(conventions.AttributeK8SReplicaSetName, controllerName)
+			attrs.PutStr(conventions.AttributeK8SReplicaSetName, controllerName)
 		case "DaemonSet":
-			attrs.UpsertString(conventions.AttributeK8SDaemonSetName, controllerName)
+			attrs.PutStr(conventions.AttributeK8SDaemonSetName, controllerName)
 		case "StatefulSet":
-			attrs.UpsertString(conventions.AttributeK8SStatefulSetName, controllerName)
+			attrs.PutStr(conventions.AttributeK8SStatefulSetName, controllerName)
 		case "Job":
-			attrs.UpsertString(conventions.AttributeK8SJobName, controllerName)
+			attrs.PutStr(conventions.AttributeK8SJobName, controllerName)
 		case "CronJob":
-			attrs.UpsertString(conventions.AttributeK8SCronJobName, controllerName)
+			attrs.PutStr(conventions.AttributeK8SCronJobName, controllerName)
 		}
 	}
 }

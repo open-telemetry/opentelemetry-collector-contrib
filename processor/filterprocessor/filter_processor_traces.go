@@ -19,7 +19,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
 

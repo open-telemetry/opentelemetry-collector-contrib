@@ -448,31 +448,37 @@ func TestUserAgent(t *testing.T) {
 	}{
 		{
 			"emptyLogGroup",
-			component.BuildInfo{Version: "1.0"},
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"",
 			"opentelemetry-collector-contrib/1.0",
 		},
 		{
+			"buildInfoCommandUsed",
+			component.BuildInfo{Command: "test-collector-contrib", Version: "1.0"},
+			"",
+			"test-collector-contrib/1.0",
+		},
+		{
 			"non container insights",
-			component.BuildInfo{Version: "1.1"},
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.1"},
 			"test-group",
 			"opentelemetry-collector-contrib/1.1",
 		},
 		{
 			"container insights EKS",
-			component.BuildInfo{Version: "1.0"},
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"/aws/containerinsights/eks-cluster-name/performance",
 			"opentelemetry-collector-contrib/1.0 (ContainerInsights)",
 		},
 		{
 			"container insights ECS",
-			component.BuildInfo{Version: "1.0"},
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"/aws/ecs/containerinsights/ecs-cluster-name/performance",
 			"opentelemetry-collector-contrib/1.0 (ContainerInsights)",
 		},
 		{
 			"container insights prometheus",
-			component.BuildInfo{Version: "1.0"},
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"/aws/containerinsights/cluster-name/prometheus",
 			"opentelemetry-collector-contrib/1.0 (ContainerInsights)",
 		},

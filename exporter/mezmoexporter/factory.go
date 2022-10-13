@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -65,8 +65,9 @@ func createLogsExporter(ctx context.Context, settings component.ExporterCreateSe
 	exp := newLogsExporter(expCfg, settings.TelemetrySettings, settings.BuildInfo, log)
 
 	return exporterhelper.NewLogsExporter(
-		expCfg,
+		ctx,
 		settings,
+		expCfg,
 		exp.pushLogData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),

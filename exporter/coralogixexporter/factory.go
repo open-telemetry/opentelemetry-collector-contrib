@@ -43,7 +43,10 @@ func createDefaultConfig() config.Exporter {
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 		// Traces GRPC client
-		GRPCClientSettings: configgrpc.GRPCClientSettings{Endpoint: "https://"},
+		Traces: configgrpc.GRPCClientSettings{
+			Endpoint: "https://",
+			Headers:  map[string]string{},
+		},
 		Metrics: configgrpc.GRPCClientSettings{
 			Endpoint: "https://",
 			Headers:  map[string]string{},
@@ -55,32 +58,56 @@ func createDefaultConfig() config.Exporter {
 			Endpoint: "https://",
 			Headers:  map[string]string{},
 		},
-
 		PrivateKey: "",
 		AppName:    "",
 	}
 }
 
-func createTraceExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
+func createTraceExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
 	cfg := config.(*Config)
-	exporter, err := newCoralogixExporter(cfg, set)
+
+	// Use deprecated jaeger endpoint if it's not empty
+	if !isEmpty(cfg.Endpoint) {
+		set.Logger.Warn("endpoint field is deprecated.Please use the new `traces.endpoint` field with OpenTelemtry endpoint.")
+
+		exporter, err := newCoralogixExporter(cfg, set)
+		if err != nil {
+			return nil, err
+		}
+
+		return exporterhelper.NewTracesExporter(
+			ctx,
+			set,
+			config,
+			exporter.tracesPusher,
+			exporterhelper.WithQueue(cfg.QueueSettings),
+			exporterhelper.WithRetry(cfg.RetrySettings),
+			exporterhelper.WithTimeout(cfg.TimeoutSettings),
+			exporterhelper.WithStart(exporter.client.startConnection),
+		)
+	}
+
+	exporter, err := newTracesExporter(cfg, set)
 	if err != nil {
 		return nil, err
 	}
 
 	return exporterhelper.NewTracesExporter(
-		config,
+		ctx,
 		set,
-		exporter.tracesPusher,
-		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		config,
+		exporter.pushTraces,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
-		exporterhelper.WithStart(exporter.client.startConnection),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithStart(exporter.start),
+		exporterhelper.WithShutdown(exporter.shutdown),
 	)
 }
 
 func createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
@@ -90,8 +117,9 @@ func createMetricsExporter(
 	}
 	oCfg := cfg.(*Config)
 	return exporterhelper.NewMetricsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		oce.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
@@ -103,7 +131,7 @@ func createMetricsExporter(
 }
 
 func createLogsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
@@ -113,8 +141,9 @@ func createLogsExporter(
 	}
 	oCfg := cfg.(*Config)
 	return exporterhelper.NewLogsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),

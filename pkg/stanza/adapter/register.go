@@ -16,8 +16,11 @@ package adapter // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	// Register parsers and transformers for stanza-based log receivers
+	_ "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/output/file"
+	_ "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/output/stdout"
 	_ "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/csv"
 	_ "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json"
+	_ "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/keyvalue"
 	_ "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	_ "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/severity"
 	_ "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/time"

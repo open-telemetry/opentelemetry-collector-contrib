@@ -64,10 +64,9 @@ func jThriftProcessToInternalResource(process *jaeger.Process, dest pcommon.Reso
 	}
 
 	attrs := dest.Attributes()
-	attrs.Clear()
 	if serviceName != "" {
 		attrs.EnsureCapacity(len(tags) + 1)
-		attrs.UpsertString(conventions.AttributeServiceName, serviceName)
+		attrs.PutStr(conventions.AttributeServiceName, serviceName)
 	} else {
 		attrs.EnsureCapacity(len(tags))
 	}
@@ -109,7 +108,7 @@ func jThriftSpanToInternal(span *jaeger.Span, dest ptrace.Span) {
 	jThriftTagsToInternalAttributes(span.Tags, attrs)
 	setInternalSpanStatus(attrs, dest.Status())
 	if spanKindAttr, ok := attrs.Get(tracetranslator.TagSpanKind); ok {
-		dest.SetKind(jSpanKindToInternal(spanKindAttr.StringVal()))
+		dest.SetKind(jSpanKindToInternal(spanKindAttr.Str()))
 		attrs.Remove(tracetranslator.TagSpanKind)
 	}
 
@@ -127,17 +126,17 @@ func jThriftTagsToInternalAttributes(tags []*jaeger.Tag, dest pcommon.Map) {
 	for _, tag := range tags {
 		switch tag.GetVType() {
 		case jaeger.TagType_STRING:
-			dest.UpsertString(tag.Key, tag.GetVStr())
+			dest.PutStr(tag.Key, tag.GetVStr())
 		case jaeger.TagType_BOOL:
-			dest.UpsertBool(tag.Key, tag.GetVBool())
+			dest.PutBool(tag.Key, tag.GetVBool())
 		case jaeger.TagType_LONG:
-			dest.UpsertInt(tag.Key, tag.GetVLong())
+			dest.PutInt(tag.Key, tag.GetVLong())
 		case jaeger.TagType_DOUBLE:
-			dest.UpsertDouble(tag.Key, tag.GetVDouble())
+			dest.PutDouble(tag.Key, tag.GetVDouble())
 		case jaeger.TagType_BINARY:
-			dest.UpsertString(tag.Key, base64.StdEncoding.EncodeToString(tag.GetVBinary()))
+			dest.PutStr(tag.Key, base64.StdEncoding.EncodeToString(tag.GetVBinary()))
 		default:
-			dest.UpsertString(tag.Key, fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
+			dest.PutStr(tag.Key, fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
 		}
 	}
 }
@@ -158,11 +157,10 @@ func jThriftLogsToSpanEvents(logs []*jaeger.Log, dest ptrace.SpanEventSlice) {
 		}
 
 		attrs := event.Attributes()
-		attrs.Clear()
 		attrs.EnsureCapacity(len(log.Fields))
 		jThriftTagsToInternalAttributes(log.Fields, attrs)
 		if name, ok := attrs.Get(eventNameAttr); ok {
-			event.SetName(name.StringVal())
+			event.SetName(name.Str())
 			attrs.Remove(eventNameAttr)
 		}
 	}

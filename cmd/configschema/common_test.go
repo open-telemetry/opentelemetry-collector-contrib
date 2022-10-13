@@ -18,7 +18,12 @@
 
 package configschema
 
-import "time"
+import (
+	"path/filepath"
+	"time"
+
+	"go.opentelemetry.io/collector/config/configtls"
+)
 
 type testPerson struct {
 	Name string
@@ -32,17 +37,18 @@ type testStruct struct {
 	Four  bool   `mapstructure:"four"`
 	// embedded, package qualified comment
 	time.Duration `mapstructure:"duration"`
-	Squashed      testPerson    `mapstructure:",squash"`
-	PersonPtr     *testPerson   `mapstructure:"person_ptr"`
-	PersonStruct  testPerson    `mapstructure:"person_struct"`
-	Persons       []testPerson  `mapstructure:"persons"`
-	PersonPtrs    []*testPerson `mapstructure:"person_ptrs"`
-	Ignored       string        `mapstructure:"-"`
+	Squashed      testPerson                 `mapstructure:",squash"`
+	PersonPtr     *testPerson                `mapstructure:"person_ptr"`
+	PersonStruct  testPerson                 `mapstructure:"person_struct"`
+	Persons       []testPerson               `mapstructure:"persons"`
+	PersonPtrs    []*testPerson              `mapstructure:"person_ptrs"`
+	Ignored       string                     `mapstructure:"-"`
+	TLS           configtls.TLSClientSetting `mapstructure:"tls"`
 }
 
-func testDR(root string) DirResolver {
+func testDR() DirResolver {
 	return DirResolver{
-		SrcRoot:    root,
+		SrcRoot:    filepath.Join("..", ".."),
 		ModuleName: DefaultModule,
 	}
 }

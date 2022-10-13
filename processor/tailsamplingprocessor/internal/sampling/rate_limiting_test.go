@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ import (
 )
 
 func TestRateLimiter(t *testing.T) {
-	trace := newTraceStringAttrs(pcommon.NewMap(), "example", "value")
-	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	trace := newTraceStringAttrs(nil, "example", "value")
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	rateLimiter := NewRateLimiting(zap.NewNop(), 3)
 
 	// Trace span count greater than spans per second

@@ -32,13 +32,13 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 func TestMain(m *testing.M) {
@@ -121,7 +121,8 @@ func TestTracesSource(t *testing.T) {
 			t.Fatalf("Metrics server handler error: %v", err)
 		}
 		reqs <- buf.Bytes()
-		w.Write([]byte("{\"status\": \"ok\"}")) // nolint:errcheck
+		_, err := w.Write([]byte("{\"status\": \"ok\"}"))
+		assert.NoError(t, err)
 	}))
 	defer metricsServer.Close()
 	tracesServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -149,9 +150,10 @@ func TestTracesSource(t *testing.T) {
 	assert := assert.New(t)
 	params := componenttest.NewNopExporterCreateSettings()
 	reg := featuregate.NewRegistry()
-	reg.Apply(map[string]bool{
+	reg.MustRegister(metadata.HostnamePreviewGate)
+	assert.NoError(reg.Apply(map[string]bool{
 		metadata.HostnamePreviewFeatureGate: true,
-	})
+	}))
 	f := newFactoryWithRegistry(reg)
 	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
 	assert.NoError(err)
@@ -219,7 +221,7 @@ func TestTracesSource(t *testing.T) {
 }
 
 func TestTraceExporter(t *testing.T) {
-	metricsServer := testutils.DatadogServerMock()
+	metricsServer := testutil.DatadogServerMock()
 	defer metricsServer.Close()
 
 	got := make(chan string, 1)
@@ -271,7 +273,7 @@ func TestTraceExporter(t *testing.T) {
 }
 
 func TestNewTracesExporter(t *testing.T) {
-	metricsServer := testutils.DatadogServerMock()
+	metricsServer := testutil.DatadogServerMock()
 	defer metricsServer.Close()
 
 	cfg := &Config{}
@@ -287,7 +289,7 @@ func TestNewTracesExporter(t *testing.T) {
 }
 
 func TestPushTraceData(t *testing.T) {
-	server := testutils.DatadogServerMock()
+	server := testutil.DatadogServerMock()
 	defer server.Close()
 	cfg := &Config{
 		API: APIConfig{
@@ -314,7 +316,9 @@ func TestPushTraceData(t *testing.T) {
 	exp, err := f.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 
-	err = exp.ConsumeTraces(context.Background(), testutils.TestTraces.Clone())
+	testTraces := ptrace.NewTraces()
+	testutil.TestTraces.CopyTo(testTraces)
+	err = exp.ConsumeTraces(context.Background(), testTraces)
 	assert.NoError(t, err)
 
 	body := <-server.MetadataChan
@@ -325,11 +329,11 @@ func TestPushTraceData(t *testing.T) {
 }
 
 func simpleTraces() ptrace.Traces {
-	return genTraces(pcommon.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}), nil)
+	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, nil)
 }
 
 func simpleTracesWithAttributes(attrs map[string]interface{}) ptrace.Traces {
-	return genTraces(pcommon.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}), attrs)
+	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, attrs)
 }
 
 func genTraces(traceID pcommon.TraceID, attrs map[string]interface{}) ptrace.Traces {
@@ -337,13 +341,10 @@ func genTraces(traceID pcommon.TraceID, attrs map[string]interface{}) ptrace.Tra
 	rspans := traces.ResourceSpans().AppendEmpty()
 	span := rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(traceID)
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 1, 2, 3, 4}))
+	span.SetSpanID([8]byte{0, 0, 0, 0, 1, 2, 3, 4})
 	if attrs == nil {
 		return traces
 	}
-	pcommon.NewMapFromRaw(attrs).Range(func(k string, v pcommon.Value) bool {
-		rspans.Resource().Attributes().Insert(k, v)
-		return true
-	})
+	rspans.Resource().Attributes().FromRaw(attrs)
 	return traces
 }

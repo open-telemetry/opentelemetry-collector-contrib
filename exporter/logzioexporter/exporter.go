@@ -89,8 +89,9 @@ func newLogzioTracesExporter(config *Config, set component.ExporterCreateSetting
 	}
 	config.checkAndWarnDeprecatedOptions(exporter.logger)
 	return exporterhelper.NewTracesExporter(
-		config,
+		context.TODO(),
 		set,
+		config,
 		exporter.pushTraceData,
 		exporterhelper.WithStart(exporter.start),
 		// disable since we rely on http.Client timeout logic.
@@ -113,8 +114,9 @@ func newLogzioLogsExporter(config *Config, set component.ExporterCreateSettings)
 	}
 	config.checkAndWarnDeprecatedOptions(exporter.logger)
 	return exporterhelper.NewLogsExporter(
-		config,
+		context.TODO(),
 		set,
+		config,
 		exporter.pushLogData,
 		exporterhelper.WithStart(exporter.start),
 		// disable since we rely on http.Client timeout logic.
@@ -224,7 +226,7 @@ func (exporter *logzioExporter) export(ctx context.Context, url string, request 
 
 	defer func() {
 		// Discard any remaining response body when we are done reading.
-		io.CopyN(io.Discard, resp.Body, maxHTTPResponseReadBytes) // nolint:errcheck
+		_, _ = io.CopyN(io.Discard, resp.Body, maxHTTPResponseReadBytes)
 		resp.Body.Close()
 	}()
 	exporter.logger.Debug(fmt.Sprintf("Response status code: %d", resp.StatusCode))

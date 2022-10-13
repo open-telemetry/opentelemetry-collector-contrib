@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -47,7 +47,10 @@ func newVcenterClient(c *Config) *vcenterClient {
 // EnsureConnection will establish a connection to the vSphere SDK if not already established
 func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	if vc.moClient != nil {
-		return nil
+		sessionActive, _ := vc.moClient.SessionManager.SessionIsActive(ctx)
+		if sessionActive {
+			return nil
+		}
 	}
 
 	sdkURL, err := vc.cfg.SDKUrl()

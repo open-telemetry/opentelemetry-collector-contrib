@@ -1,4 +1,0 @@
-change_type: bug_fix
-component: tailsamplingprocessor
-note: Fixing null pointer exception for span count sampling strategy.
-issues: [12745]

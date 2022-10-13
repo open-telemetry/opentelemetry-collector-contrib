@@ -96,11 +96,11 @@ func Test_AttributesDetectedSuccessfully(t *testing.T) {
 
 	want := pcommon.NewResource()
 	attr := want.Attributes()
-	attr.InsertString("cloud.provider", "aws")
-	attr.InsertString("cloud.platform", "aws_elastic_beanstalk")
-	attr.InsertString("deployment.environment", "BETA")
-	attr.InsertString("service.instance.id", "23")
-	attr.InsertString("service.version", "env-version-1234")
+	attr.PutStr("cloud.provider", "aws")
+	attr.PutStr("cloud.platform", "aws_elastic_beanstalk")
+	attr.PutStr("deployment.environment", "BETA")
+	attr.PutStr("service.instance.id", "23")
+	attr.PutStr("service.version", "env-version-1234")
 
 	r, _, err := d.Detect(context.TODO())
 

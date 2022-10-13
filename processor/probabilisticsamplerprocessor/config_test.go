@@ -20,42 +20,45 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	tests := []struct {
+		id       config.ComponentID
+		expected config.Processor
+	}{
+		{
+			id: config.NewComponentIDWithName(typeStr, ""),
+			expected: &Config{
+				ProcessorSettings:  config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				SamplingPercentage: 15.3,
+				HashSeed:           22,
+			},
+		},
+		{
+			id:       config.NewComponentIDWithName(typeStr, "empty"),
+			expected: createDefaultConfig(),
+		},
+	}
 
-	p0 := cfg.Processors[config.NewComponentID(typeStr)]
-	assert.Equal(t, p0,
-		&Config{
-			ProcessorSettings:  config.NewProcessorSettings(config.NewComponentID(typeStr)),
-			SamplingPercentage: 15.3,
-			HashSeed:           22,
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+			require.NoError(t, err)
+
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
-
-}
-
-func TestLoadConfigEmpty(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
-
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "empty.yaml"), factories)
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	p0 := cfg.Processors[config.NewComponentID(typeStr)]
-	assert.Equal(t, p0, createDefaultConfig())
+	}
 }

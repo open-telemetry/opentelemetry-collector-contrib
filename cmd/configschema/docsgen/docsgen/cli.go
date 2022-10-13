@@ -17,6 +17,7 @@ package docsgen // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -111,9 +112,10 @@ func writeConfigDoc(
 		panic(err)
 	}
 
-	f.Type = stripPrefix(f.Type)
-
 	mdBytes := renderHeader(string(ci.Type), ci.Group, f.Doc)
+
+	f.Name = typeToName(f.Type)
+
 	tableBytes, err := renderTable(tableTmpl, f)
 	if err != nil {
 		panic(err)
@@ -124,9 +126,10 @@ func writeConfigDoc(
 		mdBytes = append(mdBytes, durationBlock...)
 	}
 
-	dir, err := dr.PackageDir(v.Type().Elem())
-	if err != nil {
-		panic(err)
+	dir := dr.TypeToProjectPath(v.Type().Elem())
+	if dir == "" {
+		log.Printf("writeConfigDoc: skipping, local path not found for component: %s %s", ci.Group, ci.Type)
+		return
 	}
 	err = writeFile(filepath.Join(dir, mdFileName), mdBytes, 0644)
 	if err != nil {
@@ -134,7 +137,7 @@ func writeConfigDoc(
 	}
 }
 
-func stripPrefix(name string) string {
-	idx := strings.Index(name, ".")
-	return name[idx+1:]
+func typeToName(typ string) string {
+	idx := strings.IndexRune(typ, '.')
+	return typ[:idx]
 }

@@ -25,11 +25,11 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
 	"go.uber.org/zap"
 )
 
@@ -131,7 +131,8 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 		},
 	}
 	mp := &mockProcessor{}
-	next, err := processorhelper.NewTracesProcessor(cfg, consumertest.NewNop(), mp.processTraces)
+
+	next, err := processorhelper.NewTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop(), mp.processTraces)
 	require.NoError(t, err)
 
 	// test
@@ -180,15 +181,24 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 		},
 	}
 
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_multipipelines.yaml"), factories)
-	assert.NoError(t, err)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
 
-	for _, cfg := range cfg.Processors {
-		exp := newProcessor(zap.NewNop(), cfg)
-		err = exp.Start(context.Background(), host)
-		// assert that no error is thrown due to multiple pipelines and exporters not using the routing processor
-		assert.NoError(t, err)
-		assert.NoError(t, exp.Shutdown(context.Background()))
+	for k := range cm.ToStringMap() {
+		// Check if all processor variations that are defined in test config can be actually created
+		t.Run(k, func(t *testing.T) {
+			cfg := factories.Processors[typeStr].CreateDefaultConfig()
+
+			sub, err := cm.Sub(k)
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+
+			exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, cfg)
+			err = exp.Start(context.Background(), host)
+			// assert that no error is thrown due to multiple pipelines and exporters not using the routing processor
+			assert.NoError(t, err)
+			assert.NoError(t, exp.Shutdown(context.Background()))
+		})
 	}
 }
 
@@ -223,4 +233,21 @@ type mockProcessor struct{}
 
 func (mp *mockProcessor) processTraces(context.Context, ptrace.Traces) (ptrace.Traces, error) {
 	return ptrace.NewTraces(), nil
+}
+
+type mockHost struct {
+	component.Host
+	GetExportersFunc func() map[config.DataType]map[config.ComponentID]component.Exporter
+}
+
+func (m *mockHost) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
+	if m.GetExportersFunc != nil {
+		return m.GetExportersFunc()
+	}
+	return m.Host.GetExporters()
+}
+
+type mockComponent struct {
+	component.StartFunc
+	component.ShutdownFunc
 }

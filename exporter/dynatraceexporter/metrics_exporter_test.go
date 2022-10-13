@@ -74,73 +74,66 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	noneMetric.SetName("none")
 
 	intGaugeMetric := metrics.AppendEmpty()
-	intGaugeMetric.SetDataType(pmetric.MetricDataTypeGauge)
 	intGaugeMetric.SetName("int_gauge")
-	intGauge := intGaugeMetric.Gauge()
+	intGauge := intGaugeMetric.SetEmptyGauge()
 	intGaugeDataPoints := intGauge.DataPoints()
 	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
-	intGaugeDataPoint.SetIntVal(10)
+	intGaugeDataPoint.SetIntValue(10)
 	intGaugeDataPoint.SetTimestamp(testTimestamp)
 
 	nmIntSumMetric := metrics.AppendEmpty()
-	nmIntSumMetric.SetDataType(pmetric.MetricDataTypeSum)
 	nmIntSumMetric.SetName("nonmonotonic_int_sum")
-	nmIntSum := nmIntSumMetric.Sum()
+	nmIntSum := nmIntSumMetric.SetEmptySum()
 	nmIntSumDataPoints := nmIntSum.DataPoints()
 	nmIntSumDataPoint := nmIntSumDataPoints.AppendEmpty()
-	nmIntSumDataPoint.SetIntVal(10)
+	nmIntSumDataPoint.SetIntValue(10)
 	nmIntSumDataPoint.SetTimestamp(testTimestamp)
 
 	mIntSumMetric := metrics.AppendEmpty()
-	mIntSumMetric.SetDataType(pmetric.MetricDataTypeSum)
 	mIntSumMetric.SetName("monotonic_int_sum")
-	mIntSum := mIntSumMetric.Sum()
+	mIntSum := mIntSumMetric.SetEmptySum()
 	mIntSum.SetIsMonotonic(true)
 	mIntSumDataPoints := mIntSum.DataPoints()
 	mIntSumDataPoint := mIntSumDataPoints.AppendEmpty()
-	mIntSumDataPoint.SetIntVal(10)
+	mIntSumDataPoint.SetIntValue(10)
 	mIntSumDataPoint.SetTimestamp(testTimestamp)
 
 	doubleGaugeMetric := metrics.AppendEmpty()
-	doubleGaugeMetric.SetDataType(pmetric.MetricDataTypeGauge)
 	doubleGaugeMetric.SetName("double_gauge")
-	doubleGauge := doubleGaugeMetric.Gauge()
+	doubleGauge := doubleGaugeMetric.SetEmptyGauge()
 	doubleGaugeDataPoints := doubleGauge.DataPoints()
 	doubleGaugeDataPoint := doubleGaugeDataPoints.AppendEmpty()
-	doubleGaugeDataPoint.SetDoubleVal(10.1)
+	doubleGaugeDataPoint.SetDoubleValue(10.1)
 	doubleGaugeDataPoint.SetTimestamp(testTimestamp)
 
 	nmDoubleSumMetric := metrics.AppendEmpty()
-	nmDoubleSumMetric.SetDataType(pmetric.MetricDataTypeSum)
 	nmDoubleSumMetric.SetName("nonmonotonic_double_sum")
-	nmDoubleSum := nmDoubleSumMetric.Sum()
+	nmDoubleSum := nmDoubleSumMetric.SetEmptySum()
 	nmDoubleSumDataPoints := nmDoubleSum.DataPoints()
 	nmDoubleSumDataPoint := nmDoubleSumDataPoints.AppendEmpty()
-	nmDoubleSumDataPoint.SetDoubleVal(10.1)
+	nmDoubleSumDataPoint.SetDoubleValue(10.1)
 	nmDoubleSumDataPoint.SetTimestamp(testTimestamp)
 
 	mDoubleSumMetric := metrics.AppendEmpty()
-	mDoubleSumMetric.SetDataType(pmetric.MetricDataTypeSum)
 	mDoubleSumMetric.SetName("monotonic_double_sum")
-	mDoubleSum := mDoubleSumMetric.Sum()
+	mDoubleSum := mDoubleSumMetric.SetEmptySum()
 	mDoubleSum.SetIsMonotonic(true)
 	mDoubleSumDataPoints := mDoubleSum.DataPoints()
 	mDoubleSumDataPoint := mDoubleSumDataPoints.AppendEmpty()
-	mDoubleSumDataPoint.SetDoubleVal(10.1)
+	mDoubleSumDataPoint.SetDoubleValue(10.1)
 	mDoubleSumDataPoint.SetTimestamp(testTimestamp)
 
 	doubleHistogramMetric := metrics.AppendEmpty()
-	doubleHistogramMetric.SetDataType(pmetric.MetricDataTypeHistogram)
 	doubleHistogramMetric.SetName("double_histogram")
-	doubleHistogram := doubleHistogramMetric.Histogram()
+	doubleHistogram := doubleHistogramMetric.SetEmptyHistogram()
 	doubleHistogramDataPoints := doubleHistogram.DataPoints()
 	doubleHistogramDataPoint := doubleHistogramDataPoints.AppendEmpty()
 	doubleHistogramDataPoint.SetCount(2)
 	doubleHistogramDataPoint.SetSum(10.1)
-	doubleHistogramDataPoint.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0, 2, 4, 8}))
-	doubleHistogramDataPoint.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 1, 0, 1, 0}))
+	doubleHistogramDataPoint.ExplicitBounds().FromRaw([]float64{0, 2, 4, 8})
+	doubleHistogramDataPoint.BucketCounts().FromRaw([]uint64{0, 1, 0, 1, 0})
 	doubleHistogramDataPoint.SetTimestamp(testTimestamp)
-	doubleHistogram.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+	doubleHistogram.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 
 	type fields struct {
 		settings component.TelemetrySettings
@@ -205,7 +198,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 func Test_SumMetrics(t *testing.T) {
 	type args struct {
 		monotonic   bool
-		temporality pmetric.MetricAggregationTemporality
+		temporality pmetric.AggregationTemporality
 		valueType   string // either 'double' or 'int'
 	}
 	tests := []struct {
@@ -217,7 +210,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Monotonic Delta sum (int)",
 			args: args{
 				true,
-				pmetric.MetricAggregationTemporalityDelta,
+				pmetric.AggregationTemporalityDelta,
 				"int",
 			},
 			want: []string{
@@ -229,7 +222,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Non-monotonic Delta sum (int)",
 			args: args{
 				false,
-				pmetric.MetricAggregationTemporalityDelta,
+				pmetric.AggregationTemporalityDelta,
 				"int",
 			},
 			want: []string{"nothing sent"},
@@ -238,7 +231,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Monotonic Cumulative sum (int)",
 			args: args{
 				true,
-				pmetric.MetricAggregationTemporalityCumulative,
+				pmetric.AggregationTemporalityCumulative,
 				"int",
 			},
 			want: []string{"prefix.metric_name count,delta=10 1626438600000"},
@@ -247,7 +240,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Non-monotonic Cumulative sum (int)",
 			args: args{
 				false,
-				pmetric.MetricAggregationTemporalityCumulative,
+				pmetric.AggregationTemporalityCumulative,
 				"int",
 			},
 			want: []string{
@@ -259,7 +252,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Monotonic Delta sum (double)",
 			args: args{
 				true,
-				pmetric.MetricAggregationTemporalityDelta,
+				pmetric.AggregationTemporalityDelta,
 				"double",
 			},
 			want: []string{
@@ -271,7 +264,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Non-monotonic Delta sum (double)",
 			args: args{
 				false,
-				pmetric.MetricAggregationTemporalityDelta,
+				pmetric.AggregationTemporalityDelta,
 				"double",
 			},
 			want: []string{"nothing sent"},
@@ -280,7 +273,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Monotonic Cumulative sum (double)",
 			args: args{
 				true,
-				pmetric.MetricAggregationTemporalityCumulative,
+				pmetric.AggregationTemporalityCumulative,
 				"double",
 			},
 			want: []string{"prefix.metric_name count,delta=10.1 1626438600000"},
@@ -289,7 +282,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Non-monotonic Cumulative sum (double)",
 			args: args{
 				false,
-				pmetric.MetricAggregationTemporalityCumulative,
+				pmetric.AggregationTemporalityCumulative,
 				"double",
 			},
 			want: []string{
@@ -338,8 +331,7 @@ func Test_SumMetrics(t *testing.T) {
 			scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
 			metric := scopeMetric.Metrics().AppendEmpty()
 			metric.SetName("metric_name")
-			metric.SetDataType(pmetric.MetricDataTypeSum)
-			sum := metric.Sum()
+			sum := metric.SetEmptySum()
 			sum.SetAggregationTemporality(tt.args.temporality)
 			sum.SetIsMonotonic(tt.args.monotonic)
 
@@ -351,11 +343,11 @@ func Test_SumMetrics(t *testing.T) {
 
 			switch tt.args.valueType {
 			case "int":
-				dataPoint1.SetIntVal(10)
-				dataPoint2.SetIntVal(20)
+				dataPoint1.SetIntValue(10)
+				dataPoint2.SetIntValue(20)
 			case "double":
-				dataPoint1.SetDoubleVal(10.1)
-				dataPoint2.SetDoubleVal(20.2)
+				dataPoint1.SetDoubleValue(10.1)
+				dataPoint2.SetDoubleValue(20.2)
 			default:
 				t.Fatalf("valueType can only be 'int' or 'double' but was '%s'", tt.args.valueType)
 			}
@@ -416,12 +408,11 @@ func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
 
 	metrics := ilm.Metrics()
 	metric := metrics.AppendEmpty()
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	metric.SetName("int_gauge")
-	intGauge := metric.Gauge()
+	intGauge := metric.SetEmptyGauge()
 	intGaugeDataPoints := intGauge.DataPoints()
 	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
-	intGaugeDataPoint.SetIntVal(10)
+	intGaugeDataPoint.SetIntValue(10)
 	intGaugeDataPoint.SetTimestamp(testTimestamp)
 
 	e := &exporter{
@@ -604,12 +595,11 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 
 	metrics := ilm.Metrics()
 	intGaugeMetric := metrics.AppendEmpty()
-	intGaugeMetric.SetDataType(pmetric.MetricDataTypeGauge)
 	intGaugeMetric.SetName("int_gauge")
-	intGauge := intGaugeMetric.Gauge()
+	intGauge := intGaugeMetric.SetEmptyGauge()
 	intGaugeDataPoints := intGauge.DataPoints()
 	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
-	intGaugeDataPoint.SetIntVal(10)
+	intGaugeDataPoint.SetIntValue(10)
 	intGaugeDataPoint.SetTimestamp(testTimestamp)
 	type fields struct {
 		logger *zap.Logger
@@ -727,12 +717,11 @@ func Test_LineTooLong(t *testing.T) {
 
 	metrics := scm.Metrics()
 	intGaugeMetric := metrics.AppendEmpty()
-	intGaugeMetric.SetDataType(pmetric.MetricDataTypeGauge)
 	intGaugeMetric.SetName("int_gauge")
-	intGauge := intGaugeMetric.Gauge()
+	intGauge := intGaugeMetric.SetEmptyGauge()
 	intGaugeDataPoints := intGauge.DataPoints()
 	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
-	intGaugeDataPoint.SetIntVal(10)
+	intGaugeDataPoint.SetIntValue(10)
 	intGaugeDataPoint.SetTimestamp(testTimestamp)
 	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), &config.Config{DefaultDimensions: dims})
 

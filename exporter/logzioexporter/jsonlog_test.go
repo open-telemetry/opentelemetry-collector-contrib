@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ func TestSetTimeStamp(t *testing.T) {
 		recordedRequests, _ = io.ReadAll(req.Body)
 		rw.WriteHeader(http.StatusOK)
 	}))
-	ld := GenerateLogsOneEmptyTimestamp()
+	ld := generateLogsOneEmptyTimestamp()
 	cfg := &Config{
 		Region:           "us",
 		Token:            "token",

@@ -75,20 +75,21 @@ func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 			params:      rc.params,
 			idNamespace: rc.cfg.ID(),
 			host:        &loggingHost{host, rc.params.Logger},
-		}}
+		},
+	}
 
-	observers := map[config.Type]observer.Observable{}
+	observers := map[config.ComponentID]observer.Observable{}
 
 	// Match all configured observables to the extensions that are running.
 	for _, watchObserver := range rc.cfg.WatchObservers {
-		for cfg, ext := range host.GetExtensions() {
-			if cfg.Type() != watchObserver {
+		for cid, ext := range host.GetExtensions() {
+			if cid != watchObserver {
 				continue
 			}
 
 			obs, ok := ext.(observer.Observable)
 			if !ok {
-				return fmt.Errorf("extension %q in watch_observers is not an observer", watchObserver)
+				return fmt.Errorf("extension %q in watch_observers is not an observer", watchObserver.String())
 			}
 			observers[watchObserver] = obs
 		}
@@ -97,7 +98,7 @@ func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 	// Make sure all observables are present before starting any.
 	for _, watchObserver := range rc.cfg.WatchObservers {
 		if observers[watchObserver] == nil {
-			return fmt.Errorf("failed to find observer %q in the extensions list", watchObserver)
+			return fmt.Errorf("failed to find observer %q in the extensions list", watchObserver.String())
 		}
 	}
 

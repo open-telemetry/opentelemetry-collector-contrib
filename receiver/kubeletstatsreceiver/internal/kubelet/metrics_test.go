@@ -51,12 +51,12 @@ func TestMetricAccumulator(t *testing.T) {
 		ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
 		OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
 	}
-	requireMetricsOk(t, MetricsData(zap.NewNop(), summary, k8sMetadata, ValidMetricGroups, mbs))
+	requireMetricsOk(t, MetricsData(zap.NewNop(), summary, k8sMetadata, ValidMetricGroups, mbs, true, false))
 	// Disable all groups
 	mbs.NodeMetricsBuilder.Reset()
 	mbs.PodMetricsBuilder.Reset()
 	mbs.OtherMetricsBuilder.Reset()
-	require.Equal(t, 0, len(MetricsData(zap.NewNop(), summary, k8sMetadata, map[MetricGroup]bool{}, mbs)))
+	require.Equal(t, 0, len(MetricsData(zap.NewNop(), summary, k8sMetadata, map[MetricGroup]bool{}, mbs, true, false)))
 }
 
 func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {
@@ -77,19 +77,19 @@ func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {
 
 func requireMetricOk(t *testing.T, m pmetric.Metric) {
 	require.NotZero(t, m.Name())
-	require.NotEqual(t, pmetric.MetricDataTypeNone, m.DataType())
-	switch m.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	require.NotEqual(t, pmetric.MetricTypeEmpty, m.Type())
+	switch m.Type() {
+	case pmetric.MetricTypeGauge:
 		gauge := m.Gauge()
 		for i := 0; i < gauge.DataPoints().Len(); i++ {
 			dp := gauge.DataPoints().At(i)
 			require.NotZero(t, dp.Timestamp())
 			requirePointOk(t, dp)
 		}
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		sum := m.Sum()
 		require.True(t, sum.IsMonotonic())
-		require.Equal(t, pmetric.MetricAggregationTemporalityCumulative, sum.AggregationTemporality())
+		require.Equal(t, pmetric.AggregationTemporalityCumulative, sum.AggregationTemporality())
 		for i := 0; i < sum.DataPoints().Len(); i++ {
 			dp := sum.DataPoints().At(i)
 			// Start time is required for cumulative metrics. Make assertions
@@ -104,7 +104,7 @@ func requireMetricOk(t *testing.T, m pmetric.Metric) {
 
 func requirePointOk(t *testing.T, point pmetric.NumberDataPoint) {
 	require.NotZero(t, point.Timestamp())
-	require.NotEqual(t, pmetric.NumberDataPointValueTypeNone, point.ValueType())
+	require.NotEqual(t, pmetric.NumberDataPointValueTypeEmpty, point.ValueType())
 }
 
 func requireResourceOk(t *testing.T, resource pcommon.Resource) {
@@ -112,33 +112,75 @@ func requireResourceOk(t *testing.T, resource pcommon.Resource) {
 }
 
 func TestWorkingSetMem(t *testing.T) {
-	metrics := indexedFakeMetrics()
+	metrics := indexedFakeMetrics(true, false)
 	requireContains(t, metrics, "k8s.pod.memory.working_set")
 	requireContains(t, metrics, "container.memory.working_set")
 
 	nodeWsMetrics := metrics["k8s.node.memory.working_set"]
-	value := nodeWsMetrics[0].Gauge().DataPoints().At(0).IntVal()
+	value := nodeWsMetrics[0].Gauge().DataPoints().At(0).IntValue()
 	require.Equal(t, int64(1234567890), value)
 }
 
 func TestPageFaults(t *testing.T) {
-	metrics := indexedFakeMetrics()
+	metrics := indexedFakeMetrics(true, false)
 	requireContains(t, metrics, "k8s.pod.memory.page_faults")
 	requireContains(t, metrics, "container.memory.page_faults")
 
 	nodePageFaults := metrics["k8s.node.memory.page_faults"]
-	value := nodePageFaults[0].Gauge().DataPoints().At(0).IntVal()
+	value := nodePageFaults[0].Gauge().DataPoints().At(0).IntValue()
 	require.Equal(t, int64(12345), value)
 }
 
 func TestMajorPageFaults(t *testing.T) {
-	metrics := indexedFakeMetrics()
+	metrics := indexedFakeMetrics(true, false)
 	requireContains(t, metrics, "k8s.pod.memory.major_page_faults")
 	requireContains(t, metrics, "container.memory.major_page_faults")
 
 	nodePageFaults := metrics["k8s.node.memory.major_page_faults"]
-	value := nodePageFaults[0].Gauge().DataPoints().At(0).IntVal()
+	value := nodePageFaults[0].Gauge().DataPoints().At(0).IntValue()
 	require.Equal(t, int64(12), value)
+}
+
+func TestEmitMetricsWithDirectionAttribute(t *testing.T) {
+	metrics := indexedFakeMetrics(true, false)
+	metricNamesWithDirectionAttr := []string{
+		"k8s.node.network.io",
+		"k8s.node.network.errors",
+		"k8s.pod.network.io",
+		"k8s.pod.network.errors",
+	}
+	for _, name := range metricNamesWithDirectionAttr {
+		requireContains(t, metrics, name)
+		metric := metrics[name][0]
+		for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
+			dp := metric.Sum().DataPoints().At(i)
+			_, found := dp.Attributes().Get("direction")
+			require.True(t, found, "expected direction attribute")
+		}
+	}
+}
+
+func TestEmitMetricsWithoutDirectionAttribute(t *testing.T) {
+	metrics := indexedFakeMetrics(false, true)
+	metricNamesWithoutDirectionAttr := []string{
+		"k8s.node.network.io.receive",
+		"k8s.node.network.io.transmit",
+		"k8s.node.network.errors.receive",
+		"k8s.node.network.errors.transmit",
+		"k8s.pod.network.io.receive",
+		"k8s.pod.network.io.transmit",
+		"k8s.pod.network.errors.receive",
+		"k8s.pod.network.errors.transmit",
+	}
+	for _, name := range metricNamesWithoutDirectionAttr {
+		requireContains(t, metrics, name)
+		metric := metrics[name][0]
+		for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
+			dp := metric.Sum().DataPoints().At(i)
+			_, found := dp.Attributes().Get("direction")
+			require.False(t, found, "unexpected direction attribute")
+		}
+	}
 }
 
 func requireContains(t *testing.T, metrics map[string][]pmetric.Metric, metricName string) {
@@ -146,8 +188,8 @@ func requireContains(t *testing.T, metrics map[string][]pmetric.Metric, metricNa
 	require.True(t, found)
 }
 
-func indexedFakeMetrics() map[string][]pmetric.Metric {
-	mds := fakeMetrics()
+func indexedFakeMetrics(emitMetricsWithDirectionAttribute, emitMetricsWithoutDirectionAttribute bool) map[string][]pmetric.Metric {
+	mds := fakeMetrics(emitMetricsWithDirectionAttribute, emitMetricsWithoutDirectionAttribute)
 	metrics := make(map[string][]pmetric.Metric)
 	for _, md := range mds {
 		for i := 0; i < md.ResourceMetrics().Len(); i++ {
@@ -167,7 +209,7 @@ func indexedFakeMetrics() map[string][]pmetric.Metric {
 	return metrics
 }
 
-func fakeMetrics() []pmetric.Metrics {
+func fakeMetrics(emitMetricsWithDirectionAttribute, emitMetricsWithoutDirectionAttribute bool) []pmetric.Metrics {
 	rc := &fakeRestClient{}
 	statsProvider := NewStatsProvider(rc)
 	summary, _ := statsProvider.StatsSummary()
@@ -182,5 +224,5 @@ func fakeMetrics() []pmetric.Metrics {
 		ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
 		OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
 	}
-	return MetricsData(zap.NewNop(), summary, Metadata{}, mgs, mbs)
+	return MetricsData(zap.NewNop(), summary, Metadata{}, mgs, mbs, emitMetricsWithDirectionAttribute, emitMetricsWithoutDirectionAttribute)
 }

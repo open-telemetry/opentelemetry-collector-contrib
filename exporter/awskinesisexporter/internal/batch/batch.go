@@ -17,8 +17,8 @@ package batch // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"errors"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/kinesis" //nolint:staticcheck // Some encoding types uses legacy prototype version
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/kinesis/types" //nolint:staticcheck // Some encoding types uses legacy prototype version
 	"go.opentelemetry.io/collector/consumer/consumererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/compress"
@@ -42,7 +42,7 @@ type Batch struct {
 
 	compression compress.Compressor
 
-	records []*kinesis.PutRecordsRequestEntry
+	records []types.PutRecordsRequestEntry
 }
 
 type Option func(bt *Batch)
@@ -78,7 +78,7 @@ func New(opts ...Option) *Batch {
 		maxBatchSize:  MaxBatchedRecords,
 		maxRecordSize: MaxRecordSize,
 		compression:   compress.NewNoopCompressor(),
-		records:       make([]*kinesis.PutRecordsRequestEntry, 0, MaxRecordSize),
+		records:       make([]types.PutRecordsRequestEntry, 0, MaxRecordSize),
 	}
 
 	for _, op := range opts {
@@ -102,13 +102,16 @@ func (b *Batch) AddRecord(raw []byte, key string) error {
 		return ErrRecordLength
 	}
 
-	b.records = append(b.records, &kinesis.PutRecordsRequestEntry{Data: record, PartitionKey: aws.String(key)})
+	b.records = append(b.records, types.PutRecordsRequestEntry{
+		Data:         record,
+		PartitionKey: aws.String(key),
+	})
 	return nil
 }
 
 // Chunk breaks up the iternal queue into blocks that can be used
 // to be written to he kinesis.PutRecords endpoint
-func (b *Batch) Chunk() (chunks [][]*kinesis.PutRecordsRequestEntry) {
+func (b *Batch) Chunk() (chunks [][]types.PutRecordsRequestEntry) {
 	// Using local copies to avoid mutating internal data
 	var (
 		slice = b.records

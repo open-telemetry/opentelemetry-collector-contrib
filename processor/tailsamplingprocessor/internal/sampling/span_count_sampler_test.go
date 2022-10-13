@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,13 +20,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
 func TestEvaluate_NumberSpans(t *testing.T) {
 	filter := NewSpanCount(zap.NewNop(), 2)
 
-	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 
 	cases := []struct {
 		Desc        string
@@ -41,23 +42,44 @@ func TestEvaluate_NumberSpans(t *testing.T) {
 			NotSampled,
 		},
 		{
-			"Less spans than the threshold",
+			"Bigger amount of spans than the threshold, in one single batch",
 			[]int32{
-				1, 1, 1,
+				3,
 			},
-			NotSampled,
+			Sampled,
 		},
 		{
-			"Same number of spans than the threshold",
+			"Bigger amount of spans than the threshold, with different span count per batch",
 			[]int32{
 				1, 2, 1,
 			},
 			Sampled,
 		},
 		{
-			"Bigger amount of spans than the threashold",
+			"Same number of spans as the threshold, in one single batch",
+			[]int32{
+				2,
+			},
+			Sampled,
+		},
+		{
+			"Bigger amount of spans than the threshold, across multiple batches",
+			[]int32{
+				1, 1, 1,
+			},
+			Sampled,
+		},
+		{
+			"Bigger amount of spans than the threshold, with a different number",
 			[]int32{
 				1, 3, 1,
+			},
+			Sampled,
+		},
+		{
+			"Same number of spans as the threshold, across multiple batches",
+			[]int32{
+				1, 1,
 			},
 			Sampled,
 		},
@@ -74,24 +96,25 @@ func TestEvaluate_NumberSpans(t *testing.T) {
 }
 
 func newTraceWithMultipleSpans(numberSpans []int32) *TraceData {
-	var traceBatches []ptrace.Traces
+	var totalNumberSpans = int32(0)
 
-	// For each trace, going to create the number of spans defined in the array
+	// For each resource, going to create the number of spans defined in the array
+	traces := ptrace.NewTraces()
 	for i := range numberSpans {
 		// Creates trace
-		traces := ptrace.NewTraces()
 		rs := traces.ResourceSpans().AppendEmpty()
 		ils := rs.ScopeSpans().AppendEmpty()
 
 		for r := 0; r < int(numberSpans[i]); r++ {
 			span := ils.Spans().AppendEmpty()
-			span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-			span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+			span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+			span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 		}
-		traceBatches = append(traceBatches, traces)
+		totalNumberSpans += numberSpans[i]
 	}
 
 	return &TraceData{
-		ReceivedBatches: traceBatches,
+		ReceivedBatches: traces,
+		SpanCount:       atomic.NewInt64(int64(totalNumberSpans)),
 	}
 }

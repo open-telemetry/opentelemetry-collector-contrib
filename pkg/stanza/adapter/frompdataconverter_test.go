@@ -47,25 +47,15 @@ func BenchmarkConvertFromPdataComplex(b *testing.B) {
 	}
 }
 
-func baseMap() pcommon.Map {
-	obj := pcommon.NewMap()
-	arr := pcommon.NewValueSlice()
-	arr.SliceVal().AppendEmpty().SetStringVal("666")
-	arr.SliceVal().AppendEmpty().SetStringVal("777")
-	obj.Insert("slice", arr)
-	obj.InsertBool("bool", true)
-	obj.InsertInt("int", 123)
-	obj.InsertDouble("double", 12.34)
-	obj.InsertString("string", "hello")
-	obj.InsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{0xa1, 0xf0, 0x02, 0xff}))
-	return obj
-}
-
-func baseMapValue() pcommon.Value {
-	v := pcommon.NewValueMap()
-	baseMap := baseMap()
-	baseMap.CopyTo(v.MapVal())
-	return v
+func fillBaseMap(m pcommon.Map) {
+	arr := m.PutEmptySlice("slice")
+	arr.AppendEmpty().SetStr("666")
+	arr.AppendEmpty().SetStr("777")
+	m.PutBool("bool", true)
+	m.PutInt("int", 123)
+	m.PutDouble("double", 12.34)
+	m.PutStr("string", "hello")
+	m.PutEmptyBytes("bytes").FromRaw([]byte{0xa1, 0xf0, 0x02, 0xff})
 }
 
 func complexPdataForNDifferentHosts(count int, n int) plog.Logs {
@@ -76,37 +66,35 @@ func complexPdataForNDifferentHosts(count int, n int) plog.Logs {
 		rls := logs.AppendEmpty()
 
 		resource := rls.Resource()
-		attr := baseMap()
-		attr.Insert("object", baseMapValue())
-		attr.InsertString("host", fmt.Sprintf("host-%d", i%n))
-		attr.CopyTo(resource.Attributes())
+		fillBaseMap(resource.Attributes())
+		fillBaseMap(resource.Attributes().PutEmptyMap("object"))
+		resource.Attributes().PutStr("host", fmt.Sprintf("host-%d", i%n))
 
 		scopeLog := rls.ScopeLogs().AppendEmpty()
 		scopeLog.Scope().SetName("myScope")
 		lr := scopeLog.LogRecords().AppendEmpty()
 
-		lr.SetSpanID(pcommon.NewSpanID([8]byte{0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff}))
-		lr.SetTraceID(pcommon.NewTraceID([16]byte{0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff}))
-		lr.SetFlags(uint32(0x01))
+		lr.SetSpanID([8]byte{0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
+		lr.SetTraceID([16]byte{0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
+		lr.SetFlags(plog.DefaultLogRecordFlags.WithIsSampled(true))
 
-		lr.SetSeverityNumber(plog.SeverityNumberERROR)
+		lr.SetSeverityNumber(plog.SeverityNumberError)
 		lr.SetSeverityText("Error")
 
 		t, _ := time.ParseInLocation("2006-01-02", "2022-01-01", time.Local)
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(t))
 		lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(t))
 
-		attr.Remove("double")
-		attr.Remove("host")
-		attr.CopyTo(lr.Attributes())
+		resource.Attributes().CopyTo(lr.Attributes())
+		lr.Attributes().Remove("double")
+		lr.Attributes().Remove("host")
 
-		body := baseMapValue()
-		level2 := baseMapValue()
-		level2.MapVal().Remove("bytes")
-		level1 := baseMapValue()
-		level1.MapVal().Insert("object", level2)
-		body.MapVal().Insert("object", level1)
-		body.CopyTo(lr.Body())
+		fillBaseMap(lr.Body().SetEmptyMap())
+		level1 := lr.Body().Map().PutEmptyMap("object")
+		fillBaseMap(level1)
+		level2 := level1.PutEmptyMap("object")
+		fillBaseMap(level2)
+		level2.Remove("bytes")
 	}
 	return pLogs
 }
@@ -128,15 +116,15 @@ func TestRoundTrip(t *testing.T) {
 func sortComplexData(pLogs plog.Logs) {
 	pLogs.ResourceLogs().At(0).Resource().Attributes().Sort()
 	attrObject, _ := pLogs.ResourceLogs().At(0).Resource().Attributes().Get("object")
-	attrObject.MapVal().Sort()
-	pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().MapVal().Sort()
-	level1, _ := pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().MapVal().Get("object")
-	level1.MapVal().Sort()
-	level2, _ := level1.MapVal().Get("object")
-	level2.MapVal().Sort()
+	attrObject.Map().Sort()
+	pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map().Sort()
+	level1, _ := pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map().Get("object")
+	level1.Map().Sort()
+	level2, _ := level1.Map().Get("object")
+	level2.Map().Sort()
 	pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Sort()
 	attrObject, _ = pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("object")
-	attrObject.MapVal().Sort()
+	attrObject.Map().Sort()
 }
 
 func TestConvertFrom(t *testing.T) {
@@ -224,31 +212,31 @@ func TestConvertFromSeverity(t *testing.T) {
 		expectedSeverity entry.Severity
 		severityNumber   plog.SeverityNumber
 	}{
-		{entry.Default, plog.SeverityNumberUNDEFINED},
-		{entry.Trace, plog.SeverityNumberTRACE},
-		{entry.Trace2, plog.SeverityNumberTRACE2},
-		{entry.Trace3, plog.SeverityNumberTRACE3},
-		{entry.Trace4, plog.SeverityNumberTRACE4},
-		{entry.Debug, plog.SeverityNumberDEBUG},
-		{entry.Debug2, plog.SeverityNumberDEBUG2},
-		{entry.Debug3, plog.SeverityNumberDEBUG3},
-		{entry.Debug4, plog.SeverityNumberDEBUG4},
-		{entry.Info, plog.SeverityNumberINFO},
-		{entry.Info2, plog.SeverityNumberINFO2},
-		{entry.Info3, plog.SeverityNumberINFO3},
-		{entry.Info4, plog.SeverityNumberINFO4},
-		{entry.Warn, plog.SeverityNumberWARN},
-		{entry.Warn2, plog.SeverityNumberWARN2},
-		{entry.Warn3, plog.SeverityNumberWARN3},
-		{entry.Warn4, plog.SeverityNumberWARN4},
-		{entry.Error, plog.SeverityNumberERROR},
-		{entry.Error2, plog.SeverityNumberERROR2},
-		{entry.Error3, plog.SeverityNumberERROR3},
-		{entry.Error4, plog.SeverityNumberERROR4},
-		{entry.Fatal, plog.SeverityNumberFATAL},
-		{entry.Fatal2, plog.SeverityNumberFATAL2},
-		{entry.Fatal3, plog.SeverityNumberFATAL3},
-		{entry.Fatal4, plog.SeverityNumberFATAL4},
+		{entry.Default, plog.SeverityNumberUnspecified},
+		{entry.Trace, plog.SeverityNumberTrace},
+		{entry.Trace2, plog.SeverityNumberTrace2},
+		{entry.Trace3, plog.SeverityNumberTrace3},
+		{entry.Trace4, plog.SeverityNumberTrace4},
+		{entry.Debug, plog.SeverityNumberDebug},
+		{entry.Debug2, plog.SeverityNumberDebug2},
+		{entry.Debug3, plog.SeverityNumberDebug3},
+		{entry.Debug4, plog.SeverityNumberDebug4},
+		{entry.Info, plog.SeverityNumberInfo},
+		{entry.Info2, plog.SeverityNumberInfo2},
+		{entry.Info3, plog.SeverityNumberInfo3},
+		{entry.Info4, plog.SeverityNumberInfo4},
+		{entry.Warn, plog.SeverityNumberWarn},
+		{entry.Warn2, plog.SeverityNumberWarn2},
+		{entry.Warn3, plog.SeverityNumberWarn3},
+		{entry.Warn4, plog.SeverityNumberWarn4},
+		{entry.Error, plog.SeverityNumberError},
+		{entry.Error2, plog.SeverityNumberError2},
+		{entry.Error3, plog.SeverityNumberError3},
+		{entry.Error4, plog.SeverityNumberError4},
+		{entry.Fatal, plog.SeverityNumberFatal},
+		{entry.Fatal2, plog.SeverityNumberFatal2},
+		{entry.Fatal3, plog.SeverityNumberFatal3},
+		{entry.Fatal4, plog.SeverityNumberFatal4},
 	}
 
 	for _, tc := range cases {

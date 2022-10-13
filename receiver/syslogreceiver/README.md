@@ -61,8 +61,10 @@ The `tcp_input` operator supports TLS, disabled by default.
 - An [entry](../../pkg/stanza/docs/types/entry.md) is the base representation of log data as it moves through a pipeline. All operators either create, modify, or consume entries.
 - A [field](../../pkg/stanza/docs/types/field.md) is used to reference values in an entry.
 - A common [expression](../../pkg/stanza/docs/types/expression.md) syntax is used in several operators. For example, expressions can be used to [filter](../../pkg/stanza/docs/operators/filter.md) or [route](../../pkg/stanza/docs/operators/router.md) entries.
-- [timestamp](../../pkg/stanza/docs/types/timestamp.md) parsing is available as a block within all parser operators, and also as a standalone operator. Many common timestamp layouts are supported.
-- [severity](../../pkg/stanza/docs/types/severity.md) parsing is available as a block within all parser operators, and also as a standalone operator. Stanza uses a flexible severity representation which is automatically interpreted by the stanza receiver.
+
+### Parsers with Embedded Operations
+
+Many parsers operators can be configured to embed certain followup operations such as timestamp and severity parsing. For more information, see [complex parsers](../../pkg/stanza/docs/types/parsers.md#complex-parsers).
 
 ## Example Configurations
 

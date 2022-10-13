@@ -25,7 +25,6 @@ This receiver supports MongoDB versions:
 
 Mongodb recommends to set up a least privilege user (LPU) with a [`clusterMonitor` role](https://www.mongodb.com/docs/v5.0/reference/built-in-roles/#mongodb-authrole-clusterMonitor) in order to collect metrics. Please refer to [lpu.sh](./testdata/integration/scripts/lpu.sh) for an example of how to configure these permissions.
 
-Collecting metrics `mongodb.global_lock.time` and `mongodb.index.access.count` are only available for mongodb 4.0+.
 
 ## Configuration
 
@@ -60,6 +59,13 @@ receivers:
 The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml).
 
 ## Metrics
+
+The following metric are available with versions:
+- `mongodb.extent.count` < 4.4 with mmapv1 storage engine
+- `mongodb.session.count` >= 3.0 with wiredTiger storage engine
+- `mongodb.cache.operations` >= 3.0 with wiredTiger storage engine
+- `mongodb.connection.count` with attribute `active` is available >= 4.0
+- `mongodb.index.access.count` >= 4.0
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
 

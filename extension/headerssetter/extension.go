@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetter/internal/source"
-
 	"go.opentelemetry.io/collector/config/configauth"
 	"google.golang.org/grpc/credentials"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetter/internal/source"
 )
 
 type Header struct {

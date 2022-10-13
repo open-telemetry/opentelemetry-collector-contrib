@@ -622,7 +622,10 @@ func calculateNewMetric(
 	}
 
 	if tr.Operator == MetricOperatorDivision && *v2 == 0 {
-		logger.Warn(
+		// We can get here if, for example, in the denominator we get multiple
+		// datapoints that have the same counter value, which will yield a delta of
+		// zero.
+		logger.Debug(
 			"calculate_new_metric: attempt to divide by zero, skipping",
 			zap.String("tr.Operand2Metric", tr.Operand2Metric),
 			zap.String("tr.MetricName", tr.MetricName),

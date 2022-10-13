@@ -71,8 +71,10 @@ func (ipp *inProcessCollector) Start(args StartParams) error {
 	fmp := fileprovider.New()
 	configProvider, err := service.NewConfigProvider(
 		service.ConfigProviderSettings{
-			Locations:    []string{ipp.configFile},
-			MapProviders: map[string]confmap.Provider{fmp.Scheme(): fmp},
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:      []string{ipp.configFile},
+				Providers: map[string]confmap.Provider{fmp.Scheme(): fmp},
+			},
 		})
 	if err != nil {
 		return err

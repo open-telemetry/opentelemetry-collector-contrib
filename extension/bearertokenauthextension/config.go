@@ -26,6 +26,9 @@ type Config struct {
 
 	// BearerToken specifies the bearer token to use for every RPC.
 	BearerToken string `mapstructure:"token,omitempty"`
+
+	// Filename points to a file that contains the bearer token to use for every RPC.
+	Filename string `mapstructure:"filename,omitempty"`
 }
 
 var _ config.Extension = (*Config)(nil)
@@ -33,7 +36,7 @@ var errNoTokenProvided = errors.New("no bearer token provided")
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.BearerToken == "" {
+	if cfg.BearerToken == "" && cfg.Filename == "" {
 		return errNoTokenProvided
 	}
 	return nil

@@ -21,6 +21,7 @@ import (
 	"time"
 
 	strptime "github.com/observiq/ctimefmt"
+	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
@@ -47,12 +48,23 @@ func NewTimeParser() TimeParser {
 
 // TimeParser is a helper that parses time onto an entry.
 type TimeParser struct {
-	ParseFrom  *entry.Field `mapstructure:"parse_from,omitempty"  json:"parse_from,omitempty"  yaml:"parse_from,omitempty"`
-	Layout     string       `mapstructure:"layout,omitempty"      json:"layout,omitempty"      yaml:"layout,omitempty"`
-	LayoutType string       `mapstructure:"layout_type,omitempty" json:"layout_type,omitempty" yaml:"layout_type,omitempty"`
-	Location   string       `mapstructure:"location,omitempty"    json:"location,omitempty"    yaml:"location,omitempty"`
+	ParseFrom  *entry.Field `mapstructure:"parse_from"`
+	Layout     string       `mapstructure:"layout"`
+	LayoutType string       `mapstructure:"layout_type"`
+	Location   string       `mapstructure:"location"`
 
 	location *time.Location
+}
+
+// Unmarshal starting from default settings
+func (t *TimeParser) Unmarshal(component *confmap.Conf) error {
+	cfg := NewTimeParser()
+	err := component.Unmarshal(&cfg, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	*t = cfg
+	return nil
 }
 
 // IsZero returns true if the TimeParser is not a valid config

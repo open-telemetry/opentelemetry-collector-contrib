@@ -15,9 +15,12 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
+	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -33,7 +36,8 @@ type clientRoundTripper struct {
 	originalTransport http.RoundTripper
 	log               *zap.Logger
 	retrySettings     exporterhelper.RetrySettings
-	isStopped         bool
+	stopped           bool
+	mutex             sync.Mutex
 	shutdownChan      chan struct{}
 }
 
@@ -50,15 +54,33 @@ func newClientRoundTripper(
 	}
 }
 
+func (rt *clientRoundTripper) isStopped() bool {
+	rt.mutex.Lock()
+	defer rt.mutex.Unlock()
+
+	return rt.stopped
+}
+
+func (rt *clientRoundTripper) stop() {
+	rt.mutex.Lock()
+	defer rt.mutex.Unlock()
+
+	rt.stopped = true
+}
+
 func (rt *clientRoundTripper) Shutdown() error {
-	rt.isStopped = true
+	if rt.isStopped() {
+		return nil
+	}
+
+	rt.stop()
 	rt.shutdownChan <- struct{}{}
 	close(rt.shutdownChan)
 	return nil
 }
 
 func (rt *clientRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
-	if rt.isStopped {
+	if rt.isStopped() {
 		return nil, fmt.Errorf("request cancelled due to shutdown")
 	}
 
@@ -121,7 +143,7 @@ func NewMongoDBAtlasClient(
 	privateKey string,
 	retrySettings exporterhelper.RetrySettings,
 	log *zap.Logger,
-) (*MongoDBAtlasClient, error) {
+) *MongoDBAtlasClient {
 	t := digest.NewTransport(publicKey, privateKey)
 	roundTripper := newClientRoundTripper(t, log, retrySettings)
 	tc := &http.Client{Transport: roundTripper}
@@ -130,7 +152,7 @@ func NewMongoDBAtlasClient(
 		log,
 		client,
 		roundTripper,
-	}, nil
+	}
 }
 
 func (s *MongoDBAtlasClient) Shutdown() error {
@@ -143,7 +165,7 @@ func checkMongoDBClientErr(err error, response *mongodbatlas.Response) error {
 		return err
 	}
 	if response != nil {
-		return mongodbatlas.CheckResponse(response.Response)
+		return response.CheckResponse(response.Body)
 	}
 	return nil
 }
@@ -159,7 +181,7 @@ func hasNext(links []*mongodbatlas.Link) bool {
 
 // Organizations returns a list of all organizations available with the supplied credentials
 func (s *MongoDBAtlasClient) Organizations(ctx context.Context) ([]*mongodbatlas.Organization, error) {
-	allOrgs := make([]*mongodbatlas.Organization, 0)
+	var allOrgs []*mongodbatlas.Organization
 	page := 1
 
 	for {
@@ -194,12 +216,23 @@ func (s *MongoDBAtlasClient) getOrganizationsPage(
 	return orgs.Results, hasNext(orgs.Links), nil
 }
 
+// GetOrganization retrieves a single organization specified by orgID
+func (s *MongoDBAtlasClient) GetOrganization(ctx context.Context, orgID string) (*mongodbatlas.Organization, error) {
+	org, response, err := s.client.Organizations.Get(ctx, orgID)
+	err = checkMongoDBClientErr(err, response)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving project page: %w", err)
+	}
+	return org, nil
+
+}
+
 // Projects returns a list of projects accessible within the provided organization
 func (s *MongoDBAtlasClient) Projects(
 	ctx context.Context,
 	orgID string,
 ) ([]*mongodbatlas.Project, error) {
-	allProjects := make([]*mongodbatlas.Project, 0)
+	var allProjects []*mongodbatlas.Project
 	page := 1
 
 	for {
@@ -216,6 +249,16 @@ func (s *MongoDBAtlasClient) Projects(
 	return allProjects, nil
 }
 
+// GetProject returns a single project specified by projectName
+func (s *MongoDBAtlasClient) GetProject(ctx context.Context, projectName string) (*mongodbatlas.Project, error) {
+	project, response, err := s.client.Projects.GetOneProjectByName(ctx, projectName)
+	err = checkMongoDBClientErr(err, response)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving project page: %w", err)
+	}
+	return project, nil
+}
+
 func (s *MongoDBAtlasClient) getProjectsPage(
 	ctx context.Context,
 	orgID string,
@@ -224,7 +267,9 @@ func (s *MongoDBAtlasClient) getProjectsPage(
 	projects, response, err := s.client.Organizations.Projects(
 		ctx,
 		orgID,
-		&mongodbatlas.ListOptions{PageNum: pageNum},
+		&mongodbatlas.ProjectsListOptions{
+			ListOptions: mongodbatlas.ListOptions{PageNum: pageNum},
+		},
 	)
 	err = checkMongoDBClientErr(err, response)
 	if err != nil {
@@ -256,7 +301,7 @@ func (s *MongoDBAtlasClient) Processes(
 	)
 	err = checkMongoDBClientErr(err, response)
 	if err != nil {
-		return make([]*mongodbatlas.Process, 0), fmt.Errorf("error retrieving processes from MongoDB Atlas API: %w", err)
+		return nil, fmt.Errorf("error retrieving processes from MongoDB Atlas API: %w", err)
 	}
 	return processes, nil
 }
@@ -289,7 +334,7 @@ func (s *MongoDBAtlasClient) ProcessDatabases(
 	host string,
 	port int,
 ) ([]*mongodbatlas.ProcessDatabase, error) {
-	allProcessDatabases := make([]*mongodbatlas.ProcessDatabase, 0)
+	var allProcessDatabases []*mongodbatlas.ProcessDatabase
 	pageNum := 1
 	for {
 		processes, hasMore, err := s.getProcessDatabasesPage(ctx, projectID, host, port, pageNum)
@@ -316,7 +361,7 @@ func (s *MongoDBAtlasClient) ProcessMetrics(
 	end string,
 	resolution string,
 ) error {
-	allMeasurements := make([]*mongodbatlas.Measurements, 0)
+	var allMeasurements []*mongodbatlas.Measurements
 	pageNum := 1
 	for {
 		measurements, hasMore, err := s.getProcessMeasurementsPage(
@@ -383,7 +428,7 @@ func (s *MongoDBAtlasClient) ProcessDatabaseMetrics(
 	end string,
 	resolution string,
 ) error {
-	allMeasurements := make([]*mongodbatlas.Measurements, 0)
+	var allMeasurements []*mongodbatlas.Measurements
 	pageNum := 1
 	for {
 		measurements, hasMore, err := s.getProcessDatabaseMeasurementsPage(
@@ -447,7 +492,7 @@ func (s *MongoDBAtlasClient) ProcessDisks(
 	host string,
 	port int,
 ) []*mongodbatlas.ProcessDisk {
-	allDisks := make([]*mongodbatlas.ProcessDisk, 0)
+	var allDisks []*mongodbatlas.ProcessDisk
 	pageNum := 1
 	for {
 		disks, hasMore, err := s.getProcessDisksPage(ctx, projectID, host, port, pageNum)
@@ -497,7 +542,7 @@ func (s *MongoDBAtlasClient) ProcessDiskMetrics(
 	end string,
 	resolution string,
 ) error {
-	allMeasurements := make([]*mongodbatlas.Measurements, 0)
+	var allMeasurements []*mongodbatlas.Measurements
 	pageNum := 1
 	for {
 		measurements, hasMore, err := s.processDiskMeasurementsPage(
@@ -552,4 +597,57 @@ func (s *MongoDBAtlasClient) processDiskMeasurementsPage(
 		return nil, false, err
 	}
 	return measurements.Measurements, hasNext(measurements.Links), nil
+}
+
+// GetLogs retrieves the logs from the mongo API using API call: https://www.mongodb.com/docs/atlas/reference/api/logs/#syntax
+func (s *MongoDBAtlasClient) GetLogs(ctx context.Context, groupID, hostname, logName string, start, end time.Time) (*bytes.Buffer, error) {
+	buf := bytes.NewBuffer([]byte{})
+
+	dateRange := &mongodbatlas.DateRangetOptions{StartDate: toUnixString(start), EndDate: toUnixString(end)}
+	resp, err := s.client.Logs.Get(ctx, groupID, hostname, logName, buf, dateRange)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("received status code: %d", resp.StatusCode)
+	}
+
+	return buf, nil
+}
+
+// retrieves the logs from the mongo API using API call: https://www.mongodb.com/docs/atlas/reference/api/clusters-get-all/#request
+func (s *MongoDBAtlasClient) GetClusters(ctx context.Context, groupID string) ([]mongodbatlas.Cluster, error) {
+	options := mongodbatlas.ListOptions{}
+
+	clusters, _, err := s.client.Clusters.List(ctx, groupID, &options)
+	if err != nil {
+		return nil, err
+	}
+
+	return clusters, nil
+}
+
+type AlertPollOptions struct {
+	PageNum  int
+	PageSize int
+}
+
+// GetAlerts returns the alerts specified for the set projects
+func (s *MongoDBAtlasClient) GetAlerts(ctx context.Context, groupID string, opts *AlertPollOptions) (ret []mongodbatlas.Alert, nextPage bool, err error) {
+	lo := mongodbatlas.ListOptions{
+		PageNum:      opts.PageNum,
+		ItemsPerPage: opts.PageSize,
+	}
+	options := mongodbatlas.AlertsListOptions{ListOptions: lo}
+	alerts, response, err := s.client.Alerts.List(ctx, groupID, &options)
+	err = checkMongoDBClientErr(err, response)
+	if err != nil {
+		return nil, false, err
+	}
+	return alerts.Results, hasNext(response.Links), nil
+}
+
+func toUnixString(t time.Time) string {
+	return strconv.Itoa(int(t.Unix()))
 }

@@ -52,7 +52,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"add_value",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field = entry.NewBodyField("new")
 				cfg.Value = "randomMessage"
 				return cfg
@@ -68,7 +68,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"add_expr",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field = entry.NewBodyField("new")
 				cfg.Value = `EXPR(body.key + "_suffix")`
 				return cfg
@@ -84,7 +84,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"add_nest",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field = entry.NewBodyField("new")
 				cfg.Value = map[interface{}]interface{}{
 					"nest": map[interface{}]interface{}{
@@ -114,7 +114,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"add_attribute",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field = entry.NewAttributeField("new")
 				cfg.Value = "some.attribute"
 				return cfg
@@ -130,7 +130,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"add_resource",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field = entry.NewResourceField("new")
 				cfg.Value = "some.resource"
 				return cfg
@@ -146,7 +146,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"add_resource_expr",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field = entry.NewResourceField("new")
 				cfg.Value = `EXPR(body.key + "_suffix")`
 				return cfg
@@ -162,7 +162,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"add_int_to_body",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field = entry.NewBodyField("new")
 				cfg.Value = 1
 				return cfg
@@ -184,7 +184,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"add_array_to_body",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field = entry.NewBodyField("new")
 				cfg.Value = []int{1, 2, 3, 4}
 				return cfg
@@ -206,7 +206,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"overwrite",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field = entry.NewBodyField("key")
 				cfg.Value = []int{1, 2, 3, 4}
 				return cfg
@@ -227,7 +227,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"add_int_to_resource",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field = entry.NewResourceField("new")
 				cfg.Value = 1
 				return cfg
@@ -245,7 +245,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"add_int_to_attributes",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field = entry.NewAttributeField("new")
 				cfg.Value = 1
 				return cfg
@@ -263,7 +263,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"add_nested_to_attributes",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field = entry.NewAttributeField("one", "two")
 				cfg.Value = map[string]interface{}{
 					"new": 1,
@@ -287,7 +287,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"add_nested_to_resource",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field = entry.NewResourceField("one", "two")
 				cfg.Value = map[string]interface{}{
 					"new": 1,

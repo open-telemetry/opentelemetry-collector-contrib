@@ -26,7 +26,7 @@ import (
 const (
 	typeStr = "pulsar"
 	// The stability level of the exporter.
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelAlpha
 
 	defaultTracesTopic  = "otlp_spans"
 	defaultMetricsTopic = "otlp_metrics"
@@ -87,7 +87,7 @@ type pulsarExporterFactory struct {
 }
 
 func (f *pulsarExporterFactory) createTracesExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
@@ -103,8 +103,9 @@ func (f *pulsarExporterFactory) createTracesExporter(
 		return nil, err
 	}
 	return exporterhelper.NewTracesExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		exp.tracesPusher,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
@@ -116,7 +117,7 @@ func (f *pulsarExporterFactory) createTracesExporter(
 }
 
 func (f *pulsarExporterFactory) createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
@@ -132,8 +133,9 @@ func (f *pulsarExporterFactory) createMetricsExporter(
 		return nil, err
 	}
 	return exporterhelper.NewMetricsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		exp.metricsDataPusher,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
@@ -145,7 +147,7 @@ func (f *pulsarExporterFactory) createMetricsExporter(
 }
 
 func (f *pulsarExporterFactory) createLogsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
@@ -161,8 +163,9 @@ func (f *pulsarExporterFactory) createLogsExporter(
 		return nil, err
 	}
 	return exporterhelper.NewLogsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		exp.logsDataPusher,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,

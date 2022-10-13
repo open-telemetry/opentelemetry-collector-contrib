@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
 const (
@@ -49,7 +50,7 @@ func createDefaultConfig() config.Processor {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		BaseConfig: adapter.BaseConfig{
-			Operators: adapter.OperatorConfigs{},
+			Operators: []operator.Config{},
 			Converter: adapter.ConverterConfig{
 				MaxFlushCount: 100,
 				FlushInterval: 100 * time.Millisecond,
@@ -59,8 +60,8 @@ func createDefaultConfig() config.Processor {
 }
 
 func createLogsProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 	pCfg, ok := cfg.(*Config)
@@ -68,20 +69,18 @@ func createLogsProcessor(
 		return nil, errors.New("could not initialize logs transform processor")
 	}
 
-	operators, err := pCfg.BaseConfig.DecodeOperatorConfigs()
-	if err != nil {
-		return nil, err
-	}
-	if len(operators) == 0 {
+	if len(pCfg.BaseConfig.Operators) == 0 {
 		return nil, errors.New("no operators were configured for this logs transform processor")
 	}
 
 	proc := &logsTransformProcessor{
 		id:     cfg.ID(),
-		logger: params.Logger,
+		logger: set.Logger,
 		config: pCfg,
 	}
 	return processorhelper.NewLogsProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		proc.processLogs,

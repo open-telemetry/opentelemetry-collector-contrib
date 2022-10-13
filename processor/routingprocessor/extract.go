@@ -18,37 +18,25 @@ import (
 	"context"
 	"strings"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 )
 
 // extractor is responsible for extracting configured attributes from the processed data.
-// Currently it can be extract the attributes from context or resource attributes.
+// Currently, it can only extract the attributes from context.
 type extractor struct {
 	fromAttr string
 	logger   *zap.Logger
 }
 
 // newExtractor creates new extractor which can extract attributes from logs,
-// metrics and traces from from requested attribute source and from the provided
+// metrics and traces from requested attribute source and from the provided
 // attribute name.
 func newExtractor(fromAttr string, logger *zap.Logger) extractor {
 	return extractor{
 		fromAttr: fromAttr,
 		logger:   logger,
 	}
-}
-
-// extractAttrFromResource extract string value from the requested resource attribute.
-func (e extractor) extractAttrFromResource(r pcommon.Resource) string {
-	firstResourceAttributes := r.Attributes()
-	routingAttribute, found := firstResourceAttributes.Get(e.fromAttr)
-	if !found {
-		return ""
-	}
-
-	return routingAttribute.AsString()
 }
 
 func (e extractor) extractFromContext(ctx context.Context) string {

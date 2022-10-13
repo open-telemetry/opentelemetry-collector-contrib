@@ -72,8 +72,9 @@ func createMetricsExporter(
 	exp := newMetricsExporter(set, cfg)
 
 	exporter, err := exporterhelper.NewMetricsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		exp.PushMetricsData,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),

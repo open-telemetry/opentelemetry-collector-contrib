@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hashicorp/go-multierror"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -28,28 +28,35 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "key_value_parser"
+
 func init() {
-	operator.Register("key_value_parser", func() operator.Builder { return NewKVParserConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
-// NewKVParserConfig creates a new key value parser config with default values
-func NewKVParserConfig(operatorID string) *KVParserConfig {
-	return &KVParserConfig{
-		ParserConfig: helper.NewParserConfig(operatorID, "key_value_parser"),
+// NewConfig creates a new key value parser config with default values
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new key value parser config with default values
+func NewConfigWithID(operatorID string) *Config {
+	return &Config{
+		ParserConfig: helper.NewParserConfig(operatorID, operatorType),
 		Delimiter:    "=",
 	}
 }
 
-// KVParserConfig is the configuration of a key value parser operator.
-type KVParserConfig struct {
-	helper.ParserConfig `mapstructure:",squash" yaml:",inline"`
+// Config is the configuration of a key value parser operator.
+type Config struct {
+	helper.ParserConfig `mapstructure:",squash"`
 
-	Delimiter     string `mapstructure:"delimiter" yaml:"delimiter"`
-	PairDelimiter string `mapstructure:"pair_delimiter" yaml:"pair_delimiter"`
+	Delimiter     string `mapstructure:"delimiter"`
+	PairDelimiter string `mapstructure:"pair_delimiter"`
 }
 
 // Build will build a key value parser operator.
-func (c KVParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	parserOperator, err := c.ParserConfig.Build(logger)
 	if err != nil {
 		return nil, err
@@ -72,27 +79,27 @@ func (c KVParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, err
 		}
 	}
 
-	return &KVParser{
+	return &Parser{
 		ParserOperator: parserOperator,
 		delimiter:      c.Delimiter,
 		pairSplitFunc:  pairSplitFunc,
 	}, nil
 }
 
-// KVParser is an operator that parses key value pairs.
-type KVParser struct {
+// Parser is an operator that parses key value pairs.
+type Parser struct {
 	helper.ParserOperator
 	delimiter     string
 	pairSplitFunc func(input string) []string
 }
 
 // Process will parse an entry for key value pairs.
-func (kv *KVParser) Process(ctx context.Context, entry *entry.Entry) error {
+func (kv *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 	return kv.ParserOperator.ProcessWith(ctx, entry, kv.parse)
 }
 
 // parse will parse a value as key values.
-func (kv *KVParser) parse(value interface{}) (interface{}, error) {
+func (kv *Parser) parse(value interface{}) (interface{}, error) {
 	switch m := value.(type) {
 	case string:
 		return kv.parser(m, kv.delimiter)
@@ -101,7 +108,7 @@ func (kv *KVParser) parse(value interface{}) (interface{}, error) {
 	}
 }
 
-func (kv *KVParser) parser(input string, delimiter string) (map[string]interface{}, error) {
+func (kv *Parser) parser(input string, delimiter string) (map[string]interface{}, error) {
 	if input == "" {
 		return nil, fmt.Errorf("parse from field %s is empty", kv.ParseFrom.String())
 	}
@@ -113,7 +120,7 @@ func (kv *KVParser) parser(input string, delimiter string) (map[string]interface
 		m := strings.Split(raw, delimiter)
 		if len(m) != 2 {
 			e := fmt.Errorf("expected '%s' to split by '%s' into two items, got %d", raw, delimiter, len(m))
-			err = multierror.Append(err, e)
+			err = multierr.Append(err, e)
 			continue
 		}
 

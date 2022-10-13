@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -32,10 +33,11 @@ import (
 
 type topicScraper struct {
 	client       sarama.Client
-	logger       *zap.Logger
+	settings     component.ReceiverCreateSettings
 	topicFilter  *regexp.Regexp
 	saramaConfig *sarama.Config
 	config       Config
+	mb           *metadata.MetricsBuilder
 }
 
 func (s *topicScraper) Name() string {
@@ -46,6 +48,11 @@ func (s *topicScraper) shutdown(context.Context) error {
 	if s.client != nil && !s.client.Closed() {
 		return s.client.Close()
 	}
+	return nil
+}
+
+func (s *topicScraper) start(_ context.Context, _ component.Host) error {
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo)
 	return nil
 }
 
@@ -60,16 +67,14 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	topics, err := s.client.Topics()
 	if err != nil {
-		s.logger.Error("Error fetching cluster topics ", zap.Error(err))
+		s.settings.Logger.Error("Error fetching cluster topics ", zap.Error(err))
 		return pmetric.Metrics{}, err
 	}
 
 	var scrapeErrors = scrapererror.ScrapeErrors{}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-	md := pmetric.NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-	ilm.Scope().SetName(instrumentationLibName)
+
 	for _, topic := range topics {
 		if !s.topicFilter.MatchString(topic) {
 			continue
@@ -79,47 +84,45 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			scrapeErrors.Add(err)
 			continue
 		}
-		labels := pcommon.NewMap()
-		labels.UpsertString(metadata.A.Topic, topic)
-		addIntGauge(ilm.Metrics(), metadata.M.KafkaTopicPartitions.Name(), now, labels, int64(len(partitions)))
+
+		s.mb.RecordKafkaTopicPartitionsDataPoint(now, int64(len(partitions)), topic)
 		for _, partition := range partitions {
-			labels.UpsertInt(metadata.A.Partition, int64(partition))
 			currentOffset, err := s.client.GetOffset(topic, partition, sarama.OffsetNewest)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				addIntGauge(ilm.Metrics(), metadata.M.KafkaPartitionCurrentOffset.Name(), now, labels, currentOffset)
+				s.mb.RecordKafkaPartitionCurrentOffsetDataPoint(now, currentOffset, topic, int64(partition))
 			}
 			oldestOffset, err := s.client.GetOffset(topic, partition, sarama.OffsetOldest)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				addIntGauge(ilm.Metrics(), metadata.M.KafkaPartitionOldestOffset.Name(), now, labels, oldestOffset)
+				s.mb.RecordKafkaPartitionOldestOffsetDataPoint(now, oldestOffset, topic, int64(partition))
 			}
 			replicas, err := s.client.Replicas(topic, partition)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				addIntGauge(ilm.Metrics(), metadata.M.KafkaPartitionReplicas.Name(), now, labels, int64(len(replicas)))
+				s.mb.RecordKafkaPartitionReplicasDataPoint(now, int64(len(replicas)), topic, int64(partition))
 			}
 			replicasInSync, err := s.client.InSyncReplicas(topic, partition)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				addIntGauge(ilm.Metrics(), metadata.M.KafkaPartitionReplicasInSync.Name(), now, labels, int64(len(replicasInSync)))
+				s.mb.RecordKafkaPartitionReplicasInSyncDataPoint(now, int64(len(replicasInSync)), topic, int64(partition))
 			}
 		}
 	}
-	return md, scrapeErrors.Combine()
+	return s.mb.Emit(), scrapeErrors.Combine()
 }
 
-func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.Scraper, error) {
+func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, settings component.ReceiverCreateSettings) (scraperhelper.Scraper, error) {
 	topicFilter, err := regexp.Compile(cfg.TopicMatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile topic filter: %w", err)
 	}
 	s := topicScraper{
-		logger:       logger,
+		settings:     settings,
 		topicFilter:  topicFilter,
 		saramaConfig: saramaConfig,
 		config:       cfg,
@@ -127,16 +130,7 @@ func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Con
 	return scraperhelper.NewScraper(
 		s.Name(),
 		s.scrape,
+		scraperhelper.WithStart(s.start),
 		scraperhelper.WithShutdown(s.shutdown),
 	)
-}
-
-func addIntGauge(ms pmetric.MetricSlice, name string, now pcommon.Timestamp, labels pcommon.Map, value int64) {
-	m := ms.AppendEmpty()
-	m.SetName(name)
-	m.SetDataType(pmetric.MetricDataTypeGauge)
-	dp := m.Gauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(now)
-	dp.SetIntVal(value)
-	labels.CopyTo(dp.Attributes())
 }

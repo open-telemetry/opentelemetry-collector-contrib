@@ -322,48 +322,6 @@ func TestBodyFieldMerge(t *testing.T) {
 	require.Equal(t, expected, entry.Body)
 }
 
-func TestBodyFieldMarshal(t *testing.T) {
-	cases := []struct {
-		name    string
-		keys    []string
-		jsonDot string
-	}{
-		{
-			"root",
-			[]string{},
-			"body",
-		},
-		{
-			"standard",
-			[]string{"test"},
-			"body.test",
-		},
-		{
-			"bracketed",
-			[]string{"test.foo"},
-			"body['test.foo']",
-		},
-		{
-			"double_bracketed",
-			[]string{"test.foo", "bar"},
-			"body['test.foo']['bar']",
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			field := BodyField{Keys: tc.keys}
-			yaml, err := field.MarshalYAML()
-			require.NoError(t, err)
-			require.Equal(t, tc.jsonDot, yaml)
-
-			json, err := field.MarshalJSON()
-			require.NoError(t, err)
-			require.Equal(t, []byte(fmt.Sprintf(`"%s"`, tc.jsonDot)), json)
-		})
-	}
-}
-
 func TestBodyFieldUnmarshal(t *testing.T) {
 	cases := []struct {
 		name    string

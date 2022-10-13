@@ -20,11 +20,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -34,19 +35,15 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateProcessor(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "tail_sampling_config.yaml"))
+	require.NoError(t, err)
+
 	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	cfg := factory.CreateDefaultConfig().(*Config)
-
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-	factories.Processors[factory.Type()] = factory
-	serviceCfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "tail_sampling_config.yaml"), factories)
-	assert.NoError(t, err)
-
-	// Manually set required fields
-	cfg.ExpectedNewTracesPerSec = 64
-	cfg.PolicyCfgs = serviceCfg.Processors[config.NewComponentID(typeStr)].(*Config).PolicyCfgs
+	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalProcessor(sub, cfg))
 
 	params := componenttest.NewNopProcessorCreateSettings()
 	tp, err := factory.CreateTracesProcessor(context.Background(), params, cfg, consumertest.NewNop())

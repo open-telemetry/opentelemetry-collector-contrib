@@ -43,6 +43,9 @@ type propertiesMatcher struct {
 
 	// log severity texts to compare to
 	severityTextFilters filterset.FilterSet
+
+	// matcher for severity number
+	severityNumberMatcher Matcher
 }
 
 // NewMatcher creates a LogRecord Matcher that matches based on the given MatchProperties.
@@ -75,10 +78,16 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 		}
 	}
 
+	var severityNumberMatcher Matcher
+	if mp.LogSeverityNumber != nil {
+		severityNumberMatcher = newSeverityNumberMatcher(mp.LogSeverityNumber.Min, mp.LogSeverityNumber.MatchUndefined)
+	}
+
 	return &propertiesMatcher{
-		PropertiesMatcher:   rm,
-		bodyFilters:         bodyFS,
-		severityTextFilters: severitytextFS,
+		PropertiesMatcher:     rm,
+		bodyFilters:           bodyFS,
+		severityTextFilters:   severitytextFS,
+		severityNumberMatcher: severityNumberMatcher,
 	}, nil
 }
 
@@ -91,10 +100,13 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 // supported to have more than one of these specified, and all specified must
 // evaluate to true for a match to occur.
 func (mp *propertiesMatcher) MatchLogRecord(lr plog.LogRecord, resource pcommon.Resource, library pcommon.InstrumentationScope) bool {
-	if lr.Body().Type() == pcommon.ValueTypeString && mp.bodyFilters != nil && !mp.bodyFilters.Matches(lr.Body().StringVal()) {
+	if lr.Body().Type() == pcommon.ValueTypeStr && mp.bodyFilters != nil && !mp.bodyFilters.Matches(lr.Body().Str()) {
 		return false
 	}
 	if mp.severityTextFilters != nil && !mp.severityTextFilters.Matches(lr.SeverityText()) {
+		return false
+	}
+	if mp.severityNumberMatcher != nil && !mp.severityNumberMatcher.MatchLogRecord(lr, resource, library) {
 		return false
 	}
 
