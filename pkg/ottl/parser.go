@@ -55,8 +55,8 @@ func NewParser[K any](functions map[string]interface{}, pathParser PathExpressio
 	}
 }
 
-func (p *Parser[K]) ParseStatements(statements []string) ([]Statement[K], error) {
-	var parsedStatements []Statement[K]
+func (p *Parser[K]) ParseStatements(statements []string) ([]*Statement[K], error) {
+	var parsedStatements []*Statement[K]
 	var errors error
 
 	for _, statement := range statements {
@@ -75,7 +75,7 @@ func (p *Parser[K]) ParseStatements(statements []string) ([]Statement[K], error)
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		parsedStatements = append(parsedStatements, Statement[K]{
+		parsedStatements = append(parsedStatements, &Statement[K]{
 			function:  function,
 			condition: expression,
 		})
