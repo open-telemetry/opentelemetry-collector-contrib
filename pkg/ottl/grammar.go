@@ -22,8 +22,19 @@ import (
 
 // parsedStatement represents a parsed statement. It is the entry point into the statement DSL.
 type parsedStatement struct {
+	TransformationStatement *transformationStatement `parser:"( @@"`
+	ConditionStatement      *conditionStatement      `parser:"| @@ )"`
+}
+
+// transformationStatement represents a transformation statement.
+type transformationStatement struct {
 	Invocation  invocation         `parser:"@@"`
 	WhereClause *booleanExpression `parser:"( 'where' @@ )?"`
+}
+
+// conditionStatement represents a condition statement.
+type conditionStatement struct {
+	BooleanExpression *booleanExpression `parser:"@@"`
 }
 
 // booleanValue represents something that evaluates to a boolean --

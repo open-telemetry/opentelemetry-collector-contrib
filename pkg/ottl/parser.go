@@ -28,22 +28,34 @@ type Parser[K any] struct {
 }
 
 // Statement holds a top level statement for processing telemetry data.
-type Statement[K any] struct {
+type Statement[K any] interface {
+	// Execute is a function that will execute the statement's function if the statement's condition is met.
+	// Returns true if the function was run, returns false otherwise.
+	// If the statement contains no condition, the function will run and true will be returned.
+	// In addition, the functions return value is always returned.
+	Execute(ctx K) (any, bool)
+}
+
+type standardTransformationStatement[K any] struct {
 	function  ExprFunc[K]
 	condition boolExpressionEvaluator[K]
 }
 
-// Execute is a function that will execute the statement's function if the statement's condition is met.
-// Returns true if the function was run, returns false otherwise.
-// If the statement contains no condition, the function will run and true will be returned.
-// In addition, the functions return value is always returned.
-func (s *Statement[K]) Execute(ctx K) (any, bool) {
-	condition := s.condition(ctx)
+func (t standardTransformationStatement[K]) Execute(ctx K) (any, bool) {
+	condition := t.condition(ctx)
 	var result any
 	if condition {
-		result = s.function(ctx)
+		result = t.function(ctx)
 	}
 	return result, condition
+}
+
+type standardConditionStatement[K any] struct {
+	condition boolExpressionEvaluator[K]
+}
+
+func (t standardConditionStatement[K]) Execute(ctx K) (any, bool) {
+	return nil, t.condition(ctx)
 }
 
 func NewParser[K any](functions map[string]interface{}, pathParser PathExpressionParser[K], enumParser EnumParser, telemetrySettings component.TelemetrySettings) Parser[K] {
@@ -65,26 +77,59 @@ func (p *Parser[K]) ParseStatements(statements []string) ([]*Statement[K], error
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		function, err := p.newFunctionCall(parsed.Invocation)
-		if err != nil {
-			errors = multierr.Append(errors, err)
+
+		if parsed.TransformationStatement != nil {
+			tStatement, err := p.parseTransformationStatement(parsed.TransformationStatement)
+			if err != nil {
+				errors = multierr.Append(errors, err)
+				continue
+			}
+			parsedStatements = append(parsedStatements, &tStatement)
 			continue
 		}
-		expression, err := p.newBooleanExpressionEvaluator(parsed.WhereClause)
-		if err != nil {
-			errors = multierr.Append(errors, err)
+
+		if parsed.ConditionStatement != nil {
+			cStatement, err := p.parseConditionStatement(parsed.ConditionStatement)
+			if err != nil {
+				errors = multierr.Append(errors, err)
+				continue
+			}
+			parsedStatements = append(parsedStatements, &cStatement)
 			continue
 		}
-		parsedStatements = append(parsedStatements, &Statement[K]{
-			function:  function,
-			condition: expression,
-		})
 	}
 
 	if errors != nil {
 		return nil, errors
 	}
+
 	return parsedStatements, nil
+}
+
+func (p *Parser[K]) parseTransformationStatement(parsedStatement *transformationStatement) (Statement[K], error) {
+	function, err := p.newFunctionCall(parsedStatement.Invocation)
+	if err != nil {
+		return nil, err
+	}
+	expression, err := p.newBooleanExpressionEvaluator(parsedStatement.WhereClause)
+	if err != nil {
+		return nil, err
+	}
+
+	return standardTransformationStatement[K]{
+		function:  function,
+		condition: expression,
+	}, nil
+}
+
+func (p *Parser[K]) parseConditionStatement(parsedStatement *conditionStatement) (Statement[K], error) {
+	expression, err := p.newBooleanExpressionEvaluator(parsedStatement.BooleanExpression)
+	if err != nil {
+		return nil, err
+	}
+	return standardConditionStatement[K]{
+		condition: expression,
+	}, nil
 }
 
 var parser = newParser()
