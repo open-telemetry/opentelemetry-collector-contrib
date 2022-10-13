@@ -115,7 +115,7 @@ func TestClient_handle(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, sink.AllLogs(), 1)
 	assert.Equal(t, 1, sink.AllLogs()[0].LogRecordCount())
-	assert.Equal(t, []byte("hello"), sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().BytesVal().AsRaw())
+	assert.Equal(t, []byte("hello"), sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Bytes().AsRaw())
 	read, ok := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("foo")
 	assert.True(t, ok)
 	assert.Equal(t, "bar", read.AsString())
