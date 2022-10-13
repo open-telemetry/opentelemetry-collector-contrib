@@ -33,6 +33,7 @@ type MetricsSettings struct {
 	MysqlLockedConnects        MetricSettings `mapstructure:"mysql.locked_connects"`
 	MysqlLocks                 MetricSettings `mapstructure:"mysql.locks"`
 	MysqlLogOperations         MetricSettings `mapstructure:"mysql.log_operations"`
+	MysqlOpenedResources       MetricSettings `mapstructure:"mysql.opened_resources"`
 	MysqlOperations            MetricSettings `mapstructure:"mysql.operations"`
 	MysqlPageOperations        MetricSettings `mapstructure:"mysql.page_operations"`
 	MysqlRowLocks              MetricSettings `mapstructure:"mysql.row_locks"`
@@ -86,6 +87,9 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		MysqlLogOperations: MetricSettings{
+			Enabled: true,
+		},
+		MysqlOpenedResources: MetricSettings{
 			Enabled: true,
 		},
 		MysqlOperations: MetricSettings{
@@ -466,6 +470,36 @@ var MapAttributeLogOperations = map[string]AttributeLogOperations{
 	"waits":          AttributeLogOperationsWaits,
 	"write_requests": AttributeLogOperationsWriteRequests,
 	"writes":         AttributeLogOperationsWrites,
+}
+
+// AttributeOpenedResources specifies the a value opened_resources attribute.
+type AttributeOpenedResources int
+
+const (
+	_ AttributeOpenedResources = iota
+	AttributeOpenedResourcesFile
+	AttributeOpenedResourcesTableDefinition
+	AttributeOpenedResourcesTable
+)
+
+// String returns the string representation of the AttributeOpenedResources.
+func (av AttributeOpenedResources) String() string {
+	switch av {
+	case AttributeOpenedResourcesFile:
+		return "file"
+	case AttributeOpenedResourcesTableDefinition:
+		return "table_definition"
+	case AttributeOpenedResourcesTable:
+		return "table"
+	}
+	return ""
+}
+
+// MapAttributeOpenedResources is a helper map of string to AttributeOpenedResources attribute value.
+var MapAttributeOpenedResources = map[string]AttributeOpenedResources{
+	"file":             AttributeOpenedResourcesFile,
+	"table_definition": AttributeOpenedResourcesTableDefinition,
+	"table":            AttributeOpenedResourcesTable,
 }
 
 // AttributeOperations specifies the a value operations attribute.
@@ -1428,6 +1462,59 @@ func newMetricMysqlLogOperations(settings MetricSettings) metricMysqlLogOperatio
 	return m
 }
 
+type metricMysqlOpenedResources struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.opened_resources metric with initial data.
+func (m *metricMysqlOpenedResources) init() {
+	m.data.SetName("mysql.opened_resources")
+	m.data.SetDescription("The number of opened resources.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMysqlOpenedResources) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, openedResourcesAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("kind", openedResourcesAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlOpenedResources) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlOpenedResources) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlOpenedResources(settings MetricSettings) metricMysqlOpenedResources {
+	m := metricMysqlOpenedResources{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlOperations struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -1931,6 +2018,7 @@ type MetricsBuilder struct {
 	metricMysqlLockedConnects        metricMysqlLockedConnects
 	metricMysqlLocks                 metricMysqlLocks
 	metricMysqlLogOperations         metricMysqlLogOperations
+	metricMysqlOpenedResources       metricMysqlOpenedResources
 	metricMysqlOperations            metricMysqlOperations
 	metricMysqlPageOperations        metricMysqlPageOperations
 	metricMysqlRowLocks              metricMysqlRowLocks
@@ -1971,6 +2059,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricMysqlLockedConnects:        newMetricMysqlLockedConnects(settings.MysqlLockedConnects),
 		metricMysqlLocks:                 newMetricMysqlLocks(settings.MysqlLocks),
 		metricMysqlLogOperations:         newMetricMysqlLogOperations(settings.MysqlLogOperations),
+		metricMysqlOpenedResources:       newMetricMysqlOpenedResources(settings.MysqlOpenedResources),
 		metricMysqlOperations:            newMetricMysqlOperations(settings.MysqlOperations),
 		metricMysqlPageOperations:        newMetricMysqlPageOperations(settings.MysqlPageOperations),
 		metricMysqlRowLocks:              newMetricMysqlRowLocks(settings.MysqlRowLocks),
@@ -2053,6 +2142,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMysqlLockedConnects.emit(ils.Metrics())
 	mb.metricMysqlLocks.emit(ils.Metrics())
 	mb.metricMysqlLogOperations.emit(ils.Metrics())
+	mb.metricMysqlOpenedResources.emit(ils.Metrics())
 	mb.metricMysqlOperations.emit(ils.Metrics())
 	mb.metricMysqlPageOperations.emit(ils.Metrics())
 	mb.metricMysqlRowLocks.emit(ils.Metrics())
@@ -2198,6 +2288,16 @@ func (mb *MetricsBuilder) RecordMysqlLogOperationsDataPoint(ts pcommon.Timestamp
 		return fmt.Errorf("failed to parse int64 for MysqlLogOperations, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlLogOperations.recordDataPoint(mb.startTime, ts, val, logOperationsAttributeValue.String())
+	return nil
+}
+
+// RecordMysqlOpenedResourcesDataPoint adds a data point to mysql.opened_resources metric.
+func (mb *MetricsBuilder) RecordMysqlOpenedResourcesDataPoint(ts pcommon.Timestamp, inputVal string, openedResourcesAttributeValue AttributeOpenedResources) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlOpenedResources, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlOpenedResources.recordDataPoint(mb.startTime, ts, val, openedResourcesAttributeValue.String())
 	return nil
 }
 
