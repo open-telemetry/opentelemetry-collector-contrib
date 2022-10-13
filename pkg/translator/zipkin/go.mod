@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/jaegertracing/jaeger v1.38.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.62.0
 	github.com/openzipkin/zipkin-go v0.4.1
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector/pdata v0.62.0

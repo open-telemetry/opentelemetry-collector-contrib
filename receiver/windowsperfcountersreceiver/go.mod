@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/window
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.62.0
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.62.0
 	go.uber.org/multierr v1.8.0
@@ -39,7 +39,7 @@ require (
 
 require (
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.62.0
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	go.opentelemetry.io/collector/pdata v0.62.0
 )
