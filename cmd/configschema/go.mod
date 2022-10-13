@@ -441,6 +441,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.62.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.62.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.62.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver v0.62.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.62.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver v0.62.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.62.0 // indirect
