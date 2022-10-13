@@ -59,5 +59,5 @@ All attributes are also mapped to custom properties if they are booleans or stri
 This exporter saves log records to Application Insights `traces` table.
 [TraceId](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-traceid) is mapped to `operation_id` column and [SpanId](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-spanid) is mapped to `operation_parentId` column.
 
-### Traces
+### Metrics
 This exporter saves traces to Application Insights `customMetrics` table.
