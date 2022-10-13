@@ -266,7 +266,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "instrumentation_scope",
 			path: []ottl.Field{
 				{
-					Name: "instrumentation_library",
+					Name: "instrumentation_scope",
 				},
 			},
 			orig:   refIS,
