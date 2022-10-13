@@ -820,3 +820,21 @@ metrics:
       value_type: int
     attributes: [index_aggregation_type, segments_memory_object_type]
     enabled: false
+  elasticsearch.index.translog.operations:
+    description: Number of transaction log operations for an index.
+    unit: "{operations}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [index_aggregation_type]
+    enabled: false
+  elasticsearch.index.translog.size:
+    description: Size of the transaction log for an index.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [index_aggregation_type]
+    enabled: false
