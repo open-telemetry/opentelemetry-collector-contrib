@@ -15,7 +15,7 @@ exporters:
 
 service:
   pipelines:
-    traces:
+    logs:
       receivers: [azureeventhub, azureeventhub/all]
       processors: [nop]
       exporters: [nop]
