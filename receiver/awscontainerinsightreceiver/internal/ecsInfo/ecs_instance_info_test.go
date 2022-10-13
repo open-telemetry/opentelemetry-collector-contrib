@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package ecsinfo
 
 import (
@@ -61,7 +60,7 @@ func TestECSInstanceInfo(t *testing.T) {
 		err:      err,
 	}
 
-	//normal case
+	// normal case
 	ecsinstanceinfo := newECSInstanceInfo(ctx, hostIPProvider, time.Minute, zap.NewNop(), mockHTTP, instanceReadyC)
 
 	assert.NotNil(t, ecsinstanceinfo)
@@ -71,7 +70,7 @@ func TestECSInstanceInfo(t *testing.T) {
 	assert.Equal(t, "cluster_name", ecsinstanceinfo.GetClusterName())
 	assert.Equal(t, "container_instance_id", ecsinstanceinfo.GetContainerInstanceID())
 
-	//failed to get data
+	// failed to get data
 
 	err = errors.New("")
 
