@@ -18,12 +18,16 @@ type MetricSettings struct {
 // MetricsSettings provides settings for httpcheckreceiver metrics.
 type MetricsSettings struct {
 	HttpcheckDuration MetricSettings `mapstructure:"httpcheck.duration"`
+	HttpcheckError    MetricSettings `mapstructure:"httpcheck.error"`
 	HttpcheckStatus   MetricSettings `mapstructure:"httpcheck.status"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
 	return MetricsSettings{
 		HttpcheckDuration: MetricSettings{
+			Enabled: true,
+		},
+		HttpcheckError: MetricSettings{
 			Enabled: true,
 		},
 		HttpcheckStatus: MetricSettings{
@@ -83,6 +87,60 @@ func newMetricHttpcheckDuration(settings MetricSettings) metricHttpcheckDuration
 	return m
 }
 
+type metricHttpcheckError struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills httpcheck.error metric with initial data.
+func (m *metricHttpcheckError) init() {
+	m.data.SetName("httpcheck.error")
+	m.data.SetDescription("Records errors occurring during HTTP check.")
+	m.data.SetUnit("{error}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricHttpcheckError) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string, errorMessageAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+	dp.Attributes().PutStr("error.message", errorMessageAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricHttpcheckError) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricHttpcheckError) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricHttpcheckError(settings MetricSettings) metricHttpcheckError {
+	m := metricHttpcheckError{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricHttpcheckStatus struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -92,7 +150,7 @@ type metricHttpcheckStatus struct {
 // init fills httpcheck.status metric with initial data.
 func (m *metricHttpcheckStatus) init() {
 	m.data.SetName("httpcheck.status")
-	m.data.SetDescription("1 if the endpoint resulted in status http.status_code, otherwise 0.")
+	m.data.SetDescription("1 if the check resulted in status_code matching the status_class, otherwise 0.")
 	m.data.SetUnit("1")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -148,6 +206,7 @@ type MetricsBuilder struct {
 	metricsBuffer           pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo               component.BuildInfo // contains version information
 	metricHttpcheckDuration metricHttpcheckDuration
+	metricHttpcheckError    metricHttpcheckError
 	metricHttpcheckStatus   metricHttpcheckStatus
 }
 
@@ -167,6 +226,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricsBuffer:           pmetric.NewMetrics(),
 		buildInfo:               buildInfo,
 		metricHttpcheckDuration: newMetricHttpcheckDuration(settings.HttpcheckDuration),
+		metricHttpcheckError:    newMetricHttpcheckError(settings.HttpcheckError),
 		metricHttpcheckStatus:   newMetricHttpcheckStatus(settings.HttpcheckStatus),
 	}
 	for _, op := range options {
@@ -221,6 +281,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricHttpcheckDuration.emit(ils.Metrics())
+	mb.metricHttpcheckError.emit(ils.Metrics())
 	mb.metricHttpcheckStatus.emit(ils.Metrics())
 	for _, op := range rmo {
 		op(rm)
@@ -244,6 +305,11 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 // RecordHttpcheckDurationDataPoint adds a data point to httpcheck.duration metric.
 func (mb *MetricsBuilder) RecordHttpcheckDurationDataPoint(ts pcommon.Timestamp, val int64, httpURLAttributeValue string) {
 	mb.metricHttpcheckDuration.recordDataPoint(mb.startTime, ts, val, httpURLAttributeValue)
+}
+
+// RecordHttpcheckErrorDataPoint adds a data point to httpcheck.error metric.
+func (mb *MetricsBuilder) RecordHttpcheckErrorDataPoint(ts pcommon.Timestamp, val int64, httpURLAttributeValue string, errorMessageAttributeValue string) {
+	mb.metricHttpcheckError.recordDataPoint(mb.startTime, ts, val, httpURLAttributeValue, errorMessageAttributeValue)
 }
 
 // RecordHttpcheckStatusDataPoint adds a data point to httpcheck.status metric.

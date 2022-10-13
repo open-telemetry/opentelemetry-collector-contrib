@@ -62,8 +62,10 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	resp, err := h.client.Do(req)
 	h.mb.RecordHttpcheckDurationDataPoint(now, time.Since(start).Milliseconds(), h.cfg.Endpoint)
 
-	statusCode := -1
-	if err == nil {
+	statusCode := 0
+	if err != nil {
+		h.mb.RecordHttpcheckErrorDataPoint(now, int64(1), h.cfg.Endpoint, err.Error())
+	} else {
 		statusCode = resp.StatusCode
 	}
 

@@ -30,7 +30,7 @@
                         "unit": "ms"
                     },
                     {
-                        "description": "1 if the endpoint resulted in status http.status_code, otherwise 0.",
+                        "description": "1 if the check resulted in status_code matching the status_class, otherwise 0.",
                         "name": "httpcheck.status",
                         "sum": {
                             "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",

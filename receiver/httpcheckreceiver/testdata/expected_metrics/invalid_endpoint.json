@@ -30,7 +30,7 @@
                         "unit": "ms"
                     },
                     {
-                        "description": "1 if the endpoint resulted in status http.status_code, otherwise 0.",
+                        "description": "1 if the check resulted in status_code matching the status_class, otherwise 0.",
                         "name": "httpcheck.status",
                         "sum": {
                             "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -49,7 +49,7 @@
                                         {
                                             "key": "http.status_code",
                                             "value": {
-                                                "intValue": -1
+                                                "intValue": 0
                                             }
                                         },
                                         {
@@ -80,7 +80,7 @@
                                     {
                                         "key": "http.status_code",
                                         "value": {
-                                            "intValue": -1
+                                            "intValue": 0
                                         }
                                     },
                                     {
@@ -111,7 +111,7 @@
                                         {
                                             "key": "http.status_code",
                                             "value": {
-                                                "intValue": -1
+                                                "intValue": 0
                                             }
                                         },
                                         {
@@ -142,7 +142,7 @@
                                         {
                                             "key": "http.status_code",
                                             "value": {
-                                                "intValue": -1
+                                                "intValue": 0
                                             }
                                         },
                                         {
@@ -173,7 +173,7 @@
                                         {
                                             "key": "http.status_code",
                                             "value": {
-                                                "intValue": -1
+                                                "intValue": 0
                                             }
                                         },
                                         {
@@ -193,6 +193,33 @@
                             ]
                         },
                         "unit": "1"
+                    },
+                    {
+                        "description": "Records errors occurring during HTTP check.",
+                        "name": "httpcheck.error",
+                        "sum": {
+                            "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                            "dataPoints": [
+                                {
+                                    "asInt": "1",
+                                    "attributes": [
+                                        {
+                                            "key": "http.url",
+                                            "value": {
+                                                "stringValue": "http://invalid-endpoint"
+                                            }
+                                        },
+                                        {
+                                            "key": "error.message",
+                                            "value": {
+                                                "stringValue": "Get \"http://invalid-endpoint\": dial tcp: lookup invalid-endpoint: no such host"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        "unit": "{error}"
                     }
                 ]
             }

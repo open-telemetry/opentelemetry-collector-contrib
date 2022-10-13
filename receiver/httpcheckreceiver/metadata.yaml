@@ -15,10 +15,13 @@ attributes:
   http.status_class:
     description: HTTP response status class
     type: string
+  error.message:
+    description: Error message recorded during check
+    type: string
 
 metrics:
   httpcheck.status:
-    description: 1 if the endpoint resulted in status http.status_code, otherwise 0.
+    description: 1 if the check resulted in status_code matching the status_class, otherwise 0.
     enabled: true
     sum:
       value_type: int
@@ -33,3 +36,12 @@ metrics:
       value_type: int
     unit: ms
     attributes: [http.url]
+  httpcheck.error:
+    description: Records errors occurring during HTTP check.
+    enabled: true
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+    unit: "{error}"
+    attributes: [http.url, error.message]
