@@ -55,6 +55,8 @@ const (
 	SummaryObserver   ObserverType = "summary"
 	HistogramObserver ObserverType = "histogram"
 	DisableObserver   ObserverType = "disabled"
+
+	DefaultObserverType = DisableObserver
 )
 
 type TimerHistogramMapping struct {
@@ -73,7 +75,7 @@ type ObserverCategory struct {
 }
 
 var defaultObserverCategory = ObserverCategory{
-	method: DisableObserver,
+	method: DefaultObserverType,
 }
 
 // StatsDParser supports the Parse method for parsing StatsD messages with Tags.
