@@ -99,7 +99,7 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 	switch path[0].Name {
 	case "resource":
 		return ottlcommon.ResourcePathGetSetter[TransformContext](path[1:])
-	case "instrumentation_library":
+	case "instrumentation_scope":
 		return ottlcommon.ScopePathGetSetter[TransformContext](path[1:])
 	case "span":
 		return ottlcommon.SpanPathGetSetter[TransformContext](path[1:])
