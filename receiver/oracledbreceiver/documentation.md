@@ -38,7 +38,7 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| db.oracle.instance.name | The name of the instance that data is coming from. | String |
+| db.oracle.instance.name | The name of the instance that data is coming from. | Str |
 
 ## Metric attributes
 
