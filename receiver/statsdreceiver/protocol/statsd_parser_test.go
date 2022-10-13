@@ -19,13 +19,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
-
 	"github.com/lightstep/go-expohisto/mapping/logarithm"
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
 )
 
 func Test_ParseMessageToMetric(t *testing.T) {
@@ -1037,7 +1036,7 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("expohisto")
 		ep := m.SetEmptyExponentialHistogram()
-		ep.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+		ep.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 		dp := ep.DataPoints().AppendEmpty()
 
 		dp.Attributes().PutString("mykey", "myvalue")

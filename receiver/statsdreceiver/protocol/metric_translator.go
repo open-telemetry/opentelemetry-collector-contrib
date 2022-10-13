@@ -18,10 +18,9 @@ import (
 	"sort"
 	"time"
 
+	"github.com/lightstep/go-expohisto/structure"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	"github.com/lightstep/go-expohisto/structure"
 	"gonum.org/v1/gonum/stat"
 )
 
@@ -104,7 +103,7 @@ func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetri
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(desc.name)
 	expo := nm.SetEmptyExponentialHistogram()
-	expo.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+	expo.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 
 	dp := expo.DataPoints().AppendEmpty()
 	agg := histogram.agg
@@ -128,7 +127,7 @@ func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetri
 
 	for _, half := range []struct {
 		inFunc  func() *structure.Buckets
-		outFunc func() pmetric.Buckets
+		outFunc func() pmetric.ExponentialHistogramDataPointBuckets
 	}{
 		{agg.Positive, dp.Positive},
 		{agg.Negative, dp.Negative},

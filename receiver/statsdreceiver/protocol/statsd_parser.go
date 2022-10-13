@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/lightstep/go-expohisto/structure"
-
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
 )
