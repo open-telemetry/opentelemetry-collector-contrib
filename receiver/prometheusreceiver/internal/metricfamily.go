@@ -15,16 +15,23 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
 import (
+	"encoding/hex"
 	"fmt"
 	"sort"
 	"strings"
 
+	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/scrape"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+)
+
+const (
+	traceIDKey = "trace_id"
+	spanIDKey  = "span_id"
 )
 
 type metricFamily struct {
@@ -50,6 +57,7 @@ type metricGroup struct {
 	hasSum       bool
 	value        float64
 	complexValue []*dataPoint
+	exemplars    pmetric.ExemplarSlice
 }
 
 func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *zap.Logger) *metricFamily {
@@ -141,6 +149,16 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	point.SetTimestamp(tsNanos)
 	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
+	mg.setExemplars(point.Exemplars())
+}
+
+func (mg *metricGroup) setExemplars(exemplars pmetric.ExemplarSlice) {
+	if mg == nil {
+		return
+	}
+	if mg.exemplars.Len() > 0 {
+		mg.exemplars.MoveAndAppendTo(exemplars)
+	}
 }
 
 func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
@@ -201,6 +219,7 @@ func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
 		point.SetDoubleValue(mg.value)
 	}
 	populateAttributes(pmetric.MetricTypeGauge, mg.ls, point.Attributes())
+	mg.setExemplars(point.Exemplars())
 }
 
 func populateAttributes(mType pmetric.MetricType, ls labels.Labels, dest pcommon.Map) {
@@ -226,9 +245,10 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Label
 	mg, ok := mf.groups[groupKey]
 	if !ok {
 		mg = &metricGroup{
-			family: mf,
-			ts:     ts,
-			ls:     ls,
+			family:    mf,
+			ts:        ts,
+			ls:        ls,
+			exemplars: pmetric.NewExemplarSlice(),
 		}
 		mf.groups[groupKey] = mg
 		// maintaining data insertion order is helpful to generate stable/reproducible metric output
@@ -318,4 +338,60 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) {
 	}
 
 	metric.MoveTo(metrics.AppendEmpty())
+}
+
+func (mf *metricFamily) addExemplar(l labels.Labels, e exemplar.Exemplar) {
+	gk := mf.getGroupKey(l)
+	mg := mf.groups[gk]
+	if mg == nil {
+		return
+	}
+	es := mg.exemplars
+	convertExemplar(e, es.AppendEmpty())
+}
+
+func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
+	e.SetTimestamp(timestampFromMs(pe.Ts))
+	e.SetDoubleValue(pe.Value)
+	e.FilteredAttributes().EnsureCapacity(len(pe.Labels))
+	for _, lb := range pe.Labels {
+		switch strings.ToLower(lb.Name) {
+		case traceIDKey:
+			var tid [16]byte
+			err := decodeAndCopyToLowerBytes(tid[:], []byte(lb.Value))
+			if err == nil {
+				e.SetTraceID(tid)
+			} else {
+				e.FilteredAttributes().PutString(lb.Name, lb.Value)
+			}
+		case spanIDKey:
+			var sid [8]byte
+			err := decodeAndCopyToLowerBytes(sid[:], []byte(lb.Value))
+			if err == nil {
+				e.SetSpanID(sid)
+			} else {
+				e.FilteredAttributes().PutString(lb.Name, lb.Value)
+			}
+		default:
+			e.FilteredAttributes().PutString(lb.Name, lb.Value)
+		}
+	}
+}
+
+/*
+	decodeAndCopyToLowerBytes copies src to dst on lower bytes instead of higher
+
+1. If len(src) > len(dst) -> copy first len(dst) bytes as it is. Example -> src = []byte{0xab,0xcd,0xef,0xgh,0xij}, dst = [2]byte, result dst = [2]byte{0xab, 0xcd}
+2. If len(src) = len(dst) -> copy src to dst as it is
+3. If len(src) < len(dst) -> prepend required 0s and then add src to dst. Example -> src = []byte{0xab, 0xcd}, dst = [8]byte, result dst = [8]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xab, 0xcd}
+*/
+func decodeAndCopyToLowerBytes(dst []byte, src []byte) error {
+	var err error
+	decodedLen := hex.DecodedLen(len(src))
+	if decodedLen >= len(dst) {
+		_, err = hex.Decode(dst, src[:hex.EncodedLen(len(dst))])
+	} else {
+		_, err = hex.Decode(dst[len(dst)-decodedLen:], src)
+	}
+	return err
 }
