@@ -408,7 +408,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 
 // verifyConsumeMetricsInputCumulative expects one accumulation of metrics, and marked as cumulative
 func verifyConsumeMetricsInputCumulative(t testing.TB, input pmetric.Metrics) bool {
-	return verifyConsumeMetricsInput(t, input, pmetric.MetricAggregationTemporalityCumulative, 1)
+	return verifyConsumeMetricsInput(t, input, pmetric.AggregationTemporalityCumulative, 1)
 }
 
 func verifyBadMetricsOkay(t testing.TB, input pmetric.Metrics) bool {
@@ -417,7 +417,7 @@ func verifyBadMetricsOkay(t testing.TB, input pmetric.Metrics) bool {
 
 // verifyConsumeMetricsInputDelta expects one accumulation of metrics, and marked as delta
 func verifyConsumeMetricsInputDelta(t testing.TB, input pmetric.Metrics) bool {
-	return verifyConsumeMetricsInput(t, input, pmetric.MetricAggregationTemporalityDelta, 1)
+	return verifyConsumeMetricsInput(t, input, pmetric.AggregationTemporalityDelta, 1)
 }
 
 // verifyMultipleCumulativeConsumptions expects the amount of accumulations as kept track of by numCumulativeConsumptions.
@@ -426,13 +426,13 @@ func verifyMultipleCumulativeConsumptions() func(t testing.TB, input pmetric.Met
 	numCumulativeConsumptions := 0
 	return func(t testing.TB, input pmetric.Metrics) bool {
 		numCumulativeConsumptions++
-		return verifyConsumeMetricsInput(t, input, pmetric.MetricAggregationTemporalityCumulative, numCumulativeConsumptions)
+		return verifyConsumeMetricsInput(t, input, pmetric.AggregationTemporalityCumulative, numCumulativeConsumptions)
 	}
 }
 
 // verifyConsumeMetricsInput verifies the input of the ConsumeMetrics call from this processor.
 // This is the best point to verify the computed metrics from spans are as expected.
-func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemporality pmetric.MetricAggregationTemporality, numCumulativeConsumptions int) bool {
+func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemporality pmetric.AggregationTemporality, numCumulativeConsumptions int) bool {
 	require.Equal(t, 6, input.MetricCount(),
 		"Should be 3 for each of call count and latency. Each group of 3 metrics is made of: "+
 			"service-a (server kind) -> service-a (client kind) -> service-b (service kind)",
@@ -604,10 +604,10 @@ func buildSampleTrace() ptrace.Traces {
 
 func initServiceSpans(serviceSpans serviceSpans, spans ptrace.ResourceSpans) {
 	if serviceSpans.serviceName != "" {
-		spans.Resource().Attributes().PutString(conventions.AttributeServiceName, serviceSpans.serviceName)
+		spans.Resource().Attributes().PutStr(conventions.AttributeServiceName, serviceSpans.serviceName)
 	}
 
-	spans.Resource().Attributes().PutString(regionResourceAttrName, sampleRegion)
+	spans.Resource().Attributes().PutStr(regionResourceAttrName, sampleRegion)
 
 	ils := spans.ScopeSpans().AppendEmpty()
 	for _, span := range serviceSpans.spans {
@@ -622,7 +622,7 @@ func initSpan(span span, s ptrace.Span) {
 	now := time.Now()
 	s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
 	s.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(sampleLatencyDuration)))
-	s.Attributes().PutString(stringAttrName, "stringAttrValue")
+	s.Attributes().PutStr(stringAttrName, "stringAttrValue")
 	s.Attributes().PutInt(intAttrName, 99)
 	s.Attributes().PutDouble(doubleAttrName, 99.99)
 	s.Attributes().PutBool(boolAttrName, true)

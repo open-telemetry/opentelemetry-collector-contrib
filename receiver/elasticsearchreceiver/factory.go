@@ -58,6 +58,7 @@ func createDefaultConfig() config.Receiver {
 		},
 		Metrics: metadata.DefaultMetricsSettings(),
 		Nodes:   []string{"_all"},
+		Indices: []string{"_all"},
 	}
 }
 

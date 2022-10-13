@@ -76,12 +76,12 @@ func TestNew(t *testing.T) {
 
 func TestConsumeMetricsData(t *testing.T) {
 	smallBatch := pmetric.NewMetrics()
-	smallBatch.ResourceMetrics().AppendEmpty().Resource().Attributes().PutString("com.splunk.source", "test_splunk")
+	smallBatch.ResourceMetrics().AppendEmpty().Resource().Attributes().PutStr("com.splunk.source", "test_splunk")
 	m := smallBatch.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m.SetName("test_gauge")
 	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.Attributes().PutString("k0", "v0")
-	dp.Attributes().PutString("k1", "v1")
+	dp.Attributes().PutStr("k0", "v0")
+	dp.Attributes().PutStr("k1", "v1")
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	dp.SetDoubleValue(123)
 	tests := []struct {
@@ -177,15 +177,15 @@ func generateLargeBatch() pmetric.Metrics {
 	ts := time.Now()
 	metrics := pmetric.NewMetrics()
 	rm := metrics.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutString(conventions.AttributeServiceName, "test_splunkhec")
+	rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "test_splunkhec")
 	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 
 	for i := 0; i < 65000; i++ {
 		m := ms.AppendEmpty()
 		m.SetName("test_" + strconv.Itoa(i))
 		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
-		dp.Attributes().PutString("k0", "v0")
-		dp.Attributes().PutString("k1", "v1")
+		dp.Attributes().PutStr("k0", "v0")
+		dp.Attributes().PutStr("k1", "v1")
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 		dp.SetIntValue(int64(i))
 	}
@@ -202,11 +202,11 @@ func generateLargeLogsBatch() plog.Logs {
 	for i := 0; i < 65000; i++ {
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStr("mylog")
-		logRecord.Attributes().PutString(splunk.DefaultSourceLabel, "myapp")
-		logRecord.Attributes().PutString(splunk.DefaultSourceTypeLabel, "myapp-type")
-		logRecord.Attributes().PutString(splunk.DefaultIndexLabel, "myindex")
-		logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
-		logRecord.Attributes().PutString("custom", "custom")
+		logRecord.Attributes().PutStr(splunk.DefaultSourceLabel, "myapp")
+		logRecord.Attributes().PutStr(splunk.DefaultSourceTypeLabel, "myapp-type")
+		logRecord.Attributes().PutStr(splunk.DefaultIndexLabel, "myindex")
+		logRecord.Attributes().PutStr(conventions.AttributeHostName, "myhost")
+		logRecord.Attributes().PutStr("custom", "custom")
 		logRecord.SetTimestamp(ts)
 	}
 
@@ -217,8 +217,8 @@ func TestConsumeLogsData(t *testing.T) {
 	smallBatch := plog.NewLogs()
 	logRecord := smallBatch.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	logRecord.Body().SetStr("mylog")
-	logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
-	logRecord.Attributes().PutString("custom", "custom")
+	logRecord.Attributes().PutStr(conventions.AttributeHostName, "myhost")
+	logRecord.Attributes().PutStr("custom", "custom")
 	logRecord.SetTimestamp(123)
 	tests := []struct {
 		name             string

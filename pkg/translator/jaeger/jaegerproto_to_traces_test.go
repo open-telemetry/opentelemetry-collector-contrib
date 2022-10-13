@@ -166,9 +166,9 @@ func TestJTagsToInternalAttributes(t *testing.T) {
 	expected := pcommon.NewMap()
 	expected.PutBool("bool-val", true)
 	expected.PutInt("int-val", 123)
-	expected.PutString("string-val", "abc")
+	expected.PutStr("string-val", "abc")
 	expected.PutDouble("double-val", 1.23)
-	expected.PutString("binary-val", "AAAAAABkfZg=")
+	expected.PutStr("binary-val", "AAAAAABkfZg=")
 
 	got := pcommon.NewMap()
 	jTagsToInternalAttributes(tags, got)
@@ -326,26 +326,26 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 
 func TestSetInternalSpanStatus(t *testing.T) {
 
-	emptyStatus := ptrace.NewSpanStatus()
+	emptyStatus := ptrace.NewStatus()
 
-	okStatus := ptrace.NewSpanStatus()
+	okStatus := ptrace.NewStatus()
 	okStatus.SetCode(ptrace.StatusCodeOk)
 
-	errorStatus := ptrace.NewSpanStatus()
+	errorStatus := ptrace.NewStatus()
 	errorStatus.SetCode(ptrace.StatusCodeError)
 
-	errorStatusWithMessage := ptrace.NewSpanStatus()
+	errorStatusWithMessage := ptrace.NewStatus()
 	errorStatusWithMessage.SetCode(ptrace.StatusCodeError)
 	errorStatusWithMessage.SetMessage("Error: Invalid argument")
 
-	errorStatusWith404Message := ptrace.NewSpanStatus()
+	errorStatusWith404Message := ptrace.NewStatus()
 	errorStatusWith404Message.SetCode(ptrace.StatusCodeError)
 	errorStatusWith404Message.SetMessage("HTTP 404: Not Found")
 
 	tests := []struct {
 		name             string
 		attrs            map[string]interface{}
-		status           ptrace.SpanStatus
+		status           ptrace.Status
 		attrsModifiedLen int // Length of attributes map after dropping converted fields
 	}{
 		{
@@ -420,7 +420,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			status := ptrace.NewSpanStatus()
+			status := ptrace.NewStatus()
 			attrs := pcommon.NewMap()
 			attrs.FromRaw(test.attrs)
 			setInternalSpanStatus(attrs, status)
@@ -590,7 +590,7 @@ func TestChecksum(t *testing.T) {
 func generateTracesResourceOnly() ptrace.Traces {
 	td := testdata.GenerateTracesOneEmptyResourceSpans()
 	rs := td.ResourceSpans().At(0).Resource()
-	rs.Attributes().PutString(conventions.AttributeServiceName, "service-1")
+	rs.Attributes().PutStr(conventions.AttributeServiceName, "service-1")
 	rs.Attributes().PutInt("int-attr-1", 123)
 	return td
 }

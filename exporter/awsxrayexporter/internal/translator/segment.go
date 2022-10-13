@@ -106,7 +106,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		origin                                             = determineAwsOrigin(resource)
 		awsfiltered, aws                                   = makeAws(causefiltered, resource)
 		service                                            = makeService(resource)
-		sqlfiltered, sql                                   = makeSQL(awsfiltered)
+		sqlfiltered, sql                                   = makeSQL(span, awsfiltered)
 		user, annotations, metadata                        = makeXRayAttributes(sqlfiltered, resource, storeResource, indexedAttrs, indexAllAttrs)
 		name                                               string
 		namespace                                          string

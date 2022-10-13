@@ -87,28 +87,28 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 	for k, v := range ocResource.GetLabels() {
 		switch k {
 		case resourcekeys.CloudKeyZone:
-			attrs.PutString(conventions.AttributeCloudAvailabilityZone, v)
+			attrs.PutStr(conventions.AttributeCloudAvailabilityZone, v)
 		default:
-			attrs.PutString(k, v)
+			attrs.PutStr(k, v)
 		}
 	}
 	for k, v := range ocNode.GetAttributes() {
-		attrs.PutString(k, v)
+		attrs.PutStr(k, v)
 	}
 
 	// Add all special fields that should overwrite any resource label or node attribute.
 	if ocNode != nil {
 		if ocNode.ServiceInfo != nil {
 			if ocNode.ServiceInfo.Name != "" {
-				attrs.PutString(conventions.AttributeServiceName, ocNode.ServiceInfo.Name)
+				attrs.PutStr(conventions.AttributeServiceName, ocNode.ServiceInfo.Name)
 			}
 		}
 		if ocNode.Identifier != nil {
 			if ocNode.Identifier.StartTimestamp != nil {
-				attrs.PutString(occonventions.AttributeProcessStartTime, ocNode.Identifier.StartTimestamp.AsTime().Format(time.RFC3339Nano))
+				attrs.PutStr(occonventions.AttributeProcessStartTime, ocNode.Identifier.StartTimestamp.AsTime().Format(time.RFC3339Nano))
 			}
 			if ocNode.Identifier.HostName != "" {
-				attrs.PutString(conventions.AttributeHostName, ocNode.Identifier.HostName)
+				attrs.PutStr(conventions.AttributeHostName, ocNode.Identifier.HostName)
 			}
 			if ocNode.Identifier.Pid != 0 {
 				attrs.PutInt(conventions.AttributeProcessPID, int64(ocNode.Identifier.Pid))
@@ -116,21 +116,21 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 		}
 		if ocNode.LibraryInfo != nil {
 			if ocNode.LibraryInfo.CoreLibraryVersion != "" {
-				attrs.PutString(conventions.AttributeTelemetrySDKVersion, ocNode.LibraryInfo.CoreLibraryVersion)
+				attrs.PutStr(conventions.AttributeTelemetrySDKVersion, ocNode.LibraryInfo.CoreLibraryVersion)
 			}
 			if ocNode.LibraryInfo.ExporterVersion != "" {
-				attrs.PutString(occonventions.AttributeExporterVersion, ocNode.LibraryInfo.ExporterVersion)
+				attrs.PutStr(occonventions.AttributeExporterVersion, ocNode.LibraryInfo.ExporterVersion)
 			}
 			if ocNode.LibraryInfo.Language != occommon.LibraryInfo_LANGUAGE_UNSPECIFIED {
 				if str, ok := ocLangCodeToLangMap[ocNode.LibraryInfo.Language]; ok {
-					attrs.PutString(conventions.AttributeTelemetrySDKLanguage, str)
+					attrs.PutStr(conventions.AttributeTelemetrySDKLanguage, str)
 				}
 			}
 		}
 	}
 	if ocResource != nil {
 		if ocResource.Type != "" {
-			attrs.PutString(occonventions.AttributeResourceType, ocResource.Type)
+			attrs.PutStr(occonventions.AttributeResourceType, ocResource.Type)
 		}
 	}
 }

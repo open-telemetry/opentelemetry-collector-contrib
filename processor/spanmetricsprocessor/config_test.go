@@ -115,11 +115,11 @@ func TestLoadConfig(t *testing.T) {
 
 func TestGetAggregationTemporality(t *testing.T) {
 	cfg := &Config{AggregationTemporality: delta}
-	assert.Equal(t, pmetric.MetricAggregationTemporalityDelta, cfg.GetAggregationTemporality())
+	assert.Equal(t, pmetric.AggregationTemporalityDelta, cfg.GetAggregationTemporality())
 
 	cfg = &Config{AggregationTemporality: cumulative}
-	assert.Equal(t, pmetric.MetricAggregationTemporalityCumulative, cfg.GetAggregationTemporality())
+	assert.Equal(t, pmetric.AggregationTemporalityCumulative, cfg.GetAggregationTemporality())
 
 	cfg = &Config{}
-	assert.Equal(t, pmetric.MetricAggregationTemporalityCumulative, cfg.GetAggregationTemporality())
+	assert.Equal(t, pmetric.AggregationTemporalityCumulative, cfg.GetAggregationTemporality())
 }

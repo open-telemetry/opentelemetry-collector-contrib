@@ -47,6 +47,8 @@ func TestScrape(t *testing.T) {
 		newErrRegex              string
 		initializationErr        string
 		expectedErr              string
+		failedMetricsLen         *int
+		continueOnErr            bool
 	}
 
 	testCases := []testCase{
@@ -201,6 +203,62 @@ func TestScrape(t *testing.T) {
 			expectedErr:    "err1",
 		},
 		{
+			name: "Partitions and error provided",
+			config: Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+				IncludeDevices: DeviceMatchConfig{
+					Config: filterset.Config{
+						MatchType: filterset.Strict,
+					},
+					Devices: []string{"device_a", "device_b"},
+				},
+				ExcludeFSTypes: FSTypeMatchConfig{
+					Config: filterset.Config{
+						MatchType: filterset.Strict,
+					},
+					FSTypes: []string{"fs_type_b"},
+				},
+			},
+			usageFunc: func(s string) (*disk.UsageStat, error) {
+				return &disk.UsageStat{
+					Fstype: "fs_type_a",
+				}, nil
+			},
+			partitionsFunc: func(b bool) ([]disk.PartitionStat, error) {
+				return []disk.PartitionStat{
+					{
+						Device:     "device_a",
+						Mountpoint: "mount_point_a",
+						Fstype:     "fs_type_a",
+					},
+					{
+						Device:     "device_b",
+						Mountpoint: "mount_point_d",
+						Fstype:     "fs_type_c",
+					},
+				}, errors.New("invalid partitions collection")
+			},
+			expectMetrics:            true,
+			expectedDeviceDataPoints: 2,
+			expectedDeviceAttributes: []map[string]pcommon.Value{
+				{
+					"device":     pcommon.NewValueStr("device_a"),
+					"mountpoint": pcommon.NewValueStr("mount_point_a"),
+					"type":       pcommon.NewValueStr("fs_type_a"),
+					"mode":       pcommon.NewValueStr("unknown"),
+				},
+				{
+					"device":     pcommon.NewValueStr("device_b"),
+					"mountpoint": pcommon.NewValueStr("mount_point_d"),
+					"type":       pcommon.NewValueStr("fs_type_c"),
+					"mode":       pcommon.NewValueStr("unknown"),
+				},
+			},
+			expectedErr:      "failed collecting partitions information: invalid partitions collection",
+			failedMetricsLen: new(int),
+			continueOnErr:    true,
+		},
+		{
 			name:        "Usage Error",
 			usageFunc:   func(string) (*disk.UsageStat, error) { return nil, errors.New("err2") },
 			expectedErr: "err2",
@@ -243,12 +301,18 @@ func TestScrape(t *testing.T) {
 				if isPartial {
 					var scraperErr scrapererror.PartialScrapeError
 					require.ErrorAs(t, err, &scraperErr)
-					assert.Equal(t, metricsLen, scraperErr.Failed)
+					expectedFailedMetricsLen := metricsLen
+					if test.failedMetricsLen != nil {
+						expectedFailedMetricsLen = *test.failedMetricsLen
+					}
+					assert.Equal(t, expectedFailedMetricsLen, scraperErr.Failed)
 				}
-
-				return
+				if !test.continueOnErr {
+					return
+				}
+			} else {
+				require.NoError(t, err, "Failed to scrape metrics: %v", err)
 			}
-			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
 			if !test.expectMetrics {
 				assert.Equal(t, 0, md.MetricCount())

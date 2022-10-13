@@ -29,7 +29,6 @@ import (
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	promConfig "github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/discovery"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -173,10 +172,26 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			desc: "default",
 			responses: Responses{
 				responses: map[string][]mockTargetAllocatorResponseRaw{
-					"/jobs": {
-						mockTargetAllocatorResponseRaw{code: 200, data: map[string]linkJSON{
-							"job1": {Link: "/jobs/job1/targets"},
-							"job2": {Link: "/jobs/job2/targets"},
+					"/scrape_configs": {
+						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]interface{}{
+							"job1": {
+								"job_name":               "job1",
+								"scrape_interval":        "30s",
+								"scrape_timeout":         "30s",
+								"metrics_path":           "/metrics",
+								"scheme":                 "http",
+								"relabel_configs":        nil,
+								"metric_relabel_configs": nil,
+							},
+							"job2": {
+								"job_name":               "job2",
+								"scrape_interval":        "30s",
+								"scrape_timeout":         "30s",
+								"metrics_path":           "/metrics",
+								"scheme":                 "http",
+								"relabel_configs":        nil,
+								"metric_relabel_configs": nil,
+							},
 						}},
 					},
 					"/jobs/job1/targets": {
@@ -252,10 +267,26 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			desc: "update labels and targets",
 			responses: Responses{
 				responses: map[string][]mockTargetAllocatorResponseRaw{
-					"/jobs": {
-						mockTargetAllocatorResponseRaw{code: 200, data: map[string]linkJSON{
-							"job1": {Link: "/jobs/job1/targets"},
-							"job2": {Link: "/jobs/job2/targets"},
+					"/scrape_configs": {
+						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]interface{}{
+							"job1": {
+								"job_name":               "job1",
+								"scrape_interval":        "30s",
+								"scrape_timeout":         "30s",
+								"metrics_path":           "/metrics",
+								"scheme":                 "http",
+								"relabel_configs":        nil,
+								"metric_relabel_configs": nil,
+							},
+							"job2": {
+								"job_name":               "job2",
+								"scrape_interval":        "30s",
+								"scrape_timeout":         "30s",
+								"metrics_path":           "/metrics",
+								"scheme":                 "http",
+								"relabel_configs":        nil,
+								"metric_relabel_configs": nil,
+							},
 						}},
 					},
 					"/jobs/job1/targets": {
@@ -326,17 +357,49 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			desc: "update job list",
 			responses: Responses{
 				releaserMap: map[string]int{
-					"/jobs": 1,
+					"/scrape_configs": 1,
 				},
 				responses: map[string][]mockTargetAllocatorResponseRaw{
-					"/jobs": {
-						mockTargetAllocatorResponseRaw{code: 200, data: map[string]linkJSON{
-							"job1": {Link: "/jobs/job1/targets"},
-							"job2": {Link: "/jobs/job2/targets"},
+					"/scrape_configs": {
+						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]interface{}{
+							"job1": {
+								"job_name":               "job1",
+								"scrape_interval":        "30s",
+								"scrape_timeout":         "30s",
+								"metrics_path":           "/metrics",
+								"scheme":                 "http",
+								"relabel_configs":        nil,
+								"metric_relabel_configs": nil,
+							},
+							"job2": {
+								"job_name":               "job2",
+								"scrape_interval":        "30s",
+								"scrape_timeout":         "30s",
+								"metrics_path":           "/metrics",
+								"scheme":                 "http",
+								"relabel_configs":        nil,
+								"metric_relabel_configs": nil,
+							},
 						}},
-						mockTargetAllocatorResponseRaw{code: 200, data: map[string]linkJSON{
-							"job1": {Link: "/jobs/job1/targets"},
-							"job3": {Link: "/jobs/job3/targets"},
+						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]interface{}{
+							"job1": {
+								"job_name":               "job1",
+								"scrape_interval":        "30s",
+								"scrape_timeout":         "30s",
+								"metrics_path":           "/metrics",
+								"scheme":                 "http",
+								"relabel_configs":        nil,
+								"metric_relabel_configs": nil,
+							},
+							"job3": {
+								"job_name":               "job3",
+								"scrape_interval":        "30s",
+								"scrape_timeout":         "30s",
+								"metrics_path":           "/metrics",
+								"scheme":                 "http",
+								"relabel_configs":        nil,
+								"metric_relabel_configs": nil,
+							},
 						}},
 					},
 					"/jobs/job1/targets": {
@@ -407,12 +470,12 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			desc: "endpoint is not reachable",
 			responses: Responses{
 				releaserMap: map[string]int{
-					"/jobs": 1, // we are too fast if we ignore the first wait a tick
+					"/scrape_configs": 1, // we are too fast if we ignore the first wait a tick
 				},
 				responses: map[string][]mockTargetAllocatorResponseRaw{
-					"/jobs": {
-						mockTargetAllocatorResponseRaw{code: 404, data: map[string]linkJSON{}},
-						mockTargetAllocatorResponseRaw{code: 404, data: map[string]linkJSON{}},
+					"/scrape_configs": {
+						mockTargetAllocatorResponseRaw{code: 404, data: map[string]map[string]interface{}{}},
+						mockTargetAllocatorResponseRaw{code: 404, data: map[string]map[string]interface{}{}},
 					},
 				},
 			},
@@ -453,10 +516,8 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 
 			providers := receiver.discoveryManager.Providers()
 			if tc.want.empty {
-				// if no base config is supplied and the job retrieval fails and therefor no configuration is available
-				// PrometheusSD adds a static provider as default
-				require.Len(t, providers, 1)
-				require.IsType(t, discovery.StaticConfig{}, providers[0].Config())
+				// if no base config is supplied and the job retrieval fails then no configuration should be found
+				require.Len(t, providers, 0)
 				return
 			}
 

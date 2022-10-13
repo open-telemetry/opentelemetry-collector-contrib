@@ -434,7 +434,7 @@ func extractAttributes(action attributeAction, attrs pcommon.Map) {
 	// Start from index 1, which is the first submatch (index 0 is the entire
 	// match).
 	for i := 1; i < len(matches); i++ {
-		attrs.PutString(action.AttrNames[i], matches[i])
+		attrs.PutStr(action.AttrNames[i], matches[i])
 	}
 }
 

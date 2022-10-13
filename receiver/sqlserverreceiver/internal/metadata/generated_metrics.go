@@ -594,7 +594,7 @@ func (m *metricSqlserverPageOperationRate) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutString("type", pageOperationsAttributeValue)
+	dp.Attributes().PutStr("type", pageOperationsAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -929,7 +929,7 @@ func (m *metricSqlserverTransactionLogGrowthCount) init() {
 	m.data.SetUnit("{growths}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricSqlserverTransactionLogGrowthCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -980,7 +980,7 @@ func (m *metricSqlserverTransactionLogShrinkCount) init() {
 	m.data.SetUnit("{shrinks}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricSqlserverTransactionLogShrinkCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1204,7 +1204,7 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithSqlserverDatabaseName sets provided value as "sqlserver.database.name" attribute for current resource.
 func WithSqlserverDatabaseName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("sqlserver.database.name", val)
+		rm.Resource().Attributes().PutStr("sqlserver.database.name", val)
 	}
 }
 

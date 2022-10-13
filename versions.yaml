@@ -20,7 +20,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen
-      - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3mapprovider
+      - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider
       - github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/client
       - github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/server
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter
@@ -144,6 +144,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver
@@ -198,8 +199,9 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/examples/federation/prom-counter
-      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver

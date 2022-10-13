@@ -1,25 +1,10 @@
-receivers:
-  nop:
-
-processors:
-  nop:
-
-exporters:
-  googlecloudpubsub:
-  googlecloudpubsub/customname:
-    project: my-project
-    user_agent: opentelemetry-collector-contrib {{version}}
-    timeout: 20s
-    topic: projects/my-project/topics/otlp-topic
-    compression: gzip
-    watermark:
-      behavior: earliest
-      allowed_drift: 1h
-
-service:
-  pipelines:
-    traces:
-        receivers: [nop]
-        processors: [nop]
-        exporters: [googlecloudpubsub/customname]
-
+googlecloudpubsub:
+googlecloudpubsub/customname:
+  project: my-project
+  user_agent: opentelemetry-collector-contrib {{version}}
+  timeout: 20s
+  topic: projects/my-project/topics/otlp-topic
+  compression: gzip
+  watermark:
+    behavior: earliest
+    allowed_drift: 1h

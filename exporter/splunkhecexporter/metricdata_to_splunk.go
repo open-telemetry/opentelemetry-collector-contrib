@@ -212,7 +212,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 			}
 		}
 		return splunkMetrics
-	case pmetric.MetricTypeNone:
+	case pmetric.MetricTypeEmpty:
 		fallthrough
 	default:
 		logger.Warn(

@@ -33,18 +33,18 @@ func containerResource(cm ecsutil.ContainerMetadata, logger *zap.Logger) pcommon
 		docker.LogParseError(err, cm.Image, logger)
 	}
 
-	resource.Attributes().PutString(conventions.AttributeContainerName, cm.ContainerName)
-	resource.Attributes().PutString(conventions.AttributeContainerID, cm.DockerID)
-	resource.Attributes().PutString(attributeECSDockerName, cm.DockerName)
-	resource.Attributes().PutString(conventions.AttributeContainerImageName, image.Repository)
-	resource.Attributes().PutString(attributeContainerImageID, cm.ImageID)
-	resource.Attributes().PutString(conventions.AttributeContainerImageTag, image.Tag)
-	resource.Attributes().PutString(attributeContainerCreatedAt, cm.CreatedAt)
-	resource.Attributes().PutString(attributeContainerStartedAt, cm.StartedAt)
+	resource.Attributes().PutStr(conventions.AttributeContainerName, cm.ContainerName)
+	resource.Attributes().PutStr(conventions.AttributeContainerID, cm.DockerID)
+	resource.Attributes().PutStr(attributeECSDockerName, cm.DockerName)
+	resource.Attributes().PutStr(conventions.AttributeContainerImageName, image.Repository)
+	resource.Attributes().PutStr(attributeContainerImageID, cm.ImageID)
+	resource.Attributes().PutStr(conventions.AttributeContainerImageTag, image.Tag)
+	resource.Attributes().PutStr(attributeContainerCreatedAt, cm.CreatedAt)
+	resource.Attributes().PutStr(attributeContainerStartedAt, cm.StartedAt)
 	if cm.FinishedAt != "" {
-		resource.Attributes().PutString(attributeContainerFinishedAt, cm.FinishedAt)
+		resource.Attributes().PutStr(attributeContainerFinishedAt, cm.FinishedAt)
 	}
-	resource.Attributes().PutString(attributeContainerKnownStatus, cm.KnownStatus)
+	resource.Attributes().PutStr(attributeContainerKnownStatus, cm.KnownStatus)
 	if cm.ExitCode != nil {
 		resource.Attributes().PutInt(attributeContainerExitCode, *cm.ExitCode)
 	}
@@ -54,33 +54,33 @@ func containerResource(cm ecsutil.ContainerMetadata, logger *zap.Logger) pcommon
 func taskResource(tm ecsutil.TaskMetadata) pcommon.Resource {
 	resource := pcommon.NewResource()
 	region, accountID, taskID := getResourceFromARN(tm.TaskARN)
-	resource.Attributes().PutString(attributeECSCluster, getNameFromCluster(tm.Cluster))
-	resource.Attributes().PutString(conventions.AttributeAWSECSTaskARN, tm.TaskARN)
-	resource.Attributes().PutString(attributeECSTaskID, taskID)
-	resource.Attributes().PutString(conventions.AttributeAWSECSTaskFamily, tm.Family)
+	resource.Attributes().PutStr(attributeECSCluster, getNameFromCluster(tm.Cluster))
+	resource.Attributes().PutStr(conventions.AttributeAWSECSTaskARN, tm.TaskARN)
+	resource.Attributes().PutStr(attributeECSTaskID, taskID)
+	resource.Attributes().PutStr(conventions.AttributeAWSECSTaskFamily, tm.Family)
 
 	// Task revision: aws.ecs.task.version and aws.ecs.task.revision
-	resource.Attributes().PutString(attributeECSTaskRevision, tm.Revision)
-	resource.Attributes().PutString(conventions.AttributeAWSECSTaskRevision, tm.Revision)
+	resource.Attributes().PutStr(attributeECSTaskRevision, tm.Revision)
+	resource.Attributes().PutStr(conventions.AttributeAWSECSTaskRevision, tm.Revision)
 
-	resource.Attributes().PutString(attributeECSServiceName, "undefined")
+	resource.Attributes().PutStr(attributeECSServiceName, "undefined")
 
-	resource.Attributes().PutString(conventions.AttributeCloudAvailabilityZone, tm.AvailabilityZone)
-	resource.Attributes().PutString(attributeECSTaskPullStartedAt, tm.PullStartedAt)
-	resource.Attributes().PutString(attributeECSTaskPullStoppedAt, tm.PullStoppedAt)
-	resource.Attributes().PutString(attributeECSTaskKnownStatus, tm.KnownStatus)
+	resource.Attributes().PutStr(conventions.AttributeCloudAvailabilityZone, tm.AvailabilityZone)
+	resource.Attributes().PutStr(attributeECSTaskPullStartedAt, tm.PullStartedAt)
+	resource.Attributes().PutStr(attributeECSTaskPullStoppedAt, tm.PullStoppedAt)
+	resource.Attributes().PutStr(attributeECSTaskKnownStatus, tm.KnownStatus)
 
 	// Task launchtype: aws.ecs.task.launch_type (raw string) and aws.ecs.launchtype (lowercase)
-	resource.Attributes().PutString(attributeECSTaskLaunchType, tm.LaunchType)
+	resource.Attributes().PutStr(attributeECSTaskLaunchType, tm.LaunchType)
 	switch lt := strings.ToLower(tm.LaunchType); lt {
 	case "ec2":
-		resource.Attributes().PutString(conventions.AttributeAWSECSLaunchtype, conventions.AttributeAWSECSLaunchtypeEC2)
+		resource.Attributes().PutStr(conventions.AttributeAWSECSLaunchtype, conventions.AttributeAWSECSLaunchtypeEC2)
 	case "fargate":
-		resource.Attributes().PutString(conventions.AttributeAWSECSLaunchtype, conventions.AttributeAWSECSLaunchtypeFargate)
+		resource.Attributes().PutStr(conventions.AttributeAWSECSLaunchtype, conventions.AttributeAWSECSLaunchtypeFargate)
 	}
 
-	resource.Attributes().PutString(conventions.AttributeCloudRegion, region)
-	resource.Attributes().PutString(conventions.AttributeCloudAccountID, accountID)
+	resource.Attributes().PutStr(conventions.AttributeCloudRegion, region)
+	resource.Attributes().PutStr(conventions.AttributeCloudAccountID, accountID)
 
 	return resource
 }

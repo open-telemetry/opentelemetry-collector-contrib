@@ -48,9 +48,7 @@ func (p *Processor) ProcessLogs(_ context.Context, td plog.Logs) (plog.Logs, err
 			for k := 0; k < logs.Len(); k++ {
 				ctx := ottllogs.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
 				for _, statement := range p.statements {
-					if statement.Condition(ctx) {
-						statement.Function(ctx)
-					}
+					statement.Execute(ctx)
 				}
 			}
 		}

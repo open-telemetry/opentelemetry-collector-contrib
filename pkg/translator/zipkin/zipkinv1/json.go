@@ -371,7 +371,7 @@ func getOrCreateNodeRequest(m map[string]ptrace.SpanSlice, td ptrace.Traces, end
 	}
 
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutString(conventions.AttributeServiceName, endpoint.ServiceName)
+	rs.Resource().Attributes().PutStr(conventions.AttributeServiceName, endpoint.ServiceName)
 	endpoint.setAttributes(rs.Resource().Attributes())
 	ss = rs.ScopeSpans().AppendEmpty().Spans()
 	m[nodeKey] = ss
@@ -388,13 +388,13 @@ func (ep *endpoint) setAttributes(dest pcommon.Map) {
 	}
 
 	if ep.IPv4 != "" {
-		dest.PutString("ipv4", ep.IPv4)
+		dest.PutStr("ipv4", ep.IPv4)
 	}
 	if ep.IPv6 != "" {
-		dest.PutString("ipv6", ep.IPv6)
+		dest.PutStr("ipv6", ep.IPv6)
 	}
 	if ep.Port != 0 {
-		dest.PutString("port", strconv.Itoa(int(ep.Port)))
+		dest.PutStr("port", strconv.Itoa(int(ep.Port)))
 	}
 }
 

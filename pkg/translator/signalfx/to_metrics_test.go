@@ -91,7 +91,7 @@ func TestToMetrics(t *testing.T) {
 			wantMetrics: func() pmetric.Metrics {
 				m := buildDefaultMetrics(pmetric.MetricTypeSum, 13, now)
 				d := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum()
-				d.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				d.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				d.SetIsMonotonic(true)
 				return m
 			}(),
@@ -109,7 +109,7 @@ func TestToMetrics(t *testing.T) {
 			wantMetrics: func() pmetric.Metrics {
 				m := buildDefaultMetrics(pmetric.MetricTypeSum, 13.13, now)
 				d := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum()
-				d.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				d.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				d.SetIsMonotonic(true)
 				return m
 			}(),
@@ -127,7 +127,7 @@ func TestToMetrics(t *testing.T) {
 			wantMetrics: func() pmetric.Metrics {
 				m := buildDefaultMetrics(pmetric.MetricTypeSum, 13.13, now)
 				d := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum()
-				d.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				d.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				d.SetIsMonotonic(true)
 				d.DataPoints().At(0).CopyTo(d.DataPoints().AppendEmpty())
 				return m
@@ -143,7 +143,7 @@ func TestToMetrics(t *testing.T) {
 			wantMetrics: func() pmetric.Metrics {
 				m := buildDefaultMetrics(pmetric.MetricTypeSum, 13, now)
 				d := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum()
-				d.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				d.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				d.SetIsMonotonic(true)
 				return m
 			}(),
@@ -161,7 +161,7 @@ func TestToMetrics(t *testing.T) {
 			wantMetrics: func() pmetric.Metrics {
 				m := buildDefaultMetrics(pmetric.MetricTypeSum, 13.13, now)
 				d := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum()
-				d.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				d.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				d.SetIsMonotonic(true)
 				return m
 			}(),
@@ -176,7 +176,7 @@ func TestToMetrics(t *testing.T) {
 			wantMetrics: func() pmetric.Metrics {
 				m := buildDefaultMetrics(pmetric.MetricTypeSum, 13, now)
 				d := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum()
-				d.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				d.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				d.SetIsMonotonic(true)
 				d.DataPoints().At(0).CopyTo(d.DataPoints().AppendEmpty())
 				return m
@@ -192,7 +192,7 @@ func TestToMetrics(t *testing.T) {
 			wantMetrics: func() pmetric.Metrics {
 				m := buildDefaultMetrics(pmetric.MetricTypeSum, 13, now)
 				d := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum()
-				d.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				d.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				d.SetIsMonotonic(true)
 				// Append the Gauge metric as well.
 				gm := buildDefaultMetrics(pmetric.MetricTypeGauge, 13, now)
@@ -222,7 +222,7 @@ func TestToMetrics(t *testing.T) {
 			}(),
 			wantMetrics: func() pmetric.Metrics {
 				md := buildDefaultMetrics(pmetric.MetricTypeGauge, 13, now)
-				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().PutString("k0", "")
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().PutStr("k0", "")
 				return md
 			}(),
 		},
@@ -299,14 +299,14 @@ func buildDefaultMetrics(typ pmetric.MetricType, value interface{}, now time.Tim
 	case pmetric.MetricTypeGauge:
 		dps = m.SetEmptyGauge().DataPoints()
 	case pmetric.MetricTypeSum:
-		m.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		m.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		dps = m.Sum().DataPoints()
 	}
 
 	dp := dps.AppendEmpty()
-	dp.Attributes().PutString("k0", "v0")
-	dp.Attributes().PutString("k1", "v1")
-	dp.Attributes().PutString("k2", "v2")
+	dp.Attributes().PutStr("k0", "v0")
+	dp.Attributes().PutStr("k1", "v1")
+	dp.Attributes().PutStr("k2", "v2")
 	dp.Attributes().Sort()
 
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Truncate(time.Millisecond)))

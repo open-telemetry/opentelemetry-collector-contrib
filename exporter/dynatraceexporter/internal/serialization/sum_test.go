@@ -34,7 +34,7 @@ func Test_serializeSumPoint(t *testing.T) {
 		dp := pmetric.NewNumberDataPoint()
 		dp.SetIntValue(5)
 
-		got, err := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(), pmetric.MetricAggregationTemporalityDelta, dp, ttlmap.New(1, 1))
+		got, err := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(), pmetric.AggregationTemporalityDelta, dp, ttlmap.New(1, 1))
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.int_sum count,delta=5", got)
 	})
@@ -46,7 +46,7 @@ func Test_serializeSumPoint(t *testing.T) {
 
 		prev := ttlmap.New(1, 1)
 
-		got, err := serializeSumPoint("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.MetricAggregationTemporalityDelta, dp, prev)
+		got, err := serializeSumPoint("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.AggregationTemporalityDelta, dp, prev)
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.double_sum,key=value count,delta=5.5 1626438600000", got)
 	})
@@ -56,7 +56,7 @@ func Test_serializeSumPoint(t *testing.T) {
 		dp.SetIntValue(5)
 		dp.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
-		got, err := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.MetricAggregationTemporalityDelta, dp, ttlmap.New(1, 1))
+		got, err := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.AggregationTemporalityDelta, dp, ttlmap.New(1, 1))
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.int_sum,key=value count,delta=5 1626438600000", got)
 	})
@@ -72,11 +72,11 @@ func Test_serializeSumPoint(t *testing.T) {
 
 		prev := ttlmap.New(1, 1)
 
-		got, err := serializeSumPoint("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.MetricAggregationTemporalityCumulative, dp, prev)
+		got, err := serializeSumPoint("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.AggregationTemporalityCumulative, dp, prev)
 		assert.NoError(t, err)
 		assert.Equal(t, "", got)
 
-		got, err = serializeSumPoint("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.MetricAggregationTemporalityCumulative, dp2, prev)
+		got, err = serializeSumPoint("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.AggregationTemporalityCumulative, dp2, prev)
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.double_sum,key=value count,delta=1.5 1626438660000", got)
 	})
@@ -92,11 +92,11 @@ func Test_serializeSumPoint(t *testing.T) {
 
 		prev := ttlmap.New(1, 1)
 
-		got, err := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.MetricAggregationTemporalityCumulative, dp, prev)
+		got, err := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.AggregationTemporalityCumulative, dp, prev)
 		assert.NoError(t, err)
 		assert.Equal(t, "", got)
 
-		got, err = serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.MetricAggregationTemporalityCumulative, dp2, prev)
+		got, err = serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.AggregationTemporalityCumulative, dp2, prev)
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.int_sum,key=value count,delta=5 1626438660000", got)
 	})
@@ -104,34 +104,34 @@ func Test_serializeSumPoint(t *testing.T) {
 	t.Run("different dimensions should be treated as separate counters", func(t *testing.T) {
 		dp := pmetric.NewNumberDataPoint()
 		dp.SetIntValue(5)
-		dp.Attributes().PutString("sort", "unstable")
-		dp.Attributes().PutString("group", "a")
+		dp.Attributes().PutStr("sort", "unstable")
+		dp.Attributes().PutStr("group", "a")
 		dp.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		dp2 := pmetric.NewNumberDataPoint()
 		dp2.SetIntValue(10)
-		dp2.Attributes().PutString("sort", "unstable")
-		dp2.Attributes().PutString("group", "b")
+		dp2.Attributes().PutStr("sort", "unstable")
+		dp2.Attributes().PutStr("group", "b")
 		dp2.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		dp3 := pmetric.NewNumberDataPoint()
 		dp3.SetIntValue(10)
-		dp3.Attributes().PutString("group", "a")
-		dp3.Attributes().PutString("sort", "unstable")
+		dp3.Attributes().PutStr("group", "a")
+		dp3.Attributes().PutStr("sort", "unstable")
 		dp3.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		dp4 := pmetric.NewNumberDataPoint()
 		dp4.SetIntValue(20)
-		dp4.Attributes().PutString("group", "b")
-		dp4.Attributes().PutString("sort", "unstable")
+		dp4.Attributes().PutStr("group", "b")
+		dp4.Attributes().PutStr("sort", "unstable")
 		dp4.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		prev := ttlmap.New(1, 1)
 
-		got, err := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "a")), pmetric.MetricAggregationTemporalityCumulative, dp, prev)
-		got2, err2 := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "b")), pmetric.MetricAggregationTemporalityCumulative, dp2, prev)
-		got3, err3 := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "a")), pmetric.MetricAggregationTemporalityCumulative, dp3, prev)
-		got4, err4 := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "b")), pmetric.MetricAggregationTemporalityCumulative, dp4, prev)
+		got, err := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "a")), pmetric.AggregationTemporalityCumulative, dp, prev)
+		got2, err2 := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "b")), pmetric.AggregationTemporalityCumulative, dp2, prev)
+		got3, err3 := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "a")), pmetric.AggregationTemporalityCumulative, dp3, prev)
+		got4, err4 := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "b")), pmetric.AggregationTemporalityCumulative, dp4, prev)
 
 		assert.NoError(t, err)
 		assert.NoError(t, err2)
@@ -154,13 +154,13 @@ func Test_serializeSumPoint(t *testing.T) {
 
 		prev := ttlmap.New(1, 1)
 
-		got, err := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.MetricAggregationTemporalityCumulative, dp, prev)
+		got, err := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.AggregationTemporalityCumulative, dp, prev)
 		assert.NoError(t, err)
 		assert.Equal(t, "", got)
 
 		assert.Equal(t, dp, prev.Get("int_sum"))
 
-		got, err = serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.MetricAggregationTemporalityCumulative, dp2, prev)
+		got, err = serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.AggregationTemporalityCumulative, dp2, prev)
 		assert.NoError(t, err)
 		assert.Equal(t, "", got)
 
@@ -174,7 +174,7 @@ func Test_serializeSum(t *testing.T) {
 		metric := pmetric.NewMetric()
 		metric.SetName("metric_name")
 		sum := metric.SetEmptySum()
-		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 		sum.SetIsMonotonic(false)
 		prev := ttlmap.New(10, 10)
 
@@ -200,7 +200,7 @@ func Test_serializeSum(t *testing.T) {
 		metric := pmetric.NewMetric()
 		metric.SetName("metric_name")
 		sum := metric.SetEmptySum()
-		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 		sum.SetIsMonotonic(true)
 
 		dp := sum.DataPoints().AppendEmpty()
@@ -253,7 +253,7 @@ func Test_serializeSum(t *testing.T) {
 		metric := pmetric.NewMetric()
 		metric.SetName("metric_name")
 		sum := metric.SetEmptySum()
-		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		sum.SetIsMonotonic(false)
 		dp := sum.DataPoints().AppendEmpty()
 
@@ -311,7 +311,7 @@ func Test_serializeSum(t *testing.T) {
 		metric := pmetric.NewMetric()
 		metric.SetName("metric_name")
 		sum := metric.SetEmptySum()
-		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		sum.SetIsMonotonic(true)
 		dp1 := sum.DataPoints().AppendEmpty()
 		dp2 := sum.DataPoints().AppendEmpty()

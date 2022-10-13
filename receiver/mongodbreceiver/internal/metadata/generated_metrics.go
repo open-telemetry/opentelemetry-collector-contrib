@@ -249,7 +249,7 @@ func (m *metricMongodbCacheOperations) init() {
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -261,7 +261,7 @@ func (m *metricMongodbCacheOperations) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("type", typeAttributeValue)
+	dp.Attributes().PutStr("type", typeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -302,7 +302,7 @@ func (m *metricMongodbCollectionCount) init() {
 	m.data.SetUnit("{collections}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -314,7 +314,7 @@ func (m *metricMongodbCollectionCount) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("database", databaseAttributeValue)
+	dp.Attributes().PutStr("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -355,7 +355,7 @@ func (m *metricMongodbConnectionCount) init() {
 	m.data.SetUnit("{connections}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -367,8 +367,8 @@ func (m *metricMongodbConnectionCount) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("database", databaseAttributeValue)
-	dp.Attributes().PutString("type", connectionTypeAttributeValue)
+	dp.Attributes().PutStr("database", databaseAttributeValue)
+	dp.Attributes().PutStr("type", connectionTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -409,7 +409,7 @@ func (m *metricMongodbCursorCount) init() {
 	m.data.SetUnit("{cursors}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricMongodbCursorCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -460,7 +460,7 @@ func (m *metricMongodbCursorTimeoutCount) init() {
 	m.data.SetUnit("{cursors}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricMongodbCursorTimeoutCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -511,7 +511,7 @@ func (m *metricMongodbDataSize) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -523,7 +523,7 @@ func (m *metricMongodbDataSize) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("database", databaseAttributeValue)
+	dp.Attributes().PutStr("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -564,7 +564,7 @@ func (m *metricMongodbDatabaseCount) init() {
 	m.data.SetUnit("{databases}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricMongodbDatabaseCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -615,7 +615,7 @@ func (m *metricMongodbDocumentOperationCount) init() {
 	m.data.SetUnit("{documents}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -627,8 +627,8 @@ func (m *metricMongodbDocumentOperationCount) recordDataPoint(start pcommon.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("database", databaseAttributeValue)
-	dp.Attributes().PutString("operation", operationAttributeValue)
+	dp.Attributes().PutStr("database", databaseAttributeValue)
+	dp.Attributes().PutStr("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -669,7 +669,7 @@ func (m *metricMongodbExtentCount) init() {
 	m.data.SetUnit("{extents}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -681,7 +681,7 @@ func (m *metricMongodbExtentCount) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("database", databaseAttributeValue)
+	dp.Attributes().PutStr("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -722,7 +722,7 @@ func (m *metricMongodbGlobalLockTime) init() {
 	m.data.SetUnit("ms")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricMongodbGlobalLockTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -773,7 +773,7 @@ func (m *metricMongodbIndexAccessCount) init() {
 	m.data.SetUnit("{accesses}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -785,8 +785,8 @@ func (m *metricMongodbIndexAccessCount) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("database", databaseAttributeValue)
-	dp.Attributes().PutString("collection", collectionAttributeValue)
+	dp.Attributes().PutStr("database", databaseAttributeValue)
+	dp.Attributes().PutStr("collection", collectionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -827,7 +827,7 @@ func (m *metricMongodbIndexCount) init() {
 	m.data.SetUnit("{indexes}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -839,7 +839,7 @@ func (m *metricMongodbIndexCount) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("database", databaseAttributeValue)
+	dp.Attributes().PutStr("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -880,7 +880,7 @@ func (m *metricMongodbIndexSize) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -892,7 +892,7 @@ func (m *metricMongodbIndexSize) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("database", databaseAttributeValue)
+	dp.Attributes().PutStr("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -933,7 +933,7 @@ func (m *metricMongodbMemoryUsage) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -945,8 +945,8 @@ func (m *metricMongodbMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("database", databaseAttributeValue)
-	dp.Attributes().PutString("type", memoryTypeAttributeValue)
+	dp.Attributes().PutStr("database", databaseAttributeValue)
+	dp.Attributes().PutStr("type", memoryTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -987,7 +987,7 @@ func (m *metricMongodbNetworkIoReceive) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricMongodbNetworkIoReceive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1038,7 +1038,7 @@ func (m *metricMongodbNetworkIoTransmit) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricMongodbNetworkIoTransmit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1089,7 +1089,7 @@ func (m *metricMongodbNetworkRequestCount) init() {
 	m.data.SetUnit("{requests}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricMongodbNetworkRequestCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1140,7 +1140,7 @@ func (m *metricMongodbObjectCount) init() {
 	m.data.SetUnit("{objects}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1152,7 +1152,7 @@ func (m *metricMongodbObjectCount) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("database", databaseAttributeValue)
+	dp.Attributes().PutStr("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1193,7 +1193,7 @@ func (m *metricMongodbOperationCount) init() {
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1205,7 +1205,7 @@ func (m *metricMongodbOperationCount) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("operation", operationAttributeValue)
+	dp.Attributes().PutStr("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1246,7 +1246,7 @@ func (m *metricMongodbOperationTime) init() {
 	m.data.SetUnit("ms")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1258,7 +1258,7 @@ func (m *metricMongodbOperationTime) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("operation", operationAttributeValue)
+	dp.Attributes().PutStr("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1299,7 +1299,7 @@ func (m *metricMongodbSessionCount) init() {
 	m.data.SetUnit("{sessions}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricMongodbSessionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1350,7 +1350,7 @@ func (m *metricMongodbStorageSize) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1362,7 +1362,7 @@ func (m *metricMongodbStorageSize) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("database", databaseAttributeValue)
+	dp.Attributes().PutStr("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1482,7 +1482,7 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithDatabase sets provided value as "database" attribute for current resource.
 func WithDatabase(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("database", val)
+		rm.Resource().Attributes().PutStr("database", val)
 	}
 }
 

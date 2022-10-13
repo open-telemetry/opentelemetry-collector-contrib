@@ -197,7 +197,7 @@ func doubleSummaryMetricsToData(name string, data pmetric.SummaryDataPointSlice,
 
 func metricDataToSwMetricData(md pmetric.Metric, defaultLabels []*metricpb.Label) (metrics []*metricpb.MeterData) {
 	switch md.Type() {
-	case pmetric.MetricTypeNone:
+	case pmetric.MetricTypeEmpty:
 		break
 	case pmetric.MetricTypeGauge:
 		return numberMetricsToData(md.Name(), md.Gauge().DataPoints(), defaultLabels)
