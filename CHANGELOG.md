@@ -4,6 +4,69 @@
 
 <!-- next version -->
 
+## v0.62.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/ottl`: Enhance replace_all_patterns functions to take a new parameter that specifies whether the function applies to keys or values. (#12631)
+- `pkg/ottl`: Unexports several types intended only for the package's grammar. (#14599)
+- `pkg/ottl`: Changed Statement to be an interface with an `Execute` function. (#14869)
+- `pkg/ottl`: Rename the `Queries` signal configuration field to `Statements` and remove the `ottlconfig` package. (#14680)
+- `confmap/provider/s3provider`: Rename `s3mapprovider` to a `s3provider` making it consistent with other providers. (#14616)
+- `processor/transform`: Rename the `queries` config key to `statements`. (#14680)
+
+### 🚀 New components 🚀
+
+- `oracledbreceiver`: Add a new Oracle DB receiver component collecting metrics by periodically querying the database. (#13939)
+- `azuredataexplorer`: Adding a new exporter to OpenTelemetry that supports Metrics, Logs and Traces into Azure Data Explorer, a timeseries & analytics offering from Azure (#11830)
+- `awscloudwatchreceiver`: Adds the `awscloudwatchreceiver` in an alpha state (#14449)
+- `snmpreceiver`: adds the snmpreceiver metric receiver (#13409)
+
+### 💡 Enhancements 💡
+
+- `probabilisticsamplerprocessor`: add more mterics to probabilistic sampler for observ. (#13924)
+- `mongodbatlasreceiver`: Safeguard against large amounts of alert emissions. (#14610)
+- `bearertokenauthextension`: support reading tokens from file (#14325)
+- `cumulativetodeltaprocessor`: Reduce memory consumption in cumulativetodeltaprocessor by removing unnecessary storage of metric identities. (#13751)
+- `carbonexporter`: Change carbonexporter to use pdata, remove dependency on opencensus (#14589)
+- `coralogixexporter`: Adds support for mapping application name and subsystem using Resource attributes (#14398)
+- `mysqlreceiver`: add mysql.tmp_resources metric (#14138)
+- `mysqlreceiver`: add mysql.locked_connects metric (#14138)
+- `elasticsearchreceiver`: Add scraping index stats and generate search metrics (#14635)
+- `pkg/telemetryquerylanguage`: Add the Int factory function to the transform processor (#11810)
+- `exporters`: Use `BuildInfo.Command` for identifying the collector in some AWS exporter user agents. (#14719)
+  Some exporters were using a build-time constant definition to change the identity of the collector binary in user agent strings.  These will now use the collector service's `BuildInfo.Command` value.
+- `jaegerexporter`: Adds support for ValueTypeBytes to Jaeger's trace to jaegerproto translator. (#14574)
+- `mongodbatlasreceiver`: Adds capability to retrieve alerts from the API rather than listening (#14121)
+- `pkg/ottl`: Use generics to avoid context cast in getters and funcs. (#14482)
+- `pkg/ottl`: Simplify parser creation logic. (#14601)
+- `pkg/ottl`: Add new Resource context to allow for efficient transformation of resource telemetry. (#14887)
+- `exporter/signalfxexporter/translation`: Drop datapoints that have more than 36 dimensions and log a message when agent is set to debug (#14625)
+  Additionally, the metric and dimension validation failures are now logged in Debug instead of Warn
+- `sigv4authextension`: Have "sts_region" default to "region" if not provided (#14573)
+- `snmpreceiver`: adds the client for the snmpreceiver (#13409)
+- `snmpreceiver`: adds the full configuration that the SNMP Receiver will use (#13409)
+- `splunkhecreceiver`: Updates Splunk receiver http status codes in order to be compliant with SplunkCloud (#14469)
+- `pkg/stanza`: `readerFactory` and  `Reader` use  `helper.Encoding` directly, no longer depends on `helper.Splitter` (#14593)
+- `pkg/stanza`: `readerFactory` and  `Reader` use  `bufio.SplitFunc` directly, no longer depends on `helper.Splitter` (#14766)
+- `pkg/stanza`: add splitter factory which return a split func (#14766)
+- `exporter/awsxrayexporter`: Change the value of xraysegment.url from `dbConnectionString` to the span name. This makes the XRay segment timeline more informationally useful. (#14342)
+  This change contravenes the AWS documentation for what values should go into this segment field.
+- `pkg/translator/zipkin`: Change zipkin V1 conversion to use pdata. (#14592)
+
+### 🧰 Bug fixes 🧰
+
+- `clickhouseexporter`: Fix serviceName variable scope (#8028)
+- `exporter/datadogexporter`: Fix an issue where the Datadog system metrics system.memory.{usage,total} would be incorrect in Kubernetes. (#14618)
+- `mysqlreceiver`: Fix sql queries for scraping table and index metrics. (#14138)
+- `fileexporter`: set rotation disabled by default (#14690)
+- `fluentforwardreceiver`: added case to handle uint64 timestamp (#11435)
+- `sqlqueryreceiver`: fix oracle db integration test (#12332)
+- `prometheusreceiver`: changes to use the new scrape_configs endpoint in the target allocator to dynamically pull scrape configuration. (#14597)
+- `saphanareceiver`: Fix incorrect use of units for saphana licenses metrics (#10565)
+- `hostmetricsreceiver`: Allow to continue collecting partition information even if an error is returned (#14315)
+  Log the error and continue if partition information, however incomplete, was provided.
+
 ## v0.61.0
 
 ### 🛑 Breaking changes 🛑
