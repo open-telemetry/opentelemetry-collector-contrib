@@ -24,9 +24,9 @@ These are the metrics available for this scraper.
 | **oracledb.processes.limit** | Maximum limit of active processes. | {processes} | Gauge(Int) | <ul> </ul> |
 | **oracledb.processes.usage** | Current count of active processes. | {processes} | Gauge(Int) | <ul> </ul> |
 | **oracledb.sessions.limit** | Maximum limit of active sessions. | {sessions} | Gauge(Int) | <ul> </ul> |
-| **oracledb.sessions.usage** | Count of active sessions. | {sessions} | Gauge(Int) | <ul> <li>db.oracle.session.type</li> <li>db.oracle.session.status</li> </ul> |
-| **oracledb.tablespace_size.limit** | Maximum size of tablespace in bytes. | By | Gauge(Int) | <ul> <li>db.oracle.tablespace.name</li> </ul> |
-| **oracledb.tablespace_size.usage** | Used tablespace in bytes. | By | Gauge(Int) | <ul> <li>db.oracle.tablespace.name</li> </ul> |
+| **oracledb.sessions.usage** | Count of active sessions. | {sessions} | Gauge(Int) | <ul> <li>session_type</li> <li>session_status</li> </ul> |
+| **oracledb.tablespace_size.limit** | Maximum size of tablespace in bytes. | By | Gauge(Int) | <ul> <li>tablespace_name</li> </ul> |
+| **oracledb.tablespace_size.usage** | Used tablespace in bytes. | By | Gauge(Int) | <ul> <li>tablespace_name</li> </ul> |
 | **oracledb.user_commits** | Number of user commits. When a user commits a transaction, the redo generated that reflects the changes made to database blocks must be written to disk. Commits often represent the closest thing to a user transaction rate. | {commits} | Sum(Int) | <ul> </ul> |
 | **oracledb.user_rollbacks** | Number of times users manually issue the ROLLBACK statement or an error occurs during a user's transactions | 1 | Sum(Int) | <ul> </ul> |
 
@@ -43,12 +43,12 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| db.oracle.instance.name | The name of the instance that data is coming from. | Str |
+| oracledb.instance.name | The name of the instance that data is coming from. | Str |
 
 ## Metric attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| db.oracle.session.status | Session status |  |
-| db.oracle.session.type | Session type |  |
-| db.oracle.tablespace.name | Tablespace name |  |
+| session_status | Session status |  |
+| session_type | Session type |  |
+| tablespace_name | Tablespace name |  |

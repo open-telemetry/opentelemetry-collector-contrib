@@ -1,11 +1,16 @@
+name: oracledbreceiver
+resource_attributes:
+  oracledb.instance.name:
+    description: The name of the instance that data is coming from.
+    type: string
 attributes:
-  db.oracle.session.status:
+  session_status:
     description: Session status
     type: string
-  db.oracle.session.type:
+  session_type:
     description: Session type
     type: string
-  db.oracle.tablespace.name:
+  tablespace_name:
     description: Tablespace name
 metrics:
   oracledb.cpu_time:
@@ -104,8 +109,8 @@ metrics:
     unit: 1
   oracledb.sessions.usage:
     attributes:
-      - db.oracle.session.type
-      - db.oracle.session.status
+      - session_type
+      - session_status
     description: Count of active sessions.
     enabled: true
     gauge:
@@ -155,7 +160,7 @@ metrics:
     unit: "{resources}"
   oracledb.tablespace_size.limit:
     attributes:
-      - db.oracle.tablespace.name
+      - tablespace_name
     description: Maximum size of tablespace in bytes.
     enabled: true
     gauge:
@@ -163,14 +168,10 @@ metrics:
     unit: By
   oracledb.tablespace_size.usage:
     attributes:
-      - db.oracle.tablespace.name
+      - tablespace_name
     description: Used tablespace in bytes.
     enabled: true
     gauge:
       value_type: int
     unit: By
-name: oracledbreceiver
-resource_attributes:
-  db.oracle.instance.name:
-    description: The name of the instance that data is coming from.
-    type: string
+

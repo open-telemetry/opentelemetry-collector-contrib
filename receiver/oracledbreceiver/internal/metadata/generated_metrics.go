@@ -925,7 +925,7 @@ func (m *metricOracledbSessionsUsage) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricOracledbSessionsUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbOracleSessionTypeAttributeValue string, dbOracleSessionStatusAttributeValue string) {
+func (m *metricOracledbSessionsUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sessionTypeAttributeValue string, sessionStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -933,8 +933,8 @@ func (m *metricOracledbSessionsUsage) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("db.oracle.session.type", dbOracleSessionTypeAttributeValue)
-	dp.Attributes().PutStr("db.oracle.session.status", dbOracleSessionStatusAttributeValue)
+	dp.Attributes().PutStr("session_type", sessionTypeAttributeValue)
+	dp.Attributes().PutStr("session_status", sessionStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -977,7 +977,7 @@ func (m *metricOracledbTablespaceSizeLimit) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricOracledbTablespaceSizeLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbOracleTablespaceNameAttributeValue string) {
+func (m *metricOracledbTablespaceSizeLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -985,7 +985,7 @@ func (m *metricOracledbTablespaceSizeLimit) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("db.oracle.tablespace.name", dbOracleTablespaceNameAttributeValue)
+	dp.Attributes().PutStr("tablespace_name", tablespaceNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1028,7 +1028,7 @@ func (m *metricOracledbTablespaceSizeUsage) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricOracledbTablespaceSizeUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbOracleTablespaceNameAttributeValue string) {
+func (m *metricOracledbTablespaceSizeUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1036,7 +1036,7 @@ func (m *metricOracledbTablespaceSizeUsage) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("db.oracle.tablespace.name", dbOracleTablespaceNameAttributeValue)
+	dp.Attributes().PutStr("tablespace_name", tablespaceNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1253,10 +1253,10 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-// WithDbOracleInstanceName sets provided value as "db.oracle.instance.name" attribute for current resource.
-func WithDbOracleInstanceName(val string) ResourceMetricsOption {
+// WithOracledbInstanceName sets provided value as "oracledb.instance.name" attribute for current resource.
+func WithOracledbInstanceName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("db.oracle.instance.name", val)
+		rm.Resource().Attributes().PutStr("oracledb.instance.name", val)
 	}
 }
 
@@ -1413,18 +1413,18 @@ func (mb *MetricsBuilder) RecordOracledbSessionsLimitDataPoint(ts pcommon.Timest
 }
 
 // RecordOracledbSessionsUsageDataPoint adds a data point to oracledb.sessions.usage metric.
-func (mb *MetricsBuilder) RecordOracledbSessionsUsageDataPoint(ts pcommon.Timestamp, val int64, dbOracleSessionTypeAttributeValue string, dbOracleSessionStatusAttributeValue string) {
-	mb.metricOracledbSessionsUsage.recordDataPoint(mb.startTime, ts, val, dbOracleSessionTypeAttributeValue, dbOracleSessionStatusAttributeValue)
+func (mb *MetricsBuilder) RecordOracledbSessionsUsageDataPoint(ts pcommon.Timestamp, val int64, sessionTypeAttributeValue string, sessionStatusAttributeValue string) {
+	mb.metricOracledbSessionsUsage.recordDataPoint(mb.startTime, ts, val, sessionTypeAttributeValue, sessionStatusAttributeValue)
 }
 
 // RecordOracledbTablespaceSizeLimitDataPoint adds a data point to oracledb.tablespace_size.limit metric.
-func (mb *MetricsBuilder) RecordOracledbTablespaceSizeLimitDataPoint(ts pcommon.Timestamp, val int64, dbOracleTablespaceNameAttributeValue string) {
-	mb.metricOracledbTablespaceSizeLimit.recordDataPoint(mb.startTime, ts, val, dbOracleTablespaceNameAttributeValue)
+func (mb *MetricsBuilder) RecordOracledbTablespaceSizeLimitDataPoint(ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue string) {
+	mb.metricOracledbTablespaceSizeLimit.recordDataPoint(mb.startTime, ts, val, tablespaceNameAttributeValue)
 }
 
 // RecordOracledbTablespaceSizeUsageDataPoint adds a data point to oracledb.tablespace_size.usage metric.
-func (mb *MetricsBuilder) RecordOracledbTablespaceSizeUsageDataPoint(ts pcommon.Timestamp, val int64, dbOracleTablespaceNameAttributeValue string) {
-	mb.metricOracledbTablespaceSizeUsage.recordDataPoint(mb.startTime, ts, val, dbOracleTablespaceNameAttributeValue)
+func (mb *MetricsBuilder) RecordOracledbTablespaceSizeUsageDataPoint(ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue string) {
+	mb.metricOracledbTablespaceSizeUsage.recordDataPoint(mb.startTime, ts, val, tablespaceNameAttributeValue)
 }
 
 // RecordOracledbUserCommitsDataPoint adds a data point to oracledb.user_commits metric.
