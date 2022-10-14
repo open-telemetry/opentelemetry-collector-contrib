@@ -129,16 +129,16 @@ func TestProcess(t *testing.T) {
 			statement: `replace_all_patterns(attributes, "key", "http.url", "url")`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Clear()
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("http.method", "get")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("http.path", "/health")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("url", "http://localhost/health")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("flags", "A|B|C")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("http.method", "get")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("http.path", "/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("url", "http://localhost/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("flags", "A|B|C")
 
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().Clear()
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutString("http.method", "get")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutString("http.path", "/health")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutString("url", "http://localhost/health")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutString("flags", "C|D")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("http.method", "get")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("http.path", "/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("url", "http://localhost/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("flags", "C|D")
 			},
 		},
 		{
