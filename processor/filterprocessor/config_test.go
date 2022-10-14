@@ -767,7 +767,7 @@ func TestLogSeverity_severityNumber(t *testing.T) {
 		{
 			name: "unknown severity",
 			sev:  logSeverity("unknown"),
-			num:  plog.SeverityNumberUndefined,
+			num:  plog.SeverityNumberUnspecified,
 		},
 		{
 			name: "Numeric Severity",

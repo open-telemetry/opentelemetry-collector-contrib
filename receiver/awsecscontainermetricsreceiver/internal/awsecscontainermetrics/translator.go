@@ -85,7 +85,7 @@ func appendIntSum(metricName string, unit string, value int64, ts pcommon.Timest
 	metric := appendMetric(ilm, metricName, unit)
 
 	intSum := metric.SetEmptySum()
-	intSum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	intSum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 	appendIntDataPoint(intSum.DataPoints(), value, ts)
 }

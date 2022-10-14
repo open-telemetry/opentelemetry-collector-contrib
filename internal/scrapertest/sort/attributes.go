@@ -80,32 +80,32 @@ func compareValues(a, b pcommon.Value) int {
 	switch a.Type() {
 	case pcommon.ValueTypeBool:
 		switch {
-		case a.BoolVal() == b.BoolVal():
+		case a.Bool() == b.Bool():
 			return 0
-		case !a.BoolVal():
+		case !a.Bool():
 			return -1
-		case !b.BoolVal():
+		case !b.Bool():
 			return 1
 		}
 	case pcommon.ValueTypeBytes:
-		return strings.Compare(string(a.BytesVal().AsRaw()), string(b.BytesVal().AsRaw()))
+		return strings.Compare(string(a.Bytes().AsRaw()), string(b.Bytes().AsRaw()))
 	case pcommon.ValueTypeDouble:
 		switch {
-		case a.DoubleVal() == b.DoubleVal():
+		case a.Double() == b.Double():
 			return 0
-		case a.DoubleVal() < b.DoubleVal():
+		case a.Double() < b.Double():
 			return -1
-		case a.DoubleVal() > b.DoubleVal():
+		case a.Double() > b.Double():
 			return 1
 		}
 	case pcommon.ValueTypeInt:
-		return int(a.IntVal() - b.IntVal())
+		return int(a.Int() - b.Int())
 	case pcommon.ValueTypeMap:
-		return compareMaps(a.MapVal(), b.MapVal())
+		return compareMaps(a.Map(), b.Map())
 	case pcommon.ValueTypeSlice:
-		return compareSlices(a.SliceVal(), b.SliceVal())
-	case pcommon.ValueTypeString:
-		return strings.Compare(a.StringVal(), b.StringVal())
+		return compareSlices(a.Slice(), b.Slice())
+	case pcommon.ValueTypeStr:
+		return strings.Compare(a.Str(), b.Str())
 	}
 	return 0
 }

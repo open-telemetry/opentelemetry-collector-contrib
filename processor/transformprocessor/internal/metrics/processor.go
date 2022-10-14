@@ -26,7 +26,7 @@ import (
 )
 
 type Processor struct {
-	statements []ottl.Statement[ottldatapoints.TransformContext]
+	statements []*ottl.Statement[ottldatapoints.TransformContext]
 }
 
 func NewProcessor(statements []string, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
@@ -96,8 +96,6 @@ func (p *Processor) handleSummaryDataPoints(dps pmetric.SummaryDataPointSlice, m
 
 func (p *Processor) callFunctions(ctx ottldatapoints.TransformContext) {
 	for _, statement := range p.statements {
-		if statement.Condition(ctx) {
-			statement.Function(ctx)
-		}
+		statement.Execute(ctx)
 	}
 }

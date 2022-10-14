@@ -146,7 +146,7 @@ func someComplexHistogramMetrics(withResourceAttrIndex bool, rmCount int, ilmCou
 		for j := 0; j < ilmCount; j++ {
 			metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprintf("foo-%d-%d", i, j))
-			metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+			metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 			for k := 0; k < dataPointCount; k++ {
 				dataPoint := metric.Histogram().DataPoints().AppendEmpty()
@@ -374,7 +374,7 @@ func TestComplexAttributeGrouping(t *testing.T) {
 					metrics := rm.ScopeMetrics().At(j).Metrics()
 					for k := 0; k < metrics.Len(); k++ {
 						metric := metrics.At(k)
-						assert.Equal(t, metric.Histogram().AggregationTemporality(), pmetric.MetricAggregationTemporalityCumulative)
+						assert.Equal(t, metric.Histogram().AggregationTemporality(), pmetric.AggregationTemporalityCumulative)
 						for l := 0; l < metric.Histogram().DataPoints().Len(); l++ {
 							assert.EqualValues(t, outputRecordAttrs, metric.Histogram().DataPoints().At(l).Attributes())
 						}

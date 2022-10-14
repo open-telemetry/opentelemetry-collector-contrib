@@ -205,7 +205,7 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 		name           string
 		haveTags       []*binaryAnnotation
 		wantAttributes pcommon.Map
-		wantStatus     ptrace.SpanStatus
+		wantStatus     ptrace.Status
 	}
 
 	cases := []test{
@@ -216,8 +216,8 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 				Value: "2",
 			}},
 			wantAttributes: pcommon.NewMap(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				return ret
 			}(),
@@ -230,7 +230,7 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 				Value: "Forbidden",
 			}},
 			wantAttributes: pcommon.NewMap(),
-			wantStatus:     ptrace.NewSpanStatus(),
+			wantStatus:     ptrace.NewStatus(),
 		},
 
 		{
@@ -246,8 +246,8 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 				},
 			},
 			wantAttributes: pcommon.NewMap(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("Forbidden")
 				return ret
@@ -272,8 +272,8 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("NotFound")
 				return ret
@@ -306,8 +306,8 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("Forbidden")
 				return ret
@@ -336,8 +336,8 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				return ret
 			}(),
@@ -365,8 +365,8 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("NotFound")
 				return ret
@@ -386,8 +386,8 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 				},
 			},
 			wantAttributes: pcommon.NewMap(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("RPCError")
 				return ret
@@ -428,8 +428,8 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("RPCError")
 				return ret
