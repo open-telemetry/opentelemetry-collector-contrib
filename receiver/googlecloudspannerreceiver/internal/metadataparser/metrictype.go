@@ -53,24 +53,24 @@ func (metricType MetricType) dataType() (pmetric.MetricType, error) {
 	case SumMetricDataType:
 		dataType = pmetric.MetricTypeSum
 	default:
-		return pmetric.MetricTypeNone, errors.New("invalid data type received")
+		return pmetric.MetricTypeEmpty, errors.New("invalid data type received")
 	}
 
 	return dataType, nil
 }
 
-func (metricType MetricType) aggregationTemporality() (pmetric.MetricAggregationTemporality, error) {
-	var aggregationTemporality pmetric.MetricAggregationTemporality
+func (metricType MetricType) aggregationTemporality() (pmetric.AggregationTemporality, error) {
+	var aggregationTemporality pmetric.AggregationTemporality
 
 	switch metricType.Aggregation {
 	case DeltaAggregationType:
-		aggregationTemporality = pmetric.MetricAggregationTemporalityDelta
+		aggregationTemporality = pmetric.AggregationTemporalityDelta
 	case CumulativeAggregationType:
-		aggregationTemporality = pmetric.MetricAggregationTemporalityCumulative
+		aggregationTemporality = pmetric.AggregationTemporalityCumulative
 	case "":
-		aggregationTemporality = pmetric.MetricAggregationTemporalityUnspecified
+		aggregationTemporality = pmetric.AggregationTemporalityUnspecified
 	default:
-		return pmetric.MetricAggregationTemporalityUnspecified, errors.New("invalid aggregation temporality received")
+		return pmetric.AggregationTemporalityUnspecified, errors.New("invalid aggregation temporality received")
 	}
 
 	return aggregationTemporality, nil

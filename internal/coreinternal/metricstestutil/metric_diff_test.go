@@ -84,13 +84,13 @@ func TestAttributes(t *testing.T) {
 
 func TestExponentialHistogram(t *testing.T) {
 	cfg1 := goldendataset.DefaultCfg()
-	cfg1.MetricDescriptorType = pmetric.MetricTypeHistogram
+	cfg1.MetricDescriptorType = pmetric.MetricTypeExponentialHistogram
 	cfg1.PtVal = 1
 	expected := goldendataset.MetricsFromCfg(cfg1)
 	cfg2 := goldendataset.DefaultCfg()
-	cfg2.MetricDescriptorType = pmetric.MetricTypeHistogram
+	cfg2.MetricDescriptorType = pmetric.MetricTypeExponentialHistogram
 	cfg2.PtVal = 3
 	actual := goldendataset.MetricsFromCfg(cfg2)
 	diffs := DiffMetrics(nil, expected, actual)
-	assert.Len(t, diffs, 3)
+	assert.Len(t, diffs, 8)
 }

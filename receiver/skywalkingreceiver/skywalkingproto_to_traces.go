@@ -210,7 +210,7 @@ func swReferencesToSpanLinks(refs []*agentV3.SegmentReference, dest ptrace.SpanL
 	}
 }
 
-func setInternalSpanStatus(span *agentV3.SpanObject, dest ptrace.SpanStatus) {
+func setInternalSpanStatus(span *agentV3.SpanObject, dest ptrace.Status) {
 	if span.GetIsError() {
 		dest.SetCode(ptrace.StatusCodeError)
 		dest.SetMessage("ERROR")

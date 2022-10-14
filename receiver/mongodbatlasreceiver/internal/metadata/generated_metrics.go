@@ -1772,7 +1772,7 @@ func (m *metricMongodbatlasProcessCacheSize) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1825,7 +1825,7 @@ func (m *metricMongodbatlasProcessConnections) init() {
 	m.data.SetUnit("{connections}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricMongodbatlasProcessConnections) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -2438,7 +2438,7 @@ func (m *metricMongodbatlasProcessDbOperationsTime) init() {
 	m.data.SetUnit("ms")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3095,7 +3095,7 @@ func (m *metricMongodbatlasProcessNetworkRequests) init() {
 	m.data.SetUnit("{requests}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricMongodbatlasProcessNetworkRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -3752,7 +3752,7 @@ func (m *metricMongodbatlasSystemFtsMemoryUsage) init() {
 	m.data.SetUnit("MiBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 

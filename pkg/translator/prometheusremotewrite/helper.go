@@ -247,9 +247,9 @@ func validateMetrics(metric pmetric.Metric) bool {
 	case pmetric.MetricTypeGauge:
 		return metric.Gauge().DataPoints().Len() != 0
 	case pmetric.MetricTypeSum:
-		return metric.Sum().DataPoints().Len() != 0 && metric.Sum().AggregationTemporality() == pmetric.MetricAggregationTemporalityCumulative
+		return metric.Sum().DataPoints().Len() != 0 && metric.Sum().AggregationTemporality() == pmetric.AggregationTemporalityCumulative
 	case pmetric.MetricTypeHistogram:
-		return metric.Histogram().DataPoints().Len() != 0 && metric.Histogram().AggregationTemporality() == pmetric.MetricAggregationTemporalityCumulative
+		return metric.Histogram().DataPoints().Len() != 0 && metric.Histogram().AggregationTemporality() == pmetric.AggregationTemporalityCumulative
 	case pmetric.MetricTypeSummary:
 		return metric.Summary().DataPoints().Len() != 0
 	}

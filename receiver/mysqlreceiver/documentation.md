@@ -22,6 +22,7 @@ These are the metrics available for this scraper.
 | **mysql.locked_connects** | The number of attempts to connect to locked user accounts. | 1 | Sum(Int) | <ul> </ul> |
 | **mysql.locks** | The number of MySQL locks. | 1 | Sum(Int) | <ul> <li>locks</li> </ul> |
 | **mysql.log_operations** | The number of InnoDB log operations. | 1 | Sum(Int) | <ul> <li>log_operations</li> </ul> |
+| **mysql.opened_resources** | The number of opened resources. | 1 | Sum(Int) | <ul> <li>opened_resources</li> </ul> |
 | **mysql.operations** | The number of InnoDB operations. | 1 | Sum(Int) | <ul> <li>operations</li> </ul> |
 | **mysql.page_operations** | The number of InnoDB page operations. | 1 | Sum(Int) | <ul> <li>page_operations</li> </ul> |
 | **mysql.row_locks** | The number of InnoDB row locks. | 1 | Sum(Int) | <ul> <li>row_locks</li> </ul> |
@@ -61,6 +62,7 @@ metrics:
 | io_waits_operations (operation) | The io_waits operation type. | delete, fetch, insert, update |
 | locks (kind) | The table locks type. | immediate, waited |
 | log_operations (operation) | The log operation types. | waits, write_requests, writes |
+| opened_resources (kind) | The kind of the resource. | file, table_definition, table |
 | operations (operation) | The operation types. | fsyncs, reads, writes |
 | page_operations (operation) | The page operation types. | created, read, written |
 | row_locks (kind) | The row lock type. | waits, time |

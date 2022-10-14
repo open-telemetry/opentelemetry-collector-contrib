@@ -479,7 +479,7 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 		return err
 	}
 
-	err := configMap.UnmarshalExact(c)
+	err := configMap.Unmarshal(c, confmap.WithErrorUnused())
 	if err != nil {
 		return err
 	}
