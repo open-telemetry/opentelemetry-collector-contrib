@@ -101,7 +101,7 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 
 		matchCount := len(p.router.routes)
 		for key, route := range p.router.routes {
-			if _, isMatch := route.expression.Execute(ltx); !isMatch {
+			if _, isMatch := route.statement.Execute(ltx); !isMatch {
 				matchCount--
 				continue
 			}
