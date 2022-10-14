@@ -29,23 +29,32 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 )
 
 var (
 	cfg = &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		BaseConfig: adapter.BaseConfig{
-			Operators: adapter.OperatorConfigs{
-				map[string]interface{}{
-					"type":  "regex_parser",
-					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
-					"severity": map[string]interface{}{
-						"parse_from": "attributes.sev",
-					},
-					"timestamp": map[string]interface{}{
-						"layout":     "%Y-%m-%d %H:%M:%S",
-						"parse_from": "attributes.time",
-					},
+			Operators: []operator.Config{
+				{
+					Builder: func() *regex.Config {
+						cfg := regex.NewConfig()
+						cfg.Regex = "^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$"
+						sevField := entry.NewAttributeField("sev")
+						sevCfg := helper.NewSeverityConfig()
+						sevCfg.ParseFrom = &sevField
+						cfg.SeverityConfig = &sevCfg
+						timeField := entry.NewAttributeField("time")
+						timeCfg := helper.NewTimeParser()
+						timeCfg.Layout = "%Y-%m-%d %H:%M:%S"
+						timeCfg.ParseFrom = &timeField
+						cfg.TimeParser = &timeCfg
+						return cfg
+					}(),
 				},
 			},
 			Converter: adapter.ConverterConfig{
@@ -80,7 +89,7 @@ var skip = func(t *testing.T, why string) {
 
 func TestLogsTransformProcessor(t *testing.T) {
 	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9761")
-	baseMessage := pcommon.NewValueString("2022-01-01 01:02:03 INFO this is a test message")
+	baseMessage := pcommon.NewValueStr("2022-01-01 01:02:03 INFO this is a test message")
 	spanID := pcommon.SpanID([8]byte{0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
 	traceID := pcommon.TraceID([16]byte{0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
 	infoSeverityText := "Info"
@@ -116,9 +125,9 @@ func TestLogsTransformProcessor(t *testing.T) {
 					severity:     plog.SeverityNumberInfo,
 					severityText: &infoSeverityText,
 					attributes: &map[string]pcommon.Value{
-						"msg":  pcommon.NewValueString("this is a test message"),
-						"time": pcommon.NewValueString("2022-01-01 01:02:03"),
-						"sev":  pcommon.NewValueString("INFO"),
+						"msg":  pcommon.NewValueStr("this is a test message"),
+						"time": pcommon.NewValueStr("2022-01-01 01:02:03"),
+						"sev":  pcommon.NewValueStr("INFO"),
 					},
 					spanID:       spanID,
 					traceID:      traceID,
@@ -131,9 +140,9 @@ func TestLogsTransformProcessor(t *testing.T) {
 					severity:     plog.SeverityNumberInfo,
 					severityText: &infoSeverityText,
 					attributes: &map[string]pcommon.Value{
-						"msg":  pcommon.NewValueString("this is a test message"),
-						"time": pcommon.NewValueString("2022-01-01 01:02:03"),
-						"sev":  pcommon.NewValueString("INFO"),
+						"msg":  pcommon.NewValueStr("this is a test message"),
+						"time": pcommon.NewValueStr("2022-01-01 01:02:03"),
+						"sev":  pcommon.NewValueStr("INFO"),
 					},
 					spanID:       spanID,
 					traceID:      traceID,

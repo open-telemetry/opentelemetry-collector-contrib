@@ -42,10 +42,10 @@ func NewConfig(operatorID string) *Config {
 
 // Config is the configuration of a file output operatorn.
 type Config struct {
-	helper.OutputConfig `yaml:",inline"`
+	helper.OutputConfig `mapstructure:",squash"`
 
-	Path   string `json:"path" yaml:"path"`
-	Format string `json:"format,omitempty" path:"format,omitempty"`
+	Path   string `mapstructure:"path"`
+	Format string `mapstructure:"format"`
 }
 
 // Build will build a file output operator.

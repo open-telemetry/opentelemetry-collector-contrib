@@ -125,9 +125,9 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 			switch metricCfg.Sum.Aggregation {
 			case "cumulative":
-				builtMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				builtMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			case "delta":
-				builtMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				builtMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 			}
 		} else {
 			builtMetric.SetEmptyGauge()
@@ -164,7 +164,7 @@ func initializeMetricDps(metric pmetric.Metric, now pcommon.Timestamp, counterVa
 	attributes map[string]string) {
 	var dps pmetric.NumberDataPointSlice
 
-	if metric.DataType() == pmetric.MetricDataTypeGauge {
+	if metric.Type() == pmetric.MetricTypeGauge {
 		dps = metric.Gauge().DataPoints()
 	} else {
 		dps = metric.Sum().DataPoints()
@@ -172,16 +172,16 @@ func initializeMetricDps(metric pmetric.Metric, now pcommon.Timestamp, counterVa
 
 	dp := dps.AppendEmpty()
 	if counterValue.InstanceName != "" {
-		dp.Attributes().PutString(instanceLabelName, counterValue.InstanceName)
+		dp.Attributes().PutStr(instanceLabelName, counterValue.InstanceName)
 	}
 	if attributes != nil {
 		for attKey, attVal := range attributes {
-			dp.Attributes().PutString(attKey, attVal)
+			dp.Attributes().PutStr(attKey, attVal)
 		}
 	}
 
 	dp.SetTimestamp(now)
-	dp.SetDoubleVal(counterValue.Value)
+	dp.SetDoubleValue(counterValue.Value)
 }
 
 func instancesFromConfig(oc ObjectConfig) []string {

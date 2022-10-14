@@ -43,8 +43,8 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a file input operator
 type Config struct {
-	helper.InputConfig  `mapstructure:",squash" yaml:",inline"`
-	fileconsumer.Config `mapstructure:",squash" yaml:",inline"`
+	helper.InputConfig  `mapstructure:",squash"`
+	fileconsumer.Config `mapstructure:",squash"`
 }
 
 // Build will build a file input operator from the supplied configuration

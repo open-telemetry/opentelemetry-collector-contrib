@@ -77,19 +77,19 @@ func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {
 
 func requireMetricOk(t *testing.T, m pmetric.Metric) {
 	require.NotZero(t, m.Name())
-	require.NotEqual(t, pmetric.MetricDataTypeNone, m.DataType())
-	switch m.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	require.NotEqual(t, pmetric.MetricTypeEmpty, m.Type())
+	switch m.Type() {
+	case pmetric.MetricTypeGauge:
 		gauge := m.Gauge()
 		for i := 0; i < gauge.DataPoints().Len(); i++ {
 			dp := gauge.DataPoints().At(i)
 			require.NotZero(t, dp.Timestamp())
 			requirePointOk(t, dp)
 		}
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		sum := m.Sum()
 		require.True(t, sum.IsMonotonic())
-		require.Equal(t, pmetric.MetricAggregationTemporalityCumulative, sum.AggregationTemporality())
+		require.Equal(t, pmetric.AggregationTemporalityCumulative, sum.AggregationTemporality())
 		for i := 0; i < sum.DataPoints().Len(); i++ {
 			dp := sum.DataPoints().At(i)
 			// Start time is required for cumulative metrics. Make assertions
@@ -104,7 +104,7 @@ func requireMetricOk(t *testing.T, m pmetric.Metric) {
 
 func requirePointOk(t *testing.T, point pmetric.NumberDataPoint) {
 	require.NotZero(t, point.Timestamp())
-	require.NotEqual(t, pmetric.NumberDataPointValueTypeNone, point.ValueType())
+	require.NotEqual(t, pmetric.NumberDataPointValueTypeEmpty, point.ValueType())
 }
 
 func requireResourceOk(t *testing.T, resource pcommon.Resource) {
@@ -117,7 +117,7 @@ func TestWorkingSetMem(t *testing.T) {
 	requireContains(t, metrics, "container.memory.working_set")
 
 	nodeWsMetrics := metrics["k8s.node.memory.working_set"]
-	value := nodeWsMetrics[0].Gauge().DataPoints().At(0).IntVal()
+	value := nodeWsMetrics[0].Gauge().DataPoints().At(0).IntValue()
 	require.Equal(t, int64(1234567890), value)
 }
 
@@ -127,7 +127,7 @@ func TestPageFaults(t *testing.T) {
 	requireContains(t, metrics, "container.memory.page_faults")
 
 	nodePageFaults := metrics["k8s.node.memory.page_faults"]
-	value := nodePageFaults[0].Gauge().DataPoints().At(0).IntVal()
+	value := nodePageFaults[0].Gauge().DataPoints().At(0).IntValue()
 	require.Equal(t, int64(12345), value)
 }
 
@@ -137,7 +137,7 @@ func TestMajorPageFaults(t *testing.T) {
 	requireContains(t, metrics, "container.memory.major_page_faults")
 
 	nodePageFaults := metrics["k8s.node.memory.major_page_faults"]
-	value := nodePageFaults[0].Gauge().DataPoints().At(0).IntVal()
+	value := nodePageFaults[0].Gauge().DataPoints().At(0).IntValue()
 	require.Equal(t, int64(12), value)
 }
 

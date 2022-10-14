@@ -106,12 +106,12 @@ func (pc *perfCounter) Path() string {
 func (pc *perfCounter) ScrapeData() ([]CounterValue, error) {
 	err := pc.query.CollectData()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to collect data for performance counter '%s': %w", pc.path, err)
 	}
 
 	vals, err := pc.query.GetFormattedCounterArrayDouble(pc.handle)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to format data for performance counter '%s': %w", pc.path, err)
 	}
 
 	vals = removeTotalIfMultipleValues(vals)

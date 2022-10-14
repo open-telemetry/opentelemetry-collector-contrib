@@ -58,7 +58,7 @@ Stability level for components in this repository follow the [definitions](https
 
 ## Gated features
 
-Some features are hidden behind feature gates before they are part of the main code path for the component. Note that the feature gates themselves might be at different [lifecycle stages](https://github.com/open-telemetry/opentelemetry-collector/blob/v0.49.0/service/featuregate/README.md#feature-lifecycle).
+Some features are hidden behind feature gates before they are part of the main code path for the component. Note that the feature gates themselves might be at different [lifecycle stages](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#feature-lifecycle).
 
 ## Support
 
@@ -88,7 +88,7 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [David Ashpole](https://github.com/dashpole), Google
-- [Tyler Helmuth](https://github.com/TylerHelmuth), New Relic
+- [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
 
 Emeritus Approvers:
 - [Przemek Maciolek](https://github.com/pmm-sumo)

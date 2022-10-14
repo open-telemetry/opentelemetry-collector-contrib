@@ -82,7 +82,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			hecConfig: defaultTestingHecConfig,
 			output: func() plog.ResourceLogsSlice {
 				logsSlice := createLogsSlice(nanoseconds)
-				logsSlice.At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetDoubleVal(12.3)
+				logsSlice.At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetDouble(12.3)
 				return logsSlice
 			}(),
 			wantErr: nil,
@@ -104,9 +104,9 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			output: func() plog.ResourceLogsSlice {
 				logsSlice := createLogsSlice(nanoseconds)
 				arrVal := pcommon.NewValueSlice()
-				arr := arrVal.SliceVal()
-				arr.AppendEmpty().SetStringVal("foo")
-				arr.AppendEmpty().SetStringVal("bar")
+				arr := arrVal.Slice()
+				arr.AppendEmpty().SetStr("foo")
+				arr.AppendEmpty().SetStr("bar")
 				arrVal.CopyTo(logsSlice.At(0).ScopeLogs().At(0).LogRecords().At(0).Body())
 				return logsSlice
 			}(),
@@ -129,13 +129,13 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			output: func() plog.ResourceLogsSlice {
 				logsSlice := createLogsSlice(nanoseconds)
 
-				attMap := logsSlice.At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetEmptyMapVal()
+				attMap := logsSlice.At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetEmptyMap()
 				attMap.PutBool("bool", false)
 				foos := attMap.PutEmptySlice("foos")
 				foos.EnsureCapacity(3)
-				foos.AppendEmpty().SetStringVal("foo")
-				foos.AppendEmpty().SetStringVal("bar")
-				foos.AppendEmpty().SetStringVal("foobar")
+				foos.AppendEmpty().SetStr("foo")
+				foos.AppendEmpty().SetStr("bar")
+				foos.AppendEmpty().SetStr("foobar")
 				attMap.PutInt("someInt", 12)
 
 				return logsSlice
@@ -187,13 +187,13 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				lr := lrs.AppendEmpty()
 				sl := lr.ScopeLogs().AppendEmpty()
 				logRecord := sl.LogRecords().AppendEmpty()
-				logRecord.Body().SetStringVal("value")
+				logRecord.Body().SetStr("value")
 				logRecord.SetTimestamp(pcommon.Timestamp(0))
-				logRecord.Attributes().PutString("foo", "bar")
-				logRecord.Attributes().PutString("myhost", "localhost")
-				logRecord.Attributes().PutString("mysource", "mysource")
-				logRecord.Attributes().PutString("mysourcetype", "mysourcetype")
-				logRecord.Attributes().PutString("myindex", "myindex")
+				logRecord.Attributes().PutStr("foo", "bar")
+				logRecord.Attributes().PutStr("myhost", "localhost")
+				logRecord.Attributes().PutStr("mysource", "mysource")
+				logRecord.Attributes().PutStr("mysourcetype", "mysourcetype")
+				logRecord.Attributes().PutStr("myindex", "myindex")
 				return lrs
 			}(),
 			wantErr: nil,
@@ -214,13 +214,13 @@ func createLogsSlice(nanoseconds int) plog.ResourceLogsSlice {
 	lr := lrs.AppendEmpty()
 	sl := lr.ScopeLogs().AppendEmpty()
 	logRecord := sl.LogRecords().AppendEmpty()
-	logRecord.Body().SetStringVal("value")
+	logRecord.Body().SetStr("value")
 	logRecord.SetTimestamp(pcommon.Timestamp(nanoseconds))
-	logRecord.Attributes().PutString("foo", "bar")
-	logRecord.Attributes().PutString("host.name", "localhost")
-	logRecord.Attributes().PutString("com.splunk.source", "mysource")
-	logRecord.Attributes().PutString("com.splunk.sourcetype", "mysourcetype")
-	logRecord.Attributes().PutString("com.splunk.index", "myindex")
+	logRecord.Attributes().PutStr("foo", "bar")
+	logRecord.Attributes().PutStr("host.name", "localhost")
+	logRecord.Attributes().PutStr("com.splunk.source", "mysource")
+	logRecord.Attributes().PutStr("com.splunk.sourcetype", "mysourcetype")
+	logRecord.Attributes().PutStr("com.splunk.index", "myindex")
 
 	return lrs
 }
@@ -234,7 +234,7 @@ func TestConvertToValueEmpty(t *testing.T) {
 func TestConvertToValueString(t *testing.T) {
 	value := pcommon.NewValueEmpty()
 	assert.NoError(t, convertToValue(zap.NewNop(), "foo", value))
-	assert.Equal(t, pcommon.NewValueString("foo"), value)
+	assert.Equal(t, pcommon.NewValueStr("foo"), value)
 }
 
 func TestConvertToValueBool(t *testing.T) {
@@ -253,8 +253,8 @@ func TestConvertToValueMap(t *testing.T) {
 	value := pcommon.NewValueEmpty()
 	assert.NoError(t, convertToValue(zap.NewNop(), map[string]interface{}{"foo": "bar"}, value))
 	atts := pcommon.NewValueMap()
-	attMap := atts.MapVal()
-	attMap.PutString("foo", "bar")
+	attMap := atts.Map()
+	attMap.PutStr("foo", "bar")
 	assert.Equal(t, atts, value)
 }
 
@@ -262,8 +262,8 @@ func TestConvertToValueArray(t *testing.T) {
 	value := pcommon.NewValueEmpty()
 	assert.NoError(t, convertToValue(zap.NewNop(), []interface{}{"foo"}, value))
 	arrValue := pcommon.NewValueSlice()
-	arr := arrValue.SliceVal()
-	arr.AppendEmpty().SetStringVal("foo")
+	arr := arrValue.Slice()
+	arr.AppendEmpty().SetStr("foo")
 	assert.Equal(t, arrValue, value)
 }
 

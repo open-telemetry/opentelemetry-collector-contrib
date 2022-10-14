@@ -33,7 +33,7 @@ import (
 
 func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 	// prepare
-	exp := newTracesProcessor(zap.NewNop(), &Config{
+	exp := newTracesProcessor(component.TelemetrySettings{}, &Config{
 		DefaultExporters: []string{"otlp"},
 		FromAttribute:    "X-Tenant",
 		Table: []RoutingTableItem{
@@ -74,7 +74,7 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 
 func TestTraces_InvalidExporter(t *testing.T) {
 	//  prepare
-	exp := newTracesProcessor(zap.NewNop(), &Config{
+	exp := newTracesProcessor(component.TelemetrySettings{}, &Config{
 		DefaultExporters: []string{"otlp"},
 		FromAttribute:    "X-Tenant",
 		Table: []RoutingTableItem{
@@ -119,7 +119,7 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		},
 	}
 
-	exp := newTracesProcessor(zap.NewNop(), &Config{
+	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -134,17 +134,17 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	tr := ptrace.NewTraces()
 
 	rl := tr.ResourceSpans().AppendEmpty()
-	rl.Resource().Attributes().PutString("X-Tenant", "acme")
+	rl.Resource().Attributes().PutStr("X-Tenant", "acme")
 	span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("span")
 
 	rl = tr.ResourceSpans().AppendEmpty()
-	rl.Resource().Attributes().PutString("X-Tenant", "acme")
+	rl.Resource().Attributes().PutStr("X-Tenant", "acme")
 	span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("span1")
 
 	rl = tr.ResourceSpans().AppendEmpty()
-	rl.Resource().Attributes().PutString("X-Tenant", "something-else")
+	rl.Resource().Attributes().PutStr("X-Tenant", "something-else")
 	span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("span2")
 
@@ -179,7 +179,7 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 		},
 	}
 
-	exp := newTracesProcessor(zap.NewNop(), &Config{
+	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  contextAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -194,7 +194,7 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 
 	tr := ptrace.NewTraces()
 	rs := tr.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutString("X-Tenant", "acme")
+	rs.Resource().Attributes().PutStr("X-Tenant", "acme")
 
 	t.Run("non default route is properly used", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeTraces(
@@ -243,7 +243,7 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 		},
 	}
 
-	exp := newTracesProcessor(zap.NewNop(), &Config{
+	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -259,7 +259,7 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 	t.Run("non default route is properly used", func(t *testing.T) {
 		tr := ptrace.NewTraces()
 		rs := tr.ResourceSpans().AppendEmpty()
-		rs.Resource().Attributes().PutString("X-Tenant", "acme")
+		rs.Resource().Attributes().PutStr("X-Tenant", "acme")
 
 		assert.NoError(t, exp.ConsumeTraces(context.Background(), tr))
 		assert.Len(t, defaultExp.AllTraces(), 0,
@@ -273,7 +273,7 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
 		tr := ptrace.NewTraces()
 		rs := tr.ResourceSpans().AppendEmpty()
-		rs.Resource().Attributes().PutString("X-Tenant", "some-custom-value")
+		rs.Resource().Attributes().PutStr("X-Tenant", "some-custom-value")
 
 		assert.NoError(t, exp.ConsumeTraces(context.Background(), tr))
 		assert.Len(t, defaultExp.AllTraces(), 1,
@@ -301,7 +301,7 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 		},
 	}
 
-	exp := newTracesProcessor(zap.NewNop(), &Config{
+	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		AttributeSource:              resourceAttributeSource,
 		FromAttribute:                "X-Tenant",
 		DropRoutingResourceAttribute: true,
@@ -317,8 +317,8 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 
 	tr := ptrace.NewTraces()
 	rm := tr.ResourceSpans().AppendEmpty()
-	rm.Resource().Attributes().PutString("X-Tenant", "acme")
-	rm.Resource().Attributes().PutString("attr", "acme")
+	rm.Resource().Attributes().PutStr("X-Tenant", "acme")
+	rm.Resource().Attributes().PutStr("attr", "acme")
 
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), tr))
 	traces := tExp.AllTraces()
@@ -331,7 +331,7 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 	assert.False(t, ok, "routing attribute should have been dropped")
 	v, ok := attrs.Get("attr")
 	assert.True(t, ok, "non-routing attributes shouldn't have been dropped")
-	assert.Equal(t, "acme", v.StringVal())
+	assert.Equal(t, "acme", v.Str())
 }
 
 func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
@@ -352,7 +352,7 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		},
 	}
 
-	exp := newTracesProcessor(zap.NewNop(), &Config{
+	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		DefaultExporters: []string{"otlp"},
 		Table: []RoutingTableItem{
 			{
@@ -457,7 +457,7 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		rspan := defaultExp.AllTraces()[0].ResourceSpans().At(0)
 		attr, ok := rspan.Resource().Attributes().Get("value")
 		assert.True(t, ok, "routing attribute must exists")
-		assert.Equal(t, attr.IntVal(), int64(-1))
+		assert.Equal(t, attr.Int(), int64(-1))
 	})
 }
 
@@ -472,7 +472,7 @@ func TestTraceProcessorCapabilities(t *testing.T) {
 	}
 
 	// test
-	p := newTracesProcessor(zap.NewNop(), config)
+	p := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, config)
 	require.NotNil(t, p)
 
 	// verify

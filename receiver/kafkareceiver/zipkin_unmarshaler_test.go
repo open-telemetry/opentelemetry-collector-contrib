@@ -1,4 +1,4 @@
-// Copyright 2020 The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ var v2FromTranslator zipkinv2.FromTranslator
 func TestUnmarshalZipkin(t *testing.T) {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutString(conventions.AttributeServiceName, "my_service")
+	rs.Resource().Attributes().PutStr(conventions.AttributeServiceName, "my_service")
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("foo")
 	span.SetStartTimestamp(pcommon.Timestamp(1597759000))

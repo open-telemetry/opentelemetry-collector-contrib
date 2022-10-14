@@ -40,7 +40,7 @@ func TestLogProcessorCapabilities(t *testing.T) {
 	}
 
 	// test
-	p := newLogProcessor(zap.NewNop(), config)
+	p := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, config)
 	require.NotNil(t, p)
 
 	// verify
@@ -63,7 +63,7 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 		},
 	}
 
-	exp := newLogProcessor(zap.NewNop(), &Config{
+	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  contextAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -78,7 +78,7 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 
 	l := plog.NewLogs()
 	rl := l.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutString("X-Tenant", "acme")
+	rl.Resource().Attributes().PutStr("X-Tenant", "acme")
 
 	t.Run("non default route is properly used", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeLogs(
@@ -127,7 +127,7 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 		},
 	}
 
-	exp := newLogProcessor(zap.NewNop(), &Config{
+	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -143,7 +143,7 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 	t.Run("non default route is properly used", func(t *testing.T) {
 		l := plog.NewLogs()
 		rl := l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutString("X-Tenant", "acme")
+		rl.Resource().Attributes().PutStr("X-Tenant", "acme")
 
 		assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
 		assert.Len(t, defaultExp.AllLogs(), 0,
@@ -157,7 +157,7 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
 		l := plog.NewLogs()
 		rl := l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutString("X-Tenant", "some-custom-value")
+		rl.Resource().Attributes().PutStr("X-Tenant", "some-custom-value")
 
 		assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
 		assert.Len(t, defaultExp.AllLogs(), 1,
@@ -185,7 +185,7 @@ func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T)
 		},
 	}
 
-	exp := newLogProcessor(zap.NewNop(), &Config{
+	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		AttributeSource:              resourceAttributeSource,
 		FromAttribute:                "X-Tenant",
 		DropRoutingResourceAttribute: true,
@@ -201,8 +201,8 @@ func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T)
 
 	l := plog.NewLogs()
 	rm := l.ResourceLogs().AppendEmpty()
-	rm.Resource().Attributes().PutString("X-Tenant", "acme")
-	rm.Resource().Attributes().PutString("attr", "acme")
+	rm.Resource().Attributes().PutStr("X-Tenant", "acme")
+	rm.Resource().Attributes().PutStr("attr", "acme")
 
 	assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
 	logs := lExp.AllLogs()
@@ -213,7 +213,7 @@ func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T)
 	assert.False(t, ok, "routing attribute should have been dropped")
 	v, ok := attrs.Get("attr")
 	assert.True(t, ok, "non routing attributes shouldn't be dropped")
-	assert.Equal(t, "acme", v.StringVal())
+	assert.Equal(t, "acme", v.Str())
 }
 
 func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
@@ -232,7 +232,7 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		},
 	}
 
-	exp := newLogProcessor(zap.NewNop(), &Config{
+	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -247,15 +247,15 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	l := plog.NewLogs()
 
 	rl := l.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutString("X-Tenant", "acme")
+	rl.Resource().Attributes().PutStr("X-Tenant", "acme")
 	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	rl = l.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutString("X-Tenant", "acme")
+	rl.Resource().Attributes().PutStr("X-Tenant", "acme")
 	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	rl = l.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutString("X-Tenant", "something-else")
+	rl.Resource().Attributes().PutStr("X-Tenant", "something-else")
 	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	ctx := context.Background()
@@ -291,7 +291,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		},
 	}
 
-	exp := newLogProcessor(zap.NewNop(), &Config{
+	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		DefaultExporters: []string{"otlp"},
 		Table: []RoutingTableItem{
 			{
@@ -314,7 +314,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 		l := plog.NewLogs()
 		rl := l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutString("X-Tenant", "something-else")
+		rl.Resource().Attributes().PutStr("X-Tenant", "something-else")
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
@@ -332,7 +332,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		l := plog.NewLogs()
 
 		rl := l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutString("X-Tenant", "xacme")
+		rl.Resource().Attributes().PutStr("X-Tenant", "xacme")
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
@@ -350,11 +350,11 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		l := plog.NewLogs()
 
 		rl := l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutString("X-Tenant", "x_acme")
+		rl.Resource().Attributes().PutStr("X-Tenant", "x_acme")
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 		rl = l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutString("X-Tenant", "_acme")
+		rl.Resource().Attributes().PutStr("X-Tenant", "_acme")
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
@@ -376,11 +376,11 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		l := plog.NewLogs()
 
 		rl := l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutString("X-Tenant", "_acme")
+		rl.Resource().Attributes().PutStr("X-Tenant", "_acme")
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 		rl = l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutString("X-Tenant", "something-else")
+		rl.Resource().Attributes().PutStr("X-Tenant", "something-else")
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 		require.NoError(t, exp.ConsumeLogs(context.Background(), l))

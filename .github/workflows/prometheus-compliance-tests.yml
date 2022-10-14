@@ -37,6 +37,8 @@ jobs:
             ~/go/pkg/mod
             ~/.cache/go-build
           key: prometheus-${{ runner.os }}-go-${{ hashFiles('**/go.mod', '**/go.sum') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: "10"
       - run: make otelcontribcol
         working-directory: opentelemetry-collector-contrib
       - name: Checkout compliance repo

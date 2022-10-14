@@ -50,7 +50,7 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 	return &WindowsLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
+			Operators:        []operator.Config{},
 			Converter:        adapter.ConverterConfig{},
 		},
 		InputConfig: *windows.NewConfig(),

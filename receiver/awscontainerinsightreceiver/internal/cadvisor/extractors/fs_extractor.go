@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package extractors // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 
 import (
@@ -24,9 +23,7 @@ import (
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 )
 
-const (
-	allowList = "^tmpfs$|^/dev/|^overlay$"
-)
+var allowedPaths = regexp.MustCompile(`^(tmpfs|\/dev\/.*|overlay)$`)
 
 type FileSystemMetricExtractor struct {
 	allowListRegexP *regexp.Regexp
@@ -79,12 +76,8 @@ func (f *FileSystemMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMem
 
 func NewFileSystemMetricExtractor(logger *zap.Logger) *FileSystemMetricExtractor {
 	fse := &FileSystemMetricExtractor{
-		logger: logger,
-	}
-	if p, err := regexp.Compile(allowList); err == nil {
-		fse.allowListRegexP = p
-	} else {
-		logger.Error("NewFileSystemMetricExtractor set regex failed", zap.Error(err))
+		logger:          logger,
+		allowListRegexP: allowedPaths,
 	}
 
 	return fse

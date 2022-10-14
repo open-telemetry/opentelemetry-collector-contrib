@@ -58,13 +58,10 @@ func TestTags2String(t *testing.T) {
 
 func TestTags2StringNoAttributes(t *testing.T) {
 	f := newPrometheusFormatter()
-
-	mp := exampleIntMetric()
-	mp.attributes.Clear()
 	assert.Equal(t, prometheusTags(""), f.tags2String(pcommon.NewMap(), pcommon.NewMap()))
 }
 
-func TestPrometheusMetricDataTypeIntGauge(t *testing.T) {
+func TestPrometheusMetricTypeIntGauge(t *testing.T) {
 	f := newPrometheusFormatter()
 	metric := exampleIntGaugeMetric()
 
@@ -79,7 +76,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 	assert.Equal(t, expected, result)
 }
 
-func TestPrometheusMetricDataTypeDoubleGauge(t *testing.T) {
+func TestPrometheusMetricTypeDoubleGauge(t *testing.T) {
 	f := newPrometheusFormatter()
 	metric := exampleDoubleGaugeMetric()
 
@@ -94,7 +91,7 @@ gauge_metric_name_double_test{foo="bar",local_name="156155",endpoint="http://ano
 	assert.Equal(t, expected, result)
 }
 
-func TestPrometheusMetricDataTypeIntSum(t *testing.T) {
+func TestPrometheusMetricTypeIntSum(t *testing.T) {
 	f := newPrometheusFormatter()
 	metric := exampleIntSumMetric()
 
@@ -109,7 +106,7 @@ sum_metric_int_test{foo="bar",name="156155",address="http://another_url"} 1238 1
 	assert.Equal(t, expected, result)
 }
 
-func TestPrometheusMetricDataTypeDoubleSum(t *testing.T) {
+func TestPrometheusMetricTypeDoubleSum(t *testing.T) {
 	f := newPrometheusFormatter()
 	metric := exampleDoubleSumMetric()
 
@@ -124,7 +121,7 @@ sum_metric_double_test{foo="bar",pod_name="opsum",namespace="kube-config"} 1238.
 	assert.Equal(t, expected, result)
 }
 
-func TestPrometheusMetricDataTypeSummary(t *testing.T) {
+func TestPrometheusMetricTypeSummary(t *testing.T) {
 	f := newPrometheusFormatter()
 	metric := exampleSummaryMetric()
 
@@ -143,7 +140,7 @@ summary_metric_double_test_count{foo="bar",pod_name="sit",namespace="main"} 7 16
 	assert.Equal(t, expected, result)
 }
 
-func TestPrometheusMetricDataTypeHistogram(t *testing.T) {
+func TestPrometheusMetricTypeHistogram(t *testing.T) {
 	f := newPrometheusFormatter()
 	metric := exampleHistogramMetric()
 

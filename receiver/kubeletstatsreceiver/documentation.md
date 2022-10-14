@@ -72,21 +72,21 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| aws.volume.id | The id of the AWS Volume | String |
-| container.id | Container id used to identify container | String |
-| fs.type | The filesystem type of the Volume | String |
-| gce.pd.name | The name of the persistent disk in GCE | String |
-| glusterfs.endpoints.name | The endpoint name that details Glusterfs topology | String |
-| glusterfs.path | Glusterfs volume path | String |
-| k8s.container.name | Container name used by container runtime | String |
-| k8s.namespace.name | The name of the namespace that the pod is running in | String |
-| k8s.node.name | The name of the Node | String |
-| k8s.persistentvolumeclaim.name | The name of the Persistent Volume Claim | String |
-| k8s.pod.name | The name of the Pod | String |
-| k8s.pod.uid | The UID of the Pod | String |
-| k8s.volume.name | The name of the Volume | String |
-| k8s.volume.type | The type of the Volume | String |
-| partition | The partition in the Volume | String |
+| aws.volume.id | The id of the AWS Volume | Str |
+| container.id | Container id used to identify container | Str |
+| fs.type | The filesystem type of the Volume | Str |
+| gce.pd.name | The name of the persistent disk in GCE | Str |
+| glusterfs.endpoints.name | The endpoint name that details Glusterfs topology | Str |
+| glusterfs.path | Glusterfs volume path | Str |
+| k8s.container.name | Container name used by container runtime | Str |
+| k8s.namespace.name | The name of the namespace that the pod is running in | Str |
+| k8s.node.name | The name of the Node | Str |
+| k8s.persistentvolumeclaim.name | The name of the Persistent Volume Claim | Str |
+| k8s.pod.name | The name of the Pod | Str |
+| k8s.pod.uid | The UID of the Pod | Str |
+| k8s.volume.name | The name of the Volume | Str |
+| k8s.volume.type | The type of the Volume | Str |
+| partition | The partition in the Volume | Str |
 
 ## Metric attributes
 

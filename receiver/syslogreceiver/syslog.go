@@ -50,7 +50,7 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 	return &SysLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
+			Operators:        []operator.Config{},
 		},
 		InputConfig: *syslog.NewConfig(),
 	}
@@ -84,5 +84,5 @@ func (cfg *SysLogConfig) Unmarshal(componentParser *confmap.Conf) error {
 		cfg.InputConfig.UDP = &udp.NewConfig().BaseConfig
 	}
 
-	return componentParser.UnmarshalExact(cfg)
+	return componentParser.Unmarshal(cfg, confmap.WithErrorUnused())
 }

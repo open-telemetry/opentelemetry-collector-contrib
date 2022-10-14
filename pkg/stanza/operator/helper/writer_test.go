@@ -16,15 +16,15 @@ package helper
 
 import (
 	"context"
-	"encoding/json"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	yaml "gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -40,7 +40,7 @@ func TestWriterConfigMissingOutput(t *testing.T) {
 
 func TestWriterConfigValidBuild(t *testing.T) {
 	config := WriterConfig{
-		OutputIDs: OutputIDs{"output"},
+		OutputIDs: []string{"output"},
 		BasicConfig: BasicConfig{
 			OperatorType: "testtype",
 		},
@@ -92,7 +92,7 @@ func TestWriterSetOutputsMissing(t *testing.T) {
 	output1 := &testutil.Operator{}
 	output1.On("ID").Return("output1")
 	writer := WriterOperator{
-		OutputIDs: OutputIDs{"output2"},
+		OutputIDs: []string{"output2"},
 	}
 
 	err := writer.SetOutputs([]operator.Operator{output1})
@@ -105,7 +105,7 @@ func TestWriterSetOutputsInvalid(t *testing.T) {
 	output1.On("ID").Return("output1")
 	output1.On("CanProcess").Return(false)
 	writer := WriterOperator{
-		OutputIDs: OutputIDs{"output1"},
+		OutputIDs: []string{"output1"},
 	}
 
 	err := writer.SetOutputs([]operator.Operator{output1})
@@ -121,7 +121,7 @@ func TestWriterSetOutputsValid(t *testing.T) {
 	output2.On("ID").Return("output2")
 	output2.On("CanProcess").Return(true)
 	writer := WriterOperator{
-		OutputIDs: OutputIDs{"output1", "output2"},
+		OutputIDs: []string{"output1", "output2"},
 	}
 
 	err := writer.SetOutputs([]operator.Operator{output1, output2})
@@ -129,82 +129,33 @@ func TestWriterSetOutputsValid(t *testing.T) {
 	require.Equal(t, []operator.Operator{output1, output2}, writer.Outputs())
 }
 
-func TestUnmarshalJSONString(t *testing.T) {
-	bytes := []byte("{\"output\":\"test\"}")
-	var config WriterConfig
-	err := json.Unmarshal(bytes, &config)
-	require.NoError(t, err)
-	require.Equal(t, OutputIDs{"test"}, config.OutputIDs)
-}
-
-func TestUnmarshalJSONArray(t *testing.T) {
-	bytes := []byte("{\"output\":[\"test1\",\"test2\"]}")
-	var config WriterConfig
-	err := json.Unmarshal(bytes, &config)
-	require.NoError(t, err)
-	require.Equal(t, OutputIDs{"test1", "test2"}, config.OutputIDs)
-}
-
-func TestUnmarshalJSONInvalidValue(t *testing.T) {
-	bytes := []byte("..")
-	var config WriterConfig
-	err := json.Unmarshal(bytes, &config)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid character")
-}
-
-func TestUnmarshalJSONInvalidString(t *testing.T) {
-	bytes := []byte("{\"output\": true}")
-	var config WriterConfig
-	err := json.Unmarshal(bytes, &config)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "value is not of type string or string array")
-}
-
-func TestUnmarshalJSONInvalidArray(t *testing.T) {
-	bytes := []byte("{\"output\":[\"test1\", true]}")
-	var config WriterConfig
-	err := json.Unmarshal(bytes, &config)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "value in array is not of type string")
-}
-
-func TestUnmarshalYAMLString(t *testing.T) {
-	bytes := []byte("output: test")
-	var config WriterConfig
-	err := yaml.Unmarshal(bytes, &config)
-	require.NoError(t, err)
-	require.Equal(t, OutputIDs{"test"}, config.OutputIDs)
-}
-
-func TestUnmarshalYAMLArray(t *testing.T) {
-	bytes := []byte("output: [test1, test2]")
-	var config WriterConfig
-	err := yaml.Unmarshal(bytes, &config)
-	require.NoError(t, err)
-	require.Equal(t, OutputIDs{"test1", "test2"}, config.OutputIDs)
-}
-
-func TestUnmarshalYAMLInvalidValue(t *testing.T) {
-	bytes := []byte("..")
-	var config WriterConfig
-	err := yaml.Unmarshal(bytes, &config)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "cannot unmarshal")
-}
-
-func TestUnmarshalYAMLInvalidString(t *testing.T) {
-	bytes := []byte("output: true")
-	var config WriterConfig
-	err := yaml.Unmarshal(bytes, &config)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "value is not of type string or string array")
-}
-
-func TestUnmarshalYAMLInvalidArray(t *testing.T) {
-	bytes := []byte("output: [test1, true]")
-	var config WriterConfig
-	err := yaml.Unmarshal(bytes, &config)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "value in array is not of type string")
+func TestUnmarshalWriterConfig(t *testing.T) {
+	operatortest.ConfigUnmarshalTests{
+		DefaultConfig: newHelpersConfig(),
+		TestsFile:     filepath.Join(".", "testdata", "writer.yaml"),
+		Tests: []operatortest.ConfigUnmarshalTest{
+			{
+				Name: "string",
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Writer = NewWriterConfig(helpersTestType, helpersTestType)
+					c.Writer.OutputIDs = []string{"test"}
+					return c
+				}(),
+			},
+			{
+				Name: "slice",
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Writer = NewWriterConfig(helpersTestType, helpersTestType)
+					c.Writer.OutputIDs = []string{"test1", "test2"}
+					return c
+				}(),
+			},
+			{
+				Name:      "invalid",
+				ExpectErr: true,
+			},
+		},
+	}.Run(t)
 }

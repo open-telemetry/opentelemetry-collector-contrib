@@ -48,9 +48,9 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of an add operator
 type Config struct {
-	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
-	Field                    entry.Field `mapstructure:"field" json:"field" yaml:"field"`
-	Value                    interface{} `mapstructure:"value,omitempty" json:"value,omitempty" yaml:"value,omitempty"`
+	helper.TransformerConfig `mapstructure:",squash"`
+	Field                    entry.Field `mapstructure:"field"`
+	Value                    interface{} `mapstructure:"value,omitempty"`
 }
 
 // Build will build an add operator from the supplied configuration

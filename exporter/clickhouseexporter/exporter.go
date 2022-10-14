@@ -73,13 +73,13 @@ func (e *clickhouseExporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 		defer func() {
 			_ = statement.Close()
 		}()
-		var serviceName string
 		for i := 0; i < ld.ResourceLogs().Len(); i++ {
 			logs := ld.ResourceLogs().At(i)
 			res := logs.Resource()
 			resAttr := attributesToMap(res.Attributes())
+			var serviceName string
 			if v, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
-				serviceName = v.StringVal()
+				serviceName = v.Str()
 			}
 			for j := 0; j < logs.ScopeLogs().Len(); j++ {
 				rs := logs.ScopeLogs().At(j).LogRecords()
@@ -115,7 +115,7 @@ func (e *clickhouseExporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 func attributesToMap(attributes pcommon.Map) map[string]string {
 	m := make(map[string]string, attributes.Len())
 	attributes.Range(func(k string, v pcommon.Value) bool {
-		m[k] = v.StringVal()
+		m[k] = v.Str()
 		return true
 	})
 	return m

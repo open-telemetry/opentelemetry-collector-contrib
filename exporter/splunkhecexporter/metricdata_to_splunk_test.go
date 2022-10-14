@@ -71,7 +71,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				gauge.SetName("gauge_with_dims")
 				dp := gauge.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
-				dp.SetDoubleVal(math.NaN())
+				dp.SetDoubleValue(math.NaN())
 				return gauge
 			},
 			wantSplunkMetrics: []*splunk.Event{
@@ -89,7 +89,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				gauge.SetName("gauge_with_dims")
 				dp := gauge.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
-				dp.SetDoubleVal(math.Inf(1))
+				dp.SetDoubleValue(math.Inf(1))
 				return gauge
 			},
 			wantSplunkMetrics: []*splunk.Event{
@@ -107,7 +107,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				gauge.SetName("gauge_with_dims")
 				dp := gauge.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
-				dp.SetDoubleVal(math.Inf(-1))
+				dp.SetDoubleValue(math.Inf(-1))
 				return gauge
 			},
 			wantSplunkMetrics: []*splunk.Event{
@@ -186,19 +186,19 @@ func Test_metricDataToSplunk(t *testing.T) {
 			name: "int_gauge",
 			resourceFn: func() pcommon.Resource {
 				res := pcommon.NewResource()
-				res.Attributes().PutString("com.splunk.source", "mysource")
-				res.Attributes().PutString("host.name", "myhost")
-				res.Attributes().PutString("com.splunk.sourcetype", "mysourcetype")
-				res.Attributes().PutString("com.splunk.index", "myindex")
-				res.Attributes().PutString("k0", "v0")
-				res.Attributes().PutString("k1", "v1")
+				res.Attributes().PutStr("com.splunk.source", "mysource")
+				res.Attributes().PutStr("host.name", "myhost")
+				res.Attributes().PutStr("com.splunk.sourcetype", "mysourcetype")
+				res.Attributes().PutStr("com.splunk.index", "myindex")
+				res.Attributes().PutStr("k0", "v0")
+				res.Attributes().PutStr("k1", "v1")
 				return res
 			},
 			metricsDataFn: func() pmetric.Metric {
 				intGauge := pmetric.NewMetric()
 				intGauge.SetName("gauge_int_with_dims")
 				intDataPt := intGauge.SetEmptyGauge().DataPoints().AppendEmpty()
-				intDataPt.SetIntVal(int64Val)
+				intDataPt.SetIntValue(int64Val)
 				intDataPt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
 				intDataPt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
 
@@ -216,12 +216,12 @@ func Test_metricDataToSplunk(t *testing.T) {
 			name: "double_gauge",
 			resourceFn: func() pcommon.Resource {
 				res := pcommon.NewResource()
-				res.Attributes().PutString("com.splunk.source", "mysource")
-				res.Attributes().PutString("host.name", "myhost")
-				res.Attributes().PutString("com.splunk.sourcetype", "mysourcetype")
-				res.Attributes().PutString("com.splunk.index", "myindex")
-				res.Attributes().PutString("k0", "v0")
-				res.Attributes().PutString("k1", "v1")
+				res.Attributes().PutStr("com.splunk.source", "mysource")
+				res.Attributes().PutStr("host.name", "myhost")
+				res.Attributes().PutStr("com.splunk.sourcetype", "mysourcetype")
+				res.Attributes().PutStr("com.splunk.index", "myindex")
+				res.Attributes().PutStr("k0", "v0")
+				res.Attributes().PutStr("k1", "v1")
 				return res
 			},
 			metricsDataFn: func() pmetric.Metric {
@@ -229,7 +229,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				doubleGauge := pmetric.NewMetric()
 				doubleGauge.SetName("gauge_double_with_dims")
 				doubleDataPt := doubleGauge.SetEmptyGauge().DataPoints().AppendEmpty()
-				doubleDataPt.SetDoubleVal(doubleVal)
+				doubleDataPt.SetDoubleValue(doubleVal)
 				doubleDataPt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
 
 				return doubleGauge
@@ -371,7 +371,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				intSum.SetName("int_sum_with_dims")
 				intDataPt := intSum.SetEmptySum().DataPoints().AppendEmpty()
 				intDataPt.SetTimestamp(ts)
-				intDataPt.SetIntVal(62)
+				intDataPt.SetIntValue(62)
 				return intSum
 			},
 			wantSplunkMetrics: []*splunk.Event{
@@ -401,7 +401,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				doubleSum.SetName("double_sum_with_dims")
 				doubleDataPt := doubleSum.SetEmptySum().DataPoints().AppendEmpty()
 				doubleDataPt.SetTimestamp(ts)
-				doubleDataPt.SetDoubleVal(62)
+				doubleDataPt.SetDoubleValue(62)
 				return doubleSum
 			},
 			wantSplunkMetrics: []*splunk.Event{
@@ -520,19 +520,19 @@ func Test_metricDataToSplunk(t *testing.T) {
 			name: "custom_config_mapping",
 			resourceFn: func() pcommon.Resource {
 				res := pcommon.NewResource()
-				res.Attributes().PutString("mysource", "mysource2")
-				res.Attributes().PutString("myhost", "myhost2")
-				res.Attributes().PutString("mysourcetype", "mysourcetype2")
-				res.Attributes().PutString("myindex", "myindex2")
-				res.Attributes().PutString("k0", "v0")
-				res.Attributes().PutString("k1", "v1")
+				res.Attributes().PutStr("mysource", "mysource2")
+				res.Attributes().PutStr("myhost", "myhost2")
+				res.Attributes().PutStr("mysourcetype", "mysourcetype2")
+				res.Attributes().PutStr("myindex", "myindex2")
+				res.Attributes().PutStr("k0", "v0")
+				res.Attributes().PutStr("k1", "v1")
 				return res
 			},
 			metricsDataFn: func() pmetric.Metric {
 				doubleGauge := pmetric.NewMetric()
 				doubleGauge.SetName("gauge_double_with_dims")
 				doubleDataPt := doubleGauge.SetEmptyGauge().DataPoints().AppendEmpty()
-				doubleDataPt.SetDoubleVal(doubleVal)
+				doubleDataPt.SetDoubleValue(doubleVal)
 				doubleDataPt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
 
 				return doubleGauge
@@ -616,7 +616,7 @@ func TestNilTimeWhenTimestampIsZero(t *testing.T) {
 
 func newMetricsWithResources() pcommon.Resource {
 	res := pcommon.NewResource()
-	res.Attributes().PutString("k0", "v0")
-	res.Attributes().PutString("k1", "v1")
+	res.Attributes().PutStr("k0", "v0")
+	res.Attributes().PutStr("k1", "v1")
 	return res
 }

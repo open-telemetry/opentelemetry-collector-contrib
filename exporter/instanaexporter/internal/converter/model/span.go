@@ -119,7 +119,7 @@ func ConvertPDataSpanToInstanaSpan(fromS FromS, otelSpan ptrace.Span, serviceNam
 
 	instanaSpan.Data.Operation = otelSpan.Name()
 
-	instanaSpan.Data.TraceState = otelSpan.TraceStateStruct().AsRaw()
+	instanaSpan.Data.TraceState = otelSpan.TraceState().AsRaw()
 
 	otelSpan.Attributes().Sort().Range(func(k string, v pcommon.Value) bool {
 		instanaSpan.Data.Tags[k] = v.AsString()

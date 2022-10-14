@@ -66,11 +66,10 @@ func addCause(seg *awsxray.Segment, span ptrace.Span) {
 			evt := evts.AppendEmpty()
 			evt.SetName(ExceptionEventName)
 			attrs := evt.Attributes()
-			attrs.Clear()
 			attrs.EnsureCapacity(8)
 
 			// ID is a required field
-			attrs.PutString(awsxray.AWSXrayExceptionIDAttribute, *excp.ID)
+			attrs.PutStr(awsxray.AWSXrayExceptionIDAttribute, *excp.ID)
 			addString(excp.Message, conventions.AttributeExceptionMessage, attrs)
 			addString(excp.Type, conventions.AttributeExceptionType, attrs)
 			addBool(excp.Remote, awsxray.AWSXrayExceptionRemoteAttribute, attrs)
@@ -80,7 +79,7 @@ func addCause(seg *awsxray.Segment, span ptrace.Span) {
 
 			if len(excp.Stack) > 0 {
 				stackTrace := convertStackFramesToStackTraceStr(excp)
-				attrs.PutString(conventions.AttributeExceptionStacktrace, stackTrace)
+				attrs.PutStr(conventions.AttributeExceptionStacktrace, stackTrace)
 			}
 		}
 	}

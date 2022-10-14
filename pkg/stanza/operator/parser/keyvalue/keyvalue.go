@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,10 +49,10 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a key value parser operator.
 type Config struct {
-	helper.ParserConfig `mapstructure:",squash" yaml:",inline"`
+	helper.ParserConfig `mapstructure:",squash"`
 
-	Delimiter     string `mapstructure:"delimiter" yaml:"delimiter"`
-	PairDelimiter string `mapstructure:"pair_delimiter" yaml:"pair_delimiter"`
+	Delimiter     string `mapstructure:"delimiter"`
+	PairDelimiter string `mapstructure:"pair_delimiter"`
 }
 
 // Build will build a key value parser operator.

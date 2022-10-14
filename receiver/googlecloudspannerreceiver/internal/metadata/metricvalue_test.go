@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package metadata
 import (
 	"testing"
 
+	"cloud.google.com/go/spanner"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -52,6 +53,21 @@ func TestFloat64MetricValueMetadata(t *testing.T) {
 	assert.IsType(t, expectedType, metadata.ValueHolder())
 }
 
+func TestNullFloat64MetricValueMetadata(t *testing.T) {
+	metricDataType := metricValueDataType{dataType: metricDataType}
+	metadata, _ := NewMetricValueMetadata(metricName, metricColumnName, metricDataType, metricUnit, NullFloatValueType)
+
+	assert.Equal(t, metricName, metadata.Name())
+	assert.Equal(t, metricColumnName, metadata.ColumnName())
+	assert.Equal(t, metricDataType, metadata.DataType())
+	assert.Equal(t, metricUnit, metadata.Unit())
+	assert.Equal(t, NullFloatValueType, metadata.ValueType())
+
+	var expectedType *spanner.NullFloat64
+
+	assert.IsType(t, expectedType, metadata.ValueHolder())
+}
+
 func TestUnknownMetricValueMetadata(t *testing.T) {
 	metricDataType := metricValueDataType{dataType: metricDataType}
 	metadata, err := NewMetricValueMetadata(metricName, metricColumnName, metricDataType, metricUnit, UnknownValueType)
@@ -75,7 +91,7 @@ func TestInt64MetricValue(t *testing.T) {
 
 	metricValue.SetValueTo(dataPoint)
 
-	assert.Equal(t, int64Value, dataPoint.IntVal())
+	assert.Equal(t, int64Value, dataPoint.IntValue())
 }
 
 func TestFloat64MetricValue(t *testing.T) {
@@ -93,7 +109,33 @@ func TestFloat64MetricValue(t *testing.T) {
 
 	metricValue.SetValueTo(dataPoint)
 
-	assert.Equal(t, float64Value, dataPoint.DoubleVal())
+	assert.Equal(t, float64Value, dataPoint.DoubleValue())
+}
+
+func TestNullFloat64MetricValue(t *testing.T) {
+	metricDataType := metricValueDataType{dataType: metricDataType}
+	metadata, _ := NewMetricValueMetadata(metricName, metricColumnName, metricDataType, metricUnit, NullFloatValueType)
+
+	validNullFloat := spanner.NullFloat64{Float64: float64Value, Valid: true}
+	metricValue := nullFloat64MetricValue{
+		metadata: metadata,
+		value:    validNullFloat,
+	}
+	assert.Equal(t, validNullFloat, metricValue.Value())
+	assert.Equal(t, NullFloatValueType, metadata.ValueType())
+	dataPoint := pmetric.NewNumberDataPoint()
+	metricValue.SetValueTo(dataPoint)
+	assert.Equal(t, float64Value, dataPoint.DoubleValue())
+
+	invalidNullFloat := spanner.NullFloat64{Float64: float64Value, Valid: false}
+	metricValue = nullFloat64MetricValue{
+		metadata: metadata,
+		value:    invalidNullFloat,
+	}
+	assert.Equal(t, invalidNullFloat, metricValue.Value())
+	assert.Equal(t, NullFloatValueType, metadata.ValueType())
+	metricValue.SetValueTo(dataPoint)
+	assert.Equal(t, defaultNullFloat64Value, dataPoint.DoubleValue())
 }
 
 func TestNewInt64MetricValue(t *testing.T) {
@@ -118,4 +160,16 @@ func TestNewFloat64MetricValue(t *testing.T) {
 
 	assert.Equal(t, float64Value, metricValue.Value())
 	assert.Equal(t, FloatValueType, metadata.ValueType())
+}
+
+func TestNewNullFloat64MetricValue(t *testing.T) {
+	metricDataType := metricValueDataType{dataType: metricDataType}
+	metadata, _ := NewMetricValueMetadata(metricName, metricColumnName, metricDataType, metricUnit, NullFloatValueType)
+	value := spanner.NullFloat64{Float64: float64Value, Valid: true}
+	valueHolder := &value
+
+	metricValue := newNullFloat64MetricValue(metadata, valueHolder)
+
+	assert.Equal(t, value, metricValue.Value())
+	assert.Equal(t, NullFloatValueType, metadata.ValueType())
 }

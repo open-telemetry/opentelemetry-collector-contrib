@@ -54,14 +54,14 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a syslog parser operator.
 type Config struct {
-	helper.ParserConfig `mapstructure:",squash" yaml:",inline"`
-	BaseConfig          `mapstructure:",squash" yaml:",inline"`
+	helper.ParserConfig `mapstructure:",squash"`
+	BaseConfig          `mapstructure:",squash"`
 }
 
 // BaseConfig is the detailed configuration of a syslog parser.
 type BaseConfig struct {
-	Protocol string `mapstructure:"protocol,omitempty" json:"protocol,omitempty" yaml:"protocol,omitempty"`
-	Location string `mapstructure:"location,omitempty" json:"location,omitempty" yaml:"location,omitempty"`
+	Protocol string `mapstructure:"protocol,omitempty"`
+	Location string `mapstructure:"location,omitempty"`
 }
 
 // Build will build a JSON parser operator.

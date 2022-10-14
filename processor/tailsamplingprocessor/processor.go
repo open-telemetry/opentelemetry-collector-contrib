@@ -184,20 +184,11 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 
 		// Sampled or not, remove the batches
 		trace.Lock()
-		traceBatches := trace.ReceivedBatches
-		trace.ReceivedBatches = nil
+		allSpans := ptrace.NewTraces()
+		trace.ReceivedBatches.MoveTo(allSpans)
 		trace.Unlock()
 
 		if decision == sampling.Sampled {
-
-			// Combine all individual batches into a single batch so
-			// consumers may operate on the entire trace
-			allSpans := ptrace.NewTraces()
-			for j := 0; j < len(traceBatches); j++ {
-				batch := traceBatches[j]
-				batch.ResourceSpans().MoveAndAppendTo(allSpans.ResourceSpans())
-			}
-
 			_ = tsp.nextConsumer.ConsumeTraces(policy.ctx, allSpans)
 		}
 	}
@@ -301,7 +292,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 	return finalDecision, matchingPolicy
 }
 
-// ConsumeTraceData is required by the SpanProcessor interface.
+// ConsumeTraces is required by the component.TracesProcessor interface.
 func (tsp *tailSamplingSpanProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
@@ -336,13 +327,15 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 		for i := 0; i < lenPolicies; i++ {
 			initialDecisions[i] = sampling.Pending
 		}
-		initialTraceData := &sampling.TraceData{
-			Decisions:   initialDecisions,
-			ArrivalTime: time.Now(),
-			SpanCount:   atomic.NewInt64(lenSpans),
+		d, loaded := tsp.idToTrace.Load(id)
+		if !loaded {
+			d, loaded = tsp.idToTrace.LoadOrStore(id, &sampling.TraceData{
+				Decisions:       initialDecisions,
+				ArrivalTime:     time.Now(),
+				SpanCount:       atomic.NewInt64(lenSpans),
+				ReceivedBatches: ptrace.NewTraces(),
+			})
 		}
-		d, loaded := tsp.idToTrace.LoadOrStore(id, initialTraceData)
-
 		actualData := d.(*sampling.TraceData)
 		if loaded {
 			actualData.SpanCount.Add(lenSpans)
@@ -364,7 +357,6 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 		}
 
 		for i, p := range tsp.policies {
-			var traceTd ptrace.Traces
 			actualData.Lock()
 			actualDecision := actualData.Decisions[i]
 			// If decision is pending, we want to add the new spans still under the lock, so the decision doesn't happen
@@ -372,8 +364,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 			if actualDecision == sampling.Pending {
 				// Add the spans to the trace, but only once for all policy, otherwise same spans will
 				// be duplicated in the final trace.
-				traceTd = prepareTraceBatch(resourceSpans, spans)
-				actualData.ReceivedBatches = append(actualData.ReceivedBatches, traceTd)
+				appendToTraces(actualData.ReceivedBatches, resourceSpans, spans)
 				actualData.Unlock()
 				break
 			}
@@ -382,7 +373,8 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 			switch actualDecision {
 			case sampling.Sampled:
 				// Forward the spans to the policy destinations
-				traceTd := prepareTraceBatch(resourceSpans, spans)
+				traceTd := ptrace.NewTraces()
+				appendToTraces(traceTd, resourceSpans, spans)
 				if err := tsp.nextConsumer.ConsumeTraces(p.ctx, traceTd); err != nil {
 					tsp.logger.Warn("Error sending late arrived spans to destination",
 						zap.String("policy", p.name),
@@ -441,14 +433,12 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 	stats.Record(tsp.ctx, statTraceRemovalAgeSec.M(int64(deletionTime.Sub(trace.ArrivalTime)/time.Second)))
 }
 
-func prepareTraceBatch(rss ptrace.ResourceSpans, spans []*ptrace.Span) ptrace.Traces {
-	traceTd := ptrace.NewTraces()
-	rs := traceTd.ResourceSpans().AppendEmpty()
+func appendToTraces(dest ptrace.Traces, rss ptrace.ResourceSpans, spans []*ptrace.Span) {
+	rs := dest.ResourceSpans().AppendEmpty()
 	rss.Resource().CopyTo(rs.Resource())
 	ils := rs.ScopeSpans().AppendEmpty()
 	for _, span := range spans {
 		sp := ils.Spans().AppendEmpty()
 		span.CopyTo(sp)
 	}
-	return traceTd
 }

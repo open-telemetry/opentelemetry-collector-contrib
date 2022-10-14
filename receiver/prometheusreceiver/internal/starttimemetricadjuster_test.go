@@ -134,18 +134,18 @@ func TestStartTimeMetricMatch(t *testing.T) {
 					ilm := rm.ScopeMetrics().At(j)
 					for k := 0; k < ilm.Metrics().Len(); k++ {
 						metric := ilm.Metrics().At(k)
-						switch metric.DataType() {
-						case pmetric.MetricDataTypeSum:
+						switch metric.Type() {
+						case pmetric.MetricTypeSum:
 							dps := metric.Sum().DataPoints()
 							for l := 0; l < dps.Len(); l++ {
 								assert.Equal(t, tt.expectedStartTime, dps.At(l).StartTimestamp())
 							}
-						case pmetric.MetricDataTypeSummary:
+						case pmetric.MetricTypeSummary:
 							dps := metric.Summary().DataPoints()
 							for l := 0; l < dps.Len(); l++ {
 								assert.Equal(t, tt.expectedStartTime, dps.At(l).StartTimestamp())
 							}
-						case pmetric.MetricDataTypeHistogram:
+						case pmetric.MetricTypeHistogram:
 							dps := metric.Histogram().DataPoints()
 							for l := 0; l < dps.Len(); l++ {
 								assert.Equal(t, tt.expectedStartTime, dps.At(l).StartTimestamp())

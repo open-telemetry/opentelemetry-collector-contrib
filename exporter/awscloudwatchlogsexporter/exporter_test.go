@@ -119,7 +119,7 @@ func BenchmarkLogToCWLog(b *testing.B) {
 
 func testResource() pcommon.Resource {
 	resource := pcommon.NewResource()
-	resource.Attributes().PutString("host", "abc123")
+	resource.Attributes().PutStr("host", "abc123")
 	resource.Attributes().PutInt("node", 5)
 	return resource
 }
@@ -129,9 +129,9 @@ func testLogRecord() plog.LogRecord {
 	record.SetSeverityNumber(5)
 	record.SetSeverityText("debug")
 	record.SetDroppedAttributesCount(4)
-	record.Body().SetStringVal("hello world")
+	record.Body().SetStr("hello world")
 	record.Attributes().PutInt("key1", 1)
-	record.Attributes().PutString("key2", "attr2")
+	record.Attributes().PutStr("key2", "attr2")
 	record.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	record.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 	record.SetFlags(plog.DefaultLogRecordFlags.WithIsSampled(true))
@@ -144,9 +144,9 @@ func testLogRecordWithoutTrace() plog.LogRecord {
 	record.SetSeverityNumber(5)
 	record.SetSeverityText("debug")
 	record.SetDroppedAttributesCount(4)
-	record.Body().SetStringVal("hello world")
+	record.Body().SetStr("hello world")
 	record.Attributes().PutInt("key1", 1)
-	record.Attributes().PutString("key2", "attr2")
+	record.Attributes().PutStr("key2", "attr2")
 	record.SetTimestamp(1609719139000000)
 	return record
 }
@@ -181,8 +181,8 @@ func TestAttrValue(t *testing.T) {
 			name: "map",
 			value: func() pcommon.Value {
 				mAttr := pcommon.NewValueMap()
-				m := mAttr.MapVal()
-				m.PutString("key1", "value1")
+				m := mAttr.Map()
+				m.PutStr("key1", "value1")
 				m.PutEmpty("key2")
 				m.PutBool("key3", true)
 				m.PutInt("key4", 4)
@@ -201,12 +201,12 @@ func TestAttrValue(t *testing.T) {
 			name: "array",
 			value: func() pcommon.Value {
 				arrAttr := pcommon.NewValueSlice()
-				arr := arrAttr.SliceVal()
+				arr := arrAttr.Slice()
 				for _, av := range []pcommon.Value{
 					pcommon.NewValueDouble(1.2),
 					pcommon.NewValueDouble(1.6),
 					pcommon.NewValueBool(true),
-					pcommon.NewValueString("hello"),
+					pcommon.NewValueStr("hello"),
 					pcommon.NewValueEmpty(),
 				} {
 					tgt := arr.AppendEmpty()
@@ -239,7 +239,7 @@ func TestConsumeLogs(t *testing.T) {
 	assert.NotNil(t, exp)
 	ld := plog.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
-	r.Resource().Attributes().PutString("hello", "test")
+	r.Resource().Attributes().PutStr("hello", "test")
 	logRecords := r.ScopeLogs().AppendEmpty().LogRecords()
 	logRecords.EnsureCapacity(5)
 	logRecords.AppendEmpty()

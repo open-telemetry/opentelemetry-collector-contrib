@@ -29,16 +29,20 @@ type MockPerfCounterScraperError struct {
 	scrapeErr    error
 	getObjectErr error
 	getValuesErr error
+	initError    error
 }
 
 // NewMockPerfCounterScraperError returns a MockPerfCounterScraperError that will return
 // the specified errors on subsequent function calls.
-func NewMockPerfCounterScraperError(scrapeErr, getObjectErr, getValuesErr error) *MockPerfCounterScraperError {
-	return &MockPerfCounterScraperError{scrapeErr: scrapeErr, getObjectErr: getObjectErr, getValuesErr: getValuesErr}
+func NewMockPerfCounterScraperError(scrapeErr, getObjectErr, getValuesErr, initError error) *MockPerfCounterScraperError {
+	return &MockPerfCounterScraperError{scrapeErr: scrapeErr, getObjectErr: getObjectErr, getValuesErr: getValuesErr, initError: initError}
 }
 
 // start is a no-op
 func (p *MockPerfCounterScraperError) Initialize(objects ...string) error {
+	if p.initError != nil {
+		return p.initError
+	}
 	return nil
 }
 

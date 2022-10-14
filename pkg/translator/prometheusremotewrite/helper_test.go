@@ -129,8 +129,8 @@ func Test_addSample(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			addSample(tt.orig, &tt.testCase[0].sample, tt.testCase[0].labels, tt.testCase[0].metric.DataType().String())
-			addSample(tt.orig, &tt.testCase[1].sample, tt.testCase[1].labels, tt.testCase[1].metric.DataType().String())
+			addSample(tt.orig, &tt.testCase[0].sample, tt.testCase[0].labels, tt.testCase[0].metric.Type().String())
+			addSample(tt.orig, &tt.testCase[1].sample, tt.testCase[1].labels, tt.testCase[1].metric.Type().String())
 			assert.Exactly(t, tt.want, tt.orig)
 		})
 	}
@@ -149,33 +149,33 @@ func Test_timeSeriesSignature(t *testing.T) {
 			"int64_signature",
 			promLbs1,
 			validMetrics1[validIntGauge],
-			validMetrics1[validIntGauge].DataType().String() + lb1Sig,
+			validMetrics1[validIntGauge].Type().String() + lb1Sig,
 		},
 		{
 			"histogram_signature",
 			promLbs2,
 			validMetrics1[validHistogram],
-			validMetrics1[validHistogram].DataType().String() + lb2Sig,
+			validMetrics1[validHistogram].Type().String() + lb2Sig,
 		},
 		{
 			"unordered_signature",
 			getPromLabels(label22, value22, label21, value21),
 			validMetrics1[validHistogram],
-			validMetrics1[validHistogram].DataType().String() + lb2Sig,
+			validMetrics1[validHistogram].Type().String() + lb2Sig,
 		},
 		// descriptor type cannot be nil, as checked by validateMetrics
 		{
 			"nil_case",
 			nil,
 			validMetrics1[validHistogram],
-			validMetrics1[validHistogram].DataType().String(),
+			validMetrics1[validHistogram].Type().String(),
 		},
 	}
 
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.EqualValues(t, tt.want, timeSeriesSignature(tt.metric.DataType().String(), &tt.lbs))
+			assert.EqualValues(t, tt.want, timeSeriesSignature(tt.metric.Type().String(), &tt.lbs))
 		})
 	}
 }
@@ -203,8 +203,8 @@ func Test_createLabelSet(t *testing.T) {
 			"labels_with_resource",
 			func() pcommon.Resource {
 				res := pcommon.NewResource()
-				res.Attributes().PutString("service.name", "prometheus")
-				res.Attributes().PutString("service.instance.id", "127.0.0.1:8080")
+				res.Attributes().PutStr("service.name", "prometheus")
+				res.Attributes().PutStr("service.instance.id", "127.0.0.1:8080")
 				return res
 			}(),
 			lbs1,
@@ -464,7 +464,7 @@ func TestAddResourceTargetInfo(t *testing.T) {
 	}
 	resourceWithServiceAttrs := pcommon.NewResource()
 	resourceWithServiceAttrs.Attributes().FromRaw(resourceAttrMap)
-	resourceWithServiceAttrs.Attributes().PutString("resource_attr", "resource-attr-val-1")
+	resourceWithServiceAttrs.Attributes().PutStr("resource_attr", "resource-attr-val-1")
 	resourceWithOnlyServiceAttrs := pcommon.NewResource()
 	resourceWithOnlyServiceAttrs.Attributes().FromRaw(resourceAttrMap)
 	for _, tc := range []struct {
