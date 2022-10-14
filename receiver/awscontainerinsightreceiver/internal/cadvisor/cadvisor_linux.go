@@ -15,7 +15,6 @@
 //go:build linux
 // +build linux
 
-// nolint:errcheck,gocritic
 package cadvisor // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor"
 
 import (
@@ -126,7 +125,7 @@ type Decorator interface {
 
 type Cadvisor struct {
 	logger                *zap.Logger
-	nodeName              string //get the value from downward API
+	nodeName              string // get the value from downward API
 	createCadvisorManager createCadvisorManager
 	manager               cadvisorManager
 	version               string
@@ -216,7 +215,7 @@ func (c *Cadvisor) addECSMetrics(cadvisormetrics []*extractors.CAdvisorMetric) {
 			if !cpuExist && !memExist {
 				c.logger.Warn("Can't get mem or cpu limit")
 			} else {
-				//cgroup standard cpulimits should be cadvisor standard * 1.024
+				// cgroup standard cpulimits should be cadvisor standard * 1.024
 				metricMap[ci.MetricName(ci.TypeInstance, ci.CPUReservedCapacity)] = float64(cpuReserved) / (float64(cpuLimits.(int64)) * 1.024) * 100
 				metricMap[ci.MetricName(ci.TypeInstance, ci.MemReservedCapacity)] = float64(memReserved) / float64(memLimits.(int64)) * 100
 			}
@@ -262,17 +261,17 @@ func (c *Cadvisor) decorateMetrics(cadvisormetrics []*extractors.CAdvisorMetric)
 		tags := m.GetTags()
 		c.addEbsVolumeInfo(tags, ebsVolumeIdsUsedAsPV)
 
-		//add version
+		// add version
 		tags[ci.Version] = c.version
 
-		//add NodeName for node, pod and container
+		// add NodeName for node, pod and container
 		metricType := tags[ci.MetricType]
 		if c.nodeName != "" && (ci.IsNode(metricType) || ci.IsInstance(metricType) ||
 			ci.IsPod(metricType) || ci.IsContainer(metricType)) {
 			tags[ci.NodeNameKey] = c.nodeName
 		}
 
-		//add instance id and type
+		// add instance id and type
 		if instanceID := c.hostInfo.GetInstanceID(); instanceID != "" {
 			tags[ci.InstanceID] = instanceID
 		}
@@ -280,10 +279,10 @@ func (c *Cadvisor) decorateMetrics(cadvisormetrics []*extractors.CAdvisorMetric)
 			tags[ci.InstanceType] = instanceType
 		}
 
-		//add scaling group name
+		// add scaling group name
 		tags[ci.AutoScalingGroupNameKey] = c.hostInfo.GetAutoScalingGroupName()
 
-		//add ECS cluster name and container instance id
+		// add ECS cluster name and container instance id
 		if c.containerOrchestrator == ci.ECS {
 			if c.ecsInfo.GetClusterName() == "" {
 				c.logger.Warn("Can't get cluster name")
@@ -322,7 +321,7 @@ func (c *Cadvisor) GetMetrics() []pmetric.Metrics {
 	var containerinfos []*cInfo.ContainerInfo
 	var err error
 
-	//For EKS don't emit metrics if the cluster name is not detected
+	// For EKS don't emit metrics if the cluster name is not detected
 	if c.containerOrchestrator == ci.EKS {
 		clusterName := c.hostInfo.GetClusterName()
 		if clusterName == "" {
@@ -383,10 +382,10 @@ func (c *Cadvisor) initManager(createManager createCadvisorManager) error {
 		c.logger.Error("cadvisor manager allocate failed, ", zap.Error(err))
 		return err
 	}
-	cadvisormetrics.RegisterPlugin("containerd", containerd.NewPlugin())
-	cadvisormetrics.RegisterPlugin("crio", crio.NewPlugin())
-	cadvisormetrics.RegisterPlugin("docker", docker.NewPlugin())
-	cadvisormetrics.RegisterPlugin("systemd", systemd.NewPlugin())
+	_ = cadvisormetrics.RegisterPlugin("containerd", containerd.NewPlugin())
+	_ = cadvisormetrics.RegisterPlugin("crio", crio.NewPlugin())
+	_ = cadvisormetrics.RegisterPlugin("docker", docker.NewPlugin())
+	_ = cadvisormetrics.RegisterPlugin("systemd", systemd.NewPlugin())
 	c.manager = m
 	err = c.manager.Start()
 	if err != nil {

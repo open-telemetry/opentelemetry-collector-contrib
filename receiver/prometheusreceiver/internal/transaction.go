@@ -124,21 +124,52 @@ func (t *transaction) Append(ref storage.SeriesRef, ls labels.Labels, atMs int64
 		return 0, t.AddTargetInfo(ls)
 	}
 
-	curMF, ok := t.families[metricName]
-	if !ok {
-		familyName := normalizeMetricName(metricName)
-		if mf, ok := t.families[familyName]; ok && mf.includesMetric(metricName) {
-			curMF = mf
-		} else {
-			curMF = newMetricFamily(metricName, t.mc, t.logger)
-			t.families[curMF.name] = curMF
-		}
-	}
+	curMF := t.getOrCreateMetricFamily(metricName)
 
 	return 0, curMF.Add(metricName, ls, atMs, val)
 }
 
+func (t *transaction) getOrCreateMetricFamily(mn string) *metricFamily {
+	curMf, ok := t.families[mn]
+	if !ok {
+		fn := normalizeMetricName(mn)
+		if mf, ok := t.families[fn]; ok && mf.includesMetric(mn) {
+			curMf = mf
+		} else {
+			curMf = newMetricFamily(mn, t.mc, t.logger)
+			t.families[curMf.name] = curMf
+		}
+	}
+	return curMf
+}
+
 func (t *transaction) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e exemplar.Exemplar) (storage.SeriesRef, error) {
+	select {
+	case <-t.ctx.Done():
+		return 0, errTransactionAborted
+	default:
+	}
+
+	if t.isNew {
+		if err := t.initTransaction(l); err != nil {
+			return 0, err
+		}
+	}
+
+	l = l.WithoutEmpty()
+
+	if dupLabel, hasDup := l.HasDuplicateLabelNames(); hasDup {
+		return 0, fmt.Errorf("invalid sample: non-unique label names: %q", dupLabel)
+	}
+
+	mn := l.Get(model.MetricNameLabel)
+	if mn == "" {
+		return 0, errMetricNameNotFound
+	}
+
+	mf := t.getOrCreateMetricFamily(mn)
+	mf.addExemplar(l, e)
+
 	return 0, nil
 }
 
