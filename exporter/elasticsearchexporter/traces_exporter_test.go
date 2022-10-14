@@ -312,7 +312,9 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) *elas
 	exporter, err := newTracesExporter(zaptest.NewLogger(t), withTestTracesExporterConfig(fns...)(url))
 	require.NoError(t, err)
 
-	t.Cleanup(func() { exporter.Shutdown(context.TODO()) })
+	t.Cleanup(func() {
+		require.NoError(t, exporter.Shutdown(context.TODO()))
+	})
 	return exporter
 }
 
