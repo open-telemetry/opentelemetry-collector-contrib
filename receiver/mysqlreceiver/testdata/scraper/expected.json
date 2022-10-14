@@ -1538,6 +1538,43 @@
                      "unit": "ns"
                   },
                   {
+                     "description": "The number of worker threads available.",
+                     "name": "mysql.mysqlx_worker_threads",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "363",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "available"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "364",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "active"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": false
+                     },
+                     "unit": "1"
+                  },
+                  {
                      "description": "The number of opened resources.",
                      "name": "mysql.opened_resources",
                      "sum": {
