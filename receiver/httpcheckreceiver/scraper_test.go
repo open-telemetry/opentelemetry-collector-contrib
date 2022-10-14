@@ -142,6 +142,7 @@ func TestScaperScrape(t *testing.T) {
 			expectedErr: nil,
 			compareOptions: []scrapertest.CompareOption{
 				scrapertest.IgnoreMetricValues("httpcheck.duration"),
+				scrapertest.IgnoreMetricAttributeValue("error.message"),
 			},
 		},
 	}
