@@ -141,7 +141,7 @@ func (m *metricProcessRuntimeMemstatsBuckHashSys) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsBuckHashSys) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -192,7 +192,7 @@ func (m *metricProcessRuntimeMemstatsFrees) init() {
 	m.data.SetUnit("{objects}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsFrees) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -292,7 +292,7 @@ func (m *metricProcessRuntimeMemstatsGcSys) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsGcSys) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -343,7 +343,7 @@ func (m *metricProcessRuntimeMemstatsHeapAlloc) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsHeapAlloc) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -394,7 +394,7 @@ func (m *metricProcessRuntimeMemstatsHeapIdle) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsHeapIdle) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -445,7 +445,7 @@ func (m *metricProcessRuntimeMemstatsHeapInuse) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsHeapInuse) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -496,7 +496,7 @@ func (m *metricProcessRuntimeMemstatsHeapObjects) init() {
 	m.data.SetUnit("{objects}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsHeapObjects) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -547,7 +547,7 @@ func (m *metricProcessRuntimeMemstatsHeapReleased) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsHeapReleased) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -598,7 +598,7 @@ func (m *metricProcessRuntimeMemstatsHeapSys) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsHeapSys) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -698,7 +698,7 @@ func (m *metricProcessRuntimeMemstatsLookups) init() {
 	m.data.SetUnit("{lookups}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsLookups) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -749,7 +749,7 @@ func (m *metricProcessRuntimeMemstatsMallocs) init() {
 	m.data.SetUnit("{objects}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsMallocs) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -800,7 +800,7 @@ func (m *metricProcessRuntimeMemstatsMcacheInuse) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsMcacheInuse) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -851,7 +851,7 @@ func (m *metricProcessRuntimeMemstatsMcacheSys) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsMcacheSys) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -902,7 +902,7 @@ func (m *metricProcessRuntimeMemstatsMspanInuse) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsMspanInuse) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -953,7 +953,7 @@ func (m *metricProcessRuntimeMemstatsMspanSys) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsMspanSys) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1004,7 +1004,7 @@ func (m *metricProcessRuntimeMemstatsNextGc) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsNextGc) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1055,7 +1055,7 @@ func (m *metricProcessRuntimeMemstatsNumForcedGc) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsNumForcedGc) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1106,7 +1106,7 @@ func (m *metricProcessRuntimeMemstatsNumGc) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsNumGc) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1157,7 +1157,7 @@ func (m *metricProcessRuntimeMemstatsOtherSys) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsOtherSys) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1208,7 +1208,7 @@ func (m *metricProcessRuntimeMemstatsPauseTotal) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsPauseTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1259,7 +1259,7 @@ func (m *metricProcessRuntimeMemstatsStackInuse) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsStackInuse) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1310,7 +1310,7 @@ func (m *metricProcessRuntimeMemstatsStackSys) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsStackSys) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1361,7 +1361,7 @@ func (m *metricProcessRuntimeMemstatsSys) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsSys) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1412,7 +1412,7 @@ func (m *metricProcessRuntimeMemstatsTotalAlloc) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessRuntimeMemstatsTotalAlloc) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {

@@ -101,8 +101,8 @@ func (c *mySQLClient) getInnodbStats() (map[string]string, error) {
 func (c *mySQLClient) getTableIoWaitsStats() ([]TableIoWaitsStats, error) {
 	query := "SELECT OBJECT_SCHEMA, OBJECT_NAME, " +
 		"COUNT_DELETE, COUNT_FETCH, COUNT_INSERT, COUNT_UPDATE," +
-		"SUM_TIMER_DELETE, SUM_TIMER_FETCH, SUM_TIMER_INSERT, SUM_TIMER_UPDATE" +
-		"FROM performance_schema.table_io_waits_summary_by_table" +
+		"SUM_TIMER_DELETE, SUM_TIMER_FETCH, SUM_TIMER_INSERT, SUM_TIMER_UPDATE " +
+		"FROM performance_schema.table_io_waits_summary_by_table " +
 		"WHERE OBJECT_SCHEMA NOT IN ('mysql', 'performance_schema');"
 	rows, err := c.client.Query(query)
 	if err != nil {
@@ -128,8 +128,8 @@ func (c *mySQLClient) getTableIoWaitsStats() ([]TableIoWaitsStats, error) {
 func (c *mySQLClient) getIndexIoWaitsStats() ([]IndexIoWaitsStats, error) {
 	query := "SELECT OBJECT_SCHEMA, OBJECT_NAME, ifnull(INDEX_NAME, 'NONE') as INDEX_NAME," +
 		"COUNT_FETCH, COUNT_INSERT, COUNT_UPDATE, COUNT_DELETE," +
-		"SUM_TIMER_FETCH, SUM_TIMER_INSERT, SUM_TIMER_UPDATE, SUM_TIMER_DELETE" +
-		"FROM performance_schema.table_io_waits_summary_by_index_usage" +
+		"SUM_TIMER_FETCH, SUM_TIMER_INSERT, SUM_TIMER_UPDATE, SUM_TIMER_DELETE " +
+		"FROM performance_schema.table_io_waits_summary_by_index_usage " +
 		"WHERE OBJECT_SCHEMA NOT IN ('mysql', 'performance_schema');"
 
 	rows, err := c.client.Query(query)

@@ -138,7 +138,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	{
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("cumulative_double_with_dims")
-		m.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		m.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		m.Sum().SetIsMonotonic(true)
 		doublePt := m.Sum().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(ts)
@@ -147,7 +147,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	{
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("cumulative_int_with_dims")
-		m.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		m.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		m.Sum().SetIsMonotonic(true)
 		int64Pt := m.Sum().DataPoints().AppendEmpty()
 		int64Pt.SetTimestamp(ts)

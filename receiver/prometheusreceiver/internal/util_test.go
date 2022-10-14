@@ -113,7 +113,7 @@ func TestConvToMetricType(t *testing.T) {
 		{
 			name:          "textparse.metric_gauge_hostogram",
 			mtype:         textparse.MetricTypeGaugeHistogram,
-			want:          pmetric.MetricTypeNone,
+			want:          pmetric.MetricTypeEmpty,
 			wantMonotonic: false,
 		},
 	}

@@ -175,7 +175,7 @@ func TestMetricIdentity_IsSupportedMetricType(t *testing.T) {
 		{
 			name: "none",
 			fields: fields{
-				MetricType: pmetric.MetricTypeNone,
+				MetricType: pmetric.MetricTypeEmpty,
 			},
 			want: false,
 		},

@@ -97,7 +97,7 @@ func sum(ilm pmetric.MetricSlice, metricName string, unit string, points []point
 	metric := initMetric(ilm, metricName, unit)
 	sum := metric.SetEmptySum()
 	sum.SetIsMonotonic(true)
-	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 	dataPoints := sum.DataPoints()
 

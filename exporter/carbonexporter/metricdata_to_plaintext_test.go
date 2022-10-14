@@ -235,7 +235,7 @@ func TestToPlaintext(t *testing.T) {
 				md := pmetric.NewMetrics()
 				ms := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 				ms.AppendEmpty().SetName("distrib")
-				ms.At(0).SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				ms.At(0).SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				dp := ms.At(0).SetEmptyHistogram().DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
 				dp.Attributes().FromRaw(map[string]interface{}{"k0": "v0", "k1": "v1"})

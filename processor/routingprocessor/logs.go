@@ -101,11 +101,10 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 
 		matchCount := len(p.router.routes)
 		for key, route := range p.router.routes {
-			if !route.expression.Condition(ltx) {
+			if _, isMatch := route.expression.Execute(ltx); !isMatch {
 				matchCount--
 				continue
 			}
-			route.expression.Function(ltx)
 			p.group(key, groups, route.exporters, rlogs)
 		}
 

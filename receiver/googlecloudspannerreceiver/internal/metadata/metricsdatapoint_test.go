@@ -154,7 +154,7 @@ func allPossibleLabelValues() []LabelValue {
 }
 
 func allPossibleMetricValues(metricDataType pmetric.MetricType) []MetricValue {
-	dataType := NewMetricType(metricDataType, pmetric.MetricAggregationTemporalityDelta, true)
+	dataType := NewMetricType(metricDataType, pmetric.AggregationTemporalityDelta, true)
 	int64Metadata, _ := NewMetricValueMetadata("int64MetricName", "int64MetricColumnName", dataType,
 		metricUnit, IntValueType)
 	float64Metadata, _ := NewMetricValueMetadata("float64MetricName", "float64MetricColumnName", dataType,

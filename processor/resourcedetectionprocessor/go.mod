@@ -4,17 +4,17 @@ go 1.18
 
 require (
 	cloud.google.com/go/compute v1.10.0
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.33.0
-	github.com/aws/aws-sdk-go v1.44.110
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.34.1
+	github.com/aws/aws-sdk-go v1.44.114
 	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/hashicorp/consul/api v1.15.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.61.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.61.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.61.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.62.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.62.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.62.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.61.1-0.20221006231412-05d1c5f5572d
-	go.opentelemetry.io/collector/pdata v0.61.1-0.20221006231412-05d1c5f5572d
-	go.opentelemetry.io/collector/semconv v0.61.1-0.20221006231412-05d1c5f5572d
+	go.opentelemetry.io/collector v0.62.0
+	go.opentelemetry.io/collector/pdata v0.62.0
+	go.opentelemetry.io/collector/semconv v0.62.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 	k8s.io/apimachinery v0.25.2
@@ -68,8 +68,8 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.61.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.61.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.62.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.62.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -91,7 +91,7 @@ require (
 	golang.org/x/time v0.0.0-20220411224347-583f2d630306 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220915135415-7fd63a7952de // indirect
-	google.golang.org/grpc v1.49.0 // indirect
+	google.golang.org/grpc v1.50.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
