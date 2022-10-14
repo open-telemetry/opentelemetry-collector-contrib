@@ -21,56 +21,70 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func TestLoadConfig(t *testing.T) {
-	facotries, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	facotries.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), facotries)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Exporters), 2)
+	tests := []struct {
+		id       config.ComponentID
+		expected config.Exporter
+	}{
+		{
+			id:       config.NewComponentIDWithName(typeStr, ""),
+			expected: createDefaultConfig(),
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "customname"),
+			expected: &Config{
+				ExporterSettings:    config.NewExporterSettings(config.NewComponentID(typeStr)),
+				Endpoint:            "test-endpoint",
+				AccessToken:         "abcd1234",
+				NumWorkers:          3,
+				MaxConnections:      45,
+				LogDetailedResponse: true,
+				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+					AccessTokenPassthrough: false,
+				},
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: 10 * time.Second,
+				},
+				RetrySettings: exporterhelper.RetrySettings{
+					Enabled:         true,
+					InitialInterval: 10 * time.Second,
+					MaxInterval:     1 * time.Minute,
+					MaxElapsedTime:  10 * time.Minute,
+				},
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: 2,
+					QueueSize:    10,
+				},
+			},
+		},
+	}
 
-	r0 := cfg.Exporters[config.NewComponentID(typeStr)]
-	assert.Equal(t, r0, factory.CreateDefaultConfig())
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
 
-	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
-	assert.Equal(t, r1,
-		&Config{
-			ExporterSettings:    config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "customname")),
-			Endpoint:            "test-endpoint",
-			AccessToken:         "abcd1234",
-			NumWorkers:          3,
-			MaxConnections:      45,
-			LogDetailedResponse: true,
-			AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
-				AccessTokenPassthrough: false,
-			},
-			TimeoutSettings: exporterhelper.TimeoutSettings{
-				Timeout: 10 * time.Second,
-			},
-			RetrySettings: exporterhelper.RetrySettings{
-				Enabled:         true,
-				InitialInterval: 10 * time.Second,
-				MaxInterval:     1 * time.Minute,
-				MaxElapsedTime:  10 * time.Minute,
-			},
-			QueueSettings: exporterhelper.QueueSettings{
-				Enabled:      true,
-				NumConsumers: 2,
-				QueueSize:    10,
-			},
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalExporter(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
+	}
 }
 
 func TestInvalidConfig(t *testing.T) {
