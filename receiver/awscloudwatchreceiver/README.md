@@ -109,3 +109,6 @@ This receiver has a number of sample configs for reference.
    - Specifies the names of the log groups to collect
    - Does not attempt autodiscovery
    - Only collects from log streams matching a prefix
+
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
