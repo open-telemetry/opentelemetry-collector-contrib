@@ -8,7 +8,7 @@
 | Supported pipeline types | traces, metrics, logs|
 | Distributions            | [contrib], [AWS] |
 
-> Please review the Collector's [security documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md), which contains recommendations on securing sensitive information such as the API key required by this exporter.
+> Please review the Collector's [security documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security-best-practices.md), which contains recommendations on securing sensitive information such as the API key required by this exporter.
 
 Visit the [official documentation](https://docs.datadoghq.com/tracing/trace_collection/open_standards/otel_collector_datadog_exporter/) for usage instructions.
 
