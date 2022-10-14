@@ -44,7 +44,7 @@ var (
 	errInvalidTraceID = errors.New("TraceID is invalid")
 )
 
-var appResAttrsKeys = []string{labelApplication, conventions.AttributeServiceName, labelShard, labelCluster}
+var appResAttrsKeys = []string{labelApplication, labelService, labelShard, labelCluster}
 
 type span struct {
 	Name           string
@@ -167,13 +167,9 @@ func spanKind(span ptrace.Span) string {
 
 func (t *traceTransformer) setRequiredTags(tags map[string]string) {
 	if _, ok := tags[labelService]; !ok {
-		if svcName, svcNameOk := tags[conventions.AttributeServiceName]; svcNameOk {
-			tags[labelService] = svcName
-			delete(tags, conventions.AttributeServiceName)
-		} else {
-			tags[labelService] = defaultServiceName
-		}
+		tags[labelService] = defaultServiceName
 	}
+
 	if _, ok := tags[labelApplication]; !ok {
 		tags[labelApplication] = defaultApplicationName
 	}
@@ -213,32 +209,26 @@ func attributesToTags(attributes ...pcommon.Map) map[string]string {
 			return true
 		})
 	}
+
+	// Resource attr `service` will take preference over `service.name`
+	if _, ok := tags[labelService]; !ok {
+		if svcName, svcNameOk := tags[conventions.AttributeServiceName]; svcNameOk {
+			tags[labelService] = svcName
+			delete(tags, conventions.AttributeServiceName)
+		}
+	}
 	return tags
 }
 
 func appAttributesToTags(attributes pcommon.Map) map[string]string {
-	tags := map[string]string{}
-
-	// Resource attr `service` will take preference over `service.name`
-	if resAttrVal, ok := attributes.Get(labelService); ok {
-		tags[labelService] = resAttrVal.AsString()
-	}
-
+	tags := attributesToTags(attributes)
+	appTags := map[string]string{}
 	for _, resAttrsKey := range appResAttrsKeys {
-		if resAttrVal, ok := attributes.Get(resAttrsKey); ok {
-			if resAttrsKey == conventions.AttributeServiceName {
-				// check if we have already got `service` value
-				if _, ok := tags[labelService]; !ok {
-					// Change `service.name` key to `service`
-					tags[labelService] = resAttrVal.AsString()
-				}
-			} else {
-				tags[resAttrsKey] = resAttrVal.AsString()
-			}
+		if resAttrVal, ok := tags[resAttrsKey]; ok {
+			appTags[resAttrsKey] = resAttrVal
 		}
 	}
-
-	return tags
+	return appTags
 }
 
 func replaceSource(tags map[string]string) {
