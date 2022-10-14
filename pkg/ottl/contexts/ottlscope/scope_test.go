@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ottlcommon
+package ottlscope
 
 import (
 	"testing"
@@ -24,53 +24,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
-func TestScopePathGetSetter(t *testing.T) {
-	refIS := createInstrumentationScope()
+func Test_newPathGetSetter(t *testing.T) {
+	refIS, refResource := createTelemetry()
 
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
+
 	tests := []struct {
 		name     string
 		path     []ottl.Field
 		orig     interface{}
 		newVal   interface{}
-		modified func(is pcommon.InstrumentationScope)
+		modified func(is pcommon.InstrumentationScope, resource pcommon.Resource)
 	}{
-		{
-			name:   "instrumentation_scope",
-			path:   []ottl.Field{},
-			orig:   refIS,
-			newVal: pcommon.NewInstrumentationScope(),
-			modified: func(is pcommon.InstrumentationScope) {
-				pcommon.NewInstrumentationScope().CopyTo(is)
-			},
-		},
-		{
-			name: "instrumentation_scope name",
-			path: []ottl.Field{
-				{
-					Name: "name",
-				},
-			},
-			orig:   refIS.Name(),
-			newVal: "newname",
-			modified: func(is pcommon.InstrumentationScope) {
-				is.SetName("newname")
-			},
-		},
-		{
-			name: "instrumentation_scope version",
-			path: []ottl.Field{
-				{
-					Name: "version",
-				},
-			},
-			orig:   refIS.Version(),
-			newVal: "next",
-			modified: func(is pcommon.InstrumentationScope) {
-				is.SetVersion("next")
-			},
-		},
 		{
 			name: "attributes",
 			path: []ottl.Field{
@@ -80,7 +46,7 @@ func TestScopePathGetSetter(t *testing.T) {
 			},
 			orig:   refIS.Attributes(),
 			newVal: newAttrs,
-			modified: func(is pcommon.InstrumentationScope) {
+			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource) {
 				newAttrs.CopyTo(is.Attributes())
 			},
 		},
@@ -94,21 +60,8 @@ func TestScopePathGetSetter(t *testing.T) {
 			},
 			orig:   "val",
 			newVal: "newVal",
-			modified: func(is pcommon.InstrumentationScope) {
+			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource) {
 				is.Attributes().PutStr("str", "newVal")
-			},
-		},
-		{
-			name: "dropped_attributes_count",
-			path: []ottl.Field{
-				{
-					Name: "dropped_attributes_count",
-				},
-			},
-			orig:   int64(10),
-			newVal: int64(20),
-			modified: func(is pcommon.InstrumentationScope) {
-				is.SetDroppedAttributesCount(20)
 			},
 		},
 		{
@@ -121,7 +74,7 @@ func TestScopePathGetSetter(t *testing.T) {
 			},
 			orig:   true,
 			newVal: false,
-			modified: func(is pcommon.InstrumentationScope) {
+			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource) {
 				is.Attributes().PutBool("bool", false)
 			},
 		},
@@ -135,7 +88,7 @@ func TestScopePathGetSetter(t *testing.T) {
 			},
 			orig:   int64(10),
 			newVal: int64(20),
-			modified: func(is pcommon.InstrumentationScope) {
+			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource) {
 				is.Attributes().PutInt("int", 20)
 			},
 		},
@@ -147,9 +100,9 @@ func TestScopePathGetSetter(t *testing.T) {
 					MapKey: ottltest.Strp("double"),
 				},
 			},
-			orig:   1.2,
-			newVal: 2.4,
-			modified: func(is pcommon.InstrumentationScope) {
+			orig:   float64(1.2),
+			newVal: float64(2.4),
+			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource) {
 				is.Attributes().PutDouble("double", 2.4)
 			},
 		},
@@ -163,7 +116,7 @@ func TestScopePathGetSetter(t *testing.T) {
 			},
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
-			modified: func(is pcommon.InstrumentationScope) {
+			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource) {
 				is.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
 		},
@@ -180,9 +133,8 @@ func TestScopePathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []string{"new"},
-			modified: func(is pcommon.InstrumentationScope) {
-				newArr := is.Attributes().PutEmptySlice("arr_str")
-				newArr.AppendEmpty().SetStr("new")
+			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource) {
+				is.Attributes().PutEmptySlice("arr_str").AppendEmpty().SetStr("new")
 			},
 		},
 		{
@@ -198,9 +150,8 @@ func TestScopePathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []bool{false},
-			modified: func(is pcommon.InstrumentationScope) {
-				newArr := is.Attributes().PutEmptySlice("arr_bool")
-				newArr.AppendEmpty().SetBool(false)
+			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource) {
+				is.Attributes().PutEmptySlice("arr_bool").AppendEmpty().SetBool(false)
 			},
 		},
 		{
@@ -216,9 +167,8 @@ func TestScopePathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []int64{20},
-			modified: func(is pcommon.InstrumentationScope) {
-				newArr := is.Attributes().PutEmptySlice("arr_int")
-				newArr.AppendEmpty().SetInt(20)
+			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource) {
+				is.Attributes().PutEmptySlice("arr_int").AppendEmpty().SetInt(20)
 			},
 		},
 		{
@@ -234,9 +184,8 @@ func TestScopePathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []float64{2.0},
-			modified: func(is pcommon.InstrumentationScope) {
-				newArr := is.Attributes().PutEmptySlice("arr_float")
-				newArr.AppendEmpty().SetDouble(2.0)
+			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource) {
+				is.Attributes().PutEmptySlice("arr_float").AppendEmpty().SetDouble(2.0)
 			},
 		},
 		{
@@ -252,33 +201,85 @@ func TestScopePathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: [][]byte{{9, 6, 4}},
-			modified: func(is pcommon.InstrumentationScope) {
-				newArr := is.Attributes().PutEmptySlice("arr_bytes")
-				newArr.AppendEmpty().SetEmptyBytes().FromRaw([]byte{9, 6, 4})
+			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource) {
+				is.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytes().FromRaw([]byte{9, 6, 4})
+			},
+		},
+		{
+			name: "dropped_attributes_count",
+			path: []ottl.Field{
+				{
+					Name: "dropped_attributes_count",
+				},
+			},
+			orig:   int64(10),
+			newVal: int64(20),
+			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource) {
+				is.SetDroppedAttributesCount(20)
+			},
+		},
+		{
+			name: "name",
+			path: []ottl.Field{
+				{
+					Name: "name",
+				},
+			},
+			orig:   refIS.Name(),
+			newVal: "newname",
+			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource) {
+				is.SetName("newname")
+			},
+		},
+		{
+			name: "version",
+			path: []ottl.Field{
+				{
+					Name: "version",
+				},
+			},
+			orig:   refIS.Version(),
+			newVal: "next",
+			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource) {
+				is.SetVersion("next")
+			},
+		},
+		{
+			name: "resource",
+			path: []ottl.Field{
+				{
+					Name: "resource",
+				},
+			},
+			orig:   refResource,
+			newVal: pcommon.NewResource(),
+			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource) {
+				pcommon.NewResource().CopyTo(resource)
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := ScopePathGetSetter[*instrumentationScopeContext](tt.path)
+			accessor, err := newPathGetSetter(tt.path)
 			assert.NoError(t, err)
 
-			is := createInstrumentationScope()
+			il, resource := createTelemetry()
 
-			got := accessor.Get(newInstrumentationScopeContext(is))
+			got := accessor.Get(NewTransformContext(il, resource))
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(newInstrumentationScopeContext(is), tt.newVal)
+			accessor.Set(NewTransformContext(il, resource), tt.newVal)
 
-			expectedIS := createInstrumentationScope()
-			tt.modified(expectedIS)
+			exIl, exRes := createTelemetry()
+			tt.modified(exIl, exRes)
 
-			assert.Equal(t, expectedIS, is)
+			assert.Equal(t, exIl, il)
+			assert.Equal(t, exRes, resource)
 		})
 	}
 }
 
-func createInstrumentationScope() pcommon.InstrumentationScope {
+func createTelemetry() (pcommon.InstrumentationScope, pcommon.Resource) {
 	is := pcommon.NewInstrumentationScope()
 	is.SetName("library")
 	is.SetVersion("version")
@@ -310,17 +311,8 @@ func createInstrumentationScope() pcommon.InstrumentationScope {
 	arrBytes.AppendEmpty().SetEmptyBytes().FromRaw([]byte{1, 2, 3})
 	arrBytes.AppendEmpty().SetEmptyBytes().FromRaw([]byte{2, 3, 4})
 
-	return is
-}
+	resource := pcommon.NewResource()
+	is.Attributes().CopyTo(resource.Attributes())
 
-type instrumentationScopeContext struct {
-	is pcommon.InstrumentationScope
-}
-
-func (r *instrumentationScopeContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return r.is
-}
-
-func newInstrumentationScopeContext(is pcommon.InstrumentationScope) *instrumentationScopeContext {
-	return &instrumentationScopeContext{is: is}
+	return is, resource
 }
