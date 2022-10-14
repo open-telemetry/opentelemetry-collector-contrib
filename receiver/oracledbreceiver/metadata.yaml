@@ -153,7 +153,7 @@ metrics:
     gauge:
       value_type: int
     unit: "{resources}"
-  oracledb.tablespaces.limit:
+  oracledb.tablespace_size.limit:
     attributes:
       - db.oracle.tablespace.name
     description: Maximum size of tablespace in bytes.
@@ -161,7 +161,7 @@ metrics:
     gauge:
       value_type: int
     unit: By
-  oracledb.tablespaces.usage:
+  oracledb.tablespace_size.usage:
     attributes:
       - db.oracle.tablespace.name
     description: Used tablespace in bytes.

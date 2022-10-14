@@ -34,8 +34,8 @@ type MetricsSettings struct {
 	OracledbProcessesUsage        MetricSettings `mapstructure:"oracledb.processes.usage"`
 	OracledbSessionsLimit         MetricSettings `mapstructure:"oracledb.sessions.limit"`
 	OracledbSessionsUsage         MetricSettings `mapstructure:"oracledb.sessions.usage"`
-	OracledbTablespacesLimit      MetricSettings `mapstructure:"oracledb.tablespaces.limit"`
-	OracledbTablespacesUsage      MetricSettings `mapstructure:"oracledb.tablespaces.usage"`
+	OracledbTablespaceSizeLimit   MetricSettings `mapstructure:"oracledb.tablespace_size.limit"`
+	OracledbTablespaceSizeUsage   MetricSettings `mapstructure:"oracledb.tablespace_size.usage"`
 	OracledbUserCommits           MetricSettings `mapstructure:"oracledb.user_commits"`
 	OracledbUserRollbacks         MetricSettings `mapstructure:"oracledb.user_rollbacks"`
 }
@@ -93,10 +93,10 @@ func DefaultMetricsSettings() MetricsSettings {
 		OracledbSessionsUsage: MetricSettings{
 			Enabled: true,
 		},
-		OracledbTablespacesLimit: MetricSettings{
+		OracledbTablespaceSizeLimit: MetricSettings{
 			Enabled: true,
 		},
-		OracledbTablespacesUsage: MetricSettings{
+		OracledbTablespaceSizeUsage: MetricSettings{
 			Enabled: true,
 		},
 		OracledbUserCommits: MetricSettings{
@@ -962,22 +962,22 @@ func newMetricOracledbSessionsUsage(settings MetricSettings) metricOracledbSessi
 	return m
 }
 
-type metricOracledbTablespacesLimit struct {
+type metricOracledbTablespaceSizeLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills oracledb.tablespaces.limit metric with initial data.
-func (m *metricOracledbTablespacesLimit) init() {
-	m.data.SetName("oracledb.tablespaces.limit")
+// init fills oracledb.tablespace_size.limit metric with initial data.
+func (m *metricOracledbTablespaceSizeLimit) init() {
+	m.data.SetName("oracledb.tablespace_size.limit")
 	m.data.SetDescription("Maximum size of tablespace in bytes.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricOracledbTablespacesLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbOracleTablespaceNameAttributeValue string) {
+func (m *metricOracledbTablespaceSizeLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbOracleTablespaceNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -989,14 +989,14 @@ func (m *metricOracledbTablespacesLimit) recordDataPoint(start pcommon.Timestamp
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbTablespacesLimit) updateCapacity() {
+func (m *metricOracledbTablespaceSizeLimit) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbTablespacesLimit) emit(metrics pmetric.MetricSlice) {
+func (m *metricOracledbTablespaceSizeLimit) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1004,8 +1004,8 @@ func (m *metricOracledbTablespacesLimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbTablespacesLimit(settings MetricSettings) metricOracledbTablespacesLimit {
-	m := metricOracledbTablespacesLimit{settings: settings}
+func newMetricOracledbTablespaceSizeLimit(settings MetricSettings) metricOracledbTablespaceSizeLimit {
+	m := metricOracledbTablespaceSizeLimit{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1013,22 +1013,22 @@ func newMetricOracledbTablespacesLimit(settings MetricSettings) metricOracledbTa
 	return m
 }
 
-type metricOracledbTablespacesUsage struct {
+type metricOracledbTablespaceSizeUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills oracledb.tablespaces.usage metric with initial data.
-func (m *metricOracledbTablespacesUsage) init() {
-	m.data.SetName("oracledb.tablespaces.usage")
+// init fills oracledb.tablespace_size.usage metric with initial data.
+func (m *metricOracledbTablespaceSizeUsage) init() {
+	m.data.SetName("oracledb.tablespace_size.usage")
 	m.data.SetDescription("Used tablespace in bytes.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricOracledbTablespacesUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbOracleTablespaceNameAttributeValue string) {
+func (m *metricOracledbTablespaceSizeUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbOracleTablespaceNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1040,14 +1040,14 @@ func (m *metricOracledbTablespacesUsage) recordDataPoint(start pcommon.Timestamp
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbTablespacesUsage) updateCapacity() {
+func (m *metricOracledbTablespaceSizeUsage) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbTablespacesUsage) emit(metrics pmetric.MetricSlice) {
+func (m *metricOracledbTablespaceSizeUsage) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1055,8 +1055,8 @@ func (m *metricOracledbTablespacesUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbTablespacesUsage(settings MetricSettings) metricOracledbTablespacesUsage {
-	m := metricOracledbTablespacesUsage{settings: settings}
+func newMetricOracledbTablespaceSizeUsage(settings MetricSettings) metricOracledbTablespaceSizeUsage {
+	m := metricOracledbTablespaceSizeUsage{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1191,8 +1191,8 @@ type MetricsBuilder struct {
 	metricOracledbProcessesUsage        metricOracledbProcessesUsage
 	metricOracledbSessionsLimit         metricOracledbSessionsLimit
 	metricOracledbSessionsUsage         metricOracledbSessionsUsage
-	metricOracledbTablespacesLimit      metricOracledbTablespacesLimit
-	metricOracledbTablespacesUsage      metricOracledbTablespacesUsage
+	metricOracledbTablespaceSizeLimit   metricOracledbTablespaceSizeLimit
+	metricOracledbTablespaceSizeUsage   metricOracledbTablespaceSizeUsage
 	metricOracledbUserCommits           metricOracledbUserCommits
 	metricOracledbUserRollbacks         metricOracledbUserRollbacks
 }
@@ -1229,8 +1229,8 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricOracledbProcessesUsage:        newMetricOracledbProcessesUsage(settings.OracledbProcessesUsage),
 		metricOracledbSessionsLimit:         newMetricOracledbSessionsLimit(settings.OracledbSessionsLimit),
 		metricOracledbSessionsUsage:         newMetricOracledbSessionsUsage(settings.OracledbSessionsUsage),
-		metricOracledbTablespacesLimit:      newMetricOracledbTablespacesLimit(settings.OracledbTablespacesLimit),
-		metricOracledbTablespacesUsage:      newMetricOracledbTablespacesUsage(settings.OracledbTablespacesUsage),
+		metricOracledbTablespaceSizeLimit:   newMetricOracledbTablespaceSizeLimit(settings.OracledbTablespaceSizeLimit),
+		metricOracledbTablespaceSizeUsage:   newMetricOracledbTablespaceSizeUsage(settings.OracledbTablespaceSizeUsage),
 		metricOracledbUserCommits:           newMetricOracledbUserCommits(settings.OracledbUserCommits),
 		metricOracledbUserRollbacks:         newMetricOracledbUserRollbacks(settings.OracledbUserRollbacks),
 	}
@@ -1309,8 +1309,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricOracledbProcessesUsage.emit(ils.Metrics())
 	mb.metricOracledbSessionsLimit.emit(ils.Metrics())
 	mb.metricOracledbSessionsUsage.emit(ils.Metrics())
-	mb.metricOracledbTablespacesLimit.emit(ils.Metrics())
-	mb.metricOracledbTablespacesUsage.emit(ils.Metrics())
+	mb.metricOracledbTablespaceSizeLimit.emit(ils.Metrics())
+	mb.metricOracledbTablespaceSizeUsage.emit(ils.Metrics())
 	mb.metricOracledbUserCommits.emit(ils.Metrics())
 	mb.metricOracledbUserRollbacks.emit(ils.Metrics())
 	for _, op := range rmo {
@@ -1417,14 +1417,14 @@ func (mb *MetricsBuilder) RecordOracledbSessionsUsageDataPoint(ts pcommon.Timest
 	mb.metricOracledbSessionsUsage.recordDataPoint(mb.startTime, ts, val, dbOracleSessionTypeAttributeValue, dbOracleSessionStatusAttributeValue)
 }
 
-// RecordOracledbTablespacesLimitDataPoint adds a data point to oracledb.tablespaces.limit metric.
-func (mb *MetricsBuilder) RecordOracledbTablespacesLimitDataPoint(ts pcommon.Timestamp, val int64, dbOracleTablespaceNameAttributeValue string) {
-	mb.metricOracledbTablespacesLimit.recordDataPoint(mb.startTime, ts, val, dbOracleTablespaceNameAttributeValue)
+// RecordOracledbTablespaceSizeLimitDataPoint adds a data point to oracledb.tablespace_size.limit metric.
+func (mb *MetricsBuilder) RecordOracledbTablespaceSizeLimitDataPoint(ts pcommon.Timestamp, val int64, dbOracleTablespaceNameAttributeValue string) {
+	mb.metricOracledbTablespaceSizeLimit.recordDataPoint(mb.startTime, ts, val, dbOracleTablespaceNameAttributeValue)
 }
 
-// RecordOracledbTablespacesUsageDataPoint adds a data point to oracledb.tablespaces.usage metric.
-func (mb *MetricsBuilder) RecordOracledbTablespacesUsageDataPoint(ts pcommon.Timestamp, val int64, dbOracleTablespaceNameAttributeValue string) {
-	mb.metricOracledbTablespacesUsage.recordDataPoint(mb.startTime, ts, val, dbOracleTablespaceNameAttributeValue)
+// RecordOracledbTablespaceSizeUsageDataPoint adds a data point to oracledb.tablespace_size.usage metric.
+func (mb *MetricsBuilder) RecordOracledbTablespaceSizeUsageDataPoint(ts pcommon.Timestamp, val int64, dbOracleTablespaceNameAttributeValue string) {
+	mb.metricOracledbTablespaceSizeUsage.recordDataPoint(mb.startTime, ts, val, dbOracleTablespaceNameAttributeValue)
 }
 
 // RecordOracledbUserCommitsDataPoint adds a data point to oracledb.user_commits metric.
