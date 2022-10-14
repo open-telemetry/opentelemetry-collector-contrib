@@ -139,7 +139,6 @@ func (m *amqpMessagingService) dial() (err error) {
 		amqp.LinkSourceAddress(m.receiverConfig.queue),
 		amqp.LinkCredit(m.receiverConfig.maxUnacked),
 		amqp.LinkName(telemetryLinkName),
-		amqp.LinkBatching(true),
 	)
 	if err != nil {
 		m.logger.Debug("Create AMQP Receiver Link failure", zap.Error(err))
