@@ -8,22 +8,28 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| **oracledb.session.cpu_usage** | CPU usage (%) | 1 | Gauge(Double) | <ul> </ul> |
-| **oracledb.session.enqueue_deadlocks** | Total number of deadlocks between table or row locks in different sessions. | 1 | Gauge(Int) | <ul> </ul> |
-| **oracledb.session.exchange_deadlocks** | Number of times that a process detected a potential deadlock when exchanging two buffers and raised an internal, restartable error. Index scans are the only operations that perform exchanges. | 1 | Gauge(Int) | <ul> </ul> |
-| **oracledb.session.execute_count** | Total number of calls (user and recursive) that executed SQL statements | 1 | Sum(Int) | <ul> </ul> |
-| **oracledb.session.hard_parses** | Number of hard parses | 1 | Sum(Int) | <ul> </ul> |
-| **oracledb.session.logical_reads** | Number of logical reads | 1 | Sum(Int) | <ul> </ul> |
-| **oracledb.session.parse_count_total** | Total number of parse calls (hard, soft, and describe). A soft parse is a check on an object already in the shared pool, to verify that the permissions on the underlying object have not changed. | 1 | Sum(Int) | <ul> </ul> |
-| **oracledb.session.pga_memory** | PGA size at the end of the interval | By | Gauge(Int) | <ul> </ul> |
-| **oracledb.session.physical_reads** | Number of physical reads | 1 | Sum(Int) | <ul> </ul> |
-| **oracledb.session.soft_parses** | Number of soft parses | 1 | Sum(Int) | <ul> </ul> |
-| **oracledb.session.user_commits** | Number of user commits. When a user commits a transaction, the redo generated that reflects the changes made to database blocks must be written to disk. Commits often represent the closest thing to a user transaction rate. | 1 | Sum(Int) | <ul> </ul> |
-| **oracledb.session.user_rollbacks** | Number of times users manually issue the ROLLBACK statement or an error occurs during a user's transactions | 1 | Sum(Int) | <ul> </ul> |
-| **oracledb.system.resource_limits** | Designates the current utilization and max, initial and current value of a resource limit across processes, sessions, locks, and more. | 1 | Gauge(Int) | <ul> <li>db.oracle.resource.name</li> <li>db.oracle.resource.type</li> </ul> |
-| **oracledb.system.session_count** | Count of sessions. | 1 | Gauge(Int) | <ul> <li>db.oracle.session.type</li> <li>db.oracle.session.status</li> </ul> |
+| **oracledb.cpu_utilization** | CPU utilization, in seconds | s | Sum(Double) | <ul> </ul> |
+| **oracledb.enqueue_deadlocks** | Total number of deadlocks between table or row locks in different sessions. | {deadlocks} | Sum(Int) | <ul> </ul> |
+| **oracledb.exchange_deadlocks** | Number of times that a process detected a potential deadlock when exchanging two buffers and raised an internal, restartable error. Index scans are the only operations that perform exchanges. | {deadlocks} | Sum(Int) | <ul> </ul> |
+| **oracledb.execute_count** | Total number of calls (user and recursive) that executed SQL statements | {executions} | Sum(Int) | <ul> </ul> |
+| **oracledb.hard_parses** | Number of hard parses | {parses} | Sum(Int) | <ul> </ul> |
+| **oracledb.logical_reads** | Number of logical reads | {reads} | Sum(Int) | <ul> </ul> |
+| **oracledb.parse_count_total** | Total number of parse calls. | {parses} | Sum(Int) | <ul> </ul> |
+| **oracledb.pga_memory** | Session PGA (Program Global Area) memory | By | Sum(Int) | <ul> </ul> |
+| **oracledb.physical_reads** | Number of physical reads | {reads} | Sum(Int) | <ul> </ul> |
+| **oracledb.resource_limit.enqueue_locks.max** | Maximum limit of active enqueue locks. | {locks} | Gauge(Int) | <ul> </ul> |
+| **oracledb.resource_limit.enqueue_locks.utilization** | Current count of active enqueue locks. | {locks} | Gauge(Int) | <ul> </ul> |
+| **oracledb.resource_limit.enqueue_resources.max** | Maximum limit of active enqueue resources. | {resources} | Gauge(Int) | <ul> </ul> |
+| **oracledb.resource_limit.enqueue_resources.utilization** | Current count of active enqueue resources. | {resources} | Gauge(Int) | <ul> </ul> |
+| **oracledb.resource_limit.process.max** | Maximum limit of active processes. | {processes} | Gauge(Int) | <ul> </ul> |
+| **oracledb.resource_limit.process.utilization** | Current count of active processes. | {processes} | Gauge(Int) | <ul> </ul> |
+| **oracledb.resource_limit.session.max** | Maximum limit of active sessions. | {sessions} | Gauge(Int) | <ul> </ul> |
+| **oracledb.resource_limit.session.utilization** | Current count of active sessions. | {sessions} | Gauge(Int) | <ul> </ul> |
+| **oracledb.session.count** | Count of sessions. | {sessions} | Gauge(Int) | <ul> <li>db.oracle.session.type</li> <li>db.oracle.session.status</li> </ul> |
 | **oracledb.tablespace.max_size** | Maximum size of tablespace in bytes. | By | Gauge(Int) | <ul> <li>db.oracle.tablespace.name</li> </ul> |
 | **oracledb.tablespace.size** | Size of tablespace in bytes. | By | Gauge(Int) | <ul> <li>db.oracle.tablespace.name</li> </ul> |
+| **oracledb.user_commits** | Number of user commits. When a user commits a transaction, the redo generated that reflects the changes made to database blocks must be written to disk. Commits often represent the closest thing to a user transaction rate. | {commits} | Sum(Int) | <ul> </ul> |
+| **oracledb.user_rollbacks** | Number of times users manually issue the ROLLBACK statement or an error occurs during a user's transactions | 1 | Sum(Int) | <ul> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:
@@ -44,8 +50,6 @@ metrics:
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| db.oracle.resource.name | Resource name. Example values are 'processes', 'sessions', 'enqueue_locks', 'enqueue_resources'. |  |
-| db.oracle.resource.type | Resource type, one of 'current_utilization', 'max', 'initial', 'current'. |  |
 | db.oracle.session.status | Session status |  |
 | db.oracle.session.type | Session type |  |
 | db.oracle.tablespace.name | Tablespace name |  |

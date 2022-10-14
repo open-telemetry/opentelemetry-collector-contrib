@@ -5,91 +5,85 @@ attributes:
   db.oracle.session.type:
     description: Session type
     type: string
-  db.oracle.resource.name:
-    description: Resource name. Example values are 'processes', 'sessions', 'enqueue_locks', 'enqueue_resources'.
-  db.oracle.resource.type:
-    description: Resource type, one of 'current_utilization', 'max', 'initial', 'current'.
   db.oracle.tablespace.name:
     description: Tablespace name
 metrics:
-  oracledb.session.cpu_usage:
-    description: CPU usage (%)
+  oracledb.cpu_utilization:
+    description: CPU utilization, in seconds
     enabled: true
-    gauge:
+    sum:
+      aggregation: cumulative
+      monotonic: true
       value_type: double
-    unit: 1
-  oracledb.session.enqueue_deadlocks:
+    unit: s
+  oracledb.enqueue_deadlocks:
     description: Total number of deadlocks between table or row locks in different
       sessions.
     enabled: true
-    gauge:
+    sum:
+      aggregation: cumulative
+      monotonic: true
       value_type: int
-    unit: 1
-  oracledb.session.exchange_deadlocks:
+    unit: "{deadlocks}"
+  oracledb.exchange_deadlocks:
     description: Number of times that a process detected a potential deadlock when
       exchanging two buffers and raised an internal, restartable error. Index scans
       are the only operations that perform exchanges.
     enabled: true
-    gauge:
+    sum:
+      aggregation: cumulative
+      monotonic: true
       value_type: int
-    unit: 1
-  oracledb.session.execute_count:
+    unit: "{deadlocks}"
+  oracledb.execute_count:
     description: Total number of calls (user and recursive) that executed SQL statements
     enabled: true
     sum:
       aggregation: cumulative
       monotonic: true
       value_type: int
-    unit: 1
-  oracledb.session.hard_parses:
+    unit: "{executions}"
+  oracledb.hard_parses:
     description: Number of hard parses
     enabled: true
     sum:
       aggregation: cumulative
       monotonic: true
       value_type: int
-    unit: 1
-  oracledb.session.logical_reads:
+    unit: "{parses}"
+  oracledb.logical_reads:
     description: Number of logical reads
     enabled: true
     sum:
       aggregation: cumulative
       monotonic: true
       value_type: int
-    unit: 1
-  oracledb.session.parse_count_total:
-    description: Total number of parse calls (hard, soft, and describe). A soft parse
-      is a check on an object already in the shared pool, to verify that the permissions
-      on the underlying object have not changed.
+    unit: "{reads}"
+  oracledb.parse_count_total:
+    description: Total number of parse calls.
     enabled: true
     sum:
       aggregation: cumulative
       monotonic: true
       value_type: int
-    unit: 1
-  oracledb.session.pga_memory:
-    description: PGA size at the end of the interval
+    unit: "{parses}"
+  oracledb.pga_memory:
+    description: Session PGA (Program Global Area) memory
     enabled: true
-    gauge:
+    sum:
+      aggregation: cumulative
+      monotonic: true
       value_type: int
     unit: By
-  oracledb.session.physical_reads:
+  oracledb.physical_reads:
     description: Number of physical reads
     enabled: true
     sum:
       aggregation: cumulative
       monotonic: true
       value_type: int
-    unit: 1
-  oracledb.session.soft_parses:
-    description: Number of soft parses
-    enabled: true
-    sum:
-      aggregation: cumulative
-      monotonic: true
-      value_type: int
-    unit: 1
-  oracledb.session.user_commits:
+    unit: "{reads}"
+  oracledb.user_commits:
     description: Number of user commits. When a user commits a transaction, the redo
       generated that reflects the changes made to database blocks must be written
       to disk. Commits often represent the closest thing to a user transaction rate.
@@ -98,8 +92,8 @@ metrics:
       aggregation: cumulative
       monotonic: true
       value_type: int
-    unit: 1
-  oracledb.session.user_rollbacks:
+    unit: "{commits}"
+  oracledb.user_rollbacks:
     description: Number of times users manually issue the ROLLBACK statement or an
       error occurs during a user's transactions
     enabled: true
@@ -108,7 +102,7 @@ metrics:
       monotonic: true
       value_type: int
     unit: 1
-  oracledb.system.session_count:
+  oracledb.session.count:
     attributes:
     - db.oracle.session.type
     - db.oracle.session.status
@@ -116,16 +110,55 @@ metrics:
     enabled: true
     gauge:
       value_type: int
-    unit: 1
-  oracledb.system.resource_limits:
-    attributes:
-      - db.oracle.resource.name
-      - db.oracle.resource.type
-    description: Designates the current utilization and max, initial and current value of a resource limit across processes, sessions, locks, and more.
+    unit: "{sessions}"
+  oracledb.resource_limit.process.utilization:
+    description: Current count of active processes.
     enabled: true
     gauge:
       value_type: int
-    unit: 1
+    unit: "{processes}"
+  oracledb.resource_limit.process.max:
+    description: Maximum limit of active processes.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{processes}"
+  oracledb.resource_limit.session.utilization:
+    description: Current count of active sessions.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{sessions}"
+  oracledb.resource_limit.session.max:
+    description: Maximum limit of active sessions.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{sessions}"
+  oracledb.resource_limit.enqueue_locks.utilization:
+    description: Current count of active enqueue locks.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{locks}"
+  oracledb.resource_limit.enqueue_locks.max:
+    description: Maximum limit of active enqueue locks.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{locks}"
+  oracledb.resource_limit.enqueue_resources.utilization:
+    description: Current count of active enqueue resources.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{resources}"
+  oracledb.resource_limit.enqueue_resources.max:
+    description: Maximum limit of active enqueue resources.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{resources}"
   oracledb.tablespace.max_size:
     attributes:
       - db.oracle.tablespace.name
