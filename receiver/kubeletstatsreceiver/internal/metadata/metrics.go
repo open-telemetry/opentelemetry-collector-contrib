@@ -121,28 +121,6 @@ type NetworkMetricsRecorder struct {
 	RecordTransmitDataPoint RecordIntDataPointWithStringAttributeFunc
 }
 
-var NodeNetworkMetrics = NetworkMetrics{
-	IO: NetworkMetricsRecorder{
-		RecordReceiveDataPoint:  (*MetricsBuilder).RecordK8sNodeNetworkIoReceiveDataPoint,
-		RecordTransmitDataPoint: (*MetricsBuilder).RecordK8sNodeNetworkIoTransmitDataPoint,
-	},
-	Errors: NetworkMetricsRecorder{
-		RecordReceiveDataPoint:  (*MetricsBuilder).RecordK8sNodeNetworkErrorsReceiveDataPoint,
-		RecordTransmitDataPoint: (*MetricsBuilder).RecordK8sNodeNetworkErrorsTransmitDataPoint,
-	},
-}
-
-var PodNetworkMetrics = NetworkMetrics{
-	IO: NetworkMetricsRecorder{
-		RecordReceiveDataPoint:  (*MetricsBuilder).RecordK8sPodNetworkIoReceiveDataPoint,
-		RecordTransmitDataPoint: (*MetricsBuilder).RecordK8sPodNetworkIoTransmitDataPoint,
-	},
-	Errors: NetworkMetricsRecorder{
-		RecordReceiveDataPoint:  (*MetricsBuilder).RecordK8sPodNetworkErrorsReceiveDataPoint,
-		RecordTransmitDataPoint: (*MetricsBuilder).RecordK8sPodNetworkErrorsTransmitDataPoint,
-	},
-}
-
 type NetworkMetricsWithDirection struct {
 	IO     RecordIntDataPointWithDirectionFunc
 	Errors RecordIntDataPointWithDirectionFunc
