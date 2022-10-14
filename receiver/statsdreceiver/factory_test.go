@@ -17,14 +17,29 @@ package statsdreceiver
 import (
 	"context"
 	"testing"
+	"time"
 
+	"github.com/lightstep/go-expohisto/structure"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
+
+type testHost struct {
+	component.Host
+	t *testing.T
+}
+
+// ReportFatalError causes the test to be run to fail.
+func (h *testHost) ReportFatalError(err error) {
+	h.t.Fatalf("receiver reported a fatal error: %v", err)
+}
+
+var _ component.Host = (*testHost)(nil)
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
@@ -59,6 +74,83 @@ func TestCreateReceiverWithConfigErr(t *testing.T) {
 	assert.Error(t, err, "aggregation_interval must be a positive duration")
 	assert.Nil(t, receiver)
 
+}
+
+func TestCreateReceiverWithHistogramConfigError(t *testing.T) {
+	for _, maxSize := range []int32{structure.MaximumMaxSize + 1, -1, -structure.MaximumMaxSize} {
+		cfg := &Config{
+			AggregationInterval: 20 * time.Second,
+			TimerHistogramMapping: []protocol.TimerHistogramMapping{
+				{
+					StatsdType:   "timing",
+					ObserverType: "histogram",
+					Histogram: protocol.HistogramConfig{
+						MaxSize: maxSize,
+					},
+				},
+			},
+		}
+		receiver, err := createMetricsReceiver(
+			context.Background(),
+			componenttest.NewNopReceiverCreateSettings(),
+			cfg,
+			consumertest.NewNop(),
+		)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "histogram max_size out of range")
+		assert.Nil(t, receiver)
+	}
+}
+
+func TestCreateReceiverWithHistogramGoodConfig(t *testing.T) {
+	for _, maxSize := range []int32{structure.MaximumMaxSize, 0, 2} {
+		cfg := &Config{
+			AggregationInterval: 20 * time.Second,
+			TimerHistogramMapping: []protocol.TimerHistogramMapping{
+				{
+					StatsdType:   "timing",
+					ObserverType: "histogram",
+					Histogram: protocol.HistogramConfig{
+						MaxSize: maxSize,
+					},
+				},
+			},
+		}
+		receiver, err := createMetricsReceiver(
+			context.Background(),
+			componenttest.NewNopReceiverCreateSettings(),
+			cfg,
+			consumertest.NewNop(),
+		)
+		assert.NoError(t, err)
+		assert.NotNil(t, receiver)
+		assert.NoError(t, receiver.Start(context.Background(), &testHost{t: t}))
+		assert.NoError(t, receiver.Shutdown(context.Background()))
+	}
+}
+
+func TestCreateReceiverWithInvalidHistogramConfig(t *testing.T) {
+	cfg := &Config{
+		AggregationInterval: 20 * time.Second,
+		TimerHistogramMapping: []protocol.TimerHistogramMapping{
+			{
+				StatsdType:   "timing",
+				ObserverType: "gauge",
+				Histogram: protocol.HistogramConfig{
+					MaxSize: 100,
+				},
+			},
+		},
+	}
+	receiver, err := createMetricsReceiver(
+		context.Background(),
+		componenttest.NewNopReceiverCreateSettings(),
+		cfg,
+		consumertest.NewNop(),
+	)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "histogram configuration requires observer_type: histogram")
+	assert.Nil(t, receiver)
 }
 
 func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
