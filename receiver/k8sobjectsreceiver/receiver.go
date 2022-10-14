@@ -74,6 +74,7 @@ func (kr *k8sobjectsreceiver) Shutdown(context.Context) error {
 
 func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfig) {
 	resource := kr.client.Resource(*object.gvr)
+	kr.setting.Logger.Info("Started collecting", zap.Any("gvr", object.gvr), zap.Any("mode", object.Mode), zap.Any("namespaces", object.Namespaces))
 
 	switch object.Mode {
 	case PullMode:

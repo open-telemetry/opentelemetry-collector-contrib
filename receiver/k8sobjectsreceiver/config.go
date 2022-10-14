@@ -134,6 +134,10 @@ func (c *Config) getValidObjects() (map[string]*schema.GroupVersionResource, err
 			split = []string{"", "v1"}
 		}
 		for _, resource := range group.APIResources {
+			if _, ok := validObjects[resource.Name]; ok {
+				// TODO: handle conflict
+				continue
+			}
 			validObjects[resource.Name] = &schema.GroupVersionResource{
 				Group:    split[0],
 				Version:  split[1],
