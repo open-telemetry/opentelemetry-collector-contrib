@@ -8,8 +8,12 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| **oracledb.cpu_utilization** | CPU utilization, in seconds | s | Sum(Double) | <ul> </ul> |
+| **oracledb.cpu_time** | Cumulative CPU time, in seconds | s | Sum(Double) | <ul> </ul> |
 | **oracledb.enqueue_deadlocks** | Total number of deadlocks between table or row locks in different sessions. | {deadlocks} | Sum(Int) | <ul> </ul> |
+| **oracledb.enqueue_locks.limit** | Maximum limit of active enqueue locks. | {locks} | Gauge(Int) | <ul> </ul> |
+| **oracledb.enqueue_locks.usage** | Current count of active enqueue locks. | {locks} | Gauge(Int) | <ul> </ul> |
+| **oracledb.enqueue_resources.limit** | Maximum limit of active enqueue resources. | {resources} | Gauge(Int) | <ul> </ul> |
+| **oracledb.enqueue_resources.usage** | Current count of active enqueue resources. | {resources} | Gauge(Int) | <ul> </ul> |
 | **oracledb.exchange_deadlocks** | Number of times that a process detected a potential deadlock when exchanging two buffers and raised an internal, restartable error. Index scans are the only operations that perform exchanges. | {deadlocks} | Sum(Int) | <ul> </ul> |
 | **oracledb.execute_count** | Total number of calls (user and recursive) that executed SQL statements | {executions} | Sum(Int) | <ul> </ul> |
 | **oracledb.hard_parses** | Number of hard parses | {parses} | Sum(Int) | <ul> </ul> |
@@ -17,17 +21,12 @@ These are the metrics available for this scraper.
 | **oracledb.parse_count_total** | Total number of parse calls. | {parses} | Sum(Int) | <ul> </ul> |
 | **oracledb.pga_memory** | Session PGA (Program Global Area) memory | By | Sum(Int) | <ul> </ul> |
 | **oracledb.physical_reads** | Number of physical reads | {reads} | Sum(Int) | <ul> </ul> |
-| **oracledb.resource_limit.enqueue_locks.max** | Maximum limit of active enqueue locks. | {locks} | Gauge(Int) | <ul> </ul> |
-| **oracledb.resource_limit.enqueue_locks.utilization** | Current count of active enqueue locks. | {locks} | Gauge(Int) | <ul> </ul> |
-| **oracledb.resource_limit.enqueue_resources.max** | Maximum limit of active enqueue resources. | {resources} | Gauge(Int) | <ul> </ul> |
-| **oracledb.resource_limit.enqueue_resources.utilization** | Current count of active enqueue resources. | {resources} | Gauge(Int) | <ul> </ul> |
-| **oracledb.resource_limit.process.max** | Maximum limit of active processes. | {processes} | Gauge(Int) | <ul> </ul> |
-| **oracledb.resource_limit.process.utilization** | Current count of active processes. | {processes} | Gauge(Int) | <ul> </ul> |
-| **oracledb.resource_limit.session.max** | Maximum limit of active sessions. | {sessions} | Gauge(Int) | <ul> </ul> |
-| **oracledb.resource_limit.session.utilization** | Current count of active sessions. | {sessions} | Gauge(Int) | <ul> </ul> |
-| **oracledb.session.count** | Count of sessions. | {sessions} | Gauge(Int) | <ul> <li>db.oracle.session.type</li> <li>db.oracle.session.status</li> </ul> |
-| **oracledb.tablespace.max_size** | Maximum size of tablespace in bytes. | By | Gauge(Int) | <ul> <li>db.oracle.tablespace.name</li> </ul> |
-| **oracledb.tablespace.size** | Size of tablespace in bytes. | By | Gauge(Int) | <ul> <li>db.oracle.tablespace.name</li> </ul> |
+| **oracledb.process.limit** | Maximum limit of active processes. | {processes} | Gauge(Int) | <ul> </ul> |
+| **oracledb.process.usage** | Current count of active processes. | {processes} | Gauge(Int) | <ul> </ul> |
+| **oracledb.session.limit** | Maximum limit of active sessions. | {sessions} | Gauge(Int) | <ul> </ul> |
+| **oracledb.session.usage** | Count of active sessions. | {sessions} | Gauge(Int) | <ul> <li>db.oracle.session.type</li> <li>db.oracle.session.status</li> </ul> |
+| **oracledb.tablespace.limit** | Maximum size of tablespace in bytes. | By | Gauge(Int) | <ul> <li>db.oracle.tablespace.name</li> </ul> |
+| **oracledb.tablespace.usage** | Used tablespace in bytes. | By | Gauge(Int) | <ul> <li>db.oracle.tablespace.name</li> </ul> |
 | **oracledb.user_commits** | Number of user commits. When a user commits a transaction, the redo generated that reflects the changes made to database blocks must be written to disk. Commits often represent the closest thing to a user transaction rate. | {commits} | Sum(Int) | <ul> </ul> |
 | **oracledb.user_rollbacks** | Number of times users manually issue the ROLLBACK statement or an error occurs during a user's transactions | 1 | Sum(Int) | <ul> </ul> |
 

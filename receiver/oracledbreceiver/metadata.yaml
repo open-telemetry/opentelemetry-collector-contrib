@@ -8,8 +8,8 @@ attributes:
   db.oracle.tablespace.name:
     description: Tablespace name
 metrics:
-  oracledb.cpu_utilization:
-    description: CPU utilization, in seconds
+  oracledb.cpu_time:
+    description: Cumulative CPU time, in seconds
     enabled: true
     sum:
       aggregation: cumulative
@@ -43,14 +43,6 @@ metrics:
       monotonic: true
       value_type: int
     unit: "{executions}"
-  oracledb.hard_parses:
-    description: Number of hard parses
-    enabled: true
-    sum:
-      aggregation: cumulative
-      monotonic: true
-      value_type: int
-    unit: "{parses}"
   oracledb.logical_reads:
     description: Number of logical reads
     enabled: true
@@ -59,6 +51,14 @@ metrics:
       monotonic: true
       value_type: int
     unit: "{reads}"
+  oracledb.hard_parses:
+    description: Number of hard parses
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: "{parses}"
   oracledb.parse_count_total:
     description: Total number of parse calls.
     enabled: true
@@ -102,64 +102,58 @@ metrics:
       monotonic: true
       value_type: int
     unit: 1
-  oracledb.session.count:
+  oracledb.session.usage:
     attributes:
-    - db.oracle.session.type
-    - db.oracle.session.status
-    description: Count of sessions.
+      - db.oracle.session.type
+      - db.oracle.session.status
+    description: Count of active sessions.
     enabled: true
     gauge:
       value_type: int
     unit: "{sessions}"
-  oracledb.resource_limit.process.utilization:
+  oracledb.process.usage:
     description: Current count of active processes.
     enabled: true
     gauge:
       value_type: int
     unit: "{processes}"
-  oracledb.resource_limit.process.max:
+  oracledb.process.limit:
     description: Maximum limit of active processes.
     enabled: true
     gauge:
       value_type: int
     unit: "{processes}"
-  oracledb.resource_limit.session.utilization:
-    description: Current count of active sessions.
-    enabled: true
-    gauge:
-      value_type: int
-    unit: "{sessions}"
-  oracledb.resource_limit.session.max:
+  oracledb.session.limit:
     description: Maximum limit of active sessions.
     enabled: true
     gauge:
       value_type: int
     unit: "{sessions}"
-  oracledb.resource_limit.enqueue_locks.utilization:
+  oracledb.enqueue_locks.usage:
     description: Current count of active enqueue locks.
     enabled: true
     gauge:
       value_type: int
     unit: "{locks}"
-  oracledb.resource_limit.enqueue_locks.max:
+  oracledb.enqueue_locks.limit:
     description: Maximum limit of active enqueue locks.
     enabled: true
     gauge:
       value_type: int
     unit: "{locks}"
-  oracledb.resource_limit.enqueue_resources.utilization:
+  oracledb.enqueue_resources.usage:
     description: Current count of active enqueue resources.
     enabled: true
     gauge:
       value_type: int
     unit: "{resources}"
-  oracledb.resource_limit.enqueue_resources.max:
+  oracledb.enqueue_resources.limit:
     description: Maximum limit of active enqueue resources.
     enabled: true
     gauge:
       value_type: int
     unit: "{resources}"
-  oracledb.tablespace.max_size:
+  oracledb.tablespace.limit:
     attributes:
       - db.oracle.tablespace.name
     description: Maximum size of tablespace in bytes.
@@ -167,10 +161,10 @@ metrics:
     gauge:
       value_type: int
     unit: By
-  oracledb.tablespace.size:
+  oracledb.tablespace.usage:
     attributes:
       - db.oracle.tablespace.name
-    description: Size of tablespace in bytes.
+    description: Used tablespace in bytes.
     enabled: true
     gauge:
       value_type: int

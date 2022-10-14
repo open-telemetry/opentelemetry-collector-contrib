@@ -17,36 +17,47 @@ type MetricSettings struct {
 
 // MetricsSettings provides settings for oracledbreceiver metrics.
 type MetricsSettings struct {
-	OracledbCPUUtilization                           MetricSettings `mapstructure:"oracledb.cpu_utilization"`
-	OracledbEnqueueDeadlocks                         MetricSettings `mapstructure:"oracledb.enqueue_deadlocks"`
-	OracledbExchangeDeadlocks                        MetricSettings `mapstructure:"oracledb.exchange_deadlocks"`
-	OracledbExecuteCount                             MetricSettings `mapstructure:"oracledb.execute_count"`
-	OracledbHardParses                               MetricSettings `mapstructure:"oracledb.hard_parses"`
-	OracledbLogicalReads                             MetricSettings `mapstructure:"oracledb.logical_reads"`
-	OracledbParseCountTotal                          MetricSettings `mapstructure:"oracledb.parse_count_total"`
-	OracledbPgaMemory                                MetricSettings `mapstructure:"oracledb.pga_memory"`
-	OracledbPhysicalReads                            MetricSettings `mapstructure:"oracledb.physical_reads"`
-	OracledbResourceLimitEnqueueLocksMax             MetricSettings `mapstructure:"oracledb.resource_limit.enqueue_locks.max"`
-	OracledbResourceLimitEnqueueLocksUtilization     MetricSettings `mapstructure:"oracledb.resource_limit.enqueue_locks.utilization"`
-	OracledbResourceLimitEnqueueResourcesMax         MetricSettings `mapstructure:"oracledb.resource_limit.enqueue_resources.max"`
-	OracledbResourceLimitEnqueueResourcesUtilization MetricSettings `mapstructure:"oracledb.resource_limit.enqueue_resources.utilization"`
-	OracledbResourceLimitProcessMax                  MetricSettings `mapstructure:"oracledb.resource_limit.process.max"`
-	OracledbResourceLimitProcessUtilization          MetricSettings `mapstructure:"oracledb.resource_limit.process.utilization"`
-	OracledbResourceLimitSessionMax                  MetricSettings `mapstructure:"oracledb.resource_limit.session.max"`
-	OracledbResourceLimitSessionUtilization          MetricSettings `mapstructure:"oracledb.resource_limit.session.utilization"`
-	OracledbSessionCount                             MetricSettings `mapstructure:"oracledb.session.count"`
-	OracledbTablespaceMaxSize                        MetricSettings `mapstructure:"oracledb.tablespace.max_size"`
-	OracledbTablespaceSize                           MetricSettings `mapstructure:"oracledb.tablespace.size"`
-	OracledbUserCommits                              MetricSettings `mapstructure:"oracledb.user_commits"`
-	OracledbUserRollbacks                            MetricSettings `mapstructure:"oracledb.user_rollbacks"`
+	OracledbCPUTime               MetricSettings `mapstructure:"oracledb.cpu_time"`
+	OracledbEnqueueDeadlocks      MetricSettings `mapstructure:"oracledb.enqueue_deadlocks"`
+	OracledbEnqueueLocksLimit     MetricSettings `mapstructure:"oracledb.enqueue_locks.limit"`
+	OracledbEnqueueLocksUsage     MetricSettings `mapstructure:"oracledb.enqueue_locks.usage"`
+	OracledbEnqueueResourcesLimit MetricSettings `mapstructure:"oracledb.enqueue_resources.limit"`
+	OracledbEnqueueResourcesUsage MetricSettings `mapstructure:"oracledb.enqueue_resources.usage"`
+	OracledbExchangeDeadlocks     MetricSettings `mapstructure:"oracledb.exchange_deadlocks"`
+	OracledbExecuteCount          MetricSettings `mapstructure:"oracledb.execute_count"`
+	OracledbHardParses            MetricSettings `mapstructure:"oracledb.hard_parses"`
+	OracledbLogicalReads          MetricSettings `mapstructure:"oracledb.logical_reads"`
+	OracledbParseCountTotal       MetricSettings `mapstructure:"oracledb.parse_count_total"`
+	OracledbPgaMemory             MetricSettings `mapstructure:"oracledb.pga_memory"`
+	OracledbPhysicalReads         MetricSettings `mapstructure:"oracledb.physical_reads"`
+	OracledbProcessLimit          MetricSettings `mapstructure:"oracledb.process.limit"`
+	OracledbProcessUsage          MetricSettings `mapstructure:"oracledb.process.usage"`
+	OracledbSessionLimit          MetricSettings `mapstructure:"oracledb.session.limit"`
+	OracledbSessionUsage          MetricSettings `mapstructure:"oracledb.session.usage"`
+	OracledbTablespaceLimit       MetricSettings `mapstructure:"oracledb.tablespace.limit"`
+	OracledbTablespaceUsage       MetricSettings `mapstructure:"oracledb.tablespace.usage"`
+	OracledbUserCommits           MetricSettings `mapstructure:"oracledb.user_commits"`
+	OracledbUserRollbacks         MetricSettings `mapstructure:"oracledb.user_rollbacks"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
 	return MetricsSettings{
-		OracledbCPUUtilization: MetricSettings{
+		OracledbCPUTime: MetricSettings{
 			Enabled: true,
 		},
 		OracledbEnqueueDeadlocks: MetricSettings{
+			Enabled: true,
+		},
+		OracledbEnqueueLocksLimit: MetricSettings{
+			Enabled: true,
+		},
+		OracledbEnqueueLocksUsage: MetricSettings{
+			Enabled: true,
+		},
+		OracledbEnqueueResourcesLimit: MetricSettings{
+			Enabled: true,
+		},
+		OracledbEnqueueResourcesUsage: MetricSettings{
 			Enabled: true,
 		},
 		OracledbExchangeDeadlocks: MetricSettings{
@@ -70,37 +81,22 @@ func DefaultMetricsSettings() MetricsSettings {
 		OracledbPhysicalReads: MetricSettings{
 			Enabled: true,
 		},
-		OracledbResourceLimitEnqueueLocksMax: MetricSettings{
+		OracledbProcessLimit: MetricSettings{
 			Enabled: true,
 		},
-		OracledbResourceLimitEnqueueLocksUtilization: MetricSettings{
+		OracledbProcessUsage: MetricSettings{
 			Enabled: true,
 		},
-		OracledbResourceLimitEnqueueResourcesMax: MetricSettings{
+		OracledbSessionLimit: MetricSettings{
 			Enabled: true,
 		},
-		OracledbResourceLimitEnqueueResourcesUtilization: MetricSettings{
+		OracledbSessionUsage: MetricSettings{
 			Enabled: true,
 		},
-		OracledbResourceLimitProcessMax: MetricSettings{
+		OracledbTablespaceLimit: MetricSettings{
 			Enabled: true,
 		},
-		OracledbResourceLimitProcessUtilization: MetricSettings{
-			Enabled: true,
-		},
-		OracledbResourceLimitSessionMax: MetricSettings{
-			Enabled: true,
-		},
-		OracledbResourceLimitSessionUtilization: MetricSettings{
-			Enabled: true,
-		},
-		OracledbSessionCount: MetricSettings{
-			Enabled: true,
-		},
-		OracledbTablespaceMaxSize: MetricSettings{
-			Enabled: true,
-		},
-		OracledbTablespaceSize: MetricSettings{
+		OracledbTablespaceUsage: MetricSettings{
 			Enabled: true,
 		},
 		OracledbUserCommits: MetricSettings{
@@ -112,23 +108,23 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
-type metricOracledbCPUUtilization struct {
+type metricOracledbCPUTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills oracledb.cpu_utilization metric with initial data.
-func (m *metricOracledbCPUUtilization) init() {
-	m.data.SetName("oracledb.cpu_utilization")
-	m.data.SetDescription("CPU utilization, in seconds")
+// init fills oracledb.cpu_time metric with initial data.
+func (m *metricOracledbCPUTime) init() {
+	m.data.SetName("oracledb.cpu_time")
+	m.data.SetDescription("Cumulative CPU time, in seconds")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricOracledbCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricOracledbCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -139,14 +135,14 @@ func (m *metricOracledbCPUUtilization) recordDataPoint(start pcommon.Timestamp, 
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbCPUUtilization) updateCapacity() {
+func (m *metricOracledbCPUTime) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbCPUUtilization) emit(metrics pmetric.MetricSlice) {
+func (m *metricOracledbCPUTime) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -154,8 +150,8 @@ func (m *metricOracledbCPUUtilization) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbCPUUtilization(settings MetricSettings) metricOracledbCPUUtilization {
-	m := metricOracledbCPUUtilization{settings: settings}
+func newMetricOracledbCPUTime(settings MetricSettings) metricOracledbCPUTime {
+	m := metricOracledbCPUTime{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -207,6 +203,202 @@ func (m *metricOracledbEnqueueDeadlocks) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbEnqueueDeadlocks(settings MetricSettings) metricOracledbEnqueueDeadlocks {
 	m := metricOracledbEnqueueDeadlocks{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbEnqueueLocksLimit struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.enqueue_locks.limit metric with initial data.
+func (m *metricOracledbEnqueueLocksLimit) init() {
+	m.data.SetName("oracledb.enqueue_locks.limit")
+	m.data.SetDescription("Maximum limit of active enqueue locks.")
+	m.data.SetUnit("{locks}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricOracledbEnqueueLocksLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbEnqueueLocksLimit) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbEnqueueLocksLimit) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbEnqueueLocksLimit(settings MetricSettings) metricOracledbEnqueueLocksLimit {
+	m := metricOracledbEnqueueLocksLimit{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbEnqueueLocksUsage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.enqueue_locks.usage metric with initial data.
+func (m *metricOracledbEnqueueLocksUsage) init() {
+	m.data.SetName("oracledb.enqueue_locks.usage")
+	m.data.SetDescription("Current count of active enqueue locks.")
+	m.data.SetUnit("{locks}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricOracledbEnqueueLocksUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbEnqueueLocksUsage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbEnqueueLocksUsage) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbEnqueueLocksUsage(settings MetricSettings) metricOracledbEnqueueLocksUsage {
+	m := metricOracledbEnqueueLocksUsage{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbEnqueueResourcesLimit struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.enqueue_resources.limit metric with initial data.
+func (m *metricOracledbEnqueueResourcesLimit) init() {
+	m.data.SetName("oracledb.enqueue_resources.limit")
+	m.data.SetDescription("Maximum limit of active enqueue resources.")
+	m.data.SetUnit("{resources}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricOracledbEnqueueResourcesLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbEnqueueResourcesLimit) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbEnqueueResourcesLimit) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbEnqueueResourcesLimit(settings MetricSettings) metricOracledbEnqueueResourcesLimit {
+	m := metricOracledbEnqueueResourcesLimit{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbEnqueueResourcesUsage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.enqueue_resources.usage metric with initial data.
+func (m *metricOracledbEnqueueResourcesUsage) init() {
+	m.data.SetName("oracledb.enqueue_resources.usage")
+	m.data.SetDescription("Current count of active enqueue resources.")
+	m.data.SetUnit("{resources}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricOracledbEnqueueResourcesUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbEnqueueResourcesUsage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbEnqueueResourcesUsage) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbEnqueueResourcesUsage(settings MetricSettings) metricOracledbEnqueueResourcesUsage {
+	m := metricOracledbEnqueueResourcesUsage{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -571,217 +763,21 @@ func newMetricOracledbPhysicalReads(settings MetricSettings) metricOracledbPhysi
 	return m
 }
 
-type metricOracledbResourceLimitEnqueueLocksMax struct {
+type metricOracledbProcessLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills oracledb.resource_limit.enqueue_locks.max metric with initial data.
-func (m *metricOracledbResourceLimitEnqueueLocksMax) init() {
-	m.data.SetName("oracledb.resource_limit.enqueue_locks.max")
-	m.data.SetDescription("Maximum limit of active enqueue locks.")
-	m.data.SetUnit("{locks}")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricOracledbResourceLimitEnqueueLocksMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbResourceLimitEnqueueLocksMax) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbResourceLimitEnqueueLocksMax) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbResourceLimitEnqueueLocksMax(settings MetricSettings) metricOracledbResourceLimitEnqueueLocksMax {
-	m := metricOracledbResourceLimitEnqueueLocksMax{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricOracledbResourceLimitEnqueueLocksUtilization struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills oracledb.resource_limit.enqueue_locks.utilization metric with initial data.
-func (m *metricOracledbResourceLimitEnqueueLocksUtilization) init() {
-	m.data.SetName("oracledb.resource_limit.enqueue_locks.utilization")
-	m.data.SetDescription("Current count of active enqueue locks.")
-	m.data.SetUnit("{locks}")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricOracledbResourceLimitEnqueueLocksUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbResourceLimitEnqueueLocksUtilization) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbResourceLimitEnqueueLocksUtilization) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbResourceLimitEnqueueLocksUtilization(settings MetricSettings) metricOracledbResourceLimitEnqueueLocksUtilization {
-	m := metricOracledbResourceLimitEnqueueLocksUtilization{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricOracledbResourceLimitEnqueueResourcesMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills oracledb.resource_limit.enqueue_resources.max metric with initial data.
-func (m *metricOracledbResourceLimitEnqueueResourcesMax) init() {
-	m.data.SetName("oracledb.resource_limit.enqueue_resources.max")
-	m.data.SetDescription("Maximum limit of active enqueue resources.")
-	m.data.SetUnit("{resources}")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricOracledbResourceLimitEnqueueResourcesMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbResourceLimitEnqueueResourcesMax) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbResourceLimitEnqueueResourcesMax) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbResourceLimitEnqueueResourcesMax(settings MetricSettings) metricOracledbResourceLimitEnqueueResourcesMax {
-	m := metricOracledbResourceLimitEnqueueResourcesMax{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricOracledbResourceLimitEnqueueResourcesUtilization struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills oracledb.resource_limit.enqueue_resources.utilization metric with initial data.
-func (m *metricOracledbResourceLimitEnqueueResourcesUtilization) init() {
-	m.data.SetName("oracledb.resource_limit.enqueue_resources.utilization")
-	m.data.SetDescription("Current count of active enqueue resources.")
-	m.data.SetUnit("{resources}")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricOracledbResourceLimitEnqueueResourcesUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbResourceLimitEnqueueResourcesUtilization) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbResourceLimitEnqueueResourcesUtilization) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbResourceLimitEnqueueResourcesUtilization(settings MetricSettings) metricOracledbResourceLimitEnqueueResourcesUtilization {
-	m := metricOracledbResourceLimitEnqueueResourcesUtilization{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricOracledbResourceLimitProcessMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills oracledb.resource_limit.process.max metric with initial data.
-func (m *metricOracledbResourceLimitProcessMax) init() {
-	m.data.SetName("oracledb.resource_limit.process.max")
+// init fills oracledb.process.limit metric with initial data.
+func (m *metricOracledbProcessLimit) init() {
+	m.data.SetName("oracledb.process.limit")
 	m.data.SetDescription("Maximum limit of active processes.")
 	m.data.SetUnit("{processes}")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbResourceLimitProcessMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbProcessLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -792,14 +788,14 @@ func (m *metricOracledbResourceLimitProcessMax) recordDataPoint(start pcommon.Ti
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbResourceLimitProcessMax) updateCapacity() {
+func (m *metricOracledbProcessLimit) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbResourceLimitProcessMax) emit(metrics pmetric.MetricSlice) {
+func (m *metricOracledbProcessLimit) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -807,8 +803,8 @@ func (m *metricOracledbResourceLimitProcessMax) emit(metrics pmetric.MetricSlice
 	}
 }
 
-func newMetricOracledbResourceLimitProcessMax(settings MetricSettings) metricOracledbResourceLimitProcessMax {
-	m := metricOracledbResourceLimitProcessMax{settings: settings}
+func newMetricOracledbProcessLimit(settings MetricSettings) metricOracledbProcessLimit {
+	m := metricOracledbProcessLimit{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -816,21 +812,21 @@ func newMetricOracledbResourceLimitProcessMax(settings MetricSettings) metricOra
 	return m
 }
 
-type metricOracledbResourceLimitProcessUtilization struct {
+type metricOracledbProcessUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills oracledb.resource_limit.process.utilization metric with initial data.
-func (m *metricOracledbResourceLimitProcessUtilization) init() {
-	m.data.SetName("oracledb.resource_limit.process.utilization")
+// init fills oracledb.process.usage metric with initial data.
+func (m *metricOracledbProcessUsage) init() {
+	m.data.SetName("oracledb.process.usage")
 	m.data.SetDescription("Current count of active processes.")
 	m.data.SetUnit("{processes}")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbResourceLimitProcessUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbProcessUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -841,14 +837,14 @@ func (m *metricOracledbResourceLimitProcessUtilization) recordDataPoint(start pc
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbResourceLimitProcessUtilization) updateCapacity() {
+func (m *metricOracledbProcessUsage) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbResourceLimitProcessUtilization) emit(metrics pmetric.MetricSlice) {
+func (m *metricOracledbProcessUsage) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -856,8 +852,8 @@ func (m *metricOracledbResourceLimitProcessUtilization) emit(metrics pmetric.Met
 	}
 }
 
-func newMetricOracledbResourceLimitProcessUtilization(settings MetricSettings) metricOracledbResourceLimitProcessUtilization {
-	m := metricOracledbResourceLimitProcessUtilization{settings: settings}
+func newMetricOracledbProcessUsage(settings MetricSettings) metricOracledbProcessUsage {
+	m := metricOracledbProcessUsage{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -865,21 +861,21 @@ func newMetricOracledbResourceLimitProcessUtilization(settings MetricSettings) m
 	return m
 }
 
-type metricOracledbResourceLimitSessionMax struct {
+type metricOracledbSessionLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills oracledb.resource_limit.session.max metric with initial data.
-func (m *metricOracledbResourceLimitSessionMax) init() {
-	m.data.SetName("oracledb.resource_limit.session.max")
+// init fills oracledb.session.limit metric with initial data.
+func (m *metricOracledbSessionLimit) init() {
+	m.data.SetName("oracledb.session.limit")
 	m.data.SetDescription("Maximum limit of active sessions.")
 	m.data.SetUnit("{sessions}")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbResourceLimitSessionMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbSessionLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -890,14 +886,14 @@ func (m *metricOracledbResourceLimitSessionMax) recordDataPoint(start pcommon.Ti
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbResourceLimitSessionMax) updateCapacity() {
+func (m *metricOracledbSessionLimit) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbResourceLimitSessionMax) emit(metrics pmetric.MetricSlice) {
+func (m *metricOracledbSessionLimit) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -905,8 +901,8 @@ func (m *metricOracledbResourceLimitSessionMax) emit(metrics pmetric.MetricSlice
 	}
 }
 
-func newMetricOracledbResourceLimitSessionMax(settings MetricSettings) metricOracledbResourceLimitSessionMax {
-	m := metricOracledbResourceLimitSessionMax{settings: settings}
+func newMetricOracledbSessionLimit(settings MetricSettings) metricOracledbSessionLimit {
+	m := metricOracledbSessionLimit{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -914,71 +910,22 @@ func newMetricOracledbResourceLimitSessionMax(settings MetricSettings) metricOra
 	return m
 }
 
-type metricOracledbResourceLimitSessionUtilization struct {
+type metricOracledbSessionUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills oracledb.resource_limit.session.utilization metric with initial data.
-func (m *metricOracledbResourceLimitSessionUtilization) init() {
-	m.data.SetName("oracledb.resource_limit.session.utilization")
-	m.data.SetDescription("Current count of active sessions.")
-	m.data.SetUnit("{sessions}")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricOracledbResourceLimitSessionUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbResourceLimitSessionUtilization) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbResourceLimitSessionUtilization) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbResourceLimitSessionUtilization(settings MetricSettings) metricOracledbResourceLimitSessionUtilization {
-	m := metricOracledbResourceLimitSessionUtilization{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricOracledbSessionCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills oracledb.session.count metric with initial data.
-func (m *metricOracledbSessionCount) init() {
-	m.data.SetName("oracledb.session.count")
-	m.data.SetDescription("Count of sessions.")
+// init fills oracledb.session.usage metric with initial data.
+func (m *metricOracledbSessionUsage) init() {
+	m.data.SetName("oracledb.session.usage")
+	m.data.SetDescription("Count of active sessions.")
 	m.data.SetUnit("{sessions}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricOracledbSessionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbOracleSessionTypeAttributeValue string, dbOracleSessionStatusAttributeValue string) {
+func (m *metricOracledbSessionUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbOracleSessionTypeAttributeValue string, dbOracleSessionStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -991,14 +938,14 @@ func (m *metricOracledbSessionCount) recordDataPoint(start pcommon.Timestamp, ts
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbSessionCount) updateCapacity() {
+func (m *metricOracledbSessionUsage) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbSessionCount) emit(metrics pmetric.MetricSlice) {
+func (m *metricOracledbSessionUsage) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1006,8 +953,8 @@ func (m *metricOracledbSessionCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbSessionCount(settings MetricSettings) metricOracledbSessionCount {
-	m := metricOracledbSessionCount{settings: settings}
+func newMetricOracledbSessionUsage(settings MetricSettings) metricOracledbSessionUsage {
+	m := metricOracledbSessionUsage{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1015,22 +962,22 @@ func newMetricOracledbSessionCount(settings MetricSettings) metricOracledbSessio
 	return m
 }
 
-type metricOracledbTablespaceMaxSize struct {
+type metricOracledbTablespaceLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills oracledb.tablespace.max_size metric with initial data.
-func (m *metricOracledbTablespaceMaxSize) init() {
-	m.data.SetName("oracledb.tablespace.max_size")
+// init fills oracledb.tablespace.limit metric with initial data.
+func (m *metricOracledbTablespaceLimit) init() {
+	m.data.SetName("oracledb.tablespace.limit")
 	m.data.SetDescription("Maximum size of tablespace in bytes.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricOracledbTablespaceMaxSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbOracleTablespaceNameAttributeValue string) {
+func (m *metricOracledbTablespaceLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbOracleTablespaceNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1042,14 +989,14 @@ func (m *metricOracledbTablespaceMaxSize) recordDataPoint(start pcommon.Timestam
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbTablespaceMaxSize) updateCapacity() {
+func (m *metricOracledbTablespaceLimit) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbTablespaceMaxSize) emit(metrics pmetric.MetricSlice) {
+func (m *metricOracledbTablespaceLimit) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1057,8 +1004,8 @@ func (m *metricOracledbTablespaceMaxSize) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbTablespaceMaxSize(settings MetricSettings) metricOracledbTablespaceMaxSize {
-	m := metricOracledbTablespaceMaxSize{settings: settings}
+func newMetricOracledbTablespaceLimit(settings MetricSettings) metricOracledbTablespaceLimit {
+	m := metricOracledbTablespaceLimit{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1066,22 +1013,22 @@ func newMetricOracledbTablespaceMaxSize(settings MetricSettings) metricOracledbT
 	return m
 }
 
-type metricOracledbTablespaceSize struct {
+type metricOracledbTablespaceUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills oracledb.tablespace.size metric with initial data.
-func (m *metricOracledbTablespaceSize) init() {
-	m.data.SetName("oracledb.tablespace.size")
-	m.data.SetDescription("Size of tablespace in bytes.")
+// init fills oracledb.tablespace.usage metric with initial data.
+func (m *metricOracledbTablespaceUsage) init() {
+	m.data.SetName("oracledb.tablespace.usage")
+	m.data.SetDescription("Used tablespace in bytes.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricOracledbTablespaceSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbOracleTablespaceNameAttributeValue string) {
+func (m *metricOracledbTablespaceUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbOracleTablespaceNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1093,14 +1040,14 @@ func (m *metricOracledbTablespaceSize) recordDataPoint(start pcommon.Timestamp, 
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbTablespaceSize) updateCapacity() {
+func (m *metricOracledbTablespaceUsage) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbTablespaceSize) emit(metrics pmetric.MetricSlice) {
+func (m *metricOracledbTablespaceUsage) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1108,8 +1055,8 @@ func (m *metricOracledbTablespaceSize) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbTablespaceSize(settings MetricSettings) metricOracledbTablespaceSize {
-	m := metricOracledbTablespaceSize{settings: settings}
+func newMetricOracledbTablespaceUsage(settings MetricSettings) metricOracledbTablespaceUsage {
+	m := metricOracledbTablespaceUsage{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1222,33 +1169,32 @@ func newMetricOracledbUserRollbacks(settings MetricSettings) metricOracledbUserR
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                                              pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                                        int                 // maximum observed number of metrics per resource.
-	resourceCapacity                                       int                 // maximum observed number of resource attributes.
-	metricsBuffer                                          pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                                              component.BuildInfo // contains version information
-	metricOracledbCPUUtilization                           metricOracledbCPUUtilization
-	metricOracledbEnqueueDeadlocks                         metricOracledbEnqueueDeadlocks
-	metricOracledbExchangeDeadlocks                        metricOracledbExchangeDeadlocks
-	metricOracledbExecuteCount                             metricOracledbExecuteCount
-	metricOracledbHardParses                               metricOracledbHardParses
-	metricOracledbLogicalReads                             metricOracledbLogicalReads
-	metricOracledbParseCountTotal                          metricOracledbParseCountTotal
-	metricOracledbPgaMemory                                metricOracledbPgaMemory
-	metricOracledbPhysicalReads                            metricOracledbPhysicalReads
-	metricOracledbResourceLimitEnqueueLocksMax             metricOracledbResourceLimitEnqueueLocksMax
-	metricOracledbResourceLimitEnqueueLocksUtilization     metricOracledbResourceLimitEnqueueLocksUtilization
-	metricOracledbResourceLimitEnqueueResourcesMax         metricOracledbResourceLimitEnqueueResourcesMax
-	metricOracledbResourceLimitEnqueueResourcesUtilization metricOracledbResourceLimitEnqueueResourcesUtilization
-	metricOracledbResourceLimitProcessMax                  metricOracledbResourceLimitProcessMax
-	metricOracledbResourceLimitProcessUtilization          metricOracledbResourceLimitProcessUtilization
-	metricOracledbResourceLimitSessionMax                  metricOracledbResourceLimitSessionMax
-	metricOracledbResourceLimitSessionUtilization          metricOracledbResourceLimitSessionUtilization
-	metricOracledbSessionCount                             metricOracledbSessionCount
-	metricOracledbTablespaceMaxSize                        metricOracledbTablespaceMaxSize
-	metricOracledbTablespaceSize                           metricOracledbTablespaceSize
-	metricOracledbUserCommits                              metricOracledbUserCommits
-	metricOracledbUserRollbacks                            metricOracledbUserRollbacks
+	startTime                           pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity                     int                 // maximum observed number of metrics per resource.
+	resourceCapacity                    int                 // maximum observed number of resource attributes.
+	metricsBuffer                       pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo                           component.BuildInfo // contains version information
+	metricOracledbCPUTime               metricOracledbCPUTime
+	metricOracledbEnqueueDeadlocks      metricOracledbEnqueueDeadlocks
+	metricOracledbEnqueueLocksLimit     metricOracledbEnqueueLocksLimit
+	metricOracledbEnqueueLocksUsage     metricOracledbEnqueueLocksUsage
+	metricOracledbEnqueueResourcesLimit metricOracledbEnqueueResourcesLimit
+	metricOracledbEnqueueResourcesUsage metricOracledbEnqueueResourcesUsage
+	metricOracledbExchangeDeadlocks     metricOracledbExchangeDeadlocks
+	metricOracledbExecuteCount          metricOracledbExecuteCount
+	metricOracledbHardParses            metricOracledbHardParses
+	metricOracledbLogicalReads          metricOracledbLogicalReads
+	metricOracledbParseCountTotal       metricOracledbParseCountTotal
+	metricOracledbPgaMemory             metricOracledbPgaMemory
+	metricOracledbPhysicalReads         metricOracledbPhysicalReads
+	metricOracledbProcessLimit          metricOracledbProcessLimit
+	metricOracledbProcessUsage          metricOracledbProcessUsage
+	metricOracledbSessionLimit          metricOracledbSessionLimit
+	metricOracledbSessionUsage          metricOracledbSessionUsage
+	metricOracledbTablespaceLimit       metricOracledbTablespaceLimit
+	metricOracledbTablespaceUsage       metricOracledbTablespaceUsage
+	metricOracledbUserCommits           metricOracledbUserCommits
+	metricOracledbUserRollbacks         metricOracledbUserRollbacks
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -1263,31 +1209,30 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                                              pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                                          pmetric.NewMetrics(),
-		buildInfo:                                              buildInfo,
-		metricOracledbCPUUtilization:                           newMetricOracledbCPUUtilization(settings.OracledbCPUUtilization),
-		metricOracledbEnqueueDeadlocks:                         newMetricOracledbEnqueueDeadlocks(settings.OracledbEnqueueDeadlocks),
-		metricOracledbExchangeDeadlocks:                        newMetricOracledbExchangeDeadlocks(settings.OracledbExchangeDeadlocks),
-		metricOracledbExecuteCount:                             newMetricOracledbExecuteCount(settings.OracledbExecuteCount),
-		metricOracledbHardParses:                               newMetricOracledbHardParses(settings.OracledbHardParses),
-		metricOracledbLogicalReads:                             newMetricOracledbLogicalReads(settings.OracledbLogicalReads),
-		metricOracledbParseCountTotal:                          newMetricOracledbParseCountTotal(settings.OracledbParseCountTotal),
-		metricOracledbPgaMemory:                                newMetricOracledbPgaMemory(settings.OracledbPgaMemory),
-		metricOracledbPhysicalReads:                            newMetricOracledbPhysicalReads(settings.OracledbPhysicalReads),
-		metricOracledbResourceLimitEnqueueLocksMax:             newMetricOracledbResourceLimitEnqueueLocksMax(settings.OracledbResourceLimitEnqueueLocksMax),
-		metricOracledbResourceLimitEnqueueLocksUtilization:     newMetricOracledbResourceLimitEnqueueLocksUtilization(settings.OracledbResourceLimitEnqueueLocksUtilization),
-		metricOracledbResourceLimitEnqueueResourcesMax:         newMetricOracledbResourceLimitEnqueueResourcesMax(settings.OracledbResourceLimitEnqueueResourcesMax),
-		metricOracledbResourceLimitEnqueueResourcesUtilization: newMetricOracledbResourceLimitEnqueueResourcesUtilization(settings.OracledbResourceLimitEnqueueResourcesUtilization),
-		metricOracledbResourceLimitProcessMax:                  newMetricOracledbResourceLimitProcessMax(settings.OracledbResourceLimitProcessMax),
-		metricOracledbResourceLimitProcessUtilization:          newMetricOracledbResourceLimitProcessUtilization(settings.OracledbResourceLimitProcessUtilization),
-		metricOracledbResourceLimitSessionMax:                  newMetricOracledbResourceLimitSessionMax(settings.OracledbResourceLimitSessionMax),
-		metricOracledbResourceLimitSessionUtilization:          newMetricOracledbResourceLimitSessionUtilization(settings.OracledbResourceLimitSessionUtilization),
-		metricOracledbSessionCount:                             newMetricOracledbSessionCount(settings.OracledbSessionCount),
-		metricOracledbTablespaceMaxSize:                        newMetricOracledbTablespaceMaxSize(settings.OracledbTablespaceMaxSize),
-		metricOracledbTablespaceSize:                           newMetricOracledbTablespaceSize(settings.OracledbTablespaceSize),
-		metricOracledbUserCommits:                              newMetricOracledbUserCommits(settings.OracledbUserCommits),
-		metricOracledbUserRollbacks:                            newMetricOracledbUserRollbacks(settings.OracledbUserRollbacks),
+		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                       pmetric.NewMetrics(),
+		buildInfo:                           buildInfo,
+		metricOracledbCPUTime:               newMetricOracledbCPUTime(settings.OracledbCPUTime),
+		metricOracledbEnqueueDeadlocks:      newMetricOracledbEnqueueDeadlocks(settings.OracledbEnqueueDeadlocks),
+		metricOracledbEnqueueLocksLimit:     newMetricOracledbEnqueueLocksLimit(settings.OracledbEnqueueLocksLimit),
+		metricOracledbEnqueueLocksUsage:     newMetricOracledbEnqueueLocksUsage(settings.OracledbEnqueueLocksUsage),
+		metricOracledbEnqueueResourcesLimit: newMetricOracledbEnqueueResourcesLimit(settings.OracledbEnqueueResourcesLimit),
+		metricOracledbEnqueueResourcesUsage: newMetricOracledbEnqueueResourcesUsage(settings.OracledbEnqueueResourcesUsage),
+		metricOracledbExchangeDeadlocks:     newMetricOracledbExchangeDeadlocks(settings.OracledbExchangeDeadlocks),
+		metricOracledbExecuteCount:          newMetricOracledbExecuteCount(settings.OracledbExecuteCount),
+		metricOracledbHardParses:            newMetricOracledbHardParses(settings.OracledbHardParses),
+		metricOracledbLogicalReads:          newMetricOracledbLogicalReads(settings.OracledbLogicalReads),
+		metricOracledbParseCountTotal:       newMetricOracledbParseCountTotal(settings.OracledbParseCountTotal),
+		metricOracledbPgaMemory:             newMetricOracledbPgaMemory(settings.OracledbPgaMemory),
+		metricOracledbPhysicalReads:         newMetricOracledbPhysicalReads(settings.OracledbPhysicalReads),
+		metricOracledbProcessLimit:          newMetricOracledbProcessLimit(settings.OracledbProcessLimit),
+		metricOracledbProcessUsage:          newMetricOracledbProcessUsage(settings.OracledbProcessUsage),
+		metricOracledbSessionLimit:          newMetricOracledbSessionLimit(settings.OracledbSessionLimit),
+		metricOracledbSessionUsage:          newMetricOracledbSessionUsage(settings.OracledbSessionUsage),
+		metricOracledbTablespaceLimit:       newMetricOracledbTablespaceLimit(settings.OracledbTablespaceLimit),
+		metricOracledbTablespaceUsage:       newMetricOracledbTablespaceUsage(settings.OracledbTablespaceUsage),
+		metricOracledbUserCommits:           newMetricOracledbUserCommits(settings.OracledbUserCommits),
+		metricOracledbUserRollbacks:         newMetricOracledbUserRollbacks(settings.OracledbUserRollbacks),
 	}
 	for _, op := range options {
 		op(mb)
@@ -1347,8 +1292,12 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetName("otelcol/oracledbreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricOracledbCPUUtilization.emit(ils.Metrics())
+	mb.metricOracledbCPUTime.emit(ils.Metrics())
 	mb.metricOracledbEnqueueDeadlocks.emit(ils.Metrics())
+	mb.metricOracledbEnqueueLocksLimit.emit(ils.Metrics())
+	mb.metricOracledbEnqueueLocksUsage.emit(ils.Metrics())
+	mb.metricOracledbEnqueueResourcesLimit.emit(ils.Metrics())
+	mb.metricOracledbEnqueueResourcesUsage.emit(ils.Metrics())
 	mb.metricOracledbExchangeDeadlocks.emit(ils.Metrics())
 	mb.metricOracledbExecuteCount.emit(ils.Metrics())
 	mb.metricOracledbHardParses.emit(ils.Metrics())
@@ -1356,17 +1305,12 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricOracledbParseCountTotal.emit(ils.Metrics())
 	mb.metricOracledbPgaMemory.emit(ils.Metrics())
 	mb.metricOracledbPhysicalReads.emit(ils.Metrics())
-	mb.metricOracledbResourceLimitEnqueueLocksMax.emit(ils.Metrics())
-	mb.metricOracledbResourceLimitEnqueueLocksUtilization.emit(ils.Metrics())
-	mb.metricOracledbResourceLimitEnqueueResourcesMax.emit(ils.Metrics())
-	mb.metricOracledbResourceLimitEnqueueResourcesUtilization.emit(ils.Metrics())
-	mb.metricOracledbResourceLimitProcessMax.emit(ils.Metrics())
-	mb.metricOracledbResourceLimitProcessUtilization.emit(ils.Metrics())
-	mb.metricOracledbResourceLimitSessionMax.emit(ils.Metrics())
-	mb.metricOracledbResourceLimitSessionUtilization.emit(ils.Metrics())
-	mb.metricOracledbSessionCount.emit(ils.Metrics())
-	mb.metricOracledbTablespaceMaxSize.emit(ils.Metrics())
-	mb.metricOracledbTablespaceSize.emit(ils.Metrics())
+	mb.metricOracledbProcessLimit.emit(ils.Metrics())
+	mb.metricOracledbProcessUsage.emit(ils.Metrics())
+	mb.metricOracledbSessionLimit.emit(ils.Metrics())
+	mb.metricOracledbSessionUsage.emit(ils.Metrics())
+	mb.metricOracledbTablespaceLimit.emit(ils.Metrics())
+	mb.metricOracledbTablespaceUsage.emit(ils.Metrics())
 	mb.metricOracledbUserCommits.emit(ils.Metrics())
 	mb.metricOracledbUserRollbacks.emit(ils.Metrics())
 	for _, op := range rmo {
@@ -1388,14 +1332,34 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	return metrics
 }
 
-// RecordOracledbCPUUtilizationDataPoint adds a data point to oracledb.cpu_utilization metric.
-func (mb *MetricsBuilder) RecordOracledbCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricOracledbCPUUtilization.recordDataPoint(mb.startTime, ts, val)
+// RecordOracledbCPUTimeDataPoint adds a data point to oracledb.cpu_time metric.
+func (mb *MetricsBuilder) RecordOracledbCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricOracledbCPUTime.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordOracledbEnqueueDeadlocksDataPoint adds a data point to oracledb.enqueue_deadlocks metric.
 func (mb *MetricsBuilder) RecordOracledbEnqueueDeadlocksDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricOracledbEnqueueDeadlocks.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordOracledbEnqueueLocksLimitDataPoint adds a data point to oracledb.enqueue_locks.limit metric.
+func (mb *MetricsBuilder) RecordOracledbEnqueueLocksLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricOracledbEnqueueLocksLimit.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordOracledbEnqueueLocksUsageDataPoint adds a data point to oracledb.enqueue_locks.usage metric.
+func (mb *MetricsBuilder) RecordOracledbEnqueueLocksUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricOracledbEnqueueLocksUsage.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordOracledbEnqueueResourcesLimitDataPoint adds a data point to oracledb.enqueue_resources.limit metric.
+func (mb *MetricsBuilder) RecordOracledbEnqueueResourcesLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricOracledbEnqueueResourcesLimit.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordOracledbEnqueueResourcesUsageDataPoint adds a data point to oracledb.enqueue_resources.usage metric.
+func (mb *MetricsBuilder) RecordOracledbEnqueueResourcesUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricOracledbEnqueueResourcesUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordOracledbExchangeDeadlocksDataPoint adds a data point to oracledb.exchange_deadlocks metric.
@@ -1433,59 +1397,34 @@ func (mb *MetricsBuilder) RecordOracledbPhysicalReadsDataPoint(ts pcommon.Timest
 	mb.metricOracledbPhysicalReads.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordOracledbResourceLimitEnqueueLocksMaxDataPoint adds a data point to oracledb.resource_limit.enqueue_locks.max metric.
-func (mb *MetricsBuilder) RecordOracledbResourceLimitEnqueueLocksMaxDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricOracledbResourceLimitEnqueueLocksMax.recordDataPoint(mb.startTime, ts, val)
+// RecordOracledbProcessLimitDataPoint adds a data point to oracledb.process.limit metric.
+func (mb *MetricsBuilder) RecordOracledbProcessLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricOracledbProcessLimit.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordOracledbResourceLimitEnqueueLocksUtilizationDataPoint adds a data point to oracledb.resource_limit.enqueue_locks.utilization metric.
-func (mb *MetricsBuilder) RecordOracledbResourceLimitEnqueueLocksUtilizationDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricOracledbResourceLimitEnqueueLocksUtilization.recordDataPoint(mb.startTime, ts, val)
+// RecordOracledbProcessUsageDataPoint adds a data point to oracledb.process.usage metric.
+func (mb *MetricsBuilder) RecordOracledbProcessUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricOracledbProcessUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordOracledbResourceLimitEnqueueResourcesMaxDataPoint adds a data point to oracledb.resource_limit.enqueue_resources.max metric.
-func (mb *MetricsBuilder) RecordOracledbResourceLimitEnqueueResourcesMaxDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricOracledbResourceLimitEnqueueResourcesMax.recordDataPoint(mb.startTime, ts, val)
+// RecordOracledbSessionLimitDataPoint adds a data point to oracledb.session.limit metric.
+func (mb *MetricsBuilder) RecordOracledbSessionLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricOracledbSessionLimit.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordOracledbResourceLimitEnqueueResourcesUtilizationDataPoint adds a data point to oracledb.resource_limit.enqueue_resources.utilization metric.
-func (mb *MetricsBuilder) RecordOracledbResourceLimitEnqueueResourcesUtilizationDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricOracledbResourceLimitEnqueueResourcesUtilization.recordDataPoint(mb.startTime, ts, val)
+// RecordOracledbSessionUsageDataPoint adds a data point to oracledb.session.usage metric.
+func (mb *MetricsBuilder) RecordOracledbSessionUsageDataPoint(ts pcommon.Timestamp, val int64, dbOracleSessionTypeAttributeValue string, dbOracleSessionStatusAttributeValue string) {
+	mb.metricOracledbSessionUsage.recordDataPoint(mb.startTime, ts, val, dbOracleSessionTypeAttributeValue, dbOracleSessionStatusAttributeValue)
 }
 
-// RecordOracledbResourceLimitProcessMaxDataPoint adds a data point to oracledb.resource_limit.process.max metric.
-func (mb *MetricsBuilder) RecordOracledbResourceLimitProcessMaxDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricOracledbResourceLimitProcessMax.recordDataPoint(mb.startTime, ts, val)
+// RecordOracledbTablespaceLimitDataPoint adds a data point to oracledb.tablespace.limit metric.
+func (mb *MetricsBuilder) RecordOracledbTablespaceLimitDataPoint(ts pcommon.Timestamp, val int64, dbOracleTablespaceNameAttributeValue string) {
+	mb.metricOracledbTablespaceLimit.recordDataPoint(mb.startTime, ts, val, dbOracleTablespaceNameAttributeValue)
 }
 
-// RecordOracledbResourceLimitProcessUtilizationDataPoint adds a data point to oracledb.resource_limit.process.utilization metric.
-func (mb *MetricsBuilder) RecordOracledbResourceLimitProcessUtilizationDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricOracledbResourceLimitProcessUtilization.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordOracledbResourceLimitSessionMaxDataPoint adds a data point to oracledb.resource_limit.session.max metric.
-func (mb *MetricsBuilder) RecordOracledbResourceLimitSessionMaxDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricOracledbResourceLimitSessionMax.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordOracledbResourceLimitSessionUtilizationDataPoint adds a data point to oracledb.resource_limit.session.utilization metric.
-func (mb *MetricsBuilder) RecordOracledbResourceLimitSessionUtilizationDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricOracledbResourceLimitSessionUtilization.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordOracledbSessionCountDataPoint adds a data point to oracledb.session.count metric.
-func (mb *MetricsBuilder) RecordOracledbSessionCountDataPoint(ts pcommon.Timestamp, val int64, dbOracleSessionTypeAttributeValue string, dbOracleSessionStatusAttributeValue string) {
-	mb.metricOracledbSessionCount.recordDataPoint(mb.startTime, ts, val, dbOracleSessionTypeAttributeValue, dbOracleSessionStatusAttributeValue)
-}
-
-// RecordOracledbTablespaceMaxSizeDataPoint adds a data point to oracledb.tablespace.max_size metric.
-func (mb *MetricsBuilder) RecordOracledbTablespaceMaxSizeDataPoint(ts pcommon.Timestamp, val int64, dbOracleTablespaceNameAttributeValue string) {
-	mb.metricOracledbTablespaceMaxSize.recordDataPoint(mb.startTime, ts, val, dbOracleTablespaceNameAttributeValue)
-}
-
-// RecordOracledbTablespaceSizeDataPoint adds a data point to oracledb.tablespace.size metric.
-func (mb *MetricsBuilder) RecordOracledbTablespaceSizeDataPoint(ts pcommon.Timestamp, val int64, dbOracleTablespaceNameAttributeValue string) {
-	mb.metricOracledbTablespaceSize.recordDataPoint(mb.startTime, ts, val, dbOracleTablespaceNameAttributeValue)
+// RecordOracledbTablespaceUsageDataPoint adds a data point to oracledb.tablespace.usage metric.
+func (mb *MetricsBuilder) RecordOracledbTablespaceUsageDataPoint(ts pcommon.Timestamp, val int64, dbOracleTablespaceNameAttributeValue string) {
+	mb.metricOracledbTablespaceUsage.recordDataPoint(mb.startTime, ts, val, dbOracleTablespaceNameAttributeValue)
 }
 
 // RecordOracledbUserCommitsDataPoint adds a data point to oracledb.user_commits metric.
