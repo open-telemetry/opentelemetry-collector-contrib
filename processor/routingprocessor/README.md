@@ -53,7 +53,7 @@ exporters:
 
 ### Tech Preview: OpenTelemetry Transformation Language statements as routing conditions
 
-Alternatively, it is possible to use subset of the [OpenTelemetry Transformation Language (OTTL)](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#telemetry-query-language) statements as routing conditions.
+Alternatively, it is possible to use subset of the [OpenTelemetry Transformation Language (OTTL)](../../pkg/ottl/README.md) statements as routing conditions.
 
 To configure the routing processor with [OTTL] routing conditions use the following options:
 
