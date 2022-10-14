@@ -35,7 +35,6 @@ import (
 )
 
 const fullExpectedMetricsPath = "./testdata/expected_metrics/full.json"
-const fullExpectedMetricsWithoutDirectionPath = "./testdata/expected_metrics/fullWithoutDirection.json"
 const skipClusterExpectedMetricsPath = "./testdata/expected_metrics/clusterSkip.json"
 const noNodesExpectedMetricsPath = "./testdata/expected_metrics/noNodes.json"
 
