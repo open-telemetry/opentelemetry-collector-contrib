@@ -109,10 +109,6 @@ func (c *Config) validateLogsConfig() error {
 }
 
 func (c *GroupConfig) validate() error {
-	if c.AutodiscoverConfig != nil && len(c.NamedConfigs) > 0 {
-		return errAutodiscoverAndNamedConfigured
-	}
-
 	if c.AutodiscoverConfig != nil {
 		return validateAutodiscover(*c.AutodiscoverConfig)
 	}
