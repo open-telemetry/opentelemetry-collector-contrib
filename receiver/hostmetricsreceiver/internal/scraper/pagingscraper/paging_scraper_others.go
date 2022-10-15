@@ -25,12 +25,10 @@ import (
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/internal/metadata"
 )
 
@@ -46,23 +44,19 @@ type scraper struct {
 	mb       *metadata.MetricsBuilder
 
 	// for mocking
-	bootTime                             func() (uint64, error)
-	getPageFileStats                     func() ([]*pageFileStats, error)
-	swapMemory                           func() (*mem.SwapMemoryStat, error)
-	emitMetricsWithDirectionAttribute    bool
-	emitMetricsWithoutDirectionAttribute bool
+	bootTime         func() (uint64, error)
+	getPageFileStats func() ([]*pageFileStats, error)
+	swapMemory       func() (*mem.SwapMemoryStat, error)
 }
 
 // newPagingScraper creates a Paging Scraper
 func newPagingScraper(_ context.Context, settings component.ReceiverCreateSettings, cfg *Config) *scraper {
 	return &scraper{
-		settings:                             settings,
-		config:                               cfg,
-		bootTime:                             host.BootTime,
-		getPageFileStats:                     getPageFileStats,
-		swapMemory:                           mem.SwapMemory,
-		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithDirectionAttributeFeatureGateID),
-		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithoutDirectionAttributeFeatureGateID),
+		settings:         settings,
+		config:           cfg,
+		bootTime:         host.BootTime,
+		getPageFileStats: getPageFileStats,
+		swapMemory:       mem.SwapMemory,
 	}
 }
 
@@ -137,19 +131,10 @@ func (s *scraper) scrapePagingMetrics() error {
 }
 
 func (s *scraper) recordPagingOperationsDataPoints(now pcommon.Timestamp, swap *mem.SwapMemoryStat) {
-	if s.emitMetricsWithoutDirectionAttribute {
-		s.mb.RecordSystemPagingOperationsPageInDataPoint(now, int64(swap.Sin), metadata.AttributeTypeMajor)
-		s.mb.RecordSystemPagingOperationsPageOutDataPoint(now, int64(swap.Sout), metadata.AttributeTypeMajor)
-		s.mb.RecordSystemPagingOperationsPageInDataPoint(now, int64(swap.PgIn), metadata.AttributeTypeMinor)
-		s.mb.RecordSystemPagingOperationsPageOutDataPoint(now, int64(swap.PgOut), metadata.AttributeTypeMinor)
-	}
-
-	if s.emitMetricsWithDirectionAttribute {
-		s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.Sin), metadata.AttributeDirectionPageIn, metadata.AttributeTypeMajor)
-		s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.Sout), metadata.AttributeDirectionPageOut, metadata.AttributeTypeMajor)
-		s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.PgIn), metadata.AttributeDirectionPageIn, metadata.AttributeTypeMinor)
-		s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.PgOut), metadata.AttributeDirectionPageOut, metadata.AttributeTypeMinor)
-	}
+	s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.Sin), metadata.AttributeDirectionPageIn, metadata.AttributeTypeMajor)
+	s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.Sout), metadata.AttributeDirectionPageOut, metadata.AttributeTypeMajor)
+	s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.PgIn), metadata.AttributeDirectionPageIn, metadata.AttributeTypeMinor)
+	s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.PgOut), metadata.AttributeDirectionPageOut, metadata.AttributeTypeMinor)
 }
 
 func (s *scraper) recordPageFaultsDataPoints(now pcommon.Timestamp, swap *mem.SwapMemoryStat) {
