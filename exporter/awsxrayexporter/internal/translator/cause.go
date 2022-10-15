@@ -456,12 +456,13 @@ func fillDotnetStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 
 	exception.Stack = nil
 	for {
-		if strings.HasPrefix(line, "\tat ") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "at ") {
 			index := strings.Index(line, " in ")
 			if index >= 0 {
 				parts := strings.Split(line, " in ")
 
-				label := parts[0][len("\tat "):]
+				label := parts[0][len("at "):]
 				path := parts[1]
 				lineNumber := 0
 
@@ -486,7 +487,7 @@ func fillDotnetStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 			} else {
 				idx := strings.LastIndexByte(line, ')')
 				if idx >= 0 {
-					label := line[len("\tat ") : idx+1]
+					label := line[len("at ") : idx+1]
 					path := ""
 					lineNumber := 0
 

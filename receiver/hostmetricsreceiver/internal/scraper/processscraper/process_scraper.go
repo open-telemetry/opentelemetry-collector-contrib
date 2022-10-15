@@ -21,13 +21,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
@@ -49,22 +47,18 @@ type scraper struct {
 	excludeFS          filterset.FilterSet
 	scrapeProcessDelay time.Duration
 	// for mocking
-	getProcessCreateTime                 func(p processHandle) (int64, error)
-	getProcessHandles                    func() (processHandles, error)
-	emitMetricsWithDirectionAttribute    bool
-	emitMetricsWithoutDirectionAttribute bool
+	getProcessCreateTime func(p processHandle) (int64, error)
+	getProcessHandles    func() (processHandles, error)
 }
 
 // newProcessScraper creates a Process Scraper
 func newProcessScraper(settings component.ReceiverCreateSettings, cfg *Config) (*scraper, error) {
 	scraper := &scraper{
-		settings:                             settings,
-		config:                               cfg,
-		getProcessCreateTime:                 processHandle.CreateTime,
-		getProcessHandles:                    getProcessHandlesInternal,
-		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithDirectionAttributeFeatureGateID),
-		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithoutDirectionAttributeFeatureGateID),
-		scrapeProcessDelay:                   cfg.ScrapeProcessDelay,
+		settings:             settings,
+		config:               cfg,
+		getProcessCreateTime: processHandle.CreateTime,
+		getProcessHandles:    getProcessHandlesInternal,
+		scrapeProcessDelay:   cfg.ScrapeProcessDelay,
 	}
 
 	var err error
@@ -229,14 +223,8 @@ func (s *scraper) scrapeAndAppendDiskIOMetric(now pcommon.Timestamp, handle proc
 		return err
 	}
 
-	if s.emitMetricsWithoutDirectionAttribute {
-		s.mb.RecordProcessDiskIoReadDataPoint(now, int64(io.ReadBytes))
-		s.mb.RecordProcessDiskIoWriteDataPoint(now, int64(io.WriteBytes))
-	}
-	if s.emitMetricsWithDirectionAttribute {
-		s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirectionRead)
-		s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirectionWrite)
-	}
+	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirectionRead)
+	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirectionWrite)
 
 	return nil
 }

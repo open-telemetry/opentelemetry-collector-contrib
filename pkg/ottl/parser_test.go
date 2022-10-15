@@ -841,3 +841,54 @@ func Test_parseStatement(t *testing.T) {
 		})
 	}
 }
+
+func Test_Execute(t *testing.T) {
+	tests := []struct {
+		name              string
+		condition         boolExpressionEvaluator[interface{}]
+		function          ExprFunc[interface{}]
+		expectedCondition bool
+		expectedResult    interface{}
+	}{
+		{
+			name:      "Condition matched",
+			condition: alwaysTrue[interface{}],
+			function: func(ctx interface{}) interface{} {
+				return 1
+			},
+			expectedCondition: true,
+			expectedResult:    1,
+		},
+		{
+			name:      "Condition not matched",
+			condition: alwaysFalse[interface{}],
+			function: func(ctx interface{}) interface{} {
+				return 1
+			},
+			expectedCondition: false,
+			expectedResult:    nil,
+		},
+		{
+			name:      "No result",
+			condition: alwaysTrue[interface{}],
+			function: func(ctx interface{}) interface{} {
+				return nil
+			},
+			expectedCondition: true,
+			expectedResult:    nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statement := Statement[interface{}]{
+				condition: tt.condition,
+				function:  tt.function,
+			}
+
+			result, condition := statement.Execute(nil)
+
+			assert.Equal(t, tt.expectedCondition, condition)
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}

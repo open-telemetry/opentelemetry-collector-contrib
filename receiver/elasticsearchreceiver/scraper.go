@@ -22,40 +22,12 @@ import (
 
 	"github.com/hashicorp/go-version"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
-)
-
-const (
-	emitMetricsWithDirectionAttributeFeatureGateID    = "receiver.elasticsearchreceiver.emitMetricsWithDirectionAttribute"
-	emitMetricsWithoutDirectionAttributeFeatureGateID = "receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute"
-)
-
-var (
-	emitMetricsWithDirectionAttributeFeatureGate = featuregate.Gate{
-		ID:      emitMetricsWithDirectionAttributeFeatureGateID,
-		Enabled: true,
-		Description: "Some elasticsearch metrics reported are transitioning from being reported with a direction " +
-			"attribute to being reported with the direction included in the metric name to adhere to the " +
-			"OpenTelemetry specification. This feature gate controls emitting the old metrics with the direction " +
-			"attribute. For more details, see: " +
-			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/elasticsearchreceiver/README.md#feature-gate-configurations",
-	}
-
-	emitMetricsWithoutDirectionAttributeFeatureGate = featuregate.Gate{
-		ID:      emitMetricsWithoutDirectionAttributeFeatureGateID,
-		Enabled: false,
-		Description: "Some elasticsearch metrics reported are transitioning from being reported with a direction " +
-			"attribute to being reported with the direction included in the metric name to adhere to the " +
-			"OpenTelemetry specification. This feature gate controls emitting the new metrics without the direction " +
-			"attribute. For more details, see: " +
-			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/elasticsearchreceiver/README.md#feature-gate-configurations",
-	}
 )
 
 var (
@@ -69,22 +41,15 @@ var (
 	}()
 )
 
-func init() {
-	featuregate.GetRegistry().MustRegister(emitMetricsWithDirectionAttributeFeatureGate)
-	featuregate.GetRegistry().MustRegister(emitMetricsWithoutDirectionAttributeFeatureGate)
-}
-
 var errUnknownClusterStatus = errors.New("unknown cluster status")
 
 type elasticsearchScraper struct {
-	client                               elasticsearchClient
-	settings                             component.TelemetrySettings
-	cfg                                  *Config
-	mb                                   *metadata.MetricsBuilder
-	version                              *version.Version
-	clusterName                          string
-	emitMetricsWithDirectionAttribute    bool
-	emitMetricsWithoutDirectionAttribute bool
+	client      elasticsearchClient
+	settings    component.TelemetrySettings
+	cfg         *Config
+	mb          *metadata.MetricsBuilder
+	version     *version.Version
+	clusterName string
 }
 
 func newElasticSearchScraper(
@@ -92,11 +57,9 @@ func newElasticSearchScraper(
 	cfg *Config,
 ) *elasticsearchScraper {
 	return &elasticsearchScraper{
-		settings:                             settings.TelemetrySettings,
-		cfg:                                  cfg,
-		mb:                                   metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
-		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(emitMetricsWithDirectionAttributeFeatureGateID),
-		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(emitMetricsWithoutDirectionAttributeFeatureGateID),
+		settings: settings.TelemetrySettings,
+		cfg:      cfg,
+		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
 	}
 }
 
@@ -166,15 +129,8 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchNodeDiskIoReadDataPoint(now, info.FS.IOStats.Total.ReadBytes)
 		r.mb.RecordElasticsearchNodeDiskIoWriteDataPoint(now, info.FS.IOStats.Total.WriteBytes)
 
-		if r.emitMetricsWithDirectionAttribute {
-			r.mb.RecordElasticsearchNodeClusterIoDataPoint(now, info.TransportStats.ReceivedBytes, metadata.AttributeDirectionReceived)
-			r.mb.RecordElasticsearchNodeClusterIoDataPoint(now, info.TransportStats.SentBytes, metadata.AttributeDirectionSent)
-		}
-
-		if r.emitMetricsWithoutDirectionAttribute {
-			r.mb.RecordElasticsearchNodeClusterIoReceivedDataPoint(now, info.TransportStats.ReceivedBytes)
-			r.mb.RecordElasticsearchNodeClusterIoSentDataPoint(now, info.TransportStats.SentBytes)
-		}
+		r.mb.RecordElasticsearchNodeClusterIoDataPoint(now, info.TransportStats.ReceivedBytes, metadata.AttributeDirectionReceived)
+		r.mb.RecordElasticsearchNodeClusterIoDataPoint(now, info.TransportStats.SentBytes, metadata.AttributeDirectionSent)
 
 		r.mb.RecordElasticsearchNodeClusterConnectionsDataPoint(now, info.TransportStats.OpenConnections)
 

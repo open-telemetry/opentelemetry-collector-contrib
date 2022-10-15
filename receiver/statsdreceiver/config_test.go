@@ -59,7 +59,10 @@ func TestLoadConfig(t *testing.T) {
 					},
 					{
 						StatsdType:   "timing",
-						ObserverType: "gauge",
+						ObserverType: "histogram",
+						Histogram: protocol.HistogramConfig{
+							MaxSize: 170,
+						},
 					},
 				},
 			},
@@ -153,5 +156,4 @@ func TestValidate(t *testing.T) {
 			require.EqualError(t, test.cfg.validate(), test.expectedErr)
 		})
 	}
-
 }

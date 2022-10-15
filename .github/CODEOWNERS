@@ -136,6 +136,7 @@ receiver/azureeventhubreceiver/                      @open-telemetry/collector-c
 receiver/activedirectorydsreceiver/                  @open-telemetry/collector-contrib-approvers @djaglowski @binaryfissiongames
 receiver/aerospikereceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski @antonblock
 receiver/apachereceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/awscloudwatchreceiver/                      @open-telemetry/collector-contrib-approvers @djaglowski @schmikei
 receiver/awscontainerinsightreceiver/                @open-telemetry/collector-contrib-approvers @Aneurysm9 @pxaws
 receiver/awsecscontainermetricsreceiver/             @open-telemetry/collector-contrib-approvers @Aneurysm9
 receiver/awsfirehosereceiver/                        @open-telemetry/collector-contrib-approvers @Aneurysm9

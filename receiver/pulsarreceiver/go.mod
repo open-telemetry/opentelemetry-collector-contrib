@@ -7,13 +7,13 @@ require (
 	github.com/apache/thrift v0.17.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.38.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.61.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.61.0
-	github.com/openzipkin/zipkin-go v0.4.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.62.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.62.0
+	github.com/openzipkin/zipkin-go v0.4.1
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.61.1-0.20221011194806-6e554f2d823b
-	go.opentelemetry.io/collector/pdata v0.61.1-0.20221011194806-6e554f2d823b
-	go.opentelemetry.io/collector/semconv v0.61.1-0.20221011194806-6e554f2d823b
+	go.opentelemetry.io/collector v0.62.0
+	go.opentelemetry.io/collector/pdata v0.62.0
+	go.opentelemetry.io/collector/semconv v0.62.0
 	go.uber.org/zap v1.23.0
 )
 
@@ -47,7 +47,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.61.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.62.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -65,14 +65,14 @@ require (
 	go.opentelemetry.io/otel/trace v1.10.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
-	golang.org/x/net v0.0.0-20220926192436-02166a98028e // indirect
+	golang.org/x/crypto v0.0.0-20221010152910-d6f0a8c073c2 // indirect
+	golang.org/x/net v0.0.0-20221004154528-8021a29435af // indirect
 	golang.org/x/oauth2 v0.0.0-20220822191816-0ebed06d0094 // indirect
-	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664 // indirect
+	golang.org/x/sys v0.0.0-20221010170243-090e33056c14 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/text v0.3.8 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220822174746-9e6da59bd2fc // indirect
+	google.golang.org/genproto v0.0.0-20221010155953-15ba04fc1c0e // indirect
 	google.golang.org/grpc v1.50.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

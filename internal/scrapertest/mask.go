@@ -22,31 +22,41 @@ import (
 )
 
 // IgnoreMetricValues is a CompareOption that clears all values
-func IgnoreMetricValues() CompareOption {
-	return ignoreMetricValues{}
+func IgnoreMetricValues(metricNames ...string) CompareOption {
+	return ignoreMetricValues{
+		metricNames: metricNames,
+	}
 }
 
-type ignoreMetricValues struct{}
+type ignoreMetricValues struct {
+	metricNames []string
+}
 
 func (opt ignoreMetricValues) apply(expected, actual pmetric.Metrics) {
-	maskMetricValues(expected)
-	maskMetricValues(actual)
+	maskMetricValues(expected, opt.metricNames...)
+	maskMetricValues(actual, opt.metricNames...)
 }
 
-func maskMetricValues(metrics pmetric.Metrics) {
+func maskMetricValues(metrics pmetric.Metrics, metricNames ...string) {
 	rms := metrics.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		ilms := rms.At(i).ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
-			maskMetricSliceValues(ilms.At(j).Metrics())
+			maskMetricSliceValues(ilms.At(j).Metrics(), metricNames...)
 		}
 	}
 }
 
 // maskMetricSliceValues sets all data point values to zero.
-func maskMetricSliceValues(metrics pmetric.MetricSlice) {
+func maskMetricSliceValues(metrics pmetric.MetricSlice, metricNames ...string) {
+	metricNameSet := make(map[string]bool, len(metricNames))
+	for _, metricName := range metricNames {
+		metricNameSet[metricName] = true
+	}
 	for i := 0; i < metrics.Len(); i++ {
-		maskDataPointSliceValues(getDataPointSlice(metrics.At(i)))
+		if len(metricNames) == 0 || metricNameSet[metrics.At(i).Name()] {
+			maskDataPointSliceValues(getDataPointSlice(metrics.At(i)))
+		}
 	}
 }
 

@@ -211,7 +211,7 @@ func sentryEventFromError(errorMessage, errorType string, span *sentry.Span) (*s
 		Op:           span.Op,
 		Description:  span.Description,
 		Status:       span.Status,
-	}
+	}.Map()
 
 	event.Type = errorType
 	event.Message = errorMessage
@@ -436,14 +436,14 @@ func transactionFromSpan(span *sentry.Span) *sentry.Event {
 	transaction := sentry.NewEvent()
 	transaction.EventID = generateEventID()
 
-	transaction.Contexts["trace"] = &sentry.TraceContext{
+	transaction.Contexts["trace"] = sentry.TraceContext{
 		TraceID:      span.TraceID,
 		SpanID:       span.SpanID,
 		ParentSpanID: span.ParentSpanID,
 		Op:           span.Op,
 		Description:  span.Description,
 		Status:       span.Status,
-	}
+	}.Map()
 
 	transaction.Type = "transaction"
 
