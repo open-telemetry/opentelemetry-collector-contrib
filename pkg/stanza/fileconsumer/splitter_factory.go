@@ -17,8 +17,9 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"bufio"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"golang.org/x/text/encoding"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
 type splitterFactory interface {
