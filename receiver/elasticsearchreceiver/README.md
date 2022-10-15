@@ -56,17 +56,5 @@ The following metric are available with versions:
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
 
-### Feature gate configurations
-
-#### Transition from metrics with "direction" attribute
-
-The proposal to change metrics from being reported with a `direction` attribute has been reverted in the specification. As a result, the
-following feature gates will be removed in v0.62.0:
-
-- **receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute**
-- **receiver.elasticsearchreceiver.emitMetricsWithDirectionAttribute**
-
-For additional information, see https://github.com/open-telemetry/opentelemetry-specification/issues/2726.
-
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
