@@ -39,9 +39,12 @@ type s3Client interface {
 
 type provider struct {
 	client s3Client
+	optFns []func(*config.LoadOptions) error
 }
 
-// New returns a new confmap.Provider that reads the configuration from a file.
+// New returns a new confmap.Provider that reads the configuration from an s3 bucket.
+// It accepts options to configure on how aws-sdk-go loads the configuration.
+// Refer: https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/config#LoadOptionsFunc
 //
 // This Provider supports "s3" scheme, and can be called with a "uri" that follows:
 //
@@ -51,8 +54,10 @@ type provider struct {
 //
 // Examples:
 // `s3://DOC-EXAMPLE-BUCKET.s3.us-west-2.amazonaws.com/photos/puppy.jpg` - (unix, windows)
-func New() confmap.Provider {
-	return &provider{}
+func New(optFns ...func(*config.LoadOptions) error) confmap.Provider {
+	return &provider{
+		optFns: optFns,
+	}
 }
 
 func (p *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
@@ -62,7 +67,7 @@ func (p *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFu
 
 	// initialize the s3 client in the first call of Retrieve
 	if p.client == nil {
-		cfg, err := config.LoadDefaultConfig(context.Background())
+		cfg, err := config.LoadDefaultConfig(context.Background(), p.optFns...)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load configurations to initialize an AWS SDK client, error: %w", err)
 		}
