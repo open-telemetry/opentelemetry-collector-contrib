@@ -256,7 +256,6 @@ metrics:
       value_type: int
     attributes: [ ]
     enabled: true
-  # produced when receiver.elasticsearchreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
   elasticsearch.node.cluster.io:
     description: The number of bytes sent and received on the network for internal cluster communication.
     unit: By
@@ -265,26 +264,6 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [direction]
-    enabled: true
-  # produced when receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  elasticsearch.node.cluster.io.received:
-    description: The number of bytes received on the network for internal cluster communication.
-    unit: By
-    sum:
-      monotonic: true
-      aggregation: cumulative
-      value_type: int
-    attributes: []
-    enabled: true
-  # produced when receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  elasticsearch.node.cluster.io.sent:
-    description: The number of bytes sent on the network for internal cluster communication.
-    unit: By
-    sum:
-      monotonic: true
-      aggregation: cumulative
-      value_type: int
-    attributes: []
     enabled: true
   elasticsearch.node.cluster.connections:
     description: The number of open tcp connections for internal cluster communication.
