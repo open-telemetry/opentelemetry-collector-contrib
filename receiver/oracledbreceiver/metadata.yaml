@@ -146,6 +146,18 @@ metrics:
     gauge:
       value_type: int
     unit: "{locks}"
+  oracledb.dml_locks.usage:
+    description: Current count of active DML (Data Manipulation Language) locks.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{locks}"
+  oracledb.dml_locks.limit:
+    description: Maximum limit of active DML (Data Manipulation Language) locks.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{locks}"
   oracledb.enqueue_resources.usage:
     description: Current count of active enqueue resources.
     enabled: true
@@ -158,6 +170,18 @@ metrics:
     gauge:
       value_type: int
     unit: "{resources}"
+  oracledb.transactions.usage:
+    description: Current count of active transactions.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{transactions}"
+  oracledb.transactions.limit:
+    description: Maximum limit of active transactions.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{transactions}"
   oracledb.tablespace_size.limit:
     attributes:
       - tablespace_name
@@ -174,4 +198,3 @@ metrics:
     gauge:
       value_type: int
     unit: By
-
