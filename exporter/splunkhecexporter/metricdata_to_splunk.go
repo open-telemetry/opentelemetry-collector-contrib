@@ -115,10 +115,10 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 			bounds := dataPt.ExplicitBounds()
 			counts := dataPt.BucketCounts()
 			// first, add one event for sum, and one for count
-			{
+			if dataPt.HasSum() && !math.IsNaN(dataPt.Sum()) {
 				fields := cloneMap(commonFields)
 				populateAttributes(fields, dataPt.Attributes())
-				fields[metricFieldName+sumSuffix] = sanitizeFloat(dataPt.Sum())
+				fields[metricFieldName+sumSuffix] = dataPt.Sum()
 				fields[splunkMetricTypeKey] = pmetric.MetricTypeHistogram.String()
 				splunkMetrics = append(splunkMetrics, createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields))
 			}
@@ -182,10 +182,10 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 		for gi := 0; gi < pts.Len(); gi++ {
 			dataPt := pts.At(gi)
 			// first, add one event for sum, and one for count
-			{
+			if !math.IsNaN(dataPt.Sum()) {
 				fields := cloneMap(commonFields)
 				populateAttributes(fields, dataPt.Attributes())
-				fields[metricFieldName+sumSuffix] = sanitizeFloat(dataPt.Sum())
+				fields[metricFieldName+sumSuffix] = dataPt.Sum()
 				fields[splunkMetricTypeKey] = pmetric.MetricTypeSummary.String()
 				sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 				splunkMetrics = append(splunkMetrics, sm)

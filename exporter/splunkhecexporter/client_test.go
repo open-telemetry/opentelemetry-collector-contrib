@@ -722,6 +722,48 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 	}
 }
 
+func Test_PushMetricsData_Histogram_NaN_Sum(t *testing.T) {
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("k0", "v0")
+	rm.Resource().Attributes().PutStr("k1", "v1")
+
+	ilm := rm.ScopeMetrics().AppendEmpty()
+	histogram := ilm.Metrics().AppendEmpty()
+
+	histogram.SetName("histogram_with_empty_sum")
+	dp := histogram.SetEmptyHistogram().DataPoints().AppendEmpty()
+	dp.SetSum(math.NaN())
+
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+
+	got, err := runMetricsExport(cfg, metrics, t)
+
+	assert.NoError(t, err)
+	assert.Len(t, got, 1)
+}
+
+func Test_PushMetricsData_Summary_NaN_Sum(t *testing.T) {
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("k0", "v0")
+	rm.Resource().Attributes().PutStr("k1", "v1")
+
+	ilm := rm.ScopeMetrics().AppendEmpty()
+	summary := ilm.Metrics().AppendEmpty()
+
+	summary.SetName("Summary_with_empty_sum")
+	dp := summary.SetEmptySummary().DataPoints().AppendEmpty()
+	dp.SetSum(math.NaN())
+
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+
+	got, err := runMetricsExport(cfg, metrics, t)
+
+	assert.NoError(t, err)
+	assert.Len(t, got, 1)
+}
+
 func TestReceiveMetricsWithCompression(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	request, err := runMetricsExport(cfg, createMetricsData(1000), t)
