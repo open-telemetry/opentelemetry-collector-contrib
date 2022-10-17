@@ -8,7 +8,7 @@ require (
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.62.0
 	go.opentelemetry.io/collector/pdata v0.62.0
-	go.opentelemetry.io/collector/semconv v0.62.0
+	go.opentelemetry.io/collector/semconv v0.62.1
 	go.uber.org/atomic v1.10.0
 	google.golang.org/grpc v1.50.0
 	skywalking.apache.org/repo/goapi v0.0.0-20211122071111-ffc517fbfe21
