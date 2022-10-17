@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 	cfg.makeDiscoveryClient = getMockDiscoveryClient
 
 	err = cfg.Validate()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	expected := []*K8sObjectsConfig{
 		{
@@ -65,8 +65,9 @@ func TestLoadConfig(t *testing.T) {
 			Name:       "events",
 			Mode:       WatchMode,
 			Namespaces: []string{"default"},
+			Group:      "events.k8s.io",
 			gvr: &schema.GroupVersionResource{
-				Group:    "",
+				Group:    "events.k8s.io",
 				Version:  "v1",
 				Resource: "events",
 			},
@@ -94,4 +95,34 @@ func TestValidConfigs(t *testing.T) {
 	err = cfg.Validate()
 	assert.ErrorContains(t, err, "resource fake_resource not found")
 
+}
+
+func TestValidateResourceConflict(t *testing.T) {
+	t.Parallel()
+
+	mockClient := newMockDynamicClient()
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+
+	rCfg.Objects = []*K8sObjectsConfig{
+		{
+			Name: "myresources",
+			Mode: PullMode,
+		},
+	}
+
+	err := rCfg.Validate()
+	assert.ErrorContains(t, err, "conflict found for resource myresources")
+
+	rCfg.Objects = []*K8sObjectsConfig{
+		{
+			Name:  "myresources",
+			Mode:  PullMode,
+			Group: "group1",
+		},
+	}
+
+	err = rCfg.Validate()
+	assert.NoError(t, err)
 }

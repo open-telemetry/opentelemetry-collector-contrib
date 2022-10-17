@@ -31,11 +31,38 @@ func (c *MockDiscovery) ServerPreferredResources() ([]*metav1.APIResourceList, e
 			APIResources: []metav1.APIResource{
 				{
 					Name: "pods",
-					Kind: "Pods",
+					Kind: "Pod",
 				},
 				{
 					Name: "events",
-					Kind: "Events",
+					Kind: "Event",
+				},
+			},
+		},
+		{
+			GroupVersion: "events.k8s.io/v1",
+			APIResources: []metav1.APIResource{
+				{
+					Name: "events",
+					Kind: "Event",
+				},
+			},
+		},
+		{
+			GroupVersion: "group1/v1",
+			APIResources: []metav1.APIResource{
+				{
+					Name: "myresources",
+					Kind: "MyResource",
+				},
+			},
+		},
+		{
+			GroupVersion: "group2/v1",
+			APIResources: []metav1.APIResource{
+				{
+					Name: "myresources",
+					Kind: "MyResource",
 				},
 			},
 		},

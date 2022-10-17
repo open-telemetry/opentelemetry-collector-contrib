@@ -26,6 +26,7 @@ The following is example configuration
         interval: 15m
       - name: events
         mode: watch
+        group: events.k8s.io
         namespaces: [default]
 ```
 
@@ -42,6 +43,8 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 - `field_selector`: select objects by field(s)
 - `interval`: the interval at which object is pulled, default 60 minutes. Only useful for `pull` mode.
 - `namespaces`: An array of `namespaces` to collect events from. (default = `all`)
+- `group`: API group name. It is only required when resource object is available in multiple groups. (default = "")
+For example, `events` resource is available in both `v1` and `events.k8s.io/v1` APIGroup.
 
 
 The full list of settings exposed for this receiver are documented [here](./config.go)

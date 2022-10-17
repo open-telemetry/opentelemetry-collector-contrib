@@ -44,6 +44,7 @@ var modeMap = map[mode]bool{
 
 type K8sObjectsConfig struct {
 	Name          string        `mapstructure:"name"`
+	Group         string        `mapstructure:"group"`
 	Namespaces    []string      `mapstructure:"namespaces"`
 	Mode          mode          `mapstructure:"mode"`
 	LabelSelector string        `mapstructure:"label_selector"`
@@ -70,13 +71,33 @@ func (c *Config) Validate() error {
 		return err
 	}
 	for _, object := range c.Objects {
-		gvr, ok := validObjects[object.Name]
+		gvrs, ok := validObjects[object.Name]
 		if !ok {
 			availableResource := make([]string, len(validObjects))
 			for k := range validObjects {
 				availableResource = append(availableResource, k)
 			}
 			return fmt.Errorf("resource %v not found. Valid resources are: %v", object.Name, availableResource)
+		}
+
+		var gvr *schema.GroupVersionResource
+		if len(gvrs) == 1 {
+			gvr = gvrs[0]
+		} else {
+			for i := range gvrs {
+				if gvrs[i].Group == object.Group {
+					gvr = gvrs[i]
+					break
+				}
+			}
+		}
+
+		if gvr == nil {
+			availableGroups := make([]string, len(gvrs))
+			for _, g := range gvrs {
+				availableGroups = append(availableGroups, g.Group)
+			}
+			return fmt.Errorf("conflict found for resource %v in groups %v", object.Name, availableGroups)
 		}
 
 		if object.Mode == "" {
@@ -115,7 +136,7 @@ func (c *Config) getDynamicClient() (dynamic.Interface, error) {
 	return k8sconfig.MakeDynamicClient(c.APIConfig)
 }
 
-func (c *Config) getValidObjects() (map[string]*schema.GroupVersionResource, error) {
+func (c *Config) getValidObjects() (map[string][]*schema.GroupVersionResource, error) {
 	dc, err := c.getDiscoveryClient()
 	if err != nil {
 		return nil, err
@@ -126,7 +147,7 @@ func (c *Config) getValidObjects() (map[string]*schema.GroupVersionResource, err
 		return nil, err
 	}
 
-	validObjects := make(map[string]*schema.GroupVersionResource)
+	validObjects := make(map[string][]*schema.GroupVersionResource)
 
 	for _, group := range res {
 		split := strings.Split(group.GroupVersion, "/")
@@ -134,15 +155,11 @@ func (c *Config) getValidObjects() (map[string]*schema.GroupVersionResource, err
 			split = []string{"", "v1"}
 		}
 		for _, resource := range group.APIResources {
-			if _, ok := validObjects[resource.Name]; ok {
-				// TODO: handle conflict
-				continue
-			}
-			validObjects[resource.Name] = &schema.GroupVersionResource{
+			validObjects[resource.Name] = append(validObjects[resource.Name], &schema.GroupVersionResource{
 				Group:    split[0],
 				Version:  split[1],
 				Resource: resource.Name,
-			}
+			})
 		}
 
 	}

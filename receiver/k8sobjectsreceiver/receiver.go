@@ -16,6 +16,7 @@ package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -33,6 +34,7 @@ type k8sobjectsreceiver struct {
 	client          dynamic.Interface
 	consumer        consumer.Logs
 	obsrecv         *obsreport.Receiver
+	mu              sync.Mutex
 }
 
 func newReceiver(params component.ReceiverCreateSettings, config *Config, consumer consumer.Logs) (component.LogsReceiver, error) {
@@ -52,6 +54,7 @@ func newReceiver(params component.ReceiverCreateSettings, config *Config, consum
 			Transport:              transport,
 			ReceiverCreateSettings: params,
 		}),
+		mu: sync.Mutex{},
 	}, nil
 }
 
@@ -66,9 +69,11 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 
 func (kr *k8sobjectsreceiver) Shutdown(context.Context) error {
 	kr.setting.Logger.Info("Object Receiver stopped")
+	kr.mu.Lock()
 	for _, stopperChan := range kr.stopperChanList {
 		close(stopperChan)
 	}
+	kr.mu.Unlock()
 	return nil
 }
 
@@ -99,7 +104,9 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 
 func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) {
 	stopperChan := make(chan struct{})
+	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
+	kr.mu.Unlock()
 	ticker := NewTicker(config.Interval)
 	defer ticker.Stop()
 	for {
@@ -128,7 +135,9 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) {
 
 	stopperChan := make(chan struct{})
+	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
+	kr.mu.Unlock()
 
 	watch, err := resource.Watch(ctx, metav1.ListOptions{
 		FieldSelector: config.FieldSelector,
