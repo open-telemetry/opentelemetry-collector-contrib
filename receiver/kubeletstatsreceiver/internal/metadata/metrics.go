@@ -22,8 +22,6 @@ type RecordIntDataPointFunc func(*MetricsBuilder, pcommon.Timestamp, int64)
 
 type RecordIntDataPointWithDirectionFunc func(*MetricsBuilder, pcommon.Timestamp, int64, string, AttributeDirection)
 
-type RecordIntDataPointWithStringAttributeFunc func(*MetricsBuilder, pcommon.Timestamp, int64, string)
-
 type MetricsBuilders struct {
 	NodeMetricsBuilder      *MetricsBuilder
 	PodMetricsBuilder       *MetricsBuilder
@@ -112,26 +110,16 @@ var ContainerFilesystemMetrics = FilesystemMetrics{
 }
 
 type NetworkMetrics struct {
-	IO     NetworkMetricsRecorder
-	Errors NetworkMetricsRecorder
-}
-
-type NetworkMetricsRecorder struct {
-	RecordReceiveDataPoint  RecordIntDataPointWithStringAttributeFunc
-	RecordTransmitDataPoint RecordIntDataPointWithStringAttributeFunc
-}
-
-type NetworkMetricsWithDirection struct {
 	IO     RecordIntDataPointWithDirectionFunc
 	Errors RecordIntDataPointWithDirectionFunc
 }
 
-var NodeNetworkMetricsWithDirection = NetworkMetricsWithDirection{
+var NodeNetworkMetrics = NetworkMetrics{
 	IO:     (*MetricsBuilder).RecordK8sNodeNetworkIoDataPoint,
 	Errors: (*MetricsBuilder).RecordK8sNodeNetworkErrorsDataPoint,
 }
 
-var PodNetworkMetricsWithDirection = NetworkMetricsWithDirection{
+var PodNetworkMetrics = NetworkMetrics{
 	IO:     (*MetricsBuilder).RecordK8sPodNetworkIoDataPoint,
 	Errors: (*MetricsBuilder).RecordK8sPodNetworkErrorsDataPoint,
 }
