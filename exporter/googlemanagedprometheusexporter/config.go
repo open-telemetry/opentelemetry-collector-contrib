@@ -38,14 +38,17 @@ type Config struct {
 type GMPConfig struct {
 	ProjectID    string                 `mapstructure:"project"`
 	UserAgent    string                 `mapstructure:"user_agent"`
+	MetricPrefix string                 `mapstructure:"metric_prefix"`
 	ClientConfig collector.ClientConfig `mapstructure:",squash"`
 }
 
 func (c *GMPConfig) toCollectorConfig() collector.Config {
 	// start with whatever the default collector config is.
 	cfg := collector.DefaultConfig()
-	// hard-code some config options to make it work with GMP
-	cfg.MetricConfig.Prefix = "prometheus.googleapis.com"
+	cfg.MetricConfig.Prefix = c.MetricPrefix
+	if c.MetricPrefix == "" {
+		cfg.MetricConfig.Prefix = "prometheus.googleapis.com"
+	}
 	cfg.MetricConfig.SkipCreateMetricDescriptor = true
 	cfg.MetricConfig.InstrumentationLibraryLabels = false
 	cfg.MetricConfig.ServiceResourceLabels = false
