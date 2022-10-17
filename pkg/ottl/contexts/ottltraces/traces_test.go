@@ -38,7 +38,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	refSpan, refIS, refResource := createTelemetry()
 
 	newAttrs := pcommon.NewMap()
-	newAttrs.PutString("hello", "world")
+	newAttrs.PutStr("hello", "world")
 
 	newEvents := ptrace.NewSpanEventSlice()
 	newEvents.AppendEmpty().SetName("new event")
@@ -46,7 +46,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	newLinks := ptrace.NewSpanLinkSlice()
 	newLinks.AppendEmpty().SetSpanID(spanID2)
 
-	newStatus := ptrace.NewSpanStatus()
+	newStatus := ptrace.NewStatus()
 	newStatus.SetMessage("new status")
 
 	tests := []struct {
@@ -216,7 +216,6 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   refSpan.Attributes(),
 			newVal: newAttrs,
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().Clear()
 				newAttrs.CopyTo(span.Attributes())
 			},
 		},
@@ -231,7 +230,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().PutString("str", "newVal")
+				span.Attributes().PutStr("str", "newVal")
 			},
 		},
 		{
@@ -495,7 +494,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "instrumentation_scope",
 			path: []ottl.Field{
 				{
-					Name: "instrumentation_library",
+					Name: "instrumentation_scope",
 				},
 			},
 			orig:   refIS,
@@ -550,7 +549,7 @@ func createTelemetry() (ptrace.Span, pcommon.InstrumentationScope, pcommon.Resou
 	span.SetKind(ptrace.SpanKindServer)
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
-	span.Attributes().PutString("str", "val")
+	span.Attributes().PutStr("str", "val")
 	span.Attributes().PutBool("bool", true)
 	span.Attributes().PutInt("int", 10)
 	span.Attributes().PutDouble("double", 1.2)
@@ -641,7 +640,7 @@ func Test_ParseEnum(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := ParseEnum((*ottl.EnumSymbol)(ottltest.Strp(tt.name)))
+			actual, err := parseEnum((*ottl.EnumSymbol)(ottltest.Strp(tt.name)))
 			assert.NoError(t, err)
 			assert.Equal(t, *actual, tt.want)
 		})
@@ -664,7 +663,7 @@ func Test_ParseEnum_False(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := ParseEnum(tt.enumSymbol)
+			actual, err := parseEnum(tt.enumSymbol)
 			assert.Error(t, err)
 			assert.Nil(t, actual)
 		})

@@ -110,14 +110,83 @@ func TestLoadConfigAll(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, apiConfig, &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID("coralogix")),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		PrivateKey:       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-		AppName:          "APP_NAME",
-		// Deprecated: [v0.47.0] SubSystem will remove in the next version
-		SubSystem:       "SUBSYSTEM_NAME",
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		ExporterSettings:    config.NewExporterSettings(config.NewComponentID("coralogix")),
+		QueueSettings:       exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:       exporterhelper.NewDefaultRetrySettings(),
+		PrivateKey:          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+		AppNameAttributes:   []string{"service.namespace"},
+		SubSystemAttributes: []string{"service.name"},
+		AppName:             "APP_NAME",
+		SubSystem:           "SUBSYSTEM_NAME",
+		TimeoutSettings:     exporterhelper.NewDefaultTimeoutSettings(),
+		Metrics: configgrpc.GRPCClientSettings{
+			Endpoint:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+			Compression:     "gzip",
+			WriteBufferSize: 512 * 1024,
+			Headers:         map[string]string{},
+		},
+		Logs: configgrpc.GRPCClientSettings{
+			Endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+			Headers:  map[string]string{},
+		},
+		Traces: configgrpc.GRPCClientSettings{
+			Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+			Compression: "",
+			TLSSetting: configtls.TLSClientSetting{
+				TLSSetting:         configtls.TLSSetting{},
+				Insecure:           false,
+				InsecureSkipVerify: false,
+				ServerName:         "",
+			},
+			ReadBufferSize:  0,
+			WriteBufferSize: 0,
+			WaitForReady:    false,
+			Headers:         map[string]string{},
+			BalancerName:    "",
+		},
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
+			Endpoint:    "",
+			Compression: "",
+			TLSSetting: configtls.TLSClientSetting{
+				TLSSetting:         configtls.TLSSetting{},
+				Insecure:           false,
+				InsecureSkipVerify: false,
+				ServerName:         "",
+			},
+			ReadBufferSize:  0,
+			WriteBufferSize: 0,
+			WaitForReady:    false,
+			Headers: map[string]string{
+				"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				"appName":      "APP_NAME",
+			},
+			BalancerName: "",
+		},
+	})
+}
+
+func TestLoadConfigA(t *testing.T) {
+	factories, _ := componenttest.NopFactories()
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-all.yaml"), factories)
+	require.NoError(t, err)
+
+	apiConfig := cfg.Exporters[config.NewComponentID(typeStr)].(*Config)
+	err = apiConfig.Validate()
+	require.NoError(t, err)
+
+	assert.Equal(t, apiConfig, &Config{
+		ExporterSettings:    config.NewExporterSettings(config.NewComponentID("coralogix")),
+		QueueSettings:       exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:       exporterhelper.NewDefaultRetrySettings(),
+		PrivateKey:          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+		AppNameAttributes:   []string{"service.namespace"},
+		SubSystemAttributes: []string{"service.name"},
+		AppName:             "APP_NAME",
+		SubSystem:           "SUBSYSTEM_NAME",
+		TimeoutSettings:     exporterhelper.NewDefaultTimeoutSettings(),
 		Metrics: configgrpc.GRPCClientSettings{
 			Endpoint:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 			Compression:     "gzip",

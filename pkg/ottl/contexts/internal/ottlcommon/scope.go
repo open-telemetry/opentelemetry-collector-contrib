@@ -42,6 +42,8 @@ func ScopePathGetSetter[K InstrumentationScopeContext](path []ottl.Field) (ottl.
 			return accessInstrumentationScopeAttributes[K](), nil
 		}
 		return accessInstrumentationScopeAttributesKey[K](mapKey), nil
+	case "dropped_attributes_count":
+		return accessInstrumentationScopeDroppedAttributesCount[K](), nil
 	}
 
 	return nil, fmt.Errorf("invalid scope path expression %v", path)
@@ -105,6 +107,19 @@ func accessInstrumentationScopeVersion[K InstrumentationScopeContext]() ottl.Sta
 		Setter: func(ctx K, val interface{}) {
 			if str, ok := val.(string); ok {
 				ctx.GetInstrumentationScope().SetVersion(str)
+			}
+		},
+	}
+}
+
+func accessInstrumentationScopeDroppedAttributesCount[K InstrumentationScopeContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx K) interface{} {
+			return int64(ctx.GetInstrumentationScope().DroppedAttributesCount())
+		},
+		Setter: func(ctx K, val interface{}) {
+			if i, ok := val.(int64); ok {
+				ctx.GetInstrumentationScope().SetDroppedAttributesCount(uint32(i))
 			}
 		},
 	}

@@ -27,27 +27,28 @@ type EnumParser func(*EnumSymbol) (*Enum, error)
 
 type Enum int64
 
-func (p *Parser[K]) newFunctionCall(inv Invocation) (ExprFunc[K], error) {
-	if f, ok := p.functions[inv.Function]; ok {
-		args, err := p.buildArgs(inv, reflect.TypeOf(f))
-		if err != nil {
-			return nil, err
-		}
-
-		returnVals := reflect.ValueOf(f).Call(args)
-
-		if returnVals[1].IsNil() {
-			err = nil
-		} else {
-			err = returnVals[1].Interface().(error)
-		}
-
-		return returnVals[0].Interface().(ExprFunc[K]), err
+func (p *Parser[K]) newFunctionCall(inv invocation) (ExprFunc[K], error) {
+	f, ok := p.functions[inv.Function]
+	if !ok {
+		return nil, fmt.Errorf("undefined function %v", inv.Function)
 	}
-	return nil, fmt.Errorf("undefined function %v", inv.Function)
+	args, err := p.buildArgs(inv, reflect.TypeOf(f))
+	if err != nil {
+		return nil, err
+	}
+
+	returnVals := reflect.ValueOf(f).Call(args)
+
+	if returnVals[1].IsNil() {
+		err = nil
+	} else {
+		err = returnVals[1].Interface().(error)
+	}
+
+	return returnVals[0].Interface().(ExprFunc[K]), err
 }
 
-func (p *Parser[K]) buildArgs(inv Invocation, fType reflect.Type) ([]reflect.Value, error) {
+func (p *Parser[K]) buildArgs(inv invocation, fType reflect.Type) ([]reflect.Value, error) {
 	var args []reflect.Value
 	// Some function arguments may be intended to take values from the calling processor
 	// instead of being passed by the caller of the OTTL function, so we have to keep
@@ -92,7 +93,7 @@ func (p *Parser[K]) buildArgs(inv Invocation, fType reflect.Type) ([]reflect.Val
 	return args, nil
 }
 
-func (p *Parser[K]) buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args *[]reflect.Value) error {
+func (p *Parser[K]) buildSliceArg(inv invocation, argType reflect.Type, startingIndex int, args *[]reflect.Value) error {
 	name := argType.Elem().Name()
 	switch {
 	case name == reflect.String.String():
@@ -144,7 +145,7 @@ func (p *Parser[K]) buildSliceArg(inv Invocation, argType reflect.Type, starting
 }
 
 // Handle interfaces that can be passed as arguments to OTTL function invocations.
-func (p *Parser[K]) buildArg(argDef Value, argType reflect.Type, index int, args *[]reflect.Value) error {
+func (p *Parser[K]) buildArg(argDef value, argType reflect.Type, index int, args *[]reflect.Value) error {
 	name := argType.Name()
 	switch {
 	case strings.HasPrefix(name, "Setter"):

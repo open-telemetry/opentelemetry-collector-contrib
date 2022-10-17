@@ -62,7 +62,7 @@ func Test_convertGaugeToSum(t *testing.T) {
 
 				dps := gaugeInput.Gauge().DataPoints()
 
-				metric.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				metric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				metric.Sum().SetIsMonotonic(false)
 
 				dps.CopyTo(metric.Sum().DataPoints())
@@ -78,7 +78,7 @@ func Test_convertGaugeToSum(t *testing.T) {
 
 				dps := gaugeInput.Gauge().DataPoints()
 
-				metric.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				metric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				metric.Sum().SetIsMonotonic(true)
 
 				dps.CopyTo(metric.Sum().DataPoints())

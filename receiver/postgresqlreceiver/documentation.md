@@ -46,9 +46,9 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| postgresql.database.name | The name of the database. | String |
-| postgresql.index.name | The name of the index on a table. | String |
-| postgresql.table.name | The schema name followed by the table name. | String |
+| postgresql.database.name | The name of the database. | Str |
+| postgresql.index.name | The name of the index on a table. | Str |
+| postgresql.table.name | The schema name followed by the table name. | Str |
 
 ## Metric attributes
 

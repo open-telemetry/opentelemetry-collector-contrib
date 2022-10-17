@@ -51,9 +51,9 @@ type exporter struct {
 	config *Config
 
 	// gRPC clients and connection.
-	traceExporter  ptraceotlp.Client
-	metricExporter pmetricotlp.Client
-	logExporter    plogotlp.Client
+	traceExporter  ptraceotlp.GRPCClient
+	metricExporter pmetricotlp.GRPCClient
+	logExporter    plogotlp.GRPCClient
 	clientConn     *grpc.ClientConn
 	metadata       metadata.MD
 	callOptions    []grpc.CallOption
@@ -302,7 +302,7 @@ func (e *exporter) applyMasking(ld plog.Logs) {
 				log := scopedLog.LogRecords().At(z)
 				for _, setting := range e.config.Masking {
 					regexp := regexp.MustCompile(setting.Regexp)
-					log.Body().SetStringVal(regexp.ReplaceAllString(log.Body().AsString(), setting.Placeholder))
+					log.Body().SetStr(regexp.ReplaceAllString(log.Body().AsString(), setting.Placeholder))
 				}
 			}
 		}

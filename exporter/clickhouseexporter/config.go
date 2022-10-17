@@ -16,6 +16,9 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"errors"
+	"fmt"
+	"net/url"
+	"strings"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -37,6 +40,8 @@ type Config struct {
 	DSN string `mapstructure:"dsn"`
 	// LogsTableName is the table name for logs. default is `otel_logs`.
 	LogsTableName string `mapstructure:"logs_table_name"`
+	// TracesTableName is the table name for logs. default is `otel_traces`.
+	TracesTableName string `mapstructure:"traces_table_name"`
 	// TTLDays is The data time-to-live in days, 0 means no ttl.
 	TTLDays uint `mapstructure:"ttl_days"`
 }
@@ -56,7 +61,21 @@ func (cfg *Config) Validate() (err error) {
 	if cfg.DSN == "" {
 		err = multierr.Append(err, errConfigNoDSN)
 	}
+	_, e := parseDSNDatabase(cfg.DSN)
+	if e != nil {
+		err = multierr.Append(err, fmt.Errorf("invalid dsn format:%w", err))
+	}
 	return err
+}
+
+const defaultDatabase = "default"
+
+func parseDSNDatabase(dsn string) (string, error) {
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return defaultDatabase, err
+	}
+	return strings.TrimPrefix(u.Path, "/"), nil
 }
 
 func (cfg *Config) enforcedQueueSettings() exporterhelper.QueueSettings {

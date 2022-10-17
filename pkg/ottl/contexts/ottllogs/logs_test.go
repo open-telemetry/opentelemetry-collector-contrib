@@ -38,7 +38,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	refLog, refIS, refResource := createTelemetry()
 
 	newAttrs := pcommon.NewMap()
-	newAttrs.PutString("hello", "world")
+	newAttrs.PutStr("hello", "world")
 
 	tests := []struct {
 		name     string
@@ -193,7 +193,6 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   refLog.Attributes(),
 			newVal: newAttrs,
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().Clear()
 				newAttrs.CopyTo(log.Attributes())
 			},
 		},
@@ -208,7 +207,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().PutString("str", "newVal")
+				log.Attributes().PutStr("str", "newVal")
 			},
 		},
 		{
@@ -421,7 +420,7 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	log.SetSeverityNumber(plog.SeverityNumberFatal)
 	log.SetSeverityText("blue screen of death")
 	log.Body().SetStr("body")
-	log.Attributes().PutString("str", "val")
+	log.Attributes().PutStr("str", "val")
 	log.Attributes().PutBool("bool", true)
 	log.Attributes().PutInt("int", 10)
 	log.Attributes().PutDouble("double", 1.2)
@@ -471,7 +470,7 @@ func Test_ParseEnum(t *testing.T) {
 	}{
 		{
 			name: "SEVERITY_NUMBER_UNSPECIFIED",
-			want: ottl.Enum(plog.SeverityNumberUndefined),
+			want: ottl.Enum(plog.SeverityNumberUnspecified),
 		},
 		{
 			name: "SEVERITY_NUMBER_TRACE",
@@ -572,7 +571,7 @@ func Test_ParseEnum(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := ParseEnum((*ottl.EnumSymbol)(ottltest.Strp(tt.name)))
+			actual, err := parseEnum((*ottl.EnumSymbol)(ottltest.Strp(tt.name)))
 			assert.NoError(t, err)
 			assert.Equal(t, *actual, tt.want)
 		})
@@ -595,7 +594,7 @@ func Test_ParseEnum_False(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := ParseEnum(tt.enumSymbol)
+			actual, err := parseEnum(tt.enumSymbol)
 			assert.Error(t, err)
 			assert.Nil(t, actual)
 		})

@@ -38,7 +38,7 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 func TestMain(m *testing.M) {
@@ -221,7 +221,7 @@ func TestTracesSource(t *testing.T) {
 }
 
 func TestTraceExporter(t *testing.T) {
-	metricsServer := testutils.DatadogServerMock()
+	metricsServer := testutil.DatadogServerMock()
 	defer metricsServer.Close()
 
 	got := make(chan string, 1)
@@ -273,7 +273,7 @@ func TestTraceExporter(t *testing.T) {
 }
 
 func TestNewTracesExporter(t *testing.T) {
-	metricsServer := testutils.DatadogServerMock()
+	metricsServer := testutil.DatadogServerMock()
 	defer metricsServer.Close()
 
 	cfg := &Config{}
@@ -289,7 +289,7 @@ func TestNewTracesExporter(t *testing.T) {
 }
 
 func TestPushTraceData(t *testing.T) {
-	server := testutils.DatadogServerMock()
+	server := testutil.DatadogServerMock()
 	defer server.Close()
 	cfg := &Config{
 		API: APIConfig{
@@ -316,7 +316,9 @@ func TestPushTraceData(t *testing.T) {
 	exp, err := f.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 
-	err = exp.ConsumeTraces(context.Background(), testutils.TestTraces.Clone())
+	testTraces := ptrace.NewTraces()
+	testutil.TestTraces.CopyTo(testTraces)
+	err = exp.ConsumeTraces(context.Background(), testTraces)
 	assert.NoError(t, err)
 
 	body := <-server.MetadataChan

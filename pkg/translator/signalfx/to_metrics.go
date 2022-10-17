@@ -80,13 +80,13 @@ func setDataTypeAndPoints(sfxDataPoint *model.DataPoint, ms pmetric.MetricSlice,
 
 	case model.MetricType_COUNTER:
 		m = ms.AppendEmpty()
-		m.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+		m.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 		m.Sum().SetIsMonotonic(true)
 		fillNumberDataPoint(sfxDataPoint, m.Sum().DataPoints())
 
 	case model.MetricType_CUMULATIVE_COUNTER:
 		m = ms.AppendEmpty()
-		m.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		m.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		m.Sum().SetIsMonotonic(true)
 		fillNumberDataPoint(sfxDataPoint, m.Sum().DataPoints())
 
@@ -113,7 +113,6 @@ func fillNumberDataPoint(sfxDataPoint *model.DataPoint, dps pmetric.NumberDataPo
 }
 
 func fillInAttributes(dimensions []*model.Dimension, attributes pcommon.Map) {
-	attributes.Clear()
 	attributes.EnsureCapacity(len(dimensions))
 
 	for _, dim := range dimensions {
@@ -121,6 +120,6 @@ func fillInAttributes(dimensions []*model.Dimension, attributes pcommon.Map) {
 			// TODO: Log or metric for this odd ball?
 			continue
 		}
-		attributes.PutString(dim.Key, dim.Value)
+		attributes.PutStr(dim.Key, dim.Value)
 	}
 }

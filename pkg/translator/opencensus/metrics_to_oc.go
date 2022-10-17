@@ -173,13 +173,13 @@ func descriptorTypeToOC(metric pmetric.Metric, allNumberDataPointValueInt bool) 
 		return gaugeType(allNumberDataPointValueInt)
 	case pmetric.MetricTypeSum:
 		sd := metric.Sum()
-		if sd.IsMonotonic() && sd.AggregationTemporality() == pmetric.MetricAggregationTemporalityCumulative {
+		if sd.IsMonotonic() && sd.AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
 			return cumulativeType(allNumberDataPointValueInt)
 		}
 		return gaugeType(allNumberDataPointValueInt)
 	case pmetric.MetricTypeHistogram:
 		hd := metric.Histogram()
-		if hd.AggregationTemporality() == pmetric.MetricAggregationTemporalityCumulative {
+		if hd.AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
 			return ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION
 		}
 		return ocmetrics.MetricDescriptor_GAUGE_DISTRIBUTION
@@ -341,7 +341,7 @@ func doubleSummaryPointToOC(dps pmetric.SummaryDataPointSlice, labelKeys *labelK
 	return timeseries
 }
 
-func summaryPercentilesToOC(qtls pmetric.ValueAtQuantileSlice) []*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile {
+func summaryPercentilesToOC(qtls pmetric.SummaryDataPointValueAtQuantileSlice) []*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile {
 	if qtls.Len() == 0 {
 		return nil
 	}

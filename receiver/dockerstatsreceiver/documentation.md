@@ -22,7 +22,7 @@ These are the metrics available for this scraper.
 | container.cpu.throttling_data.throttled_time | Aggregate time the container was throttled. | ns | Sum(Int) | <ul> </ul> |
 | **container.cpu.usage.kernelmode** | Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows). | ns | Sum(Int) | <ul> </ul> |
 | container.cpu.usage.percpu | Per-core CPU usage by the container. | ns | Sum(Int) | <ul> <li>core</li> </ul> |
-| **container.cpu.usage.system** | System CPU usage. | ns | Sum(Int) | <ul> </ul> |
+| container.cpu.usage.system | System CPU usage, as reported by docker. Note this is the usage for the system, not the container. | ns | Sum(Int) | <ul> </ul> |
 | **container.cpu.usage.total** | Total CPU time consumed. | ns | Sum(Int) | <ul> </ul> |
 | **container.cpu.usage.usermode** | Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows). | ns | Sum(Int) | <ul> </ul> |
 | container.memory.active_anon | The amount of anonymous memory that has been identified as active by the kernel. | By | Sum(Int) | <ul> </ul> |
@@ -85,11 +85,11 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| container.hostname | The hostname of the container. | String |
-| container.id | The ID of the container. | String |
-| container.image.name | The name of the docker image in use by the container. | String |
-| container.name | The name of the container. | String |
-| container.runtime | The runtime of the container. For this receiver, it will always be 'docker'. | String |
+| container.hostname | The hostname of the container. | Str |
+| container.id | The ID of the container. | Str |
+| container.image.name | The name of the docker image in use by the container. | Str |
+| container.name | The name of the container. | Str |
+| container.runtime | The runtime of the container. For this receiver, it will always be 'docker'. | Str |
 
 ## Metric attributes
 

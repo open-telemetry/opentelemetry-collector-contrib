@@ -39,12 +39,12 @@ func (sp *scrubbingProcessor) applyMasking(ld plog.Logs) {
 
 			if (setting.AttributeType == ResourceAttribute || setting.AttributeType == EmptyAttribute) && setting.AttributeKey == "" {
 				resourceAttributes.Range(func(key string, attributeValue pcommon.Value) bool {
-					attributeValue.SetStringVal(regexp.ReplaceAllString(attributeValue.AsString(), setting.Placeholder))
+					attributeValue.SetStr(regexp.ReplaceAllString(attributeValue.AsString(), setting.Placeholder))
 					return true
 				})
 			} else if setting.AttributeType == ResourceAttribute && setting.AttributeKey != "" {
 				if attributeValue, ok := resourceAttributes.Get(setting.AttributeKey); ok {
-					attributeValue.SetStringVal(regexp.ReplaceAllString(attributeValue.AsString(), setting.Placeholder))
+					attributeValue.SetStr(regexp.ReplaceAllString(attributeValue.AsString(), setting.Placeholder))
 				}
 			}
 		}
@@ -62,24 +62,24 @@ func (sp *scrubbingProcessor) applyMasking(ld plog.Logs) {
 					// masking in record attributes
 					if (setting.AttributeType == RecordAttribute || setting.AttributeType == EmptyAttribute) && setting.AttributeKey == "" {
 						log.Attributes().Range(func(key string, attributeValue pcommon.Value) bool {
-							attributeValue.SetStringVal(regexp.ReplaceAllString(attributeValue.AsString(), setting.Placeholder))
+							attributeValue.SetStr(regexp.ReplaceAllString(attributeValue.AsString(), setting.Placeholder))
 							return true
 						})
 					} else if setting.AttributeType == RecordAttribute && setting.AttributeKey != "" {
 						if attributeValue, ok := log.Attributes().Get(setting.AttributeKey); ok {
-							attributeValue.SetStringVal(regexp.ReplaceAllString(attributeValue.AsString(), setting.Placeholder))
+							attributeValue.SetStr(regexp.ReplaceAllString(attributeValue.AsString(), setting.Placeholder))
 						}
 					}
 
 					// masking body
 					switch log.Body().Type() {
 					case pcommon.ValueTypeMap:
-						log.Body().MapVal().Range(func(k string, v pcommon.Value) bool {
-							v.SetStringVal(regexp.ReplaceAllString(v.AsString(), setting.Placeholder))
+						log.Body().Map().Range(func(k string, v pcommon.Value) bool {
+							v.SetStr(regexp.ReplaceAllString(v.AsString(), setting.Placeholder))
 							return true
 						})
-					case pcommon.ValueTypeString:
-						log.Body().SetStringVal(regexp.ReplaceAllString(log.Body().AsString(), setting.Placeholder))
+					case pcommon.ValueTypeStr:
+						log.Body().SetStr(regexp.ReplaceAllString(log.Body().AsString(), setting.Placeholder))
 					}
 				}
 			}

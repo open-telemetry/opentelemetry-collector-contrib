@@ -41,22 +41,22 @@ func (kv logKeyValuePairs) Less(i, j int) bool { return kv[i].Key < kv[j].Key }
 
 func fillComplexAttributeValueMap(m pcommon.Map) {
 	m.PutBool("result", true)
-	m.PutString("status", "ok")
+	m.PutStr("status", "ok")
 	m.PutDouble("value", 1.3)
 	m.PutInt("code", 200)
 	m.PutEmpty("null")
 	m.PutEmptySlice("array").AppendEmpty().SetStr("array")
-	m.PutEmptyMap("map").PutString("data", "hello world")
-	m.PutString("status", "ok")
+	m.PutEmptyMap("map").PutStr("data", "hello world")
+	m.PutStr("status", "ok")
 }
 
 func createLogData(numberOfLogs int) plog.Logs {
 	logs := plog.NewLogs()
 	logs.ResourceLogs().AppendEmpty() // Add an empty ResourceLogs
 	rl := logs.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutString("resouceKey", "resourceValue")
-	rl.Resource().Attributes().PutString(conventions.AttributeServiceName, "test-log-service-exporter")
-	rl.Resource().Attributes().PutString(conventions.AttributeHostName, "test-host")
+	rl.Resource().Attributes().PutStr("resouceKey", "resourceValue")
+	rl.Resource().Attributes().PutStr(conventions.AttributeServiceName, "test-log-service-exporter")
+	rl.Resource().Attributes().PutStr(conventions.AttributeHostName, "test-host")
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.Scope().SetName("collector")
 	sl.Scope().SetVersion("v0.1.0")
@@ -84,10 +84,10 @@ func createLogData(numberOfLogs int) plog.Logs {
 		default:
 			logRecord.Body().SetStr("log contents")
 		}
-		logRecord.Attributes().PutString(conventions.AttributeServiceName, "myapp")
-		logRecord.Attributes().PutString("my-label", "myapp-type")
-		logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
-		logRecord.Attributes().PutString("custom", "custom")
+		logRecord.Attributes().PutStr(conventions.AttributeServiceName, "myapp")
+		logRecord.Attributes().PutStr("my-label", "myapp-type")
+		logRecord.Attributes().PutStr(conventions.AttributeHostName, "myhost")
+		logRecord.Attributes().PutStr("custom", "custom")
 		logRecord.Attributes().PutEmpty("null-value")
 
 		logRecord.SetTimestamp(ts)

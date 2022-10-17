@@ -333,12 +333,12 @@ func (p *processor) updateDurationMetrics(key string, duration float64) {
 
 func buildDimensions(e *store.Edge) pcommon.Map {
 	dims := pcommon.NewMap()
-	dims.PutString("client", e.ClientService)
-	dims.PutString("server", e.ServerService)
-	dims.PutString("connection_type", string(e.ConnectionType))
+	dims.PutStr("client", e.ClientService)
+	dims.PutStr("server", e.ServerService)
+	dims.PutStr("connection_type", string(e.ConnectionType))
 	dims.PutBool("failed", e.Failed)
 	for k, v := range e.Dimensions {
-		dims.PutString(k, v)
+		dims.PutStr(k, v)
 	}
 	return dims
 }
@@ -369,7 +369,7 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 		mCount.SetName("traces_service_graph_request_total")
 		mCount.SetEmptySum().SetIsMonotonic(true)
 		// TODO: Support other aggregation temporalities
-		mCount.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		mCount.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 		dpCalls := mCount.Sum().DataPoints().AppendEmpty()
 		dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
@@ -389,7 +389,7 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 		mCount.SetName("traces_service_graph_request_failed_total")
 		mCount.SetEmptySum().SetIsMonotonic(true)
 		// TODO: Support other aggregation temporalities
-		mCount.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		mCount.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 		dpCalls := mCount.Sum().DataPoints().AppendEmpty()
 		dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
@@ -412,7 +412,7 @@ func (p *processor) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 		mDuration := ilm.Metrics().AppendEmpty()
 		mDuration.SetName("traces_service_graph_request_duration_seconds")
 		// TODO: Support other aggregation temporalities
-		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 		timestamp := pcommon.NewTimestampFromTime(time.Now())
 

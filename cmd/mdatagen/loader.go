@@ -25,6 +25,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/go-playground/validator/v10/non-standard/validators"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -180,7 +181,7 @@ func loadMetadata(filePath string) (metadata, error) {
 	}
 
 	var md metadata
-	if err := m.UnmarshalExact(&md); err != nil {
+	if err := m.Unmarshal(&md, confmap.WithErrorUnused()); err != nil {
 		return metadata{}, err
 	}
 

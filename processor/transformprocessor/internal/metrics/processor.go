@@ -20,31 +20,23 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 )
 
 type Processor struct {
-	queries []ottl.Statement[ottldatapoints.TransformContext]
-	logger  *zap.Logger
+	statements []*ottl.Statement[ottldatapoints.TransformContext]
 }
 
 func NewProcessor(statements []string, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
-	ottlp := ottl.NewParser(
-		functions,
-		ottldatapoints.ParsePath,
-		ottldatapoints.ParseEnum,
-		settings,
-	)
-	queries, err := ottlp.ParseStatements(statements)
+	ottlp := ottldatapoints.NewParser(functions, settings)
+	parsedStatements, err := ottlp.ParseStatements(statements)
 	if err != nil {
 		return nil, err
 	}
 	return &Processor{
-		queries: queries,
-		logger:  settings.Logger,
+		statements: parsedStatements,
 	}, nil
 }
 
@@ -103,9 +95,7 @@ func (p *Processor) handleSummaryDataPoints(dps pmetric.SummaryDataPointSlice, m
 }
 
 func (p *Processor) callFunctions(ctx ottldatapoints.TransformContext) {
-	for _, statement := range p.queries {
-		if statement.Condition(ctx) {
-			statement.Function(ctx)
-		}
+	for _, statement := range p.statements {
+		statement.Execute(ctx)
 	}
 }

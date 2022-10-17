@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -36,37 +35,8 @@ import (
 var zookeeperFormatRE = regexp.MustCompile(`(^zk_\w+)\s+([\w\.\-]+)`)
 
 const (
-	mntrCommand                                       = "mntr"
-	emitMetricsWithDirectionAttributeFeatureGateID    = "receiver.zookeeperreceiver.emitMetricsWithDirectionAttribute"
-	emitMetricsWithoutDirectionAttributeFeatureGateID = "receiver.zookeeperreceiver.emitMetricsWithoutDirectionAttribute"
+	mntrCommand = "mntr"
 )
-
-var (
-	emitMetricsWithDirectionAttributeFeatureGate = featuregate.Gate{
-		ID:      emitMetricsWithDirectionAttributeFeatureGateID,
-		Enabled: true,
-		Description: "Some zookeeper metrics reported are transitioning from being reported with a direction " +
-			"attribute to being reported with the direction included in the metric name to adhere to the " +
-			"OpenTelemetry specification. This feature gate controls emitting the old metrics with the direction " +
-			"attribute. For more details, see: " +
-			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/zookeeperreceiver/README.md#feature-gate-configurations",
-	}
-
-	emitMetricsWithoutDirectionAttributeFeatureGate = featuregate.Gate{
-		ID:      emitMetricsWithoutDirectionAttributeFeatureGateID,
-		Enabled: false,
-		Description: "Some zookeeper metrics reported are transitioning from being reported with a direction " +
-			"attribute to being reported with the direction included in the metric name to adhere to the " +
-			"OpenTelemetry specification. This feature gate controls emitting the new metrics without the direction " +
-			"attribute. For more details, see: " +
-			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/zookeeperreceiver/README.md#feature-gate-configurations",
-	}
-)
-
-func init() {
-	featuregate.GetRegistry().MustRegister(emitMetricsWithDirectionAttributeFeatureGate)
-	featuregate.GetRegistry().MustRegister(emitMetricsWithoutDirectionAttributeFeatureGate)
-}
 
 type zookeeperMetricsScraper struct {
 	logger *zap.Logger
@@ -78,20 +48,10 @@ type zookeeperMetricsScraper struct {
 	closeConnection       func(net.Conn) error
 	setConnectionDeadline func(net.Conn, time.Time) error
 	sendCmd               func(net.Conn, string) (*bufio.Scanner, error)
-
-	// Feature gates while transitioning to metrics without a direction attribute
-	emitMetricsWithDirectionAttribute    bool
-	emitMetricsWithoutDirectionAttribute bool
 }
 
 func (z *zookeeperMetricsScraper) Name() string {
 	return typeStr
-}
-
-func logDeprecatedFeatureGateForDirection(log *zap.Logger, gate featuregate.Gate) {
-	log.Warn("WARNING: The " + gate.ID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
-		"the direction attribute has been reverted in the specification. See https://github.com/open-telemetry/opentelemetry-specification/issues/2726 " +
-		"for additional details.")
 }
 
 func newZookeeperMetricsScraper(settings component.ReceiverCreateSettings, config *Config) (*zookeeperMetricsScraper, error) {
@@ -105,22 +65,12 @@ func newZookeeperMetricsScraper(settings component.ReceiverCreateSettings, confi
 	}
 
 	z := &zookeeperMetricsScraper{
-		logger:                               settings.Logger,
-		config:                               config,
-		mb:                                   metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
-		closeConnection:                      closeConnection,
-		setConnectionDeadline:                setConnectionDeadline,
-		sendCmd:                              sendCmd,
-		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(emitMetricsWithDirectionAttributeFeatureGateID),
-		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(emitMetricsWithoutDirectionAttributeFeatureGateID),
-	}
-
-	if !z.emitMetricsWithDirectionAttribute {
-		logDeprecatedFeatureGateForDirection(z.logger, emitMetricsWithDirectionAttributeFeatureGate)
-	}
-
-	if z.emitMetricsWithoutDirectionAttribute {
-		logDeprecatedFeatureGateForDirection(z.logger, emitMetricsWithoutDirectionAttributeFeatureGate)
+		logger:                settings.Logger,
+		config:                config,
+		mb:                    metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		closeConnection:       closeConnection,
+		setConnectionDeadline: setConnectionDeadline,
+		sendCmd:               sendCmd,
 	}
 
 	return z, nil
@@ -172,7 +122,7 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pmetric.Met
 		return pmetric.NewMetrics(), err
 	}
 
-	creator := newMetricCreator(z.mb, z.emitMetricsWithDirectionAttribute, z.emitMetricsWithoutDirectionAttribute)
+	creator := newMetricCreator(z.mb)
 	now := pcommon.NewTimestampFromTime(time.Now())
 	resourceOpts := make([]metadata.ResourceMetricsOption, 0, 2)
 	for scanner.Scan() {

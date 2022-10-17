@@ -623,7 +623,8 @@ func startServerAndMakeRequest(t *testing.T, exp component.TracesExporter, td pt
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
 	// Clone the request and store as expected.
-	expectedData := td.Clone()
+	var expectedData ptrace.Traces
+	td.CopyTo(expectedData)
 
 	// Resend the request, this should succeed.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -780,7 +781,7 @@ func generateTestEntries() plog.Logs {
 		el := sc.LogRecords().AppendEmpty()
 		duration := time.Hour * time.Duration(i)
 		el.SetTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-duration)))
-		el.Body().SetStringVal(fmt.Sprintf("This is entry # %q", i))
+		el.Body().SetStr(fmt.Sprintf("This is entry # %q", i))
 	}
 
 	return ld

@@ -19,8 +19,11 @@ These are the metrics available for this scraper.
 | **mysql.handlers** | The number of requests to various MySQL handlers. | 1 | Sum(Int) | <ul> <li>handler</li> </ul> |
 | **mysql.index.io.wait.count** | The total count of I/O wait events for an index. | 1 | Sum(Int) | <ul> <li>io_waits_operations</li> <li>table_name</li> <li>schema</li> <li>index_name</li> </ul> |
 | **mysql.index.io.wait.time** | The total time of I/O wait events for an index. | ns | Sum(Int) | <ul> <li>io_waits_operations</li> <li>table_name</li> <li>schema</li> <li>index_name</li> </ul> |
+| **mysql.locked_connects** | The number of attempts to connect to locked user accounts. | 1 | Sum(Int) | <ul> </ul> |
 | **mysql.locks** | The number of MySQL locks. | 1 | Sum(Int) | <ul> <li>locks</li> </ul> |
 | **mysql.log_operations** | The number of InnoDB log operations. | 1 | Sum(Int) | <ul> <li>log_operations</li> </ul> |
+| **mysql.mysqlx_worker_threads** | The number of worker threads available. This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html) | 1 | Sum(Int) | <ul> <li>mysqlx_threads</li> </ul> |
+| **mysql.opened_resources** | The number of opened resources. | 1 | Sum(Int) | <ul> <li>opened_resources</li> </ul> |
 | **mysql.operations** | The number of InnoDB operations. | 1 | Sum(Int) | <ul> <li>operations</li> </ul> |
 | **mysql.page_operations** | The number of InnoDB page operations. | 1 | Sum(Int) | <ul> <li>page_operations</li> </ul> |
 | **mysql.row_locks** | The number of InnoDB row locks. | 1 | Sum(Int) | <ul> <li>row_locks</li> </ul> |
@@ -29,6 +32,7 @@ These are the metrics available for this scraper.
 | **mysql.table.io.wait.count** | The total count of I/O wait events for a table. | 1 | Sum(Int) | <ul> <li>io_waits_operations</li> <li>table_name</li> <li>schema</li> </ul> |
 | **mysql.table.io.wait.time** | The total time of I/O wait events for a table. | ns | Sum(Int) | <ul> <li>io_waits_operations</li> <li>table_name</li> <li>schema</li> </ul> |
 | **mysql.threads** | The state of MySQL threads. | 1 | Sum(Int) | <ul> <li>threads</li> </ul> |
+| **mysql.tmp_resources** | The number of created temporary resources. | 1 | Sum(Int) | <ul> <li>tmp_resource</li> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:
@@ -43,7 +47,7 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| mysql.instance.endpoint | Endpoint of the MySQL instance. | String |
+| mysql.instance.endpoint | Endpoint of the MySQL instance. | Str |
 
 ## Metric attributes
 
@@ -59,6 +63,8 @@ metrics:
 | io_waits_operations (operation) | The io_waits operation type. | delete, fetch, insert, update |
 | locks (kind) | The table locks type. | immediate, waited |
 | log_operations (operation) | The log operation types. | waits, write_requests, writes |
+| mysqlx_threads (kind) | The worker thread count kind. | available, active |
+| opened_resources (kind) | The kind of the resource. | file, table_definition, table |
 | operations (operation) | The operation types. | fsyncs, reads, writes |
 | page_operations (operation) | The page operation types. | created, read, written |
 | row_locks (kind) | The row lock type. | waits, time |
@@ -67,3 +73,4 @@ metrics:
 | sorts (kind) | The sort count type. | merge_passes, range, rows, scan |
 | table_name (table) | Table name for event or process. |  |
 | threads (kind) | The thread count type. | cached, connected, created, running |
+| tmp_resource (resource) | The kind of temporary resources. | disk_tables, files, tables |

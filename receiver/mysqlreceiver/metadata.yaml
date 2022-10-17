@@ -75,6 +75,18 @@ attributes:
   index_name:
     value: index
     description: The name of the index.
+  opened_resources:
+    value: kind
+    description: The kind of the resource.
+    enum: [file, table_definition, table]
+  tmp_resource:
+    value: resource
+    description: The kind of temporary resources.
+    enum: [disk_tables, files, tables]
+  mysqlx_threads:
+    value: kind
+    description: The worker thread count kind.
+    enum: [available, active]
 
 metrics:
   mysql.buffer_pool.pages:
@@ -279,3 +291,43 @@ metrics:
       monotonic: false
       aggregation: cumulative
     attributes: [threads]
+  mysql.opened_resources:
+    enabled: true
+    description: The number of opened resources.
+    unit: 1
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+    attributes: [opened_resources]
+  mysql.locked_connects:
+    enabled: true
+    description: The number of attempts to connect to locked user accounts.
+    unit: 1
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+  mysql.tmp_resources:
+    enabled: true
+    description: The number of created temporary resources.
+    unit: 1
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+    attributes: [tmp_resource]
+  mysql.mysqlx_worker_threads:
+    enabled: true
+    description: The number of worker threads available.
+    unit: 1
+    extended_documentation: This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html)
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation: cumulative
+    attributes: [mysqlx_threads]
