@@ -18,6 +18,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
@@ -27,16 +28,17 @@ import (
 	"go.uber.org/zap"
 )
 
-type clickhouseExporter struct {
-	client        *sql.DB
-	insertLogsSQL string
+type logsExporter struct {
+	client    *sql.DB
+	insertSQL string
 
 	logger *zap.Logger
 	cfg    *Config
 }
 
-func newExporter(logger *zap.Logger, cfg *Config) (*clickhouseExporter, error) {
-	if err := cfg.Validate(); err != nil {
+func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
+
+	if err := createDatabase(cfg); err != nil {
 		return nil, err
 	}
 
@@ -45,39 +47,41 @@ func newExporter(logger *zap.Logger, cfg *Config) (*clickhouseExporter, error) {
 		return nil, err
 	}
 
-	insertLogsSQL := renderInsertLogsSQL(cfg)
+	if err = createLogsTable(cfg, client); err != nil {
+		return nil, err
+	}
 
-	return &clickhouseExporter{
-		client:        client,
-		insertLogsSQL: insertLogsSQL,
-		logger:        logger,
-		cfg:           cfg,
+	return &logsExporter{
+		client:    client,
+		insertSQL: renderInsertLogsSQL(cfg),
+		logger:    logger,
+		cfg:       cfg,
 	}, nil
 }
 
 // Shutdown will shutdown the exporter.
-func (e *clickhouseExporter) Shutdown(_ context.Context) error {
+func (e *logsExporter) Shutdown(_ context.Context) error {
 	if e.client != nil {
 		return e.client.Close()
 	}
 	return nil
 }
 
-func (e *clickhouseExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
+func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	start := time.Now()
 	err := doWithTx(ctx, e.client, func(tx *sql.Tx) error {
-		statement, err := tx.PrepareContext(ctx, e.insertLogsSQL)
+		statement, err := tx.PrepareContext(ctx, e.insertSQL)
 		if err != nil {
 			return fmt.Errorf("PrepareContext:%w", err)
 		}
 		defer func() {
 			_ = statement.Close()
 		}()
+		var serviceName string
 		for i := 0; i < ld.ResourceLogs().Len(); i++ {
 			logs := ld.ResourceLogs().At(i)
 			res := logs.Resource()
 			resAttr := attributesToMap(res.Attributes())
-			var serviceName string
 			if v, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
 				serviceName = v.Str()
 			}
@@ -177,22 +181,44 @@ var driverName = "clickhouse" // for testing
 
 // newClickhouseClient create a clickhouse client.
 func newClickhouseClient(cfg *Config) (*sql.DB, error) {
-	// use empty database to create database
-	db, err := sql.Open(driverName, cfg.DSN)
+	return sql.Open(driverName, cfg.DSN)
+}
+
+func createDatabase(cfg *Config) error {
+	database, _ := parseDSNDatabase(cfg.DSN)
+	if database == defaultDatabase {
+		return nil
+	}
+	// use default database to create new database
+	dsnUseDefaultDatabase := strings.Replace(cfg.DSN, database, defaultDatabase, 1)
+	db, err := sql.Open(driverName, dsnUseDefaultDatabase)
 	if err != nil {
-		return nil, fmt.Errorf("sql.Open:%w", err)
+		return fmt.Errorf("sql.Open:%w", err)
 	}
-	// create table
-	query := fmt.Sprintf(createLogsTableSQL, cfg.LogsTableName, "")
+	defer func() {
+		_ = db.Close()
+	}()
+	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", database)
+	_, err = db.Exec(query)
+	if err != nil {
+		return fmt.Errorf("create database:%w", err)
+	}
+	return nil
+}
+
+func createLogsTable(cfg *Config, db *sql.DB) error {
+	if _, err := db.Exec(renderCreateLogsTableSQL(cfg)); err != nil {
+		return fmt.Errorf("exec create logs table sql: %w", err)
+	}
+	return nil
+}
+
+func renderCreateLogsTableSQL(cfg *Config) string {
+	var ttlExpr string
 	if cfg.TTLDays > 0 {
-		query = fmt.Sprintf(createLogsTableSQL,
-			cfg.LogsTableName,
-			fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTLDays))
+		ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTLDays)
 	}
-	if _, err := db.Exec(query); err != nil {
-		return nil, fmt.Errorf("exec create table sql: %w", err)
-	}
-	return db, nil
+	return fmt.Sprintf(createLogsTableSQL, cfg.LogsTableName, ttlExpr)
 }
 
 func renderInsertLogsSQL(cfg *Config) string {

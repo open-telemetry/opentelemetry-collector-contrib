@@ -22,6 +22,7 @@ These are the metrics available for this scraper.
 | **mysql.locked_connects** | The number of attempts to connect to locked user accounts. | 1 | Sum(Int) | <ul> </ul> |
 | **mysql.locks** | The number of MySQL locks. | 1 | Sum(Int) | <ul> <li>locks</li> </ul> |
 | **mysql.log_operations** | The number of InnoDB log operations. | 1 | Sum(Int) | <ul> <li>log_operations</li> </ul> |
+| **mysql.mysqlx_worker_threads** | The number of worker threads available. This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html) | 1 | Sum(Int) | <ul> <li>mysqlx_threads</li> </ul> |
 | **mysql.opened_resources** | The number of opened resources. | 1 | Sum(Int) | <ul> <li>opened_resources</li> </ul> |
 | **mysql.operations** | The number of InnoDB operations. | 1 | Sum(Int) | <ul> <li>operations</li> </ul> |
 | **mysql.page_operations** | The number of InnoDB page operations. | 1 | Sum(Int) | <ul> <li>page_operations</li> </ul> |
@@ -62,6 +63,7 @@ metrics:
 | io_waits_operations (operation) | The io_waits operation type. | delete, fetch, insert, update |
 | locks (kind) | The table locks type. | immediate, waited |
 | log_operations (operation) | The log operation types. | waits, write_requests, writes |
+| mysqlx_threads (kind) | The worker thread count kind. | available, active |
 | opened_resources (kind) | The kind of the resource. | file, table_definition, table |
 | operations (operation) | The operation types. | fsyncs, reads, writes |
 | page_operations (operation) | The page operation types. | created, read, written |

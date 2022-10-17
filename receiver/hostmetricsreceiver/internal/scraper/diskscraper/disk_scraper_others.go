@@ -25,13 +25,11 @@ import (
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/host"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper/internal/metadata"
 )
 
@@ -50,17 +48,13 @@ type scraper struct {
 	excludeFS filterset.FilterSet
 
 	// for mocking
-	bootTime                             func() (uint64, error)
-	ioCounters                           func(names ...string) (map[string]disk.IOCountersStat, error)
-	emitMetricsWithDirectionAttribute    bool
-	emitMetricsWithoutDirectionAttribute bool
+	bootTime   func() (uint64, error)
+	ioCounters func(names ...string) (map[string]disk.IOCountersStat, error)
 }
 
 // newDiskScraper creates a Disk Scraper
 func newDiskScraper(_ context.Context, settings component.ReceiverCreateSettings, cfg *Config) (*scraper, error) {
 	scraper := &scraper{settings: settings, config: cfg, bootTime: host.BootTime, ioCounters: disk.IOCounters}
-	scraper.emitMetricsWithDirectionAttribute = featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithDirectionAttributeFeatureGateID)
-	scraper.emitMetricsWithoutDirectionAttribute = featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithoutDirectionAttributeFeatureGateID)
 
 	var err error
 
@@ -116,27 +110,15 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 func (s *scraper) recordDiskIOMetric(now pcommon.Timestamp, ioCounters map[string]disk.IOCountersStat) {
 	for device, ioCounter := range ioCounters {
-		if s.emitMetricsWithDirectionAttribute {
-			s.mb.RecordSystemDiskIoDataPoint(now, int64(ioCounter.ReadBytes), device, metadata.AttributeDirectionRead)
-			s.mb.RecordSystemDiskIoDataPoint(now, int64(ioCounter.WriteBytes), device, metadata.AttributeDirectionWrite)
-		}
-		if s.emitMetricsWithoutDirectionAttribute {
-			s.mb.RecordSystemDiskIoReadDataPoint(now, int64(ioCounter.ReadBytes), device)
-			s.mb.RecordSystemDiskIoWriteDataPoint(now, int64(ioCounter.WriteBytes), device)
-		}
+		s.mb.RecordSystemDiskIoDataPoint(now, int64(ioCounter.ReadBytes), device, metadata.AttributeDirectionRead)
+		s.mb.RecordSystemDiskIoDataPoint(now, int64(ioCounter.WriteBytes), device, metadata.AttributeDirectionWrite)
 	}
 }
 
 func (s *scraper) recordDiskOperationsMetric(now pcommon.Timestamp, ioCounters map[string]disk.IOCountersStat) {
 	for device, ioCounter := range ioCounters {
-		if s.emitMetricsWithDirectionAttribute {
-			s.mb.RecordSystemDiskOperationsDataPoint(now, int64(ioCounter.ReadCount), device, metadata.AttributeDirectionRead)
-			s.mb.RecordSystemDiskOperationsDataPoint(now, int64(ioCounter.WriteCount), device, metadata.AttributeDirectionWrite)
-		}
-		if s.emitMetricsWithoutDirectionAttribute {
-			s.mb.RecordSystemDiskOperationsReadDataPoint(now, int64(ioCounter.ReadCount), device)
-			s.mb.RecordSystemDiskOperationsWriteDataPoint(now, int64(ioCounter.WriteCount), device)
-		}
+		s.mb.RecordSystemDiskOperationsDataPoint(now, int64(ioCounter.ReadCount), device, metadata.AttributeDirectionRead)
+		s.mb.RecordSystemDiskOperationsDataPoint(now, int64(ioCounter.WriteCount), device, metadata.AttributeDirectionWrite)
 	}
 }
 
@@ -148,14 +130,8 @@ func (s *scraper) recordDiskIOTimeMetric(now pcommon.Timestamp, ioCounters map[s
 
 func (s *scraper) recordDiskOperationTimeMetric(now pcommon.Timestamp, ioCounters map[string]disk.IOCountersStat) {
 	for device, ioCounter := range ioCounters {
-		if s.emitMetricsWithDirectionAttribute {
-			s.mb.RecordSystemDiskOperationTimeDataPoint(now, float64(ioCounter.ReadTime)/1e3, device, metadata.AttributeDirectionRead)
-			s.mb.RecordSystemDiskOperationTimeDataPoint(now, float64(ioCounter.WriteTime)/1e3, device, metadata.AttributeDirectionWrite)
-		}
-		if s.emitMetricsWithoutDirectionAttribute {
-			s.mb.RecordSystemDiskOperationTimeReadDataPoint(now, float64(ioCounter.ReadTime)/1e3, device)
-			s.mb.RecordSystemDiskOperationTimeWriteDataPoint(now, float64(ioCounter.WriteTime)/1e3, device)
-		}
+		s.mb.RecordSystemDiskOperationTimeDataPoint(now, float64(ioCounter.ReadTime)/1e3, device, metadata.AttributeDirectionRead)
+		s.mb.RecordSystemDiskOperationTimeDataPoint(now, float64(ioCounter.WriteTime)/1e3, device, metadata.AttributeDirectionWrite)
 	}
 }
 
