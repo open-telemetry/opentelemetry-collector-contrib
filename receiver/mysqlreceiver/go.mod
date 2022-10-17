@@ -12,7 +12,7 @@ require (
 
 require (
 	github.com/testcontainers/testcontainers-go v0.14.0
-	go.opentelemetry.io/collector/pdata v0.62.0
+	go.opentelemetry.io/collector/pdata v0.62.1
 )
 
 require (
