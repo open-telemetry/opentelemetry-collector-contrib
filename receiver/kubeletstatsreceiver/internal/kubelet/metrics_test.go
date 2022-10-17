@@ -141,15 +141,15 @@ func TestMajorPageFaults(t *testing.T) {
 	require.Equal(t, int64(12), value)
 }
 
-func TestEmitMetricsWithDirectionAttribute(t *testing.T) {
+func TestEmitMetrics(t *testing.T) {
 	metrics := indexedFakeMetrics()
-	metricNamesWithDirectionAttr := []string{
+	metricNames := []string{
 		"k8s.node.network.io",
 		"k8s.node.network.errors",
 		"k8s.pod.network.io",
 		"k8s.pod.network.errors",
 	}
-	for _, name := range metricNamesWithDirectionAttr {
+	for _, name := range metricNames {
 		requireContains(t, metrics, name)
 		metric := metrics[name][0]
 		for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
