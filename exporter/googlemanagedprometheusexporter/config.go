@@ -38,6 +38,8 @@ type Config struct {
 type GMPConfig struct {
 	ProjectID    string                 `mapstructure:"project"`
 	UserAgent    string                 `mapstructure:"user_agent"`
+        // MetricPrefix configures the prefix of metrics sent to GoogleManagedPrometheus.  Defaults to prometheus.googleapis.com.
+        // Changing this prefix is not recommended, as it may cause metrics to not be queryable with promql in the Cloud Monitoring UI.
 	MetricPrefix string                 `mapstructure:"metric_prefix"`
 	ClientConfig collector.ClientConfig `mapstructure:",squash"`
 }
