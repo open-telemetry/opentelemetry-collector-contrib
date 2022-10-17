@@ -25,7 +25,7 @@ import (
 
 const (
 	typeStr   = "influxdb"
-	stability = component.StabilityLevelUnmaintained
+	stability = component.StabilityLevelBeta
 )
 
 func NewFactory() component.ReceiverFactory {
