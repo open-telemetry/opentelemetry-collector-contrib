@@ -55,8 +55,8 @@ receivers:
     include:
       ## Logs will be collected from the below file path. Please ensure it is correct or edit as needed.
       - /var/log/**/*example*/*.log
-     ## It is essential to extract trace_id and span_id from the logs in order to ensure that logs / traces correlation works.
-     ## For JSON logs, json_parser will parse the body into attributes, while trace_parser will extract the trace_id and span_id.
+     # # It is essential to extract the trace_id and span_id from the logs in order to ensure that logs / traces correlation works.
+     # # For JSON logs, json_parser will parse the body into attributes, while trace_parser will extract the trace_id and span_id.
      # operators:
      #  - id : parse_body
      #    type: json_parser
@@ -290,7 +290,7 @@ service:
 
     # Pipelines starting with `logs` or `logs/` define a logs pipeline.
     logs:
-      # This pipeline has an OTLP receiver , filelog receiver , a batch processor and a Datadog exporter.
+      # This pipeline has an OTLP receiver, filelog receiver, a batch processor and a Datadog exporter.
       receivers: [otlp, filelog]
       processors: [batch]
       exporters: [datadog]
