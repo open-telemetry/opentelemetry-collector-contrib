@@ -23,16 +23,16 @@ import (
 
 type getNetworkDataFunc func(s *stats.NetworkStats) (rx *uint64, tx *uint64)
 
-func addNetworkMetricsWithDirection(mb *metadata.MetricsBuilder, networkMetrics metadata.NetworkMetricsWithDirection, s *stats.NetworkStats, currentTime pcommon.Timestamp) {
+func addNetworkMetrics(mb *metadata.MetricsBuilder, networkMetrics metadata.NetworkMetrics, s *stats.NetworkStats, currentTime pcommon.Timestamp) {
 	if s == nil {
 		return
 	}
 
-	recordNetworkDataPointWithDirection(mb, networkMetrics.IO, s, getNetworkIO, currentTime)
-	recordNetworkDataPointWithDirection(mb, networkMetrics.Errors, s, getNetworkErrors, currentTime)
+	recordNetworkDataPoint(mb, networkMetrics.IO, s, getNetworkIO, currentTime)
+	recordNetworkDataPoint(mb, networkMetrics.Errors, s, getNetworkErrors, currentTime)
 }
 
-func recordNetworkDataPointWithDirection(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordIntDataPointWithDirectionFunc, s *stats.NetworkStats, getData getNetworkDataFunc, currentTime pcommon.Timestamp) {
+func recordNetworkDataPoint(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordIntDataPointWithDirectionFunc, s *stats.NetworkStats, getData getNetworkDataFunc, currentTime pcommon.Timestamp) {
 	rx, tx := getData(s)
 
 	if rx != nil {

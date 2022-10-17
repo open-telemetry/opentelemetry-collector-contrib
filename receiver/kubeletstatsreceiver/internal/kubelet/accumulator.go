@@ -61,7 +61,7 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	addCPUMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeCPUMetrics, s.CPU, currentTime)
 	addMemoryMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeMemoryMetrics, s.Memory, currentTime)
 	addFilesystemMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeFilesystemMetrics, s.Fs, currentTime)
-	addNetworkMetricsWithDirection(a.mbs.NodeMetricsBuilder, metadata.NodeNetworkMetricsWithDirection, s.Network, currentTime)
+	addNetworkMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeNetworkMetrics, s.Network, currentTime)
 	// todo s.Runtime.ImageFs
 
 	a.m = append(a.m, a.mbs.NodeMetricsBuilder.Emit(
@@ -79,7 +79,7 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 	addCPUMetrics(a.mbs.PodMetricsBuilder, metadata.PodCPUMetrics, s.CPU, currentTime)
 	addMemoryMetrics(a.mbs.PodMetricsBuilder, metadata.PodMemoryMetrics, s.Memory, currentTime)
 	addFilesystemMetrics(a.mbs.PodMetricsBuilder, metadata.PodFilesystemMetrics, s.EphemeralStorage, currentTime)
-	addNetworkMetricsWithDirection(a.mbs.PodMetricsBuilder, metadata.PodNetworkMetricsWithDirection, s.Network, currentTime)
+	addNetworkMetrics(a.mbs.PodMetricsBuilder, metadata.PodNetworkMetrics, s.Network, currentTime)
 
 	a.m = append(a.m, a.mbs.PodMetricsBuilder.Emit(
 		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
