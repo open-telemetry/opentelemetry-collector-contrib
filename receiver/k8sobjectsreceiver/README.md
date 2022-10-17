@@ -128,6 +128,12 @@ rules:
   - get
   - list
   - watch
+- apiGroups: 
+  - "events.k8s.io"
+  resources:
+  - events
+  verbs:
+  - watch
 EOF
 ```
 
