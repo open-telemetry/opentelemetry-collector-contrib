@@ -40,16 +40,17 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, len(cfg.Exporters), 2)
 
 	defaultCfg := factory.CreateDefaultConfig()
-	defaultCfg.(*Config).DSN = "tcp://127.0.0.1:9000?database=default"
+	defaultCfg.(*Config).DSN = defaultDSN
 	r0 := cfg.Exporters[config.NewComponentID(typeStr)]
 	assert.Equal(t, r0, defaultCfg)
 
 	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "full")].(*Config)
 	assert.Equal(t, r1, &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "full")),
-		DSN:              "tcp://127.0.0.1:9000?database=default",
+		DSN:              defaultDSN,
 		TTLDays:          3,
 		LogsTableName:    "otel_logs",
+		TracesTableName:  "otel_traces",
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: 5 * time.Second,
 		},
@@ -72,3 +73,7 @@ func withDefaultConfig(fns ...func(*Config)) *Config {
 	}
 	return cfg
 }
+
+const (
+	defaultDSN = "tcp://127.0.0.1:9000/otel"
+)
