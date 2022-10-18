@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxra
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.114
+	github.com/aws/aws-sdk-go v1.44.117
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.62.0
 	github.com/stretchr/testify v1.8.0
@@ -16,7 +16,7 @@ require (
 require (
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/fsnotify/fsnotify v1.5.4 // indirect
+	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect

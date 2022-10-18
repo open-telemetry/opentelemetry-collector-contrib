@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/mongodb-forks/digest v1.0.4
-	go.mongodb.org/atlas v0.17.0
+	go.mongodb.org/atlas v0.18.0
 	go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c
 	go.uber.org/zap v1.23.0
 )
@@ -14,7 +14,7 @@ require (
 	github.com/antonmedv/expr v1.9.0 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/fsnotify/fsnotify v1.5.4 // indirect
+	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect

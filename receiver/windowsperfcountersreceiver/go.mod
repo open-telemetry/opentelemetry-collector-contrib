@@ -41,7 +41,7 @@ require (
 )
 
 require (
-	github.com/fsnotify/fsnotify v1.5.4 // indirect
+	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.62.0
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
