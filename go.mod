@@ -1075,6 +1075,7 @@ replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ./internal/filter
 
+// loki needs grafana fork to be used
 replace github.com/hpcloud/tail => github.com/grafana/tail v0.0.0-20220426200921-98e8eb28ea4c
 
 // using fork for support LogpullReceived and LogpullFields for loki - see https://github.com/cloudflare/cloudflare-go/pull/743

@@ -233,6 +233,7 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
+// loki needs grafana fork to be used
 replace github.com/hpcloud/tail => github.com/grafana/tail v0.0.0-20220426200921-98e8eb28ea4c
 
 // some dependencies attempt to bring something like v1.8.2-0.20220303173753-edfe657b5405, which is older than v0.38.0

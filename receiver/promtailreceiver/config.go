@@ -62,7 +62,7 @@ type Config struct {
 	// Promtail input config is declared as nested key to allow custom unmarshalling
 	// confmap doesn't call custom unmarshal for the top structure
 	// see the implementation of unmarshalerHookFunc in https://github.com/open-telemetry/opentelemetry-collector:
-	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/confmap/confmap.go#L274
+	// https://github.com/open-telemetry/opentelemetry-collector/blob/c157b128e9ff32ed06e2913e2afa83c9abbed9ba/confmap/confmap.go#L269
 	Input PromtailInputConfig `mapstructure:"config,omitempty" yaml:"config,omitempty"`
 }
 
