@@ -263,6 +263,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, config.UnmarshalReceiver(loaded, cfg))
 			require.Equal(t, cfg, tc.expectedConfig)
+			require.NoError(t, cfg.Validate())
 		})
 	}
 }
