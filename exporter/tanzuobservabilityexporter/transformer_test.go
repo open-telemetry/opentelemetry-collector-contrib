@@ -151,7 +151,7 @@ func TestSpanEventsAreTranslatedToSpanLogs(t *testing.T) {
 	event := span.Events().AppendEmpty()
 	event.SetName("eventName")
 	event.SetTimestamp(pcommon.NewTimestampFromTime(now))
-	event.Attributes().PutString("attrKey", "attrVal")
+	event.Attributes().PutStr("attrKey", "attrVal")
 
 	result, err := transform.Span(span)
 	require.NoError(t, err, "transforming span to wavefront format")
@@ -239,8 +239,8 @@ func TestSpanForSourceTag(t *testing.T) {
 
 	//TestCase2: source value from resAttrs.source
 	resAttrs = pcommon.NewMap()
-	resAttrs.PutString(labelSource, "test_source")
-	resAttrs.PutString(conventions.AttributeHostName, "test_host.name")
+	resAttrs.PutStr(labelSource, "test_source")
+	resAttrs.PutStr(conventions.AttributeHostName, "test_host.name")
 	transform = transformerFromAttributes(resAttrs)
 	span = ptrace.NewSpan()
 	span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
@@ -258,8 +258,8 @@ func TestSpanForSourceTag(t *testing.T) {
 
 	//TestCase2: source value from resAttrs.host.name when source is not present
 	resAttrs = pcommon.NewMap()
-	resAttrs.PutString("hostname", "test_hostname")
-	resAttrs.PutString(conventions.AttributeHostName, "test_host.name")
+	resAttrs.PutStr("hostname", "test_hostname")
+	resAttrs.PutStr(conventions.AttributeHostName, "test_host.name")
 	transform = transformerFromAttributes(resAttrs)
 	span = ptrace.NewSpan()
 	span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
@@ -277,9 +277,9 @@ func TestSpanForSourceTag(t *testing.T) {
 
 	//TestCase4: source value from resAttrs.source when spanAttrs.source is present
 	resAttrs = pcommon.NewMap()
-	span.Attributes().PutString(labelSource, "source_from_span_attribute")
-	resAttrs.PutString(labelSource, "test_source")
-	resAttrs.PutString(conventions.AttributeHostName, "test_host.name")
+	span.Attributes().PutStr(labelSource, "source_from_span_attribute")
+	resAttrs.PutStr(labelSource, "test_source")
+	resAttrs.PutStr(conventions.AttributeHostName, "test_host.name")
 	transform = transformerFromAttributes(resAttrs)
 	actual, err = transform.Span(span)
 	require.NoError(t, err, "transforming span to wavefront format")
@@ -323,8 +323,8 @@ func TestSpanForDroppedCount(t *testing.T) {
 
 func TestGetSourceAndResourceTags(t *testing.T) {
 	resAttrs := pcommon.NewMap()
-	resAttrs.PutString(labelSource, "test_source")
-	resAttrs.PutString(conventions.AttributeHostName, "test_host.name")
+	resAttrs.PutStr(labelSource, "test_source")
+	resAttrs.PutStr(conventions.AttributeHostName, "test_host.name")
 
 	actualSource, actualAttrsWithoutSource := getSourceAndResourceTags(resAttrs)
 	assert.Equal(t, "test_source", actualSource)
@@ -336,8 +336,8 @@ func TestGetSourceAndResourceTags(t *testing.T) {
 
 func TestGetSourceAndKey(t *testing.T) {
 	resAttrs := pcommon.NewMap()
-	resAttrs.PutString(labelSource, "some_source")
-	resAttrs.PutString(conventions.AttributeHostName, "test_host.name")
+	resAttrs.PutStr(labelSource, "some_source")
+	resAttrs.PutStr(conventions.AttributeHostName, "test_host.name")
 
 	source, sourceKey := getSourceAndKey(resAttrs)
 	assert.Equal(t, "some_source", source)
@@ -346,8 +346,8 @@ func TestGetSourceAndKey(t *testing.T) {
 
 func TestGetSourceAndKeyNotFound(t *testing.T) {
 	resAttrs := pcommon.NewMap()
-	resAttrs.PutString("foo", "some_source")
-	resAttrs.PutString("bar", "test_host.name")
+	resAttrs.PutStr("foo", "some_source")
+	resAttrs.PutStr("bar", "test_host.name")
 
 	source, sourceKey := getSourceAndKey(resAttrs)
 	assert.Equal(t, "", source)
@@ -401,41 +401,26 @@ func spanWithStatus(statusCode ptrace.StatusCode, message string) ptrace.Span {
 	return span
 }
 
-func TestAttributesToTagsForMetrics(t *testing.T) {
-	// 1. Empty sourceKey: does not change resulting wfTags
-	attrMap := newMap(map[string]string{"k": "v"})
-	wfTags := attributesToTagsForMetrics("", attrMap)
-	assert.Equal(t, map[string]string{"k": "v"}, wfTags)
-
-	// 2. sourceKey is "source": delete from resulting wfTags. This scenario should only occur when
-	//    the Resource Attrs contained an Attr named "source", which is the determinant of sourceKey.
-	attrMap = newMap(map[string]string{"k": "v", "source": "a_source"})
-	wfTags = attributesToTagsForMetrics("source", attrMap)
-	assert.Equal(t, map[string]string{"k": "v"}, wfTags)
-	assert.Equal(t, 1, len(wfTags))
-
-	// 3. sourceKey is not "source", but a "source" tag exists in Attrs
-	//    This scenario should only occur if Resource Attrs did not include a "source" attr, but
-	//    the Attrs at the metric-level happened to include an attr named "source". In this edge-
-	//    case scenario, rename the resulting wfTag to "_source" so the data isn't lost.
-	attrMap = newMap(map[string]string{"k": "v", "source": "a_val"})
-	wfTags = attributesToTagsForMetrics("", attrMap)
-	assert.Equal(t, map[string]string{"k": "v", "_source": "a_val"}, wfTags)
-}
-
 func TestAppAttributesToTags(t *testing.T) {
 	// 1. other attributes provided
 	attrMap := newMap(map[string]string{"k": "v"})
 	tags := appAttributesToTags(attrMap)
 	assert.Equal(t, map[string]string{}, tags)
 
-	// 2. service.name converted to service
+	// 2. service.name provided
 	attrMap = newMap(map[string]string{"k": "v", "application": "test_app", "service.name": "test_service.name", "shard": "test_shard", "cluster": "test_cluster"})
 	tags1 := appAttributesToTags(attrMap)
-	assert.Equal(t, map[string]string{"application": "test_app", "service": "test_service.name", "shard": "test_shard", "cluster": "test_cluster"}, tags1)
+	assert.Equal(t, map[string]string{"application": "test_app", "service.name": "test_service.name", "shard": "test_shard", "cluster": "test_cluster"}, tags1)
 
-	// 3. service get picked up when both the tags are provided
+	// 3. service and service.name both provided
 	attrMap = newMap(map[string]string{"k": "v", "application": "test_app", "service.name": "test_service.name", "shard": "test_shard", "cluster": "test_cluster", "service": "test_service"})
 	tags2 := appAttributesToTags(attrMap)
-	assert.Equal(t, map[string]string{"application": "test_app", "service": "test_service", "shard": "test_shard", "cluster": "test_cluster"}, tags2)
+	assert.Equal(t, map[string]string{"application": "test_app", "service": "test_service", "shard": "test_shard", "cluster": "test_cluster", "service.name": "test_service.name"}, tags2)
+}
+
+func TestFixServiceTag(t *testing.T) {
+	// service get picked up when both the tags are provided
+	attrMap := map[string]string{"application": "test_app", "shard": "test_shard", "cluster": "test_cluster", "service.name": "test_service"}
+	fixServiceTag(attrMap)
+	assert.Equal(t, map[string]string{"application": "test_app", "service": "test_service", "shard": "test_shard", "cluster": "test_cluster"}, attrMap)
 }

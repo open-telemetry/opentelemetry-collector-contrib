@@ -121,6 +121,7 @@ func (c *metricsConsumer) Consume(ctx context.Context, md pmetric.Metrics) error
 				} else if !c.config.AppTagsExcluded {
 					resAttrsMap = appAttributesToTags(resAttrs)
 				}
+				fixServiceTag(resAttrsMap)
 				mi := metricInfo{Metric: m, Source: source, SourceKey: sourceKey, ResourceAttrs: resAttrsMap}
 				select {
 				case <-ctx.Done():
@@ -236,7 +237,7 @@ func pushGaugeNumberDataPoint(
 	settings component.TelemetrySettings,
 	missingValues *atomic.Int64,
 ) {
-	tags := attributesToTagsForMetrics(mi.SourceKey, numberDataPoint.Attributes(), newMap(mi.ResourceAttrs))
+	tags := pointAndResAttrsToTagsAndFixSource(mi.SourceKey, numberDataPoint.Attributes(), newMap(mi.ResourceAttrs))
 	ts := numberDataPoint.Timestamp().AsTime().Unix()
 	value, err := getValue(numberDataPoint)
 	if err != nil {
@@ -336,7 +337,7 @@ func (s *sumConsumer) PushInternalMetrics(errs *[]error) {
 }
 
 func (s *sumConsumer) pushNumberDataPoint(mi metricInfo, numberDataPoint pmetric.NumberDataPoint, errs *[]error) {
-	tags := attributesToTagsForMetrics(mi.SourceKey, numberDataPoint.Attributes(), newMap(mi.ResourceAttrs))
+	tags := pointAndResAttrsToTagsAndFixSource(mi.SourceKey, numberDataPoint.Attributes(), newMap(mi.ResourceAttrs))
 	value, err := getValue(numberDataPoint)
 	if err != nil {
 		logMissingValue(mi.Metric, s.settings, s.missingValues)
@@ -484,7 +485,7 @@ func (c *cumulativeHistogramDataPointConsumer) Consume(
 		return
 	}
 	name := mi.Name()
-	tags := attributesToTagsForMetrics(mi.SourceKey, point.Attributes, newMap(mi.ResourceAttrs))
+	tags := pointAndResAttrsToTagsAndFixSource(mi.SourceKey, point.Attributes, newMap(mi.ResourceAttrs))
 	if leTag, ok := tags["le"]; ok {
 		tags["_le"] = leTag
 	}
@@ -520,7 +521,7 @@ func (d *deltaHistogramDataPointConsumer) Consume(
 		return
 	}
 	name := mi.Name()
-	tags := attributesToTagsForMetrics(mi.SourceKey, point.Attributes, newMap(mi.ResourceAttrs))
+	tags := pointAndResAttrsToTagsAndFixSource(mi.SourceKey, point.Attributes, newMap(mi.ResourceAttrs))
 	err := d.sender.SendDistribution(
 		name, point.AsDelta(), allGranularity, point.SecondsSinceEpoch, mi.Source, tags)
 	if err != nil {
@@ -563,7 +564,7 @@ func (s *summaryConsumer) sendSummaryDataPoint(
 ) {
 	name := mi.Name()
 	ts := summaryDataPoint.Timestamp().AsTime().Unix()
-	tags := attributesToTagsForMetrics(mi.SourceKey, summaryDataPoint.Attributes(), newMap(mi.ResourceAttrs))
+	tags := pointAndResAttrsToTagsAndFixSource(mi.SourceKey, summaryDataPoint.Attributes(), newMap(mi.ResourceAttrs))
 	count := summaryDataPoint.Count()
 	sum := summaryDataPoint.Sum()
 

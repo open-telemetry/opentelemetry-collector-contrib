@@ -44,6 +44,7 @@ func TestEndToEndGaugeConsumer(t *testing.T) {
 		map[string]interface{}{"source": "renamed", "host.name": "my_source", "env": "prod"},
 		dataPoints,
 	)
+	// test if service.name gets converted to service
 	resourceAttributes := map[string]string{"host.name": "my_source", "res_attr_key": "res_attr_value", "application": "test_app", "service.name": "test_service", "shard": "test_shard", "cluster": "test_cluster"}
 	metrics := constructMetricsWithTags(resourceAttributes, gauge)
 	sender := &mockGaugeSender{}
@@ -96,7 +97,8 @@ func TestEndToEndGaugeConsumerWithResAttrsIncluded(t *testing.T) {
 		map[string]interface{}{"source": "renamed", "host.name": "my_source", "env": "prod"},
 		dataPoints,
 	)
-	resourceAttributes := map[string]string{"host.name": "my_source", "res_attr_key": "res_attr_value"}
+	// test if service.name gets converted to service
+	resourceAttributes := map[string]string{"host.name": "my_source", "res_attr_key": "res_attr_value", "service.name": "test_service"}
 	metrics := constructMetricsWithTags(resourceAttributes, gauge)
 	sender := &mockGaugeSender{}
 	gaugeConsumer := newGaugeConsumer(sender, componenttest.NewNopTelemetrySettings())
@@ -113,7 +115,7 @@ func TestEndToEndGaugeConsumerWithResAttrsIncluded(t *testing.T) {
 			Name:   "gauge",
 			Ts:     1640123456,
 			Value:  432.25,
-			Tags:   map[string]string{"_source": "renamed", "env": "prod", "res_attr_key": "res_attr_value"},
+			Tags:   map[string]string{"_source": "renamed", "env": "prod", "res_attr_key": "res_attr_value", "service": "test_service"},
 			Source: "my_source",
 		},
 	)
@@ -148,7 +150,8 @@ func TestEndToEndGaugeConsumerWithAppResAttrsExcluded(t *testing.T) {
 		map[string]interface{}{"source": "renamed", "host.name": "my_source", "env": "prod"},
 		dataPoints,
 	)
-	resourceAttributes := map[string]string{"host.name": "my_source", "res_attr_key": "res_attr_value", "application": "test_app", "service.name": "test_service", "shard": "test_shard", "cluster": "test_cluster"}
+	// test if service.name gets converted to service
+	resourceAttributes := map[string]string{"host.name": "my_source", "res_attr_key": "res_attr_value", "application": "test_app", "service": "test_service", "service.name": "test_service.name", "shard": "test_shard", "cluster": "test_cluster"}
 	metrics := constructMetricsWithTags(resourceAttributes, gauge)
 	sender := &mockGaugeSender{}
 	gaugeConsumer := newGaugeConsumer(sender, componenttest.NewNopTelemetrySettings())

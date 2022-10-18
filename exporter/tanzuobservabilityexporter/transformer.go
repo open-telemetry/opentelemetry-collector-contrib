@@ -44,7 +44,7 @@ var (
 	errInvalidTraceID = errors.New("TraceID is invalid")
 )
 
-var appResAttrsKeys = []string{labelApplication, labelService, labelShard, labelCluster}
+var appResAttrsKeys = []string{labelApplication, conventions.AttributeServiceName, labelService, labelShard, labelCluster}
 
 type span struct {
 	Name           string
@@ -74,6 +74,7 @@ func (t *traceTransformer) Span(orig ptrace.Span) (span, error) {
 	source, attributesWithoutSource := getSourceAndResourceTags(t.resAttrs)
 	tags := attributesToTagsReplaceSource(
 		newMap(attributesWithoutSource), orig.Attributes())
+	fixServiceTag(tags)
 	t.setRequiredTags(tags)
 
 	tags[labelSpanKind] = spanKind(orig)
@@ -201,6 +202,21 @@ func calculateTimes(span ptrace.Span) (int64, int64) {
 	return startMillis, durationMillis
 }
 
+func fixServiceTag(tags map[string]string) {
+	// tag `service` will take preference over `service.name` if both are provided
+	if _, ok := tags[labelService]; !ok {
+		if svcName, svcNameOk := tags[conventions.AttributeServiceName]; svcNameOk {
+			tags[labelService] = svcName
+			delete(tags, conventions.AttributeServiceName)
+		}
+	}
+}
+
+func fixSourceKey(sourceKey string, tags map[string]string) {
+	delete(tags, sourceKey)
+	replaceSource(tags)
+}
+
 func attributesToTags(attributes ...pcommon.Map) map[string]string {
 	tags := map[string]string{}
 	for _, att := range attributes {
@@ -209,26 +225,18 @@ func attributesToTags(attributes ...pcommon.Map) map[string]string {
 			return true
 		})
 	}
-
-	// Resource attr `service` will take preference over `service.name`
-	if _, ok := tags[labelService]; !ok {
-		if svcName, svcNameOk := tags[conventions.AttributeServiceName]; svcNameOk {
-			tags[labelService] = svcName
-			delete(tags, conventions.AttributeServiceName)
-		}
-	}
 	return tags
 }
 
 func appAttributesToTags(attributes pcommon.Map) map[string]string {
-	tags := attributesToTags(attributes)
-	appTags := map[string]string{}
+	tags := map[string]string{}
 	for _, resAttrsKey := range appResAttrsKeys {
-		if resAttrVal, ok := tags[resAttrsKey]; ok {
-			appTags[resAttrsKey] = resAttrVal
+		if resAttrVal, ok := attributes.Get(resAttrsKey); ok {
+			tags[resAttrsKey] = resAttrVal.AsString()
 		}
 	}
-	return appTags
+
+	return tags
 }
 
 func replaceSource(tags map[string]string) {
@@ -244,17 +252,17 @@ func attributesToTagsReplaceSource(attributes ...pcommon.Map) map[string]string 
 	return tags
 }
 
-func attributesToTagsForMetrics(sourceKey string, attributes ...pcommon.Map) map[string]string {
+func pointAndResAttrsToTagsAndFixSource(sourceKey string, attributes ...pcommon.Map) map[string]string {
 	tags := attributesToTags(attributes...)
-	delete(tags, sourceKey)
-	replaceSource(tags)
+	fixServiceTag(tags)
+	fixSourceKey(sourceKey, tags)
 	return tags
 }
 
 func newMap(tags map[string]string) pcommon.Map {
 	m := pcommon.NewMap()
 	for key, value := range tags {
-		m.PutString(key, value)
+		m.PutStr(key, value)
 	}
 	return m
 }
