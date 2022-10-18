@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package k8sapiserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8sapiserver"
 
 import (
@@ -70,7 +69,7 @@ type K8sClient interface {
 
 // K8sAPIServer is a struct that produces metrics from kubernetes api server
 type K8sAPIServer struct {
-	nodeName            string //get the value from downward API
+	nodeName            string // get the value from downward API
 	logger              *zap.Logger
 	clusterNameProvider clusterNameProvider
 	cancel              context.CancelFunc
@@ -78,7 +77,7 @@ type K8sAPIServer struct {
 	mu      sync.Mutex
 	leading bool
 
-	k8sClient  K8sClient //*k8sclient.K8sClient
+	k8sClient  K8sClient // *k8sclient.K8sClient
 	epClient   k8sclient.EpClient
 	nodeClient k8sclient.NodeClient
 	podClient  k8sclient.PodClient
@@ -309,7 +308,7 @@ func (k *K8sAPIServer) startLeaderElection(ctx context.Context, lock resourceloc
 					k.mu.Lock()
 					defer k.mu.Unlock()
 					k.leading = false
-					//node and pod are only used for cluster level metrics, endpoint is used for decorator too.
+					// node and pod are only used for cluster level metrics, endpoint is used for decorator too.
 					k.k8sClient.ShutdownNodeClient()
 					k.k8sClient.ShutdownPodClient()
 				},
@@ -320,7 +319,7 @@ func (k *K8sAPIServer) startLeaderElection(ctx context.Context, lock resourceloc
 		})
 
 		select {
-		case <-ctx.Done(): //when leader election ends, the channel ctx.Done() will be closed
+		case <-ctx.Done(): // when leader election ends, the channel ctx.Done() will be closed
 			k.logger.Info(fmt.Sprintf("k8sapiserver shutdown Leader Election: %s", k.nodeName))
 			return
 		default:

@@ -25,15 +25,15 @@ import (
 func exampleLog() (plog.LogRecord, pcommon.Resource) {
 
 	buffer := plog.NewLogRecord()
-	buffer.Body().SetStringVal("Example log")
+	buffer.Body().SetStr("Example log")
 	buffer.SetSeverityText("error")
-	buffer.Attributes().PutString("attr1", "1")
-	buffer.Attributes().PutString("attr2", "2")
+	buffer.Attributes().PutStr("attr1", "1")
+	buffer.Attributes().PutStr("attr2", "2")
 	buffer.SetTraceID([16]byte{1, 2, 3, 4})
 	buffer.SetSpanID([8]byte{5, 6, 7, 8})
 
 	resource := pcommon.NewResource()
-	resource.Attributes().PutString("host.name", "something")
+	resource.Attributes().PutStr("host.name", "something")
 
 	return buffer, resource
 }
@@ -51,8 +51,8 @@ func TestConvertWithMapBody(t *testing.T) {
 
 	log, resource := exampleLog()
 	mapVal := pcommon.NewValueMap()
-	mapVal.MapVal().PutString("key1", "value")
-	mapVal.MapVal().PutString("key2", "value")
+	mapVal.Map().PutStr("key1", "value")
+	mapVal.Map().PutStr("key2", "value")
 	mapVal.CopyTo(log.Body())
 
 	out, err := Encode(log, resource)
@@ -63,24 +63,24 @@ func TestConvertWithMapBody(t *testing.T) {
 func TestSerializeBody(t *testing.T) {
 
 	arrayval := pcommon.NewValueSlice()
-	arrayval.SliceVal().AppendEmpty().SetStringVal("a")
-	arrayval.SliceVal().AppendEmpty().SetStringVal("b")
+	arrayval.Slice().AppendEmpty().SetStr("a")
+	arrayval.Slice().AppendEmpty().SetStr("b")
 
 	simplemap := pcommon.NewValueMap()
-	simplemap.MapVal().PutString("key", "val")
+	simplemap.Map().PutStr("key", "val")
 
 	complexmap := pcommon.NewValueMap()
-	complexmap.MapVal().PutString("keystr", "val")
-	complexmap.MapVal().PutInt("keyint", 1)
-	complexmap.MapVal().PutDouble("keyint", 1)
-	complexmap.MapVal().PutBool("keybool", true)
-	complexmap.MapVal().PutEmpty("keynull")
-	arrayval.CopyTo(complexmap.MapVal().PutEmpty("keyarr"))
-	simplemap.CopyTo(complexmap.MapVal().PutEmpty("keymap"))
-	complexmap.MapVal().PutEmpty("keyempty")
+	complexmap.Map().PutStr("keystr", "val")
+	complexmap.Map().PutInt("keyint", 1)
+	complexmap.Map().PutDouble("keyint", 1)
+	complexmap.Map().PutBool("keybool", true)
+	complexmap.Map().PutEmpty("keynull")
+	arrayval.CopyTo(complexmap.Map().PutEmpty("keyarr"))
+	simplemap.CopyTo(complexmap.Map().PutEmpty("keymap"))
+	complexmap.Map().PutEmpty("keyempty")
 
 	bytes := pcommon.NewValueBytes()
-	bytes.BytesVal().FromRaw([]byte(`abc`))
+	bytes.Bytes().FromRaw([]byte(`abc`))
 
 	testcases := []struct {
 		input    pcommon.Value
@@ -91,7 +91,7 @@ func TestSerializeBody(t *testing.T) {
 			nil,
 		},
 		{
-			pcommon.NewValueString("a"),
+			pcommon.NewValueStr("a"),
 			[]byte(`"a"`),
 		},
 		{

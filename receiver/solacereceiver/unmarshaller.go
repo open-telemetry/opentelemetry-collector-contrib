@@ -37,25 +37,29 @@ type tracesUnmarshaller interface {
 }
 
 // newUnmarshalleer returns a new unmarshaller ready for message unmarshalling
-func newTracesUnmarshaller(logger *zap.Logger) tracesUnmarshaller {
+func newTracesUnmarshaller(logger *zap.Logger, metrics *opencensusMetrics) tracesUnmarshaller {
 	return &solaceTracesUnmarshaller{
-		logger: logger,
+		logger:  logger,
+		metrics: metrics,
 		// v1 unmarshaller is implemented by solaceMessageUnmarshallerV1
 		v1: &solaceMessageUnmarshallerV1{
-			logger: logger,
+			logger:  logger,
+			metrics: metrics,
 		},
 	}
 }
 
 // solaceTracesUnmarshaller implements tracesUnmarshaller.
 type solaceTracesUnmarshaller struct {
-	logger *zap.Logger
-	v1     tracesUnmarshaller
+	logger  *zap.Logger
+	metrics *opencensusMetrics
+	v1      tracesUnmarshaller
 }
 
 var (
 	errUnknownTraceMessgeVersion = errors.New("unsupported trace message version")
 	errUnknownTraceMessgeType    = errors.New("bad trace message")
+	errEmptyPayload              = errors.New("no binary attachment")
 )
 
 // unmarshal will unmarshal an *solaceMessage into ptrace.Traces.
@@ -85,7 +89,8 @@ func (u *solaceTracesUnmarshaller) unmarshal(message *inboundMessage) (ptrace.Tr
 }
 
 type solaceMessageUnmarshallerV1 struct {
-	logger *zap.Logger
+	logger  *zap.Logger
+	metrics *opencensusMetrics
 }
 
 // unmarshal implements tracesUnmarshaller.unmarshal
@@ -102,8 +107,12 @@ func (u *solaceMessageUnmarshallerV1) unmarshal(message *inboundMessage) (ptrace
 // unmarshalToSpanData will consume an solaceMessage and unmarshal it into a SpanData.
 // Returns an error if one occurred.
 func (u *solaceMessageUnmarshallerV1) unmarshalToSpanData(message *inboundMessage) (*model_v1.SpanData, error) {
+	var data = message.GetData()
+	if len(data) == 0 {
+		return nil, errEmptyPayload
+	}
 	var spanData model_v1.SpanData
-	if err := proto.Unmarshal(message.GetData(), &spanData); err != nil {
+	if err := proto.Unmarshal(data, &spanData); err != nil {
 		return nil, err
 	}
 	return &spanData, nil
@@ -133,13 +142,11 @@ func (u *solaceMessageUnmarshallerV1) mapResourceSpanAttributes(spanData *model_
 		messageVpnNameAttrKey = "service.instance.id"
 		solosVersionAttrKey   = "service.version"
 	)
-	if spanData.RouterName != nil {
-		attrMap.PutString(routerNameAttrKey, *spanData.RouterName)
-	}
+	attrMap.PutStr(routerNameAttrKey, spanData.RouterName)
 	if spanData.MessageVpnName != nil {
-		attrMap.PutString(messageVpnNameAttrKey, *spanData.MessageVpnName)
+		attrMap.PutStr(messageVpnNameAttrKey, *spanData.MessageVpnName)
 	}
-	attrMap.PutString(solosVersionAttrKey, spanData.SolosVersion)
+	attrMap.PutStr(solosVersionAttrKey, spanData.SolosVersion)
 }
 
 func (u *solaceMessageUnmarshallerV1) mapClientSpanData(spanData *model_v1.SpanData, clientSpan ptrace.Span) {
@@ -175,7 +182,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanData(spanData *model_v1.SpanD
 	}
 	// trace state
 	if spanData.TraceState != nil {
-		clientSpan.TraceStateStruct().FromRaw(*spanData.TraceState)
+		clientSpan.TraceState().FromRaw(*spanData.TraceState)
 	}
 }
 
@@ -189,8 +196,8 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 		operationAttrKey   = "messaging.operation"
 		operationAttrValue = "receive"
 	)
-	attrMap.PutString(systemAttrKey, systemAttrValue)
-	attrMap.PutString(operationAttrKey, operationAttrValue)
+	attrMap.PutStr(systemAttrKey, systemAttrValue)
+	attrMap.PutStr(operationAttrKey, operationAttrValue)
 	// attributes from spanData
 	const (
 		protocolAttrKey                    = "messaging.protocol"
@@ -209,31 +216,47 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 		droppedEnqueueEventsFailedAttrKey  = "messaging.solace.dropped_enqueue_events_failed"
 		replyToAttrKey                     = "messaging.solace.reply_to_topic"
 		receiveTimeAttrKey                 = "messaging.solace.broker_receive_time_unix_nano"
-		droppedUserPropertiesAttrKey       = "messaging.solace.dropped_user_properties"
+		droppedUserPropertiesAttrKey       = "messaging.solace.dropped_application_message_properties"
+		deliveryModeAttrKey                = "messaging.solace.delivery_mode"
 		hostIPAttrKey                      = "net.host.ip"
 		hostPortAttrKey                    = "net.host.port"
 		peerIPAttrKey                      = "net.peer.ip"
 		peerPortAttrKey                    = "net.peer.port"
 	)
-	attrMap.PutString(protocolAttrKey, spanData.Protocol)
+	attrMap.PutStr(protocolAttrKey, spanData.Protocol)
 	if spanData.ProtocolVersion != nil {
-		attrMap.PutString(protocolVersionAttrKey, *spanData.ProtocolVersion)
+		attrMap.PutStr(protocolVersionAttrKey, *spanData.ProtocolVersion)
 	}
 	if spanData.ApplicationMessageId != nil {
-		attrMap.PutString(messageIDAttrKey, *spanData.ApplicationMessageId)
+		attrMap.PutStr(messageIDAttrKey, *spanData.ApplicationMessageId)
 	}
 	if spanData.CorrelationId != nil {
-		attrMap.PutString(conversationIDAttrKey, *spanData.CorrelationId)
+		attrMap.PutStr(conversationIDAttrKey, *spanData.CorrelationId)
 	}
 	attrMap.PutInt(payloadSizeBytesAttrKey, int64(spanData.BinaryAttachmentSize+spanData.XmlAttachmentSize+spanData.MetadataSize))
-	attrMap.PutString(clientUsernameAttrKey, spanData.ClientUsername)
-	attrMap.PutString(clientNameAttrKey, spanData.ClientName)
+	attrMap.PutStr(clientUsernameAttrKey, spanData.ClientUsername)
+	attrMap.PutStr(clientNameAttrKey, spanData.ClientName)
 	attrMap.PutInt(receiveTimeAttrKey, spanData.BrokerReceiveTimeUnixNano)
-	attrMap.PutString(destinationAttrKey, spanData.Topic)
+	attrMap.PutStr(destinationAttrKey, spanData.Topic)
+
+	var deliveryMode string
+	switch spanData.DeliveryMode {
+	case model_v1.SpanData_DIRECT:
+		deliveryMode = "direct"
+	case model_v1.SpanData_NON_PERSISTENT:
+		deliveryMode = "non_persistent"
+	case model_v1.SpanData_PERSISTENT:
+		deliveryMode = "persistent"
+	default:
+		deliveryMode = fmt.Sprintf("Unknown Delivery Mode (%s)", spanData.DeliveryMode.String())
+		u.logger.Warn(fmt.Sprintf("Received span with unknown delivery mode %s", spanData.DeliveryMode))
+		u.metrics.recordRecoverableUnmarshallingError()
+	}
+	attrMap.PutString(deliveryModeAttrKey, deliveryMode)
 
 	rgmid := u.rgmidToString(spanData.ReplicationGroupMessageId)
 	if len(rgmid) > 0 {
-		attrMap.PutString(replicationGroupMessageIDAttrKey, rgmid)
+		attrMap.PutStr(replicationGroupMessageIDAttrKey, rgmid)
 	}
 
 	if spanData.Priority != nil {
@@ -243,7 +266,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 		attrMap.PutInt(ttlAttrKey, *spanData.Ttl)
 	}
 	if spanData.ReplyToTopic != nil {
-		attrMap.PutString(replyToAttrKey, *spanData.ReplyToTopic)
+		attrMap.PutStr(replyToAttrKey, *spanData.ReplyToTopic)
 	}
 	attrMap.PutBool(dmqEligibleAttrKey, spanData.DmqEligible)
 	attrMap.PutInt(droppedEnqueueEventsSuccessAttrKey, int64(spanData.DroppedEnqueueEventsSuccess))
@@ -251,23 +274,23 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 
 	hostIPLen := len(spanData.HostIp)
 	if hostIPLen == 4 || hostIPLen == 16 {
-		attrMap.PutString(hostIPAttrKey, net.IP(spanData.HostIp).String())
+		attrMap.PutStr(hostIPAttrKey, net.IP(spanData.HostIp).String())
 	} else {
 		u.logger.Warn("Host ip attribute has an illegal length", zap.Int("length", hostIPLen))
-		recordRecoverableUnmarshallingError()
+		u.metrics.recordRecoverableUnmarshallingError()
 	}
 	attrMap.PutInt(hostPortAttrKey, int64(spanData.HostPort))
 
 	peerIPLen := len(spanData.HostIp)
 	if peerIPLen == 4 || peerIPLen == 16 {
-		attrMap.PutString(peerIPAttrKey, net.IP(spanData.PeerIp).String())
+		attrMap.PutStr(peerIPAttrKey, net.IP(spanData.PeerIp).String())
 	} else {
 		u.logger.Warn("Peer ip attribute has an illegal length", zap.Int("length", peerIPLen))
-		recordRecoverableUnmarshallingError()
+		u.metrics.recordRecoverableUnmarshallingError()
 	}
 	attrMap.PutInt(peerPortAttrKey, int64(spanData.PeerPort))
 
-	attrMap.PutBool(droppedUserPropertiesAttrKey, spanData.DroppedUserProperties)
+	attrMap.PutBool(droppedUserPropertiesAttrKey, spanData.DroppedApplicationMessageProperties)
 	for key, value := range spanData.UserProperties {
 		if value != nil {
 			u.insertUserProperty(attrMap, key, value.Value)
@@ -292,14 +315,11 @@ func (u *solaceMessageUnmarshallerV1) mapEvents(spanData *model_v1.SpanData, cli
 func (u *solaceMessageUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v1.SpanData_EnqueueEvent, clientSpanEvents ptrace.SpanEventSlice) {
 	const (
 		enqueueEventSuffix               = " enqueue" // Final should be `<dest> enqueue`
-		messagingDestinationEventKey     = "messaging.destination"
 		messagingDestinationTypeEventKey = "messaging.solace.destination_type"
 		statusMessageEventKey            = "messaging.solace.enqueue_error_message"
 		rejectsAllEnqueuesKey            = "messaging.solace.rejects_all_enqueues"
 		queueKind                        = "queue"
 		topicEndpointKind                = "topic-endpoint"
-		anonymousQueuePrefix             = "#P2P"
-		anonymousQueueEventName          = "(anonymous)" + enqueueEventSuffix
 	)
 	var destinationName string
 	var destinationType string
@@ -312,24 +332,17 @@ func (u *solaceMessageUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v1.Spa
 		destinationType = queueKind
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown destination type %T", casted))
-		recordRecoverableUnmarshallingError()
+		u.metrics.recordRecoverableUnmarshallingError()
 		return
 	}
 	clientEvent := clientSpanEvents.AppendEmpty()
-	var eventName string
-	if strings.HasPrefix(destinationName, anonymousQueuePrefix) {
-		eventName = anonymousQueueEventName
-	} else {
-		eventName = destinationName + enqueueEventSuffix
-	}
-	clientEvent.SetName(eventName)
+	clientEvent.SetName(destinationName + enqueueEventSuffix)
 	clientEvent.SetTimestamp(pcommon.Timestamp(enqueueEvent.TimeUnixNano))
 	clientEvent.Attributes().EnsureCapacity(3)
-	clientEvent.Attributes().PutString(messagingDestinationEventKey, destinationName)
-	clientEvent.Attributes().PutString(messagingDestinationTypeEventKey, destinationType)
+	clientEvent.Attributes().PutStr(messagingDestinationTypeEventKey, destinationType)
 	clientEvent.Attributes().PutBool(rejectsAllEnqueuesKey, enqueueEvent.RejectsAllEnqueues)
 	if enqueueEvent.ErrorDescription != nil {
-		clientEvent.Attributes().PutString(statusMessageEventKey, enqueueEvent.GetErrorDescription())
+		clientEvent.Attributes().PutStr(statusMessageEventKey, enqueueEvent.GetErrorDescription())
 	}
 }
 
@@ -354,10 +367,15 @@ func (u *solaceMessageUnmarshallerV1) mapTransactionEvent(transactionEvent *mode
 		name = "end"
 	case model_v1.SpanData_TransactionEvent_PREPARE:
 		name = "prepare"
+	case model_v1.SpanData_TransactionEvent_SESSION_TIMEOUT:
+		name = "session_timeout"
+	case model_v1.SpanData_TransactionEvent_ROLLBACK_ONLY:
+		name = "rollback_only"
 	default:
-		u.logger.Warn(fmt.Sprintf("Unknown transaction type %d", transactionEvent.GetType()))
-		recordRecoverableUnmarshallingError()
-		return // exit when we don't have a valid type since we should not add a span without a name
+		// Set the name to the unknown transaction event type to ensure forward compat.
+		name = fmt.Sprintf("Unknown Transaction Event (%s)", transactionEvent.GetType().String())
+		u.logger.Warn(fmt.Sprintf("Received span with unknown transaction event %s", transactionEvent.GetType()))
+		u.metrics.recordRecoverableUnmarshallingError()
 	}
 	clientEvent := clientSpanEvents.AppendEmpty()
 	clientEvent.SetName(name)
@@ -369,32 +387,33 @@ func (u *solaceMessageUnmarshallerV1) mapTransactionEvent(transactionEvent *mode
 		initiator = "client"
 	case model_v1.SpanData_TransactionEvent_ADMIN:
 		initiator = "administrator"
-	case model_v1.SpanData_TransactionEvent_SESSION_TIMEOUT:
-		initiator = "session timeout"
+	case model_v1.SpanData_TransactionEvent_BROKER:
+		initiator = "broker"
 	default:
-		u.logger.Warn(fmt.Sprintf("Unknown transaction initiator %d", transactionEvent.GetInitiator()))
-		recordRecoverableUnmarshallingError()
+		initiator = fmt.Sprintf("Unknown Transaction Initiator (%s)", transactionEvent.GetInitiator().String())
+		u.logger.Warn(fmt.Sprintf("Received span with unknown transaction initiator %s", transactionEvent.GetInitiator()))
+		u.metrics.recordRecoverableUnmarshallingError()
 	}
-	clientEvent.Attributes().PutString(transactionInitiatorEventKey, initiator)
+	clientEvent.Attributes().PutStr(transactionInitiatorEventKey, initiator)
 	// conditionally set the error description if one occurred, otherwise omit
 	if transactionEvent.ErrorDescription != nil {
-		clientEvent.Attributes().PutString(transactionErrorMessageEventKey, transactionEvent.GetErrorDescription())
+		clientEvent.Attributes().PutStr(transactionErrorMessageEventKey, transactionEvent.GetErrorDescription())
 	}
 	// map the transaction type/id
 	transactionID := transactionEvent.GetTransactionId()
 	switch casted := transactionID.(type) {
 	case *model_v1.SpanData_TransactionEvent_LocalId:
 		clientEvent.Attributes().PutInt(transactionIDEventKey, int64(casted.LocalId.TransactionId))
-		clientEvent.Attributes().PutString(transactedSessionNameEventKey, casted.LocalId.SessionName)
+		clientEvent.Attributes().PutStr(transactedSessionNameEventKey, casted.LocalId.SessionName)
 		clientEvent.Attributes().PutInt(transactedSessionIDEventKey, int64(casted.LocalId.SessionId))
 	case *model_v1.SpanData_TransactionEvent_Xid_:
 		// format xxxxxxxx-yyyyyyyy-zzzzzzzz where x is FormatID (hex rep of int32), y is BranchQualifier and z is GlobalID, hex encoded.
 		xidString := fmt.Sprintf("%08x", casted.Xid.FormatId) + "-" +
 			hex.EncodeToString(casted.Xid.BranchQualifier) + "-" + hex.EncodeToString(casted.Xid.GlobalId)
-		clientEvent.Attributes().PutString(transactionXIDEventKey, xidString)
+		clientEvent.Attributes().PutStr(transactionXIDEventKey, xidString)
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown transaction ID type %T", transactionID))
-		recordRecoverableUnmarshallingError()
+		u.metrics.recordRecoverableUnmarshallingError()
 	}
 }
 
@@ -404,7 +423,7 @@ func (u *solaceMessageUnmarshallerV1) rgmidToString(rgmid []byte) string {
 		// may be cases where the rgmid is empty or nil, len(rgmid) will return 0 if nil
 		if len(rgmid) > 0 {
 			u.logger.Warn("Received invalid length or version for rgmid", zap.Int8("version", int8(rgmid[0])), zap.Int("length", len(rgmid)))
-			recordRecoverableUnmarshallingError()
+			u.metrics.recordRecoverableUnmarshallingError()
 		}
 		return hex.EncodeToString(rgmid)
 	}
@@ -451,11 +470,13 @@ func (u *solaceMessageUnmarshallerV1) insertUserProperty(toMap pcommon.Map, key 
 	case *model_v1.SpanData_UserPropertyValue_Uint64Value:
 		toMap.PutInt(k, int64(v.Uint64Value))
 	case *model_v1.SpanData_UserPropertyValue_StringValue:
-		toMap.PutString(k, v.StringValue)
+		toMap.PutStr(k, v.StringValue)
 	case *model_v1.SpanData_UserPropertyValue_DestinationValue:
-		toMap.PutString(k, v.DestinationValue)
+		toMap.PutStr(k, v.DestinationValue)
+	case *model_v1.SpanData_UserPropertyValue_CharacterValue:
+		toMap.PutStr(k, string(rune(v.CharacterValue)))
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown user property type: %T", v))
-		recordRecoverableUnmarshallingError()
+		u.metrics.recordRecoverableUnmarshallingError()
 	}
 }

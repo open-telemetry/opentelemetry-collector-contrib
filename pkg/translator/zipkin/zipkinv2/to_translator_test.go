@@ -122,7 +122,7 @@ func generateTraceSingleSpanMinmalResource() ptrace.Traces {
 	td := generateTraceSingleSpanNoResourceOrInstrLibrary()
 	rs := td.ResourceSpans().At(0)
 	rsc := rs.Resource()
-	rsc.Attributes().PutString(conventions.AttributeServiceName, "SoleAttr")
+	rsc.Attributes().PutStr(conventions.AttributeServiceName, "SoleAttr")
 	return td
 }
 
@@ -178,5 +178,5 @@ func TestV2SpanWithoutTimestampGetsTag(t *testing.T) {
 
 	wasAbsent, mapContainedKey := gs.Attributes().Get(zipkin.StartTimeAbsent)
 	assert.True(t, mapContainedKey)
-	assert.True(t, wasAbsent.BoolVal())
+	assert.True(t, wasAbsent.Bool())
 }

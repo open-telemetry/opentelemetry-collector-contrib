@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,31 +19,23 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottltraces"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
 )
 
 type Processor struct {
-	queries []ottl.Query
-	logger  *zap.Logger
+	statements []*ottl.Statement[ottltraces.TransformContext]
 }
 
 func NewProcessor(statements []string, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
-	ottlp := ottl.NewParser(
-		functions,
-		ottltraces.ParsePath,
-		ottltraces.ParseEnum,
-		settings,
-	)
-	queries, err := ottlp.ParseQueries(statements)
+	ottlp := ottltraces.NewParser(functions, settings)
+	parsedStatements, err := ottlp.ParseStatements(statements)
 	if err != nil {
 		return nil, err
 	}
 	return &Processor{
-		queries: queries,
-		logger:  settings.Logger,
+		statements: parsedStatements,
 	}, nil
 }
 
@@ -55,10 +47,8 @@ func (p *Processor) ProcessTraces(_ context.Context, td ptrace.Traces) (ptrace.T
 			spans := sspan.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				ctx := ottltraces.NewTransformContext(spans.At(k), sspan.Scope(), rspans.Resource())
-				for _, statement := range p.queries {
-					if statement.Condition(ctx) {
-						statement.Function(ctx)
-					}
+				for _, statement := range p.statements {
+					statement.Execute(ctx)
 				}
 			}
 		}

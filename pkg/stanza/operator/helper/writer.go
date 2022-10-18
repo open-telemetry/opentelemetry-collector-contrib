@@ -16,7 +16,6 @@ package helper // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -34,8 +33,8 @@ func NewWriterConfig(operatorID, operatorType string) WriterConfig {
 
 // WriterConfig is the configuration of a writer operator.
 type WriterConfig struct {
-	BasicConfig `mapstructure:",squash" yaml:",inline"`
-	OutputIDs   OutputIDs `mapstructure:"output" json:"output" yaml:"output"`
+	BasicConfig `mapstructure:",squash"`
+	OutputIDs   []string `mapstructure:"output"`
 }
 
 // Build will build a writer operator from the config.
@@ -54,7 +53,7 @@ func (c WriterConfig) Build(logger *zap.SugaredLogger) (WriterOperator, error) {
 // WriterOperator is an operator that can write to other operators.
 type WriterOperator struct {
 	BasicOperator
-	OutputIDs       OutputIDs
+	OutputIDs       []string
 	OutputOperators []operator.Operator
 }
 
@@ -118,67 +117,4 @@ func (w *WriterOperator) findOperator(operators []operator.Operator, operatorID 
 		}
 	}
 	return nil, false
-}
-
-// OutputIDs is a collection of operator IDs used as outputs.
-type OutputIDs []string
-
-// UnmarshalJSON will unmarshal a string or array of strings to OutputIDs.
-func (o *OutputIDs) UnmarshalJSON(bytes []byte) error {
-	var value interface{}
-	err := json.Unmarshal(bytes, &value)
-	if err != nil {
-		return err
-	}
-
-	ids, err := NewOutputIDsFromInterface(value)
-	if err != nil {
-		return err
-	}
-
-	*o = ids
-	return nil
-}
-
-// UnmarshalYAML will unmarshal a string or array of strings to OutputIDs.
-func (o *OutputIDs) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var value interface{}
-	err := unmarshal(&value)
-	if err != nil {
-		return err
-	}
-
-	ids, err := NewOutputIDsFromInterface(value)
-	if err != nil {
-		return err
-	}
-
-	*o = ids
-	return nil
-}
-
-// NewOutputIDsFromInterface creates a new OutputIDs object from an interface
-func NewOutputIDsFromInterface(value interface{}) (OutputIDs, error) {
-	if str, ok := value.(string); ok {
-		return OutputIDs{str}, nil
-	}
-
-	if array, ok := value.([]interface{}); ok {
-		return NewOutputIDsFromArray(array)
-	}
-
-	return nil, fmt.Errorf("value is not of type string or string array")
-}
-
-// NewOutputIDsFromArray creates a new OutputIDs object from an array
-func NewOutputIDsFromArray(array []interface{}) (OutputIDs, error) {
-	ids := OutputIDs{}
-	for _, rawValue := range array {
-		strValue, ok := rawValue.(string)
-		if !ok {
-			return nil, fmt.Errorf("value in array is not of type string")
-		}
-		ids = append(ids, strValue)
-	}
-	return ids, nil
 }

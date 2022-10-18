@@ -25,7 +25,8 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottltraces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
 
 var _ component.TracesProcessor = (*tracesProcessor)(nil)
@@ -35,7 +36,7 @@ type tracesProcessor struct {
 	config *Config
 
 	extractor extractor
-	router    router[component.TracesExporter]
+	router    router[component.TracesExporter, ottltraces.TransformContext]
 }
 
 func newTracesProcessor(settings component.TelemetrySettings, config config.Processor) *tracesProcessor {
@@ -44,10 +45,11 @@ func newTracesProcessor(settings component.TelemetrySettings, config config.Proc
 	return &tracesProcessor{
 		logger: settings.Logger,
 		config: cfg,
-		router: newRouter[component.TracesExporter](
+		router: newRouter[component.TracesExporter, ottltraces.TransformContext](
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
+			ottltraces.NewParser(common.Functions[ottltraces.TransformContext](), settings),
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
@@ -79,7 +81,7 @@ func (p *tracesProcessor) ConsumeTraces(ctx context.Context, t ptrace.Traces) er
 
 type spanGroup struct {
 	exporters []component.TracesExporter
-	resSpans  ptrace.ResourceSpansSlice
+	traces    ptrace.Traces
 }
 
 func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
@@ -99,11 +101,10 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 
 		matchCount := len(p.router.routes)
 		for key, route := range p.router.routes {
-			if !route.expression.Condition(stx) {
+			if _, isMatch := route.statement.Execute(stx); !isMatch {
 				matchCount--
 				continue
 			}
-			route.expression.Function(stx)
 			p.group(key, groups, route.exporters, rspans)
 		}
 
@@ -114,12 +115,8 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 	}
 
 	for _, g := range groups {
-		t := ptrace.NewTraces()
-		t.ResourceSpans().EnsureCapacity(g.resSpans.Len())
-		g.resSpans.MoveAndAppendTo(t.ResourceSpans())
-
 		for _, e := range g.exporters {
-			errs = multierr.Append(errs, e.ConsumeTraces(ctx, t))
+			errs = multierr.Append(errs, e.ConsumeTraces(ctx, g.traces))
 		}
 	}
 	return errs
@@ -128,10 +125,10 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 func (p *tracesProcessor) group(key string, groups map[string]spanGroup, exporters []component.TracesExporter, spans ptrace.ResourceSpans) {
 	group, ok := groups[key]
 	if !ok {
-		group.resSpans = ptrace.NewResourceSpansSlice()
+		group.traces = ptrace.NewTraces()
 		group.exporters = exporters
 	}
-	spans.CopyTo(group.resSpans.AppendEmpty())
+	spans.CopyTo(group.traces.ResourceSpans().AppendEmpty())
 	groups[key] = group
 }
 

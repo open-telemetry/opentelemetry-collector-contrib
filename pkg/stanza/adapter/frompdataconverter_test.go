@@ -49,12 +49,12 @@ func BenchmarkConvertFromPdataComplex(b *testing.B) {
 
 func fillBaseMap(m pcommon.Map) {
 	arr := m.PutEmptySlice("slice")
-	arr.AppendEmpty().SetStringVal("666")
-	arr.AppendEmpty().SetStringVal("777")
+	arr.AppendEmpty().SetStr("666")
+	arr.AppendEmpty().SetStr("777")
 	m.PutBool("bool", true)
 	m.PutInt("int", 123)
 	m.PutDouble("double", 12.34)
-	m.PutString("string", "hello")
+	m.PutStr("string", "hello")
 	m.PutEmptyBytes("bytes").FromRaw([]byte{0xa1, 0xf0, 0x02, 0xff})
 }
 
@@ -68,7 +68,7 @@ func complexPdataForNDifferentHosts(count int, n int) plog.Logs {
 		resource := rls.Resource()
 		fillBaseMap(resource.Attributes())
 		fillBaseMap(resource.Attributes().PutEmptyMap("object"))
-		resource.Attributes().PutString("host", fmt.Sprintf("host-%d", i%n))
+		resource.Attributes().PutStr("host", fmt.Sprintf("host-%d", i%n))
 
 		scopeLog := rls.ScopeLogs().AppendEmpty()
 		scopeLog.Scope().SetName("myScope")
@@ -89,8 +89,8 @@ func complexPdataForNDifferentHosts(count int, n int) plog.Logs {
 		lr.Attributes().Remove("double")
 		lr.Attributes().Remove("host")
 
-		fillBaseMap(lr.Body().SetEmptyMapVal())
-		level1 := lr.Body().MapVal().PutEmptyMap("object")
+		fillBaseMap(lr.Body().SetEmptyMap())
+		level1 := lr.Body().Map().PutEmptyMap("object")
 		fillBaseMap(level1)
 		level2 := level1.PutEmptyMap("object")
 		fillBaseMap(level2)
@@ -116,15 +116,15 @@ func TestRoundTrip(t *testing.T) {
 func sortComplexData(pLogs plog.Logs) {
 	pLogs.ResourceLogs().At(0).Resource().Attributes().Sort()
 	attrObject, _ := pLogs.ResourceLogs().At(0).Resource().Attributes().Get("object")
-	attrObject.MapVal().Sort()
-	pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().MapVal().Sort()
-	level1, _ := pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().MapVal().Get("object")
-	level1.MapVal().Sort()
-	level2, _ := level1.MapVal().Get("object")
-	level2.MapVal().Sort()
+	attrObject.Map().Sort()
+	pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map().Sort()
+	level1, _ := pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map().Get("object")
+	level1.Map().Sort()
+	level2, _ := level1.Map().Get("object")
+	level2.Map().Sort()
 	pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Sort()
 	attrObject, _ = pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("object")
-	attrObject.MapVal().Sort()
+	attrObject.Map().Sort()
 }
 
 func TestConvertFrom(t *testing.T) {
@@ -212,7 +212,7 @@ func TestConvertFromSeverity(t *testing.T) {
 		expectedSeverity entry.Severity
 		severityNumber   plog.SeverityNumber
 	}{
-		{entry.Default, plog.SeverityNumberUndefined},
+		{entry.Default, plog.SeverityNumberUnspecified},
 		{entry.Trace, plog.SeverityNumberTrace},
 		{entry.Trace2, plog.SeverityNumberTrace2},
 		{entry.Trace3, plog.SeverityNumberTrace3},

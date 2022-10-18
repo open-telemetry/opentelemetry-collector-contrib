@@ -155,15 +155,15 @@ func verifyMetrics(t *testing.T, md pmetric.Metrics) error {
 }
 
 func verifyCount(t *testing.T, m pmetric.Metric) {
-	assert.Equal(t, "request_total", m.Name())
+	assert.Equal(t, "traces_service_graph_request_total", m.Name())
 
-	assert.Equal(t, pmetric.MetricDataTypeSum, m.DataType())
+	assert.Equal(t, pmetric.MetricTypeSum, m.Type())
 	dps := m.Sum().DataPoints()
 	assert.Equal(t, 1, dps.Len())
 
 	dp := dps.At(0)
 	assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-	assert.Equal(t, int64(1), dp.IntVal())
+	assert.Equal(t, int64(1), dp.IntValue())
 
 	attributes := dp.Attributes()
 	assert.Equal(t, 4, attributes.Len())
@@ -174,9 +174,9 @@ func verifyCount(t *testing.T, m pmetric.Metric) {
 }
 
 func verifyDuration(t *testing.T, m pmetric.Metric) {
-	assert.Equal(t, "request_duration_seconds", m.Name())
+	assert.Equal(t, "traces_service_graph_request_duration_seconds", m.Name())
 
-	assert.Equal(t, pmetric.MetricDataTypeHistogram, m.DataType())
+	assert.Equal(t, pmetric.MetricTypeHistogram, m.Type())
 	dps := m.Histogram().DataPoints()
 	assert.Equal(t, 1, dps.Len())
 
@@ -206,7 +206,7 @@ func sampleTraces() ptrace.Traces {
 	traces := ptrace.NewTraces()
 
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
-	resourceSpans.Resource().Attributes().PutString(semconv.AttributeServiceName, "some-service")
+	resourceSpans.Resource().Attributes().PutStr(semconv.AttributeServiceName, "some-service")
 
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 
@@ -220,7 +220,7 @@ func sampleTraces() ptrace.Traces {
 	clientSpan.SetKind(ptrace.SpanKindClient)
 	clientSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
 	clientSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
-	clientSpan.Attributes().PutString("some-attribute", "val") // Attribute selected as dimension for metrics
+	clientSpan.Attributes().PutStr("some-attribute", "val") // Attribute selected as dimension for metrics
 
 	serverSpan := scopeSpans.Spans().AppendEmpty()
 	serverSpan.SetName("server span")

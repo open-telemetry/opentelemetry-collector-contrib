@@ -21,11 +21,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 // Test that the factory creates the default configuration
@@ -48,23 +47,21 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 // TestLoadConfig tests that the configuration is loaded correctly
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfig(filepath.Join("testdata", "config.yml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
 
 	t.Run("valid config", func(t *testing.T) {
-		validConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "valid")].(*Config)
-		err = validConfig.Validate()
+		cfg := factory.CreateDefaultConfig()
+		sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "valid").String())
+		require.NoError(t, err)
+		require.NoError(t, config.UnmarshalExporter(sub, cfg))
+
+		err = cfg.Validate()
 
 		require.NoError(t, err)
 		assert.Equal(t, &Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint:        "http://example.com/api/",
 				Timeout:         30 * time.Second,
@@ -73,18 +70,26 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Endpoint: "http://example.com/api/",
 			AgentKey: "key1",
-		}, validConfig)
+		}, cfg)
 	})
 
 	t.Run("bad endpoint", func(t *testing.T) {
-		badEndpointConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "bad_endpoint")].(*Config)
-		err = badEndpointConfig.Validate()
+		cfg := factory.CreateDefaultConfig()
+		sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "bad_endpoint").String())
+		require.NoError(t, err)
+		require.NoError(t, config.UnmarshalExporter(sub, cfg))
+
+		err = cfg.Validate()
 		require.Error(t, err)
 	})
 
 	t.Run("missing agent key", func(t *testing.T) {
-		missingAgentConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "missing_agent_key")].(*Config)
-		err = missingAgentConfig.Validate()
+		cfg := factory.CreateDefaultConfig()
+		sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "missing_agent_key").String())
+		require.NoError(t, err)
+		require.NoError(t, config.UnmarshalExporter(sub, cfg))
+
+		err = cfg.Validate()
 		require.Error(t, err)
 	})
 }

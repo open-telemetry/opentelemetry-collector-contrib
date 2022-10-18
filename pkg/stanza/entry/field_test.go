@@ -24,147 +24,151 @@ import (
 
 func TestFieldUnmarshalJSON(t *testing.T) {
 	cases := []struct {
-		name     string
-		input    []byte
-		expected Field
+		name                string
+		input               []byte
+		expected            Field
+		expectedErr         string
+		expectedErrRootable string
 	}{
 		{
-			"BodyLong",
-			[]byte(`"body"`),
-			NewBodyField(),
+			name:     "BodyLong",
+			input:    []byte(`"body"`),
+			expected: NewBodyField(),
 		},
 		{
-			"SimpleField",
-			[]byte(`"body.test1"`),
-			NewBodyField("test1"),
+			name:     "SimpleField",
+			input:    []byte(`"body.test1"`),
+			expected: NewBodyField("test1"),
 		},
 		{
-			"ComplexField",
-			[]byte(`"body.test1.test2"`),
-			NewBodyField("test1", "test2"),
+			name:     "ComplexField",
+			input:    []byte(`"body.test1.test2"`),
+			expected: NewBodyField("test1", "test2"),
 		},
 		{
-			"BracketedField",
-			[]byte(`"body.test1['file.name']"`),
-			NewBodyField("test1", "file.name"),
+			name:     "BracketedField",
+			input:    []byte(`"body.test1['file.name']"`),
+			expected: NewBodyField("test1", "file.name"),
 		},
 		{
-			"DoubleBracketedField",
-			[]byte(`"body.test1['file.details']['file.name']"`),
-			NewBodyField("test1", "file.details", "file.name"),
+			name:     "DoubleBracketedField",
+			input:    []byte(`"body.test1['file.details']['file.name']"`),
+			expected: NewBodyField("test1", "file.details", "file.name"),
 		},
 		{
-			"PostBracketField",
-			[]byte(`"body.test1['file.details'].name"`),
-			NewBodyField("test1", "file.details", "name"),
+			name:     "PostBracketField",
+			input:    []byte(`"body.test1['file.details'].name"`),
+			expected: NewBodyField("test1", "file.details", "name"),
 		},
 		{
-			"AttributesSimpleField",
-			[]byte(`"attributes.test1"`),
-			NewAttributeField("test1"),
+			name:     "AttributesSimpleField",
+			input:    []byte(`"attributes.test1"`),
+			expected: NewAttributeField("test1"),
 		},
 		{
-			"AttributesComplexField",
-			[]byte(`"attributes.test1.test2"`),
-			NewAttributeField("test1", "test2"),
+			name:     "AttributesComplexField",
+			input:    []byte(`"attributes.test1.test2"`),
+			expected: NewAttributeField("test1", "test2"),
 		},
 		{
-			"AttributesBracketedField",
-			[]byte(`"attributes.test1['file.name']"`),
-			NewAttributeField("test1", "file.name"),
+			name:     "AttributesBracketedField",
+			input:    []byte(`"attributes.test1['file.name']"`),
+			expected: NewAttributeField("test1", "file.name"),
 		},
 		{
-			"AttributesDoubleBracketedField",
-			[]byte(`"attributes.test1['file.details']['file.name']"`),
-			NewAttributeField("test1", "file.details", "file.name"),
+			name:     "AttributesDoubleBracketedField",
+			input:    []byte(`"attributes.test1['file.details']['file.name']"`),
+			expected: NewAttributeField("test1", "file.details", "file.name"),
 		},
 		{
-			"AttributesPostBracketField",
-			[]byte(`"attributes.test1['file.details'].name"`),
-			NewAttributeField("test1", "file.details", "name"),
+			name:     "AttributesPostBracketField",
+			input:    []byte(`"attributes.test1['file.details'].name"`),
+			expected: NewAttributeField("test1", "file.details", "name"),
 		},
 		{
-			"AttributesSimpleField",
-			[]byte(`"attributes.test1"`),
-			NewAttributeField("test1"),
-		},
-
-		{
-			"ResourceSimpleField",
-			[]byte(`"resource.test1"`),
-			NewResourceField("test1"),
+			name:     "AttributesSimpleField",
+			input:    []byte(`"attributes.test1"`),
+			expected: NewAttributeField("test1"),
 		},
 		{
-			"ResourceComplexField",
-			[]byte(`"resource.test1.test2"`),
-			NewResourceField("test1", "test2"),
+			name:     "ResourceSimpleField",
+			input:    []byte(`"resource.test1"`),
+			expected: NewResourceField("test1"),
 		},
 		{
-			"ResourceBracketedField",
-			[]byte(`"resource.test1['file.name']"`),
-			NewResourceField("test1", "file.name"),
+			name:     "ResourceComplexField",
+			input:    []byte(`"resource.test1.test2"`),
+			expected: NewResourceField("test1", "test2"),
 		},
 		{
-			"ResourceDoubleBracketedField",
-			[]byte(`"resource.test1['file.details']['file.name']"`),
-			NewResourceField("test1", "file.details", "file.name"),
+			name:     "ResourceBracketedField",
+			input:    []byte(`"resource.test1['file.name']"`),
+			expected: NewResourceField("test1", "file.name"),
 		},
 		{
-			"ResourcePostBracketField",
-			[]byte(`"resource.test1['file.details'].name"`),
-			NewResourceField("test1", "file.details", "name"),
+			name:     "ResourceDoubleBracketedField",
+			input:    []byte(`"resource.test1['file.details']['file.name']"`),
+			expected: NewResourceField("test1", "file.details", "file.name"),
 		},
 		{
-			"ResourceSimpleField",
-			[]byte(`"resource.test1"`),
-			NewResourceField("test1"),
+			name:     "ResourcePostBracketField",
+			input:    []byte(`"resource.test1['file.details'].name"`),
+			expected: NewResourceField("test1", "file.details", "name"),
+		},
+		{
+			name:     "ResourceSimpleField",
+			input:    []byte(`"resource.test1"`),
+			expected: NewResourceField("test1"),
+		},
+		{
+			name:        "AttributesRoot",
+			input:       []byte(`"attributes"`),
+			expectedErr: "attributes cannot be referenced without subfield",
+			expected:    NewAttributeField(),
+		},
+		{
+			name:        "ResourceRoot",
+			input:       []byte(`"resource"`),
+			expectedErr: "resource cannot be referenced without subfield",
+			expected:    NewResourceField(),
+		},
+		{
+			name:                "Bool",
+			input:               []byte(`"bool"`),
+			expectedErrRootable: "unrecognized prefix",
+		},
+		{
+			name:                "Object",
+			input:               []byte(`{"key":"value"}`),
+			expectedErrRootable: "cannot unmarshal object into Go value of type string",
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			var f Field
-			err := json.Unmarshal(tc.input, &f)
-			require.NoError(t, err)
-			require.Equal(t, tc.expected, f)
-		})
-	}
-}
+			var field Field
+			err := json.Unmarshal(tc.input, &field)
 
-func TestFieldUnmarshalJSONFailure(t *testing.T) {
-	cases := []struct {
-		name     string
-		input    []byte
-		expected string
-	}{
-		{
-			"Bool",
-			[]byte(`"bool"`),
-			"unrecognized prefix",
-		},
-		{
-			"Object",
-			[]byte(`{"key":"value"}`),
-			"cannot unmarshal object into Go value of type string",
-		},
-		{
-			"AttributesRoot",
-			[]byte(`"attributes"`),
-			"attributes cannot be referenced without subfield",
-		},
-		{
-			"ResourceRoot",
-			[]byte(`"resource"`),
-			"resource cannot be referenced without subfield",
-		},
-	}
+			var rootableField RootableField
+			errRootable := json.Unmarshal(tc.input, &rootableField)
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			var f Field
-			err := json.Unmarshal(tc.input, &f)
-			require.Error(t, err)
-			require.Contains(t, err.Error(), tc.expected)
+			switch {
+			case tc.expectedErrRootable != "":
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tc.expectedErr)
+				require.Error(t, errRootable)
+				require.Contains(t, errRootable.Error(), tc.expectedErrRootable)
+			case tc.expectedErr != "":
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tc.expectedErr)
+				require.NoError(t, errRootable)
+				require.Equal(t, tc.expected, rootableField.Field)
+			default:
+				require.NoError(t, err)
+				require.Equal(t, tc.expected, field)
+				require.NoError(t, errRootable)
+				require.Equal(t, tc.expected, rootableField.Field)
+			}
 		})
 	}
 }

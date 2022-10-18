@@ -1,0 +1,16 @@
+mapping:
+  type: helpers_test
+  severity:
+    mapping:
+      critical: 5xx
+      error: 4xx
+      info: 3xx
+      debug: 2xx
+parse_from:
+  type: helpers_test
+  severity:
+    parse_from: body.from
+preset:
+  type: helpers_test
+  severity:
+    preset: http

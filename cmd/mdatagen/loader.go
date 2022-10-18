@@ -25,6 +25,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/go-playground/validator/v10/non-standard/validators"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -61,7 +62,7 @@ func (mvt *ValueType) UnmarshalText(text []byte) error {
 	case "":
 		mvt.ValueType = pcommon.ValueTypeEmpty
 	case "string":
-		mvt.ValueType = pcommon.ValueTypeString
+		mvt.ValueType = pcommon.ValueTypeStr
 	case "int":
 		mvt.ValueType = pcommon.ValueTypeInt
 	case "double":
@@ -84,7 +85,7 @@ func (mvt ValueType) String() string {
 // Primitive returns name of primitive type for the ValueType.
 func (mvt ValueType) Primitive() string {
 	switch mvt.ValueType {
-	case pcommon.ValueTypeString:
+	case pcommon.ValueTypeStr:
 		return "string"
 	case pcommon.ValueTypeInt:
 		return "int64"
@@ -180,7 +181,7 @@ func loadMetadata(filePath string) (metadata, error) {
 	}
 
 	var md metadata
-	if err := m.UnmarshalExact(&md); err != nil {
+	if err := m.Unmarshal(&md, confmap.WithErrorUnused()); err != nil {
 		return metadata{}, err
 	}
 

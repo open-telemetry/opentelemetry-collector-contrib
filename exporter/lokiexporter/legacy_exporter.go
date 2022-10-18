@@ -291,11 +291,11 @@ func (l *lokiExporter) convertAttributesToLabels(attributes pcommon.Map, allowed
 	for attr, attrLabelName := range allowedLabels {
 		av, ok := attributes.Get(attr)
 		if ok {
-			if av.Type() != pcommon.ValueTypeString {
+			if av.Type() != pcommon.ValueTypeStr {
 				l.settings.Logger.Debug("Failed to convert attribute value to Loki label value, value is not a string", zap.String("attribute", attr))
 				continue
 			}
-			ls[attrLabelName] = model.LabelValue(av.StringVal())
+			ls[attrLabelName] = model.LabelValue(av.Str())
 		}
 	}
 
@@ -373,7 +373,7 @@ func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Reso
 		return true
 	})
 
-	b.WriteString(lr.Body().StringVal())
+	b.WriteString(lr.Body().Str())
 
 	return &logproto.Entry{
 		Timestamp: timestampFromLogRecord(lr),

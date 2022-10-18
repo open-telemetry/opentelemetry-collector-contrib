@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/oteltransformationlanguage/contexts/ottlmetrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 )
 
 func getTestSummaryMetric() pmetric.Metric {
@@ -54,7 +54,7 @@ func getTestGaugeMetric() pmetric.Metric {
 	metricInput.SetEmptyGauge()
 	metricInput.SetName("gauge_metric")
 	input := metricInput.Gauge().DataPoints().AppendEmpty()
-	input.SetIntVal(12)
+	input.SetIntValue(12)
 
 	attrs := getTestAttributes()
 	attrs.CopyTo(input.Attributes())
@@ -63,7 +63,7 @@ func getTestGaugeMetric() pmetric.Metric {
 
 func getTestAttributes() pcommon.Map {
 	attrs := pcommon.NewMap()
-	attrs.PutString("test", "hello world")
+	attrs.PutStr("test", "hello world")
 	attrs.PutInt("test2", 3)
 	attrs.PutBool("test3", true)
 	return attrs
@@ -89,12 +89,12 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
 				sumMetric.SetEmptySum()
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(false)
 
 				sumMetric.SetName("summary_metric_sum")
 				dp := sumMetric.Sum().DataPoints().AppendEmpty()
-				dp.SetDoubleVal(12.34)
+				dp.SetDoubleValue(12.34)
 
 				attrs := getTestAttributes()
 				attrs.CopyTo(dp.Attributes())
@@ -110,12 +110,12 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
 				sumMetric.SetEmptySum()
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(true)
 
 				sumMetric.SetName("summary_metric_sum")
 				dp := sumMetric.Sum().DataPoints().AppendEmpty()
-				dp.SetDoubleVal(12.34)
+				dp.SetDoubleValue(12.34)
 
 				attrs := getTestAttributes()
 				attrs.CopyTo(dp.Attributes())
@@ -131,12 +131,12 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
 				sumMetric.SetEmptySum()
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				sumMetric.Sum().SetIsMonotonic(false)
 
 				sumMetric.SetName("summary_metric_sum")
 				dp := sumMetric.Sum().DataPoints().AppendEmpty()
-				dp.SetDoubleVal(12.34)
+				dp.SetDoubleValue(12.34)
 
 				attrs := getTestAttributes()
 				attrs.CopyTo(dp.Attributes())
@@ -161,7 +161,7 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 			evaluate, err := convertSummarySumValToSum(tt.temporality, tt.monotonicity)
 			assert.NoError(t, err)
 
-			evaluate(ottlmetrics.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			evaluate(ottldatapoints.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
 
 			expected := pmetric.NewMetricSlice()
 			tt.want(expected)

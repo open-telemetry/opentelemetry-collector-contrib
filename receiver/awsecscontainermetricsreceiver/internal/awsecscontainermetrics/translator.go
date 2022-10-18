@@ -85,7 +85,7 @@ func appendIntSum(metricName string, unit string, value int64, ts pcommon.Timest
 	metric := appendMetric(ilm, metricName, unit)
 
 	intSum := metric.SetEmptySum()
-	intSum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	intSum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 	appendIntDataPoint(intSum.DataPoints(), value, ts)
 }
@@ -94,13 +94,13 @@ func appendDoubleGauge(metricName string, unit string, value float64, ts pcommon
 	metric := appendMetric(ilm, metricName, unit)
 	doubleGauge := metric.SetEmptyGauge()
 	dataPoint := doubleGauge.DataPoints().AppendEmpty()
-	dataPoint.SetDoubleVal(value)
+	dataPoint.SetDoubleValue(value)
 	dataPoint.SetTimestamp(ts)
 }
 
 func appendIntDataPoint(dataPoints pmetric.NumberDataPointSlice, value int64, ts pcommon.Timestamp) {
 	dataPoint := dataPoints.AppendEmpty()
-	dataPoint.SetIntVal(value)
+	dataPoint.SetIntValue(value)
 	dataPoint.SetTimestamp(ts)
 }
 

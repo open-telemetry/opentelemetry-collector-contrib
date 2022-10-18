@@ -30,7 +30,7 @@ func makeService(resource pcommon.Resource) *awsxray.ServiceData {
 	}
 	if ok {
 		service = &awsxray.ServiceData{
-			Version: awsxray.String(verStr.StringVal()),
+			Version: awsxray.String(verStr.Str()),
 		}
 	}
 	return service

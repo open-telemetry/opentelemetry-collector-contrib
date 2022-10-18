@@ -49,13 +49,13 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| bigip.node.ip_address | The IP Address of the Big-IP Node. | String |
-| bigip.node.name | The name of the Big-IP Node. | String |
-| bigip.pool.name | The name of the Big-IP Pool. | String |
-| bigip.pool_member.ip_address | The IP Address of the Big-IP Pool Member. | String |
-| bigip.pool_member.name | The name of the Big-IP Pool Member. | String |
-| bigip.virtual_server.destination | The destination for the Big-IP Virtual Server. | String |
-| bigip.virtual_server.name | The name of the Big-IP Virtual Server. | String |
+| bigip.node.ip_address | The IP Address of the Big-IP Node. | Str |
+| bigip.node.name | The name of the Big-IP Node. | Str |
+| bigip.pool.name | The name of the Big-IP Pool. | Str |
+| bigip.pool_member.ip_address | The IP Address of the Big-IP Pool Member. | Str |
+| bigip.pool_member.name | The name of the Big-IP Pool Member. | Str |
+| bigip.virtual_server.destination | The destination for the Big-IP Virtual Server. | Str |
+| bigip.virtual_server.name | The name of the Big-IP Virtual Server. | Str |
 
 ## Metric attributes
 

@@ -15,10 +15,12 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
 import (
+	"encoding/hex"
 	"fmt"
 	"sort"
 	"strings"
 
+	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/scrape"
@@ -27,8 +29,13 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	traceIDKey = "trace_id"
+	spanIDKey  = "span_id"
+)
+
 type metricFamily struct {
-	mtype pmetric.MetricDataType
+	mtype pmetric.MetricType
 	// isMonotonic only applies to sums
 	isMonotonic bool
 	groups      map[uint64]*metricGroup
@@ -50,12 +57,13 @@ type metricGroup struct {
 	hasSum       bool
 	value        float64
 	complexValue []*dataPoint
+	exemplars    pmetric.ExemplarSlice
 }
 
 func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *zap.Logger) *metricFamily {
 	metadata, familyName := metadataForMetric(metricName, mc)
 	mtype, isMonotonic := convToMetricType(metadata.Type)
-	if mtype == pmetric.MetricDataTypeNone {
+	if mtype == pmetric.MetricTypeEmpty {
 		logger.Debug(fmt.Sprintf("Unknown-typed metric : %s %+v", metricName, metadata))
 	}
 
@@ -70,7 +78,7 @@ func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *z
 
 // includesMetric returns true if the metric is part of the family
 func (mf *metricFamily) includesMetric(metricName string) bool {
-	if mf.mtype != pmetric.MetricDataTypeGauge {
+	if mf.mtype != pmetric.MetricTypeGauge {
 		// If it is a merged family type, then it should match the
 		// family name when suffixes are trimmed.
 		return normalizeMetricName(metricName) == mf.name
@@ -125,7 +133,7 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	point := dest.AppendEmpty()
 
 	if pointIsStale {
-		point.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+		point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 	} else {
 		point.SetCount(uint64(mg.count))
 		if mg.hasSum {
@@ -140,7 +148,17 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	tsNanos := timestampFromMs(mg.ts)
 	point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	point.SetTimestamp(tsNanos)
-	populateAttributes(pmetric.MetricDataTypeHistogram, mg.ls, point.Attributes())
+	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
+	mg.setExemplars(point.Exemplars())
+}
+
+func (mg *metricGroup) setExemplars(exemplars pmetric.ExemplarSlice) {
+	if mg == nil {
+		return
+	}
+	if mg.exemplars.Len() > 0 {
+		mg.exemplars.MoveAndAppendTo(exemplars)
+	}
 }
 
 func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
@@ -156,7 +174,7 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 	point := dest.AppendEmpty()
 	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
 	if pointIsStale {
-		point.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+		point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 	} else {
 		if mg.hasSum {
 			point.SetSum(mg.sum)
@@ -184,26 +202,27 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 	tsNanos := timestampFromMs(mg.ts)
 	point.SetTimestamp(tsNanos)
 	point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-	populateAttributes(pmetric.MetricDataTypeSummary, mg.ls, point.Attributes())
+	populateAttributes(pmetric.MetricTypeSummary, mg.ls, point.Attributes())
 }
 
 func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
 	tsNanos := timestampFromMs(mg.ts)
 	point := dest.AppendEmpty()
 	// gauge/undefined types have no start time.
-	if mg.family.mtype == pmetric.MetricDataTypeSum {
+	if mg.family.mtype == pmetric.MetricTypeSum {
 		point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	}
 	point.SetTimestamp(tsNanos)
 	if value.IsStaleNaN(mg.value) {
-		point.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+		point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 	} else {
-		point.SetDoubleVal(mg.value)
+		point.SetDoubleValue(mg.value)
 	}
-	populateAttributes(pmetric.MetricDataTypeGauge, mg.ls, point.Attributes())
+	populateAttributes(pmetric.MetricTypeGauge, mg.ls, point.Attributes())
+	mg.setExemplars(point.Exemplars())
 }
 
-func populateAttributes(mType pmetric.MetricDataType, ls labels.Labels, dest pcommon.Map) {
+func populateAttributes(mType pmetric.MetricType, ls labels.Labels, dest pcommon.Map) {
 	dest.EnsureCapacity(ls.Len())
 	names := getSortedNotUsefulLabels(mType)
 	j := 0
@@ -218,7 +237,7 @@ func populateAttributes(mType pmetric.MetricDataType, ls labels.Labels, dest pco
 			// empty label values should be omitted
 			continue
 		}
-		dest.PutString(ls[i].Name, ls[i].Value)
+		dest.PutStr(ls[i].Name, ls[i].Value)
 	}
 }
 
@@ -226,9 +245,10 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Label
 	mg, ok := mf.groups[groupKey]
 	if !ok {
 		mg = &metricGroup{
-			family: mf,
-			ts:     ts,
-			ls:     ls,
+			family:    mf,
+			ts:        ts,
+			ls:        ls,
+			exemplars: pmetric.NewExemplarSlice(),
 		}
 		mf.groups[groupKey] = mg
 		// maintaining data insertion order is helpful to generate stable/reproducible metric output
@@ -244,7 +264,7 @@ func (mf *metricFamily) Add(metricName string, ls labels.Labels, t int64, v floa
 		return fmt.Errorf("inconsistent timestamps on metric points for metric %v", metricName)
 	}
 	switch mf.mtype {
-	case pmetric.MetricDataTypeHistogram, pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeHistogram, pmetric.MetricTypeSummary:
 		switch {
 		case strings.HasSuffix(metricName, metricsSuffixSum):
 			mg.sum = v
@@ -277,16 +297,16 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) {
 	pointCount := 0
 
 	switch mf.mtype {
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		histogram := metric.SetEmptyHistogram()
-		histogram.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		histogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		hdpL := histogram.DataPoints()
 		for _, mg := range mf.groupOrders {
 			mg.toDistributionPoint(hdpL)
 		}
 		pointCount = hdpL.Len()
 
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		summary := metric.SetEmptySummary()
 		sdpL := summary.DataPoints()
 		for _, mg := range mf.groupOrders {
@@ -294,9 +314,9 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) {
 		}
 		pointCount = sdpL.Len()
 
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		sum := metric.SetEmptySum()
-		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		sum.SetIsMonotonic(mf.isMonotonic)
 		sdpL := sum.DataPoints()
 		for _, mg := range mf.groupOrders {
@@ -318,4 +338,60 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) {
 	}
 
 	metric.MoveTo(metrics.AppendEmpty())
+}
+
+func (mf *metricFamily) addExemplar(l labels.Labels, e exemplar.Exemplar) {
+	gk := mf.getGroupKey(l)
+	mg := mf.groups[gk]
+	if mg == nil {
+		return
+	}
+	es := mg.exemplars
+	convertExemplar(e, es.AppendEmpty())
+}
+
+func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
+	e.SetTimestamp(timestampFromMs(pe.Ts))
+	e.SetDoubleValue(pe.Value)
+	e.FilteredAttributes().EnsureCapacity(len(pe.Labels))
+	for _, lb := range pe.Labels {
+		switch strings.ToLower(lb.Name) {
+		case traceIDKey:
+			var tid [16]byte
+			err := decodeAndCopyToLowerBytes(tid[:], []byte(lb.Value))
+			if err == nil {
+				e.SetTraceID(tid)
+			} else {
+				e.FilteredAttributes().PutStr(lb.Name, lb.Value)
+			}
+		case spanIDKey:
+			var sid [8]byte
+			err := decodeAndCopyToLowerBytes(sid[:], []byte(lb.Value))
+			if err == nil {
+				e.SetSpanID(sid)
+			} else {
+				e.FilteredAttributes().PutStr(lb.Name, lb.Value)
+			}
+		default:
+			e.FilteredAttributes().PutStr(lb.Name, lb.Value)
+		}
+	}
+}
+
+/*
+	decodeAndCopyToLowerBytes copies src to dst on lower bytes instead of higher
+
+1. If len(src) > len(dst) -> copy first len(dst) bytes as it is. Example -> src = []byte{0xab,0xcd,0xef,0xgh,0xij}, dst = [2]byte, result dst = [2]byte{0xab, 0xcd}
+2. If len(src) = len(dst) -> copy src to dst as it is
+3. If len(src) < len(dst) -> prepend required 0s and then add src to dst. Example -> src = []byte{0xab, 0xcd}, dst = [8]byte, result dst = [8]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xab, 0xcd}
+*/
+func decodeAndCopyToLowerBytes(dst []byte, src []byte) error {
+	var err error
+	decodedLen := hex.DecodedLen(len(src))
+	if decodedLen >= len(dst) {
+		_, err = hex.Decode(dst, src[:hex.EncodedLen(len(dst))])
+	} else {
+		_, err = hex.Decode(dst[len(dst)-decodedLen:], src)
+	}
+	return err
 }

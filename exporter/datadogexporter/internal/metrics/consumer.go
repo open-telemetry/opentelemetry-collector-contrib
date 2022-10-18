@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/sketches"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 )
 
 var _ translator.Consumer = (*Consumer)(nil)
@@ -46,8 +46,8 @@ func NewConsumer() *Consumer {
 }
 
 // toDataType maps translator datatypes to zorkian's datatypes.
-func (c *Consumer) toDataType(dt translator.MetricDataType) (out MetricDataType) {
-	out = MetricDataType("unknown")
+func (c *Consumer) toDataType(dt translator.MetricDataType) (out MetricType) {
+	out = MetricType("unknown")
 
 	switch dt {
 	case translator.Count:

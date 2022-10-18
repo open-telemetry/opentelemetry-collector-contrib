@@ -372,7 +372,7 @@ func getAttributeValueFromContext(ctx context.Context, key string) (pcommon.Valu
 
 		switch a := attr.(type) {
 		case string:
-			return pcommon.NewValueString(a), true
+			return pcommon.NewValueStr(a), true
 		case []string:
 			vals = a
 		default:
@@ -388,7 +388,7 @@ func getAttributeValueFromContext(ctx context.Context, key string) (pcommon.Valu
 		return pcommon.Value{}, false
 	}
 
-	return pcommon.NewValueString(strings.Join(vals, ";")), true
+	return pcommon.NewValueStr(strings.Join(vals, ";")), true
 }
 
 func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs pcommon.Map) (pcommon.Value, bool) {
@@ -420,13 +420,13 @@ func extractAttributes(action attributeAction, attrs pcommon.Map) {
 	value, found := attrs.Get(action.Key)
 
 	// Extracting values only functions on strings.
-	if !found || value.Type() != pcommon.ValueTypeString {
+	if !found || value.Type() != pcommon.ValueTypeStr {
 		return
 	}
 
 	// Note: The number of matches will always be equal to number of
 	// subexpressions.
-	matches := action.Regex.FindStringSubmatch(value.StringVal())
+	matches := action.Regex.FindStringSubmatch(value.Str())
 	if matches == nil {
 		return
 	}
@@ -434,7 +434,7 @@ func extractAttributes(action attributeAction, attrs pcommon.Map) {
 	// Start from index 1, which is the first submatch (index 0 is the entire
 	// match).
 	for i := 1; i < len(matches); i++ {
-		attrs.PutString(action.AttrNames[i], matches[i])
+		attrs.PutStr(action.AttrNames[i], matches[i])
 	}
 }
 

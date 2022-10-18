@@ -1,22 +1,8 @@
-receivers:
-  saphana:
-    metrics:
-      saphana.cpu.used:
-        enabled: false
-    endpoint: example.com:30015
-    username: otel
-    password: password
-    collection_interval: 2m
-
-processors:
-  nop:
-
-exporters:
-  nop:
-
-service:
-  pipelines:
-    metrics:
-      receivers: [saphana]
-      processors: [nop]
-      exporters: [nop]
+saphana:
+  metrics:
+    saphana.cpu.used:
+      enabled: false
+  endpoint: example.com:30015
+  username: otel
+  password: password
+  collection_interval: 2m

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -168,6 +168,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				SkipClusterMetrics: true,
 				Nodes:              []string{"_local"},
+				Indices:            []string{".geoip_databases"},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 					CollectionInterval: 2 * time.Minute,

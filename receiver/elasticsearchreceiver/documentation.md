@@ -22,6 +22,8 @@ These are the metrics available for this scraper.
 | **elasticsearch.cluster.state_queue** | Number of cluster states in queue. | 1 | Sum(Int) | <ul> <li>cluster_state_queue_state</li> </ul> |
 | **elasticsearch.cluster.state_update.count** | The number of cluster state update attempts that changed the cluster state since the node started. | 1 | Sum(Int) | <ul> <li>cluster_state_update_state</li> </ul> |
 | **elasticsearch.cluster.state_update.time** | The cumulative amount of time updating the cluster state since the node started. | ms | Sum(Int) | <ul> <li>cluster_state_update_state</li> <li>cluster_state_update_type</li> </ul> |
+| **elasticsearch.index.operations.completed** | The number of operations completed for an index. | {operations} | Sum(Int) | <ul> <li>operation</li> <li>index_aggregation_type</li> </ul> |
+| **elasticsearch.index.operations.time** | Time spent on operations for an index. | ms | Sum(Int) | <ul> <li>operation</li> <li>index_aggregation_type</li> </ul> |
 | **elasticsearch.indexing_pressure.memory.limit** | Configured memory limit, in bytes, for the indexing requests. | By | Gauge(Int) | <ul> </ul> |
 | **elasticsearch.indexing_pressure.memory.total.primary_rejections** | Cumulative number of indexing requests rejected in the primary stage. | 1 | Sum(Int) | <ul> </ul> |
 | **elasticsearch.indexing_pressure.memory.total.replica_rejections** | Number of indexing requests rejected in the replica stage. | 1 | Sum(Int) | <ul> </ul> |
@@ -31,8 +33,6 @@ These are the metrics available for this scraper.
 | **elasticsearch.node.cache.memory.usage** | The size in bytes of the cache. | By | Sum(Int) | <ul> <li>cache_name</li> </ul> |
 | **elasticsearch.node.cluster.connections** | The number of open tcp connections for internal cluster communication. | {connections} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.cluster.io** | The number of bytes sent and received on the network for internal cluster communication. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
-| **elasticsearch.node.cluster.io.received** | The number of bytes received on the network for internal cluster communication. | By | Sum(Int) | <ul> </ul> |
-| **elasticsearch.node.cluster.io.sent** | The number of bytes sent on the network for internal cluster communication. | By | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.disk.io.read** | The total number of kilobytes read across all file stores for this node. | KiBy | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.disk.io.write** | The total number of kilobytes written across all file stores for this node. | KiBy | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.documents** | The number of documents on the node. | {documents} | Sum(Int) | <ul> <li>document_state</li> </ul> |
@@ -44,8 +44,8 @@ These are the metrics available for this scraper.
 | **elasticsearch.node.ingest.documents.current** | Total number of documents currently being ingested. | {documents} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.ingest.operations.failed** | Total number of failed ingest operations during the lifetime of this node. | {operation} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.open_files** | The number of open file descriptors held by the node. | {files} | Sum(Int) | <ul> </ul> |
-| **elasticsearch.node.operations.completed** | The number of operations completed. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
-| **elasticsearch.node.operations.time** | Time spent on operations. | ms | Sum(Int) | <ul> <li>operation</li> </ul> |
+| **elasticsearch.node.operations.completed** | The number of operations completed by a node. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
+| **elasticsearch.node.operations.time** | Time spent on operations by a node. | ms | Sum(Int) | <ul> <li>operation</li> </ul> |
 | **elasticsearch.node.pipeline.ingest.documents.current** | Total number of documents currently being ingested by a pipeline. | {documents} | Sum(Int) | <ul> <li>ingest_pipeline_name</li> </ul> |
 | **elasticsearch.node.pipeline.ingest.documents.preprocessed** | Number of documents preprocessed by the ingest pipeline. | {documents} | Sum(Int) | <ul> <li>ingest_pipeline_name</li> </ul> |
 | **elasticsearch.node.pipeline.ingest.operations.failed** | Total number of failed operations for the ingest pipeline. | {operation} | Sum(Int) | <ul> <li>ingest_pipeline_name</li> </ul> |
@@ -91,8 +91,9 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| elasticsearch.cluster.name | The name of the elasticsearch cluster. | String |
-| elasticsearch.node.name | The name of the elasticsearch node. | String |
+| elasticsearch.cluster.name | The name of the elasticsearch cluster. | Str |
+| elasticsearch.index.name | The name of the elasticsearch index. | Str |
+| elasticsearch.node.name | The name of the elasticsearch node. | Str |
 
 ## Metric attributes
 
@@ -109,6 +110,7 @@ metrics:
 | document_state (state) | The state of the document. | active, deleted |
 | fs_direction (direction) | The direction of filesystem IO. | read, write |
 | health_status (status) | The health status of the cluster. | green, yellow, red |
+| index_aggregation_type (aggregation) | Type of shard aggregation for index statistics | primary_shards, total |
 | indexing_memory_state (state) | State of the indexing memory | current, total |
 | indexing_pressure_stage (stage) | Stage of the indexing pressure | coordinating, primary, replica |
 | ingest_pipeline_name (name) | Name of the ingest pipeline. |  |

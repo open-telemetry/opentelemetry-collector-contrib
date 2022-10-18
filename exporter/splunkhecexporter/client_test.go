@@ -84,8 +84,8 @@ func createMetricsData(numberOfDataPoints int) pmetric.Metrics {
 	doubleVal := 1234.5678
 	metrics := pmetric.NewMetrics()
 	rm := metrics.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutString("k0", "v0")
-	rm.Resource().Attributes().PutString("k1", "v1")
+	rm.Resource().Attributes().PutStr("k0", "v0")
+	rm.Resource().Attributes().PutStr("k1", "v1")
 
 	for i := 0; i < numberOfDataPoints; i++ {
 		tsUnix := time.Unix(int64(i), int64(i)*time.Millisecond.Nanoseconds())
@@ -95,11 +95,11 @@ func createMetricsData(numberOfDataPoints int) pmetric.Metrics {
 		metric.SetName("gauge_double_with_dims")
 		doublePt := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
-		doublePt.SetDoubleVal(doubleVal)
-		doublePt.Attributes().PutString("k/n0", "vn0")
-		doublePt.Attributes().PutString("k/n1", "vn1")
-		doublePt.Attributes().PutString("k/r0", "vr0")
-		doublePt.Attributes().PutString("k/r1", "vr1")
+		doublePt.SetDoubleValue(doubleVal)
+		doublePt.Attributes().PutStr("k/n0", "vn0")
+		doublePt.Attributes().PutStr("k/n1", "vn1")
+		doublePt.Attributes().PutStr("k/r0", "vr0")
+		doublePt.Attributes().PutStr("k/r1", "vr1")
 	}
 
 	return metrics
@@ -108,7 +108,7 @@ func createMetricsData(numberOfDataPoints int) pmetric.Metrics {
 func createTraceData(numberOfTraces int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutString("resource", "R1")
+	rs.Resource().Attributes().PutStr("resource", "R1")
 	ils := rs.ScopeSpans().AppendEmpty()
 	ils.Spans().EnsureCapacity(numberOfTraces)
 	for i := 0; i < numberOfTraces; i++ {
@@ -118,7 +118,7 @@ func createTraceData(numberOfTraces int) ptrace.Traces {
 		span.SetEndTimestamp(pcommon.Timestamp((i + 2) * 1e9))
 		span.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
 		span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
-		span.TraceStateStruct().FromRaw("foo")
+		span.TraceState().FromRaw("foo")
 		if i%2 == 0 {
 			span.SetParentSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 			span.Status().SetCode(ptrace.StatusCodeOk)
@@ -154,13 +154,13 @@ func createLogDataWithCustomLibraries(numResources int, libraries []string, numR
 			for k := 0; k < numRecords[j]; k++ {
 				ts := pcommon.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
 				logRecord := sl.LogRecords().AppendEmpty()
-				logRecord.Body().SetStringVal("mylog")
-				logRecord.Attributes().PutString(splunk.DefaultNameLabel, fmt.Sprintf("%d_%d_%d", i, j, k))
-				logRecord.Attributes().PutString(splunk.DefaultSourceLabel, "myapp")
-				logRecord.Attributes().PutString(splunk.DefaultSourceTypeLabel, "myapp-type")
-				logRecord.Attributes().PutString(splunk.DefaultIndexLabel, "myindex")
-				logRecord.Attributes().PutString(conventions.AttributeHostName, "myhost")
-				logRecord.Attributes().PutString("custom", "custom")
+				logRecord.Body().SetStr("mylog")
+				logRecord.Attributes().PutStr(splunk.DefaultNameLabel, fmt.Sprintf("%d_%d_%d", i, j, k))
+				logRecord.Attributes().PutStr(splunk.DefaultSourceLabel, "myapp")
+				logRecord.Attributes().PutStr(splunk.DefaultSourceTypeLabel, "myapp-type")
+				logRecord.Attributes().PutStr(splunk.DefaultIndexLabel, "myindex")
+				logRecord.Attributes().PutStr(conventions.AttributeHostName, "myhost")
+				logRecord.Attributes().PutStr("custom", "custom")
 				logRecord.SetTimestamp(ts)
 			}
 		}
@@ -947,7 +947,7 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 	logs := plog.NewLogs()
 	log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	// Invalid log value
-	log.Body().SetDoubleVal(math.Inf(1))
+	log.Body().SetDouble(math.Inf(1))
 
 	err := c.pushLogData(context.Background(), logs)
 

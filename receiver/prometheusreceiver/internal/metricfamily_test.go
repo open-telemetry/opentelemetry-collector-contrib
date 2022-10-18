@@ -132,8 +132,8 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				point.BucketCounts().FromRaw([]uint64{33, 22, 11})
 				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
-				attributes.PutString("a", "A")
-				attributes.PutString("b", "B")
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
 				return point
 			},
 		},
@@ -152,13 +152,13 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			want: func() pmetric.HistogramDataPoint {
 				point := pmetric.NewHistogramDataPoint()
 				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
-				point.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 				point.ExplicitBounds().FromRaw([]float64{0.75, 2.75})
 				point.BucketCounts().FromRaw([]uint64{0, 0, 0})
 				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
-				attributes.PutString("a", "A")
-				attributes.PutString("b", "B")
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
 				return point
 			},
 		},
@@ -303,8 +303,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				point.SetTimestamp(pcommon.Timestamp(14 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(pcommon.Timestamp(14 * time.Millisecond)) // the time in milliseconds -> nanoseconds
 				attributes := point.Attributes()
-				attributes.PutString("a", "A")
-				attributes.PutString("b", "B")
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
 				return point
 			},
 		},
@@ -356,7 +356,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				point := pmetric.NewSummaryDataPoint()
 				qtL := point.QuantileValues()
 				qn0 := qtL.AppendEmpty()
-				point.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 				qn0.SetQuantile(0)
 				qn0.SetValue(0)
 				qn50 := qtL.AppendEmpty()
@@ -374,8 +374,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				point.SetTimestamp(pcommon.Timestamp(14 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(pcommon.Timestamp(14 * time.Millisecond)) // the time in milliseconds -> nanoseconds
 				attributes := point.Attributes()
-				attributes.PutString("a", "A")
-				attributes.PutString("b", "B")
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
 				return point
 			},
 		},
@@ -461,12 +461,12 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			},
 			want: func() pmetric.NumberDataPoint {
 				point := pmetric.NewNumberDataPoint()
-				point.SetDoubleVal(33.7)
+				point.SetDoubleValue(33.7)
 				point.SetTimestamp(pcommon.Timestamp(13 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(pcommon.Timestamp(13 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
-				attributes.PutString("a", "A")
-				attributes.PutString("b", "B")
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
 				return point
 			},
 		},
@@ -480,12 +480,12 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			},
 			want: func() pmetric.NumberDataPoint {
 				point := pmetric.NewNumberDataPoint()
-				point.SetDoubleVal(99.9)
+				point.SetDoubleValue(99.9)
 				point.SetTimestamp(pcommon.Timestamp(28 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(pcommon.Timestamp(28 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
-				attributes.PutString("a", "A")
-				attributes.PutString("b", "B")
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
 				return point
 			},
 		},

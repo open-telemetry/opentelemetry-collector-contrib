@@ -235,22 +235,22 @@ func valueToInterface(value pcommon.Value) interface{} {
 	switch value.Type() {
 	case pcommon.ValueTypeEmpty:
 		return nil
-	case pcommon.ValueTypeString:
-		return value.StringVal()
+	case pcommon.ValueTypeStr:
+		return value.Str()
 	case pcommon.ValueTypeBool:
-		return value.BoolVal()
+		return value.Bool()
 	case pcommon.ValueTypeDouble:
-		return value.DoubleVal()
+		return value.Double()
 	case pcommon.ValueTypeInt:
-		return value.IntVal()
+		return value.Int()
 	case pcommon.ValueTypeBytes:
-		return value.BytesVal().AsRaw()
+		return value.Bytes().AsRaw()
 	case pcommon.ValueTypeMap:
-		return value.MapVal().AsRaw()
+		return value.Map().AsRaw()
 	case pcommon.ValueTypeSlice:
-		arr := make([]interface{}, 0, value.SliceVal().Len())
-		for i := 0; i < value.SliceVal().Len(); i++ {
-			arr = append(arr, valueToInterface(value.SliceVal().At(i)))
+		arr := make([]interface{}, 0, value.Slice().Len())
+		for i := 0; i < value.Slice().Len(); i++ {
+			arr = append(arr, valueToInterface(value.Slice().At(i)))
 		}
 		return arr
 	default:
@@ -259,29 +259,29 @@ func valueToInterface(value pcommon.Value) interface{} {
 }
 
 var fromPdataSevMap = map[plog.SeverityNumber]entry.Severity{
-	plog.SeverityNumberUndefined: entry.Default,
-	plog.SeverityNumberTrace:     entry.Trace,
-	plog.SeverityNumberTrace2:    entry.Trace2,
-	plog.SeverityNumberTrace3:    entry.Trace3,
-	plog.SeverityNumberTrace4:    entry.Trace4,
-	plog.SeverityNumberDebug:     entry.Debug,
-	plog.SeverityNumberDebug2:    entry.Debug2,
-	plog.SeverityNumberDebug3:    entry.Debug3,
-	plog.SeverityNumberDebug4:    entry.Debug4,
-	plog.SeverityNumberInfo:      entry.Info,
-	plog.SeverityNumberInfo2:     entry.Info2,
-	plog.SeverityNumberInfo3:     entry.Info3,
-	plog.SeverityNumberInfo4:     entry.Info4,
-	plog.SeverityNumberWarn:      entry.Warn,
-	plog.SeverityNumberWarn2:     entry.Warn2,
-	plog.SeverityNumberWarn3:     entry.Warn3,
-	plog.SeverityNumberWarn4:     entry.Warn4,
-	plog.SeverityNumberError:     entry.Error,
-	plog.SeverityNumberError2:    entry.Error2,
-	plog.SeverityNumberError3:    entry.Error3,
-	plog.SeverityNumberError4:    entry.Error4,
-	plog.SeverityNumberFatal:     entry.Fatal,
-	plog.SeverityNumberFatal2:    entry.Fatal2,
-	plog.SeverityNumberFatal3:    entry.Fatal3,
-	plog.SeverityNumberFatal4:    entry.Fatal4,
+	plog.SeverityNumberUnspecified: entry.Default,
+	plog.SeverityNumberTrace:       entry.Trace,
+	plog.SeverityNumberTrace2:      entry.Trace2,
+	plog.SeverityNumberTrace3:      entry.Trace3,
+	plog.SeverityNumberTrace4:      entry.Trace4,
+	plog.SeverityNumberDebug:       entry.Debug,
+	plog.SeverityNumberDebug2:      entry.Debug2,
+	plog.SeverityNumberDebug3:      entry.Debug3,
+	plog.SeverityNumberDebug4:      entry.Debug4,
+	plog.SeverityNumberInfo:        entry.Info,
+	plog.SeverityNumberInfo2:       entry.Info2,
+	plog.SeverityNumberInfo3:       entry.Info3,
+	plog.SeverityNumberInfo4:       entry.Info4,
+	plog.SeverityNumberWarn:        entry.Warn,
+	plog.SeverityNumberWarn2:       entry.Warn2,
+	plog.SeverityNumberWarn3:       entry.Warn3,
+	plog.SeverityNumberWarn4:       entry.Warn4,
+	plog.SeverityNumberError:       entry.Error,
+	plog.SeverityNumberError2:      entry.Error2,
+	plog.SeverityNumberError3:      entry.Error3,
+	plog.SeverityNumberError4:      entry.Error4,
+	plog.SeverityNumberFatal:       entry.Fatal,
+	plog.SeverityNumberFatal2:      entry.Fatal2,
+	plog.SeverityNumberFatal3:      entry.Fatal3,
+	plog.SeverityNumberFatal4:      entry.Fatal4,
 }
