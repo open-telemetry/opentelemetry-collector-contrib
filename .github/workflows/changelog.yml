@@ -42,8 +42,6 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: changelog-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        env:
-          SEGMENT_DOWNLOAD_TIMEOUT_MIN: "10"
 
       - name: Ensure no changes to the CHANGELOG
         run: |
