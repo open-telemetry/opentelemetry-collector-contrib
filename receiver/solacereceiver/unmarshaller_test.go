@@ -77,6 +77,16 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 			err: errUnknownTraceMessgeType,
 		},
 		{
+			name: "Empty Message Data",
+			message: &amqp.Message{
+				Data: [][]byte{{}},
+				Properties: &amqp.MessageProperties{
+					To: &validTopicVersion,
+				},
+			},
+			err: errEmptyPayload,
+		},
+		{
 			name: "Invalid Message Data",
 			message: &amqp.Message{
 				Data: [][]byte{{1, 2, 3, 4, 5}},
@@ -103,36 +113,37 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 						topic                = "someTopic"
 					)
 					validData, err := proto.Marshal(&model_v1.SpanData{
-						TraceId:                     []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
-						SpanId:                      []byte{7, 6, 5, 4, 3, 2, 1, 0},
-						StartTimeUnixNano:           1234567890,
-						EndTimeUnixNano:             2234567890,
-						RouterName:                  &routerName,
-						MessageVpnName:              &vpnName,
-						SolosVersion:                "10.0.0",
-						Protocol:                    "MQTT",
-						ProtocolVersion:             &protocolVersion,
-						ApplicationMessageId:        &applicationMessageID,
-						CorrelationId:               &correlationID,
-						BinaryAttachmentSize:        1000,
-						XmlAttachmentSize:           200,
-						MetadataSize:                34,
-						ClientUsername:              "someClientUsername",
-						ClientName:                  "someClient1234",
-						Topic:                       topic,
-						ReplyToTopic:                &replyToTopic,
-						ReplicationGroupMessageId:   []byte{0x01, 0x00, 0x01, 0x04, 0x09, 0x10, 0x19, 0x24, 0x31, 0x40, 0x51, 0x64, 0x79, 0x90, 0xa9, 0xc4, 0xe1},
-						Priority:                    &priority,
-						Ttl:                         &ttl,
-						DmqEligible:                 true,
-						DroppedEnqueueEventsSuccess: 42,
-						DroppedEnqueueEventsFailed:  24,
-						HostIp:                      []byte{1, 2, 3, 4},
-						HostPort:                    55555,
-						PeerIp:                      []byte{35, 69, 4, 37, 44, 161, 0, 0, 0, 0, 5, 103, 86, 115, 35, 181},
-						PeerPort:                    12345,
-						BrokerReceiveTimeUnixNano:   1357924680,
-						DroppedUserProperties:       false,
+						TraceId:                             []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+						SpanId:                              []byte{7, 6, 5, 4, 3, 2, 1, 0},
+						StartTimeUnixNano:                   1234567890,
+						EndTimeUnixNano:                     2234567890,
+						RouterName:                          routerName,
+						MessageVpnName:                      &vpnName,
+						SolosVersion:                        "10.0.0",
+						Protocol:                            "MQTT",
+						ProtocolVersion:                     &protocolVersion,
+						ApplicationMessageId:                &applicationMessageID,
+						CorrelationId:                       &correlationID,
+						DeliveryMode:                        model_v1.SpanData_DIRECT,
+						BinaryAttachmentSize:                1000,
+						XmlAttachmentSize:                   200,
+						MetadataSize:                        34,
+						ClientUsername:                      "someClientUsername",
+						ClientName:                          "someClient1234",
+						Topic:                               topic,
+						ReplyToTopic:                        &replyToTopic,
+						ReplicationGroupMessageId:           []byte{0x01, 0x00, 0x01, 0x04, 0x09, 0x10, 0x19, 0x24, 0x31, 0x40, 0x51, 0x64, 0x79, 0x90, 0xa9, 0xc4, 0xe1},
+						Priority:                            &priority,
+						Ttl:                                 &ttl,
+						DmqEligible:                         true,
+						DroppedEnqueueEventsSuccess:         42,
+						DroppedEnqueueEventsFailed:          24,
+						HostIp:                              []byte{1, 2, 3, 4},
+						HostPort:                            55555,
+						PeerIp:                              []byte{35, 69, 4, 37, 44, 161, 0, 0, 0, 0, 5, 103, 86, 115, 35, 181},
+						PeerPort:                            12345,
+						BrokerReceiveTimeUnixNano:           1357924680,
+						DroppedApplicationMessageProperties: false,
 						UserProperties: map[string]*model_v1.SpanData_UserPropertyValue{
 							"special_key": {
 								Value: &model_v1.SpanData_UserPropertyValue_BoolValue{
@@ -152,7 +163,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 						},
 						TransactionEvent: &model_v1.SpanData_TransactionEvent{
 							TimeUnixNano: 123456789,
-							Type:         model_v1.SpanData_TransactionEvent_COMMIT,
+							Type:         model_v1.SpanData_TransactionEvent_SESSION_TIMEOUT,
 							Initiator:    model_v1.SpanData_TransactionEvent_CLIENT,
 							TransactionId: &model_v1.SpanData_TransactionEvent_LocalId{
 								LocalId: &model_v1.SpanData_TransactionEvent_LocalTransactionId{
@@ -188,43 +199,43 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 				span.SetKind(5)
 				span.SetName("(topic) receive")
 				span.Status().SetCode(ptrace.StatusCodeUnset)
-				populateAttributes(t, span.Attributes(), map[string]interface{}{
-					"messaging.system":                                "SolacePubSub+",
-					"messaging.operation":                             "receive",
-					"messaging.protocol":                              "MQTT",
-					"messaging.protocol_version":                      "5.0",
-					"messaging.message_id":                            "someMessageID",
-					"messaging.conversation_id":                       "someConversationID",
-					"messaging.message_payload_size_bytes":            int64(1234),
-					"messaging.destination":                           "someTopic",
-					"messaging.solace.client_username":                "someClientUsername",
-					"messaging.solace.client_name":                    "someClient1234",
-					"messaging.solace.replication_group_message_id":   "rmid1:00010-40910192431-40516479-90a9c4e1",
-					"messaging.solace.priority":                       int64(1),
-					"messaging.solace.ttl":                            int64(86000),
-					"messaging.solace.dmq_eligible":                   true,
-					"messaging.solace.dropped_enqueue_events_success": int64(42),
-					"messaging.solace.dropped_enqueue_events_failed":  int64(24),
-					"messaging.solace.reply_to_topic":                 "someReplyToTopic",
-					"messaging.solace.broker_receive_time_unix_nano":  int64(1357924680),
-					"messaging.solace.dropped_user_properties":        false,
-					"net.host.ip":                                     "1.2.3.4",
-					"net.host.port":                                   int64(55555),
-					"net.peer.ip":                                     "2345:425:2ca1::567:5673:23b5",
-					"net.peer.port":                                   int64(12345),
-					"messaging.solace.user_properties.special_key":    true,
+				spanAttrs := span.Attributes()
+				populateAttributes(t, spanAttrs, map[string]interface{}{
+					"messaging.system":                                        "SolacePubSub+",
+					"messaging.operation":                                     "receive",
+					"messaging.protocol":                                      "MQTT",
+					"messaging.protocol_version":                              "5.0",
+					"messaging.message_id":                                    "someMessageID",
+					"messaging.conversation_id":                               "someConversationID",
+					"messaging.message_payload_size_bytes":                    int64(1234),
+					"messaging.destination":                                   "someTopic",
+					"messaging.solace.client_username":                        "someClientUsername",
+					"messaging.solace.client_name":                            "someClient1234",
+					"messaging.solace.replication_group_message_id":           "rmid1:00010-40910192431-40516479-90a9c4e1",
+					"messaging.solace.priority":                               int64(1),
+					"messaging.solace.ttl":                                    int64(86000),
+					"messaging.solace.dmq_eligible":                           true,
+					"messaging.solace.dropped_enqueue_events_success":         int64(42),
+					"messaging.solace.dropped_enqueue_events_failed":          int64(24),
+					"messaging.solace.reply_to_topic":                         "someReplyToTopic",
+					"messaging.solace.broker_receive_time_unix_nano":          int64(1357924680),
+					"messaging.solace.dropped_application_message_properties": false,
+					"messaging.solace.delivery_mode":                          "direct",
+					"net.host.ip":                                             "1.2.3.4",
+					"net.host.port":                                           int64(55555),
+					"net.peer.ip":                                             "2345:425:2ca1::567:5673:23b5",
+					"net.peer.port":                                           int64(12345),
+					"messaging.solace.user_properties.special_key":            true,
 				})
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]interface{}{
-					"messaging.destination":                 "somequeue",
 					"messaging.solace.destination_type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
 				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]interface{}{
-					"messaging.destination":                 "sometopic",
 					"messaging.solace.destination_type":     "topic-endpoint",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
-				populateEvent(t, span, "commit", 123456789, map[string]interface{}{
+				populateEvent(t, span, "session_timeout", 123456789, map[string]interface{}{
 					"messaging.solace.transaction_initiator":   "client",
 					"messaging.solace.transaction_id":          12345,
 					"messaging.solace.transacted_session_name": "my-session-name",
@@ -236,7 +247,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := newTracesUnmarshaller(zap.NewNop())
+			u := newTracesUnmarshaller(zap.NewNop(), newTestMetrics(t))
 			traces, err := u.unmarshal(tt.message)
 			if tt.err != nil {
 				require.Error(t, err)
@@ -281,7 +292,7 @@ func TestUnmarshallerMapResourceSpan(t *testing.T) {
 		{
 			name: "Maps All Fields When Present",
 			spanData: &model_v1.SpanData{
-				RouterName:     &routerName,
+				RouterName:     routerName,
 				MessageVpnName: &vpnName,
 				SolosVersion:   version,
 			},
@@ -296,16 +307,17 @@ func TestUnmarshallerMapResourceSpan(t *testing.T) {
 			spanData: &model_v1.SpanData{},
 			want: map[string]interface{}{
 				"service.version": "",
+				"service.name":    "",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := &solaceMessageUnmarshallerV1{zap.NewNop()}
+			u := newTestV1Unmarshaller(t)
 			actual := pcommon.NewMap()
 			u.mapResourceSpanAttributes(tt.spanData, actual)
 			assert.Equal(t, tt.want, actual.AsRaw())
-			validateMetric(t, viewRecoverableUnmarshallingErrors, tt.expectedUnmarshallingErrors)
+			validateMetric(t, u.metrics.views.recoverableUnmarshallingErrors, tt.expectedUnmarshallingErrors)
 		})
 	}
 }
@@ -368,7 +380,7 @@ func TestUnmarshallerMapClientSpanData(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := &solaceMessageUnmarshallerV1{zap.NewNop()}
+			u := newTestV1Unmarshaller(t)
 			actual := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			u.mapClientSpanData(tt.data, actual)
 			expected := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
@@ -397,29 +409,30 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 		{
 			name: "With All Valid Attributes",
 			spanData: &model_v1.SpanData{
-				Protocol:                    "MQTT",
-				ProtocolVersion:             &protocolVersion,
-				ApplicationMessageId:        &applicationMessageID,
-				CorrelationId:               &correlationID,
-				BinaryAttachmentSize:        1000,
-				XmlAttachmentSize:           200,
-				MetadataSize:                34,
-				ClientUsername:              "someClientUsername",
-				ClientName:                  "someClient1234",
-				ReplyToTopic:                &replyToTopic,
-				Topic:                       "someTopic",
-				ReplicationGroupMessageId:   []byte{0x01, 0x00, 0x01, 0x04, 0x09, 0x10, 0x19, 0x24, 0x31, 0x40, 0x51, 0x64, 0x79, 0x90, 0xa9, 0xc4, 0xe1},
-				Priority:                    &priority,
-				Ttl:                         &ttl,
-				DmqEligible:                 true,
-				DroppedEnqueueEventsSuccess: 42,
-				DroppedEnqueueEventsFailed:  24,
-				HostIp:                      []byte{1, 2, 3, 4},
-				HostPort:                    55555,
-				PeerIp:                      []byte{35, 69, 4, 37, 44, 161, 0, 0, 0, 0, 5, 103, 86, 115, 35, 181},
-				PeerPort:                    12345,
-				BrokerReceiveTimeUnixNano:   1357924680,
-				DroppedUserProperties:       false,
+				Protocol:                            "MQTT",
+				ProtocolVersion:                     &protocolVersion,
+				ApplicationMessageId:                &applicationMessageID,
+				CorrelationId:                       &correlationID,
+				BinaryAttachmentSize:                1000,
+				XmlAttachmentSize:                   200,
+				MetadataSize:                        34,
+				ClientUsername:                      "someClientUsername",
+				ClientName:                          "someClient1234",
+				ReplyToTopic:                        &replyToTopic,
+				DeliveryMode:                        model_v1.SpanData_PERSISTENT,
+				Topic:                               "someTopic",
+				ReplicationGroupMessageId:           []byte{0x01, 0x00, 0x01, 0x04, 0x09, 0x10, 0x19, 0x24, 0x31, 0x40, 0x51, 0x64, 0x79, 0x90, 0xa9, 0xc4, 0xe1},
+				Priority:                            &priority,
+				Ttl:                                 &ttl,
+				DmqEligible:                         true,
+				DroppedEnqueueEventsSuccess:         42,
+				DroppedEnqueueEventsFailed:          24,
+				HostIp:                              []byte{1, 2, 3, 4},
+				HostPort:                            55555,
+				PeerIp:                              []byte{35, 69, 4, 37, 44, 161, 0, 0, 0, 0, 5, 103, 86, 115, 35, 181},
+				PeerPort:                            12345,
+				BrokerReceiveTimeUnixNano:           1357924680,
+				DroppedApplicationMessageProperties: false,
 				UserProperties: map[string]*model_v1.SpanData_UserPropertyValue{
 					"special_key": {
 						Value: &model_v1.SpanData_UserPropertyValue_BoolValue{
@@ -429,79 +442,126 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				},
 			},
 			want: map[string]interface{}{
-				"messaging.system":                                "SolacePubSub+",
-				"messaging.operation":                             "receive",
-				"messaging.protocol":                              "MQTT",
-				"messaging.protocol_version":                      "5.0",
-				"messaging.message_id":                            "someMessageID",
-				"messaging.conversation_id":                       "someConversationID",
-				"messaging.message_payload_size_bytes":            int64(1234),
-				"messaging.destination":                           "someTopic",
-				"messaging.solace.client_username":                "someClientUsername",
-				"messaging.solace.client_name":                    "someClient1234",
-				"messaging.solace.replication_group_message_id":   "rmid1:00010-40910192431-40516479-90a9c4e1",
-				"messaging.solace.priority":                       int64(1),
-				"messaging.solace.ttl":                            int64(86000),
-				"messaging.solace.dmq_eligible":                   true,
-				"messaging.solace.dropped_enqueue_events_success": int64(42),
-				"messaging.solace.dropped_enqueue_events_failed":  int64(24),
-				"messaging.solace.reply_to_topic":                 "someReplyToTopic",
-				"net.host.ip":                                     "1.2.3.4",
-				"net.host.port":                                   int64(55555),
-				"net.peer.ip":                                     "2345:425:2ca1::567:5673:23b5",
-				"net.peer.port":                                   int64(12345),
-				"messaging.solace.user_properties.special_key":    true,
-				"messaging.solace.broker_receive_time_unix_nano":  int64(1357924680),
-				"messaging.solace.dropped_user_properties":        false,
+				"messaging.system":                                        "SolacePubSub+",
+				"messaging.operation":                                     "receive",
+				"messaging.protocol":                                      "MQTT",
+				"messaging.protocol_version":                              "5.0",
+				"messaging.message_id":                                    "someMessageID",
+				"messaging.conversation_id":                               "someConversationID",
+				"messaging.message_payload_size_bytes":                    int64(1234),
+				"messaging.destination":                                   "someTopic",
+				"messaging.solace.client_username":                        "someClientUsername",
+				"messaging.solace.client_name":                            "someClient1234",
+				"messaging.solace.replication_group_message_id":           "rmid1:00010-40910192431-40516479-90a9c4e1",
+				"messaging.solace.priority":                               int64(1),
+				"messaging.solace.ttl":                                    int64(86000),
+				"messaging.solace.dmq_eligible":                           true,
+				"messaging.solace.dropped_enqueue_events_success":         int64(42),
+				"messaging.solace.dropped_enqueue_events_failed":          int64(24),
+				"messaging.solace.reply_to_topic":                         "someReplyToTopic",
+				"messaging.solace.delivery_mode":                          "persistent",
+				"net.host.ip":                                             "1.2.3.4",
+				"net.host.port":                                           int64(55555),
+				"net.peer.ip":                                             "2345:425:2ca1::567:5673:23b5",
+				"net.peer.port":                                           int64(12345),
+				"messaging.solace.user_properties.special_key":            true,
+				"messaging.solace.broker_receive_time_unix_nano":          int64(1357924680),
+				"messaging.solace.dropped_application_message_properties": false,
 			},
 		},
 		{
 			name: "With Only Required Fields",
 			spanData: &model_v1.SpanData{
-				Protocol:                    "MQTT",
-				BinaryAttachmentSize:        1000,
-				XmlAttachmentSize:           200,
-				MetadataSize:                34,
-				ClientUsername:              "someClientUsername",
-				ClientName:                  "someClient1234",
-				Topic:                       "someTopic",
-				DmqEligible:                 true,
-				DroppedEnqueueEventsSuccess: 42,
-				DroppedEnqueueEventsFailed:  24,
-				HostPort:                    55555,
-				PeerPort:                    12345,
-				BrokerReceiveTimeUnixNano:   1357924680,
-				DroppedUserProperties:       true,
+				Protocol:                            "MQTT",
+				BinaryAttachmentSize:                1000,
+				XmlAttachmentSize:                   200,
+				MetadataSize:                        34,
+				ClientUsername:                      "someClientUsername",
+				ClientName:                          "someClient1234",
+				Topic:                               "someTopic",
+				DeliveryMode:                        model_v1.SpanData_NON_PERSISTENT,
+				DmqEligible:                         true,
+				DroppedEnqueueEventsSuccess:         42,
+				DroppedEnqueueEventsFailed:          24,
+				HostIp:                              []byte{1, 2, 3, 4},
+				HostPort:                            55555,
+				PeerIp:                              []byte{35, 69, 4, 37, 44, 161, 0, 0, 0, 0, 5, 103, 86, 115, 35, 181},
+				PeerPort:                            12345,
+				BrokerReceiveTimeUnixNano:           1357924680,
+				DroppedApplicationMessageProperties: true,
 				UserProperties: map[string]*model_v1.SpanData_UserPropertyValue{
 					"special_key": nil,
 				},
 			},
 			want: map[string]interface{}{
-				"messaging.system":                                "SolacePubSub+",
-				"messaging.operation":                             "receive",
-				"messaging.protocol":                              "MQTT",
-				"messaging.message_payload_size_bytes":            int64(1234),
-				"messaging.destination":                           "someTopic",
-				"messaging.solace.client_username":                "someClientUsername",
-				"messaging.solace.client_name":                    "someClient1234",
-				"messaging.solace.dmq_eligible":                   true,
-				"messaging.solace.dropped_enqueue_events_success": int64(42),
-				"messaging.solace.dropped_enqueue_events_failed":  int64(24),
-				"net.host.port":                                   int64(55555),
-				"net.peer.port":                                   int64(12345),
-				"messaging.solace.broker_receive_time_unix_nano":  int64(1357924680),
-				"messaging.solace.dropped_user_properties":        true,
+				"messaging.system":                                        "SolacePubSub+",
+				"messaging.operation":                                     "receive",
+				"messaging.protocol":                                      "MQTT",
+				"messaging.message_payload_size_bytes":                    int64(1234),
+				"messaging.destination":                                   "someTopic",
+				"messaging.solace.client_username":                        "someClientUsername",
+				"messaging.solace.client_name":                            "someClient1234",
+				"messaging.solace.dmq_eligible":                           true,
+				"messaging.solace.delivery_mode":                          "non_persistent",
+				"messaging.solace.dropped_enqueue_events_success":         int64(42),
+				"messaging.solace.dropped_enqueue_events_failed":          int64(24),
+				"net.host.ip":                                             "1.2.3.4",
+				"net.host.port":                                           int64(55555),
+				"net.peer.ip":                                             "2345:425:2ca1::567:5673:23b5",
+				"net.peer.port":                                           int64(12345),
+				"messaging.solace.broker_receive_time_unix_nano":          int64(1357924680),
+				"messaging.solace.dropped_application_message_properties": true,
 			},
-			expectedUnmarshallingErrors: 2,
+		},
+		{
+			name: "With Some Invalid Fields",
+			spanData: &model_v1.SpanData{
+				Protocol:                            "MQTT",
+				BinaryAttachmentSize:                1000,
+				XmlAttachmentSize:                   200,
+				MetadataSize:                        34,
+				ClientUsername:                      "someClientUsername",
+				ClientName:                          "someClient1234",
+				Topic:                               "someTopic",
+				DeliveryMode:                        model_v1.SpanData_DeliveryMode(1000),
+				DmqEligible:                         true,
+				DroppedEnqueueEventsSuccess:         42,
+				DroppedEnqueueEventsFailed:          24,
+				HostPort:                            55555,
+				PeerPort:                            12345,
+				BrokerReceiveTimeUnixNano:           1357924680,
+				DroppedApplicationMessageProperties: true,
+				UserProperties: map[string]*model_v1.SpanData_UserPropertyValue{
+					"special_key": nil,
+				},
+			},
+			want: map[string]interface{}{
+				"messaging.system":                                        "SolacePubSub+",
+				"messaging.operation":                                     "receive",
+				"messaging.protocol":                                      "MQTT",
+				"messaging.message_payload_size_bytes":                    int64(1234),
+				"messaging.destination":                                   "someTopic",
+				"messaging.solace.client_username":                        "someClientUsername",
+				"messaging.solace.client_name":                            "someClient1234",
+				"messaging.solace.dmq_eligible":                           true,
+				"messaging.solace.delivery_mode":                          "Unknown Delivery Mode (1000)",
+				"messaging.solace.dropped_enqueue_events_success":         int64(42),
+				"messaging.solace.dropped_enqueue_events_failed":          int64(24),
+				"net.host.port":                                           int64(55555),
+				"net.peer.port":                                           int64(12345),
+				"messaging.solace.broker_receive_time_unix_nano":          int64(1357924680),
+				"messaging.solace.dropped_application_message_properties": true,
+			},
+			expectedUnmarshallingErrors: 3,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := &solaceMessageUnmarshallerV1{zap.NewNop()}
+			u := newTestV1Unmarshaller(t)
 			actual := pcommon.NewMap()
 			u.mapClientSpanAttributes(tt.spanData, actual)
 			assert.Equal(t, tt.want, actual.AsRaw())
-			validateMetric(t, viewRecoverableUnmarshallingErrors, tt.expectedUnmarshallingErrors)
+			validateMetric(t, u.metrics.views.recoverableUnmarshallingErrors, tt.expectedUnmarshallingErrors)
 		})
 	}
 }
@@ -532,7 +592,6 @@ func TestUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]interface{}{
-					"messaging.destination":                 "somequeue",
 					"messaging.solace.destination_type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
@@ -552,7 +611,6 @@ func TestUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "sometopic enqueue", 123456789, map[string]interface{}{
-					"messaging.destination":                  "sometopic",
 					"messaging.solace.destination_type":      "topic-endpoint",
 					"messaging.solace.enqueue_error_message": someErrorString,
 					"messaging.solace.rejects_all_enqueues":  true,
@@ -575,52 +633,12 @@ func TestUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]interface{}{
-					"messaging.destination":                 "somequeue",
 					"messaging.solace.destination_type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
 				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]interface{}{
-					"messaging.destination":                 "sometopic",
 					"messaging.solace.destination_type":     "topic-endpoint",
 					"messaging.solace.rejects_all_enqueues": false,
-				})
-			},
-		},
-		{ // when an enqueue event is present, expect it to be added to the span events
-			name: "Enqueue Event Anonymous Queue",
-			spanData: &model_v1.SpanData{
-				EnqueueEvents: []*model_v1.SpanData_EnqueueEvent{
-					{
-						Dest:         &model_v1.SpanData_EnqueueEvent_QueueName{QueueName: "#P2P/QUE/solbroker/some-topic-endpoint"},
-						TimeUnixNano: 123456789,
-					},
-				},
-			},
-			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "(anonymous) enqueue", 123456789, map[string]interface{}{
-					"messaging.destination":                 "#P2P/QUE/solbroker/some-topic-endpoint",
-					"messaging.solace.destination_type":     "queue",
-					"messaging.solace.rejects_all_enqueues": false,
-				})
-			},
-		},
-		{ // when a topic endpoint enqueue event is present, expect it to be added to the span events
-			name: "Enqueue Event Anonymous Topic Endpoint",
-			spanData: &model_v1.SpanData{
-				EnqueueEvents: []*model_v1.SpanData_EnqueueEvent{
-					{
-						Dest:             &model_v1.SpanData_EnqueueEvent_TopicEndpointName{TopicEndpointName: "#P2P/TE/solbroker/some-topic-endpoint"},
-						TimeUnixNano:     123456789,
-						ErrorDescription: &someErrorString,
-					},
-				},
-			},
-			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "(anonymous) enqueue", 123456789, map[string]interface{}{
-					"messaging.destination":                  "#P2P/TE/solbroker/some-topic-endpoint",
-					"messaging.solace.destination_type":      "topic-endpoint",
-					"messaging.solace.enqueue_error_message": someErrorString,
-					"messaging.solace.rejects_all_enqueues":  false,
 				})
 			},
 		},
@@ -691,7 +709,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 				TransactionEvent: &model_v1.SpanData_TransactionEvent{
 					TimeUnixNano: 123456789,
 					Type:         model_v1.SpanData_TransactionEvent_PREPARE,
-					Initiator:    model_v1.SpanData_TransactionEvent_SESSION_TIMEOUT,
+					Initiator:    model_v1.SpanData_TransactionEvent_BROKER,
 					TransactionId: &model_v1.SpanData_TransactionEvent_Xid_{
 						Xid: &model_v1.SpanData_TransactionEvent_Xid{
 							FormatId:        123,
@@ -704,25 +722,29 @@ func TestUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "prepare", 123456789, map[string]interface{}{
-					"messaging.solace.transaction_initiator":     "session timeout",
+					"messaging.solace.transaction_initiator":     "broker",
 					"messaging.solace.transaction_xid":           "0000007b--",
 					"messaging.solace.transaction_error_message": someErrorString,
 				})
 			},
 		},
 		{ // Type of transaction not handled
-			name: "Invalid Transaction Type",
+			name: "Unknown Transaction Type and no ID",
 			spanData: &model_v1.SpanData{
 				TransactionEvent: &model_v1.SpanData_TransactionEvent{
 					TimeUnixNano: 123456789,
 					Type:         model_v1.SpanData_TransactionEvent_Type(12345),
 				},
 			},
-			populateExpectedSpan: func(span ptrace.Span) {},
-			unmarshallingErrors:  1,
+			populateExpectedSpan: func(span ptrace.Span) {
+				populateEvent(t, span, "Unknown Transaction Event (12345)", 123456789, map[string]interface{}{
+					"messaging.solace.transaction_initiator": "client",
+				})
+			},
+			unmarshallingErrors: 2,
 		},
 		{ // Type of ID not handled, type of initiator not handled
-			name: "Invalid Transaction Initiator and ID",
+			name: "Unknown Transaction Initiator and no ID",
 			spanData: &model_v1.SpanData{
 				TransactionEvent: &model_v1.SpanData_TransactionEvent{
 					TimeUnixNano:  123456789,
@@ -733,7 +755,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "rollback", 123456789, map[string]interface{}{
-					"messaging.solace.transaction_initiator": "",
+					"messaging.solace.transaction_initiator": "Unknown Transaction Initiator (12345)",
 				})
 			},
 			unmarshallingErrors: 2,
@@ -754,7 +776,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 				},
 				TransactionEvent: &model_v1.SpanData_TransactionEvent{
 					TimeUnixNano: 123456789,
-					Type:         model_v1.SpanData_TransactionEvent_COMMIT,
+					Type:         model_v1.SpanData_TransactionEvent_ROLLBACK_ONLY,
 					Initiator:    model_v1.SpanData_TransactionEvent_CLIENT,
 					TransactionId: &model_v1.SpanData_TransactionEvent_LocalId{
 						LocalId: &model_v1.SpanData_TransactionEvent_LocalTransactionId{
@@ -767,16 +789,14 @@ func TestUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]interface{}{
-					"messaging.destination":                 "somequeue",
 					"messaging.solace.destination_type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
 				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]interface{}{
-					"messaging.destination":                 "sometopic",
 					"messaging.solace.destination_type":     "topic-endpoint",
 					"messaging.solace.rejects_all_enqueues": true,
 				})
-				populateEvent(t, span, "commit", 123456789, map[string]interface{}{
+				populateEvent(t, span, "rollback_only", 123456789, map[string]interface{}{
 					"messaging.solace.transaction_initiator":   "client",
 					"messaging.solace.transaction_id":          12345,
 					"messaging.solace.transacted_session_name": "my-session-name",
@@ -787,14 +807,14 @@ func TestUnmarshallerEvents(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := &solaceMessageUnmarshallerV1{zap.NewNop()}
+			u := newTestV1Unmarshaller(t)
 			expected := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			tt.populateExpectedSpan(expected)
 			actual := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			u.mapEvents(tt.spanData, actual)
 			// order is nondeterministic for attributes, so we must sort to get a valid comparison
 			compareSpans(t, expected, actual)
-			validateMetric(t, viewRecoverableUnmarshallingErrors, tt.unmarshallingErrors)
+			validateMetric(t, u.metrics.views.recoverableUnmarshallingErrors, tt.unmarshallingErrors)
 		})
 	}
 }
@@ -870,15 +890,16 @@ func TestUnmarshallerRGMID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := &solaceMessageUnmarshallerV1{zap.NewNop()}
+			u := newTestV1Unmarshaller(t)
 			actual := u.rgmidToString(tt.in)
 			assert.Equal(t, tt.expected, actual)
-			validateMetric(t, viewRecoverableUnmarshallingErrors, tt.numErr)
+			validateMetric(t, u.metrics.views.recoverableUnmarshallingErrors, tt.numErr)
 		})
 	}
 }
 
 func TestUnmarshallerInsertUserProperty(t *testing.T) {
+	emojiVal := 0xf09f92a9
 	testCases := []struct {
 		data         interface{}
 		expectedType pcommon.ValueType
@@ -987,6 +1008,27 @@ func TestUnmarshallerInsertUserProperty(t *testing.T) {
 				assert.Equal(t, "some_dest", val.Str())
 			},
 		},
+		{
+			&model_v1.SpanData_UserPropertyValue_CharacterValue{CharacterValue: 0x61},
+			pcommon.ValueTypeStr,
+			func(val pcommon.Value) {
+				assert.Equal(t, "a", val.Str())
+			},
+		},
+		{
+			&model_v1.SpanData_UserPropertyValue_CharacterValue{CharacterValue: 0xe68080},
+			pcommon.ValueTypeStr,
+			func(val pcommon.Value) {
+				assert.Equal(t, string(rune(0xe68080)), val.Str())
+			},
+		},
+		{
+			&model_v1.SpanData_UserPropertyValue_CharacterValue{CharacterValue: 0xf09f92a9},
+			pcommon.ValueTypeStr,
+			func(val pcommon.Value) {
+				assert.Equal(t, string(rune(emojiVal)), val.Str())
+			},
+		},
 	}
 
 	unmarshaller := &solaceMessageUnmarshallerV1{
@@ -1008,13 +1050,16 @@ func TestUnmarshallerInsertUserProperty(t *testing.T) {
 }
 
 func TestSolaceMessageUnmarshallerV1InsertUserPropertyUnsupportedType(t *testing.T) {
-	unmarshaller := &solaceMessageUnmarshallerV1{
-		logger: zap.NewNop(),
-	}
+	u := newTestV1Unmarshaller(t)
 	const key = "some-property"
 	attributeMap := pcommon.NewMap()
-	unmarshaller.insertUserProperty(attributeMap, key, "invalid data type")
+	u.insertUserProperty(attributeMap, key, "invalid data type")
 	_, ok := attributeMap.Get("messaging.solace.user_properties." + key)
 	assert.False(t, ok)
-	validateMetric(t, viewRecoverableUnmarshallingErrors, 1)
+	validateMetric(t, u.metrics.views.recoverableUnmarshallingErrors, 1)
+}
+
+func newTestV1Unmarshaller(t *testing.T) *solaceMessageUnmarshallerV1 {
+	m := newTestMetrics(t)
+	return &solaceMessageUnmarshallerV1{zap.NewNop(), m}
 }
