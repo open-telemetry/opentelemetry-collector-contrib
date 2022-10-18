@@ -14,7 +14,7 @@ on:
 env:
   # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
   # Cache downloads for this workflow consistently run in under 1 minute
-  SEGMENT_DOWNLOAD_TIMEOUT_MIN: 5
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 5
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
