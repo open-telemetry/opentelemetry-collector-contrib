@@ -565,14 +565,14 @@ func (m *metricPostgresqlBgwriterDuration) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlBgwriterDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, bgDurationTypeAttributeValue string) {
+func (m *metricPostgresqlBgwriterDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, bgDurationTypeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("type", bgDurationTypeAttributeValue)
 }
 
@@ -1685,7 +1685,7 @@ func (mb *MetricsBuilder) RecordPostgresqlBgwriterCheckpointCountDataPoint(ts pc
 }
 
 // RecordPostgresqlBgwriterDurationDataPoint adds a data point to postgresql.bgwriter.duration metric.
-func (mb *MetricsBuilder) RecordPostgresqlBgwriterDurationDataPoint(ts pcommon.Timestamp, val int64, bgDurationTypeAttributeValue AttributeBgDurationType) {
+func (mb *MetricsBuilder) RecordPostgresqlBgwriterDurationDataPoint(ts pcommon.Timestamp, val float64, bgDurationTypeAttributeValue AttributeBgDurationType) {
 	mb.metricPostgresqlBgwriterDuration.recordDataPoint(mb.startTime, ts, val, bgDurationTypeAttributeValue.String())
 }
 
