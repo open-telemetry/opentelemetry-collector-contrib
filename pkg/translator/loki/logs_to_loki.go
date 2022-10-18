@@ -36,7 +36,8 @@ type PushReport struct {
 
 // LogsToLokiRequests converts a Logs pipeline data into Loki PushRequests grouped
 // by tenant. The tenant value is inferred from the `loki.tenant` resource or log
-// attribute hint.
+// attribute hint. If the `loki.tenant` attribute is present in both resource or
+// log attributes, then the resource attribute takes precedence.
 // Labels for each record are inferred based on the hints "loki.attribute.labels"
 // and "loki.resource.labels". Each hint might contain a comma-separated list of
 // attributes (resource or record) that should be promoted to a Loki label. Those
@@ -130,7 +131,7 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 	return requests
 }
 
-// resolveAttributeFromTenantHint extract an attribute based on the tenant hint.
+// getTenantFromTenantHint extract an attribute based on the tenant hint.
 // it looks up for the attribute first in resource attributes and fallbacks to
 // record attributes if it is not found.
 func getTenantFromTenantHint(logAttr pcommon.Map, resourceAttr pcommon.Map) string {
