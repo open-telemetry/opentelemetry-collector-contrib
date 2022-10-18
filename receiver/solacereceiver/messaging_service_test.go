@@ -364,28 +364,28 @@ func TestAMQPAcknowledgeMessage(t *testing.T) {
 		close(writeCalled)
 		return len(b), nil
 	}
-	err = service.ack(context.Background(), msg)
+	err = service.accept(context.Background(), msg)
 	assert.NoError(t, err)
 	assertChannelClosed(t, writeCalled)
 	closeMockedAMQPService(t, service, conn)
 }
 
-func TestAMQPRejectMessage(t *testing.T) {
+func TestAMQPModifyMessage(t *testing.T) {
 	service, conn := startMockedService(t)
 	conn.nextData <- []byte(amqpHelloWorldMsg)
 	msg, err := service.receiveMessage(context.Background())
 	assert.NoError(t, err)
 	writeCalled := make(chan struct{})
-	// Expected reject from AMQP frame for first received message
+	// Expected modify from AMQP frame for first received message
 	// "\x00\x00\x00\x1c\x02\x00\x00\x00\x00\x53\x15\xd0\x00\x00\x00\x0c\x00\x00\x00\x05\x41\x43\x40\x41\x00\x53\x25\x45"
 	conn.writeHandle = func(b []byte) (n int, err error) {
 		// assert that a disposition is written
 		assert.Equal(t, byte(0x15), b[10])
-		assert.Equal(t, byte(0x25), b[26]) // 0x25 at the 27th byte in this case means reject
+		assert.Equal(t, byte(0x27), b[26]) // 0x27 at the 27th byte in this case means modify
 		close(writeCalled)
 		return len(b), nil
 	}
-	err = service.nack(context.Background(), msg)
+	err = service.failed(context.Background(), msg)
 	assert.NoError(t, err)
 	select {
 	case <-writeCalled:
