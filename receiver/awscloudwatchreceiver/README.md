@@ -33,7 +33,7 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
 
 ### Group Parameters
 
-`autodiscover` and `named` are ways to control and filter which log groups and log streams which are collected from. They are mutually exclusive and are incompatible and should not be configured at the same time.
+`autodiscover` and `named` are ways to control and filter which log groups and log streams which are collected from. They are mutually exclusive and are incompatible to be configured at the same time.
 
 - `autodiscover`
   - `limit`: (optional; default = 50) Limits the number of discovered log groups.
