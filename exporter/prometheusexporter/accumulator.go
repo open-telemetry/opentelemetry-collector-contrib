@@ -384,6 +384,7 @@ func AccumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
 		for i := 0; i < newer.BucketCounts().Len(); i++ {
 			if older.ExplicitBounds().At(i) != newer.ExplicitBounds().At(i) {
 				match = false
+				break
 			}
 		}
 	} else {
