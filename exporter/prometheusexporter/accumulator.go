@@ -393,7 +393,7 @@ func AccumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
 
 	if match {
 		dest.SetCount(newer.Count() + older.Count())
-		if newer.HasSum() {
+		if newer.HasSum() && older.HasSum() {
 			dest.SetSum(newer.Sum() + older.Sum())
 		}
 
