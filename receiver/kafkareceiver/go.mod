@@ -14,9 +14,9 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.1
 	github.com/stretchr/testify v1.8.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.62.0
-	go.opentelemetry.io/collector/pdata v0.62.0
-	go.opentelemetry.io/collector/semconv v0.62.0
+	go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c
+	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
+	go.opentelemetry.io/collector/semconv v0.62.2-0.20221017171445-6313054b642c
 	go.uber.org/zap v1.23.0
 )
 
@@ -27,6 +27,8 @@ require (
 	github.com/eapache/go-resiliency v1.3.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
+	github.com/go-logr/logr v1.2.3 // indirect
+	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -55,9 +57,10 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.1 // indirect
 	github.com/xdg-go/stringprep v1.0.3 // indirect
-	go.opentelemetry.io/otel v1.10.0 // indirect
-	go.opentelemetry.io/otel/metric v0.32.1 // indirect
-	go.opentelemetry.io/otel/trace v1.10.0 // indirect
+	go.opentelemetry.io/otel v1.11.0 // indirect
+	go.opentelemetry.io/otel/metric v0.32.3 // indirect
+	go.opentelemetry.io/otel/sdk v1.11.0 // indirect
+	go.opentelemetry.io/otel/trace v1.11.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/crypto v0.0.0-20221010152910-d6f0a8c073c2 // indirect

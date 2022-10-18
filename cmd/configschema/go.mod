@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.62.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.62.0
+	go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4
 	golang.org/x/text v0.3.8
 )
@@ -240,7 +240,7 @@ require (
 	github.com/hetznercloud/hcloud-go v1.35.2 // indirect
 	github.com/iancoleman/strcase v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6 // indirect
 	github.com/influxdata/influxdb-observability/common v0.2.29 // indirect
 	github.com/influxdata/influxdb-observability/influx2otel v0.2.29 // indirect
@@ -538,7 +538,7 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
-	github.com/spf13/cobra v1.5.0 // indirect
+	github.com/spf13/cobra v1.6.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.13.0 // indirect
@@ -582,13 +582,13 @@ require (
 	go.mongodb.org/atlas v0.17.0 // indirect
 	go.mongodb.org/mongo-driver v1.10.3 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.62.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.62.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.1 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.1 // indirect
-	go.opentelemetry.io/contrib/zpages v0.36.1 // indirect
+	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c // indirect
+	go.opentelemetry.io/collector/semconv v0.62.2-0.20221017171445-6313054b642c // indirect
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.3 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.3 // indirect
+	go.opentelemetry.io/contrib/zpages v0.36.3 // indirect
 	go.opentelemetry.io/otel v1.11.0 // indirect
-	go.opentelemetry.io/otel/metric v0.32.1 // indirect
+	go.opentelemetry.io/otel/metric v0.32.3 // indirect
 	go.opentelemetry.io/otel/sdk v1.11.0 // indirect
 	go.opentelemetry.io/otel/trace v1.11.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
