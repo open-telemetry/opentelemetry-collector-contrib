@@ -179,6 +179,8 @@ require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.14 // indirect
 	github.com/99designs/keyring v1.1.6 // indirect
 	github.com/AthenZ/athenz v1.10.39 // indirect
+	github.com/Azure/azure-amqp-common-go/v3 v3.2.3 // indirect
+	github.com/Azure/azure-event-hubs-go/v3 v3.3.18 // indirect
 	github.com/Azure/azure-kusto-go v0.8.1 // indirect
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
 	github.com/Azure/azure-sdk-for-go v65.0.0+incompatible // indirect
@@ -287,6 +289,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/denisenkom/go-mssqldb v0.12.2 // indirect
 	github.com/dennwc/varint v1.0.0 // indirect
+	github.com/devigned/tab v0.1.1 // indirect
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
 	github.com/digitalocean/godo v1.82.0 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
@@ -609,7 +612,7 @@ require (
 	google.golang.org/api v0.98.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20221010155953-15ba04fc1c0e // indirect
-	google.golang.org/grpc v1.50.0 // indirect
+	google.golang.org/grpc v1.50.1 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
