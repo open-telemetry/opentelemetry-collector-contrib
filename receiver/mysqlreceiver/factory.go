@@ -52,6 +52,11 @@ func createDefaultConfig() config.Receiver {
 			Transport: "tcp",
 		},
 		Metrics: metadata.DefaultMetricsSettings(),
+		StatementEvents: StatementEventsConfig{
+			DigestTextLimit: defaultStatementEventsDigestTextLimit,
+			Limit:           defaultStatementEventsLimit,
+			TimeLimit:       defaultStatementEventsTimeLimit,
+		},
 	}
 }
 
