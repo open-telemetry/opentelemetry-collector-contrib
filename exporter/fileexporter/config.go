@@ -100,21 +100,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	// next manually search for protocols in the confmap.Conf,
 	// if rotation is not present it means it is disabled.
 	if !componentParser.IsSet(rotationFieldName) {
-		return nil
+		cfg.Rotation = nil
 	}
-	rotationConfmap, err := componentParser.Sub(rotationFieldName)
-	if err != nil {
-		return err
-	}
-	rotationCfg := newDefaultRotationConfig()
-	err = rotationConfmap.Unmarshal(rotationCfg, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	cfg.Rotation = rotationCfg
 	return nil
-}
-
-func newDefaultRotationConfig() *Rotation {
-	return &Rotation{MaxBackups: defaultMaxBackups}
 }
