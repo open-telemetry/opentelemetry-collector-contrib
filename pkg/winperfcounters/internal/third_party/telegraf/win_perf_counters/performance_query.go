@@ -8,6 +8,7 @@ import (
 	"errors"
 	"syscall"
 	"time"
+	"unicode/utf16"
 	"unsafe"
 )
 
@@ -222,9 +223,8 @@ func UTF16PtrToString(s *uint16) string {
 		len++
 	}
 
-	// len+1 to include null byte in the slice
-	slice := unsafe.Slice(s, len+1)
-	return syscall.UTF16ToString(slice)
+	slice := unsafe.Slice(s, len)
+	return string(utf16.Decode(slice))
 }
 
 // UTF16ToStringArray converts list of Windows API NULL terminated strings  to go string array
