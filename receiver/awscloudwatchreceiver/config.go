@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 	"go.uber.org/multierr"
 )
 
@@ -66,11 +67,12 @@ type StreamConfig struct {
 }
 
 var (
-	errNoRegion                 = errors.New("no region was specified")
-	errNoLogsConfigured         = errors.New("no logs configured")
-	errInvalidEventLimit        = errors.New("event limit is improperly configured, value must be greater than 0")
-	errInvalidPollInterval      = errors.New("poll interval is incorrect, it must be a duration greater than one second")
-	errInvalidAutodiscoverLimit = errors.New("the limit of autodiscovery of log groups is improperly configured, value must be greater than 0")
+	errNoRegion                       = errors.New("no region was specified")
+	errNoLogsConfigured               = errors.New("no logs configured")
+	errInvalidEventLimit              = errors.New("event limit is improperly configured, value must be greater than 0")
+	errInvalidPollInterval            = errors.New("poll interval is incorrect, it must be a duration greater than one second")
+	errInvalidAutodiscoverLimit       = errors.New("the limit of autodiscovery of log groups is improperly configured, value must be greater than 0")
+	errAutodiscoverAndNamedConfigured = errors.New("both autodiscover and named configs are configured, Only one or the other is permitted")
 )
 
 // Validate validates all portions of the relevant config
@@ -92,6 +94,23 @@ func (c *Config) Validate() error {
 	return errs
 }
 
+// Unmarshal is a custom unmarshaller that ensures that autodiscover is nil if
+// autodiscover is not specified
+func (c *Config) Unmarshal(componentParser *confmap.Conf) error {
+	if componentParser == nil {
+		return errors.New("")
+	}
+	err := componentParser.Unmarshal(c, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+
+	if componentParser.IsSet("logs::groups::named") && !componentParser.IsSet("logs::groups::autodiscover") {
+		c.Logs.Groups.AutodiscoverConfig = nil
+	}
+	return nil
+}
+
 func (c *Config) validateLogsConfig() error {
 	if c.Logs == nil {
 		return errNoLogsConfigured
@@ -108,6 +127,10 @@ func (c *Config) validateLogsConfig() error {
 }
 
 func (c *GroupConfig) validate() error {
+	if c.AutodiscoverConfig != nil && len(c.NamedConfigs) > 0 {
+		return errAutodiscoverAndNamedConfigured
+	}
+
 	if c.AutodiscoverConfig != nil {
 		return validateAutodiscover(*c.AutodiscoverConfig)
 	}
