@@ -25,7 +25,7 @@ attributes:
     type: string
   is.success:
     description: Login status
-    type: bool
+    type: string
   schema.name:
     description: name of schema 
     type: string
