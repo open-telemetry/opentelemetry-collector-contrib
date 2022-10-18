@@ -18,10 +18,294 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/grafana/loki/pkg/logproto"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
+
+func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
+	tests := []struct {
+		name     string
+		logs     plog.Logs
+		expected map[string]PushRequest
+	}{
+		{
+			name: "tenant from logs attributes",
+			logs: func() plog.Logs {
+				logs := plog.NewLogs()
+				rl := logs.ResourceLogs().AppendEmpty()
+
+				sl := rl.ScopeLogs().AppendEmpty()
+				logRecord := sl.LogRecords().AppendEmpty()
+				logRecord.Attributes().PutStr(hintTenant, "tenant.id")
+				logRecord.Attributes().PutStr("tenant.id", "1")
+				logRecord.Attributes().PutInt("http.status", 200)
+
+				sl = rl.ScopeLogs().AppendEmpty()
+				logRecord = sl.LogRecords().AppendEmpty()
+				logRecord.Attributes().PutStr(hintTenant, "tenant.id")
+				logRecord.Attributes().PutStr("tenant.id", "2")
+				logRecord.Attributes().PutInt("http.status", 200)
+
+				return logs
+			}(),
+			expected: map[string]PushRequest{
+				"1": {
+					PushRequest: &logproto.PushRequest{
+						Streams: []logproto.Stream{
+							{
+								Labels: `{exporter="OTLP", tenant.id="1"}`,
+								Entries: []logproto.Entry{
+									{
+										Line: `{"attributes":{"http.status":200}}`,
+									},
+								}},
+						},
+					},
+				},
+				"2": {
+					PushRequest: &logproto.PushRequest{
+						Streams: []logproto.Stream{
+							{
+								Labels: `{exporter="OTLP", tenant.id="2"}`,
+								Entries: []logproto.Entry{
+									{
+										Line: `{"attributes":{"http.status":200}}`,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "tenant from resource attributes",
+			logs: func() plog.Logs {
+				logs := plog.NewLogs()
+				rl := logs.ResourceLogs().AppendEmpty()
+				rl.Resource().Attributes().PutStr(hintTenant, "tenant.id")
+				rl.Resource().Attributes().PutStr("tenant.id", "11")
+
+				sl := rl.ScopeLogs().AppendEmpty()
+				logRecord := sl.LogRecords().AppendEmpty()
+				logRecord.Attributes().PutInt("http.status", 200)
+
+				rl = logs.ResourceLogs().AppendEmpty()
+				rl.Resource().Attributes().PutStr(hintTenant, "tenant.id")
+				rl.Resource().Attributes().PutStr("tenant.id", "12")
+
+				sl = rl.ScopeLogs().AppendEmpty()
+				logRecord = sl.LogRecords().AppendEmpty()
+				logRecord.Attributes().PutInt("http.status", 200)
+
+				return logs
+			}(),
+			expected: map[string]PushRequest{
+				"11": {
+					PushRequest: &logproto.PushRequest{
+						Streams: []logproto.Stream{
+							{
+								Labels: `{exporter="OTLP", tenant.id="11"}`,
+								Entries: []logproto.Entry{
+									{
+										Line: `{"attributes":{"http.status":200}}`,
+									},
+								}},
+						},
+					},
+				},
+				"12": {
+					PushRequest: &logproto.PushRequest{
+						Streams: []logproto.Stream{
+							{
+								Labels: `{exporter="OTLP", tenant.id="12"}`,
+								Entries: []logproto.Entry{
+									{
+										Line: `{"attributes":{"http.status":200}}`,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "use tenant resource attributes if both logs and resource attributes provided",
+			logs: func() plog.Logs {
+				logs := plog.NewLogs()
+
+				rl := logs.ResourceLogs().AppendEmpty()
+				rl.Resource().Attributes().PutStr(hintTenant, "tenant.id")
+				rl.Resource().Attributes().PutStr("tenant.id", "21")
+
+				sl := rl.ScopeLogs().AppendEmpty()
+				logRecord := sl.LogRecords().AppendEmpty()
+				logRecord.Attributes().PutStr(hintTenant, "tenant.id")
+				logRecord.Attributes().PutStr("tenant.id", "31")
+				logRecord.Attributes().PutInt("http.status", 200)
+
+				rl = logs.ResourceLogs().AppendEmpty()
+				rl.Resource().Attributes().PutStr(hintTenant, "tenant.id")
+				rl.Resource().Attributes().PutStr("tenant.id", "22")
+
+				sl = rl.ScopeLogs().AppendEmpty()
+				logRecord = sl.LogRecords().AppendEmpty()
+				logRecord.Attributes().PutStr(hintTenant, "tenant.id")
+				logRecord.Attributes().PutStr("tenant.id", "32")
+				logRecord.Attributes().PutInt("http.status", 200)
+
+				return logs
+			}(),
+			expected: map[string]PushRequest{
+				"21": {
+					PushRequest: &logproto.PushRequest{
+						Streams: []logproto.Stream{
+							{
+								Labels: `{exporter="OTLP", tenant.id="21"}`,
+								Entries: []logproto.Entry{
+									{
+										Line: `{"attributes":{"http.status":200}}`,
+									},
+								}},
+						},
+					},
+				},
+				"22": {
+					PushRequest: &logproto.PushRequest{
+						Streams: []logproto.Stream{
+							{
+								Labels: `{exporter="OTLP", tenant.id="22"}`,
+								Entries: []logproto.Entry{
+									{
+										Line: `{"attributes":{"http.status":200}}`,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			requests := LogsToLokiRequests(tt.logs)
+
+			for tenant, request := range requests {
+				want, ok := tt.expected[tenant]
+				assert.Equal(t, ok, true)
+
+				streams := request.Streams
+				for s := 0; s < len(streams); s++ {
+					gotStream := request.Streams[s]
+					wantStream := want.Streams[s]
+
+					assert.Equal(t, wantStream.Labels, gotStream.Labels)
+					for e := 0; e < len(gotStream.Entries); e++ {
+						assert.Equal(t, wantStream.Entries[e].Line, gotStream.Entries[e].Line)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
+	testCases := []struct {
+		desc          string
+		hints         map[string]interface{}
+		attrs         map[string]interface{}
+		res           map[string]interface{}
+		expectedLabel string
+		expectedLines []string
+	}{
+		{
+			desc: "with attribute to label and regular attribute",
+			attrs: map[string]interface{}{
+				"host.name":   "guarana",
+				"http.status": 200,
+			},
+			hints: map[string]interface{}{
+				hintAttributes: "host.name",
+			},
+			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
+			expectedLines: []string{
+				`{"traceid":"01000000000000000000000000000000","attributes":{"http.status":200}}`,
+				`{"traceid":"02000000000000000000000000000000","attributes":{"http.status":200}}`,
+				`{"traceid":"03000000000000000000000000000000","attributes":{"http.status":200}}`,
+			},
+		},
+		{
+			desc: "with resource to label and regular resource",
+			res: map[string]interface{}{
+				"host.name": "guarana",
+				"region.az": "eu-west-1a",
+			},
+			hints: map[string]interface{}{
+				hintResources: "host.name",
+			},
+			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
+			expectedLines: []string{
+				`{"traceid":"01000000000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
+				`{"traceid":"02000000000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
+				`{"traceid":"03000000000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
+			},
+		},
+	}
+	for _, tt := range testCases {
+		t.Run(tt.desc, func(t *testing.T) {
+			// prepare
+			ld := plog.NewLogs()
+			ld.ResourceLogs().AppendEmpty()
+			for i := 0; i < 3; i++ {
+				ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty()
+				ld.ResourceLogs().At(0).ScopeLogs().At(i).LogRecords().AppendEmpty()
+				ld.ResourceLogs().At(0).ScopeLogs().At(i).LogRecords().At(0).SetTraceID([16]byte{byte(i + 1)})
+			}
+
+			if len(tt.res) > 0 {
+				ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(tt.res)
+			}
+
+			rlogs := ld.ResourceLogs()
+			for i := 0; i < rlogs.Len(); i++ {
+				slogs := rlogs.At(i).ScopeLogs()
+				for j := 0; j < slogs.Len(); j++ {
+					logs := slogs.At(j).LogRecords()
+					for k := 0; k < logs.Len(); k++ {
+						log := logs.At(k)
+						if len(tt.attrs) > 0 {
+							log.Attributes().FromRaw(tt.attrs)
+						}
+						for k, v := range tt.hints {
+							log.Attributes().PutStr(k, fmt.Sprintf("%v", v))
+						}
+					}
+				}
+			}
+
+			// test
+			requests := LogsToLokiRequests(ld)
+			assert.Len(t, requests, 1)
+			request := requests[""]
+
+			// verify
+			assert.Empty(t, request.Report.Errors)
+			assert.Equal(t, 0, request.Report.NumDropped)
+			assert.Equal(t, ld.LogRecordCount(), request.Report.NumSubmitted)
+			assert.Len(t, request.Streams, 1)
+			assert.Equal(t, tt.expectedLabel, request.Streams[0].Labels)
+
+			entries := request.Streams[0].Entries
+			for i := 0; i < len(entries); i++ {
+				assert.Equal(t, tt.expectedLines[i], entries[i].Line)
+			}
+		})
+	}
+}
 
 func TestLogsToLoki(t *testing.T) {
 	testCases := []struct {
