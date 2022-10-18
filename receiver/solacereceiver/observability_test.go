@@ -78,12 +78,13 @@ func validateMetric(t *testing.T, v *view.View, expected interface{}) {
 func TestRegisterViewsExpectingFailure(t *testing.T) {
 	statName := "solacereceiver/" + t.Name() + "/failed_reconnections"
 	stat := stats.Int64(statName, "", stats.UnitDimensionless)
-	view.Register(&view.View{
+	err := view.Register(&view.View{
 		Name:        buildReceiverCustomMetricName(statName),
 		Description: "some description",
 		Measure:     stat,
 		Aggregation: view.Sum(),
 	})
+	require.NoError(t, err)
 	metrics, err := newOpenCensusMetrics(t.Name())
 	assert.Error(t, err)
 	assert.Nil(t, metrics)

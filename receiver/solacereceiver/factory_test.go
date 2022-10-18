@@ -90,12 +90,13 @@ func TestCreateTracesReceiverBadMetrics(t *testing.T) {
 	// register a metric first with the same name
 	statName := "solacereceiver/primary/failed_reconnections"
 	stat := stats.Int64(statName, "", stats.UnitDimensionless)
-	view.Register(&view.View{
+	err := view.Register(&view.View{
 		Name:        buildReceiverCustomMetricName(statName),
 		Description: "some description",
 		Measure:     stat,
 		Aggregation: view.Sum(),
 	})
+	require.NoError(t, err)
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
