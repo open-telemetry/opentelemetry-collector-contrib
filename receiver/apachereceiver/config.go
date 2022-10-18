@@ -28,6 +28,7 @@ type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
 	serverName                              string
+	emitServerNameAsResourceAttribute       bool
 	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
 }
 

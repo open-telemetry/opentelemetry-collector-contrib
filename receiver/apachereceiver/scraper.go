@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -73,7 +72,7 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	emitWith := []metadata.ResourceMetricsOption{}
 
-	if featuregate.GetRegistry().IsEnabled(emitServerNameAsResourceAttribute.ID) {
+	if r.cfg.emitServerNameAsResourceAttribute {
 		err = r.scrapeWithoutServerNameAttr(stats)
 		emitWith = append(emitWith, metadata.WithApacheServerName(r.cfg.serverName))
 	} else {

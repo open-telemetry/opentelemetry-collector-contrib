@@ -16,6 +16,7 @@ package apachereceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -76,6 +77,14 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
+
+	emitServerNameAsResourceAttributeEnabled := featuregate.GetRegistry().IsEnabled(EmitServerNameAsResourceAttribute)
+
+	if !emitServerNameAsResourceAttributeEnabled {
+		params.Logger.Warn(fmt.Sprintf("Feature gate %s is not enabled. Please see the README.md file of apache receiver for more information.", EmitServerNameAsResourceAttribute))
+	}
+
+	cfg.emitServerNameAsResourceAttribute = emitServerNameAsResourceAttributeEnabled
 
 	ns := newApacheScraper(params, cfg)
 	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape, scraperhelper.WithStart(ns.start))
