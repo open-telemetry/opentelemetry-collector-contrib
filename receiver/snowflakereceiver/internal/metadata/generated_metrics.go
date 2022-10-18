@@ -619,7 +619,7 @@ func (m *metricSnowflakeLoginsTotal) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSnowflakeLoginsTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, errorMessageAttributeValue string, reportedClientTypeAttributeValue string, isSuccessAttributeValue bool) {
+func (m *metricSnowflakeLoginsTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, errorMessageAttributeValue string, reportedClientTypeAttributeValue string, isSuccessAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -629,7 +629,7 @@ func (m *metricSnowflakeLoginsTotal) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetIntValue(val)
 	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
 	dp.Attributes().PutString("reported.client.type", reportedClientTypeAttributeValue)
-	dp.Attributes().PutBool("is.success", isSuccessAttributeValue)
+	dp.Attributes().PutString("is.success", isSuccessAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2499,7 +2499,7 @@ func WithSnowflakeAccountName(val string) ResourceMetricsOption {
 // WithSnowflakeUsername sets provided value as "snowflake.username" attribute for current resource.
 func WithSnowflakeUsername(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutEmpty("snowflake.username")
+		rm.Resource().Attributes().PutString("snowflake.username", val)
 	}
 }
 
@@ -2642,7 +2642,7 @@ func (mb *MetricsBuilder) RecordSnowflakeDatabaseQueryCountDataPoint(ts pcommon.
 }
 
 // RecordSnowflakeLoginsTotalDataPoint adds a data point to snowflake.logins.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeLoginsTotalDataPoint(ts pcommon.Timestamp, val int64, errorMessageAttributeValue string, reportedClientTypeAttributeValue string, isSuccessAttributeValue bool) {
+func (mb *MetricsBuilder) RecordSnowflakeLoginsTotalDataPoint(ts pcommon.Timestamp, val int64, errorMessageAttributeValue string, reportedClientTypeAttributeValue string, isSuccessAttributeValue string) {
 	mb.metricSnowflakeLoginsTotal.recordDataPoint(mb.startTime, ts, val, errorMessageAttributeValue, reportedClientTypeAttributeValue, isSuccessAttributeValue)
 }
 
