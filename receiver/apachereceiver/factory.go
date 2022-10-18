@@ -22,15 +22,30 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
 )
 
 const (
-	typeStr   = "apache"
-	stability = component.StabilityLevelBeta
+	typeStr                           = "apache"
+	stability                         = component.StabilityLevelBeta
+	EmitServerNameAsResourceAttribute = "receiver.apache.emitServerNameAsResourceAttribute"
 )
+
+var (
+	emitServerNameAsResourceAttribute = featuregate.Gate{
+		ID:      EmitServerNameAsResourceAttribute,
+		Enabled: false,
+		Description: "When enabled, the name of the server will be sent as an apache.server.name resource attribute " +
+			"instead of a metric-level server_name attribute.",
+	}
+)
+
+func init() {
+	featuregate.GetRegistry().MustRegister(emitServerNameAsResourceAttribute)
+}
 
 // NewFactory creates a factory for apache receiver.
 func NewFactory() component.ReceiverFactory {

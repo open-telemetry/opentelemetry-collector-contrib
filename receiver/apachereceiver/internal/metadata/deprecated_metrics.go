@@ -983,7 +983,7 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 }
 
 // RecordApacheCPULoadDataPoint adds a data point to apache.cpu.load metric.
-func (mb *MetricsBuilder) RecordApacheCPULoadDataPoint(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
+func (mb *MetricsBuilder) RecordApacheCPULoadDataPointWithServerName(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
 	val, err := strconv.ParseFloat(inputVal, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for ApacheCPULoad, value was %s: %w", inputVal, err)
@@ -993,7 +993,7 @@ func (mb *MetricsBuilder) RecordApacheCPULoadDataPoint(ts pcommon.Timestamp, inp
 }
 
 // RecordApacheCPUTimeDataPoint adds a data point to apache.cpu.time metric.
-func (mb *MetricsBuilder) RecordApacheCPUTimeDataPoint(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string, cpuLevelAttributeValue AttributeCPULevel, cpuModeAttributeValue AttributeCPUMode) error {
+func (mb *MetricsBuilder) RecordApacheCPUTimeDataPointWithServerName(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string, cpuLevelAttributeValue AttributeCPULevel, cpuModeAttributeValue AttributeCPUMode) error {
 	val, err := strconv.ParseFloat(inputVal, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for ApacheCPUTime, value was %s: %w", inputVal, err)
@@ -1003,7 +1003,7 @@ func (mb *MetricsBuilder) RecordApacheCPUTimeDataPoint(ts pcommon.Timestamp, inp
 }
 
 // RecordApacheCurrentConnectionsDataPoint adds a data point to apache.current_connections metric.
-func (mb *MetricsBuilder) RecordApacheCurrentConnectionsDataPoint(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
+func (mb *MetricsBuilder) RecordApacheCurrentConnectionsDataPointWithServerName(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for ApacheCurrentConnections, value was %s: %w", inputVal, err)
@@ -1013,7 +1013,7 @@ func (mb *MetricsBuilder) RecordApacheCurrentConnectionsDataPoint(ts pcommon.Tim
 }
 
 // RecordApacheLoad1DataPoint adds a data point to apache.load.1 metric.
-func (mb *MetricsBuilder) RecordApacheLoad1DataPoint(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
+func (mb *MetricsBuilder) RecordApacheLoad1DataPointWithServerName(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
 	val, err := strconv.ParseFloat(inputVal, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for ApacheLoad1, value was %s: %w", inputVal, err)
@@ -1023,7 +1023,7 @@ func (mb *MetricsBuilder) RecordApacheLoad1DataPoint(ts pcommon.Timestamp, input
 }
 
 // RecordApacheLoad15DataPoint adds a data point to apache.load.15 metric.
-func (mb *MetricsBuilder) RecordApacheLoad15DataPoint(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
+func (mb *MetricsBuilder) RecordApacheLoad15DataPointWithServerName(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
 	val, err := strconv.ParseFloat(inputVal, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for ApacheLoad15, value was %s: %w", inputVal, err)
@@ -1033,7 +1033,7 @@ func (mb *MetricsBuilder) RecordApacheLoad15DataPoint(ts pcommon.Timestamp, inpu
 }
 
 // RecordApacheLoad5DataPoint adds a data point to apache.load.5 metric.
-func (mb *MetricsBuilder) RecordApacheLoad5DataPoint(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
+func (mb *MetricsBuilder) RecordApacheLoad5DataPointWithServerName(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
 	val, err := strconv.ParseFloat(inputVal, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for ApacheLoad5, value was %s: %w", inputVal, err)
@@ -1043,7 +1043,7 @@ func (mb *MetricsBuilder) RecordApacheLoad5DataPoint(ts pcommon.Timestamp, input
 }
 
 // RecordApacheRequestTimeDataPoint adds a data point to apache.request.time metric.
-func (mb *MetricsBuilder) RecordApacheRequestTimeDataPoint(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
+func (mb *MetricsBuilder) RecordApacheRequestTimeDataPointWithServerName(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for ApacheRequestTime, value was %s: %w", inputVal, err)
@@ -1053,7 +1053,7 @@ func (mb *MetricsBuilder) RecordApacheRequestTimeDataPoint(ts pcommon.Timestamp,
 }
 
 // RecordApacheRequestsDataPoint adds a data point to apache.requests metric.
-func (mb *MetricsBuilder) RecordApacheRequestsDataPoint(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
+func (mb *MetricsBuilder) RecordApacheRequestsDataPointWithServerName(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for ApacheRequests, value was %s: %w", inputVal, err)
@@ -1063,17 +1063,17 @@ func (mb *MetricsBuilder) RecordApacheRequestsDataPoint(ts pcommon.Timestamp, in
 }
 
 // RecordApacheScoreboardDataPoint adds a data point to apache.scoreboard metric.
-func (mb *MetricsBuilder) RecordApacheScoreboardDataPoint(ts pcommon.Timestamp, val int64, serverNameAttributeValue string, scoreboardStateAttributeValue AttributeScoreboardState) {
+func (mb *MetricsBuilder) RecordApacheScoreboardDataPointWithServerName(ts pcommon.Timestamp, val int64, serverNameAttributeValue string, scoreboardStateAttributeValue AttributeScoreboardState) {
 	mb.metricApacheScoreboard.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue, scoreboardStateAttributeValue.String())
 }
 
 // RecordApacheTrafficDataPoint adds a data point to apache.traffic metric.
-func (mb *MetricsBuilder) RecordApacheTrafficDataPoint(ts pcommon.Timestamp, val int64, serverNameAttributeValue string) {
+func (mb *MetricsBuilder) RecordApacheTrafficDataPointWithServerName(ts pcommon.Timestamp, val int64, serverNameAttributeValue string) {
 	mb.metricApacheTraffic.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
 }
 
 // RecordApacheUptimeDataPoint adds a data point to apache.uptime metric.
-func (mb *MetricsBuilder) RecordApacheUptimeDataPoint(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
+func (mb *MetricsBuilder) RecordApacheUptimeDataPointWithServerName(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for ApacheUptime, value was %s: %w", inputVal, err)
@@ -1083,7 +1083,7 @@ func (mb *MetricsBuilder) RecordApacheUptimeDataPoint(ts pcommon.Timestamp, inpu
 }
 
 // RecordApacheWorkersDataPoint adds a data point to apache.workers metric.
-func (mb *MetricsBuilder) RecordApacheWorkersDataPoint(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string, workersStateAttributeValue AttributeWorkersState) error {
+func (mb *MetricsBuilder) RecordApacheWorkersDataPointWithServerName(ts pcommon.Timestamp, inputVal string, serverNameAttributeValue string, workersStateAttributeValue AttributeWorkersState) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for ApacheWorkers, value was %s: %w", inputVal, err)
