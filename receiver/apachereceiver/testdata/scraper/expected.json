@@ -1,7 +1,16 @@
 {
   "resourceMetrics": [
     {
-      "resource": {},
+      "resource": {
+        "attributes": [
+          {
+             "key": "apache.server.name",
+             "value": {
+                "stringValue": "127.0.0.1"
+             }
+          }
+        ]
+      },
       "scopeMetrics": [
         {
           "scope": {
@@ -16,14 +25,7 @@
               "sum": {
                 "dataPoints": [
                   {
-                    "attributes": [
-                      {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      }
-                    ],
+                    "attributes": [],
                     "timeUnixNano": "1632495518500962000",
                     "asInt": "410"
                   }
@@ -39,14 +41,7 @@
               "sum": {
                 "dataPoints": [
                   {
-                    "attributes": [
-                      {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      }
-                    ],
+                    "attributes": [],
                     "timeUnixNano": "1632495518500962000",
                     "asInt": "110"
                   }
@@ -64,12 +59,6 @@
                   {
                     "attributes": [
                       {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      },
-                      {
                         "key": "state",
                         "value": {
                           "stringValue": "busy"
@@ -81,12 +70,6 @@
                   },
                   {
                     "attributes": [
-                      {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      },
                       {
                         "key": "state",
                         "value": {
@@ -109,14 +92,7 @@
               "sum": {
                 "dataPoints": [
                   {
-                    "attributes": [
-                      {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      }
-                    ],
+                    "attributes": [],
                     "timeUnixNano": "1632495518500962000",
                     "asInt": "14169"
                   }
@@ -132,14 +108,7 @@
               "sum": {
                 "dataPoints": [
                   {
-                    "attributes": [
-                      {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      }
-                    ],
+                    "attributes": [],
                     "timeUnixNano": "1632495518500962000",
                     "asInt": "21411840"
                   }
@@ -156,12 +125,6 @@
                 "dataPoints": [
                   {
                     "attributes": [
-                      {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      },
                       {
                         "key": "level",
                         "value": {
@@ -181,12 +144,6 @@
                   {
                     "attributes": [
                       {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      },
-                      {
                         "key": "level",
                         "value": {
                           "stringValue": "children"
@@ -205,12 +162,6 @@
                   {
                     "attributes": [
                       {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      },
-                      {
                         "key": "level",
                         "value": {
                           "stringValue": "self"
@@ -228,12 +179,6 @@
                   },
                   {
                     "attributes": [
-                      {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      },
                       {
                         "key": "level",
                         "value": {
@@ -262,14 +207,7 @@
               "gauge": {
                 "dataPoints": [
                   {
-                    "attributes": [
-                      {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      }
-                    ],
+                    "attributes": [],
                     "timeUnixNano": "1632495518500962000",
                     "asDouble": "0.66"
                   }
@@ -283,14 +221,7 @@
               "gauge": {
                 "dataPoints": [
                   {
-                    "attributes": [
-                      {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      }
-                    ],
+                    "attributes": [],
                     "timeUnixNano": "1632495518500962000",
                     "asDouble": "0.9"
                   }
@@ -304,14 +235,7 @@
               "gauge": {
                 "dataPoints": [
                   {
-                    "attributes": [
-                      {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      }
-                    ],
+                    "attributes": [],
                     "timeUnixNano": "1632495518500962000",
                     "asDouble": "0.4"
                   }
@@ -325,14 +249,7 @@
               "gauge": {
                 "dataPoints": [
                   {
-                    "attributes": [
-                      {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      }
-                    ],
+                    "attributes": [],
                     "timeUnixNano": "1632495518500962000",
                     "asDouble": "0.3"
                   }
@@ -346,14 +263,7 @@
               "sum": {
                 "dataPoints": [
                   {
-                    "attributes": [
-                      {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      }
-                    ],
+                    "attributes": [],
                     "timeUnixNano": "1632495518500962000",
                     "asInt": "1501"
                   }
@@ -371,12 +281,6 @@
                   {
                     "attributes": [
                       {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      },
-                      {
                         "key": "state",
                         "value": {
                           "stringValue": "waiting"
@@ -388,12 +292,6 @@
                   },
                   {
                     "attributes": [
-                      {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      },
                       {
                         "key": "state",
                         "value": {
@@ -407,12 +305,6 @@
                   {
                     "attributes": [
                       {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      },
-                      {
                         "key": "state",
                         "value": {
                           "stringValue": "logging"
@@ -424,12 +316,6 @@
                   },
                   {
                     "attributes": [
-                      {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      },
                       {
                         "key": "state",
                         "value": {
@@ -443,12 +329,6 @@
                   {
                     "attributes": [
                       {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      },
-                      {
                         "key": "state",
                         "value": {
                           "stringValue": "open"
@@ -460,12 +340,6 @@
                   },
                   {
                     "attributes": [
-                      {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      },
                       {
                         "key": "state",
                         "value": {
@@ -479,12 +353,6 @@
                   {
                     "attributes": [
                       {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      },
-                      {
                         "key": "state",
                         "value": {
                           "stringValue": "starting"
@@ -496,12 +364,6 @@
                   },
                   {
                     "attributes": [
-                      {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      },
                       {
                         "key": "state",
                         "value": {
@@ -515,12 +377,6 @@
                   {
                     "attributes": [
                       {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      },
-                      {
                         "key": "state",
                         "value": {
                           "stringValue": "sending"
@@ -533,12 +389,6 @@
                   {
                     "attributes": [
                       {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      },
-                      {
                         "key": "state",
                         "value": {
                           "stringValue": "dnslookup"
@@ -550,12 +400,6 @@
                   },
                   {
                     "attributes": [
-                      {
-                        "key": "server_name",
-                        "value": {
-                          "stringValue": "127.0.0.1"
-                        }
-                      },
                       {
                         "key": "state",
                         "value": {

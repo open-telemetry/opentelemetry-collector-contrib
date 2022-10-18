@@ -8,18 +8,18 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| **apache.cpu.load** | Current load of the CPU. | % | Gauge(Double) | <ul> <li>server_name</li> </ul> |
-| **apache.cpu.time** | Jiffs used by processes of given category. | {jiff} | Sum(Double) | <ul> <li>server_name</li> <li>cpu_level</li> <li>cpu_mode</li> </ul> |
-| **apache.current_connections** | The number of active connections currently attached to the HTTP server. | {connections} | Sum(Int) | <ul> <li>server_name</li> </ul> |
-| **apache.load.1** | The average server load during the last minute. | % | Gauge(Double) | <ul> <li>server_name</li> </ul> |
-| **apache.load.15** | The average server load during the last 15 minutes. | % | Gauge(Double) | <ul> <li>server_name</li> </ul> |
-| **apache.load.5** | The average server load during the last 5 minutes. | % | Gauge(Double) | <ul> <li>server_name</li> </ul> |
-| **apache.request.time** | Total time spent on handling requests. | ms | Sum(Int) | <ul> <li>server_name</li> </ul> |
-| **apache.requests** | The number of requests serviced by the HTTP server per second. | {requests} | Sum(Int) | <ul> <li>server_name</li> </ul> |
-| **apache.scoreboard** | The number of workers in each state. The apache scoreboard is an encoded representation of the state of all the server's workers. This metric decodes the scoreboard and presents a count of workers in each state. Additional details can be found [here](https://metacpan.org/pod/Apache::Scoreboard#DESCRIPTION). | {workers} | Sum(Int) | <ul> <li>server_name</li> <li>scoreboard_state</li> </ul> |
-| **apache.traffic** | Total HTTP server traffic. | By | Sum(Int) | <ul> <li>server_name</li> </ul> |
-| **apache.uptime** | The amount of time that the server has been running in seconds. | s | Sum(Int) | <ul> <li>server_name</li> </ul> |
-| **apache.workers** | The number of workers currently attached to the HTTP server. | {workers} | Sum(Int) | <ul> <li>server_name</li> <li>workers_state</li> </ul> |
+| **apache.cpu.load** | Current load of the CPU. | % | Gauge(Double) | <ul> </ul> |
+| **apache.cpu.time** | Jiffs used by processes of given category. | {jiff} | Sum(Double) | <ul> <li>cpu_level</li> <li>cpu_mode</li> </ul> |
+| **apache.current_connections** | The number of active connections currently attached to the HTTP server. | {connections} | Sum(Int) | <ul> </ul> |
+| **apache.load.1** | The average server load during the last minute. | % | Gauge(Double) | <ul> </ul> |
+| **apache.load.15** | The average server load during the last 15 minutes. | % | Gauge(Double) | <ul> </ul> |
+| **apache.load.5** | The average server load during the last 5 minutes. | % | Gauge(Double) | <ul> </ul> |
+| **apache.request.time** | Total time spent on handling requests. | ms | Sum(Int) | <ul> </ul> |
+| **apache.requests** | The number of requests serviced by the HTTP server per second. | {requests} | Sum(Int) | <ul> </ul> |
+| **apache.scoreboard** | The number of workers in each state. The apache scoreboard is an encoded representation of the state of all the server's workers. This metric decodes the scoreboard and presents a count of workers in each state. Additional details can be found [here](https://metacpan.org/pod/Apache::Scoreboard#DESCRIPTION). | {workers} | Sum(Int) | <ul> <li>scoreboard_state</li> </ul> |
+| **apache.traffic** | Total HTTP server traffic. | By | Sum(Int) | <ul> </ul> |
+| **apache.uptime** | The amount of time that the server has been running in seconds. | s | Sum(Int) | <ul> </ul> |
+| **apache.workers** | The number of workers currently attached to the HTTP server. | {workers} | Sum(Int) | <ul> <li>workers_state</li> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:
@@ -30,6 +30,12 @@ metrics:
     enabled: <true|false>
 ```
 
+## Resource attributes
+
+| Name | Description | Type |
+| ---- | ----------- | ---- |
+| apache.server.name | The name of the Apache HTTP server. | Str |
+
 ## Metric attributes
 
 | Name | Description | Values |
@@ -37,5 +43,4 @@ metrics:
 | cpu_level (level) | Level of processes. | self, children |
 | cpu_mode (mode) | Mode of processes. | system, user |
 | scoreboard_state (state) | The state of a connection. | open, waiting, starting, reading, sending, keepalive, dnslookup, closing, logging, finishing, idle_cleanup, unknown |
-| server_name | The name of the Apache HTTP server. |  |
 | workers_state (state) | The state of workers. | busy, idle |

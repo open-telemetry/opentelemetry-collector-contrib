@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
@@ -38,6 +39,9 @@ func TestScraper(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto")
 	require.NoError(t, cfg.Validate())
+
+	// Let this test check if it works with the feature enabled and the integration test will test the feature disabled.
+	featuregate.GetRegistry().Apply(map[string]bool{emitServerNameAsResourceAttribute.ID: true})
 
 	scraper := newApacheScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 
