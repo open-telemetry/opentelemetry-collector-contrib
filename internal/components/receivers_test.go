@@ -174,6 +174,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "hostmetrics",
 		},
 		{
+			receiver: "httpcheck",
+		},
+		{
 			receiver: "influxdb",
 		},
 		{

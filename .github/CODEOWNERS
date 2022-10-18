@@ -158,6 +158,7 @@ receiver/fluentforwardreceiver/                      @open-telemetry/collector-c
 receiver/googlecloudpubsubreceiver/                  @open-telemetry/collector-contrib-approvers @alexvanboxel
 receiver/googlecloudspannerreceiver/                 @open-telemetry/collector-contrib-approvers @ydrozhdzhal @asukhyy @khospodarysko @architjugran
 receiver/hostmetricsreceiver/                        @open-telemetry/collector-contrib-approvers @dmitryax
+receiver/httpcheckreceiver/                          @open-telemetry/collector-contrib-approvers @codeboten
 receiver/influxdbreceiver/                           @open-telemetry/collector-contrib-approvers @jacobmarble
 receiver/iisreceiver/                                @open-telemetry/collector-contrib-approvers @mrod1598 @djaglowski
 receiver/jaegerreceiver/                             @open-telemetry/collector-contrib-approvers @jpkrohling
