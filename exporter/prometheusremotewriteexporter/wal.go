@@ -421,6 +421,9 @@ func (prwe *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wreq 
 				if ok {
 					wErr = eerr
 				}
+
+			case <-time.After(1 * time.Millisecond):
+				wErr = nil
 			}
 		}()
 
