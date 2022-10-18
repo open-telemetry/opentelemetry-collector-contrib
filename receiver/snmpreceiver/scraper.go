@@ -100,11 +100,6 @@ func (s *snmpScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	// Get a basic ResourceMetrics prepped for metrics with no resource attributes
 	metrics := pmetric.NewMetrics()
 	resourceMetricsSlice := metrics.ResourceMetrics()
-	// generalResource := resourceMetricsSlice.AppendEmpty()
-	// scopeMetrics := generalResource.ScopeMetrics().AppendEmpty()
-	// scopeMetrics.Scope().SetName("otelcol/snmpreceiver")
-	// scopeMetrics.Scope().SetVersion(s.settings.BuildInfo.Version)
-	// metricSlice := scopeMetrics.Metrics()
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	resourcesByKey := map[string]*pmetric.ResourceMetrics{}
@@ -230,7 +225,7 @@ func scalarDataToMetric(
 			if attributeCfg.Value != "" {
 				attributeKey = attributeCfg.Value
 			}
-			dp.Attributes().PutString(attributeKey, attribute.Value)
+			dp.Attributes().PutStr(attributeKey, attribute.Value)
 		}
 
 		return nil
@@ -307,12 +302,12 @@ func indexedDataToMetric(
 ) processFunc {
 	// This returns a processFunc because this is what the client's GetScalarData method requires
 	return func(data snmpData) error {
-		// Return an error if this SNMP scalar data is not of a useable type
+		// Return an error if this SNMP indexed data is not of a useable type
 		if data.valueType == notSupportedVal || data.valueType == stringVal {
 			return fmt.Errorf(errMsgIndexedBadValueType, data.oid, data.parentOID)
 		}
 
-		// Retrieve the metric config for this SNMP data
+		// Retrieve the metric config for this SNMP indexed data
 		cfg := snmpScraper.cfg
 		metricName := indexedMetricNamesByOID[data.parentOID]
 		metricCfg := cfg.Metrics[metricName]
@@ -365,7 +360,7 @@ func indexedDataToMetric(
 
 		// Add attributes to the datapoint if they exist
 		for key, val := range dataPointAttributes {
-			dp.Attributes().PutString(key, val)
+			dp.Attributes().PutStr(key, val)
 		}
 
 		return nil
@@ -505,7 +500,7 @@ func createResource(
 ) *pmetric.ResourceMetrics {
 	resourceMetrics := resourceMetricsSlice.AppendEmpty()
 	for key, value := range resourceAttributes {
-		resourceMetrics.Resource().Attributes().PutString(key, value)
+		resourceMetrics.Resource().Attributes().PutStr(key, value)
 	}
 	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
 	scopeMetrics.Scope().SetName("otelcol/snmpreceiver")

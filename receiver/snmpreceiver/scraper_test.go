@@ -338,7 +338,7 @@ func TestScrape(t *testing.T) {
 								Sum: &SumMetric{
 									Aggregation: "cumulative",
 									Monotonic:   true,
-									ValueType:   "float",
+									ValueType:   "double",
 								},
 								ScalarOIDs: []ScalarOID{
 									{
@@ -905,7 +905,7 @@ func TestScrape(t *testing.T) {
 								Sum: &SumMetric{
 									Aggregation: "cumulative",
 									Monotonic:   true,
-									ValueType:   "float",
+									ValueType:   "double",
 								},
 								ColumnOIDs: []ColumnOID{
 									{
@@ -1897,7 +1897,7 @@ func TestScrape(t *testing.T) {
 								Description: "test description2",
 								Unit:        "{units}",
 								Gauge: &GaugeMetric{
-									ValueType: "float",
+									ValueType: "double",
 								},
 								ColumnOIDs: []ColumnOID{
 									{
@@ -2170,7 +2170,7 @@ func TestScrape(t *testing.T) {
 								Description: "test description2",
 								Unit:        "{units}",
 								Gauge: &GaugeMetric{
-									ValueType: "float",
+									ValueType: "double",
 								},
 								ColumnOIDs: []ColumnOID{
 									{
@@ -2284,7 +2284,7 @@ func TestScrape(t *testing.T) {
 								Description: "test description2",
 								Unit:        "{units}",
 								Gauge: &GaugeMetric{
-									ValueType: "float",
+									ValueType: "double",
 								},
 								ColumnOIDs: []ColumnOID{
 									{
