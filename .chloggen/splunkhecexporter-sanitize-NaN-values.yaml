@@ -5,7 +5,7 @@ change_type: bug_fix
 component: splunkhecexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Santitized value returned from `SummaryDataPoint.Sum` and `HistogramDataPoint.Sum` as it may return `NaN` value."
+note: "Skip `SummaryDataPoint.Sum` and `HistogramDataPoint.Sum` NaN values"
 
 # One or more tracking issues related to the change
 issues: [14877]
