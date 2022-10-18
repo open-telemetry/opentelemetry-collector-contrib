@@ -195,7 +195,7 @@ func (m *metricSnowflakeBillingCloudServiceSum) init() {
 	m.data.SetName("snowflake.billing.cloud_service.sum")
 	m.data.SetDescription("cloud services sum")
 	m.data.SetUnit("credits")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -206,8 +206,8 @@ func (m *metricSnowflakeBillingCloudServiceSum) recordDataPoint(start pcommon.Ti
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().UpsertString("service.type", serviceTypeAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutString("service.type", serviceTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -246,7 +246,7 @@ func (m *metricSnowflakeBillingTotalCreditSum) init() {
 	m.data.SetName("snowflake.billing.total_credit.sum")
 	m.data.SetDescription("billing total sum")
 	m.data.SetUnit("credits")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -257,8 +257,8 @@ func (m *metricSnowflakeBillingTotalCreditSum) recordDataPoint(start pcommon.Tim
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().UpsertString("service.type", serviceTypeAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutString("service.type", serviceTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -297,7 +297,7 @@ func (m *metricSnowflakeBillingVirtualWarehouseSum) init() {
 	m.data.SetName("snowflake.billing.virtual_warehouse.sum")
 	m.data.SetDescription("compute credits used sum")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -308,8 +308,8 @@ func (m *metricSnowflakeBillingVirtualWarehouseSum) recordDataPoint(start pcommo
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().UpsertString("service.type", serviceTypeAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutString("service.type", serviceTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -348,17 +348,19 @@ func (m *metricSnowflakeBillingWarehouseCloudServiceSum) init() {
 	m.data.SetName("snowflake.billing.warehouse.cloud_service.sum")
 	m.data.SetDescription("ware billing for cloud service")
 	m.data.SetUnit("credits")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSnowflakeBillingWarehouseCloudServiceSum) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricSnowflakeBillingWarehouseCloudServiceSum) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -397,17 +399,19 @@ func (m *metricSnowflakeBillingWarehouseTotalCreditSum) init() {
 	m.data.SetName("snowflake.billing.warehouse.total_credit.sum")
 	m.data.SetDescription("warehouse total credits")
 	m.data.SetUnit("credits")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSnowflakeBillingWarehouseTotalCreditSum) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricSnowflakeBillingWarehouseTotalCreditSum) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -446,17 +450,19 @@ func (m *metricSnowflakeBillingWarehouseVirtualWarehouseSum) init() {
 	m.data.SetName("snowflake.billing.warehouse.virtual_warehouse.sum")
 	m.data.SetDescription("virtual warehouse credits used")
 	m.data.SetUnit("credits")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSnowflakeBillingWarehouseVirtualWarehouseSum) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricSnowflakeBillingWarehouseVirtualWarehouseSum) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -495,7 +501,7 @@ func (m *metricSnowflakeDatabaseBytesScannedAvg) init() {
 	m.data.SetName("snowflake.database.bytes_scanned.avg")
 	m.data.SetDescription("average bytes scanned")
 	m.data.SetUnit("bytes")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -506,14 +512,14 @@ func (m *metricSnowflakeDatabaseBytesScannedAvg) recordDataPoint(start pcommon.T
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -552,7 +558,7 @@ func (m *metricSnowflakeDatabaseQueryCount) init() {
 	m.data.SetName("snowflake.database.query.count")
 	m.data.SetDescription("total number of queries")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -563,14 +569,14 @@ func (m *metricSnowflakeDatabaseQueryCount) recordDataPoint(start pcommon.Timest
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -609,7 +615,7 @@ func (m *metricSnowflakeLoginsTotal) init() {
 	m.data.SetName("snowflake.logins.total")
 	m.data.SetDescription("total logins")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -620,10 +626,10 @@ func (m *metricSnowflakeLoginsTotal) recordDataPoint(start pcommon.Timestamp, ts
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("reported.client.type", reportedClientTypeAttributeValue)
-	dp.Attributes().UpsertBool("is.success", isSuccessAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("reported.client.type", reportedClientTypeAttributeValue)
+	dp.Attributes().PutBool("is.success", isSuccessAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -662,7 +668,7 @@ func (m *metricSnowflakePipeCreditsUsedSum) init() {
 	m.data.SetName("snowflake.pipe.credits_used.sum")
 	m.data.SetDescription("snow pipe credits consumed")
 	m.data.SetUnit("credits")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -673,8 +679,8 @@ func (m *metricSnowflakePipeCreditsUsedSum) recordDataPoint(start pcommon.Timest
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().UpsertString("pipe.name", pipeNameAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutString("pipe.name", pipeNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -713,17 +719,19 @@ func (m *metricSnowflakeQueryBlocked) init() {
 	m.data.SetName("snowflake.query.blocked")
 	m.data.SetDescription("number of blocked queries")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSnowflakeQueryBlocked) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricSnowflakeQueryBlocked) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -762,7 +770,7 @@ func (m *metricSnowflakeQueryBytesDeletedSum) init() {
 	m.data.SetName("snowflake.query.bytes_deleted.sum")
 	m.data.SetDescription("total bytes bytes deleted")
 	m.data.SetUnit("bytes")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -773,14 +781,14 @@ func (m *metricSnowflakeQueryBytesDeletedSum) recordDataPoint(start pcommon.Time
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -819,7 +827,7 @@ func (m *metricSnowflakeQueryBytesScannedSum) init() {
 	m.data.SetName("snowflake.query.bytes_scanned.sum")
 	m.data.SetDescription("total bytes scanend")
 	m.data.SetUnit("bytes")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -830,14 +838,14 @@ func (m *metricSnowflakeQueryBytesScannedSum) recordDataPoint(start pcommon.Time
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -876,7 +884,7 @@ func (m *metricSnowflakeQueryBytesSpilledLocalSum) init() {
 	m.data.SetName("snowflake.query.bytes_spilled.local.sum")
 	m.data.SetDescription("total bytes spilled")
 	m.data.SetUnit("bytes")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -887,14 +895,14 @@ func (m *metricSnowflakeQueryBytesSpilledLocalSum) recordDataPoint(start pcommon
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -933,7 +941,7 @@ func (m *metricSnowflakeQueryBytesSpilledRemoteSum) init() {
 	m.data.SetName("snowflake.query.bytes_spilled.remote.sum")
 	m.data.SetDescription("remote bytes spilled")
 	m.data.SetUnit("bytes")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -944,14 +952,14 @@ func (m *metricSnowflakeQueryBytesSpilledRemoteSum) recordDataPoint(start pcommo
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -990,7 +998,7 @@ func (m *metricSnowflakeQueryBytesWrittenSum) init() {
 	m.data.SetName("snowflake.query.bytes_written.sum")
 	m.data.SetDescription("total bytes bytes")
 	m.data.SetUnit("bytes")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1001,14 +1009,14 @@ func (m *metricSnowflakeQueryBytesWrittenSum) recordDataPoint(start pcommon.Time
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1047,7 +1055,7 @@ func (m *metricSnowflakeQueryCompilationTimeSum) init() {
 	m.data.SetName("snowflake.query.compilation_time.sum")
 	m.data.SetDescription("total compilation time")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1058,14 +1066,14 @@ func (m *metricSnowflakeQueryCompilationTimeSum) recordDataPoint(start pcommon.T
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1104,7 +1112,7 @@ func (m *metricSnowflakeQueryDataScannedCacheAvg) init() {
 	m.data.SetName("snowflake.query.data_scanned_cache.avg")
 	m.data.SetDescription("average data scanned cache")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1115,14 +1123,14 @@ func (m *metricSnowflakeQueryDataScannedCacheAvg) recordDataPoint(start pcommon.
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1161,17 +1169,19 @@ func (m *metricSnowflakeQueryExecuted) init() {
 	m.data.SetName("snowflake.query.executed")
 	m.data.SetDescription("number of executed queries")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSnowflakeQueryExecuted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricSnowflakeQueryExecuted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1210,7 +1220,7 @@ func (m *metricSnowflakeQueryExecutionTimeSum) init() {
 	m.data.SetName("snowflake.query.execution_time.sum")
 	m.data.SetDescription("query execution time")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1221,14 +1231,14 @@ func (m *metricSnowflakeQueryExecutionTimeSum) recordDataPoint(start pcommon.Tim
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1267,7 +1277,7 @@ func (m *metricSnowflakeQueryPartitionsScannedSum) init() {
 	m.data.SetName("snowflake.query.partitions_scanned.sum")
 	m.data.SetDescription("number of partitions scanned")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1278,14 +1288,14 @@ func (m *metricSnowflakeQueryPartitionsScannedSum) recordDataPoint(start pcommon
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1324,17 +1334,19 @@ func (m *metricSnowflakeQueryQueuedOverload) init() {
 	m.data.SetName("snowflake.query.queued_overload")
 	m.data.SetDescription("queue overload count")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSnowflakeQueryQueuedOverload) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricSnowflakeQueryQueuedOverload) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1373,17 +1385,19 @@ func (m *metricSnowflakeQueryQueuedProvision) init() {
 	m.data.SetName("snowflake.query.queued_provision")
 	m.data.SetDescription("queue provision count")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSnowflakeQueryQueuedProvision) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricSnowflakeQueryQueuedProvision) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1422,25 +1436,25 @@ func (m *metricSnowflakeQueuedOverloadTimeAvg) init() {
 	m.data.SetName("snowflake.queued_overload_time.avg")
 	m.data.SetDescription("average queued overload time")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSnowflakeQueuedOverloadTimeAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+func (m *metricSnowflakeQueuedOverloadTimeAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1479,7 +1493,7 @@ func (m *metricSnowflakeQueuedOverloadTimeSum) init() {
 	m.data.SetName("snowflake.queued_overload_time.sum")
 	m.data.SetDescription("total queued overload time")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1490,14 +1504,14 @@ func (m *metricSnowflakeQueuedOverloadTimeSum) recordDataPoint(start pcommon.Tim
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1536,25 +1550,25 @@ func (m *metricSnowflakeQueuedProvisioningTimeAvg) init() {
 	m.data.SetName("snowflake.queued_provisioning_time.avg")
 	m.data.SetDescription("average queued provisioning time")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSnowflakeQueuedProvisioningTimeAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+func (m *metricSnowflakeQueuedProvisioningTimeAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1593,7 +1607,7 @@ func (m *metricSnowflakeQueuedProvisioningTimeSum) init() {
 	m.data.SetName("snowflake.queued_provisioning_time.sum")
 	m.data.SetDescription("total queued provisioning time")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1604,14 +1618,14 @@ func (m *metricSnowflakeQueuedProvisioningTimeSum) recordDataPoint(start pcommon
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1650,25 +1664,25 @@ func (m *metricSnowflakeQueuedRepairTimeAvg) init() {
 	m.data.SetName("snowflake.queued_repair_time.avg")
 	m.data.SetDescription("average queued repair time")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSnowflakeQueuedRepairTimeAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+func (m *metricSnowflakeQueuedRepairTimeAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1707,7 +1721,7 @@ func (m *metricSnowflakeQueuedRepairTimeSum) init() {
 	m.data.SetName("snowflake.queued_repair_time.sum")
 	m.data.SetDescription("total queued repair time")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1718,14 +1732,14 @@ func (m *metricSnowflakeQueuedRepairTimeSum) recordDataPoint(start pcommon.Times
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1764,7 +1778,7 @@ func (m *metricSnowflakeRowsDeletedSum) init() {
 	m.data.SetName("snowflake.rows_deleted.sum")
 	m.data.SetDescription("rows deleted")
 	m.data.SetUnit("rows")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1775,14 +1789,14 @@ func (m *metricSnowflakeRowsDeletedSum) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1821,7 +1835,7 @@ func (m *metricSnowflakeRowsInsertedSum) init() {
 	m.data.SetName("snowflake.rows_inserted.sum")
 	m.data.SetDescription("rows inserted")
 	m.data.SetUnit("rows")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1832,14 +1846,14 @@ func (m *metricSnowflakeRowsInsertedSum) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1878,7 +1892,7 @@ func (m *metricSnowflakeRowsProducedSum) init() {
 	m.data.SetName("snowflake.rows_produced.sum")
 	m.data.SetDescription("rows produced")
 	m.data.SetUnit("rows")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1889,14 +1903,14 @@ func (m *metricSnowflakeRowsProducedSum) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1935,7 +1949,7 @@ func (m *metricSnowflakeRowsUnloadedSum) init() {
 	m.data.SetName("snowflake.rows_unloaded.sum")
 	m.data.SetDescription("rows unloaded")
 	m.data.SetUnit("rows")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1946,14 +1960,14 @@ func (m *metricSnowflakeRowsUnloadedSum) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1992,7 +2006,7 @@ func (m *metricSnowflakeRowsUpdatedSum) init() {
 	m.data.SetName("snowflake.rows_updated.sum")
 	m.data.SetDescription("rows updated")
 	m.data.SetUnit("rows")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -2003,14 +2017,14 @@ func (m *metricSnowflakeRowsUpdatedSum) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2049,17 +2063,19 @@ func (m *metricSnowflakeSessionIDCount) init() {
 	m.data.SetName("snowflake.session_id.count")
 	m.data.SetDescription("distinct session ids")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSnowflakeSessionIDCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricSnowflakeSessionIDCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, userNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
+	dp.Attributes().PutString("user.name", userNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2098,7 +2114,7 @@ func (m *metricSnowflakeStorageFailsafeBytesTotal) init() {
 	m.data.SetName("snowflake.storage.failsafe_bytes.total")
 	m.data.SetDescription("total failsafe bytes in snowflake")
 	m.data.SetUnit("bytes")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSnowflakeStorageFailsafeBytesTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2108,7 +2124,7 @@ func (m *metricSnowflakeStorageFailsafeBytesTotal) recordDataPoint(start pcommon
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2147,7 +2163,7 @@ func (m *metricSnowflakeStorageStageBytesTotal) init() {
 	m.data.SetName("snowflake.storage.stage_bytes.total")
 	m.data.SetDescription("total stage bytes in snowflake")
 	m.data.SetUnit("bytes")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSnowflakeStorageStageBytesTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2157,7 +2173,7 @@ func (m *metricSnowflakeStorageStageBytesTotal) recordDataPoint(start pcommon.Ti
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2196,7 +2212,7 @@ func (m *metricSnowflakeStorageStorageBytesTotal) init() {
 	m.data.SetName("snowflake.storage.storage_bytes.total")
 	m.data.SetDescription("total storage bytes in snowflake")
 	m.data.SetUnit("bytes")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSnowflakeStorageStorageBytesTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2206,7 +2222,7 @@ func (m *metricSnowflakeStorageStorageBytesTotal) recordDataPoint(start pcommon.
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2245,25 +2261,25 @@ func (m *metricSnowflakeTotalElapsedTimeAvg) init() {
 	m.data.SetName("snowflake.total_elapsed_time.avg")
 	m.data.SetDescription("average elapsed time")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSnowflakeTotalElapsedTimeAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+func (m *metricSnowflakeTotalElapsedTimeAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2302,7 +2318,7 @@ func (m *metricSnowflakeTotalElapsedTimeSum) init() {
 	m.data.SetName("snowflake.total_elapsed_time.sum")
 	m.data.SetDescription("total elapsed time")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -2313,14 +2329,14 @@ func (m *metricSnowflakeTotalElapsedTimeSum) recordDataPoint(start pcommon.Times
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().UpsertString("schema.name", schemaNameAttributeValue)
-	dp.Attributes().UpsertString("execution.status", executionStatusAttributeValue)
-	dp.Attributes().UpsertString("error.message", errorMessageAttributeValue)
-	dp.Attributes().UpsertString("query.type", queryTypeAttributeValue)
-	dp.Attributes().UpsertString("warehouse.name", warehouseNameAttributeValue)
-	dp.Attributes().UpsertString("database.name", databaseNameAttributeValue)
-	dp.Attributes().UpsertString("warehouse.size", warehouseSizeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutString("schema.name", schemaNameAttributeValue)
+	dp.Attributes().PutString("execution.status", executionStatusAttributeValue)
+	dp.Attributes().PutString("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutString("query.type", queryTypeAttributeValue)
+	dp.Attributes().PutString("warehouse.name", warehouseNameAttributeValue)
+	dp.Attributes().PutString("database.name", databaseNameAttributeValue)
+	dp.Attributes().PutString("warehouse.size", warehouseSizeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2476,21 +2492,21 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithSnowflakeAccountName sets provided value as "snowflake.account.name" attribute for current resource.
 func WithSnowflakeAccountName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("snowflake.account.name", val)
+		rm.Resource().Attributes().PutString("snowflake.account.name", val)
 	}
 }
 
 // WithSnowflakeUsername sets provided value as "snowflake.username" attribute for current resource.
 func WithSnowflakeUsername(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertEmpty("snowflake.username", val)
+		rm.Resource().Attributes().PutEmpty("snowflake.username")
 	}
 }
 
 // WithSnowflakeWarehouseName sets provided value as "snowflake.warehouse.name" attribute for current resource.
 func WithSnowflakeWarehouseName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("snowflake.warehouse.name", val)
+		rm.Resource().Attributes().PutString("snowflake.warehouse.name", val)
 	}
 }
 
@@ -2501,10 +2517,10 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {
@@ -2601,18 +2617,18 @@ func (mb *MetricsBuilder) RecordSnowflakeBillingVirtualWarehouseSumDataPoint(ts 
 }
 
 // RecordSnowflakeBillingWarehouseCloudServiceSumDataPoint adds a data point to snowflake.billing.warehouse.cloud_service.sum metric.
-func (mb *MetricsBuilder) RecordSnowflakeBillingWarehouseCloudServiceSumDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSnowflakeBillingWarehouseCloudServiceSum.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordSnowflakeBillingWarehouseCloudServiceSumDataPoint(ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
+	mb.metricSnowflakeBillingWarehouseCloudServiceSum.recordDataPoint(mb.startTime, ts, val, warehouseNameAttributeValue)
 }
 
 // RecordSnowflakeBillingWarehouseTotalCreditSumDataPoint adds a data point to snowflake.billing.warehouse.total_credit.sum metric.
-func (mb *MetricsBuilder) RecordSnowflakeBillingWarehouseTotalCreditSumDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSnowflakeBillingWarehouseTotalCreditSum.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordSnowflakeBillingWarehouseTotalCreditSumDataPoint(ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
+	mb.metricSnowflakeBillingWarehouseTotalCreditSum.recordDataPoint(mb.startTime, ts, val, warehouseNameAttributeValue)
 }
 
 // RecordSnowflakeBillingWarehouseVirtualWarehouseSumDataPoint adds a data point to snowflake.billing.warehouse.virtual_warehouse.sum metric.
-func (mb *MetricsBuilder) RecordSnowflakeBillingWarehouseVirtualWarehouseSumDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSnowflakeBillingWarehouseVirtualWarehouseSum.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordSnowflakeBillingWarehouseVirtualWarehouseSumDataPoint(ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
+	mb.metricSnowflakeBillingWarehouseVirtualWarehouseSum.recordDataPoint(mb.startTime, ts, val, warehouseNameAttributeValue)
 }
 
 // RecordSnowflakeDatabaseBytesScannedAvgDataPoint adds a data point to snowflake.database.bytes_scanned.avg metric.
@@ -2636,8 +2652,8 @@ func (mb *MetricsBuilder) RecordSnowflakePipeCreditsUsedSumDataPoint(ts pcommon.
 }
 
 // RecordSnowflakeQueryBlockedDataPoint adds a data point to snowflake.query.blocked metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryBlockedDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSnowflakeQueryBlocked.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordSnowflakeQueryBlockedDataPoint(ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
+	mb.metricSnowflakeQueryBlocked.recordDataPoint(mb.startTime, ts, val, warehouseNameAttributeValue)
 }
 
 // RecordSnowflakeQueryBytesDeletedSumDataPoint adds a data point to snowflake.query.bytes_deleted.sum metric.
@@ -2676,8 +2692,8 @@ func (mb *MetricsBuilder) RecordSnowflakeQueryDataScannedCacheAvgDataPoint(ts pc
 }
 
 // RecordSnowflakeQueryExecutedDataPoint adds a data point to snowflake.query.executed metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryExecutedDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSnowflakeQueryExecuted.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordSnowflakeQueryExecutedDataPoint(ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
+	mb.metricSnowflakeQueryExecuted.recordDataPoint(mb.startTime, ts, val, warehouseNameAttributeValue)
 }
 
 // RecordSnowflakeQueryExecutionTimeSumDataPoint adds a data point to snowflake.query.execution_time.sum metric.
@@ -2691,17 +2707,17 @@ func (mb *MetricsBuilder) RecordSnowflakeQueryPartitionsScannedSumDataPoint(ts p
 }
 
 // RecordSnowflakeQueryQueuedOverloadDataPoint adds a data point to snowflake.query.queued_overload metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryQueuedOverloadDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSnowflakeQueryQueuedOverload.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordSnowflakeQueryQueuedOverloadDataPoint(ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
+	mb.metricSnowflakeQueryQueuedOverload.recordDataPoint(mb.startTime, ts, val, warehouseNameAttributeValue)
 }
 
 // RecordSnowflakeQueryQueuedProvisionDataPoint adds a data point to snowflake.query.queued_provision metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryQueuedProvisionDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSnowflakeQueryQueuedProvision.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordSnowflakeQueryQueuedProvisionDataPoint(ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
+	mb.metricSnowflakeQueryQueuedProvision.recordDataPoint(mb.startTime, ts, val, warehouseNameAttributeValue)
 }
 
 // RecordSnowflakeQueuedOverloadTimeAvgDataPoint adds a data point to snowflake.queued_overload_time.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueuedOverloadTimeAvgDataPoint(ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+func (mb *MetricsBuilder) RecordSnowflakeQueuedOverloadTimeAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
 	mb.metricSnowflakeQueuedOverloadTimeAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
@@ -2711,7 +2727,7 @@ func (mb *MetricsBuilder) RecordSnowflakeQueuedOverloadTimeSumDataPoint(ts pcomm
 }
 
 // RecordSnowflakeQueuedProvisioningTimeAvgDataPoint adds a data point to snowflake.queued_provisioning_time.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueuedProvisioningTimeAvgDataPoint(ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+func (mb *MetricsBuilder) RecordSnowflakeQueuedProvisioningTimeAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
 	mb.metricSnowflakeQueuedProvisioningTimeAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
@@ -2721,7 +2737,7 @@ func (mb *MetricsBuilder) RecordSnowflakeQueuedProvisioningTimeSumDataPoint(ts p
 }
 
 // RecordSnowflakeQueuedRepairTimeAvgDataPoint adds a data point to snowflake.queued_repair_time.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueuedRepairTimeAvgDataPoint(ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+func (mb *MetricsBuilder) RecordSnowflakeQueuedRepairTimeAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
 	mb.metricSnowflakeQueuedRepairTimeAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
@@ -2756,8 +2772,8 @@ func (mb *MetricsBuilder) RecordSnowflakeRowsUpdatedSumDataPoint(ts pcommon.Time
 }
 
 // RecordSnowflakeSessionIDCountDataPoint adds a data point to snowflake.session_id.count metric.
-func (mb *MetricsBuilder) RecordSnowflakeSessionIDCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSnowflakeSessionIDCount.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordSnowflakeSessionIDCountDataPoint(ts pcommon.Timestamp, val int64, userNameAttributeValue string) {
+	mb.metricSnowflakeSessionIDCount.recordDataPoint(mb.startTime, ts, val, userNameAttributeValue)
 }
 
 // RecordSnowflakeStorageFailsafeBytesTotalDataPoint adds a data point to snowflake.storage.failsafe_bytes.total metric.
@@ -2776,7 +2792,7 @@ func (mb *MetricsBuilder) RecordSnowflakeStorageStorageBytesTotalDataPoint(ts pc
 }
 
 // RecordSnowflakeTotalElapsedTimeAvgDataPoint adds a data point to snowflake.total_elapsed_time.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeTotalElapsedTimeAvgDataPoint(ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+func (mb *MetricsBuilder) RecordSnowflakeTotalElapsedTimeAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
 	mb.metricSnowflakeTotalElapsedTimeAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
