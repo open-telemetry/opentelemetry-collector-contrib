@@ -53,6 +53,7 @@
 - `exporter/awsxrayexporter`: Change the value of xraysegment.url from `dbConnectionString` to the span name. This makes the XRay segment timeline more informationally useful. (#14342)
   This change contravenes the AWS documentation for what values should go into this segment field.
 - `pkg/translator/zipkin`: Change zipkin V1 conversion to use pdata. (#14592)
+- `filterexpr`: Prevent the matcher from panicking (#13573)
 
 ### 🧰 Bug fixes 🧰
 
@@ -66,6 +67,7 @@
 - `saphanareceiver`: Fix incorrect use of units for saphana licenses metrics (#10565)
 - `hostmetricsreceiver`: Allow to continue collecting partition information even if an error is returned (#14315)
   Log the error and continue if partition information, however incomplete, was provided.
+- `kubeletstatsreceiver`: Fix use network io as network errors bug (#14318)
 
 ## v0.61.0
 
@@ -154,7 +156,7 @@
 - `pkg/stanza/adapter`: Remove `OperatorConfigs` type, rename `LogReceiverType.DecodeInputConfig` to `LogReceiverType.InputConfig`. (#14078)
 - `postgresqlreceiver`: The receiver will now emit resource attributes via default. (#13811)
   old behavior can be established by setting the featuregates `receiver.postgresql.emitMetricsWithResourceAttributes` to false and `receiver.postgresql.emitMetricsWithoutResourceAttributes` to true
-  
+
 - `k8sattributesprocessor`: Change the way how `key_regex` setting is handled. After this change, provided expressions are applied to the full length of attribute values. (#9716)
 - `pkg/telemetryquerylanguage`: Add ability to specify attribute keys in the `limit` function that aren't allowed to be dropped (#9734)
   This breaking change affects the transform processor since we don't have a way to default values in a function call.
@@ -176,7 +178,7 @@
 - `processor/filter`: Added ability to filter by metric type using expression `MetricType` keyword. (#14107)
 - `elasticsearchreceiver`: Add additional two cluster-level metrics (#13748)
   Add additional cluster metrics for elasticsearch.cluster.in_flight_fetch & elasticsearch.cluster.pending_tasks.
-  
+
 - `dockerstatsreceiver`: Simplify BlockIO metrics by taking operation out of the metric name and putting it in an attribute. (#9794, #13445)
 - `elasticsearchreceiver`: Added `node.fs.disk.{free,total}` to elasticsearch receiver (#13571)
 - `elasticsearchexporter`: Support sending OpenTelemetry tracing data to Elasticsearch index or data stream. (#12069)
