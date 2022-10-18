@@ -7,8 +7,8 @@ require (
 	github.com/go-playground/universal-translator v0.18.0
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.62.0
-	go.opentelemetry.io/collector/pdata v0.62.0
+	go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c
+	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
 )
 
 require (
@@ -30,7 +30,7 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/crypto v0.0.0-20220507011949-2cf3adece122 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
-	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664 // indirect
+	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
 	google.golang.org/grpc v1.50.1 // indirect

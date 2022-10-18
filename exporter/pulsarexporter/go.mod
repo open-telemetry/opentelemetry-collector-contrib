@@ -9,9 +9,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.62.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.62.0
-	go.opentelemetry.io/collector/pdata v0.62.0
-	go.opentelemetry.io/collector/semconv v0.62.0
+	go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c
+	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
+	go.opentelemetry.io/collector/semconv v0.62.2-0.20221017171445-6313054b642c
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 )
@@ -30,6 +30,8 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dvsekhvalnov/jose2go v0.0.0-20200901110807-248326c1351b // indirect
 	github.com/frankban/quicktest v1.14.3 // indirect
+	github.com/go-logr/logr v1.2.3 // indirect
+	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
@@ -62,14 +64,15 @@ require (
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel v1.10.0 // indirect
-	go.opentelemetry.io/otel/metric v0.32.1 // indirect
-	go.opentelemetry.io/otel/trace v1.10.0 // indirect
+	go.opentelemetry.io/otel v1.11.0 // indirect
+	go.opentelemetry.io/otel/metric v0.32.3 // indirect
+	go.opentelemetry.io/otel/sdk v1.11.0 // indirect
+	go.opentelemetry.io/otel/trace v1.11.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
 	golang.org/x/net v0.0.0-20220926192436-02166a98028e // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
-	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664 // indirect
+	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect

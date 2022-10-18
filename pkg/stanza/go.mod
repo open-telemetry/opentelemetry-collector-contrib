@@ -11,10 +11,10 @@ require (
 	github.com/observiq/ctimefmt v1.0.0
 	github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.62.0
+	go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c
 	go.uber.org/zap v1.23.0
 	golang.org/x/exp v0.0.0-20200331195152-e8c3332aa8e5 // indirect
-	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664
+	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8
 	golang.org/x/text v0.3.7
 	gonum.org/v1/gonum v0.12.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -23,7 +23,7 @@ require (
 require (
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.62.0
-	go.opentelemetry.io/collector/pdata v0.62.0
+	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.8.0
 )
@@ -31,6 +31,8 @@ require (
 require (
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/go-logr/logr v1.2.3 // indirect
+	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/knadh/koanf v1.4.3 // indirect
@@ -42,9 +44,10 @@ require (
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/stretchr/objx v0.4.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel v1.10.0 // indirect
-	go.opentelemetry.io/otel/metric v0.32.1 // indirect
-	go.opentelemetry.io/otel/trace v1.10.0 // indirect
+	go.opentelemetry.io/otel v1.11.0 // indirect
+	go.opentelemetry.io/otel/metric v0.32.3 // indirect
+	go.opentelemetry.io/otel/sdk v1.11.0 // indirect
+	go.opentelemetry.io/otel/trace v1.11.0 // indirect
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
 	google.golang.org/grpc v1.50.1 // indirect
