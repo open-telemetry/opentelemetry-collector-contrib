@@ -369,7 +369,7 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 		mCount.SetName("traces_service_graph_request_total")
 		mCount.SetEmptySum().SetIsMonotonic(true)
 		// TODO: Support other aggregation temporalities
-		mCount.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		mCount.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 		dpCalls := mCount.Sum().DataPoints().AppendEmpty()
 		dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
@@ -389,7 +389,7 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 		mCount.SetName("traces_service_graph_request_failed_total")
 		mCount.SetEmptySum().SetIsMonotonic(true)
 		// TODO: Support other aggregation temporalities
-		mCount.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		mCount.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 		dpCalls := mCount.Sum().DataPoints().AppendEmpty()
 		dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
@@ -412,7 +412,7 @@ func (p *processor) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 		mDuration := ilm.Metrics().AppendEmpty()
 		mDuration.SetName("traces_service_graph_request_duration_seconds")
 		// TODO: Support other aggregation temporalities
-		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 		timestamp := pcommon.NewTimestampFromTime(time.Now())
 

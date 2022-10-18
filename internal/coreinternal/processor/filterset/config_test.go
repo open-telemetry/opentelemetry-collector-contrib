@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset/regexp"
@@ -31,7 +32,7 @@ func readTestdataConfigYamls(t *testing.T, filename string) map[string]*Config {
 	require.NoError(t, err)
 
 	cfgs := map[string]*Config{}
-	require.NoErrorf(t, v.UnmarshalExact(&cfgs), "unable to unmarshal yaml from file %v", testFile)
+	require.NoErrorf(t, v.Unmarshal(&cfgs, confmap.WithErrorUnused()), "unable to unmarshal yaml from file %v", testFile)
 	return cfgs
 }
 

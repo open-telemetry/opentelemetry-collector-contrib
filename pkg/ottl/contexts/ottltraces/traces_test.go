@@ -46,7 +46,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	newLinks := ptrace.NewSpanLinkSlice()
 	newLinks.AppendEmpty().SetSpanID(spanID2)
 
-	newStatus := ptrace.NewSpanStatus()
+	newStatus := ptrace.NewStatus()
 	newStatus.SetMessage("new status")
 
 	tests := []struct {
@@ -494,7 +494,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "instrumentation_scope",
 			path: []ottl.Field{
 				{
-					Name: "instrumentation_library",
+					Name: "instrumentation_scope",
 				},
 			},
 			orig:   refIS,

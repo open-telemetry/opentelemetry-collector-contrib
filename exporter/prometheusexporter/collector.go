@@ -219,18 +219,22 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 
 	arrLen := ip.Exemplars().Len()
 	exemplars := make([]prometheus.Exemplar, arrLen)
+
 	for i := 0; i < arrLen; i++ {
 		e := ip.Exemplars().At(i)
+		exemplarLabels := make(prometheus.Labels, 0)
 
-		labels := make(prometheus.Labels, e.FilteredAttributes().Len())
-		e.FilteredAttributes().Range(func(k string, v pcommon.Value) bool {
-			labels[k] = v.AsString()
-			return true
-		})
+		if !e.TraceID().IsEmpty() {
+			exemplarLabels["trace_id"] = e.TraceID().HexString()
+		}
+
+		if !e.SpanID().IsEmpty() {
+			exemplarLabels["span_id"] = e.SpanID().HexString()
+		}
 
 		exemplars[i] = prometheus.Exemplar{
 			Value:     e.DoubleValue(),
-			Labels:    labels,
+			Labels:    exemplarLabels,
 			Timestamp: e.Timestamp().AsTime(),
 		}
 	}

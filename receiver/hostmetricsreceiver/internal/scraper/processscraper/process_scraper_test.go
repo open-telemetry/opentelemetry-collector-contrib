@@ -47,35 +47,13 @@ func skipTestOnUnsupportedOS(t *testing.T) {
 func TestScrape(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 	type testCase struct {
-		name                                   string
-		expectMetricsWithDirectionAttribute    bool
-		expectMetricsWithoutDirectionAttribute bool
-		expectThreadsCount                     bool
-		mutateScraper                          func(*scraper)
+		name               string
+		expectThreadsCount bool
+		mutateScraper      func(*scraper)
 	}
 	testCases := []testCase{
 		{
-			name:                                   "Standard",
-			expectMetricsWithDirectionAttribute:    true,
-			expectMetricsWithoutDirectionAttribute: false,
-		},
-		{
-			name:                                   "Standard with direction removed",
-			expectMetricsWithDirectionAttribute:    false,
-			expectMetricsWithoutDirectionAttribute: true,
-			mutateScraper: func(s *scraper) {
-				s.emitMetricsWithDirectionAttribute = false
-				s.emitMetricsWithoutDirectionAttribute = true
-			},
-		},
-		{
-			name:                                   "Emit both old and new metrics",
-			expectMetricsWithDirectionAttribute:    true,
-			expectMetricsWithoutDirectionAttribute: true,
-			mutateScraper: func(s *scraper) {
-				s.emitMetricsWithDirectionAttribute = true
-				s.emitMetricsWithoutDirectionAttribute = true
-			},
+			name: "Standard",
 		},
 		{
 			name:               "With threads count",
@@ -122,12 +100,7 @@ func TestScrape(t *testing.T) {
 			assertProcessResourceAttributesExist(t, md.ResourceMetrics())
 			assertCPUTimeMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			assertMemoryUsageMetricValid(t, md.ResourceMetrics(), expectedStartTime)
-			if test.expectMetricsWithDirectionAttribute {
-				assertOldDiskIOMetricValid(t, md.ResourceMetrics(), expectedStartTime)
-			}
-			if test.expectMetricsWithoutDirectionAttribute {
-				assertNewDiskIOMetricValid(t, md.ResourceMetrics(), expectedStartTime)
-			}
+			assertOldDiskIOMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			if test.expectThreadsCount {
 				assertThreadsCountValid(t, md.ResourceMetrics(), expectedStartTime)
 			} else {
@@ -176,16 +149,6 @@ func assertMemoryUsageMetricValid(t *testing.T, resourceMetrics pmetric.Resource
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, physicalMemUsageMetric, startTime)
 		internal.AssertSumMetricStartTimeEquals(t, virtualMemUsageMetric, startTime)
-	}
-}
-
-func assertNewDiskIOMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice,
-	startTime pcommon.Timestamp) {
-	for _, metricName := range []string{"process.disk.io.read", "process.disk.io.write"} {
-		diskIOMetric := getMetric(t, metricName, resourceMetrics)
-		if startTime != 0 {
-			internal.AssertSumMetricStartTimeEquals(t, diskIOMetric, startTime)
-		}
 	}
 }
 

@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influx
 go 1.18
 
 require (
-	github.com/influxdata/influxdb-observability/common v0.2.28
-	github.com/influxdata/influxdb-observability/influx2otel v0.2.28
+	github.com/influxdata/influxdb-observability/common v0.2.29
+	github.com/influxdata/influxdb-observability/influx2otel v0.2.29
 	github.com/influxdata/line-protocol/v2 v2.2.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.61.0
-	go.opentelemetry.io/collector v0.61.1-0.20221006231412-05d1c5f5572d
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.62.0
+	go.opentelemetry.io/collector v0.62.0
 	go.uber.org/zap v1.23.0
 
 )
@@ -31,7 +31,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/rs/cors v1.8.2 // indirect
-	go.opentelemetry.io/collector/pdata v0.61.1-0.20221006231412-05d1c5f5572d // indirect
+	go.opentelemetry.io/collector/pdata v0.62.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.1 // indirect
 	go.opentelemetry.io/otel v1.10.0 // indirect
 	go.opentelemetry.io/otel/metric v0.32.1 // indirect
@@ -42,7 +42,7 @@ require (
 	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
-	google.golang.org/grpc v1.50.0 // indirect
+	google.golang.org/grpc v1.50.1 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )
 

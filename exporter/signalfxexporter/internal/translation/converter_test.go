@@ -146,28 +146,28 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("cumulative_double_with_dims")
 					m.SetEmptySum().SetIsMonotonic(true)
-					m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+					m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 					initDoublePt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("cumulative_int_with_dims")
 					m.SetEmptySum().SetIsMonotonic(true)
-					m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+					m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("delta_double_with_dims")
 					m.SetEmptySum().SetIsMonotonic(true)
-					m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+					m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 					initDoublePt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("delta_int_with_dims")
 					m.SetEmptySum().SetIsMonotonic(true)
-					m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+					m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{

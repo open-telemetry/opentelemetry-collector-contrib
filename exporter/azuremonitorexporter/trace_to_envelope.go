@@ -622,7 +622,7 @@ func mapIncomingSpanToType(attributeMap pcommon.Map) spanType {
 }
 
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
-func getDefaultFormattedSpanStatus(spanStatus ptrace.SpanStatus) (statusCodeAsString string, success bool) {
+func getDefaultFormattedSpanStatus(spanStatus ptrace.Status) (statusCodeAsString string, success bool) {
 	code := spanStatus.Code()
 
 	return strconv.FormatInt(int64(code), 10), code != ptrace.StatusCodeError

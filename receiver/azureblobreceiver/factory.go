@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 )
@@ -75,6 +76,8 @@ func (f *blobReceiverFactory) createLogsReceiver(
 		return nil, err
 	}
 
+	receiver.(logsDataConsumer).setNextLogsConsumer(nextConsumer)
+
 	return receiver, nil
 }
 
@@ -92,6 +95,7 @@ func (f *blobReceiverFactory) createTracesReceiver(
 		return nil, err
 	}
 
+	receiver.(tracesDataConsumer).setNextTracesConsumer(nextConsumer)
 	return receiver, nil
 }
 
@@ -108,8 +112,14 @@ func (f *blobReceiverFactory) getReceiver(
 			return nil
 		}
 
+		var beh blobEventHandler
+		beh, err = f.getBlobEventHandler(receiverConfig, set.Logger)
+		if err != nil {
+			return nil
+		}
+
 		var receiver component.Receiver
-		receiver, err = newReceiver(*receiverConfig, set)
+		receiver, err = newReceiver(*receiverConfig, set, beh)
 		return receiver
 	})
 
@@ -118,4 +128,14 @@ func (f *blobReceiverFactory) getReceiver(
 	}
 
 	return r.Unwrap(), err
+}
+
+func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger) (blobEventHandler, error) {
+	bc, err := newBlobClient(cfg.ConnectionString, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	return newBlobEventHandler(cfg.EventHub.EndPoint, cfg.Logs.ContainerName, cfg.Traces.ContainerName, bc, logger),
+		nil
 }

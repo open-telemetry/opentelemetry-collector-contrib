@@ -392,7 +392,7 @@ func spanWithStatus(statusCode ptrace.StatusCode, message string) ptrace.Span {
 	span := ptrace.NewSpan()
 	span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
 	span.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
-	status := ptrace.NewSpanStatus()
+	status := ptrace.NewStatus()
 	status.SetCode(statusCode)
 	if message != "" {
 		status.SetMessage(message)

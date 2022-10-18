@@ -98,7 +98,7 @@ var pMaps ascendingValues = []pcommon.Value{
 	func() pcommon.Value {
 		v := pcommon.NewValueMap()
 		m := v.SetEmptyMap()
-		m.PutString("a", "")
+		m.PutStr("a", "")
 		return v
 	}(),
 	func() pcommon.Value {
@@ -116,27 +116,27 @@ var pMaps ascendingValues = []pcommon.Value{
 	func() pcommon.Value {
 		v := pcommon.NewValueMap()
 		m := v.SetEmptyMap()
-		m.PutString("c", "")
+		m.PutStr("c", "")
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueMap()
 		m := v.SetEmptyMap()
-		m.PutString("a", "")
-		m.PutString("b", "")
+		m.PutStr("a", "")
+		m.PutStr("b", "")
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueMap()
 		m := v.SetEmptyMap()
-		m.PutString("a", "")
+		m.PutStr("a", "")
 		m.PutEmptyMap("m")
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueMap()
 		m := v.SetEmptyMap()
-		m.PutString("a", "")
+		m.PutStr("a", "")
 		mv := m.PutEmptyMap("m")
 		mv.PutInt("i", 0)
 		return v
@@ -144,7 +144,7 @@ var pMaps ascendingValues = []pcommon.Value{
 	func() pcommon.Value {
 		v := pcommon.NewValueMap()
 		m := v.SetEmptyMap()
-		m.PutString("a", "")
+		m.PutStr("a", "")
 		vs := m.PutEmptySlice("s")
 		d := vs.AppendEmpty()
 		d.SetDouble(100)
@@ -189,14 +189,14 @@ var pSlices ascendingValues = []pcommon.Value{
 		v := pcommon.NewValueSlice()
 		s := v.SetEmptySlice()
 		m := s.AppendEmpty().SetEmptyMap()
-		m.PutString("a", "")
+		m.PutStr("a", "")
 		return v
 	}(),
 	func() pcommon.Value {
 		v := pcommon.NewValueSlice()
 		s := v.SetEmptySlice()
 		m := s.AppendEmpty().SetEmptyMap()
-		m.PutString("b", "")
+		m.PutStr("b", "")
 		return v
 	}(),
 	func() pcommon.Value {

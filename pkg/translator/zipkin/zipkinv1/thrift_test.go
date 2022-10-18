@@ -130,7 +130,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 		name           string
 		haveTags       []*zipkincore.BinaryAnnotation
 		wantAttributes pcommon.Map
-		wantStatus     ptrace.SpanStatus
+		wantStatus     ptrace.Status
 	}
 
 	cases := []test{
@@ -142,7 +142,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 				AnnotationType: zipkincore.AnnotationType_I64,
 			}},
 			wantAttributes: pcommon.NewMap(),
-			wantStatus:     ptrace.NewSpanStatus(),
+			wantStatus:     ptrace.NewStatus(),
 		},
 		{
 			name: "census.status_code int64",
@@ -152,8 +152,8 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 				AnnotationType: zipkincore.AnnotationType_I64,
 			}},
 			wantAttributes: pcommon.NewMap(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				return ret
 			}(),
@@ -166,8 +166,8 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 				AnnotationType: zipkincore.AnnotationType_I32,
 			}},
 			wantAttributes: pcommon.NewMap(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				return ret
 			}(),
@@ -180,8 +180,8 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 				AnnotationType: zipkincore.AnnotationType_I16,
 			}},
 			wantAttributes: pcommon.NewMap(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				return ret
 			}(),
@@ -194,7 +194,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 				AnnotationType: zipkincore.AnnotationType_STRING,
 			}},
 			wantAttributes: pcommon.NewMap(),
-			wantStatus:     ptrace.NewSpanStatus(),
+			wantStatus:     ptrace.NewStatus(),
 		},
 		{
 			name: "both status.code and status.message",
@@ -211,8 +211,8 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 				},
 			},
 			wantAttributes: pcommon.NewMap(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("Forbidden")
 				return ret
@@ -239,8 +239,8 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("NotFound")
 				return ret
@@ -277,8 +277,8 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("Forbidden")
 				return ret
@@ -310,8 +310,8 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				return ret
 			}(),
@@ -341,8 +341,8 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("NotFound")
 				return ret
@@ -364,8 +364,8 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 				},
 			},
 			wantAttributes: pcommon.NewMap(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("RPCError")
 				return ret
@@ -412,8 +412,8 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("RPCError")
 				return ret
