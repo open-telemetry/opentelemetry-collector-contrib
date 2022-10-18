@@ -31,5 +31,4 @@ pkg/experimentalmetricmetadata
 processor/deltatorateprocessor
 processor/metricsgenerationprocessor
 receiver/dotnetdiagnosticsreceiver
-receiver/snowflakereceiver
 testbed
