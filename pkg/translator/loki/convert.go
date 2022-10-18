@@ -28,6 +28,7 @@ import (
 const (
 	hintAttributes = "loki.attribute.labels"
 	hintResources  = "loki.resource.labels"
+	hintTenant     = "loki.tenant"
 )
 
 var defaultExporterLabels = model.LabelSet{"exporter": "OTLP"}
@@ -45,6 +46,18 @@ func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map) model
 
 	if attributesToLabel, found := logAttrs.Get(hintAttributes); found {
 		labels := convertAttributesToLabels(logAttrs, attributesToLabel)
+		out = out.Merge(labels)
+	}
+
+	// get tenant hint from resource attributes, fallback to record attributes
+	// if it is not found
+	if resourcesToLabel, found := resAttrs.Get(hintTenant); !found {
+		if attributesToLabel, found := logAttrs.Get(hintTenant); found {
+			labels := convertAttributesToLabels(logAttrs, attributesToLabel)
+			out = out.Merge(labels)
+		}
+	} else {
+		labels := convertAttributesToLabels(resAttrs, resourcesToLabel)
 		out = out.Merge(labels)
 	}
 
@@ -87,7 +100,7 @@ func parseAttributeNames(attrsToSelect pcommon.Value) []string {
 
 func removeAttributes(attrs pcommon.Map, labels model.LabelSet) {
 	attrs.RemoveIf(func(s string, v pcommon.Value) bool {
-		if s == hintAttributes || s == hintResources {
+		if s == hintAttributes || s == hintResources || s == hintTenant {
 			return true
 		}
 
