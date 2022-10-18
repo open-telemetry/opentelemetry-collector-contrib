@@ -40,11 +40,11 @@ func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric, startTime pc
 	}
 	attrs := dataPoint.Attributes()
 	for k, v := range cfg.StaticAttributes {
-		attrs.PutString(k, v)
+		attrs.PutStr(k, v)
 	}
 	for _, columnName := range cfg.AttributeColumns {
 		if attrVal, found := row[columnName]; found {
-			attrs.PutString(columnName, attrVal)
+			attrs.PutStr(columnName, attrVal)
 		} else {
 			return fmt.Errorf("rowToMetric: attribute_column not found: '%s'", columnName)
 		}
@@ -80,13 +80,13 @@ func setMetricFields(cfg MetricCfg, dest pmetric.Metric) pmetric.NumberDataPoint
 	return out
 }
 
-func cfgToAggregationTemporality(agg MetricAggregation) pmetric.MetricAggregationTemporality {
-	var out pmetric.MetricAggregationTemporality
+func cfgToAggregationTemporality(agg MetricAggregation) pmetric.AggregationTemporality {
+	var out pmetric.AggregationTemporality
 	switch agg {
 	case MetricAggregationUnspecified, MetricAggregationCumulative:
-		out = pmetric.MetricAggregationTemporalityCumulative
+		out = pmetric.AggregationTemporalityCumulative
 	case MetricAggregationDelta:
-		out = pmetric.MetricAggregationTemporalityDelta
+		out = pmetric.AggregationTemporalityDelta
 	}
 	return out
 }

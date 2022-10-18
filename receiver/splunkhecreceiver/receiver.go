@@ -393,7 +393,7 @@ func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resour
 		if strings.HasPrefix(accessToken, splunk.HECTokenHeader+" ") {
 			accessTokenValue := accessToken[len(splunk.HECTokenHeader)+1:]
 			return func(resource pcommon.Resource) {
-				resource.Attributes().PutString(splunk.HecTokenLabel, accessTokenValue)
+				resource.Attributes().PutStr(splunk.HecTokenLabel, accessTokenValue)
 			}
 		}
 	}

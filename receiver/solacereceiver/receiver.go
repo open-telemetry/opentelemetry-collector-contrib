@@ -36,6 +36,7 @@ type solaceTracesReceiver struct {
 
 	nextConsumer consumer.Traces
 	settings     component.ReceiverCreateSettings
+	metrics      *opencensusMetrics
 	unmarshaller tracesUnmarshaller
 	// cancel is the function that will cancel the context associated with the main worker loop
 	cancel            context.CancelFunc
@@ -66,13 +67,20 @@ func newTracesReceiver(config *Config, receiverCreateSettings component.Receiver
 		return nil, err
 	}
 
-	unmarshaller := newTracesUnmarshaller(receiverCreateSettings.Logger)
+	metrics, err := newOpenCensusMetrics(config.ID().Name())
+	if err != nil {
+		receiverCreateSettings.Logger.Warn("Error registering metrics", zap.Any("error", err))
+		return nil, err
+	}
+
+	unmarshaller := newTracesUnmarshaller(receiverCreateSettings.Logger, metrics)
 
 	return &solaceTracesReceiver{
 		instanceID:        config.ID(),
 		config:            config,
 		nextConsumer:      nextConsumer,
 		settings:          receiverCreateSettings,
+		metrics:           metrics,
 		unmarshaller:      unmarshaller,
 		shutdownWaitGroup: &sync.WaitGroup{},
 		factory:           factory,
@@ -83,7 +91,7 @@ func newTracesReceiver(config *Config, receiverCreateSettings component.Receiver
 
 // Start implements component.Receiver::Start
 func (s *solaceTracesReceiver) Start(_ context.Context, _ component.Host) error {
-	recordReceiverStatus(receiverStateStarting)
+	s.metrics.recordReceiverStatus(receiverStateStarting)
 	var cancelableContext context.Context
 	cancelableContext, s.cancel = context.WithCancel(context.Background())
 
@@ -98,12 +106,12 @@ func (s *solaceTracesReceiver) Start(_ context.Context, _ component.Host) error 
 // Shutdown implements component.Receiver::Shutdown
 func (s *solaceTracesReceiver) Shutdown(ctx context.Context) error {
 	s.terminating.Store(true)
-	recordReceiverStatus(receiverStateTerminating)
+	s.metrics.recordReceiverStatus(receiverStateTerminating)
 	s.settings.Logger.Info("Shutdown waiting for all components to complete")
 	s.cancel() // cancels the context passed to the reconneciton loop
 	s.shutdownWaitGroup.Wait()
 	s.settings.Logger.Info("Receiver shutdown successfully")
-	recordReceiverStatus(receiverStateTerminated)
+	s.metrics.recordReceiverStatus(receiverStateTerminated)
 	return nil
 }
 
@@ -119,7 +127,7 @@ func (s *solaceTracesReceiver) connectAndReceive(ctx context.Context) {
 	disable := false
 
 	// indicate we are in connecting state at the start
-	recordReceiverStatus(receiverStateConnecting)
+	s.metrics.recordReceiverStatus(receiverStateConnecting)
 
 reconnectionLoop:
 	for !disable {
@@ -145,7 +153,7 @@ reconnectionLoop:
 
 			if err := service.dial(); err != nil {
 				s.settings.Logger.Debug("Encountered error while connecting messaging service", zap.Error(err))
-				recordFailedReconnection()
+				s.metrics.recordFailedReconnection()
 				return
 			}
 			// dial was successful, record the connected state
@@ -154,7 +162,7 @@ reconnectionLoop:
 			if err := s.receiveMessages(ctx, service); err != nil {
 				s.settings.Logger.Debug("Encountered error while receiving messages", zap.Error(err))
 				if errors.Is(err, errUnknownTraceMessgeVersion) {
-					recordNeedUpgrade()
+					s.metrics.recordNeedUpgrade()
 					disable = true
 					return
 				}
@@ -171,7 +179,7 @@ reconnectionLoop:
 // this state transition were to happen, it would be short lived.
 func (s *solaceTracesReceiver) recordConnectionState(state receiverState) {
 	if !s.terminating.Load() {
-		recordReceiverStatus(state)
+		s.metrics.recordReceiverStatus(state)
 	}
 }
 
@@ -200,25 +208,25 @@ func (s *solaceTracesReceiver) receiveMessage(ctx context.Context, service messa
 		return err // propagate any receive message error up to caller
 	}
 	// only set the disposition action after we have received a message successfully
-	disposition := service.ack
+	disposition := service.accept
 	defer func() { // on return of receiveMessage, we want to either ack or nack the message
 		if actionErr := disposition(ctx, msg); err == nil && actionErr != nil {
 			err = actionErr
 		}
 	}()
 	// message received successfully
-	recordReceivedSpanMessages()
+	s.metrics.recordReceivedSpanMessages()
 	// unmarshal the message. unmarshalling errors are not fatal unless the version is unknown
 	traces, unmarshalErr := s.unmarshaller.unmarshal(msg)
 	if unmarshalErr != nil {
 		s.settings.Logger.Error("Encountered error while unmarshalling message", zap.Error(unmarshalErr))
-		recordFatalUnmarshallingError()
+		s.metrics.recordFatalUnmarshallingError()
 		if errors.Is(unmarshalErr, errUnknownTraceMessgeVersion) {
-			disposition = service.nack // if we don't know the version, reject the trace message since we will disable the receiver
+			disposition = service.failed // if we don't know the version, reject the trace message since we will disable the receiver
 			return unmarshalErr
 		}
-		recordDroppedSpanMessages() // if the error is some other unmarshalling error, we will ack the message and drop the content
-		return nil                  // don't propagate error, but don't continue forwarding traces
+		s.metrics.recordDroppedSpanMessages() // if the error is some other unmarshalling error, we will ack the message and drop the content
+		return nil                            // don't propagate error, but don't continue forwarding traces
 	}
 	// forward to next consumer. Forwarding errors are not fatal so are not propagated to the caller.
 	// Temporary consumer errors will lead to redelivered messages, permanent will be accepted
@@ -226,13 +234,13 @@ func (s *solaceTracesReceiver) receiveMessage(ctx context.Context, service messa
 	if forwardErr != nil {
 		if !consumererror.IsPermanent(forwardErr) { // reject the message if the error is not permanent so we can retry, don't increment dropped span messages
 			s.settings.Logger.Warn("Encountered temporary error while forwarding traces to next receiver, will allow redelivery", zap.Error(forwardErr))
-			disposition = service.nack
+			disposition = service.failed
 		} else { // error is permanent, we want to accept the message and increment the number of dropped messages
 			s.settings.Logger.Warn("Encountered permanent error while forwarding traces to next receiver, will swallow trace", zap.Error(forwardErr))
-			recordDroppedSpanMessages()
+			s.metrics.recordDroppedSpanMessages()
 		}
 	} else {
-		recordReportedSpans()
+		s.metrics.recordReportedSpans()
 	}
 	return nil
 }

@@ -85,15 +85,15 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| mongodb_atlas.db.name | Name of the Database | String |
-| mongodb_atlas.disk.partition | Name of a disk partition | String |
-| mongodb_atlas.host.name | Hostname of the process | String |
-| mongodb_atlas.org_name | Organization Name | String |
-| mongodb_atlas.process.id | ID of the process | String |
-| mongodb_atlas.process.port | Port process is bound to | String |
-| mongodb_atlas.process.type_name | Process type | String |
-| mongodb_atlas.project.id | Project ID | String |
-| mongodb_atlas.project.name | Project Name | String |
+| mongodb_atlas.db.name | Name of the Database | Str |
+| mongodb_atlas.disk.partition | Name of a disk partition | Str |
+| mongodb_atlas.host.name | Hostname of the process | Str |
+| mongodb_atlas.org_name | Organization Name | Str |
+| mongodb_atlas.process.id | ID of the process | Str |
+| mongodb_atlas.process.port | Port process is bound to | Str |
+| mongodb_atlas.process.type_name | Process type | Str |
+| mongodb_atlas.project.id | Project ID | Str |
+| mongodb_atlas.project.name | Project Name | Str |
 
 ## Metric attributes
 

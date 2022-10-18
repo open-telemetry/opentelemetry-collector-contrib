@@ -228,7 +228,7 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 func initGaugeMetric0(dest pmetric.Metric) {
 	dest.SetName("test_gauge1")
 	dp := dest.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.Attributes().PutString("k0", "v0")
+	dp.Attributes().PutStr("k0", "v0")
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	dp.SetDoubleValue(1)
 }
@@ -236,8 +236,8 @@ func initGaugeMetric0(dest pmetric.Metric) {
 func initGaugeMetric1(dest pmetric.Metric) {
 	dest.SetName("test_gauge2")
 	dp := dest.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.Attributes().PutString("k0", "v0")
-	dp.Attributes().PutString("k1", "v1")
+	dp.Attributes().PutStr("k0", "v0")
+	dp.Attributes().PutStr("k1", "v1")
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	dp.SetDoubleValue(12)
 }
@@ -245,9 +245,9 @@ func initGaugeMetric1(dest pmetric.Metric) {
 func initGaugeMetric2(dest pmetric.Metric) {
 	dest.SetName("test_gauge3")
 	dp := dest.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.Attributes().PutString("k0", "v0")
-	dp.Attributes().PutString("k1", "v1")
-	dp.Attributes().PutString("k2", "v2")
+	dp.Attributes().PutStr("k0", "v0")
+	dp.Attributes().PutStr("k1", "v1")
+	dp.Attributes().PutStr("k2", "v2")
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	dp.SetDoubleValue(123)
 }
@@ -255,10 +255,10 @@ func initGaugeMetric2(dest pmetric.Metric) {
 func initGaugeMetric3(dest pmetric.Metric) {
 	dest.SetName("test_gauge4")
 	dp := dest.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.Attributes().PutString("k0", "v0")
-	dp.Attributes().PutString("k1", "v1")
-	dp.Attributes().PutString("k2", "v2")
-	dp.Attributes().PutString("k3", "v3")
+	dp.Attributes().PutStr("k0", "v0")
+	dp.Attributes().PutStr("k1", "v1")
+	dp.Attributes().PutStr("k2", "v2")
+	dp.Attributes().PutStr("k3", "v3")
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	dp.SetDoubleValue(1234)
 }
@@ -266,8 +266,8 @@ func initGaugeMetric3(dest pmetric.Metric) {
 func initGaugeMetric4(dest pmetric.Metric) {
 	dest.SetName("test_gauge5")
 	dp := dest.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.Attributes().PutString("k4", "v4")
-	dp.Attributes().PutString("k5", "v5")
+	dp.Attributes().PutStr("k4", "v4")
+	dp.Attributes().PutStr("k5", "v5")
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	dp.SetDoubleValue(34)
 }

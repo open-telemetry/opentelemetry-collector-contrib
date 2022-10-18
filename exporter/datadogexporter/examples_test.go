@@ -29,6 +29,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 )
 
@@ -95,6 +96,7 @@ func newTestComponents(t *testing.T) component.Factories {
 		[]component.ReceiverFactory{
 			otlpreceiver.NewFactory(),
 			hostmetricsreceiver.NewFactory(),
+			filelogreceiver.NewFactory(),
 		}...,
 	)
 	require.NoError(t, err)

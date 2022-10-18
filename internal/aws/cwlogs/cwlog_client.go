@@ -31,8 +31,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs/handler"
 )
 
-var collectorDistribution = "opentelemetry-collector-contrib"
-
 const (
 	// this is the retry count, the total attempts will be at most retry count + 1.
 	defaultRetryCount          = 1
@@ -180,9 +178,9 @@ func (client *Client) CreateStream(logGroup, streamName *string) (token string, 
 }
 
 func newCollectorUserAgentHandler(buildInfo component.BuildInfo, logGroupName string) request.NamedHandler {
-	fn := request.MakeAddToUserAgentHandler(collectorDistribution, buildInfo.Version)
+	fn := request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version)
 	if matchContainerInsightsPattern(logGroupName) {
-		fn = request.MakeAddToUserAgentHandler(collectorDistribution, buildInfo.Version, "ContainerInsights")
+		fn = request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, "ContainerInsights")
 	}
 	return request.NamedHandler{
 		Name: "otel.collector.UserAgentHandler",

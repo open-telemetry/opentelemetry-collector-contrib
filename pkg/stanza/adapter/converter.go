@@ -430,7 +430,7 @@ func upsertStringsToSlice(obsArr []string, dest pcommon.Slice) {
 }
 
 var sevMap = map[entry.Severity]plog.SeverityNumber{
-	entry.Default: plog.SeverityNumberUndefined,
+	entry.Default: plog.SeverityNumberUnspecified,
 	entry.Trace:   plog.SeverityNumberTrace,
 	entry.Trace2:  plog.SeverityNumberTrace2,
 	entry.Trace3:  plog.SeverityNumberTrace3,

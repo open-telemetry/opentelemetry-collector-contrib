@@ -19,13 +19,18 @@ These are the metrics available for this scraper.
 | **mysql.handlers** | The number of requests to various MySQL handlers. | 1 | Sum(Int) | <ul> <li>handler</li> </ul> |
 | **mysql.index.io.wait.count** | The total count of I/O wait events for an index. | 1 | Sum(Int) | <ul> <li>io_waits_operations</li> <li>table_name</li> <li>schema</li> <li>index_name</li> </ul> |
 | **mysql.index.io.wait.time** | The total time of I/O wait events for an index. | ns | Sum(Int) | <ul> <li>io_waits_operations</li> <li>table_name</li> <li>schema</li> <li>index_name</li> </ul> |
+| **mysql.locked_connects** | The number of attempts to connect to locked user accounts. | 1 | Sum(Int) | <ul> </ul> |
 | **mysql.locks** | The number of MySQL locks. | 1 | Sum(Int) | <ul> <li>locks</li> </ul> |
 | **mysql.log_operations** | The number of InnoDB log operations. | 1 | Sum(Int) | <ul> <li>log_operations</li> </ul> |
+| **mysql.mysqlx_worker_threads** | The number of worker threads available. This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html) | 1 | Sum(Int) | <ul> <li>mysqlx_threads</li> </ul> |
+| **mysql.opened_resources** | The number of opened resources. | 1 | Sum(Int) | <ul> <li>opened_resources</li> </ul> |
 | **mysql.operations** | The number of InnoDB operations. | 1 | Sum(Int) | <ul> <li>operations</li> </ul> |
 | **mysql.page_operations** | The number of InnoDB page operations. | 1 | Sum(Int) | <ul> <li>page_operations</li> </ul> |
 | **mysql.row_locks** | The number of InnoDB row locks. | 1 | Sum(Int) | <ul> <li>row_locks</li> </ul> |
 | **mysql.row_operations** | The number of InnoDB row operations. | 1 | Sum(Int) | <ul> <li>row_operations</li> </ul> |
 | **mysql.sorts** | The number of MySQL sorts. | 1 | Sum(Int) | <ul> <li>sorts</li> </ul> |
+| mysql.statement_event.count | Summary of current and recent statement events. | 1 | Sum(Int) | <ul> <li>schema</li> <li>digest</li> <li>digest_text</li> <li>event_state</li> </ul> |
+| mysql.statement_event.wait.time | The total wait time of the summarized timed events. | ns | Sum(Int) | <ul> <li>schema</li> <li>digest</li> <li>digest_text</li> </ul> |
 | **mysql.table.io.wait.count** | The total count of I/O wait events for a table. | 1 | Sum(Int) | <ul> <li>io_waits_operations</li> <li>table_name</li> <li>schema</li> </ul> |
 | **mysql.table.io.wait.time** | The total time of I/O wait events for a table. | ns | Sum(Int) | <ul> <li>io_waits_operations</li> <li>table_name</li> <li>schema</li> </ul> |
 | **mysql.threads** | The state of MySQL threads. | 1 | Sum(Int) | <ul> <li>threads</li> </ul> |
@@ -44,7 +49,7 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| mysql.instance.endpoint | Endpoint of the MySQL instance. | String |
+| mysql.instance.endpoint | Endpoint of the MySQL instance. | Str |
 
 ## Metric attributes
 
@@ -54,12 +59,17 @@ metrics:
 | buffer_pool_operations (operation) | The buffer pool operations types. | read_ahead_rnd, read_ahead, read_ahead_evicted, read_requests, reads, wait_free, write_requests |
 | buffer_pool_pages (kind) | The buffer pool pages types. | data, free, misc |
 | command (command) | The command types. | execute, close, fetch, prepare, reset, send_long_data |
+| digest (digest) | Digest. |  |
+| digest_text (digest_text) | Text before digestion. |  |
 | double_writes (kind) | The doublewrite types. | pages_written, writes |
+| event_state (kind) | Possible event states. | errors, warnings, rows_affected, rows_sent, rows_examined, created_tmp_disk_tables, created_tmp_tables, sort_merge_passes, sort_rows, no_index_used |
 | handler (kind) | The handler types. | commit, delete, discover, external_lock, mrr_init, prepare, read_first, read_key, read_last, read_next, read_prev, read_rnd, read_rnd_next, rollback, savepoint, savepoint_rollback, update, write |
 | index_name (index) | The name of the index. |  |
 | io_waits_operations (operation) | The io_waits operation type. | delete, fetch, insert, update |
 | locks (kind) | The table locks type. | immediate, waited |
 | log_operations (operation) | The log operation types. | waits, write_requests, writes |
+| mysqlx_threads (kind) | The worker thread count kind. | available, active |
+| opened_resources (kind) | The kind of the resource. | file, table_definition, table |
 | operations (operation) | The operation types. | fsyncs, reads, writes |
 | page_operations (operation) | The page operation types. | created, read, written |
 | row_locks (kind) | The row lock type. | waits, time |

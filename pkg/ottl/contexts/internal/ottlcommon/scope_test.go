@@ -28,7 +28,7 @@ func TestScopePathGetSetter(t *testing.T) {
 	refIS := createInstrumentationScope()
 
 	newAttrs := pcommon.NewMap()
-	newAttrs.PutString("hello", "world")
+	newAttrs.PutStr("hello", "world")
 	tests := []struct {
 		name     string
 		path     []ottl.Field
@@ -95,7 +95,20 @@ func TestScopePathGetSetter(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(is pcommon.InstrumentationScope) {
-				is.Attributes().PutString("str", "newVal")
+				is.Attributes().PutStr("str", "newVal")
+			},
+		},
+		{
+			name: "dropped_attributes_count",
+			path: []ottl.Field{
+				{
+					Name: "dropped_attributes_count",
+				},
+			},
+			orig:   int64(10),
+			newVal: int64(20),
+			modified: func(is pcommon.InstrumentationScope) {
+				is.SetDroppedAttributesCount(20)
 			},
 		},
 		{
@@ -269,8 +282,9 @@ func createInstrumentationScope() pcommon.InstrumentationScope {
 	is := pcommon.NewInstrumentationScope()
 	is.SetName("library")
 	is.SetVersion("version")
+	is.SetDroppedAttributesCount(10)
 
-	is.Attributes().PutString("str", "val")
+	is.Attributes().PutStr("str", "val")
 	is.Attributes().PutBool("bool", true)
 	is.Attributes().PutInt("int", 10)
 	is.Attributes().PutDouble("double", 1.2)

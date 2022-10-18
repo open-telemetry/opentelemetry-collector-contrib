@@ -40,8 +40,8 @@ func Test_FromMetrics(t *testing.T) {
 		"k1": "v1",
 	}
 	attrMap := pcommon.NewMap()
-	attrMap.PutString("k0", "v0")
-	attrMap.PutString("k1", "v1")
+	attrMap.PutStr("k0", "v0")
+	attrMap.PutStr("k1", "v1")
 
 	ts := pcommon.NewTimestampFromTime(time.Unix(unixSecs, unixNSecs))
 
@@ -107,28 +107,28 @@ func Test_FromMetrics(t *testing.T) {
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("cumulative_double_with_dims")
 					m.SetEmptySum().SetIsMonotonic(true)
-					m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+					m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 					initDoublePt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("cumulative_int_with_dims")
 					m.SetEmptySum().SetIsMonotonic(true)
-					m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+					m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("delta_double_with_dims")
 					m.SetEmptySum().SetIsMonotonic(true)
-					m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+					m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 					initDoublePt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("delta_int_with_dims")
 					m.SetEmptySum().SetIsMonotonic(true)
-					m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+					m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
@@ -201,10 +201,10 @@ func Test_FromMetrics(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().PutString("k_r0", "v_r0")
-				res.Attributes().PutString("k_r1", "v_r1")
-				res.Attributes().PutString("k_n0", "v_n0")
-				res.Attributes().PutString("k_n1", "v_n1")
+				res.Attributes().PutStr("k_r0", "v_r0")
+				res.Attributes().PutStr("k_r1", "v_r1")
+				res.Attributes().PutStr("k_n0", "v_n0")
+				res.Attributes().PutStr("k_n1", "v_n1")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(2)
@@ -252,7 +252,7 @@ func Test_FromMetrics(t *testing.T) {
 				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("histogram")
-				m.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				m.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				initHistDP(m.Histogram().DataPoints().AppendEmpty())
 				return out
 			},
@@ -278,7 +278,7 @@ func Test_FromMetrics(t *testing.T) {
 				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("histogram")
-				m.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				m.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				initHistDPNoOptional(m.Histogram().DataPoints().AppendEmpty())
 				return out
 			},
@@ -301,7 +301,7 @@ func Test_FromMetrics(t *testing.T) {
 				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("delta_histogram")
-				m.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				m.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				initHistDP(m.Histogram().DataPoints().AppendEmpty())
 				return out
 			},

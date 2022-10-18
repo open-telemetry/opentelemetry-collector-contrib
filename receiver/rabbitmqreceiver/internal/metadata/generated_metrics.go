@@ -87,7 +87,7 @@ func (m *metricRabbitmqConsumerCount) init() {
 	m.data.SetUnit("{consumers}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricRabbitmqConsumerCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -138,7 +138,7 @@ func (m *metricRabbitmqMessageAcknowledged) init() {
 	m.data.SetUnit("{messages}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricRabbitmqMessageAcknowledged) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -189,7 +189,7 @@ func (m *metricRabbitmqMessageCurrent) init() {
 	m.data.SetUnit("{messages}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -201,7 +201,7 @@ func (m *metricRabbitmqMessageCurrent) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("state", messageStateAttributeValue)
+	dp.Attributes().PutStr("state", messageStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -242,7 +242,7 @@ func (m *metricRabbitmqMessageDelivered) init() {
 	m.data.SetUnit("{messages}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricRabbitmqMessageDelivered) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -293,7 +293,7 @@ func (m *metricRabbitmqMessageDropped) init() {
 	m.data.SetUnit("{messages}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricRabbitmqMessageDropped) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -344,7 +344,7 @@ func (m *metricRabbitmqMessagePublished) init() {
 	m.data.SetUnit("{messages}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricRabbitmqMessagePublished) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -442,21 +442,21 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithRabbitmqNodeName sets provided value as "rabbitmq.node.name" attribute for current resource.
 func WithRabbitmqNodeName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("rabbitmq.node.name", val)
+		rm.Resource().Attributes().PutStr("rabbitmq.node.name", val)
 	}
 }
 
 // WithRabbitmqQueueName sets provided value as "rabbitmq.queue.name" attribute for current resource.
 func WithRabbitmqQueueName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("rabbitmq.queue.name", val)
+		rm.Resource().Attributes().PutStr("rabbitmq.queue.name", val)
 	}
 }
 
 // WithRabbitmqVhostName sets provided value as "rabbitmq.vhost.name" attribute for current resource.
 func WithRabbitmqVhostName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("rabbitmq.vhost.name", val)
+		rm.Resource().Attributes().PutStr("rabbitmq.vhost.name", val)
 	}
 }
 

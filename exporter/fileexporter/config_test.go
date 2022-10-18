@@ -20,101 +20,103 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-	require.EqualError(t, err, "exporter \"file\" has invalid configuration: path must be non-empty")
-	require.NotNil(t, cfg)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
 
-	e0 := cfg.Exporters[config.NewComponentID(typeStr)]
-	assert.Equal(t, e0, factory.CreateDefaultConfig())
-
-	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
-	assert.Equal(t, e1,
-		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
-			Path:             "./filename.json",
-			Rotation: &Rotation{
-				MaxMegabytes: 10,
-				MaxDays:      3,
-				MaxBackups:   3,
-				LocalTime:    true,
+	tests := []struct {
+		id           config.ComponentID
+		expected     config.Exporter
+		errorMessage string
+	}{
+		{
+			id: config.NewComponentIDWithName(typeStr, "2"),
+			expected: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				Path:             "./filename.json",
+				Rotation: &Rotation{
+					MaxMegabytes: 10,
+					MaxDays:      3,
+					MaxBackups:   3,
+					LocalTime:    true,
+				},
+				FormatType: formatTypeJSON,
 			},
-			FormatType: formatTypeJSON,
-		})
-	e2 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "3")]
-	assert.Equal(t, e2,
-		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "3")),
-			Path:             "./filename",
-			Rotation: &Rotation{
-				MaxMegabytes: 10,
-				MaxDays:      3,
-				MaxBackups:   3,
-				LocalTime:    true,
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "3"),
+			expected: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				Path:             "./filename",
+				Rotation: &Rotation{
+					MaxMegabytes: 10,
+					MaxDays:      3,
+					MaxBackups:   3,
+					LocalTime:    true,
+				},
+				FormatType:  formatTypeProto,
+				Compression: compressionZSTD,
 			},
-			FormatType:  formatTypeProto,
-			Compression: compressionZSTD,
-		})
-	e3 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "no_rotation")]
-	assert.Equal(t, e3,
-		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "no_rotation")),
-			Path:             "./foo",
-			FormatType:       formatTypeJSON,
-		})
-	e4 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "rotation_with_default_settings")]
-	assert.Equal(t, e4,
-		&Config{
-			ExporterSettings: config.NewExporterSettings(
-				config.NewComponentIDWithName(typeStr, "rotation_with_default_settings")),
-			Path:       "./foo",
-			FormatType: formatTypeJSON,
-			Rotation: &Rotation{
-				MaxBackups: defaultMaxBackups,
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "rotation_with_default_settings"),
+			expected: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				Path:             "./foo",
+				FormatType:       formatTypeJSON,
+				Rotation: &Rotation{
+					MaxBackups: defaultMaxBackups,
+				},
 			},
-		})
-	e5 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "rotation_with_custom_settings")]
-	assert.Equal(t, e5,
-		&Config{
-			ExporterSettings: config.NewExporterSettings(
-				config.NewComponentIDWithName(typeStr, "rotation_with_custom_settings")),
-			Path: "./foo",
-			Rotation: &Rotation{
-				MaxMegabytes: 1234,
-				MaxBackups:   defaultMaxBackups,
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "rotation_with_custom_settings"),
+			expected: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				Path:             "./foo",
+				Rotation: &Rotation{
+					MaxMegabytes: 1234,
+					MaxBackups:   defaultMaxBackups,
+				},
+				FormatType: formatTypeJSON,
 			},
-			FormatType: formatTypeJSON,
+		},
+		{
+			id:           config.NewComponentIDWithName(typeStr, "compression_error"),
+			errorMessage: "compression is not supported",
+		},
+		{
+			id:           config.NewComponentIDWithName(typeStr, "format_error"),
+			errorMessage: "format type is not supported",
+		},
+		{
+			id:           config.NewComponentIDWithName(typeStr, ""),
+			errorMessage: "path must be non-empty",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalExporter(sub, cfg))
+
+			if tt.expected == nil {
+				assert.EqualError(t, cfg.Validate(), tt.errorMessage)
+				return
+			}
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
-}
-
-func TestLoadConfigFormatError(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-format-error.yaml"), factories)
-	require.EqualError(t, err, "exporter \"file\" has invalid configuration: format type is not supported")
-	require.NotNil(t, cfg)
-}
-
-func TestLoadConfiCompressionError(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-compression-error.yaml"), factories)
-	require.EqualError(t, err, "exporter \"file\" has invalid configuration: compression is not supported")
-	require.NotNil(t, cfg)
+	}
 }

@@ -40,11 +40,7 @@ type MetricsSettings struct {
 	K8sNodeMemoryUsage             MetricSettings `mapstructure:"k8s.node.memory.usage"`
 	K8sNodeMemoryWorkingSet        MetricSettings `mapstructure:"k8s.node.memory.working_set"`
 	K8sNodeNetworkErrors           MetricSettings `mapstructure:"k8s.node.network.errors"`
-	K8sNodeNetworkErrorsReceive    MetricSettings `mapstructure:"k8s.node.network.errors.receive"`
-	K8sNodeNetworkErrorsTransmit   MetricSettings `mapstructure:"k8s.node.network.errors.transmit"`
 	K8sNodeNetworkIo               MetricSettings `mapstructure:"k8s.node.network.io"`
-	K8sNodeNetworkIoReceive        MetricSettings `mapstructure:"k8s.node.network.io.receive"`
-	K8sNodeNetworkIoTransmit       MetricSettings `mapstructure:"k8s.node.network.io.transmit"`
 	K8sPodCPUTime                  MetricSettings `mapstructure:"k8s.pod.cpu.time"`
 	K8sPodCPUUtilization           MetricSettings `mapstructure:"k8s.pod.cpu.utilization"`
 	K8sPodFilesystemAvailable      MetricSettings `mapstructure:"k8s.pod.filesystem.available"`
@@ -57,11 +53,7 @@ type MetricsSettings struct {
 	K8sPodMemoryUsage              MetricSettings `mapstructure:"k8s.pod.memory.usage"`
 	K8sPodMemoryWorkingSet         MetricSettings `mapstructure:"k8s.pod.memory.working_set"`
 	K8sPodNetworkErrors            MetricSettings `mapstructure:"k8s.pod.network.errors"`
-	K8sPodNetworkErrorsReceive     MetricSettings `mapstructure:"k8s.pod.network.errors.receive"`
-	K8sPodNetworkErrorsTransmit    MetricSettings `mapstructure:"k8s.pod.network.errors.transmit"`
 	K8sPodNetworkIo                MetricSettings `mapstructure:"k8s.pod.network.io"`
-	K8sPodNetworkIoReceive         MetricSettings `mapstructure:"k8s.pod.network.io.receive"`
-	K8sPodNetworkIoTransmit        MetricSettings `mapstructure:"k8s.pod.network.io.transmit"`
 	K8sVolumeAvailable             MetricSettings `mapstructure:"k8s.volume.available"`
 	K8sVolumeCapacity              MetricSettings `mapstructure:"k8s.volume.capacity"`
 	K8sVolumeInodes                MetricSettings `mapstructure:"k8s.volume.inodes"`
@@ -140,19 +132,7 @@ func DefaultMetricsSettings() MetricsSettings {
 		K8sNodeNetworkErrors: MetricSettings{
 			Enabled: true,
 		},
-		K8sNodeNetworkErrorsReceive: MetricSettings{
-			Enabled: true,
-		},
-		K8sNodeNetworkErrorsTransmit: MetricSettings{
-			Enabled: true,
-		},
 		K8sNodeNetworkIo: MetricSettings{
-			Enabled: true,
-		},
-		K8sNodeNetworkIoReceive: MetricSettings{
-			Enabled: true,
-		},
-		K8sNodeNetworkIoTransmit: MetricSettings{
 			Enabled: true,
 		},
 		K8sPodCPUTime: MetricSettings{
@@ -191,19 +171,7 @@ func DefaultMetricsSettings() MetricsSettings {
 		K8sPodNetworkErrors: MetricSettings{
 			Enabled: true,
 		},
-		K8sPodNetworkErrorsReceive: MetricSettings{
-			Enabled: true,
-		},
-		K8sPodNetworkErrorsTransmit: MetricSettings{
-			Enabled: true,
-		},
 		K8sPodNetworkIo: MetricSettings{
-			Enabled: true,
-		},
-		K8sPodNetworkIoReceive: MetricSettings{
-			Enabled: true,
-		},
-		K8sPodNetworkIoTransmit: MetricSettings{
 			Enabled: true,
 		},
 		K8sVolumeAvailable: MetricSettings{
@@ -263,7 +231,7 @@ func (m *metricContainerCPUTime) init() {
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -804,7 +772,7 @@ func (m *metricK8sNodeCPUTime) init() {
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricK8sNodeCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -1345,7 +1313,7 @@ func (m *metricK8sNodeNetworkErrors) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1357,8 +1325,8 @@ func (m *metricK8sNodeNetworkErrors) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("interface", interfaceAttributeValue)
-	dp.Attributes().PutString("direction", directionAttributeValue)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1386,112 +1354,6 @@ func newMetricK8sNodeNetworkErrors(settings MetricSettings) metricK8sNodeNetwork
 	return m
 }
 
-type metricK8sNodeNetworkErrorsReceive struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills k8s.node.network.errors.receive metric with initial data.
-func (m *metricK8sNodeNetworkErrorsReceive) init() {
-	m.data.SetName("k8s.node.network.errors.receive")
-	m.data.SetDescription("Node network receive errors")
-	m.data.SetUnit("1")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricK8sNodeNetworkErrorsReceive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutString("interface", interfaceAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricK8sNodeNetworkErrorsReceive) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricK8sNodeNetworkErrorsReceive) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricK8sNodeNetworkErrorsReceive(settings MetricSettings) metricK8sNodeNetworkErrorsReceive {
-	m := metricK8sNodeNetworkErrorsReceive{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricK8sNodeNetworkErrorsTransmit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills k8s.node.network.errors.transmit metric with initial data.
-func (m *metricK8sNodeNetworkErrorsTransmit) init() {
-	m.data.SetName("k8s.node.network.errors.transmit")
-	m.data.SetDescription("Node network transmission errors")
-	m.data.SetUnit("1")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricK8sNodeNetworkErrorsTransmit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutString("interface", interfaceAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricK8sNodeNetworkErrorsTransmit) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricK8sNodeNetworkErrorsTransmit) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricK8sNodeNetworkErrorsTransmit(settings MetricSettings) metricK8sNodeNetworkErrorsTransmit {
-	m := metricK8sNodeNetworkErrorsTransmit{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricK8sNodeNetworkIo struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -1505,7 +1367,7 @@ func (m *metricK8sNodeNetworkIo) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1517,8 +1379,8 @@ func (m *metricK8sNodeNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("interface", interfaceAttributeValue)
-	dp.Attributes().PutString("direction", directionAttributeValue)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1546,112 +1408,6 @@ func newMetricK8sNodeNetworkIo(settings MetricSettings) metricK8sNodeNetworkIo {
 	return m
 }
 
-type metricK8sNodeNetworkIoReceive struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills k8s.node.network.io.receive metric with initial data.
-func (m *metricK8sNodeNetworkIoReceive) init() {
-	m.data.SetName("k8s.node.network.io.receive")
-	m.data.SetDescription("Node network IO received")
-	m.data.SetUnit("By")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricK8sNodeNetworkIoReceive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutString("interface", interfaceAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricK8sNodeNetworkIoReceive) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricK8sNodeNetworkIoReceive) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricK8sNodeNetworkIoReceive(settings MetricSettings) metricK8sNodeNetworkIoReceive {
-	m := metricK8sNodeNetworkIoReceive{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricK8sNodeNetworkIoTransmit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills k8s.node.network.io.transmit metric with initial data.
-func (m *metricK8sNodeNetworkIoTransmit) init() {
-	m.data.SetName("k8s.node.network.io.transmit")
-	m.data.SetDescription("Node network IO transmitted")
-	m.data.SetUnit("By")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricK8sNodeNetworkIoTransmit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutString("interface", interfaceAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricK8sNodeNetworkIoTransmit) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricK8sNodeNetworkIoTransmit) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricK8sNodeNetworkIoTransmit(settings MetricSettings) metricK8sNodeNetworkIoTransmit {
-	m := metricK8sNodeNetworkIoTransmit{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricK8sPodCPUTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -1665,7 +1421,7 @@ func (m *metricK8sPodCPUTime) init() {
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricK8sPodCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -2206,7 +1962,7 @@ func (m *metricK8sPodNetworkErrors) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -2218,8 +1974,8 @@ func (m *metricK8sPodNetworkErrors) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("interface", interfaceAttributeValue)
-	dp.Attributes().PutString("direction", directionAttributeValue)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2247,112 +2003,6 @@ func newMetricK8sPodNetworkErrors(settings MetricSettings) metricK8sPodNetworkEr
 	return m
 }
 
-type metricK8sPodNetworkErrorsReceive struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills k8s.pod.network.errors.receive metric with initial data.
-func (m *metricK8sPodNetworkErrorsReceive) init() {
-	m.data.SetName("k8s.pod.network.errors.receive")
-	m.data.SetDescription("Pod network receive errors")
-	m.data.SetUnit("1")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricK8sPodNetworkErrorsReceive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutString("interface", interfaceAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricK8sPodNetworkErrorsReceive) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricK8sPodNetworkErrorsReceive) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricK8sPodNetworkErrorsReceive(settings MetricSettings) metricK8sPodNetworkErrorsReceive {
-	m := metricK8sPodNetworkErrorsReceive{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricK8sPodNetworkErrorsTransmit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills k8s.pod.network.errors.transmit metric with initial data.
-func (m *metricK8sPodNetworkErrorsTransmit) init() {
-	m.data.SetName("k8s.pod.network.errors.transmit")
-	m.data.SetDescription("Pod network transmission errors")
-	m.data.SetUnit("1")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricK8sPodNetworkErrorsTransmit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutString("interface", interfaceAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricK8sPodNetworkErrorsTransmit) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricK8sPodNetworkErrorsTransmit) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricK8sPodNetworkErrorsTransmit(settings MetricSettings) metricK8sPodNetworkErrorsTransmit {
-	m := metricK8sPodNetworkErrorsTransmit{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricK8sPodNetworkIo struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -2366,7 +2016,7 @@ func (m *metricK8sPodNetworkIo) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -2378,8 +2028,8 @@ func (m *metricK8sPodNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("interface", interfaceAttributeValue)
-	dp.Attributes().PutString("direction", directionAttributeValue)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2400,112 +2050,6 @@ func (m *metricK8sPodNetworkIo) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sPodNetworkIo(settings MetricSettings) metricK8sPodNetworkIo {
 	m := metricK8sPodNetworkIo{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricK8sPodNetworkIoReceive struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills k8s.pod.network.io.receive metric with initial data.
-func (m *metricK8sPodNetworkIoReceive) init() {
-	m.data.SetName("k8s.pod.network.io.receive")
-	m.data.SetDescription("Pod network IO received")
-	m.data.SetUnit("By")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricK8sPodNetworkIoReceive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutString("interface", interfaceAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricK8sPodNetworkIoReceive) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricK8sPodNetworkIoReceive) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricK8sPodNetworkIoReceive(settings MetricSettings) metricK8sPodNetworkIoReceive {
-	m := metricK8sPodNetworkIoReceive{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricK8sPodNetworkIoTransmit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills k8s.pod.network.io.transmit metric with initial data.
-func (m *metricK8sPodNetworkIoTransmit) init() {
-	m.data.SetName("k8s.pod.network.io.transmit")
-	m.data.SetDescription("Pod network IO transmitted")
-	m.data.SetUnit("By")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricK8sPodNetworkIoTransmit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutString("interface", interfaceAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricK8sPodNetworkIoTransmit) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricK8sPodNetworkIoTransmit) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricK8sPodNetworkIoTransmit(settings MetricSettings) metricK8sPodNetworkIoTransmit {
-	m := metricK8sPodNetworkIoTransmit{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2789,11 +2333,7 @@ type MetricsBuilder struct {
 	metricK8sNodeMemoryUsage             metricK8sNodeMemoryUsage
 	metricK8sNodeMemoryWorkingSet        metricK8sNodeMemoryWorkingSet
 	metricK8sNodeNetworkErrors           metricK8sNodeNetworkErrors
-	metricK8sNodeNetworkErrorsReceive    metricK8sNodeNetworkErrorsReceive
-	metricK8sNodeNetworkErrorsTransmit   metricK8sNodeNetworkErrorsTransmit
 	metricK8sNodeNetworkIo               metricK8sNodeNetworkIo
-	metricK8sNodeNetworkIoReceive        metricK8sNodeNetworkIoReceive
-	metricK8sNodeNetworkIoTransmit       metricK8sNodeNetworkIoTransmit
 	metricK8sPodCPUTime                  metricK8sPodCPUTime
 	metricK8sPodCPUUtilization           metricK8sPodCPUUtilization
 	metricK8sPodFilesystemAvailable      metricK8sPodFilesystemAvailable
@@ -2806,11 +2346,7 @@ type MetricsBuilder struct {
 	metricK8sPodMemoryUsage              metricK8sPodMemoryUsage
 	metricK8sPodMemoryWorkingSet         metricK8sPodMemoryWorkingSet
 	metricK8sPodNetworkErrors            metricK8sPodNetworkErrors
-	metricK8sPodNetworkErrorsReceive     metricK8sPodNetworkErrorsReceive
-	metricK8sPodNetworkErrorsTransmit    metricK8sPodNetworkErrorsTransmit
 	metricK8sPodNetworkIo                metricK8sPodNetworkIo
-	metricK8sPodNetworkIoReceive         metricK8sPodNetworkIoReceive
-	metricK8sPodNetworkIoTransmit        metricK8sPodNetworkIoTransmit
 	metricK8sVolumeAvailable             metricK8sVolumeAvailable
 	metricK8sVolumeCapacity              metricK8sVolumeCapacity
 	metricK8sVolumeInodes                metricK8sVolumeInodes
@@ -2856,11 +2392,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricK8sNodeMemoryUsage:             newMetricK8sNodeMemoryUsage(settings.K8sNodeMemoryUsage),
 		metricK8sNodeMemoryWorkingSet:        newMetricK8sNodeMemoryWorkingSet(settings.K8sNodeMemoryWorkingSet),
 		metricK8sNodeNetworkErrors:           newMetricK8sNodeNetworkErrors(settings.K8sNodeNetworkErrors),
-		metricK8sNodeNetworkErrorsReceive:    newMetricK8sNodeNetworkErrorsReceive(settings.K8sNodeNetworkErrorsReceive),
-		metricK8sNodeNetworkErrorsTransmit:   newMetricK8sNodeNetworkErrorsTransmit(settings.K8sNodeNetworkErrorsTransmit),
 		metricK8sNodeNetworkIo:               newMetricK8sNodeNetworkIo(settings.K8sNodeNetworkIo),
-		metricK8sNodeNetworkIoReceive:        newMetricK8sNodeNetworkIoReceive(settings.K8sNodeNetworkIoReceive),
-		metricK8sNodeNetworkIoTransmit:       newMetricK8sNodeNetworkIoTransmit(settings.K8sNodeNetworkIoTransmit),
 		metricK8sPodCPUTime:                  newMetricK8sPodCPUTime(settings.K8sPodCPUTime),
 		metricK8sPodCPUUtilization:           newMetricK8sPodCPUUtilization(settings.K8sPodCPUUtilization),
 		metricK8sPodFilesystemAvailable:      newMetricK8sPodFilesystemAvailable(settings.K8sPodFilesystemAvailable),
@@ -2873,11 +2405,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricK8sPodMemoryUsage:              newMetricK8sPodMemoryUsage(settings.K8sPodMemoryUsage),
 		metricK8sPodMemoryWorkingSet:         newMetricK8sPodMemoryWorkingSet(settings.K8sPodMemoryWorkingSet),
 		metricK8sPodNetworkErrors:            newMetricK8sPodNetworkErrors(settings.K8sPodNetworkErrors),
-		metricK8sPodNetworkErrorsReceive:     newMetricK8sPodNetworkErrorsReceive(settings.K8sPodNetworkErrorsReceive),
-		metricK8sPodNetworkErrorsTransmit:    newMetricK8sPodNetworkErrorsTransmit(settings.K8sPodNetworkErrorsTransmit),
 		metricK8sPodNetworkIo:                newMetricK8sPodNetworkIo(settings.K8sPodNetworkIo),
-		metricK8sPodNetworkIoReceive:         newMetricK8sPodNetworkIoReceive(settings.K8sPodNetworkIoReceive),
-		metricK8sPodNetworkIoTransmit:        newMetricK8sPodNetworkIoTransmit(settings.K8sPodNetworkIoTransmit),
 		metricK8sVolumeAvailable:             newMetricK8sVolumeAvailable(settings.K8sVolumeAvailable),
 		metricK8sVolumeCapacity:              newMetricK8sVolumeCapacity(settings.K8sVolumeCapacity),
 		metricK8sVolumeInodes:                newMetricK8sVolumeInodes(settings.K8sVolumeInodes),
@@ -2906,105 +2434,105 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithAwsVolumeID sets provided value as "aws.volume.id" attribute for current resource.
 func WithAwsVolumeID(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("aws.volume.id", val)
+		rm.Resource().Attributes().PutStr("aws.volume.id", val)
 	}
 }
 
 // WithContainerID sets provided value as "container.id" attribute for current resource.
 func WithContainerID(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("container.id", val)
+		rm.Resource().Attributes().PutStr("container.id", val)
 	}
 }
 
 // WithFsType sets provided value as "fs.type" attribute for current resource.
 func WithFsType(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("fs.type", val)
+		rm.Resource().Attributes().PutStr("fs.type", val)
 	}
 }
 
 // WithGcePdName sets provided value as "gce.pd.name" attribute for current resource.
 func WithGcePdName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("gce.pd.name", val)
+		rm.Resource().Attributes().PutStr("gce.pd.name", val)
 	}
 }
 
 // WithGlusterfsEndpointsName sets provided value as "glusterfs.endpoints.name" attribute for current resource.
 func WithGlusterfsEndpointsName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("glusterfs.endpoints.name", val)
+		rm.Resource().Attributes().PutStr("glusterfs.endpoints.name", val)
 	}
 }
 
 // WithGlusterfsPath sets provided value as "glusterfs.path" attribute for current resource.
 func WithGlusterfsPath(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("glusterfs.path", val)
+		rm.Resource().Attributes().PutStr("glusterfs.path", val)
 	}
 }
 
 // WithK8sContainerName sets provided value as "k8s.container.name" attribute for current resource.
 func WithK8sContainerName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("k8s.container.name", val)
+		rm.Resource().Attributes().PutStr("k8s.container.name", val)
 	}
 }
 
 // WithK8sNamespaceName sets provided value as "k8s.namespace.name" attribute for current resource.
 func WithK8sNamespaceName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("k8s.namespace.name", val)
+		rm.Resource().Attributes().PutStr("k8s.namespace.name", val)
 	}
 }
 
 // WithK8sNodeName sets provided value as "k8s.node.name" attribute for current resource.
 func WithK8sNodeName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("k8s.node.name", val)
+		rm.Resource().Attributes().PutStr("k8s.node.name", val)
 	}
 }
 
 // WithK8sPersistentvolumeclaimName sets provided value as "k8s.persistentvolumeclaim.name" attribute for current resource.
 func WithK8sPersistentvolumeclaimName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("k8s.persistentvolumeclaim.name", val)
+		rm.Resource().Attributes().PutStr("k8s.persistentvolumeclaim.name", val)
 	}
 }
 
 // WithK8sPodName sets provided value as "k8s.pod.name" attribute for current resource.
 func WithK8sPodName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("k8s.pod.name", val)
+		rm.Resource().Attributes().PutStr("k8s.pod.name", val)
 	}
 }
 
 // WithK8sPodUID sets provided value as "k8s.pod.uid" attribute for current resource.
 func WithK8sPodUID(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("k8s.pod.uid", val)
+		rm.Resource().Attributes().PutStr("k8s.pod.uid", val)
 	}
 }
 
 // WithK8sVolumeName sets provided value as "k8s.volume.name" attribute for current resource.
 func WithK8sVolumeName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("k8s.volume.name", val)
+		rm.Resource().Attributes().PutStr("k8s.volume.name", val)
 	}
 }
 
 // WithK8sVolumeType sets provided value as "k8s.volume.type" attribute for current resource.
 func WithK8sVolumeType(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("k8s.volume.type", val)
+		rm.Resource().Attributes().PutStr("k8s.volume.type", val)
 	}
 }
 
 // WithPartition sets provided value as "partition" attribute for current resource.
 func WithPartition(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("partition", val)
+		rm.Resource().Attributes().PutStr("partition", val)
 	}
 }
 
@@ -3063,11 +2591,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sNodeMemoryUsage.emit(ils.Metrics())
 	mb.metricK8sNodeMemoryWorkingSet.emit(ils.Metrics())
 	mb.metricK8sNodeNetworkErrors.emit(ils.Metrics())
-	mb.metricK8sNodeNetworkErrorsReceive.emit(ils.Metrics())
-	mb.metricK8sNodeNetworkErrorsTransmit.emit(ils.Metrics())
 	mb.metricK8sNodeNetworkIo.emit(ils.Metrics())
-	mb.metricK8sNodeNetworkIoReceive.emit(ils.Metrics())
-	mb.metricK8sNodeNetworkIoTransmit.emit(ils.Metrics())
 	mb.metricK8sPodCPUTime.emit(ils.Metrics())
 	mb.metricK8sPodCPUUtilization.emit(ils.Metrics())
 	mb.metricK8sPodFilesystemAvailable.emit(ils.Metrics())
@@ -3080,11 +2604,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sPodMemoryUsage.emit(ils.Metrics())
 	mb.metricK8sPodMemoryWorkingSet.emit(ils.Metrics())
 	mb.metricK8sPodNetworkErrors.emit(ils.Metrics())
-	mb.metricK8sPodNetworkErrorsReceive.emit(ils.Metrics())
-	mb.metricK8sPodNetworkErrorsTransmit.emit(ils.Metrics())
 	mb.metricK8sPodNetworkIo.emit(ils.Metrics())
-	mb.metricK8sPodNetworkIoReceive.emit(ils.Metrics())
-	mb.metricK8sPodNetworkIoTransmit.emit(ils.Metrics())
 	mb.metricK8sVolumeAvailable.emit(ils.Metrics())
 	mb.metricK8sVolumeCapacity.emit(ils.Metrics())
 	mb.metricK8sVolumeInodes.emit(ils.Metrics())
@@ -3224,29 +2744,9 @@ func (mb *MetricsBuilder) RecordK8sNodeNetworkErrorsDataPoint(ts pcommon.Timesta
 	mb.metricK8sNodeNetworkErrors.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue, directionAttributeValue.String())
 }
 
-// RecordK8sNodeNetworkErrorsReceiveDataPoint adds a data point to k8s.node.network.errors.receive metric.
-func (mb *MetricsBuilder) RecordK8sNodeNetworkErrorsReceiveDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	mb.metricK8sNodeNetworkErrorsReceive.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue)
-}
-
-// RecordK8sNodeNetworkErrorsTransmitDataPoint adds a data point to k8s.node.network.errors.transmit metric.
-func (mb *MetricsBuilder) RecordK8sNodeNetworkErrorsTransmitDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	mb.metricK8sNodeNetworkErrorsTransmit.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue)
-}
-
 // RecordK8sNodeNetworkIoDataPoint adds a data point to k8s.node.network.io metric.
 func (mb *MetricsBuilder) RecordK8sNodeNetworkIoDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string, directionAttributeValue AttributeDirection) {
 	mb.metricK8sNodeNetworkIo.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue, directionAttributeValue.String())
-}
-
-// RecordK8sNodeNetworkIoReceiveDataPoint adds a data point to k8s.node.network.io.receive metric.
-func (mb *MetricsBuilder) RecordK8sNodeNetworkIoReceiveDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	mb.metricK8sNodeNetworkIoReceive.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue)
-}
-
-// RecordK8sNodeNetworkIoTransmitDataPoint adds a data point to k8s.node.network.io.transmit metric.
-func (mb *MetricsBuilder) RecordK8sNodeNetworkIoTransmitDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	mb.metricK8sNodeNetworkIoTransmit.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue)
 }
 
 // RecordK8sPodCPUTimeDataPoint adds a data point to k8s.pod.cpu.time metric.
@@ -3309,29 +2809,9 @@ func (mb *MetricsBuilder) RecordK8sPodNetworkErrorsDataPoint(ts pcommon.Timestam
 	mb.metricK8sPodNetworkErrors.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue, directionAttributeValue.String())
 }
 
-// RecordK8sPodNetworkErrorsReceiveDataPoint adds a data point to k8s.pod.network.errors.receive metric.
-func (mb *MetricsBuilder) RecordK8sPodNetworkErrorsReceiveDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	mb.metricK8sPodNetworkErrorsReceive.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue)
-}
-
-// RecordK8sPodNetworkErrorsTransmitDataPoint adds a data point to k8s.pod.network.errors.transmit metric.
-func (mb *MetricsBuilder) RecordK8sPodNetworkErrorsTransmitDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	mb.metricK8sPodNetworkErrorsTransmit.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue)
-}
-
 // RecordK8sPodNetworkIoDataPoint adds a data point to k8s.pod.network.io metric.
 func (mb *MetricsBuilder) RecordK8sPodNetworkIoDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string, directionAttributeValue AttributeDirection) {
 	mb.metricK8sPodNetworkIo.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue, directionAttributeValue.String())
-}
-
-// RecordK8sPodNetworkIoReceiveDataPoint adds a data point to k8s.pod.network.io.receive metric.
-func (mb *MetricsBuilder) RecordK8sPodNetworkIoReceiveDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	mb.metricK8sPodNetworkIoReceive.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue)
-}
-
-// RecordK8sPodNetworkIoTransmitDataPoint adds a data point to k8s.pod.network.io.transmit metric.
-func (mb *MetricsBuilder) RecordK8sPodNetworkIoTransmitDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	mb.metricK8sPodNetworkIoTransmit.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue)
 }
 
 // RecordK8sVolumeAvailableDataPoint adds a data point to k8s.volume.available metric.

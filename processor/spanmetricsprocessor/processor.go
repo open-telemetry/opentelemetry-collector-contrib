@@ -42,7 +42,6 @@ const (
 	spanKindKey        = "span.kind"   // OpenTelemetry non-standard constant.
 	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
-	traceIDKey         = "trace_id"
 
 	defaultDimensionsCacheSize = 1000
 )
@@ -55,6 +54,7 @@ var (
 
 type exemplarData struct {
 	traceID pcommon.TraceID
+	spanID  pcommon.SpanID
 	value   float64
 }
 
@@ -267,7 +267,7 @@ func (p *processorImp) buildMetrics() (pmetric.Metrics, error) {
 	p.metricKeyToDimensions.RemoveEvictedItems()
 
 	// If delta metrics, reset accumulated data
-	if p.config.GetAggregationTemporality() == pmetric.MetricAggregationTemporalityDelta {
+	if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
 		p.resetAccumulatedMetrics()
 	}
 	p.resetExemplarData()
@@ -390,7 +390,7 @@ func (p *processorImp) aggregateMetricsForSpan(serviceName string, span ptrace.S
 	p.cache(serviceName, span, key, resourceAttr)
 	p.updateCallMetrics(key)
 	p.updateLatencyMetrics(key, latencyInMilliseconds, index)
-	p.updateLatencyExemplars(key, latencyInMilliseconds, span.TraceID())
+	p.updateLatencyExemplars(key, latencyInMilliseconds, span.TraceID(), span.SpanID())
 }
 
 // updateCallMetrics increments the call count for the given metric key.
@@ -409,13 +409,14 @@ func (p *processorImp) resetAccumulatedMetrics() {
 }
 
 // updateLatencyExemplars sets the histogram exemplars for the given metric key and append the exemplar data.
-func (p *processorImp) updateLatencyExemplars(key metricKey, value float64, traceID pcommon.TraceID) {
+func (p *processorImp) updateLatencyExemplars(key metricKey, value float64, traceID pcommon.TraceID, spanID pcommon.SpanID) {
 	if _, ok := p.latencyExemplarsData[key]; !ok {
 		p.latencyExemplarsData[key] = []exemplarData{}
 	}
 
 	e := exemplarData{
 		traceID: traceID,
+		spanID:  spanID,
 		value:   value,
 	}
 	p.latencyExemplarsData[key] = append(p.latencyExemplarsData[key], e)
@@ -440,10 +441,10 @@ func (p *processorImp) updateLatencyMetrics(key metricKey, latency float64, inde
 
 func (p *processorImp) buildDimensionKVs(serviceName string, span ptrace.Span, optionalDims []Dimension, resourceAttrs pcommon.Map) pcommon.Map {
 	dims := pcommon.NewMap()
-	dims.PutString(serviceNameKey, serviceName)
-	dims.PutString(operationKey, span.Name())
-	dims.PutString(spanKindKey, span.Kind().String())
-	dims.PutString(statusCodeKey, span.Status().Code().String())
+	dims.PutStr(serviceNameKey, serviceName)
+	dims.PutStr(operationKey, span.Name())
+	dims.PutStr(spanKindKey, span.Kind().String())
+	dims.PutStr(statusCodeKey, span.Status().Code().String())
 	for _, d := range optionalDims {
 		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
 			v.CopyTo(dims.PutEmpty(d.Name))
@@ -559,6 +560,7 @@ func setLatencyExemplars(exemplarsData []exemplarData, timestamp pcommon.Timesta
 	for _, ed := range exemplarsData {
 		value := ed.value
 		traceID := ed.traceID
+		spanID := ed.spanID
 
 		exemplar := es.AppendEmpty()
 
@@ -568,7 +570,8 @@ func setLatencyExemplars(exemplarsData []exemplarData, timestamp pcommon.Timesta
 
 		exemplar.SetDoubleValue(value)
 		exemplar.SetTimestamp(timestamp)
-		exemplar.FilteredAttributes().PutString(traceIDKey, traceID.HexString())
+		exemplar.SetTraceID(traceID)
+		exemplar.SetSpanID(spanID)
 	}
 
 	es.CopyTo(exemplars)

@@ -54,14 +54,14 @@ func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pme
 
 func copyEnvelopeAttributes(attributes pcommon.Map, envelope *loggregator_v2.Envelope) {
 	for key, value := range envelope.Tags {
-		attributes.PutString(attributeNamePrefix+key, value)
+		attributes.PutStr(attributeNamePrefix+key, value)
 	}
 
 	if envelope.SourceId != "" {
-		attributes.PutString(attributeNamePrefix+"source_id", envelope.SourceId)
+		attributes.PutStr(attributeNamePrefix+"source_id", envelope.SourceId)
 	}
 
 	if envelope.InstanceId != "" {
-		attributes.PutString(attributeNamePrefix+"instance_id", envelope.InstanceId)
+		attributes.PutStr(attributeNamePrefix+"instance_id", envelope.InstanceId)
 	}
 }

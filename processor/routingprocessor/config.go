@@ -73,12 +73,12 @@ func (c *Config) Validate() error {
 	// validate that every route has a value for the routing attribute and has
 	// at least one exporter
 	for _, item := range c.Table {
-		if len(item.Value) == 0 && len(item.Expression) == 0 {
+		if len(item.Value) == 0 && len(item.Statement) == 0 {
 			return fmt.Errorf("invalid (empty) route : %w", errEmptyRoute)
 		}
 
-		if len(item.Value) != 0 && len(item.Expression) != 0 {
-			return fmt.Errorf("invalid route: both expression (%s) and value (%s) provided", item.Expression, item.Value)
+		if len(item.Value) != 0 && len(item.Statement) != 0 {
+			return fmt.Errorf("invalid route: both statement (%s) and value (%s) provided", item.Statement, item.Value)
 		}
 
 		if len(item.Exporters) == 0 {
@@ -113,12 +113,12 @@ const (
 // RoutingTableItem specifies how data should be routed to the different exporters
 type RoutingTableItem struct {
 	// Value represents a possible value for the field specified under FromAttribute.
-	// Required when 'Expression' isn't provided.
+	// Required when Statement isn't provided.
 	Value string `mapstructure:"value"`
 
-	// Expression is a OTTL expression on which signals routing is based.
+	// Statement is a OTTL statement used for making a routing decision.
 	// Required when 'Value' isn't provided.
-	Expression string `mapstructure:"expression"`
+	Statement string `mapstructure:"statement"`
 
 	// Exporters contains the list of exporters to use when the value from the FromAttribute field matches this table item.
 	// When no exporters are specified, the ones specified under DefaultExporters are used, if any.
@@ -134,7 +134,7 @@ func rewriteRoutingEntriesToOTTL(cfg *Config) *Config {
 	}
 	table := make([]RoutingTableItem, 0, len(cfg.Table))
 	for _, e := range cfg.Table {
-		if e.Expression != "" {
+		if e.Statement != "" {
 			table = append(table, e)
 			continue
 		}
@@ -157,8 +157,8 @@ func rewriteRoutingEntriesToOTTL(cfg *Config) *Config {
 			),
 		)
 		table = append(table, RoutingTableItem{
-			Expression: s.String(),
-			Exporters:  e.Exporters,
+			Statement: s.String(),
+			Exporters: e.Exporters,
 		})
 	}
 	return &Config{
