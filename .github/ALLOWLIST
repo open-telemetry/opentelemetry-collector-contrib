@@ -33,4 +33,5 @@ processor/deltatorateprocessor
 processor/metricsgenerationprocessor
 receiver/dotnetdiagnosticsreceiver
 receiver/influxdbreceiver
+receiver/snowflakereceiver
 testbed
