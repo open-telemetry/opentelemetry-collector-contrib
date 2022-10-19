@@ -15,11 +15,15 @@
 package syslog // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	sl "github.com/influxdata/go-syslog/v3"
+	"github.com/influxdata/go-syslog/v3/nontransparent"
+	"github.com/influxdata/go-syslog/v3/octetcounting"
 	"github.com/influxdata/go-syslog/v3/rfc3164"
 	"github.com/influxdata/go-syslog/v3/rfc5424"
 	"go.uber.org/zap"
@@ -34,6 +38,9 @@ const (
 
 	RFC3164 = "rfc3164"
 	RFC5424 = "rfc5424"
+
+	NULTrailer = "NUL"
+	LFTrailer  = "LF"
 )
 
 func init() {
@@ -60,8 +67,10 @@ type Config struct {
 
 // BaseConfig is the detailed configuration of a syslog parser.
 type BaseConfig struct {
-	Protocol string `mapstructure:"protocol,omitempty"`
-	Location string `mapstructure:"location,omitempty"`
+	Protocol                     string  `mapstructure:"protocol,omitempty"`
+	Location                     string  `mapstructure:"location,omitempty"`
+	EnableOctetCounting          bool    `mapstructure:"enable_octet_counting,omitempty"`
+	NonTransparentFramingTrailer *string `mapstructure:"non_transparent_framing_trailer,omitempty"`
 }
 
 // Build will build a JSON parser operator.
@@ -79,8 +88,17 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
-	if c.Protocol == "" {
+	switch {
+	case c.Protocol == "":
 		return nil, fmt.Errorf("missing field 'protocol'")
+	case c.Protocol == RFC3164 && (c.NonTransparentFramingTrailer != nil || c.EnableOctetCounting):
+		return nil, errors.New("octet_counting and non_transparent_framing are only compatible with protocol rfc5424")
+	case c.Protocol == RFC5424 && (c.NonTransparentFramingTrailer != nil && c.EnableOctetCounting):
+		return nil, errors.New("only one of octet_counting or non_transparent_framing can be enabled")
+	case c.Protocol == RFC5424 && c.NonTransparentFramingTrailer != nil:
+		if err := validateNonTransparentFramingTrailer(c.NonTransparentFramingTrailer); err != nil {
+			return nil, err
+		}
 	}
 
 	if c.Location == "" {
@@ -93,28 +111,52 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	return &Parser{
-		ParserOperator: parserOperator,
-		protocol:       c.Protocol,
-		location:       location,
+		ParserOperator:               parserOperator,
+		protocol:                     c.Protocol,
+		location:                     location,
+		enableOctetCounting:          c.EnableOctetCounting,
+		nonTransparentFramingTrailer: c.NonTransparentFramingTrailer,
 	}, nil
 }
 
-func buildMachine(protocol string, location *time.Location) (sl.Machine, error) {
-	switch protocol {
+// parseFunc a parseFunc determines how the raw input is to be parsed into a syslog message
+type parseFunc func(input []byte) (sl.Message, error)
+
+func (s *Parser) buildParseFunc() (parseFunc, error) {
+	switch s.protocol {
 	case RFC3164:
-		return rfc3164.NewMachine(rfc3164.WithLocaleTimezone(location)), nil
+		return func(input []byte) (sl.Message, error) {
+			machine := rfc3164.NewMachine(rfc3164.WithLocaleTimezone(s.location))
+			return machine.Parse(input)
+		}, nil
 	case RFC5424:
-		return rfc5424.NewMachine(), nil
+		switch {
+		// Octet Counting Parsing RFC6587
+		case s.enableOctetCounting:
+			return newOctetCountingParseFunc(), nil
+		// Non-Transparent-Framing Parsing RFC6587
+		case s.nonTransparentFramingTrailer != nil:
+			return newNonTransparentFramingParseFunc(*s.nonTransparentFramingTrailer), nil
+		// Raw RFC5424 parsing
+		default:
+			return func(input []byte) (sl.Message, error) {
+				machine := rfc5424.NewMachine()
+				return machine.Parse(input)
+			}, nil
+		}
+
 	default:
-		return nil, fmt.Errorf("invalid protocol %s", protocol)
+		return nil, fmt.Errorf("invalid protocol %s", s.protocol)
 	}
 }
 
 // Parser is an operator that parses syslog.
 type Parser struct {
 	helper.ParserOperator
-	protocol string
-	location *time.Location
+	protocol                     string
+	location                     *time.Location
+	enableOctetCounting          bool
+	nonTransparentFramingTrailer *string
 }
 
 // Process will parse an entry field as syslog.
@@ -129,12 +171,12 @@ func (s *Parser) parse(value interface{}) (interface{}, error) {
 		return nil, err
 	}
 
-	machine, err := buildMachine(s.protocol, s.location)
+	pFunc, err := s.buildParseFunc()
 	if err != nil {
 		return nil, err
 	}
 
-	slog, err := machine.Parse(bytes)
+	slog, err := pFunc(bytes)
 	if err != nil {
 		return nil, err
 	}
@@ -278,4 +320,48 @@ func postprocess(e *entry.Entry) error {
 	}
 
 	return nil
+}
+
+func validateNonTransparentFramingTrailer(trailer *string) error {
+	if trailer == nil {
+		return nil
+	}
+
+	if *trailer != NULTrailer && *trailer != LFTrailer {
+		return fmt.Errorf("invalid non_transparent_framing_trailer '%s'. Must be either 'LF' or 'NUL'", *trailer)
+	}
+
+	return nil
+}
+
+func newOctetCountingParseFunc() parseFunc {
+	return func(input []byte) (message sl.Message, err error) {
+		listener := func(res *sl.Result) {
+			message = res.Message
+			err = res.Error
+		}
+		parser := octetcounting.NewParser(sl.WithBestEffort(), sl.WithListener(listener))
+		reader := bytes.NewReader(input)
+		parser.Parse(reader)
+		return
+	}
+}
+
+func newNonTransparentFramingParseFunc(trailer string) parseFunc {
+	return func(input []byte) (message sl.Message, err error) {
+		listener := func(res *sl.Result) {
+			message = res.Message
+			err = res.Error
+		}
+
+		trailerType := nontransparent.LF
+		if trailer == NULTrailer {
+			trailerType = nontransparent.NUL
+		}
+
+		parser := nontransparent.NewParser(sl.WithBestEffort(), nontransparent.WithTrailer(trailerType), sl.WithListener(listener))
+		reader := bytes.NewReader(input)
+		parser.Parse(reader)
+		return
+	}
 }
