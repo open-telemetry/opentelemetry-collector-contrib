@@ -58,9 +58,8 @@ type snmpScraper struct {
 // metricsByResourceContainer is a helper alias to hold metric data keyed by resource key and metric name
 type metricsByResourceContainer map[string]map[string]*pmetric.Metric
 
-func newMetricsByResourceContainer(metrics map[string]*pmetric.Metric) metricsByResourceContainer {
+func newMetricsByResourceContainer() metricsByResourceContainer {
 	mbrc := metricsByResourceContainer{}
-	mbrc[generalResourceKey] = metrics
 
 	return mbrc
 }
@@ -70,6 +69,27 @@ func (m metricsByResourceContainer) getMetrics(resourceKey string) map[string]*p
 		m[resourceKey] = map[string]*pmetric.Metric{}
 	}
 	return m[resourceKey]
+}
+
+// snmpOTELMetricData is a helper data struct to contain OTEL related data that will be used by many functions
+type snmpOTELMetricData struct {
+	// This is used as an easy reference to grab existing OTEL resources by unique key
+	resourcesByKey map[string]*pmetric.ResourceMetrics
+	// The info in this map will ultimately already be contained within the resourcesByKey, but it is
+	// more easily accessible to pull out a specific existing Metric by resource and metric name using this
+	metricsByResource metricsByResourceContainer
+	// This is the ResourceMetricsSlice that will contain all newly created resources and metrics
+	resourceMetricsSlice *pmetric.ResourceMetricsSlice
+}
+
+func newSNMPOTELMetricData(resourceMetricsSlice *pmetric.ResourceMetricsSlice) *snmpOTELMetricData {
+	otelMetricData := snmpOTELMetricData{
+		resourceMetricsSlice: resourceMetricsSlice,
+		resourcesByKey:       map[string]*pmetric.ResourceMetrics{},
+		metricsByResource:    newMetricsByResourceContainer(),
+	}
+
+	return &otelMetricData
 }
 
 // indexedAttributeKey is a complex key for attribute value maps
@@ -101,29 +121,19 @@ func (s *snmpScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	}
 	defer s.client.Close()
 
-	// Get a basic ResourceMetrics prepped for metrics with no resource attributes
+	// Get a Metrics prepped all of the resources/metrics that we will be creating
 	metrics := pmetric.NewMetrics()
 	resourceMetricsSlice := metrics.ResourceMetrics()
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	resourcesByKey := map[string]*pmetric.ResourceMetrics{}
-	metricsByName := map[string]*pmetric.Metric{}
-	// Try to scrape scalar OID based metrics.
-	// metricsByName is passed in as a place for any created metrics to live
+	otelMetricData := newSNMPOTELMetricData(&resourceMetricsSlice)
+
 	var scraperErrors scrapererror.ScrapeErrors
-	s.scrapeScalarMetrics(now, &resourceMetricsSlice, resourcesByKey, metricsByName, &scraperErrors)
+	// Try to scrape scalar OID based metrics
+	s.scrapeScalarMetrics(now, otelMetricData, &scraperErrors)
 
-	// Load this with the scalar metric map that was just created for the
-	// basic ResourceMetrics. The info in this map is ultimately already
-	// contained within the resourcesByKey, but it is more easily accessible
-	// to pull out a specific existing Metric by resource and metric name using this
-	metricsByResource := newMetricsByResourceContainer(metricsByName)
-
-	// Try to scrape column OID based metrics.
-	// Resources is passed in as a place for any created resources/metrics to live
-	// metricsByResource is provided as an easy way to check if a metric is already
-	// associated with an existing resource
-	s.scrapeIndexedMetrics(now, &resourceMetricsSlice, resourcesByKey, metricsByResource, &scraperErrors)
+	// Try to scrape column OID based metrics
+	s.scrapeIndexedMetrics(now, otelMetricData, &scraperErrors)
 
 	return metrics, scraperErrors.Combine()
 }
@@ -132,9 +142,7 @@ func (s *snmpScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 // into metrics with optional enum attributes
 func (s *snmpScraper) scrapeScalarMetrics(
 	now pcommon.Timestamp,
-	resourceMetricsSlice *pmetric.ResourceMetricsSlice,
-	resourcesByKey map[string]*pmetric.ResourceMetrics,
-	metricsByName map[string]*pmetric.Metric,
+	otelMetricData *snmpOTELMetricData,
 	scraperErrors *scrapererror.ScrapeErrors,
 ) {
 	scalarMetricNamesByOID := map[string]string{}
@@ -163,22 +171,22 @@ func (s *snmpScraper) scrapeScalarMetrics(
 		return
 	}
 
+	// Retrieve all SNMP data from scalar metric OIDs
 	scalarData := s.client.GetScalarData(scalarMetricOIDs, scraperErrors)
+	// For each piece of SNMP data, attempt to create the necessary OTEL structures (resources/metrics/datapoints)
 	for _, data := range scalarData {
-		if err := s.scalarDataToMetric(data, now, resourceMetricsSlice, resourcesByKey, metricsByName, scalarMetricNamesByOID); err != nil {
+		if err := s.scalarDataToMetric(data, now, otelMetricData, scalarMetricNamesByOID); err != nil {
 			scraperErrors.AddPartial(1, fmt.Errorf(errMsgScalarOIDProcessing, data.oid, err))
 		}
 	}
 }
 
-// scalarDataToMetric provides a function which will convert one piece of SNMP scalar data, turn it into
-// a metric with attributes based on the related configs, store it in the passed in metricsByName
+// scalarDataToMetric will take one piece of SNMP scalar data and turn it into a datapoint for
+// either a new or existing metric with attributes based on the related configs
 func (s *snmpScraper) scalarDataToMetric(
-	data snmpData,
+	data SNMPData,
 	now pcommon.Timestamp,
-	resourceMetricsSlice *pmetric.ResourceMetricsSlice,
-	resourcesByKey map[string]*pmetric.ResourceMetrics,
-	metricsByName map[string]*pmetric.Metric,
+	otelMetricData *snmpOTELMetricData,
 	scalarMetricNamesByOID map[string]string,
 ) error {
 	// Return an error if this SNMP scalar data is not of a useable type
@@ -198,10 +206,11 @@ func (s *snmpScraper) scalarDataToMetric(
 		}
 	}
 
-	// Create new general resource if needed and get metric slice
+	// Create new general resource if needed and get related MetricSlice
 	var metricSlice pmetric.MetricSlice
+	resourcesByKey := otelMetricData.resourcesByKey
 	if resourcesByKey[generalResourceKey] == nil {
-		generalResource := resourceMetricsSlice.AppendEmpty()
+		generalResource := otelMetricData.resourceMetricsSlice.AppendEmpty()
 		resourcesByKey[generalResourceKey] = &generalResource
 		scopeMetrics := generalResource.ScopeMetrics().AppendEmpty()
 		scopeMetrics.Scope().SetName("otelcol/snmpreceiver")
@@ -211,7 +220,8 @@ func (s *snmpScraper) scalarDataToMetric(
 		metricSlice = resourcesByKey[generalResourceKey].ScopeMetrics().At(0).Metrics()
 	}
 
-	// Get/create the metric and datapoint for this SNMP scalar data and make sure metricsByName is current
+	// Get/create a metric and create a new datapoint for this metric using this SNMP scalar data
+	metricsByName := otelMetricData.metricsByResource.getMetrics(generalResourceKey)
 	metric := metricsByName[metricName]
 	if metric == nil {
 		metric = createMetric(&metricSlice, metricsByName, metricName, metricCfg)
@@ -240,9 +250,7 @@ func (s *snmpScraper) scalarDataToMetric(
 // into metrics with optional attribute and/or resource attributes
 func (s *snmpScraper) scrapeIndexedMetrics(
 	now pcommon.Timestamp,
-	resourceMetricsSlice *pmetric.ResourceMetricsSlice,
-	resourcesByKey map[string]*pmetric.ResourceMetrics,
-	metricsByResource metricsByResourceContainer,
+	otelMetricData *snmpOTELMetricData,
 	scraperErrors *scrapererror.ScrapeErrors,
 ) {
 	// Retrieve column OID SNMP indexed data for attributes
@@ -278,24 +286,23 @@ func (s *snmpScraper) scrapeIndexedMetrics(
 		return
 	}
 
+	// Retrieve all SNMP indexed data from column metric OIDs
 	indexedData := s.client.GetIndexedData(indexedMetricOIDs, scraperErrors)
+	// For each piece of SNMP data, attempt to create the necessary OTEL structures (resources/metrics/datapoints)
 	for _, data := range indexedData {
-		if err := s.indexedDataToMetric(data, now, resourceMetricsSlice, resourcesByKey, metricsByResource, indexedMetricNamesByOID, indexedAttributeValues, indexedResourceAttributeValues); err != nil {
+		if err := s.indexedDataToMetric(data, now, otelMetricData, indexedMetricNamesByOID, indexedAttributeValues, indexedResourceAttributeValues); err != nil {
 			scraperErrors.AddPartial(1, fmt.Errorf(errMsgIndexedMetricOIDProcessing, data.oid, data.parentOID, err))
 		}
 	}
 }
 
-// indexedDataToMetric provides a function which will convert one piece of column OID SNMP indexed data
-// and turn it into a metric with attributes based on the config and previously collected column OID
-// SNMP indexed attribute. A resource may also be created if none exists for the related previously
-// collected resource attribute data yet.
+// indexedDataToMetric will take one piece of column OID SNMP indexed metric data and turn it
+// into a datapoint for either a new or existing metric with attributes that belongs to either
+// a new or existing resource
 func (s *snmpScraper) indexedDataToMetric(
-	data snmpData,
+	data SNMPData,
 	now pcommon.Timestamp,
-	resourceMetricsSlice *pmetric.ResourceMetricsSlice,
-	resourcesByKey map[string]*pmetric.ResourceMetrics,
-	metricsByResource metricsByResourceContainer,
+	otelMetricData *snmpOTELMetricData,
 	indexedMetricNamesByOID map[string]string,
 	indexedAttributeValues map[indexedAttributeKey]string,
 	indexedResourceAttributeValues map[indexedAttributeKey]string,
@@ -333,19 +340,20 @@ func (s *snmpScraper) indexedDataToMetric(
 		return fmt.Errorf(errMsgOIDResourceAttributeEmptyValue, metricName, err)
 	}
 
-	// Create a resource key using all of the relevant resource attribute names
+	// Create a resource key using all of the relevant resource attribute names along
+	// with the row index of the SNMP data
 	resourceKey := getResourceKey(metricCfgResourceAttributes, indexString)
 
-	// Get/create the resource for this SNMP data and make sure resourcesByKey is current
+	// Get/create the resource for this SNMP data
+	resourcesByKey := otelMetricData.resourcesByKey
 	resource := resourcesByKey[resourceKey]
 	if resource == nil {
-		resource = s.createResource(resourceMetricsSlice, resourceAttributes, resourcesByKey, resourceKey)
+		resource = s.createResource(otelMetricData.resourceMetricsSlice, resourceAttributes, resourcesByKey, resourceKey)
 	}
 	metricSlice := resource.ScopeMetrics().At(0).Metrics()
 
-	// Get/create the metric and datapoint for this SNMP data, make sure metricsByName is current,
-	// and assign the metric to the correct resource if it is new
-	metricsByName := metricsByResource.getMetrics(resourceKey)
+	// Get/create the metric and datapoint for this SNMP data
+	metricsByName := otelMetricData.metricsByResource.getMetrics(resourceKey)
 	metric := metricsByName[metricName]
 	if metric == nil {
 		metric = createMetric(&metricSlice, metricsByName, metricName, metricCfg)
@@ -364,7 +372,8 @@ func (s *snmpScraper) indexedDataToMetric(
 }
 
 // getResourceKey returns a unique key based on all of the relevant resource attributes names
-// as well as the current indexString for a metric data point
+// as well as the current row index for a metric data point (a row index corresponds to values
+// for the attributes that all belong to a single resource)
 func getResourceKey(
 	metricCfgResourceAttributes []string,
 	indexString string,
@@ -510,7 +519,7 @@ func addMetricDataPoint(
 	metric *pmetric.Metric,
 	metricCfg *MetricConfig,
 	now pcommon.Timestamp,
-	data snmpData,
+	data SNMPData,
 ) (*pmetric.NumberDataPoint, error) {
 	if metric == nil {
 		return nil, fmt.Errorf("cannot retrieve datapoints from metric '%s' as it does not currently exist", metric.Name())
@@ -561,7 +570,9 @@ func (s *snmpScraper) scrapeIndexedAttributes(
 		return
 	}
 
+	// Retrieve all SNMP indexed data from column attribute OIDs
 	indexedData := s.client.GetIndexedData(indexedAttributeOIDs, scraperErrors)
+	// For each piece of SNMP data, store the necessary info to help create metric attributes later if needed
 	for _, data := range indexedData {
 		if err := indexedDataToAttribute(data, indexedAttributeValues); err != nil {
 			scraperErrors.AddPartial(1, fmt.Errorf(errMsgIndexedAttributeOIDProcessing, data.oid, data.parentOID, err))
@@ -593,7 +604,9 @@ func (s *snmpScraper) scrapeIndexedResourceAttributes(
 		return
 	}
 
+	// Retrieve all SNMP indexed data from column resource attribute OIDs
 	indexedData := s.client.GetIndexedData(indexedResourceAttributeOIDs, scraperErrors)
+	// For each piece of SNMP data, store the necessary info to help create resources later if needed
 	for _, data := range indexedData {
 		if err := indexedDataToAttribute(data, indexedResourceAttributeValues); err != nil {
 			scraperErrors.AddPartial(1, fmt.Errorf(errMsgIndexedResourceAttributeOIDProcessing, data.oid, data.parentOID, err))
@@ -605,7 +618,7 @@ func (s *snmpScraper) scrapeIndexedResourceAttributes(
 // (for either an attribute or resource attribute) and stores it in a map for later use (keyed by both
 // {resource} attribute config column OID and OID index)
 func indexedDataToAttribute(
-	data snmpData,
+	data SNMPData,
 	indexedAttributeValues map[indexedAttributeKey]string,
 ) error {
 	// Get the string value of the SNMP data for the {resource} attribute value
