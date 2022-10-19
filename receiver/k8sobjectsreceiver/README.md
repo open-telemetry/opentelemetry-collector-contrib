@@ -199,7 +199,10 @@ EOF
 
 ## Troubleshooting
 
-
+If receiver returns error similar to below, make sure that resource is added to `ClusterRole`.
+```
+{"kind": "receiver", "name": "k8sobjects", "pipeline": "logs", "resource": "events.k8s.io/v1, Resource=events", "error": "unknown"}
+```
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
