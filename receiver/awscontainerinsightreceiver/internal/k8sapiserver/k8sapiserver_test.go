@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package k8sapiserver
 
 import (
@@ -216,10 +215,12 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 	*/
 	for _, metric := range metrics {
 		assert.Equal(t, "cluster-name", getStringAttrVal(metric, ci.ClusterNameKey))
-		if metricType := getStringAttrVal(metric, ci.MetricType); metricType == ci.TypeCluster {
+		metricType := getStringAttrVal(metric, ci.MetricType)
+		switch metricType {
+		case ci.TypeCluster:
 			assertMetricValueEqual(t, metric, "cluster_failed_node_count", int64(1))
 			assertMetricValueEqual(t, metric, "cluster_node_count", int64(1))
-		} else if metricType == ci.TypeClusterService {
+		case ci.TypeClusterService:
 			assertMetricValueEqual(t, metric, "service_number_of_running_pods", int64(1))
 			if serviceTag := getStringAttrVal(metric, ci.TypeService); serviceTag != "service1" && serviceTag != "service2" {
 				assert.Fail(t, "Expect to see a tag named as Service")
@@ -227,10 +228,10 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 			if namespaceTag := getStringAttrVal(metric, ci.K8sNamespace); namespaceTag != "kube-system" {
 				assert.Fail(t, "Expect to see a tag named as Namespace")
 			}
-		} else if metricType == ci.TypeClusterNamespace {
+		case ci.TypeClusterNamespace:
 			assertMetricValueEqual(t, metric, "namespace_number_of_running_pods", int64(2))
 			assert.Equal(t, "default", getStringAttrVal(metric, ci.K8sNamespace))
-		} else {
+		default:
 			assert.Fail(t, "Unexpected metric type: "+metricType)
 		}
 	}

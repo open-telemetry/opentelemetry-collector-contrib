@@ -213,17 +213,20 @@ Examples:
 
 ## replace_all_patterns
 
-`replace_all_patterns(target, regex, replacement)`
+`replace_all_patterns(target, mode, regex, replacement)`
 
-The `replace_all_patterns` function replaces any segments in a string value that match the regex pattern with the replacement string.
+The `replace_all_patterns` function replaces any segments in a string value or key that match the regex pattern with the replacement string.
 
 `target` is a path expression to a `pdata.Map` type field. `regex` is a regex string indicating a segment to replace. `replacement` is a string.
+
+`mode` determines whether the match and replace will occur on the map's value or key. Valid values are `key` and `value`.
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
 Examples:
 
-- `replace_all_patterns(attributes, "/account/\\d{4}", "/account/{accountId}")`
+- `replace_all_patterns(attributes, "value", "/account/\\d{4}", "/account/{accountId}")`
+- `replace_all_patterns(attributes, "key", "/account/\\d{4}", "/account/{accountId}")`
 
 ## replace_pattern
 
@@ -293,3 +296,4 @@ Examples:
 
 
 - `truncate_all(resource.attributes, 50)`
+

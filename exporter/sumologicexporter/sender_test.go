@@ -118,12 +118,12 @@ func exampleTwoLogs() []plog.LogRecord {
 	buffer := make([]plog.LogRecord, 2)
 	buffer[0] = plog.NewLogRecord()
 	buffer[0].Body().SetStr("Example log")
-	buffer[0].Attributes().PutString("key1", "value1")
-	buffer[0].Attributes().PutString("key2", "value2")
+	buffer[0].Attributes().PutStr("key1", "value1")
+	buffer[0].Attributes().PutStr("key2", "value2")
 	buffer[1] = plog.NewLogRecord()
 	buffer[1].Body().SetStr("Another example log")
-	buffer[1].Attributes().PutString("key1", "value1")
-	buffer[1].Attributes().PutString("key2", "value2")
+	buffer[1].Attributes().PutStr("key1", "value1")
+	buffer[1].Attributes().PutStr("key2", "value2")
 
 	return buffer
 }
@@ -132,12 +132,12 @@ func exampleTwoDifferentLogs() []plog.LogRecord {
 	buffer := make([]plog.LogRecord, 2)
 	buffer[0] = plog.NewLogRecord()
 	buffer[0].Body().SetStr("Example log")
-	buffer[0].Attributes().PutString("key1", "value1")
-	buffer[0].Attributes().PutString("key2", "value2")
+	buffer[0].Attributes().PutStr("key1", "value1")
+	buffer[0].Attributes().PutStr("key2", "value2")
 	buffer[1] = plog.NewLogRecord()
 	buffer[1].Body().SetStr("Another example log")
-	buffer[1].Attributes().PutString("key3", "value3")
-	buffer[1].Attributes().PutString("key4", "value4")
+	buffer[1].Attributes().PutStr("key3", "value3")
+	buffer[1].Attributes().PutStr("key4", "value4")
 
 	return buffer
 }
@@ -147,14 +147,14 @@ func exampleMultitypeLogs() []plog.LogRecord {
 
 	attVal := pcommon.NewValueMap()
 	attMap := attVal.Map()
-	attMap.PutString("lk1", "lv1")
+	attMap.PutStr("lk1", "lv1")
 	attMap.PutInt("lk2", 13)
 
 	buffer[0] = plog.NewLogRecord()
 	attVal.CopyTo(buffer[0].Body())
 
-	buffer[0].Attributes().PutString("key1", "value1")
-	buffer[0].Attributes().PutString("key2", "value2")
+	buffer[0].Attributes().PutStr("key1", "value1")
+	buffer[0].Attributes().PutStr("key2", "value2")
 
 	buffer[1] = plog.NewLogRecord()
 
@@ -171,8 +171,8 @@ func exampleMultitypeLogs() []plog.LogRecord {
 	intVal.CopyTo(intTgt)
 
 	attVal.CopyTo(buffer[1].Body())
-	buffer[1].Attributes().PutString("key1", "value1")
-	buffer[1].Attributes().PutString("key2", "value2")
+	buffer[1].Attributes().PutStr("key1", "value1")
+	buffer[1].Attributes().PutStr("key2", "value2")
 
 	return buffer
 }
@@ -818,8 +818,8 @@ foo=bar metric=gauge_metric_name  245 1608124662`
 		"key2": "value2",
 	})
 
-	test.s.metricBuffer[0].attributes.PutString("unit", "m/s")
-	test.s.metricBuffer[0].attributes.PutString("escape me", "=invalid\n")
+	test.s.metricBuffer[0].attributes.PutStr("unit", "m/s")
+	test.s.metricBuffer[0].attributes.PutStr("escape me", "=invalid\n")
 	test.s.metricBuffer[0].attributes.PutBool("metric", true)
 
 	_, err := test.s.sendMetrics(context.Background(), flds)
@@ -854,7 +854,7 @@ gauge_metric_name.. 245 1608124662`
 		"key2": "value2",
 	})
 
-	test.s.metricBuffer[0].attributes.PutString("unit", "m/s")
+	test.s.metricBuffer[0].attributes.PutStr("unit", "m/s")
 	test.s.metricBuffer[0].attributes.PutBool("metric", true)
 
 	_, err := test.s.sendMetrics(context.Background(), flds)

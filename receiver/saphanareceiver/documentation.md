@@ -67,8 +67,8 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| db.system | The type of database system. | String |
-| saphana.host | The SAP HANA host. | String |
+| db.system | The type of database system. | Str |
+| saphana.host | The SAP HANA host. | Str |
 
 ## Metric attributes
 

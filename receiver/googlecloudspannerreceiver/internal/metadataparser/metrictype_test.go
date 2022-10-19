@@ -30,7 +30,7 @@ func TestDataType(t *testing.T) {
 	}{
 		"Gauge":   {GaugeMetricDataType, pmetric.MetricTypeGauge, false},
 		"Sum":     {SumMetricDataType, pmetric.MetricTypeSum, false},
-		"Invalid": {UnknownMetricDataType, pmetric.MetricTypeNone, true},
+		"Invalid": {UnknownMetricDataType, pmetric.MetricTypeEmpty, true},
 	}
 
 	for name, testCase := range testCases {
@@ -55,13 +55,13 @@ func TestDataType(t *testing.T) {
 func TestAggregationTemporality(t *testing.T) {
 	testCases := map[string]struct {
 		aggregationTemporality         AggregationType
-		expectedAggregationTemporality pmetric.MetricAggregationTemporality
+		expectedAggregationTemporality pmetric.AggregationTemporality
 		expectError                    bool
 	}{
-		"Cumulative": {CumulativeAggregationType, pmetric.MetricAggregationTemporalityCumulative, false},
-		"Delta":      {DeltaAggregationType, pmetric.MetricAggregationTemporalityDelta, false},
-		"Empty":      {"", pmetric.MetricAggregationTemporalityUnspecified, false},
-		"Invalid":    {UnknownAggregationType, pmetric.MetricAggregationTemporalityUnspecified, true},
+		"Cumulative": {CumulativeAggregationType, pmetric.AggregationTemporalityCumulative, false},
+		"Delta":      {DeltaAggregationType, pmetric.AggregationTemporalityDelta, false},
+		"Empty":      {"", pmetric.AggregationTemporalityUnspecified, false},
+		"Invalid":    {UnknownAggregationType, pmetric.AggregationTemporalityUnspecified, true},
 	}
 
 	for name, testCase := range testCases {
@@ -88,13 +88,13 @@ func TestToMetricType(t *testing.T) {
 		dataType                       MetricDataType
 		aggregationTemporality         AggregationType
 		expectedDataType               pmetric.MetricType
-		expectedAggregationTemporality pmetric.MetricAggregationTemporality
+		expectedAggregationTemporality pmetric.AggregationTemporality
 		isMonotonic                    bool
 		expectError                    bool
 	}{
-		"Happy path":          {GaugeMetricDataType, CumulativeAggregationType, pmetric.MetricTypeGauge, pmetric.MetricAggregationTemporalityCumulative, true, false},
-		"Invalid data type":   {"invalid", CumulativeAggregationType, pmetric.MetricTypeNone, pmetric.MetricAggregationTemporalityCumulative, true, true},
-		"Invalid aggregation": {GaugeMetricDataType, "invalid", pmetric.MetricTypeGauge, pmetric.MetricAggregationTemporalityUnspecified, true, true},
+		"Happy path":          {GaugeMetricDataType, CumulativeAggregationType, pmetric.MetricTypeGauge, pmetric.AggregationTemporalityCumulative, true, false},
+		"Invalid data type":   {"invalid", CumulativeAggregationType, pmetric.MetricTypeEmpty, pmetric.AggregationTemporalityCumulative, true, true},
+		"Invalid aggregation": {GaugeMetricDataType, "invalid", pmetric.MetricTypeGauge, pmetric.AggregationTemporalityUnspecified, true, true},
 	}
 
 	for name, testCase := range testCases {

@@ -32,7 +32,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 	il.SetVersion("ilm_version")
 
 	attributes := pcommon.NewMap()
-	attributes.PutString("label", "value")
+	attributes.PutStr("label", "value")
 	type fields struct {
 		Resource               pcommon.Resource
 		InstrumentationLibrary pcommon.InstrumentationScope
@@ -175,7 +175,7 @@ func TestMetricIdentity_IsSupportedMetricType(t *testing.T) {
 		{
 			name: "none",
 			fields: fields{
-				MetricType: pmetric.MetricTypeNone,
+				MetricType: pmetric.MetricTypeEmpty,
 			},
 			want: false,
 		},

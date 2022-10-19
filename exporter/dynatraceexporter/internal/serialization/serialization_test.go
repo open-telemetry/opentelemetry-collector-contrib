@@ -57,7 +57,7 @@ func TestSerializeMetric(t *testing.T) {
 		metric.SetName("metric_name")
 		sum := metric.SetEmptySum()
 		sum.SetIsMonotonic(true)
-		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 		sumDp := sum.DataPoints().AppendEmpty()
 		sumDp.SetIntValue(4)
 
@@ -75,7 +75,7 @@ func TestSerializeMetric(t *testing.T) {
 		metric := pmetric.NewMetric()
 		metric.SetName("metric_name")
 		hist := metric.SetEmptyHistogram()
-		hist.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+		hist.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 		dp := hist.DataPoints().AppendEmpty()
 		dp.SetMin(1)
 		dp.SetMax(3)
@@ -101,8 +101,8 @@ func Test_makeCombinedDimensions(t *testing.T) {
 		dimensions.NewDimension("c", "default"),
 	)
 	attributes := pcommon.NewMap()
-	attributes.PutString("a", "attribute")
-	attributes.PutString("b", "attribute")
+	attributes.PutStr("a", "attribute")
+	attributes.PutStr("b", "attribute")
 	staticDims := dimensions.NewNormalizedDimensionList(
 		dimensions.NewDimension("a", "static"),
 	)

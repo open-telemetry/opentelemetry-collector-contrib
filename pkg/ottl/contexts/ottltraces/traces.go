@@ -95,7 +95,7 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 	switch path[0].Name {
 	case "resource":
 		return ottlcommon.ResourcePathGetSetter[TransformContext](path[1:])
-	case "instrumentation_library":
+	case "instrumentation_scope":
 		return ottlcommon.ScopePathGetSetter[TransformContext](path[1:])
 	case "trace_id":
 		if len(path) == 1 {
@@ -415,7 +415,7 @@ func accessStatus() ottl.StandardGetSetter[TransformContext] {
 			return ctx.GetSpan().Status()
 		},
 		Setter: func(ctx TransformContext, val interface{}) {
-			if status, ok := val.(ptrace.SpanStatus); ok {
+			if status, ok := val.(ptrace.Status); ok {
 				status.CopyTo(ctx.GetSpan().Status())
 			}
 		},

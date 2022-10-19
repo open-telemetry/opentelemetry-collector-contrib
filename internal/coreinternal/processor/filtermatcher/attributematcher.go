@@ -61,7 +61,7 @@ func NewAttributesMatcher(config filterset.Config, attributes []filterconfig.Att
 			case filterset.Regexp:
 				if val.Type() != pcommon.ValueTypeStr {
 					return nil, fmt.Errorf(
-						"%s=%s for %q only supports STRING, but found %s",
+						"%s=%s for %q only supports Str, but found %s",
 						filterset.MatchTypeFieldName, filterset.Regexp, attribute.Key, val.Type(),
 					)
 				}

@@ -362,7 +362,7 @@ func spanIDToOC(sid pcommon.SpanID) []byte {
 	return sid[:]
 }
 
-func statusToOC(status ptrace.SpanStatus) (*octrace.Status, *octrace.AttributeValue) {
+func statusToOC(status ptrace.Status) (*octrace.Status, *octrace.AttributeValue) {
 	var attr *octrace.AttributeValue
 	var oc int32
 	switch status.Code() {

@@ -113,8 +113,8 @@ func Test_RawMarshaler(t *testing.T) {
 			logRecord: func() plog.LogRecord {
 				lr := plog.NewLogRecord()
 				m := lr.Body().SetEmptyMap()
-				m.PutString("foo", "foo")
-				m.PutString("bar", "bar")
+				m.PutStr("foo", "foo")
+				m.PutStr("bar", "bar")
 				m.PutBool("foobar", false)
 				return lr
 			},

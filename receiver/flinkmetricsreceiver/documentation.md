@@ -51,12 +51,12 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| flink.job.name | The job name. | String |
-| flink.resource.type | The flink scope type in which a metric belongs to. | String |
-| flink.subtask.index | The subtask index. | String |
-| flink.task.name | The task name. | String |
-| flink.taskmanager.id | The taskmanager ID. | String |
-| host.name | The host name. | String |
+| flink.job.name | The job name. | Str |
+| flink.resource.type | The flink scope type in which a metric belongs to. | Str |
+| flink.subtask.index | The subtask index. | Str |
+| flink.task.name | The task name. | Str |
+| flink.taskmanager.id | The taskmanager ID. | Str |
+| host.name | The host name. | Str |
 
 ## Metric attributes
 
