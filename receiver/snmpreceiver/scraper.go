@@ -34,13 +34,17 @@ const generalResourceKey = ""
 
 var (
 	// Error messages
-	errMsgBadValueType                   = `returned metric SNMP data type for OID '%s' is not supported`
-	errMsgIndexedBadValueType            = `returned metric SNMP data type for OID '%s' from column OID '%s' is not supported`
-	errMsgIndexedAttributesBadValueType  = `returned attribute SNMP data type for OID '%s' from column OID '%s' is not supported`
-	errMsgAttributeEmptyValue            = `metric OID attribute value is blank`
-	errMsgOIDAttributeEmptyValue         = `not creating indexed metric '%s' datapoint: %w`
-	errMsgResourceAttributeEmptyValue    = `related resource attribute value is blank`
-	errMsgOIDResourceAttributeEmptyValue = `not creating indexed metric '%s' or resource: %w`
+	errMsgBadValueType                          = `returned metric SNMP data type for OID '%s' is not supported`
+	errMsgIndexedBadValueType                   = `returned metric SNMP data type for OID '%s' from column OID '%s' is not supported`
+	errMsgIndexedAttributesBadValueType         = `returned attribute SNMP data type for OID '%s' from column OID '%s' is not supported`
+	errMsgAttributeEmptyValue                   = `metric OID attribute value is blank`
+	errMsgOIDAttributeEmptyValue                = `not creating indexed metric '%s' datapoint: %w`
+	errMsgResourceAttributeEmptyValue           = `related resource attribute value is blank`
+	errMsgOIDResourceAttributeEmptyValue        = `not creating indexed metric '%s' or resource: %w`
+	errMsgScalarOIDProcessing                   = `problem processing scalar metric data for OID '%s': %w`
+	errMsgIndexedMetricOIDProcessing            = `problem processing indexed metric data for OID '%s' from column OID '%s': %w`
+	errMsgIndexedAttributeOIDProcessing         = `problem processing indexed attribute data for OID '%s' from column OID '%s': %w`
+	errMsgIndexedResourceAttributeOIDProcessing = `problem processing indexed resource attribute data for OID '%s' from column OID '%s': %w`
 )
 
 // snmpScraper handles scraping of SNMP metrics
@@ -159,77 +163,77 @@ func (s *snmpScraper) scrapeScalarMetrics(
 		return
 	}
 
-	// Get all SNMP scalar OID data and turn it into metrics/attributes
-	// which are then stored in the passed in metricsByName
-	s.client.GetScalarData(scalarMetricOIDs, scalarDataToMetric(now, resourceMetricsSlice, resourcesByKey, metricsByName, scalarMetricNamesByOID, s), scraperErrors)
+	scalarData := s.client.GetScalarData(scalarMetricOIDs, scraperErrors)
+	for _, data := range scalarData {
+		if err := s.scalarDataToMetric(data, now, resourceMetricsSlice, resourcesByKey, metricsByName, scalarMetricNamesByOID); err != nil {
+			scraperErrors.AddPartial(1, fmt.Errorf(errMsgScalarOIDProcessing, data.oid, err))
+		}
+	}
 }
 
 // scalarDataToMetric provides a function which will convert one piece of SNMP scalar data, turn it into
 // a metric with attributes based on the related configs, store it in the passed in metricsByName
-func scalarDataToMetric(
+func (s *snmpScraper) scalarDataToMetric(
+	data snmpData,
 	now pcommon.Timestamp,
 	resourceMetricsSlice *pmetric.ResourceMetricsSlice,
 	resourcesByKey map[string]*pmetric.ResourceMetrics,
 	metricsByName map[string]*pmetric.Metric,
 	scalarMetricNamesByOID map[string]string,
-	snmpScraper *snmpScraper,
-) processFunc {
-	// This returns a processFunc because this is what the client's GetScalarData method requires
-	return func(data snmpData) error {
-		// Return an error if this SNMP scalar data is not of a useable type
-		if data.valueType == notSupportedVal || data.valueType == stringVal {
-			return fmt.Errorf(errMsgBadValueType, data.oid)
-		}
-
-		// Retrieve the metric config for this SNMP data
-		metricName := scalarMetricNamesByOID[data.oid]
-		metricCfg := snmpScraper.cfg.Metrics[metricName]
-
-		// Get all enum attributes names and values for this SNMP scalar data based on the metric config
-		var metricAttributes []Attribute
-		for _, scalarOID := range metricCfg.ScalarOIDs {
-			if scalarOID.OID == data.oid {
-				metricAttributes = scalarOID.Attributes
-			}
-		}
-
-		// Create new general resource if needed and get metric slice
-		var metricSlice pmetric.MetricSlice
-		if resourcesByKey[generalResourceKey] == nil {
-			generalResource := resourceMetricsSlice.AppendEmpty()
-			resourcesByKey[generalResourceKey] = &generalResource
-			scopeMetrics := generalResource.ScopeMetrics().AppendEmpty()
-			scopeMetrics.Scope().SetName("otelcol/snmpreceiver")
-			scopeMetrics.Scope().SetVersion(snmpScraper.settings.BuildInfo.Version)
-			metricSlice = scopeMetrics.Metrics()
-		} else {
-			metricSlice = resourcesByKey[generalResourceKey].ScopeMetrics().At(0).Metrics()
-		}
-
-		// Get/create the metric and datapoint for this SNMP scalar data and make sure metricsByName is current
-		metric := metricsByName[metricName]
-		if metric == nil {
-			metric = createMetric(&metricSlice, metricsByName, metricName, metricCfg)
-		}
-		dp, err := addMetricDataPoint(metric, metricCfg, now, data)
-		if err != nil {
-			return err
-		}
-
-		// Set enum attributes for this metric's datapoint based on the previously gathered attributes.
-		// Keys will be determined from the related attribute config and enum values will come straight from
-		// the metric config's attributes.
-		for _, attribute := range metricAttributes {
-			attributeCfg := snmpScraper.cfg.Attributes[attribute.Name]
-			attributeKey := attribute.Name
-			if attributeCfg.Value != "" {
-				attributeKey = attributeCfg.Value
-			}
-			dp.Attributes().PutStr(attributeKey, attribute.Value)
-		}
-
-		return nil
+) error {
+	// Return an error if this SNMP scalar data is not of a useable type
+	if data.valueType == notSupportedVal || data.valueType == stringVal {
+		return fmt.Errorf(errMsgBadValueType, data.oid)
 	}
+
+	// Retrieve the metric config for this SNMP data
+	metricName := scalarMetricNamesByOID[data.oid]
+	metricCfg := s.cfg.Metrics[metricName]
+
+	// Get all enum attributes names and values for this SNMP scalar data based on the metric config
+	var metricAttributes []Attribute
+	for _, scalarOID := range metricCfg.ScalarOIDs {
+		if scalarOID.OID == data.oid {
+			metricAttributes = scalarOID.Attributes
+		}
+	}
+
+	// Create new general resource if needed and get metric slice
+	var metricSlice pmetric.MetricSlice
+	if resourcesByKey[generalResourceKey] == nil {
+		generalResource := resourceMetricsSlice.AppendEmpty()
+		resourcesByKey[generalResourceKey] = &generalResource
+		scopeMetrics := generalResource.ScopeMetrics().AppendEmpty()
+		scopeMetrics.Scope().SetName("otelcol/snmpreceiver")
+		scopeMetrics.Scope().SetVersion(s.settings.BuildInfo.Version)
+		metricSlice = scopeMetrics.Metrics()
+	} else {
+		metricSlice = resourcesByKey[generalResourceKey].ScopeMetrics().At(0).Metrics()
+	}
+
+	// Get/create the metric and datapoint for this SNMP scalar data and make sure metricsByName is current
+	metric := metricsByName[metricName]
+	if metric == nil {
+		metric = createMetric(&metricSlice, metricsByName, metricName, metricCfg)
+	}
+	dp, err := addMetricDataPoint(metric, metricCfg, now, data)
+	if err != nil {
+		return err
+	}
+
+	// Set enum attributes for this metric's datapoint based on the previously gathered attributes.
+	// Keys will be determined from the related attribute config and enum values will come straight from
+	// the metric config's attributes.
+	for _, attribute := range metricAttributes {
+		attributeCfg := s.cfg.Attributes[attribute.Name]
+		attributeKey := attribute.Name
+		if attributeCfg.Value != "" {
+			attributeKey = attributeCfg.Value
+		}
+		dp.Attributes().PutStr(attributeKey, attribute.Value)
+	}
+
+	return nil
 }
 
 // scrapeIndexedMetrics retrieves all SNMP data from column OIDs and turns the returned indexed data
@@ -274,23 +278,20 @@ func (s *snmpScraper) scrapeIndexedMetrics(
 		return
 	}
 
-	// Get all column OID SNMP indexed data for metrics and turn it into metrics, attributes,
-	// and resource attributes (using the previously retrieved attribute and resource attribute data)
-	s.client.GetIndexedData(
-		indexedMetricOIDs,
-		indexedDataToMetric(
-			now, resourceMetricsSlice, resourcesByKey, metricsByResource, indexedMetricNamesByOID,
-			indexedAttributeValues, indexedResourceAttributeValues, s,
-		),
-		scraperErrors,
-	)
+	indexedData := s.client.GetIndexedData(indexedMetricOIDs, scraperErrors)
+	for _, data := range indexedData {
+		if err := s.indexedDataToMetric(data, now, resourceMetricsSlice, resourcesByKey, metricsByResource, indexedMetricNamesByOID, indexedAttributeValues, indexedResourceAttributeValues); err != nil {
+			scraperErrors.AddPartial(1, fmt.Errorf(errMsgIndexedMetricOIDProcessing, data.oid, data.parentOID, err))
+		}
+	}
 }
 
 // indexedDataToMetric provides a function which will convert one piece of column OID SNMP indexed data
 // and turn it into a metric with attributes based on the config and previously collected column OID
 // SNMP indexed attribute. A resource may also be created if none exists for the related previously
 // collected resource attribute data yet.
-func indexedDataToMetric(
+func (s *snmpScraper) indexedDataToMetric(
+	data snmpData,
 	now pcommon.Timestamp,
 	resourceMetricsSlice *pmetric.ResourceMetricsSlice,
 	resourcesByKey map[string]*pmetric.ResourceMetrics,
@@ -298,73 +299,68 @@ func indexedDataToMetric(
 	indexedMetricNamesByOID map[string]string,
 	indexedAttributeValues map[indexedAttributeKey]string,
 	indexedResourceAttributeValues map[indexedAttributeKey]string,
-	snmpScraper *snmpScraper,
-) processFunc {
-	// This returns a processFunc because this is what the client's GetScalarData method requires
-	return func(data snmpData) error {
-		// Return an error if this SNMP indexed data is not of a useable type
-		if data.valueType == notSupportedVal || data.valueType == stringVal {
-			return fmt.Errorf(errMsgIndexedBadValueType, data.oid, data.parentOID)
-		}
-
-		// Retrieve the metric config for this SNMP indexed data
-		cfg := snmpScraper.cfg
-		metricName := indexedMetricNamesByOID[data.parentOID]
-		metricCfg := cfg.Metrics[metricName]
-
-		// Get all related attribute and resource attribute info for this SNMP indexed data based on the metric config
-		var metricCfgResourceAttributes []string
-		var metricCfgAttributes []Attribute
-		for _, columnOID := range metricCfg.ColumnOIDs {
-			if columnOID.OID == data.parentOID {
-				metricCfgAttributes = columnOID.Attributes
-				metricCfgResourceAttributes = columnOID.ResourceAttributes
-			}
-		}
-
-		indexString := strings.TrimPrefix(data.oid, data.parentOID)
-
-		// Get data point attributes
-		dataPointAttributes, err := getDataPointAttributes(indexedAttributeValues, metricCfgAttributes, cfg, indexString)
-		if err != nil {
-			return fmt.Errorf(errMsgOIDAttributeEmptyValue, metricName, err)
-		}
-
-		// Get resource attributes
-		resourceAttributes, err := getResourceAttributes(indexedResourceAttributeValues, metricCfgResourceAttributes, cfg, indexString)
-		if err != nil {
-			return fmt.Errorf(errMsgOIDResourceAttributeEmptyValue, metricName, err)
-		}
-
-		// Create a resource key using all of the relevant resource attribute names
-		resourceKey := getResourceKey(metricCfgResourceAttributes, indexString)
-
-		// Get/create the resource for this SNMP data and make sure resourcesByKey is current
-		resource := resourcesByKey[resourceKey]
-		if resource == nil {
-			resource = createResource(resourceMetricsSlice, resourceAttributes, resourcesByKey, resourceKey, snmpScraper)
-		}
-		metricSlice := resource.ScopeMetrics().At(0).Metrics()
-
-		// Get/create the metric and datapoint for this SNMP data, make sure metricsByName is current,
-		// and assign the metric to the correct resource if it is new
-		metricsByName := metricsByResource.getMetrics(resourceKey)
-		metric := metricsByName[metricName]
-		if metric == nil {
-			metric = createMetric(&metricSlice, metricsByName, metricName, metricCfg)
-		}
-		dp, err := addMetricDataPoint(metric, metricCfg, now, data)
-		if err != nil {
-			return err
-		}
-
-		// Add attributes to the datapoint if they exist
-		for key, val := range dataPointAttributes {
-			dp.Attributes().PutStr(key, val)
-		}
-
-		return nil
+) error {
+	// Return an error if this SNMP indexed data is not of a useable type
+	if data.valueType == notSupportedVal || data.valueType == stringVal {
+		return fmt.Errorf(errMsgIndexedBadValueType, data.oid, data.parentOID)
 	}
+
+	// Retrieve the metric config for this SNMP indexed data
+	metricName := indexedMetricNamesByOID[data.parentOID]
+	metricCfg := s.cfg.Metrics[metricName]
+
+	// Get all related attribute and resource attribute info for this SNMP indexed data based on the metric config
+	var metricCfgResourceAttributes []string
+	var metricCfgAttributes []Attribute
+	for _, columnOID := range metricCfg.ColumnOIDs {
+		if columnOID.OID == data.parentOID {
+			metricCfgAttributes = columnOID.Attributes
+			metricCfgResourceAttributes = columnOID.ResourceAttributes
+		}
+	}
+
+	indexString := strings.TrimPrefix(data.oid, data.parentOID)
+
+	// Get data point attributes
+	dataPointAttributes, err := getDataPointAttributes(indexedAttributeValues, metricCfgAttributes, s.cfg, indexString)
+	if err != nil {
+		return fmt.Errorf(errMsgOIDAttributeEmptyValue, metricName, err)
+	}
+
+	// Get resource attributes
+	resourceAttributes, err := getResourceAttributes(indexedResourceAttributeValues, metricCfgResourceAttributes, s.cfg, indexString)
+	if err != nil {
+		return fmt.Errorf(errMsgOIDResourceAttributeEmptyValue, metricName, err)
+	}
+
+	// Create a resource key using all of the relevant resource attribute names
+	resourceKey := getResourceKey(metricCfgResourceAttributes, indexString)
+
+	// Get/create the resource for this SNMP data and make sure resourcesByKey is current
+	resource := resourcesByKey[resourceKey]
+	if resource == nil {
+		resource = s.createResource(resourceMetricsSlice, resourceAttributes, resourcesByKey, resourceKey)
+	}
+	metricSlice := resource.ScopeMetrics().At(0).Metrics()
+
+	// Get/create the metric and datapoint for this SNMP data, make sure metricsByName is current,
+	// and assign the metric to the correct resource if it is new
+	metricsByName := metricsByResource.getMetrics(resourceKey)
+	metric := metricsByName[metricName]
+	if metric == nil {
+		metric = createMetric(&metricSlice, metricsByName, metricName, metricCfg)
+	}
+	dp, err := addMetricDataPoint(metric, metricCfg, now, data)
+	if err != nil {
+		return err
+	}
+
+	// Add attributes to the datapoint if they exist
+	for key, val := range dataPointAttributes {
+		dp.Attributes().PutStr(key, val)
+	}
+
+	return nil
 }
 
 // getResourceKey returns a unique key based on all of the relevant resource attributes names
@@ -491,12 +487,11 @@ func createMetric(
 
 // createResource creates a new ResourceMetrics, adds it to the passed in ResourceMetricSlice,
 // and adds it to the passed in resourceByKey
-func createResource(
+func (s *snmpScraper) createResource(
 	resourceMetricsSlice *pmetric.ResourceMetricsSlice,
 	resourceAttributes map[string]string,
 	resourcesByKey map[string]*pmetric.ResourceMetrics,
 	resourceKey string,
-	snmpScraper *snmpScraper,
 ) *pmetric.ResourceMetrics {
 	resourceMetrics := resourceMetricsSlice.AppendEmpty()
 	for key, value := range resourceAttributes {
@@ -504,7 +499,7 @@ func createResource(
 	}
 	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
 	scopeMetrics.Scope().SetName("otelcol/snmpreceiver")
-	scopeMetrics.Scope().SetVersion(snmpScraper.settings.BuildInfo.Version)
+	scopeMetrics.Scope().SetVersion(s.settings.BuildInfo.Version)
 	resourcesByKey[resourceKey] = &resourceMetrics
 
 	return &resourceMetrics
@@ -566,12 +561,12 @@ func (s *snmpScraper) scrapeIndexedAttributes(
 		return
 	}
 
-	// Retrieve SNMP attribute indexed data and store for later use
-	s.client.GetIndexedData(
-		indexedAttributeOIDs,
-		indexedDataToAttribute(indexedAttributeValues),
-		scraperErrors,
-	)
+	indexedData := s.client.GetIndexedData(indexedAttributeOIDs, scraperErrors)
+	for _, data := range indexedData {
+		if err := indexedDataToAttribute(data, indexedAttributeValues); err != nil {
+			scraperErrors.AddPartial(1, fmt.Errorf(errMsgIndexedAttributeOIDProcessing, data.oid, data.parentOID, err))
+		}
+	}
 }
 
 // scrapeIndexedResourceAttributes retrieves all SNMP data from resource attribute config column OIDs and
@@ -598,45 +593,43 @@ func (s *snmpScraper) scrapeIndexedResourceAttributes(
 		return
 	}
 
-	// Retrieve resource attribute indexed data and store for later use
-	s.client.GetIndexedData(
-		indexedResourceAttributeOIDs,
-		indexedDataToAttribute(indexedResourceAttributeValues),
-		scraperErrors,
-	)
+	indexedData := s.client.GetIndexedData(indexedResourceAttributeOIDs, scraperErrors)
+	for _, data := range indexedData {
+		if err := indexedDataToAttribute(data, indexedResourceAttributeValues); err != nil {
+			scraperErrors.AddPartial(1, fmt.Errorf(errMsgIndexedResourceAttributeOIDProcessing, data.oid, data.parentOID, err))
+		}
+	}
 }
 
 // indexedDataToAttribute provides a function which will take one piece of column OID SNMP indexed data
 // (for either an attribute or resource attribute) and stores it in a map for later use (keyed by both
 // {resource} attribute config column OID and OID index)
 func indexedDataToAttribute(
+	data snmpData,
 	indexedAttributeValues map[indexedAttributeKey]string,
-) processFunc {
-	// This returns a processFunc because this is what the client's GetIndexedData method requires
-	return func(data snmpData) error {
-		// Get the string value of the SNMP data for the {resource} attribute value
-		var stringValue string
-		// Not explicitly checking these casts as this should be made safe in the client
-		switch data.valueType {
-		case notSupportedVal:
-			return fmt.Errorf(errMsgIndexedAttributesBadValueType, data.oid, data.parentOID)
-		case stringVal:
-			stringValue = data.value.(string)
-		case integerVal:
-			stringValue = strconv.FormatInt(data.value.(int64), 10)
-		case floatVal:
-			stringValue = strconv.FormatFloat(data.value.(float64), 'f', 2, 64)
-		}
-		// Store the {resource} attribute value in a map using the column OID and OID index associated
-		// as keys. This way we can match indexed metrics to this data through the {resource} attribute
-		// config and the indices of the individual metric values
-		indexString := strings.TrimPrefix(data.oid, data.parentOID)
-		attrKey := indexedAttributeKey{
-			parentOID: data.parentOID,
-			oidIndex:  indexString,
-		}
-		indexedAttributeValues[attrKey] = stringValue
-
-		return nil
+) error {
+	// Get the string value of the SNMP data for the {resource} attribute value
+	var stringValue string
+	// Not explicitly checking these casts as this should be made safe in the client
+	switch data.valueType {
+	case notSupportedVal:
+		return fmt.Errorf(errMsgIndexedAttributesBadValueType, data.oid, data.parentOID)
+	case stringVal:
+		stringValue = data.value.(string)
+	case integerVal:
+		stringValue = strconv.FormatInt(data.value.(int64), 10)
+	case floatVal:
+		stringValue = strconv.FormatFloat(data.value.(float64), 'f', 2, 64)
 	}
+	// Store the {resource} attribute value in a map using the column OID and OID index associated
+	// as keys. This way we can match indexed metrics to this data through the {resource} attribute
+	// config and the indices of the individual metric values
+	indexString := strings.TrimPrefix(data.oid, data.parentOID)
+	attrKey := indexedAttributeKey{
+		parentOID: data.parentOID,
+		oidIndex:  indexString,
+	}
+	indexedAttributeValues[attrKey] = stringValue
+
+	return nil
 }

@@ -45,17 +45,14 @@ type snmpData struct {
 	valueType oidDataType
 }
 
-// processFunc our own function type to better control what data can be passed in
-type processFunc func(data snmpData) error
-
 // client is used for retrieving data from a SNMP environment
 type client interface {
 	// GetScalarData retrieves SNMP scalar data from a list of passed in OIDS,
-	// then the passed in function is performed on each piece of data
-	GetScalarData(oids []string, processFn processFunc, scraperErrors *scrapererror.ScrapeErrors)
+	// then returns the retrieved data
+	GetScalarData(oids []string, scraperErrors *scrapererror.ScrapeErrors) []snmpData
 	// GetIndexedData retrieves SNMP indexed data from a list of passed in OIDS,
-	// then the passed in function is performed on each piece of data
-	GetIndexedData(oids []string, processFn processFunc, scraperErrors *scrapererror.ScrapeErrors)
+	// then returns the retrieved data
+	GetIndexedData(oids []string, scraperErrors *scrapererror.ScrapeErrors) []snmpData
 	// Connect makes a connection to the SNMP host
 	Connect() error
 	// Close closes a connection to the SNMP host
@@ -201,13 +198,14 @@ func (c *snmpClient) Close() error {
 	return c.client.Close()
 }
 
-// GetScalarData retrieves scalar metrics from passed in scalar OIDs. The returned data
-// is then also passed into the provided function.
+// GetScalarData retrieves and returns scalar data from passed in scalar OIDs.
 // Note: These OIDs must all end in ".0" for the SNMP GET to work correctly
-func (c *snmpClient) GetScalarData(oids []string, processFn processFunc, scraperErrors *scrapererror.ScrapeErrors) {
+func (c *snmpClient) GetScalarData(oids []string, scraperErrors *scrapererror.ScrapeErrors) []snmpData {
+	scalarData := []snmpData{}
+
 	// Nothing to do if there are no OIDs
 	if len(oids) == 0 {
-		return
+		return scalarData
 	}
 
 	// Group OIDs into chunks based on the max amount allowed in a single SNMP GET
@@ -226,7 +224,7 @@ func (c *snmpClient) GetScalarData(oids []string, processFn processFunc, scraper
 				}
 				if err = c.Connect(); err != nil {
 					scraperErrors.AddPartial(len(oidChunk), fmt.Errorf("problem with getting scalar data: problem connecting while trying to reset connection: %w", err))
-					return
+					return scalarData
 				}
 			}
 			continue
@@ -246,60 +244,34 @@ func (c *snmpClient) GetScalarData(oids []string, processFn processFunc, scraper
 				scraperErrors.AddPartial(1, fmt.Errorf("problem with getting scalar data: data for OID '%s' not a supported type", data.Name))
 				continue
 			}
-			// Process the data
-			if err := processFn(clientSNMPData); err != nil {
-				scraperErrors.AddPartial(1, fmt.Errorf("problem with getting scalar data: problem with processing data for OID '%s': %w", data.Name, err))
-				continue
-			}
+
+			// Add the data to be returned
+			scalarData = append(scalarData, clientSNMPData)
 		}
 	}
+
+	return scalarData
 }
 
 // GetIndexedData retrieves indexed metrics from passed in column OIDs. The returned data
 // is then also passed into the provided function.
-func (c *snmpClient) GetIndexedData(oids []string, processFn processFunc, scraperErrors *scrapererror.ScrapeErrors) {
+func (c *snmpClient) GetIndexedData(oids []string, scraperErrors *scrapererror.ScrapeErrors) []snmpData {
+	indexedData := []snmpData{}
+
 	// Nothing to do if there are no OIDs
 	if len(oids) == 0 {
-		return
+		return indexedData
 	}
 
 	// For each column based OID
 	for _, oid := range oids {
-		// Because BulkWalk and Walk do not return errors if the given OID doesn't exist, we need to keep track of whether
-		// BulkWalk called the walkFn or not. This will allow us to know if there was a problem with given OID
-		walkFnCalled := false
-		// Create a walkFunc which is a required argument for the gosnmp Walk functions
-		walkFn := func(data gosnmp.SnmpPDU) error {
-			walkFnCalled = true
-			// If there is no value, then stop processing
-			if data.Value == nil {
-				scraperErrors.AddPartial(1, fmt.Errorf("problem with getting indexed data: data for OID '%s' not found", data.Name))
-				return nil
-			}
-			// Convert data into the more simplified data type
-			clientSNMPData := c.convertSnmpPDUToSnmpData(data)
-			// Keep track of which column OID this data came from as well
-			clientSNMPData.parentOID = oid
-			// If the value type is not supported, then ignore
-			if clientSNMPData.valueType == notSupportedVal {
-				scraperErrors.AddPartial(1, fmt.Errorf("problem with getting indexed data: data for OID '%s' not a supported type", data.Name))
-				return nil
-			}
-
-			// Process the data
-			if err := processFn(clientSNMPData); err != nil {
-				scraperErrors.AddPartial(1, fmt.Errorf("problem with getting indexed data: problem with processing data for OID '%s': %w", data.Name, err))
-			}
-
-			return nil
-		}
-
 		// Call the correct gosnmp Walk function based on SNMP version
 		var err error
+		var snmpPDUs []gosnmp.SnmpPDU
 		if c.client.GetVersion() == gosnmp.Version1 {
-			err = c.client.Walk(oid, walkFn)
+			snmpPDUs, err = c.client.WalkAll(oid)
 		} else {
-			err = c.client.BulkWalk(oid, walkFn)
+			snmpPDUs, err = c.client.BulkWalkAll(oid)
 		}
 		if err != nil {
 			scraperErrors.AddPartial(1, fmt.Errorf("problem with getting indexed data: problem with SNMP WALK for OID '%v': %w", oid, err))
@@ -310,13 +282,33 @@ func (c *snmpClient) GetIndexedData(oids []string, processFn processFunc, scrape
 				}
 				if err = c.Connect(); err != nil {
 					scraperErrors.AddPartial(len(oids), fmt.Errorf("problem with getting indexed data: problem connecting while trying to reset connection: %w", err))
-					return
+					return indexedData
 				}
 			}
-		} else if !walkFnCalled {
-			scraperErrors.AddPartial(1, fmt.Errorf("problem with getting indexed data: problem with SNMP WALK for OID '%v': Could not find any data for given OID", oid))
+		}
+
+		for _, snmpPDU := range snmpPDUs {
+			// If there is no value, then stop processing
+			if snmpPDU.Value == nil {
+				scraperErrors.AddPartial(1, fmt.Errorf("problem with getting indexed data: data for OID '%s' not found", snmpPDU.Name))
+				continue
+			}
+			// Convert data into the more simplified data type
+			clientSNMPData := c.convertSnmpPDUToSnmpData(snmpPDU)
+			// Keep track of which column OID this data came from as well
+			clientSNMPData.parentOID = oid
+			// If the value type is not supported, then ignore
+			if clientSNMPData.valueType == notSupportedVal {
+				scraperErrors.AddPartial(1, fmt.Errorf("problem with getting indexed data: data for OID '%s' not a supported type", snmpPDU.Name))
+				continue
+			}
+
+			// Add the data to be returned
+			indexedData = append(indexedData, clientSNMPData)
 		}
 	}
+
+	return indexedData
 }
 
 // chunkArray takes an initial array and splits it into a number of smaller
