@@ -204,6 +204,7 @@ from opentelemetry.instrumentation.propagators import (
 )
 from opentelemetry.instrumentation.utils import _start_internal_or_server_span
 from opentelemetry.metrics import get_meter
+from opentelemetry.semconv.metrics import MetricInstruments
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.util.http import get_excluded_urls, parse_excluded_urls
 
@@ -423,12 +424,12 @@ class _InstrumentedFlask(flask.Flask):
             __name__, __version__, _InstrumentedFlask._meter_provider
         )
         duration_histogram = meter.create_histogram(
-            name="http.server.duration",
+            name=MetricInstruments.HTTP_SERVER_DURATION,
             unit="ms",
             description="measures the duration of the inbound HTTP request",
         )
         active_requests_counter = meter.create_up_down_counter(
-            name="http.server.active_requests",
+            name=MetricInstruments.HTTP_SERVER_ACTIVE_REQUESTS,
             unit="requests",
             description="measures the number of concurrent HTTP requests that are currently in-flight",
         )
@@ -521,12 +522,12 @@ class FlaskInstrumentor(BaseInstrumentor):
             )
             meter = get_meter(__name__, __version__, meter_provider)
             duration_histogram = meter.create_histogram(
-                name="http.server.duration",
+                name=MetricInstruments.HTTP_SERVER_DURATION,
                 unit="ms",
                 description="measures the duration of the inbound HTTP request",
             )
             active_requests_counter = meter.create_up_down_counter(
-                name="http.server.active_requests",
+                name=MetricInstruments.HTTP_SERVER_ACTIVE_REQUESTS,
                 unit="requests",
                 description="measures the number of concurrent HTTP requests that are currently in-flight",
             )

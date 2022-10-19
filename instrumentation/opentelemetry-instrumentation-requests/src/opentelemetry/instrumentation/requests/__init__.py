@@ -71,6 +71,7 @@ from opentelemetry.instrumentation.utils import (
 )
 from opentelemetry.metrics import Histogram, get_meter
 from opentelemetry.propagate import inject
+from opentelemetry.semconv.metrics import MetricInstruments
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import SpanKind, Tracer, get_tracer
 from opentelemetry.trace.span import Span
@@ -311,7 +312,7 @@ class RequestsInstrumentor(BaseInstrumentor):
             meter_provider,
         )
         duration_histogram = meter.create_histogram(
-            name="http.client.duration",
+            name=MetricInstruments.HTTP_CLIENT_DURATION,
             unit="ms",
             description="measures the duration of the outbound HTTP request",
         )

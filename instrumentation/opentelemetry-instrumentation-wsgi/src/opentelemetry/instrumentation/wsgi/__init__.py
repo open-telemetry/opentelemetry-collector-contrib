@@ -168,6 +168,7 @@ from opentelemetry.instrumentation.utils import (
 from opentelemetry.instrumentation.wsgi.version import __version__
 from opentelemetry.metrics import get_meter
 from opentelemetry.propagators.textmap import Getter
+from opentelemetry.semconv.metrics import MetricInstruments
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry.util.http import (
@@ -409,12 +410,12 @@ class OpenTelemetryMiddleware:
         self.tracer = trace.get_tracer(__name__, __version__, tracer_provider)
         self.meter = get_meter(__name__, __version__, meter_provider)
         self.duration_histogram = self.meter.create_histogram(
-            name="http.server.duration",
+            name=MetricInstruments.HTTP_SERVER_DURATION,
             unit="ms",
             description="measures the duration of the inbound HTTP request",
         )
         self.active_requests_counter = self.meter.create_up_down_counter(
-            name="http.server.active_requests",
+            name=MetricInstruments.HTTP_SERVER_ACTIVE_REQUESTS,
             unit="requests",
             description="measures the number of concurrent HTTP requests that are currently in-flight",
         )

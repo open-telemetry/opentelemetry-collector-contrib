@@ -181,6 +181,7 @@ from opentelemetry.instrumentation.utils import (
 from opentelemetry.metrics import get_meter
 from opentelemetry.metrics._internal.instrument import Histogram
 from opentelemetry.propagators import textmap
+from opentelemetry.semconv.metrics import MetricInstruments
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry.util.http import (
@@ -201,13 +202,6 @@ _HANDLER_CONTEXT_KEY = "_otel_trace_context_key"
 _OTEL_PATCHED_KEY = "_otel_patched_key"
 
 _START_TIME = "start_time"
-_CLIENT_DURATION_HISTOGRAM = "http.client.duration"
-_CLIENT_REQUEST_SIZE_HISTOGRAM = "http.client.request.size"
-_CLIENT_RESPONSE_SIZE_HISTOGRAM = "http.client.response.size"
-_SERVER_DURATION_HISTOGRAM = "http.server.duration"
-_SERVER_REQUEST_SIZE_HISTOGRAM = "http.server.request.size"
-_SERVER_RESPONSE_SIZE_HISTOGRAM = "http.server.response.size"
-_SERVER_ACTIVE_REQUESTS_HISTOGRAM = "http.server.active_requests"
 
 _excluded_urls = get_excluded_urls("TORNADO")
 _traced_request_attrs = get_traced_request_attrs("TORNADO")
@@ -273,9 +267,9 @@ class TornadoInstrumentor(BaseInstrumentor):
                 tracer,
                 client_request_hook,
                 client_response_hook,
-                client_histograms[_CLIENT_DURATION_HISTOGRAM],
-                client_histograms[_CLIENT_REQUEST_SIZE_HISTOGRAM],
-                client_histograms[_CLIENT_RESPONSE_SIZE_HISTOGRAM],
+                client_histograms[MetricInstruments.HTTP_CLIENT_DURATION],
+                client_histograms[MetricInstruments.HTTP_CLIENT_REQUEST_SIZE],
+                client_histograms[MetricInstruments.HTTP_CLIENT_RESPONSE_SIZE],
             ),
         )
 
@@ -289,23 +283,23 @@ class TornadoInstrumentor(BaseInstrumentor):
 
 def _create_server_histograms(meter) -> Dict[str, Histogram]:
     histograms = {
-        _SERVER_DURATION_HISTOGRAM: meter.create_histogram(
-            name="http.server.duration",
+        MetricInstruments.HTTP_SERVER_DURATION: meter.create_histogram(
+            name=MetricInstruments.HTTP_SERVER_DURATION,
             unit="ms",
             description="measures the duration outbound HTTP requests",
         ),
-        _SERVER_REQUEST_SIZE_HISTOGRAM: meter.create_histogram(
-            name="http.server.request.size",
+        MetricInstruments.HTTP_SERVER_REQUEST_SIZE: meter.create_histogram(
+            name=MetricInstruments.HTTP_SERVER_REQUEST_SIZE,
             unit="By",
             description="measures the size of HTTP request messages (compressed)",
         ),
-        _SERVER_RESPONSE_SIZE_HISTOGRAM: meter.create_histogram(
-            name="http.server.response.size",
+        MetricInstruments.HTTP_SERVER_RESPONSE_SIZE: meter.create_histogram(
+            name=MetricInstruments.HTTP_SERVER_RESPONSE_SIZE,
             unit="By",
             description="measures the size of HTTP response messages (compressed)",
         ),
-        _SERVER_ACTIVE_REQUESTS_HISTOGRAM: meter.create_up_down_counter(
-            name="http.server.active_requests",
+        MetricInstruments.HTTP_SERVER_ACTIVE_REQUESTS: meter.create_up_down_counter(
+            name=MetricInstruments.HTTP_SERVER_ACTIVE_REQUESTS,
             unit="requests",
             description="measures the number of concurrent HTTP requests that are currently in-flight",
         ),
@@ -316,18 +310,18 @@ def _create_server_histograms(meter) -> Dict[str, Histogram]:
 
 def _create_client_histograms(meter) -> Dict[str, Histogram]:
     histograms = {
-        _CLIENT_DURATION_HISTOGRAM: meter.create_histogram(
-            name="http.client.duration",
+        MetricInstruments.HTTP_CLIENT_DURATION: meter.create_histogram(
+            name=MetricInstruments.HTTP_CLIENT_DURATION,
             unit="ms",
             description="measures the duration outbound HTTP requests",
         ),
-        _CLIENT_REQUEST_SIZE_HISTOGRAM: meter.create_histogram(
-            name="http.client.request.size",
+        MetricInstruments.HTTP_CLIENT_REQUEST_SIZE: meter.create_histogram(
+            name=MetricInstruments.HTTP_CLIENT_REQUEST_SIZE,
             unit="By",
             description="measures the size of HTTP request messages (compressed)",
         ),
-        _CLIENT_RESPONSE_SIZE_HISTOGRAM: meter.create_histogram(
-            name="http.client.response.size",
+        MetricInstruments.HTTP_CLIENT_RESPONSE_SIZE: meter.create_histogram(
+            name=MetricInstruments.HTTP_CLIENT_RESPONSE_SIZE,
             unit="By",
             description="measures the size of HTTP response messages (compressed)",
         ),
@@ -562,14 +556,14 @@ def _record_prepare_metrics(server_histograms, handler):
     request_size = int(handler.request.headers.get("Content-Length", 0))
     metric_attributes = _create_metric_attributes(handler)
 
-    server_histograms[_SERVER_REQUEST_SIZE_HISTOGRAM].record(
+    server_histograms[MetricInstruments.HTTP_SERVER_REQUEST_SIZE].record(
         request_size, attributes=metric_attributes
     )
 
     active_requests_attributes = _create_active_requests_attributes(
         handler.request
     )
-    server_histograms[_SERVER_ACTIVE_REQUESTS_HISTOGRAM].add(
+    server_histograms[MetricInstruments.HTTP_SERVER_ACTIVE_REQUESTS].add(
         1, attributes=active_requests_attributes
     )
 
@@ -585,18 +579,18 @@ def _record_on_finish_metrics(server_histograms, handler, error=None):
     if isinstance(error, tornado.web.HTTPError):
         metric_attributes[SpanAttributes.HTTP_STATUS_CODE] = error.status_code
 
-    server_histograms[_SERVER_RESPONSE_SIZE_HISTOGRAM].record(
+    server_histograms[MetricInstruments.HTTP_SERVER_RESPONSE_SIZE].record(
         response_size, attributes=metric_attributes
     )
 
-    server_histograms[_SERVER_DURATION_HISTOGRAM].record(
+    server_histograms[MetricInstruments.HTTP_SERVER_DURATION].record(
         elapsed_time, attributes=metric_attributes
     )
 
     active_requests_attributes = _create_active_requests_attributes(
         handler.request
     )
-    server_histograms[_SERVER_ACTIVE_REQUESTS_HISTOGRAM].add(
+    server_histograms[MetricInstruments.HTTP_SERVER_ACTIVE_REQUESTS].add(
         -1, attributes=active_requests_attributes
     )
 

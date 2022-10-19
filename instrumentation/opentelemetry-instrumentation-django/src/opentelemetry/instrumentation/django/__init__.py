@@ -207,6 +207,7 @@ from opentelemetry.instrumentation.django.package import _instruments
 from opentelemetry.instrumentation.django.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.metrics import get_meter
+from opentelemetry.semconv.metrics import MetricInstruments
 from opentelemetry.trace import get_tracer
 
 DJANGO_2_0 = django_version >= (2, 0)
@@ -260,12 +261,12 @@ class DjangoInstrumentor(BaseInstrumentor):
             "response_hook", None
         )
         _DjangoMiddleware._duration_histogram = meter.create_histogram(
-            name="http.server.duration",
+            name=MetricInstruments.HTTP_SERVER_DURATION,
             unit="ms",
             description="measures the duration of the inbound http request",
         )
         _DjangoMiddleware._active_request_counter = meter.create_up_down_counter(
-            name="http.server.active_requests",
+            name=MetricInstruments.HTTP_SERVER_ACTIVE_REQUESTS,
             unit="requests",
             description="measures the number of concurrent HTTP requests those are currently in flight",
         )
