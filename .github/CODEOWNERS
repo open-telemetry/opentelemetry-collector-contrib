@@ -195,6 +195,7 @@ receiver/skywalkingreceiver/                         @open-telemetry/collector-c
 receiver/snmpreceiver/                               @open-telemetry/collector-contrib-approvers @djaglowski @StefanKurek @tamir-michaeli
 receiver/solacereceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski @mcardy
 receiver/splunkhecreceiver/                          @open-telemetry/collector-contrib-approvers @atoulme @keitwb
+receiver/snowflakereceiver/                          @open-telemetry/collector-contrib-approvers @dmitryax @shalper2
 receiver/sqlqueryreceiver/                           @open-telemetry/collector-contrib-approvers @dmitryax @pmcollins
 receiver/sqlserverreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski @StefanKurek
 receiver/statsdreceiver/                             @open-telemetry/collector-contrib-approvers @jmacd @dmitryax
