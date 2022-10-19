@@ -43,8 +43,10 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 - `field_selector`: select objects by field(s)
 - `interval`: the interval at which object is pulled, default 60 minutes. Only useful for `pull` mode.
 - `namespaces`: An array of `namespaces` to collect events from. (default = `all`)
-- `group`: API group name. It is only required when resource object is available in multiple groups. (default = "")
-For example, `events` resource is available in both `v1` and `events.k8s.io/v1` APIGroup.
+- `group`: API group name. It is an optional config. When given resource object is present in multiple groups,
+use this config to specify the group to select. By default, it will select the first group.
+For example, `events` resource is available in both `v1` and `events.k8s.io/v1` APIGroup. In 
+this case, it will select `v1` by default.
 
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
@@ -194,6 +196,10 @@ spec:
             name: otelcontribcol
 EOF
 ```
+
+## Troubleshooting
+
+
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

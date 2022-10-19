@@ -105,6 +105,7 @@ func TestValidateResourceConflict(t *testing.T) {
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
 
+	// Validate it should choose first gvr if group is not specified
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "myresources",
@@ -113,16 +114,19 @@ func TestValidateResourceConflict(t *testing.T) {
 	}
 
 	err := rCfg.Validate()
-	assert.ErrorContains(t, err, "conflict found for resource myresources")
+	require.NoError(t, err)
+	assert.Equal(t, "group1", rCfg.Objects[0].gvr.Group)
 
+	// Validate it should choose gvr for specified group
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name:  "myresources",
 			Mode:  PullMode,
-			Group: "group1",
+			Group: "group2",
 		},
 	}
 
 	err = rCfg.Validate()
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	assert.Equal(t, "group2", rCfg.Objects[0].gvr.Group)
 }

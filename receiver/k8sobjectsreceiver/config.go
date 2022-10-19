@@ -80,24 +80,12 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("resource %v not found. Valid resources are: %v", object.Name, availableResource)
 		}
 
-		var gvr *schema.GroupVersionResource
-		if len(gvrs) == 1 {
-			gvr = gvrs[0]
-		} else {
-			for i := range gvrs {
-				if gvrs[i].Group == object.Group {
-					gvr = gvrs[i]
-					break
-				}
+		gvr := gvrs[0]
+		for i := range gvrs {
+			if gvrs[i].Group == object.Group {
+				gvr = gvrs[i]
+				break
 			}
-		}
-
-		if gvr == nil {
-			availableGroups := make([]string, len(gvrs))
-			for _, g := range gvrs {
-				availableGroups = append(availableGroups, g.Group)
-			}
-			return fmt.Errorf("conflict found for resource %v in groups %v", object.Name, availableGroups)
 		}
 
 		if object.Mode == "" {
