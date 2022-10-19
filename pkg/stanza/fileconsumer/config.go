@@ -102,13 +102,17 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc, opts ...FactoryO
 		return nil, fmt.Errorf("`fingerprint_size` must be at least %d bytes", MinFingerprintSize)
 	}
 
-	// Ensure that splitter is buildable
-	var factory splitterFactory
-	factory = newDefaultSplitterFactory(c.EncodingConfig, c.Flusher)
-	for _, opt := range opts {
-		factory = opt(c.EncodingConfig, c.Flusher)
+	// Ensure that encoding is buildable
+	enc, err := c.EncodingConfig.Build()
+	if err != nil {
+		return nil, err
 	}
-	_, err := factory.Build(int(c.MaxLogSize))
+
+	// Ensure that splitter is buildable
+	flusher := c.Flusher.Build()
+	opts = append(opts, WithEncoding(enc.Encoding), WithFlusher(flusher))
+	factory := NewFactory(opts...)
+	_, err = factory.Build(int(c.MaxLogSize))
 	if err != nil {
 		return nil, err
 	}
@@ -144,15 +148,4 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc, opts ...FactoryO
 		knownFiles:    make([]*Reader, 0, 10),
 		seenPaths:     make(map[string]struct{}, 100),
 	}, nil
-}
-
-type FactoryOption func(encoding helper.EncodingConfig,
-	flusher helper.FlusherConfig) splitterFactory
-
-func WithMultilineFactory(multiline helper.MultilineConfig) func(encoding helper.EncodingConfig,
-	flusher helper.FlusherConfig) splitterFactory {
-	return func(encoding helper.EncodingConfig,
-		flusher helper.FlusherConfig) splitterFactory {
-		return newMultilineSplitterFactory(encoding, flusher, multiline)
-	}
 }

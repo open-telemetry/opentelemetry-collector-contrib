@@ -50,20 +50,6 @@ func Test_multilineSplitterFactory_Build(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "eoncoding error",
-			fields: fields{
-				EncodingConfig: helper.EncodingConfig{
-					Encoding: "error",
-				},
-				Flusher:   helper.NewFlusherConfig(),
-				Multiline: helper.NewMultilineConfig(),
-			},
-			args: args{
-				maxLogSize: defaultMaxLogSize,
-			},
-			wantErr: true,
-		},
-		{
 			name: "Multiline  error",
 			fields: fields{
 				EncodingConfig: helper.NewEncodingConfig(),
@@ -81,10 +67,11 @@ func Test_multilineSplitterFactory_Build(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			enc, _ := tt.fields.EncodingConfig.Build()
 			factory := &multilineSplitterFactory{
-				EncodingConfig: tt.fields.EncodingConfig,
-				Flusher:        tt.fields.Flusher,
-				Multiline:      tt.fields.Multiline,
+				Encoding:  enc.Encoding,
+				Flusher:   tt.fields.Flusher.Build(),
+				Multiline: tt.fields.Multiline,
 			}
 			got, err := factory.Build(tt.args.maxLogSize)
 			if (err != nil) != tt.wantErr {
@@ -99,6 +86,9 @@ func Test_multilineSplitterFactory_Build(t *testing.T) {
 }
 
 func Test_newMultilineSplitterFactory(t *testing.T) {
-	splitter := newMultilineSplitterFactory(helper.NewEncodingConfig(), helper.NewFlusherConfig(), helper.NewMultilineConfig())
+	enc, _ := helper.NewEncodingConfig().Build()
+	flusherConfig := helper.NewFlusherConfig()
+	flusher := flusherConfig.Build()
+	splitter := newMultilineSplitterFactory(enc.Encoding, flusher, helper.NewMultilineConfig())
 	assert.NotNil(t, splitter)
 }
