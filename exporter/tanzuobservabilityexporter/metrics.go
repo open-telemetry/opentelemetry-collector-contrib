@@ -121,7 +121,6 @@ func (c *metricsConsumer) Consume(ctx context.Context, md pmetric.Metrics) error
 				} else if !c.config.AppTagsExcluded {
 					resAttrsMap = appAttributesToTags(resAttrs)
 				}
-				fixServiceTag(resAttrsMap)
 				mi := metricInfo{Metric: m, Source: source, SourceKey: sourceKey, ResourceAttrs: resAttrsMap}
 				select {
 				case <-ctx.Done():
