@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -35,6 +37,7 @@ type TransformContext struct {
 	logRecord            plog.LogRecord
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
+	json                 jsoniter.API
 }
 
 func NewTransformContext(logRecord plog.LogRecord, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
@@ -42,6 +45,7 @@ func NewTransformContext(logRecord plog.LogRecord, instrumentationScope pcommon.
 		logRecord:            logRecord,
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
+		json:                 jsoniter.ConfigFastest,
 	}
 }
 
@@ -120,6 +124,12 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 		return accessSeverityNumber(), nil
 	case "severity_text":
 		return accessSeverityText(), nil
+	case "json_body":
+		mapkey := path[0].MapKey
+		if mapkey == nil {
+			return nil, fmt.Errorf("json_body needs a field to extract.")
+		}
+		return accessJsonBody(mapkey), nil
 	case "body":
 		return accessBody(), nil
 	case "attributes":
@@ -203,6 +213,21 @@ func accessSeverityText() ottl.StandardGetSetter[TransformContext] {
 	}
 }
 
+func accessJsonBody(mapKey *string) ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx TransformContext) interface{} {
+			var parsedValue map[string]interface{}
+			err := ctx.json.UnmarshalFromString(ctx.GetLogRecord().Body().AsString(), &parsedValue)
+			if err != nil {
+				return nil
+			}
+			return parsedValue[*mapKey]
+		},
+		Setter: func(ctx TransformContext, val interface{}) {
+			// TODO: Remove this setter and throw an error during config parsing
+		},
+	}
+}
 func accessBody() ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx TransformContext) interface{} {
