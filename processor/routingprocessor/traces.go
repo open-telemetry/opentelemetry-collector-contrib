@@ -101,7 +101,7 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 
 		matchCount := len(p.router.routes)
 		for key, route := range p.router.routes {
-			if _, isMatch := route.expression.Execute(stx); !isMatch {
+			if _, isMatch := route.statement.Execute(stx); !isMatch {
 				matchCount--
 				continue
 			}

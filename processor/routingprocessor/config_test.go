@@ -113,22 +113,22 @@ func TestValidateConfig(t *testing.T) {
 		error  string
 	}{
 		{
-			name: "both expression and value specified",
+			name: "both statement and value specified",
 			config: &Config{
 				FromAttribute:   "attr",
 				AttributeSource: resourceAttributeSource,
 				Table: []RoutingTableItem{
 					{
-						Exporters:  []string{"otlp"},
-						Value:      "acme",
-						Expression: `route() where resource.attributes["attr"] == "acme"`,
+						Exporters: []string{"otlp"},
+						Value:     "acme",
+						Statement: `route() where resource.attributes["attr"] == "acme"`,
 					},
 				},
 			},
-			error: "invalid route: both expression (route() where resource.attributes[\"attr\"] == \"acme\") and value (acme) provided",
+			error: "invalid route: both statement (route() where resource.attributes[\"attr\"] == \"acme\") and value (acme) provided",
 		},
 		{
-			name: "neither expression or value provided",
+			name: "neither statement or value provided",
 			config: &Config{
 				FromAttribute:   "attr",
 				AttributeSource: resourceAttributeSource,
@@ -185,8 +185,8 @@ func TestRewriteLegacyConfigToOTTL(t *testing.T) {
 			want: Config{
 				Table: []RoutingTableItem{
 					{
-						Exporters:  []string{"otlp"},
-						Expression: `route() where resource.attributes["attr"] == "acme"`,
+						Exporters: []string{"otlp"},
+						Statement: `route() where resource.attributes["attr"] == "acme"`,
 					},
 				},
 			},
@@ -210,12 +210,12 @@ func TestRewriteLegacyConfigToOTTL(t *testing.T) {
 			want: Config{
 				Table: []RoutingTableItem{
 					{
-						Exporters:  []string{"otlp"},
-						Expression: `route() where resource.attributes["attr"] == "acme"`,
+						Exporters: []string{"otlp"},
+						Statement: `route() where resource.attributes["attr"] == "acme"`,
 					},
 					{
-						Exporters:  []string{"otlp/2"},
-						Expression: `route() where resource.attributes["attr"] == "ecorp"`,
+						Exporters: []string{"otlp/2"},
+						Statement: `route() where resource.attributes["attr"] == "ecorp"`,
 					},
 				},
 			},
@@ -236,8 +236,8 @@ func TestRewriteLegacyConfigToOTTL(t *testing.T) {
 			want: Config{
 				Table: []RoutingTableItem{
 					{
-						Exporters:  []string{"otlp"},
-						Expression: `delete_key(resource.attributes, "attr") where resource.attributes["attr"] == "acme"`,
+						Exporters: []string{"otlp"},
+						Statement: `delete_key(resource.attributes, "attr") where resource.attributes["attr"] == "acme"`,
 					},
 				},
 			},
@@ -276,20 +276,20 @@ func TestRewriteLegacyConfigToOTTL(t *testing.T) {
 						Value:     "acme",
 					},
 					{
-						Exporters:  []string{"otlp/2"},
-						Expression: `route() where resource.attributes["attr"] == "ecorp"`,
+						Exporters: []string{"otlp/2"},
+						Statement: `route() where resource.attributes["attr"] == "ecorp"`,
 					},
 				},
 			},
 			want: Config{
 				Table: []RoutingTableItem{
 					{
-						Exporters:  []string{"otlp"},
-						Expression: `route() where resource.attributes["attr"] == "acme"`,
+						Exporters: []string{"otlp"},
+						Statement: `route() where resource.attributes["attr"] == "acme"`,
 					},
 					{
-						Exporters:  []string{"otlp/2"},
-						Expression: `route() where resource.attributes["attr"] == "ecorp"`,
+						Exporters: []string{"otlp/2"},
+						Statement: `route() where resource.attributes["attr"] == "ecorp"`,
 					},
 				},
 			},

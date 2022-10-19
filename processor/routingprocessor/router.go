@@ -61,8 +61,8 @@ func newRouter[E component.Exporter, K any](
 }
 
 type routingItem[E component.Exporter, K any] struct {
-	exporters  []E
-	expression *ottl.Statement[K]
+	exporters []E
+	statement *ottl.Statement[K]
 }
 
 func (r *router[E, K]) registerExporters(available map[config.ComponentID]component.Exporter) error {
@@ -102,14 +102,14 @@ func (r *router[E, K]) registerDefaultExporters(available map[config.ComponentID
 // available exporters map to check if they were available.
 func (r *router[E, K]) registerRouteExporters(available map[config.ComponentID]component.Exporter) error {
 	for _, item := range r.table {
-		e, err := r.routingExpression(item)
+		statement, err := r.getStatementFrom(item)
 		if err != nil {
 			return err
 		}
 
 		route, ok := r.routes[key(item)]
 		if !ok {
-			route.expression = e
+			route.statement = statement
 		}
 
 		for _, name := range item.Exporters {
@@ -127,29 +127,29 @@ func (r *router[E, K]) registerRouteExporters(available map[config.ComponentID]c
 	return nil
 }
 
-// routingExpression builds a routing OTTL expressions from provided
+// getStatementFrom builds a routing OTTL statements from provided
 // routing table entry configuration. If routing table entry configuration
-// does not contain a OTTL expressions then nil is returned.
-func (r *router[E, K]) routingExpression(item RoutingTableItem) (*ottl.Statement[K], error) {
-	var e *ottl.Statement[K]
-	if item.Expression != "" {
-		queries, err := r.parser.ParseStatements([]string{item.Expression})
+// does not contain a OTTL statement then nil is returned.
+func (r *router[E, K]) getStatementFrom(item RoutingTableItem) (*ottl.Statement[K], error) {
+	var statement *ottl.Statement[K]
+	if item.Statement != "" {
+		statements, err := r.parser.ParseStatements([]string{item.Statement})
 		if err != nil {
-			return e, err
+			return statement, err
 		}
-		if len(queries) != 1 {
-			return e, errors.New("more than one expression specified")
+		if len(statements) != 1 {
+			return statement, errors.New("more than one statement specified")
 		}
-		e = queries[0]
+		statement = statements[0]
 	}
-	return e, nil
+	return statement, nil
 }
 
 func key(entry RoutingTableItem) string {
 	if entry.Value != "" {
 		return entry.Value
 	}
-	return entry.Expression
+	return entry.Statement
 }
 
 // extractExporter returns an exporter for the given name (type/name) and type

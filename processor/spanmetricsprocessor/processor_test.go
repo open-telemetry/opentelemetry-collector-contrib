@@ -622,6 +622,7 @@ func initSpan(span span, s ptrace.Span) {
 	now := time.Now()
 	s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
 	s.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(sampleLatencyDuration)))
+
 	s.Attributes().PutStr(stringAttrName, "stringAttrValue")
 	s.Attributes().PutInt(intAttrName, 99)
 	s.Attributes().PutDouble(doubleAttrName, 99.99)
@@ -630,6 +631,7 @@ func initSpan(span span, s ptrace.Span) {
 	s.Attributes().PutEmptyMap(mapAttrName)
 	s.Attributes().PutEmptySlice(arrayAttrName)
 	s.SetTraceID(pcommon.TraceID([16]byte{byte(42)}))
+	s.SetSpanID(pcommon.SpanID([8]byte{byte(42)}))
 }
 
 func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExporter, component.TracesExporter) {
@@ -841,21 +843,23 @@ func TestSetLatencyExemplars(t *testing.T) {
 	// ----- conditions -------------------------------------------------------
 	traces := buildSampleTrace()
 	traceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
+	spanID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SpanID()
 	exemplarSlice := pmetric.NewExemplarSlice()
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	value := float64(42)
 
-	ed := []exemplarData{{traceID: traceID, value: value}}
+	ed := []exemplarData{{traceID: traceID, spanID: spanID, value: value}}
 
 	// ----- call -------------------------------------------------------------
 	setLatencyExemplars(ed, timestamp, exemplarSlice)
 
 	// ----- verify -----------------------------------------------------------
-	traceIDValue, exist := exemplarSlice.At(0).FilteredAttributes().Get(traceIDKey)
+	traceIDValue := exemplarSlice.At(0).TraceID()
+	spanIDValue := exemplarSlice.At(0).SpanID()
 
 	assert.NotEmpty(t, exemplarSlice)
-	assert.True(t, exist)
-	assert.Equal(t, traceIDValue.AsString(), traceID.HexString())
+	assert.Equal(t, traceIDValue, traceID)
+	assert.Equal(t, spanIDValue, spanID)
 	assert.Equal(t, exemplarSlice.At(0).Timestamp(), timestamp)
 	assert.Equal(t, exemplarSlice.At(0).DoubleValue(), value)
 }
@@ -866,18 +870,19 @@ func TestProcessorUpdateLatencyExemplars(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	traces := buildSampleTrace()
 	traceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
+	spanID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SpanID()
 	key := metricKey("metricKey")
 	next := new(consumertest.TracesSink)
 	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
 	value := float64(42)
 
 	// ----- call -------------------------------------------------------------
-	p.updateLatencyExemplars(key, value, traceID)
+	p.updateLatencyExemplars(key, value, traceID, spanID)
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
 	assert.NotEmpty(t, p.latencyExemplarsData[key])
-	assert.Equal(t, p.latencyExemplarsData[key][0], exemplarData{traceID: traceID, value: value})
+	assert.Equal(t, p.latencyExemplarsData[key][0], exemplarData{traceID: traceID, spanID: spanID, value: value})
 }
 
 func TestProcessorResetExemplarData(t *testing.T) {
