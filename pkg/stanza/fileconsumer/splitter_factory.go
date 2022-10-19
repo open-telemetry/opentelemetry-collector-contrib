@@ -101,7 +101,6 @@ type splitterBuilder struct {
 	flusher   *helper.Flusher
 	encoding  encoding.Encoding
 	multiline helper.MultilineConfig
-	splitFunc bufio.SplitFunc
 }
 
 type FactoryOption func(*splitterBuilder)
@@ -110,7 +109,6 @@ func WithFlusher(flusher *helper.Flusher) func(*splitterBuilder) {
 	return func(builder *splitterBuilder) {
 		builder.flusher = flusher
 	}
-
 }
 
 func WithMultiline(multiline helper.MultilineConfig) func(*splitterBuilder) {
