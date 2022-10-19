@@ -382,7 +382,7 @@ func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Reso
 }
 
 func (l *lokiExporter) convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource) (*logproto.Entry, error) {
-	line, err := loki.Encode(lr, res)
+	line, err := loki.EncodeJson(lr, res)
 	if err != nil {
 		return nil, err
 	}

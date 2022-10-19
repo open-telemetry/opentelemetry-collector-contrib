@@ -15,8 +15,10 @@
 package loki // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/go-logfmt/logfmt"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -38,15 +40,15 @@ func exampleLog() (plog.LogRecord, pcommon.Resource) {
 	return buffer, resource
 }
 
-func TestConvertWithStringBody(t *testing.T) {
+func TestEncodeJsonWithStringBody(t *testing.T) {
 	in := `{"body":"Example log","traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resources":{"host.name":"something"}}`
 
-	out, err := Encode(exampleLog())
+	out, err := EncodeJson(exampleLog())
 	assert.NoError(t, err)
 	assert.Equal(t, in, out)
 }
 
-func TestConvertWithMapBody(t *testing.T) {
+func TestEncodeJsonWithMapBody(t *testing.T) {
 	in := `{"body":{"key1":"value","key2":"value"},"traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resources":{"host.name":"something"}}`
 
 	log, resource := exampleLog()
@@ -55,12 +57,12 @@ func TestConvertWithMapBody(t *testing.T) {
 	mapVal.Map().PutStr("key2", "value")
 	mapVal.CopyTo(log.Body())
 
-	out, err := Encode(log, resource)
+	out, err := EncodeJson(log, resource)
 	assert.NoError(t, err)
 	assert.Equal(t, in, out)
 }
 
-func TestSerializeBody(t *testing.T) {
+func TestSerializeComplexBody(t *testing.T) {
 
 	arrayval := pcommon.NewValueSlice()
 	arrayval.Slice().AppendEmpty().SetStr("a")
@@ -83,50 +85,101 @@ func TestSerializeBody(t *testing.T) {
 	bytes.Bytes().FromRaw([]byte(`abc`))
 
 	testcases := []struct {
-		input    pcommon.Value
-		expected []byte
+		input          pcommon.Value
+		expectedJson   []byte
+		expectedLogfmt []byte
 	}{
 		{
 			pcommon.NewValueEmpty(),
+			nil,
 			nil,
 		},
 		{
 			pcommon.NewValueStr("a"),
 			[]byte(`"a"`),
+			[]byte(`a=`),
 		},
 		{
 			pcommon.NewValueInt(1),
 			[]byte(`1`),
+			[]byte(`msg=1`),
 		},
 		{
 			pcommon.NewValueDouble(1.1),
 			[]byte(`1.1`),
+			[]byte(`msg=1.1`),
 		},
 		{
 			pcommon.NewValueBool(true),
 			[]byte(`true`),
+			[]byte(`msg=true`),
 		},
 		{
 			simplemap,
 			[]byte(`{"key":"val"}`),
+			[]byte(`key=val`),
 		},
 		{
 			complexmap,
 			[]byte(`{"keyarr":["a","b"],"keybool":true,"keyempty":null,"keyint":1,"keymap":{"key":"val"},"keynull":null,"keystr":"val"}`),
+			[]byte(`keystr=val keyint=1 keybool=true keyarr_0=a keyarr_1=b keymap_key=val`),
 		},
 		{
 			arrayval,
 			[]byte(`["a","b"]`),
+			[]byte(`body_0=a body_1=b`),
 		},
 		{
 			bytes,
 			[]byte(`"YWJj"`),
+			[]byte(`msg=abc`),
 		},
 	}
 
 	for _, test := range testcases {
-		out, err := serializeBody(test.input)
+		out, err := serializeBodyJson(test.input)
 		assert.NoError(t, err)
-		assert.Equal(t, test.expected, out)
+		assert.Equal(t, test.expectedJson, out)
+
+		keyvals, err := bodyToKeyvals(test.input)
+		fmt.Println("keyvals", fmt.Sprint(keyvals))
+		assert.NoError(t, err)
+		out, err = logfmt.MarshalKeyvals(keyvals...)
+		assert.NoError(t, err)
+		assert.Equal(t, string(test.expectedLogfmt), string(out))
 	}
+}
+
+func TestEncodeLogfmtWithStringBody(t *testing.T) {
+	in := `msg="hello world" traceID=01020304000000000000000000000000 spanID=0506070800000000 severity=error attribute_attr1=1 attribute_attr2=2 resource_host.name=something`
+	log, resource := exampleLog()
+	log.Body().SetStr("msg=\"hello world\"")
+	out, err := EncodeLogfmt(log, resource)
+	assert.NoError(t, err)
+	assert.Equal(t, in, out)
+}
+
+func TestEncodeLogfmtWithMapBody(t *testing.T) {
+	in := `key1=value key2=value traceID=01020304000000000000000000000000 spanID=0506070800000000 severity=error attribute_attr1=1 attribute_attr2=2 resource_host.name=something`
+	log, resource := exampleLog()
+	mapVal := pcommon.NewValueMap()
+	mapVal.Map().PutStr("key1", "value")
+	mapVal.Map().PutStr("key2", "value")
+	mapVal.CopyTo(log.Body())
+	out, err := EncodeLogfmt(log, resource)
+	assert.NoError(t, err)
+	assert.Equal(t, in, out)
+}
+
+func TestEncodeLogfmtWithSliceBody(t *testing.T) {
+	in := `body_0=value body_1=true body_2=123 traceID=01020304000000000000000000000000 spanID=0506070800000000 severity=error attribute_attr1=1 attribute_attr2=2 resource_host.name=something`
+	log, resource := exampleLog()
+	sliceVal := pcommon.NewValueSlice()
+	sliceVal.Slice().AppendEmpty().SetStr("value")
+	sliceVal.Slice().AppendEmpty().SetBool(true)
+	sliceVal.Slice().AppendEmpty().SetInt(123)
+	sliceVal.CopyTo(log.Body())
+	out, err := EncodeLogfmt(log, resource)
+	assert.NoError(t, err)
+	assert.Equal(t, in, out)
 }
