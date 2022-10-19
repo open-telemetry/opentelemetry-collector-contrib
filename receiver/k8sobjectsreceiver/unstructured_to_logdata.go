@@ -45,7 +45,7 @@ func unstructuredListToLogData(event *unstructured.UnstructuredList) plog.Logs {
 			rl := resourceLogs.AppendEmpty()
 			resourceAttrs := rl.Resource().Attributes()
 			if namespace := e.GetNamespace(); namespace != "" {
-				resourceAttrs.PutString(semconv.AttributeK8SNamespaceName, namespace)
+				resourceAttrs.PutStr(semconv.AttributeK8SNamespaceName, namespace)
 			}
 			sl := rl.ScopeLogs().AppendEmpty()
 			logSlice = sl.LogRecords()
@@ -55,8 +55,8 @@ func unstructuredListToLogData(event *unstructured.UnstructuredList) plog.Logs {
 
 		attrs := record.Attributes()
 		attrs.EnsureCapacity(2)
-		attrs.PutString("event.domain", "k8s")
-		attrs.PutString("event.name", e.GetKind())
+		attrs.PutStr("event.domain", "k8s")
+		attrs.PutStr("event.name", e.GetKind())
 
 		dest := record.Body()
 		destMap := dest.SetEmptyMap()
