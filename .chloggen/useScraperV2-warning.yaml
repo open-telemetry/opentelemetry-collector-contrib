@@ -1,0 +1,4 @@
+change_type: enhancement
+component: dockerstatsreceiver
+note: Log warning when using ScraperV1, and add documentation for migrating from V1 to V2.
+issues: [9794, 14968]
