@@ -240,8 +240,7 @@ func accessMetricType() ottl.StandardGetSetter[TransformContext] {
 			return int64(ctx.GetMetric().Type())
 		},
 		Setter: func(ctx TransformContext, val interface{}) {
-			// TODO Implement methods so correctly convert data types.
-			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10130
+			fmt.Errorf("setting metric type is not allowed")
 		},
 	}
 }
