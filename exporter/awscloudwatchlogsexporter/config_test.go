@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
@@ -84,6 +85,10 @@ func TestLoadConfig(t *testing.T) {
 			id:           config.NewComponentIDWithName(typeStr, "invalid_required_field_group"),
 			errorMessage: "'log_group_name' must be set",
 		},
+		{
+			id:           config.NewComponentIDWithName(typeStr, "invalid_queue_setting"),
+			errorMessage: `'sending_queue' has invalid keys: enabled, num_consumers`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -93,10 +98,11 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalExporter(sub, cfg))
+			err = config.UnmarshalExporter(sub, cfg)
 
 			if tt.expected == nil {
-				assert.EqualError(t, cfg.Validate(), tt.errorMessage)
+				err = multierr.Append(err, cfg.Validate())
+				assert.ErrorContains(t, err, tt.errorMessage)
 				return
 			}
 			assert.NoError(t, cfg.Validate())
