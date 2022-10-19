@@ -48,6 +48,7 @@ func TestScrape(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 	type testCase struct {
 		name               string
+		expectPagingFaults bool
 		expectThreadsCount bool
 		mutateScraper      func(*scraper)
 	}
@@ -59,6 +60,10 @@ func TestScrape(t *testing.T) {
 			name:               "With threads count",
 			expectThreadsCount: true,
 		},
+		{
+			name:               "With page faults",
+			expectPagingFaults: true,
+		},
 	}
 
 	const createTime = 100
@@ -67,6 +72,9 @@ func TestScrape(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			metricsConfig := metadata.DefaultMetricsSettings()
+			if test.expectPagingFaults {
+				metricsConfig.ProcessPagingFaults.Enabled = true
+			}
 			if test.expectThreadsCount {
 				metricsConfig.ProcessThreads.Enabled = true
 			}
@@ -101,7 +109,7 @@ func TestScrape(t *testing.T) {
 			assertCPUTimeMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			assertMemoryUsageMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			assertOldDiskIOMetricValid(t, md.ResourceMetrics(), expectedStartTime)
-			if runtime.GOOS == "linux" {
+			if test.expectPagingFaults && runtime.GOOS == "linux" {
 				assertPagingMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			}
 			if test.expectThreadsCount {

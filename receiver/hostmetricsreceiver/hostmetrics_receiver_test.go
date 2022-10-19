@@ -73,10 +73,6 @@ var resourceMetrics = []string{
 	"process.disk.io",
 }
 
-var osSpecificResourceMetrics = map[string][]string{
-	"linux": {"process.paging.faults"},
-}
-
 var systemSpecificMetrics = map[string][]string{
 	"linux":   {"system.disk.merged", "system.disk.weighted_io_time", "system.filesystem.inodes.usage", "system.paging.faults", "system.processes.created", "system.processes.count"},
 	"darwin":  {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.count"},
@@ -182,7 +178,6 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 
 	var expectedResourceMetrics []string
 	expectedResourceMetrics = append(expectedResourceMetrics, resourceMetrics...)
-	expectedResourceMetrics = append(expectedResourceMetrics, osSpecificResourceMetrics[runtime.GOOS]...)
 	assert.Equal(t, len(expectedResourceMetrics), len(returnedResourceMetrics))
 	for _, expected := range expectedResourceMetrics {
 		assert.Contains(t, returnedResourceMetrics, expected)
