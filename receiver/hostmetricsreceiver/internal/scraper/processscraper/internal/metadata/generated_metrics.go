@@ -41,7 +41,7 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		ProcessPagingFaults: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ProcessThreads: MetricSettings{
 			Enabled: false,

@@ -235,6 +235,10 @@ func (s *scraper) scrapeAndAppendDiskIOMetric(now pcommon.Timestamp, handle proc
 }
 
 func (s *scraper) scrapeAndAppendPagingMetric(now pcommon.Timestamp, handle processHandle) error {
+	if !s.config.Metrics.ProcessPagingFaults.Enabled {
+		return nil
+	}
+
 	pageFaultsStat, err := handle.PageFaults()
 	if err != nil {
 		return err

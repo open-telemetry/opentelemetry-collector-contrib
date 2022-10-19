@@ -91,7 +91,7 @@ metrics:
     attributes: [direction]
 
   process.paging.faults:
-    enabled: true
+    enabled: false
     description: Number of page faults the process has made. This metric is only available on Linux.
     unit: "{faults}"
     sum:
