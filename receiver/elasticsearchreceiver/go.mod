@@ -10,6 +10,7 @@ require (
 )
 
 require (
+	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/go-version v1.6.0
 	github.com/testcontainers/testcontainers-go v0.14.0
 )
