@@ -263,6 +263,13 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 				replayLag:    700,
 				writeLag:     800,
 			},
+			{
+				clientAddr:   "nulls",
+				pendingBytes: -1,
+				flushLag:     -1,
+				replayLag:    -1,
+				writeLag:     -1,
+			},
 		}, nil)
 	} else {
 		table1 := "public.table1"
