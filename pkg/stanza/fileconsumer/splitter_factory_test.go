@@ -70,7 +70,7 @@ func Test_multilineSplitterFactory_Build(t *testing.T) {
 			enc, _ := tt.fields.EncodingConfig.Build()
 			factory := &multilineSplitterFactory{
 				Encoding:  enc.Encoding,
-				Flusher:   tt.fields.Flusher.Build(),
+				Flusher:   tt.fields.Flusher,
 				Multiline: tt.fields.Multiline,
 			}
 			got, err := factory.Build(tt.args.maxLogSize)
@@ -88,7 +88,6 @@ func Test_multilineSplitterFactory_Build(t *testing.T) {
 func Test_newMultilineSplitterFactory(t *testing.T) {
 	enc, _ := helper.NewEncodingConfig().Build()
 	flusherConfig := helper.NewFlusherConfig()
-	flusher := flusherConfig.Build()
-	splitter := newMultilineSplitterFactory(enc.Encoding, flusher, helper.NewMultilineConfig())
+	splitter := newMultilineSplitterFactory(enc.Encoding, flusherConfig, helper.NewMultilineConfig())
 	assert.NotNil(t, splitter)
 }

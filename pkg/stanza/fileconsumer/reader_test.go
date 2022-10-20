@@ -102,7 +102,6 @@ func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 	emitChan := make(chan *emitParams, 100)
 	enc, _ := helper.NewEncodingConfig().Build()
 	flusherConfig := helper.NewFlusherConfig()
-	flusher := flusherConfig.Build()
 	return &readerFactory{
 		SugaredLogger: testutil.Logger(t),
 		readerConfig: &readerConfig{
@@ -114,7 +113,7 @@ func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 		},
 		fromBeginning: true,
 		splitterFactory: newMultilineSplitterFactory(
-			enc.Encoding, flusher, helper.NewMultilineConfig()),
+			enc.Encoding, flusherConfig, helper.NewMultilineConfig()),
 		encodingConfig: helper.NewEncodingConfig(),
 	}, emitChan
 }
