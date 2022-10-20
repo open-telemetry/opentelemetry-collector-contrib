@@ -36,7 +36,7 @@ extensions:
     token: "somerandomtoken"
     filename: "file-containing.token"
   bearertokenauth/withscheme:
-    scheme: "Scheme"
+    scheme: "Bearer"
     token: "randomtoken"
 
 receivers:
