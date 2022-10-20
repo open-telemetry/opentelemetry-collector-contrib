@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
@@ -48,7 +49,20 @@ func newNextExporter(config *Config, settings component.TelemetrySettings) *next
 }
 
 func (l *nextLokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
-	pushReq, report := loki.LogsToLoki(ld)
+	requests := loki.LogsToLokiRequests(ld)
+
+	var errs error
+	for tenant, request := range requests {
+		err := l.sendPushRequest(ctx, tenant, request, ld)
+		errs = multierr.Append(errs, err)
+	}
+
+	return errs
+}
+
+func (l *nextLokiExporter) sendPushRequest(ctx context.Context, tenant string, request loki.PushRequest, ld plog.Logs) error {
+	pushReq := request.PushRequest
+	report := request.Report
 	if len(pushReq.Streams) == 0 {
 		return consumererror.NewPermanent(fmt.Errorf("failed to transform logs into Loki log streams"))
 	}
@@ -74,6 +88,9 @@ func (l *nextLokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error 
 		req.Header.Set(k, v)
 	}
 	req.Header.Set("Content-Type", "application/x-protobuf")
+	if len(tenant) > 0 {
+		req.Header.Set("X-Scope-OrgID", tenant)
+	}
 
 	resp, err := l.client.Do(req)
 	if err != nil {

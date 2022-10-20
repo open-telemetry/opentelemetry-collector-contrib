@@ -133,6 +133,35 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			},
 		},
 		{
+			name: "tenant hint attribute is not found in resource and logs attributes",
+			logs: func() plog.Logs {
+				logs := plog.NewLogs()
+				rl := logs.ResourceLogs().AppendEmpty()
+
+				sl := rl.ScopeLogs().AppendEmpty()
+				logRecord := sl.LogRecords().AppendEmpty()
+				logRecord.Attributes().PutStr(hintTenant, "tenant.id")
+				logRecord.Attributes().PutInt("http.status", 200)
+
+				return logs
+			}(),
+			expected: map[string]PushRequest{
+				"": {
+					PushRequest: &logproto.PushRequest{
+						Streams: []logproto.Stream{
+							{
+								Labels: `{exporter="OTLP"}`,
+								Entries: []logproto.Entry{
+									{
+										Line: `{"attributes":{"http.status":200}}`,
+									},
+								}},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "use tenant resource attributes if both logs and resource attributes provided",
 			logs: func() plog.Logs {
 				logs := plog.NewLogs()
