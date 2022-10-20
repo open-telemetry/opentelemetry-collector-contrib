@@ -28,11 +28,12 @@ func Test_replacePattern(t *testing.T) {
 	input := pcommon.NewValueStr("application passwd=sensitivedtata otherarg=notsensitive key1 key2")
 
 	target := &ottl.StandardGetSetter[pcommon.Value]{
-		Getter: func(ctx pcommon.Value) interface{} {
-			return ctx.Str()
+		Getter: func(ctx pcommon.Value) (interface{}, error) {
+			return ctx.Str(), nil
 		},
-		Setter: func(ctx pcommon.Value, val interface{}) {
+		Setter: func(ctx pcommon.Value, val interface{}) error {
 			ctx.SetStr(val.(string))
+			return nil
 		},
 	}
 
@@ -77,7 +78,9 @@ func Test_replacePattern(t *testing.T) {
 
 			exprFunc, err := ReplacePattern(tt.target, tt.pattern, tt.replacement)
 			require.NoError(t, err)
-			assert.Nil(t, exprFunc(scenarioValue))
+
+			result, _ := exprFunc(scenarioValue)
+			assert.Nil(t, result)
 
 			expected := pcommon.NewValueStr("")
 			tt.want(expected)
@@ -90,43 +93,50 @@ func Test_replacePattern(t *testing.T) {
 func Test_replacePattern_bad_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
-			return ctx
+		Getter: func(ctx interface{}) (interface{}, error) {
+			return ctx, nil
 		},
-		Setter: func(ctx interface{}, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
 	exprFunc, err := ReplacePattern[interface{}](target, "regexp", "{replacement}")
 	require.NoError(t, err)
-	assert.Nil(t, exprFunc(input))
+
+	result, _ := exprFunc(input)
+	assert.Nil(t, result)
 	assert.Equal(t, pcommon.NewValueInt(1), input)
 }
 
 func Test_replacePattern_get_nil(t *testing.T) {
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
-			return ctx
+		Getter: func(ctx interface{}) (interface{}, error) {
+			return ctx, nil
 		},
-		Setter: func(ctx interface{}, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
 	exprFunc, err := ReplacePattern[interface{}](target, `nomatch\=[^\s]*(\s?)`, "{anything}")
 	require.NoError(t, err)
-	assert.Nil(t, exprFunc(nil))
+
+	result, _ := exprFunc(nil)
+	assert.Nil(t, result)
 }
 
 func Test_replacePatterns_invalid_pattern(t *testing.T) {
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
+		Getter: func(ctx interface{}) (interface{}, error) {
 			t.Errorf("nothing should be received in this scenario")
-			return nil
+			return nil, nil
 		},
-		Setter: func(ctx interface{}, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 

@@ -265,7 +265,7 @@ func TestScopePathGetSetter(t *testing.T) {
 
 			is := createInstrumentationScope()
 
-			got := accessor.Get(newInstrumentationScopeContext(is))
+			got, _ := accessor.Get(newInstrumentationScopeContext(is))
 			assert.Equal(t, tt.orig, got)
 
 			accessor.Set(newInstrumentationScopeContext(is), tt.newVal)

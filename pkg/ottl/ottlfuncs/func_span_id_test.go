@@ -38,7 +38,8 @@ func Test_spanID(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := SpanID[interface{}](tt.bytes)
 			require.NoError(t, err)
-			assert.Equal(t, tt.want, exprFunc(nil))
+			result, _ := exprFunc(nil)
+			assert.Equal(t, tt.want, result)
 		})
 	}
 }

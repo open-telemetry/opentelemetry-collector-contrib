@@ -46,50 +46,54 @@ func ResourcePathGetSetter[K ResourceContext](path []ottl.Field) (ottl.GetSetter
 
 func accessResource[K ResourceContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx K) interface{} {
-			return ctx.GetResource()
+		Getter: func(ctx K) (interface{}, error) {
+			return ctx.GetResource(), nil
 		},
-		Setter: func(ctx K, val interface{}) {
+		Setter: func(ctx K, val interface{}) error {
 			if newRes, ok := val.(pcommon.Resource); ok {
 				newRes.CopyTo(ctx.GetResource())
 			}
+			return nil
 		},
 	}
 }
 
 func accessResourceAttributes[K ResourceContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx K) interface{} {
-			return ctx.GetResource().Attributes()
+		Getter: func(ctx K) (interface{}, error) {
+			return ctx.GetResource().Attributes(), nil
 		},
-		Setter: func(ctx K, val interface{}) {
+		Setter: func(ctx K, val interface{}) error {
 			if attrs, ok := val.(pcommon.Map); ok {
 				attrs.CopyTo(ctx.GetResource().Attributes())
 			}
+			return nil
 		},
 	}
 }
 
 func accessResourceAttributesKey[K ResourceContext](mapKey *string) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx K) interface{} {
-			return GetMapValue(ctx.GetResource().Attributes(), *mapKey)
+		Getter: func(ctx K) (interface{}, error) {
+			return GetMapValue(ctx.GetResource().Attributes(), *mapKey), nil
 		},
-		Setter: func(ctx K, val interface{}) {
+		Setter: func(ctx K, val interface{}) error {
 			SetMapValue(ctx.GetResource().Attributes(), *mapKey, val)
+			return nil
 		},
 	}
 }
 
 func accessResourceDroppedAttributesCount[K ResourceContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx K) interface{} {
-			return int64(ctx.GetResource().DroppedAttributesCount())
+		Getter: func(ctx K) (interface{}, error) {
+			return int64(ctx.GetResource().DroppedAttributesCount()), nil
 		},
-		Setter: func(ctx K, val interface{}) {
+		Setter: func(ctx K, val interface{}) error {
 			if i, ok := val.(int64); ok {
 				ctx.GetResource().SetDroppedAttributesCount(uint32(i))
 			}
+			return nil
 		},
 	}
 }

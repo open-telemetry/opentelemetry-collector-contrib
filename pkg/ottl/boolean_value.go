@@ -70,8 +70,8 @@ func (p *Parser[K]) newComparisonEvaluator(comparison *comparison) (boolExpressi
 
 	// The parser ensures that we'll never get an invalid comparison.Op, so we don't have to check that case.
 	return func(ctx K) bool {
-		a := left.Get(ctx)
-		b := right.Get(ctx)
+		a, _ := left.Get(ctx)
+		b, _ := right.Get(ctx)
 		return p.compare(a, b, comparison.Op)
 	}, nil
 

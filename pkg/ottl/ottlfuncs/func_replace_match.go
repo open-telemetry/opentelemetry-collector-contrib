@@ -27,16 +27,16 @@ func ReplaceMatch[K any](target ottl.GetSetter[K], pattern string, replacement s
 	if err != nil {
 		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern: %w", err)
 	}
-	return func(ctx K) interface{} {
-		val := target.Get(ctx)
+	return func(ctx K) (interface{}, error) {
+		val, _ := target.Get(ctx)
 		if val == nil {
-			return nil
+			return nil, nil
 		}
 		if valStr, ok := val.(string); ok {
 			if glob.Match(valStr) {
 				target.Set(ctx, replacement)
 			}
 		}
-		return nil
+		return nil, nil
 	}, nil
 }

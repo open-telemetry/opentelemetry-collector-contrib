@@ -21,15 +21,15 @@ import (
 )
 
 func DeleteKey[K any](target ottl.Getter[K], key string) (ottl.ExprFunc[K], error) {
-	return func(ctx K) interface{} {
-		val := target.Get(ctx)
+	return func(ctx K) (interface{}, error) {
+		val, _ := target.Get(ctx)
 		if val == nil {
-			return nil
+			return nil, nil
 		}
 
 		if attrs, ok := val.(pcommon.Map); ok {
 			attrs.Remove(key)
 		}
-		return nil
+		return nil, nil
 	}, nil
 }

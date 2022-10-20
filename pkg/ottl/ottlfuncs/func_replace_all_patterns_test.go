@@ -31,11 +31,12 @@ func Test_replaceAllPatterns(t *testing.T) {
 	input.PutStr("test3", "goodbye world1 and world2")
 
 	target := &ottl.StandardGetSetter[pcommon.Map]{
-		Getter: func(ctx pcommon.Map) interface{} {
-			return ctx
+		Getter: func(ctx pcommon.Map) (interface{}, error) {
+			return ctx, nil
 		},
-		Setter: func(ctx pcommon.Map, val interface{}) {
+		Setter: func(ctx pcommon.Map, val interface{}) error {
 			val.(pcommon.Map).CopyTo(ctx)
+			return nil
 		},
 	}
 
@@ -144,11 +145,12 @@ func Test_replaceAllPatterns_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
 
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
-			return ctx
+		Getter: func(ctx interface{}) (interface{}, error) {
+			return ctx, nil
 		},
-		Setter: func(ctx interface{}, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
@@ -162,11 +164,12 @@ func Test_replaceAllPatterns_bad_input(t *testing.T) {
 
 func Test_replaceAllPatterns_get_nil(t *testing.T) {
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
-			return ctx
+		Getter: func(ctx interface{}) (interface{}, error) {
+			return ctx, nil
 		},
-		Setter: func(ctx interface{}, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
@@ -177,12 +180,13 @@ func Test_replaceAllPatterns_get_nil(t *testing.T) {
 
 func Test_replaceAllPatterns_invalid_pattern(t *testing.T) {
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
+		Getter: func(ctx interface{}) (interface{}, error) {
 			t.Errorf("nothing should be received in this scenario")
-			return nil
+			return nil, nil
 		},
-		Setter: func(ctx interface{}, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
@@ -195,12 +199,13 @@ func Test_replaceAllPatterns_invalid_pattern(t *testing.T) {
 
 func Test_replaceAllPatterns_invalid_model(t *testing.T) {
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
+		Getter: func(ctx interface{}) (interface{}, error) {
 			t.Errorf("nothing should be received in this scenario")
-			return nil
+			return nil, nil
 		},
-		Setter: func(ctx interface{}, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 

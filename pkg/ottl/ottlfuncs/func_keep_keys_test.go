@@ -31,11 +31,12 @@ func Test_keepKeys(t *testing.T) {
 	input.PutBool("test3", true)
 
 	target := &ottl.StandardGetSetter[pcommon.Map]{
-		Getter: func(ctx pcommon.Map) interface{} {
-			return ctx
+		Getter: func(ctx pcommon.Map) (interface{}, error) {
+			return ctx, nil
 		},
-		Setter: func(ctx pcommon.Map, val interface{}) {
+		Setter: func(ctx pcommon.Map, val interface{}) error {
 			val.(pcommon.Map).CopyTo(ctx)
+			return nil
 		},
 	}
 
@@ -101,11 +102,12 @@ func Test_keepKeys(t *testing.T) {
 func Test_keepKeys_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
-			return ctx
+		Getter: func(ctx interface{}) (interface{}, error) {
+			return ctx, nil
 		},
-		Setter: func(ctx interface{}, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
@@ -120,11 +122,12 @@ func Test_keepKeys_bad_input(t *testing.T) {
 
 func Test_keepKeys_get_nil(t *testing.T) {
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
-			return ctx
+		Getter: func(ctx interface{}) (interface{}, error) {
+			return ctx, nil
 		},
-		Setter: func(ctx interface{}, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
@@ -132,5 +135,6 @@ func Test_keepKeys_get_nil(t *testing.T) {
 
 	exprFunc, err := KeepKeys[interface{}](target, keys)
 	require.NoError(t, err)
-	assert.Nil(t, exprFunc(nil))
+	result, _ := exprFunc(nil)
+	assert.Nil(t, result)
 }

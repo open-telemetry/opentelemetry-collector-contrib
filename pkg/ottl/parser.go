@@ -41,7 +41,7 @@ func (s *Statement[K]) Execute(ctx K) (any, bool) {
 	condition := s.condition(ctx)
 	var result any
 	if condition {
-		result = s.function(ctx)
+		result, _ = s.function(ctx)
 	}
 	return result, condition
 }

@@ -28,8 +28,9 @@ func Test_set(t *testing.T) {
 	input := pcommon.NewValueStr("original name")
 
 	target := &ottl.StandardGetSetter[pcommon.Value]{
-		Setter: func(ctx pcommon.Value, val interface{}) {
+		Setter: func(ctx pcommon.Value, val interface{}) error {
 			ctx.SetStr(val.(string))
+			return nil
 		},
 	}
 
@@ -43,8 +44,8 @@ func Test_set(t *testing.T) {
 			name:   "set name",
 			setter: target,
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx pcommon.Value) interface{} {
-					return "new name"
+				Getter: func(ctx pcommon.Value) (interface{}, error) {
+					return "new name", nil
 				},
 			},
 			want: func(expectedValue pcommon.Value) {
@@ -55,8 +56,8 @@ func Test_set(t *testing.T) {
 			name:   "set nil value",
 			setter: target,
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx pcommon.Value) interface{} {
-					return nil
+				Getter: func(ctx pcommon.Value) (interface{}, error) {
+					return nil, nil
 				},
 			},
 			want: func(expectedValue pcommon.Value) {
@@ -70,7 +71,9 @@ func Test_set(t *testing.T) {
 
 			exprFunc, err := Set(tt.setter, tt.getter)
 			require.NoError(t, err)
-			assert.Nil(t, exprFunc(scenarioValue))
+
+			result, _ := exprFunc(scenarioValue)
+			assert.Nil(t, result)
 
 			expected := pcommon.NewValueStr("")
 			tt.want(expected)
@@ -82,18 +85,21 @@ func Test_set(t *testing.T) {
 
 func Test_set_get_nil(t *testing.T) {
 	setter := &ottl.StandardGetSetter[interface{}]{
-		Setter: func(ctx interface{}, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
 	getter := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
-			return ctx
+		Getter: func(ctx interface{}) (interface{}, error) {
+			return ctx, nil
 		},
 	}
 
 	exprFunc, err := Set[interface{}](setter, getter)
 	require.NoError(t, err)
-	assert.Nil(t, exprFunc(nil))
+
+	result, _ := exprFunc(nil)
+	assert.Nil(t, result)
 }

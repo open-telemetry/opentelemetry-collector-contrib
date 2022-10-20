@@ -37,19 +37,19 @@ func Limit[K any](target ottl.GetSetter[K], limit int64, priorityKeys []string) 
 		keep[key] = struct{}{}
 	}
 
-	return func(ctx K) interface{} {
-		val := target.Get(ctx)
+	return func(ctx K) (interface{}, error) {
+		val, _ := target.Get(ctx)
 		if val == nil {
-			return nil
+			return nil, nil
 		}
 
 		attrs, ok := val.(pcommon.Map)
 		if !ok {
-			return nil
+			return nil, nil
 		}
 
 		if int64(attrs.Len()) <= limit {
-			return nil
+			return nil, nil
 		}
 
 		count := int64(0)
@@ -71,6 +71,6 @@ func Limit[K any](target ottl.GetSetter[K], limit int64, priorityKeys []string) 
 		})
 		// TODO: Write log when limiting is performed
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9730
-		return nil
+		return nil, nil
 	}, nil
 }

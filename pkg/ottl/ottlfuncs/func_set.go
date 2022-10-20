@@ -17,13 +17,13 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
 func Set[K any](target ottl.Setter[K], value ottl.Getter[K]) (ottl.ExprFunc[K], error) {
-	return func(ctx K) interface{} {
-		val := value.Get(ctx)
+	return func(ctx K) (interface{}, error) {
+		val, _ := value.Get(ctx)
 
 		// No fields currently support `null` as a valid type.
 		if val != nil {
 			target.Set(ctx, val)
 		}
-		return nil
+		return nil, nil
 	}, nil
 }

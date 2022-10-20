@@ -26,10 +26,10 @@ func KeepKeys[K any](target ottl.GetSetter[K], keys []string) (ottl.ExprFunc[K],
 		keySet[key] = struct{}{}
 	}
 
-	return func(ctx K) interface{} {
-		val := target.Get(ctx)
+	return func(ctx K) (interface{}, error) {
+		val, _ := target.Get(ctx)
 		if val == nil {
-			return nil
+			return nil, nil
 		}
 
 		if attrs, ok := val.(pcommon.Map); ok {
@@ -41,6 +41,6 @@ func KeepKeys[K any](target ottl.GetSetter[K], keys []string) (ottl.ExprFunc[K],
 				attrs.Clear()
 			}
 		}
-		return nil
+		return nil, nil
 	}, nil
 }

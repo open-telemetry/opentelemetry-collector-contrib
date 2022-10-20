@@ -22,12 +22,13 @@ import (
 )
 
 func Concat[K any](vals []ottl.Getter[K], delimiter string) (ottl.ExprFunc[K], error) {
-	return func(ctx K) interface{} {
+	return func(ctx K) (interface{}, error) {
 		builder := strings.Builder{}
 		for i, rv := range vals {
-			switch val := rv.Get(ctx).(type) {
+			val, _ := rv.Get(ctx)
+			switch val.(type) {
 			case string:
-				builder.WriteString(val)
+				builder.WriteString(val.(string))
 			case []byte:
 				builder.WriteString(fmt.Sprintf("%x", val))
 			case int64:
@@ -44,6 +45,6 @@ func Concat[K any](vals []ottl.Getter[K], delimiter string) (ottl.ExprFunc[K], e
 				builder.WriteString(delimiter)
 			}
 		}
-		return builder.String()
+		return builder.String(), nil
 	}, nil
 }

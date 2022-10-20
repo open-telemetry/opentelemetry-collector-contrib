@@ -31,8 +31,8 @@ func Test_deleteMatchingKeys(t *testing.T) {
 	input.PutBool("test3", true)
 
 	target := &ottl.StandardGetSetter[pcommon.Map]{
-		Getter: func(ctx pcommon.Map) interface{} {
-			return ctx
+		Getter: func(ctx pcommon.Map) (interface{}, error) {
+			return ctx, nil
 		},
 	}
 
@@ -89,8 +89,8 @@ func Test_deleteMatchingKeys(t *testing.T) {
 func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
-			return ctx
+		Getter: func(ctx interface{}) (interface{}, error) {
+			return ctx, nil
 		},
 	}
 
@@ -103,21 +103,22 @@ func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 
 func Test_deleteMatchingKeys_get_nil(t *testing.T) {
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
-			return ctx
+		Getter: func(ctx interface{}) (interface{}, error) {
+			return ctx, nil
 		},
 	}
 
 	exprFunc, err := DeleteMatchingKeys[interface{}](target, "anything")
 	require.NoError(t, err)
-	assert.Nil(t, exprFunc(nil))
+	result, _ := exprFunc(nil)
+	assert.Nil(t, result)
 }
 
 func Test_deleteMatchingKeys_invalid_pattern(t *testing.T) {
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
+		Getter: func(ctx interface{}) (interface{}, error) {
 			t.Errorf("nothing should be received in this scenario")
-			return nil
+			return nil, nil
 		},
 	}
 
