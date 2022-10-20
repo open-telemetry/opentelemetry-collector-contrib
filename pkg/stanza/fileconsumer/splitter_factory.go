@@ -39,7 +39,7 @@ func NewFactory(opts ...FactoryOption) splitterFactory {
 
 type multilineSplitterFactory struct {
 	Encoding  encoding.Encoding
-	Flusher   *helper.Flusher
+	Flusher   helper.FlusherConfig
 	Multiline helper.MultilineConfig
 }
 
@@ -47,7 +47,7 @@ var _ splitterFactory = (*multilineSplitterFactory)(nil)
 
 func newMultilineSplitterFactory(
 	encoding encoding.Encoding,
-	flusher *helper.Flusher,
+	flusher helper.FlusherConfig,
 	multiline helper.MultilineConfig) *multilineSplitterFactory {
 	return &multilineSplitterFactory{
 		Encoding:  encoding,
@@ -59,7 +59,8 @@ func newMultilineSplitterFactory(
 
 // Build builds Multiline Splitter struct
 func (factory *multilineSplitterFactory) Build(maxLogSize int) (bufio.SplitFunc, error) {
-	splitter, err := factory.Multiline.Build(factory.Encoding, false, factory.Flusher, maxLogSize)
+	flusher := factory.Flusher.Build()
+	splitter, err := factory.Multiline.Build(factory.Encoding, false, flusher, maxLogSize)
 	if err != nil {
 		return nil, err
 	}
@@ -68,14 +69,14 @@ func (factory *multilineSplitterFactory) Build(maxLogSize int) (bufio.SplitFunc,
 
 type defaultSplitterFactory struct {
 	Encoding encoding.Encoding
-	Flusher  *helper.Flusher
+	Flusher  helper.FlusherConfig
 }
 
 var _ splitterFactory = (*defaultSplitterFactory)(nil)
 
 func newDefaultSplitterFactory(
 	encoding encoding.Encoding,
-	flusher *helper.Flusher) *defaultSplitterFactory {
+	flusher helper.FlusherConfig) *defaultSplitterFactory {
 	return &defaultSplitterFactory{
 		Encoding: encoding,
 		Flusher:  flusher,
@@ -91,14 +92,15 @@ func (factory *defaultSplitterFactory) Build(maxLogSize int) (bufio.SplitFunc, e
 	if err != nil {
 		return nil, err
 	}
-	if factory.Flusher != nil {
-		splitFunc = factory.Flusher.SplitFunc(splitFunc)
+	flusher := factory.Flusher.Build()
+	if flusher != nil {
+		splitFunc = flusher.SplitFunc(splitFunc)
 	}
 	return splitFunc, nil
 }
 
 type splitterBuilder struct {
-	flusher   *helper.Flusher
+	flusher   helper.FlusherConfig
 	encoding  encoding.Encoding
 	multiline helper.MultilineConfig
 }
@@ -106,9 +108,8 @@ type splitterBuilder struct {
 type FactoryOption func(*splitterBuilder)
 
 func WithFlusherConfig(flusherConfig helper.FlusherConfig) func(*splitterBuilder) {
-	flusher := flusherConfig.Build()
 	return func(builder *splitterBuilder) {
-		builder.flusher = flusher
+		builder.flusher = flusherConfig
 	}
 }
 
