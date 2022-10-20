@@ -22,35 +22,53 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 type Processor struct {
+	contexts   []common.Context
 	statements []*ottl.Statement[ottllogs.TransformContext]
 }
 
-func NewProcessor(statements []string, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
-	ottlp := ottllogs.NewParser(functions, settings)
-	parsedStatements, err := ottlp.ParseStatements(statements)
+func NewProcessor(statements []string, contextStatements []common.ContextStatements, settings component.TelemetrySettings) (*Processor, error) {
+	if len(statements) > 0 {
+		ottlp := ottllogs.NewParser(Functions(), settings)
+		parsedStatements, err := ottlp.ParseStatements(statements)
+		if err != nil {
+			return nil, err
+		}
+		return &Processor{
+			statements: parsedStatements,
+		}, nil
+	}
+	pc := common.NewLogsParserCollection(Functions(), settings)
+	contexts, err := pc.ParseContextStatements(contextStatements)
 	if err != nil {
 		return nil, err
 	}
 	return &Processor{
-		statements: parsedStatements,
+		contexts: contexts,
 	}, nil
 }
 
 func (p *Processor) ProcessLogs(_ context.Context, td plog.Logs) (plog.Logs, error) {
-	for i := 0; i < td.ResourceLogs().Len(); i++ {
-		rlogs := td.ResourceLogs().At(i)
-		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
-			slogs := rlogs.ScopeLogs().At(j)
-			logs := slogs.LogRecords()
-			for k := 0; k < logs.Len(); k++ {
-				ctx := ottllogs.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
-				for _, statement := range p.statements {
-					statement.Execute(ctx)
+	if len(p.statements) > 0 {
+		for i := 0; i < td.ResourceLogs().Len(); i++ {
+			rlogs := td.ResourceLogs().At(i)
+			for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
+				slogs := rlogs.ScopeLogs().At(j)
+				logs := slogs.LogRecords()
+				for k := 0; k < logs.Len(); k++ {
+					ctx := ottllogs.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
+					for _, statement := range p.statements {
+						statement.Execute(ctx)
+					}
 				}
 			}
+		}
+	} else {
+		for _, contexts := range p.contexts {
+			contexts.ProcessLogs(td)
 		}
 	}
 	return td, nil

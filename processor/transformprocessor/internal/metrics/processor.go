@@ -23,44 +23,62 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 type Processor struct {
+	contexts   []common.Context
 	statements []*ottl.Statement[ottldatapoints.TransformContext]
 }
 
-func NewProcessor(statements []string, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
-	ottlp := ottldatapoints.NewParser(functions, settings)
-	parsedStatements, err := ottlp.ParseStatements(statements)
+func NewProcessor(statements []string, contextStatements []common.ContextStatements, settings component.TelemetrySettings) (*Processor, error) {
+	if len(statements) > 0 {
+		ottlp := ottldatapoints.NewParser(Functions(), settings)
+		parsedStatements, err := ottlp.ParseStatements(statements)
+		if err != nil {
+			return nil, err
+		}
+		return &Processor{
+			statements: parsedStatements,
+		}, nil
+	}
+	pc := common.NewMetricsParserCollection(Functions(), settings)
+	contexts, err := pc.ParseContextStatements(contextStatements)
 	if err != nil {
 		return nil, err
 	}
 	return &Processor{
-		statements: parsedStatements,
+		contexts: contexts,
 	}, nil
 }
 
 func (p *Processor) ProcessMetrics(_ context.Context, td pmetric.Metrics) (pmetric.Metrics, error) {
-	for i := 0; i < td.ResourceMetrics().Len(); i++ {
-		rmetrics := td.ResourceMetrics().At(i)
-		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
-			smetrics := rmetrics.ScopeMetrics().At(j)
-			metrics := smetrics.Metrics()
-			for k := 0; k < metrics.Len(); k++ {
-				metric := metrics.At(k)
-				switch metric.Type() {
-				case pmetric.MetricTypeSum:
-					p.handleNumberDataPoints(metric.Sum().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
-				case pmetric.MetricTypeGauge:
-					p.handleNumberDataPoints(metric.Gauge().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
-				case pmetric.MetricTypeHistogram:
-					p.handleHistogramDataPoints(metric.Histogram().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
-				case pmetric.MetricTypeExponentialHistogram:
-					p.handleExponetialHistogramDataPoints(metric.ExponentialHistogram().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
-				case pmetric.MetricTypeSummary:
-					p.handleSummaryDataPoints(metric.Summary().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
+	if len(p.statements) > 0 {
+		for i := 0; i < td.ResourceMetrics().Len(); i++ {
+			rmetrics := td.ResourceMetrics().At(i)
+			for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
+				smetrics := rmetrics.ScopeMetrics().At(j)
+				metrics := smetrics.Metrics()
+				for k := 0; k < metrics.Len(); k++ {
+					metric := metrics.At(k)
+					switch metric.Type() {
+					case pmetric.MetricTypeSum:
+						p.handleNumberDataPoints(metric.Sum().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
+					case pmetric.MetricTypeGauge:
+						p.handleNumberDataPoints(metric.Gauge().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
+					case pmetric.MetricTypeHistogram:
+						p.handleHistogramDataPoints(metric.Histogram().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
+					case pmetric.MetricTypeExponentialHistogram:
+						p.handleExponetialHistogramDataPoints(metric.ExponentialHistogram().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
+					case pmetric.MetricTypeSummary:
+						p.handleSummaryDataPoints(metric.Summary().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
+					}
 				}
 			}
+		}
+	} else {
+		for _, contexts := range p.contexts {
+			contexts.ProcessMetrics(td)
 		}
 	}
 	return td, nil

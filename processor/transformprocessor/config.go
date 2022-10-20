@@ -15,10 +15,14 @@
 package transformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
@@ -31,6 +35,11 @@ import (
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"`
 
+	TraceStatements  []common.ContextStatements `mapstructure:"trace_statements"`
+	MetricStatements []common.ContextStatements `mapstructure:"metric_statements"`
+	LogStatements    []common.ContextStatements `mapstructure:"log_statements"`
+
+	// Deprecated.  Use TraceStatements, MetricStatements, and LogStatements instead
 	OTTLConfig `mapstructure:",squash"`
 }
 
@@ -47,24 +56,60 @@ type SignalConfig struct {
 var _ config.Processor = (*Config)(nil)
 
 func (c *Config) Validate() error {
+	if (len(c.Traces.Statements) > 0 || len(c.Metrics.Statements) > 0 || len(c.Logs.Statements) > 0) &&
+		(len(c.TraceStatements) > 0 || len(c.MetricStatements) > 0 || len(c.LogStatements) > 0) {
+		return fmt.Errorf("cannot use Traces, Metrics and/or Logs with TraceStatements, MetricStatements and/or LogStatements")
+	}
+
 	var errors error
 
-	ottltracesp := ottltraces.NewParser(traces.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
-	_, err := ottltracesp.ParseStatements(c.Traces.Statements)
-	if err != nil {
-		errors = multierr.Append(errors, err)
+	if len(c.Traces.Statements) > 0 {
+		ottltracesp := ottltraces.NewParser(traces.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+		_, err := ottltracesp.ParseStatements(c.Traces.Statements)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+		}
 	}
 
-	ottlmetricsp := ottldatapoints.NewParser(metrics.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
-	_, err = ottlmetricsp.ParseStatements(c.Metrics.Statements)
-	if err != nil {
-		errors = multierr.Append(errors, err)
+	if len(c.TraceStatements) > 0 {
+		pc := common.NewTracesParserCollection(traces.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+		_, err := pc.ParseContextStatements(c.TraceStatements)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+		}
 	}
 
-	ottllogsp := ottllogs.NewParser(logs.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
-	_, err = ottllogsp.ParseStatements(c.Logs.Statements)
-	if err != nil {
-		errors = multierr.Append(errors, err)
+	if len(c.Metrics.Statements) > 0 {
+		ottlmetricsp := ottldatapoints.NewParser(metrics.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+		_, err := ottlmetricsp.ParseStatements(c.Metrics.Statements)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+		}
 	}
+
+	if len(c.MetricStatements) > 0 {
+		pc := common.NewMetricsParserCollection(metrics.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+		_, err := pc.ParseContextStatements(c.MetricStatements)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+		}
+	}
+
+	if len(c.Logs.Statements) > 0 {
+		ottllogsp := ottllogs.NewParser(logs.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+		_, err := ottllogsp.ParseStatements(c.Logs.Statements)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+		}
+	}
+
+	if len(c.LogStatements) > 0 {
+		pc := common.NewLogsParserCollection(logs.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+		_, err := pc.ParseContextStatements(c.LogStatements)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+		}
+	}
+
 	return errors
 }

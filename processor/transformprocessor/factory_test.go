@@ -18,6 +18,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
@@ -49,6 +51,9 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 				Statements: []string{},
 			},
 		},
+		TraceStatements:  []common.ContextStatements{},
+		MetricStatements: []common.ContextStatements{},
+		LogStatements:    []common.ContextStatements{},
 	})
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }

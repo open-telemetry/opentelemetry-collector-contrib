@@ -18,6 +18,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
@@ -34,6 +36,68 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			id: config.NewComponentIDWithName(typeStr, ""),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				OTTLConfig: OTTLConfig{
+					Traces: SignalConfig{
+						Statements: []string{},
+					},
+					Metrics: SignalConfig{
+						Statements: []string{},
+					},
+					Logs: SignalConfig{
+						Statements: []string{},
+					},
+				},
+				TraceStatements: []common.ContextStatements{
+					{
+						Context: "trace",
+						Statements: []string{
+							`set(name, "bear") where attributes["http.path"] == "/animal"`,
+							`keep_keys(attributes, ["http.method", "http.path"])`,
+						},
+					},
+					{
+						Context: "resource",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+						},
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						Context: "datapoint",
+						Statements: []string{
+							`set(metric.name, "bear") where attributes["http.path"] == "/animal"`,
+							`keep_keys(attributes, ["http.method", "http.path"])`,
+						},
+					},
+					{
+						Context: "resource",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+						},
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						Context: "log",
+						Statements: []string{
+							`set(body, "bear") where attributes["http.path"] == "/animal"`,
+							`keep_keys(attributes, ["http.method", "http.path"])`,
+						},
+					},
+					{
+						Context: "resource",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+						},
+					},
+				},
+			},
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "deprecated_format"),
 			expected: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				OTTLConfig: OTTLConfig{
@@ -56,7 +120,14 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
+				TraceStatements:  []common.ContextStatements{},
+				MetricStatements: []common.ContextStatements{},
+				LogStatements:    []common.ContextStatements{},
 			},
+		},
+		{
+			id:           config.NewComponentIDWithName(typeStr, "using_both_formats"),
+			errorMessage: "cannot use Traces, Metrics and/or Logs with TraceStatements, MetricStatements and/or LogStatements",
 		},
 		{
 			id:           config.NewComponentIDWithName(typeStr, "bad_syntax_trace"),
@@ -66,7 +137,6 @@ func TestLoadConfig(t *testing.T) {
 			id:           config.NewComponentIDWithName(typeStr, "unknown_function_trace"),
 			errorMessage: "undefined function not_a_function",
 		},
-
 		{
 			id:           config.NewComponentIDWithName(typeStr, "bad_syntax_metric"),
 			errorMessage: "1:18: unexpected token \"where\" (expected \")\")",
@@ -82,6 +152,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:           config.NewComponentIDWithName(typeStr, "unknown_function_log"),
 			errorMessage: "undefined function not_a_function",
+		},
+		{
+			id:           config.NewComponentIDWithName(typeStr, "unknown_context"),
+			errorMessage: "context, test, is not a valid context",
 		},
 	}
 	for _, tt := range tests {
