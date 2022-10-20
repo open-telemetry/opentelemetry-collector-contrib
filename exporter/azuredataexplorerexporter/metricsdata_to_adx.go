@@ -241,7 +241,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			}
 		}
 		return adxMetrics
-	case pmetric.MetricTypeNone:
+	case pmetric.MetricTypeEmpty:
 		fallthrough
 	default:
 		logger.Warn(

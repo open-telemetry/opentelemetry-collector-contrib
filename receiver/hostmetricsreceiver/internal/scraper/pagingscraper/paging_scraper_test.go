@@ -32,13 +32,11 @@ import (
 
 func TestScrape(t *testing.T) {
 	type testCase struct {
-		name                                   string
-		config                                 Config
-		expectedStartTime                      pcommon.Timestamp
-		initializationErr                      string
-		expectMetricsWithDirectionAttribute    bool
-		expectMetricsWithoutDirectionAttribute bool
-		mutateScraper                          func(*scraper)
+		name              string
+		config            Config
+		expectedStartTime pcommon.Timestamp
+		initializationErr string
+		mutateScraper     func(*scraper)
 	}
 
 	config := metadata.DefaultMetricsSettings()
@@ -46,19 +44,12 @@ func TestScrape(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			name:                                "Standard",
-			config:                              Config{Metrics: config},
-			expectMetricsWithDirectionAttribute: true,
+			name:   "Standard",
+			config: Config{Metrics: config},
 		},
 		{
-			name:                                   "Standard with direction removed",
-			config:                                 Config{Metrics: config},
-			expectMetricsWithDirectionAttribute:    false,
-			expectMetricsWithoutDirectionAttribute: true,
-			mutateScraper: func(s *scraper) {
-				s.emitMetricsWithDirectionAttribute = false
-				s.emitMetricsWithoutDirectionAttribute = true
-			},
+			name:   "Standard with direction removed",
+			config: Config{Metrics: config},
 		},
 		{
 			name:   "Validate Start Time",
@@ -101,10 +92,6 @@ func TestScrape(t *testing.T) {
 			if runtime.GOOS == "windows" {
 				expectedMetrics = 3
 			}
-			if test.expectMetricsWithoutDirectionAttribute {
-				// in/out are separated into an additional metric
-				expectedMetrics++
-			}
 
 			assert.Equal(t, expectedMetrics, md.MetricCount())
 
@@ -114,15 +101,8 @@ func TestScrape(t *testing.T) {
 				startIndex++
 			}
 
-			if test.expectMetricsWithoutDirectionAttribute {
-				assertPagingOperationsMetricValid(t, []pmetric.Metric{metrics.At(startIndex),
-					metrics.At(startIndex + 1)}, test.expectedStartTime, true)
-				startIndex++
-			}
-			if test.expectMetricsWithDirectionAttribute {
-				assertPagingOperationsMetricValid(t, []pmetric.Metric{metrics.At(startIndex)},
-					test.expectedStartTime, false)
-			}
+			assertPagingOperationsMetricValid(t, []pmetric.Metric{metrics.At(startIndex)},
+				test.expectedStartTime, false)
 
 			internal.AssertSameTimeStampForMetrics(t, metrics, 0, metrics.Len()-2)
 			startIndex++
@@ -219,29 +199,12 @@ func assertPagingOperationsMetricValid(t *testing.T, pagingMetric []pmetric.Metr
 		unit        string
 	}
 
-	var tests []test
-
-	if removeAttribute {
-		tests = []test{
-			{
-				name:        "system.paging.operations.page_in",
-				description: "The number of page_in operations.",
-				unit:        "{operations}",
-			},
-			{
-				name:        "system.paging.operations.page_out",
-				description: "The number of page_out operations.",
-				unit:        "{operations}",
-			},
-		}
-	} else {
-		tests = []test{
-			{
-				name:        "system.paging.operations",
-				description: "The number of paging operations.",
-				unit:        "{operations}",
-			},
-		}
+	tests := []test{
+		{
+			name:        "system.paging.operations",
+			description: "The number of paging operations.",
+			unit:        "{operations}",
+		},
 	}
 
 	for idx, tt := range tests {

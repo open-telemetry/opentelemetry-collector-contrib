@@ -16,12 +16,9 @@
 cmd/configschema
 examples/demo/client
 examples/demo/server
-exporter/influxdbexporter
 exporter/parquetexporter
 extension/fluentbitextension
 extension/httpforwarder
-extension/sigv4authextension
-extension/storage
 internal/common
 internal/containertest
 internal/coreinternal
@@ -32,5 +29,4 @@ pkg/experimentalmetricmetadata
 processor/deltatorateprocessor
 processor/metricsgenerationprocessor
 receiver/dotnetdiagnosticsreceiver
-receiver/influxdbreceiver
 testbed

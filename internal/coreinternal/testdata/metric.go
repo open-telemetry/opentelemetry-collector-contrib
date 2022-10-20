@@ -145,7 +145,7 @@ func GenerateMetricsAllTypesEmptyDataPoint() pmetric.Metrics {
 func GenerateMetricsMetricTypeInvalid() pmetric.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 	ilm0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
-	initMetric(ilm0.Metrics().AppendEmpty(), TestSumIntMetricName, pmetric.MetricTypeNone)
+	initMetric(ilm0.Metrics().AppendEmpty(), TestSumIntMetricName, pmetric.MetricTypeEmpty)
 	return md
 }
 
@@ -286,11 +286,11 @@ func initMetric(m pmetric.Metric, name string, ty pmetric.MetricType) {
 	case pmetric.MetricTypeSum:
 		sum := m.SetEmptySum()
 		sum.SetIsMonotonic(true)
-		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 	case pmetric.MetricTypeHistogram:
 		histo := m.SetEmptyHistogram()
-		histo.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		histo.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 	case pmetric.MetricTypeExponentialHistogram:
 		m.SetEmptyExponentialHistogram()

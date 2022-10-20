@@ -44,7 +44,6 @@ const (
 	spanKindKey        = "span.kind"   // OpenTelemetry non-standard constant.
 	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
-	traceIDKey         = "trace_id"
 
 	defaultDimensionsCacheSize = 1000
 )
@@ -57,6 +56,7 @@ var (
 
 type exemplarData struct {
 	traceID pcommon.TraceID
+	spanID  pcommon.SpanID
 	value   float64
 }
 
@@ -284,7 +284,7 @@ func (p *processorImp) buildMetrics() (pmetric.Metrics, error) {
 	p.metricKeyToDimensions.RemoveEvictedItems()
 
 	// If delta metrics, reset accumulated data
-	if p.config.GetAggregationTemporality() == pmetric.MetricAggregationTemporalityDelta {
+	if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
 		p.resetAccumulatedMetrics()
 	}
 	p.resetExemplarData()
@@ -407,7 +407,7 @@ func (p *processorImp) aggregateMetricsForSpan(serviceName string, span ptrace.S
 	p.cache(serviceName, span, key, resourceAttr)
 	p.updateCallMetrics(key)
 	p.updateLatencyMetrics(key, latencyInMilliseconds, index)
-	p.updateLatencyExemplars(key, latencyInMilliseconds, span.TraceID())
+	p.updateLatencyExemplars(key, latencyInMilliseconds, span.TraceID(), span.SpanID())
 }
 
 // updateCallMetrics increments the call count for the given metric key.
@@ -426,13 +426,14 @@ func (p *processorImp) resetAccumulatedMetrics() {
 }
 
 // updateLatencyExemplars sets the histogram exemplars for the given metric key and append the exemplar data.
-func (p *processorImp) updateLatencyExemplars(key metricKey, value float64, traceID pcommon.TraceID) {
+func (p *processorImp) updateLatencyExemplars(key metricKey, value float64, traceID pcommon.TraceID, spanID pcommon.SpanID) {
 	if _, ok := p.latencyExemplarsData[key]; !ok {
 		p.latencyExemplarsData[key] = []exemplarData{}
 	}
 
 	e := exemplarData{
 		traceID: traceID,
+		spanID:  spanID,
 		value:   value,
 	}
 	p.latencyExemplarsData[key] = append(p.latencyExemplarsData[key], e)
@@ -577,6 +578,7 @@ func setLatencyExemplars(exemplarsData []exemplarData, timestamp pcommon.Timesta
 	for _, ed := range exemplarsData {
 		value := ed.value
 		traceID := ed.traceID
+		spanID := ed.spanID
 
 		exemplar := es.AppendEmpty()
 
@@ -586,7 +588,8 @@ func setLatencyExemplars(exemplarsData []exemplarData, timestamp pcommon.Timesta
 
 		exemplar.SetDoubleValue(value)
 		exemplar.SetTimestamp(timestamp)
-		exemplar.FilteredAttributes().PutStr(traceIDKey, traceID.HexString())
+		exemplar.SetTraceID(traceID)
+		exemplar.SetSpanID(spanID)
 	}
 
 	es.CopyTo(exemplars)

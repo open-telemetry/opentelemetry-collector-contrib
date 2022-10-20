@@ -51,14 +51,14 @@ exporters:
     endpoint: localhost:24250
 ```
 
-### Tech Preview: OpenTelemetry Transformation Language expressions as routing conditions
+### Tech Preview: OpenTelemetry Transformation Language statements as routing conditions
 
-Alternatively, it is possible to use subset of the [OpenTelemetry Transformation Language (OTTL)](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#telemetry-query-language) expressions as routing conditions.
+Alternatively, it is possible to use subset of the [OpenTelemetry Transformation Language (OTTL)](../../pkg/ottl/README.md) statements as routing conditions.
 
 To configure the routing processor with [OTTL] routing conditions use the following options:
 
 - `table (required)`: the routing table for this processor.
-- `table.expression (required)`: the routing condition provided as the [OTTL] expression.
+- `table.statement (required)`: the routing condition provided as the [OTTL] statement.
 - `table.exporters (required)`: the list of exporters to use when the routing condition is met.
 - `default_exporters (optional)`: contains the list of exporters to use when a record
 does not meet any of specified conditions.
@@ -70,9 +70,9 @@ processors:
     default_exporters:
     - jaeger
     table:
-      - expression: route() where resource.attributes["X-Tenant"] == "acme"
+      - statement: route() where resource.attributes["X-Tenant"] == "acme"
         exporters: [jaeger/acme]
-      - expression: delete_key(resource.attributes, "X-Tenant") where IsMatch(resource.attributes["X-Tenant"], ".*corp") == true
+      - statement: delete_key(resource.attributes, "X-Tenant") where IsMatch(resource.attributes["X-Tenant"], ".*corp") == true
         exporters: [jaeger/ecorp]
 
 exporters:
@@ -91,8 +91,8 @@ It is also possible to use both the conventional routing items configuration and
 
 #### Limitations:
 
-- [OTTL] expressions can be applied only to resource attributes.
-- Currently, it is not possible to specify the boolean expression without function invocation as the routing condition. It is required to provide the NOOP `route()` or any other supported function as part of the routing expression, see [#13545](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13545) for more information.
+- [OTTL] statements can be applied only to resource attributes.
+- Currently, it is not possible to specify the boolean statements without function invocation as the routing condition. It is required to provide the NOOP `route()` or any other supported function as part of the routing statement, see [#13545](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13545) for more information.
 - Supported [OTTL] functions:
   - [IsMatch](../../pkg/ottl/ottlfuncs/README.md#IsMatch)
   - [delete_key](../../pkg/ottl/ottlfuncs/README.md#delete_key)

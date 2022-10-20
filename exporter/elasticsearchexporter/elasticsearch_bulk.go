@@ -14,7 +14,6 @@
 
 // Package elasticsearchexporter contains an opentelemetry-collector exporter
 // for Elasticsearch.
-// nolint:errcheck
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
@@ -208,8 +207,8 @@ func pushDocuments(ctx context.Context, logger *zap.Logger, index string, docume
 				zap.NamedError("reason", err))
 
 			attempts++
-			body.Seek(0, io.SeekStart)
-			bulkIndexer.Add(ctx, item)
+			_, _ = body.Seek(0, io.SeekStart)
+			_ = bulkIndexer.Add(ctx, item)
 
 		case resp.Status == 0 && err != nil:
 			// Encoding error. We didn't even attempt to send the event

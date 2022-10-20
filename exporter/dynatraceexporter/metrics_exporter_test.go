@@ -133,7 +133,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleHistogramDataPoint.ExplicitBounds().FromRaw([]float64{0, 2, 4, 8})
 	doubleHistogramDataPoint.BucketCounts().FromRaw([]uint64{0, 1, 0, 1, 0})
 	doubleHistogramDataPoint.SetTimestamp(testTimestamp)
-	doubleHistogram.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+	doubleHistogram.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 
 	type fields struct {
 		settings component.TelemetrySettings
@@ -198,7 +198,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 func Test_SumMetrics(t *testing.T) {
 	type args struct {
 		monotonic   bool
-		temporality pmetric.MetricAggregationTemporality
+		temporality pmetric.AggregationTemporality
 		valueType   string // either 'double' or 'int'
 	}
 	tests := []struct {
@@ -210,7 +210,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Monotonic Delta sum (int)",
 			args: args{
 				true,
-				pmetric.MetricAggregationTemporalityDelta,
+				pmetric.AggregationTemporalityDelta,
 				"int",
 			},
 			want: []string{
@@ -222,7 +222,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Non-monotonic Delta sum (int)",
 			args: args{
 				false,
-				pmetric.MetricAggregationTemporalityDelta,
+				pmetric.AggregationTemporalityDelta,
 				"int",
 			},
 			want: []string{"nothing sent"},
@@ -231,7 +231,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Monotonic Cumulative sum (int)",
 			args: args{
 				true,
-				pmetric.MetricAggregationTemporalityCumulative,
+				pmetric.AggregationTemporalityCumulative,
 				"int",
 			},
 			want: []string{"prefix.metric_name count,delta=10 1626438600000"},
@@ -240,7 +240,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Non-monotonic Cumulative sum (int)",
 			args: args{
 				false,
-				pmetric.MetricAggregationTemporalityCumulative,
+				pmetric.AggregationTemporalityCumulative,
 				"int",
 			},
 			want: []string{
@@ -252,7 +252,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Monotonic Delta sum (double)",
 			args: args{
 				true,
-				pmetric.MetricAggregationTemporalityDelta,
+				pmetric.AggregationTemporalityDelta,
 				"double",
 			},
 			want: []string{
@@ -264,7 +264,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Non-monotonic Delta sum (double)",
 			args: args{
 				false,
-				pmetric.MetricAggregationTemporalityDelta,
+				pmetric.AggregationTemporalityDelta,
 				"double",
 			},
 			want: []string{"nothing sent"},
@@ -273,7 +273,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Monotonic Cumulative sum (double)",
 			args: args{
 				true,
-				pmetric.MetricAggregationTemporalityCumulative,
+				pmetric.AggregationTemporalityCumulative,
 				"double",
 			},
 			want: []string{"prefix.metric_name count,delta=10.1 1626438600000"},
@@ -282,7 +282,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Non-monotonic Cumulative sum (double)",
 			args: args{
 				false,
-				pmetric.MetricAggregationTemporalityCumulative,
+				pmetric.AggregationTemporalityCumulative,
 				"double",
 			},
 			want: []string{
