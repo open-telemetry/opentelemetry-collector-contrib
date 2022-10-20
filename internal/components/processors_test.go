@@ -122,6 +122,10 @@ func TestDefaultProcessors(t *testing.T) {
 			},
 		},
 		{
+			processor:     "servicegraph",
+			skipLifecycle: true,
+		},
+		{
 			processor:     "spanmetrics",
 			skipLifecycle: true, // Requires a running exporter to convert data to/from
 		},
