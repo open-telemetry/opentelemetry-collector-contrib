@@ -174,7 +174,7 @@ func TestNewFactory(t *testing.T) {
 			},
 		},
 		{
-			desc: "CreateMetricsReceiver adds missing metric gauge value type as float",
+			desc: "CreateMetricsReceiver adds missing metric gauge value type as double",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
@@ -194,11 +194,11 @@ func TestNewFactory(t *testing.T) {
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				require.Equal(t, "float", snmpCfg.Metrics["m1"].Gauge.ValueType)
+				require.Equal(t, "double", snmpCfg.Metrics["m1"].Gauge.ValueType)
 			},
 		},
 		{
-			desc: "CreateMetricsReceiver adds missing metric sum value type as float",
+			desc: "CreateMetricsReceiver adds missing metric sum value type as double",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
@@ -218,7 +218,7 @@ func TestNewFactory(t *testing.T) {
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				require.Equal(t, "float", snmpCfg.Metrics["m1"].Sum.ValueType)
+				require.Equal(t, "double", snmpCfg.Metrics["m1"].Sum.ValueType)
 			},
 		},
 		{
