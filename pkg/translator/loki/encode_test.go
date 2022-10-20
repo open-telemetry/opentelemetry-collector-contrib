@@ -15,7 +15,6 @@
 package loki // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/go-logfmt/logfmt"
@@ -142,7 +141,6 @@ func TestSerializeComplexBody(t *testing.T) {
 		assert.Equal(t, test.expectedJson, out)
 
 		keyvals, err := bodyToKeyvals(test.input)
-		fmt.Println("keyvals", fmt.Sprint(keyvals))
 		assert.NoError(t, err)
 		out, err = logfmt.MarshalKeyvals(keyvals...)
 		assert.NoError(t, err)
@@ -179,6 +177,27 @@ func TestEncodeLogfmtWithSliceBody(t *testing.T) {
 	sliceVal.Slice().AppendEmpty().SetBool(true)
 	sliceVal.Slice().AppendEmpty().SetInt(123)
 	sliceVal.CopyTo(log.Body())
+	out, err := EncodeLogfmt(log, resource)
+	assert.NoError(t, err)
+	assert.Equal(t, in, out)
+}
+
+func TestEncodeLogfmtWithComplexAttributes(t *testing.T) {
+	in := `Example= log= traceID=01020304000000000000000000000000 spanID=0506070800000000 severity=error attribute_attr1=1 attribute_attr2=2 attribute_aslice_0=fooo attribute_aslice_1_slice_0=true attribute_aslice_1_foo=bar attribute_aslice_2_nested="deeply nested" attribute_aslice_2_uint=123 resource_host.name=something resource_bslice_0=fooo resource_bslice_1_slice_0=true resource_bslice_1_foo=bar resource_bslice_2_nested="deeply nested" resource_bslice_2_uint=123`
+	log, resource := exampleLog()
+	sliceVal := pcommon.NewValueSlice()
+	sliceVal.Slice().AppendEmpty().SetStr("fooo")
+	map1 := pcommon.NewValueMap()
+	map1.Map().PutEmptySlice("slice").AppendEmpty().SetBool(true)
+	map1.Map().PutStr("foo", "bar")
+	map1.CopyTo(sliceVal.Slice().AppendEmpty())
+	anotherMap := pcommon.NewValueMap()
+	anotherMap.Map().PutStr("nested", "deeply nested")
+	anotherMap.Map().PutInt("uint", 123)
+	anotherMap.CopyTo(sliceVal.Slice().AppendEmpty())
+	sliceVal.CopyTo(log.Attributes().PutEmpty("aslice"))
+	sliceVal.CopyTo(resource.Attributes().PutEmpty("bslice"))
+
 	out, err := EncodeLogfmt(log, resource)
 	assert.NoError(t, err)
 	assert.Equal(t, in, out)
