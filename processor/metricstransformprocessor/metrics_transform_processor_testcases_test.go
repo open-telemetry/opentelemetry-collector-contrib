@@ -1611,39 +1611,78 @@ var (
 			out: []pmetric.Metric{},
 		},
 		{
-			name:       "simple_convert_to_snake_case",
-			spipOCTest: true,
+			name: "simple_convert_to_snake_case",
 			transforms: []internalTransform{
 				{
 					MetricIncludeFilter: internalFilterStrict{include: "metric"},
 					Action:              ConvertSnakeCase,
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metricTest").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metricTest").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric_test").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric_test").build(),
 			},
 		},
 		{
-			name:       "complex_convert_to_snake_case",
-			spipOCTest: true,
+			name: "complex_convert_to_snake_case",
 			transforms: []internalTransform{
 				{
 					MetricIncludeFilter: internalFilterStrict{include: "metric"},
 					Action:              ConvertSnakeCase,
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("Base_MetricTest").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "Base_MetricTest").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("base_metric_test").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "base_metric_test").build(),
+			},
+		},
+		{
+			name: "no_change_convert_to_snake_case",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric"},
+					Action:              ConvertSnakeCase,
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "simple_metric").build(),
+			},
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "simple_metric").build(),
+			},
+		},
+		{
+			name: "multiple_uppercase_convert_to_snake_case",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric"},
+					Action:              ConvertSnakeCase,
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "HTTPMetric").build(),
+			},
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "http_metric").build(),
+			},
+		},
+		{
+			name: "dash_replacement_convert_to_snake_case",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric"},
+					Action:              ConvertSnakeCase,
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "simple-metric").build(),
+			},
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "simple_metric").build(),
 			},
 		},
 	}
