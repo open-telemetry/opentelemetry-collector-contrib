@@ -215,7 +215,7 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "No OIDs does nothing",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{}
+				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				client := &snmpClient{
 					logger: zap.NewNop(),
@@ -230,7 +230,7 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "GoSNMP Client failures adds error",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{}
+				expectedSNMPData := []SNMPData{}
 				getError := errors.New("Bad GET")
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("Get", []string{"1"}).Return(nil, getError)
@@ -250,7 +250,7 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "GoSNMP Client timeout failures tries to reset connection",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{}
+				expectedSNMPData := []SNMPData{}
 				getError := errors.New("request timeout (after 0 retries)")
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("Get", []string{"1"}).Return(nil, getError)
@@ -272,7 +272,7 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "GoSNMP Client reset connection fails on connect adds error",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{}
+				expectedSNMPData := []SNMPData{}
 				getError := errors.New("request timeout (after 0 retries)")
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("Get", []string{"1"}).Return(nil, getError)
@@ -297,7 +297,7 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "GoSNMP Client partial failures still return successes",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{
+				expectedSNMPData := []SNMPData{
 					{
 						oid:       "2",
 						value:     int64(1),
@@ -332,7 +332,7 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "GoSNMP Client returned nil value does not return data",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{}
+				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				pdu := gosnmp.SnmpPDU{
 					Value: nil,
@@ -358,7 +358,7 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "GoSNMP Client returned unsupported type value does not return data",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{}
+				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				pdu := gosnmp.SnmpPDU{
 					Value: true,
@@ -384,7 +384,7 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "Large amount of OIDs handled in chunks",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{
+				expectedSNMPData := []SNMPData{
 					{
 						oid:       "1",
 						value:     int64(1),
@@ -444,7 +444,7 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "GoSNMP Client float data type properly converted",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{
+				expectedSNMPData := []SNMPData{
 					{
 						oid:       "1",
 						value:     1.0,
@@ -473,7 +473,7 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "GoSNMP Client float data type with bad value adds error",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{}
+				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				pdu1 := gosnmp.SnmpPDU{
 					Value: true,
@@ -497,7 +497,7 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "GoSNMP Client float data type with bad string value adds error",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{}
+				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				pdu1 := gosnmp.SnmpPDU{
 					Value: "bad",
@@ -521,7 +521,7 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "GoSNMP Client int data type with bad value adds error",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{}
+				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				pdu1 := gosnmp.SnmpPDU{
 					Value: uint64(math.MaxUint64),
@@ -545,7 +545,7 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "GoSNMP Client string data type properly converted",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{
+				expectedSNMPData := []SNMPData{
 					{
 						oid:       "1",
 						value:     "test",
@@ -586,7 +586,7 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "No OIDs does nothing",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{}
+				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				client := &snmpClient{
 					logger: zap.NewNop(),
@@ -601,7 +601,7 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "GoSNMP Client failures adds error",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{}
+				expectedSNMPData := []SNMPData{}
 				walkError := errors.New("Bad WALK")
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("GetVersion", mock.Anything).Return(gosnmp.Version2c)
@@ -621,7 +621,7 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "GoSNMP Client timeout failures tries to reset connection",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{}
+				expectedSNMPData := []SNMPData{}
 				walkError := errors.New("request timeout (after 0 retries)")
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("GetVersion", mock.Anything).Return(gosnmp.Version2c)
@@ -643,7 +643,7 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "GoSNMP Client reset connection fails on connect adds errors",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{}
+				expectedSNMPData := []SNMPData{}
 				walkError := errors.New("request timeout (after 0 retries)")
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("GetVersion", mock.Anything).Return(gosnmp.Version2c)
@@ -668,7 +668,7 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "GoSNMP Client partial failures still returns successes",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{
+				expectedSNMPData := []SNMPData{
 					{
 						parentOID: "2",
 						oid:       "2.1",
@@ -701,7 +701,7 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "GoSNMP Client returned nil value does not return data",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{}
+				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("GetVersion", mock.Anything).Return(gosnmp.Version2c)
 				badOID := "1.1"
@@ -726,7 +726,7 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "GoSNMP Client returned unsupported type value does not return data",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{}
+				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("GetVersion", mock.Anything).Return(gosnmp.Version2c)
 				badOID := "1.1"
@@ -751,7 +751,7 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "Return multiple good values",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{
+				expectedSNMPData := []SNMPData{
 					{
 						parentOID: "1",
 						oid:       "1.1",
@@ -815,7 +815,7 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "GoSNMP Client float data type properly converted",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{
+				expectedSNMPData := []SNMPData{
 					{
 						parentOID: "1",
 						oid:       "1.1",
@@ -844,7 +844,7 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "GoSNMP Client float data type with bad value adds error",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{}
+				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("GetVersion", mock.Anything).Return(gosnmp.Version2c)
 				pdu := gosnmp.SnmpPDU{
@@ -867,7 +867,7 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "GoSNMP Client float data type with bad string value adds error",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{}
+				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("GetVersion", mock.Anything).Return(gosnmp.Version2c)
 				pdu := gosnmp.SnmpPDU{
@@ -890,7 +890,7 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "GoSNMP Client int data type with bad value adds error",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{}
+				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("GetVersion", mock.Anything).Return(gosnmp.Version2c)
 				pdu := gosnmp.SnmpPDU{
@@ -913,7 +913,7 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "GoSNMP Client string data type properly converted",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{
+				expectedSNMPData := []SNMPData{
 					{
 						parentOID: "1",
 						oid:       "1.1",
@@ -942,7 +942,7 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "GoSNMP Client v1 uses normal Walk function",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []snmpData{
+				expectedSNMPData := []SNMPData{
 					{
 						parentOID: "1",
 						oid:       "1.1",
