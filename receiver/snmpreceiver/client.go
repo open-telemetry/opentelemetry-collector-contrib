@@ -37,8 +37,8 @@ const (
 	stringVal       oidDataType = 0x03 // value will be string
 )
 
-// snmpData used for processFunc and is a simpler version of gosnmp.SnmpPDU
-type snmpData struct {
+// SNMPData used for processFunc and is a simpler version of gosnmp.SnmpPDU
+type SNMPData struct {
 	parentOID string // optional
 	oid       string
 	value     interface{}
@@ -49,10 +49,10 @@ type snmpData struct {
 type client interface {
 	// GetScalarData retrieves SNMP scalar data from a list of passed in OIDS,
 	// then returns the retrieved data
-	GetScalarData(oids []string, scraperErrors *scrapererror.ScrapeErrors) []snmpData
+	GetScalarData(oids []string, scraperErrors *scrapererror.ScrapeErrors) []SNMPData
 	// GetIndexedData retrieves SNMP indexed data from a list of passed in OIDS,
 	// then returns the retrieved data
-	GetIndexedData(oids []string, scraperErrors *scrapererror.ScrapeErrors) []snmpData
+	GetIndexedData(oids []string, scraperErrors *scrapererror.ScrapeErrors) []SNMPData
 	// Connect makes a connection to the SNMP host
 	Connect() error
 	// Close closes a connection to the SNMP host
@@ -200,8 +200,8 @@ func (c *snmpClient) Close() error {
 
 // GetScalarData retrieves and returns scalar data from passed in scalar OIDs.
 // Note: These OIDs must all end in ".0" for the SNMP GET to work correctly
-func (c *snmpClient) GetScalarData(oids []string, scraperErrors *scrapererror.ScrapeErrors) []snmpData {
-	scalarData := []snmpData{}
+func (c *snmpClient) GetScalarData(oids []string, scraperErrors *scrapererror.ScrapeErrors) []SNMPData {
+	scalarData := []SNMPData{}
 
 	// Nothing to do if there are no OIDs
 	if len(oids) == 0 {
@@ -255,8 +255,8 @@ func (c *snmpClient) GetScalarData(oids []string, scraperErrors *scrapererror.Sc
 
 // GetIndexedData retrieves indexed metrics from passed in column OIDs. The returned data
 // is then also passed into the provided function.
-func (c *snmpClient) GetIndexedData(oids []string, scraperErrors *scrapererror.ScrapeErrors) []snmpData {
-	indexedData := []snmpData{}
+func (c *snmpClient) GetIndexedData(oids []string, scraperErrors *scrapererror.ScrapeErrors) []SNMPData {
+	indexedData := []SNMPData{}
 
 	// Nothing to do if there are no OIDs
 	if len(oids) == 0 {
@@ -329,9 +329,9 @@ func chunkArray(initArray []string, chunkSize int) [][]string {
 }
 
 // convertSnmpPDUToSnmpData takes a piece of SnmpPDU data and converts it to the
-// client's snmpData type.
-func (c *snmpClient) convertSnmpPDUToSnmpData(pdu gosnmp.SnmpPDU) snmpData {
-	clientSNMPData := snmpData{
+// client's SNMPData type.
+func (c *snmpClient) convertSnmpPDUToSnmpData(pdu gosnmp.SnmpPDU) SNMPData {
+	clientSNMPData := SNMPData{
 		oid: pdu.Name,
 	}
 
