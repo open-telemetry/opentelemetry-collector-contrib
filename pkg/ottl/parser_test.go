@@ -425,6 +425,176 @@ func Test_parse(t *testing.T) {
 				WhereClause: nil,
 			},
 		},
+		{
+			name:      "Invocation with empty list",
+			statement: `set(attributes["test"], [])`,
+			expected: &parsedStatement{
+				Invocation: invocation{
+					Function: "set",
+					Arguments: []value{
+						{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name:   "attributes",
+										MapKey: ottltest.Strp("test"),
+									},
+								},
+							},
+						},
+						{
+							List: &list{
+								Values: nil,
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "Invocation with single-value list",
+			statement: `set(attributes["test"], ["value0"])`,
+			expected: &parsedStatement{
+				Invocation: invocation{
+					Function: "set",
+					Arguments: []value{
+						{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name:   "attributes",
+										MapKey: ottltest.Strp("test"),
+									},
+								},
+							},
+						},
+						{
+							List: &list{
+								Values: []value{
+									{
+										String: ottltest.Strp("value0"),
+									},
+								},
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "Invocation with multi-value list",
+			statement: `set(attributes["test"], ["value1", "value2"])`,
+			expected: &parsedStatement{
+				Invocation: invocation{
+					Function: "set",
+					Arguments: []value{
+						{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name:   "attributes",
+										MapKey: ottltest.Strp("test"),
+									},
+								},
+							},
+						},
+						{
+							List: &list{
+								Values: []value{
+									{
+										String: ottltest.Strp("value1"),
+									},
+									{
+										String: ottltest.Strp("value2"),
+									},
+								},
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "Invocation with nested heterogeneous types",
+			statement: `set(attributes["test"], [Concat(["a", "b"], "+"), ["1", 2, 3.0], nil, attributes["test"]])`,
+			expected: &parsedStatement{
+				Invocation: invocation{
+					Function: "set",
+					Arguments: []value{
+						{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name:   "attributes",
+										MapKey: ottltest.Strp("test"),
+									},
+								},
+							},
+						},
+						{
+							List: &list{
+								Values: []value{
+									{
+										Invocation: &invocation{
+											Function: "Concat",
+											Arguments: []value{
+												{
+													List: &list{
+														Values: []value{
+															{
+																String: ottltest.Strp("a"),
+															},
+															{
+																String: ottltest.Strp("b"),
+															},
+														},
+													},
+												},
+												{
+													String: ottltest.Strp("+"),
+												},
+											},
+										},
+									},
+									{
+										List: &list{
+											Values: []value{
+												{
+													String: ottltest.Strp("1"),
+												},
+												{
+													Int: ottltest.Intp(2),
+												},
+												{
+													Float: ottltest.Floatp(3.0),
+												},
+											},
+										},
+									},
+									{
+										IsNil: (*isNil)(ottltest.Boolp(true)),
+									},
+									{
+										Path: &Path{
+											Fields: []Field{
+												{
+													Name:   "attributes",
+													MapKey: ottltest.Strp("test"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -838,6 +1008,57 @@ func Test_parseStatement(t *testing.T) {
 				t.Errorf("parseStatement(%s) error = %v, wantErr %v", tt.statement, err, tt.wantErr)
 				return
 			}
+		})
+	}
+}
+
+func Test_Execute(t *testing.T) {
+	tests := []struct {
+		name              string
+		condition         boolExpressionEvaluator[interface{}]
+		function          ExprFunc[interface{}]
+		expectedCondition bool
+		expectedResult    interface{}
+	}{
+		{
+			name:      "Condition matched",
+			condition: alwaysTrue[interface{}],
+			function: func(ctx interface{}) interface{} {
+				return 1
+			},
+			expectedCondition: true,
+			expectedResult:    1,
+		},
+		{
+			name:      "Condition not matched",
+			condition: alwaysFalse[interface{}],
+			function: func(ctx interface{}) interface{} {
+				return 1
+			},
+			expectedCondition: false,
+			expectedResult:    nil,
+		},
+		{
+			name:      "No result",
+			condition: alwaysTrue[interface{}],
+			function: func(ctx interface{}) interface{} {
+				return nil
+			},
+			expectedCondition: true,
+			expectedResult:    nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statement := Statement[interface{}]{
+				condition: tt.condition,
+				function:  tt.function,
+			}
+
+			result, condition := statement.Execute(nil)
+
+			assert.Equal(t, tt.expectedCondition, condition)
+			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
 }

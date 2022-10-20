@@ -72,12 +72,12 @@ func NewParser(functions map[string]interface{}, telemetrySettings component.Tel
 }
 
 var symbolTable = map[ottl.EnumSymbol]ottl.Enum{
-	"AGGREGATION_TEMPORALITY_UNSPECIFIED":    ottl.Enum(pmetric.MetricAggregationTemporalityUnspecified),
-	"AGGREGATION_TEMPORALITY_DELTA":          ottl.Enum(pmetric.MetricAggregationTemporalityDelta),
-	"AGGREGATION_TEMPORALITY_CUMULATIVE":     ottl.Enum(pmetric.MetricAggregationTemporalityCumulative),
+	"AGGREGATION_TEMPORALITY_UNSPECIFIED":    ottl.Enum(pmetric.AggregationTemporalityUnspecified),
+	"AGGREGATION_TEMPORALITY_DELTA":          ottl.Enum(pmetric.AggregationTemporalityDelta),
+	"AGGREGATION_TEMPORALITY_CUMULATIVE":     ottl.Enum(pmetric.AggregationTemporalityCumulative),
 	"FLAG_NONE":                              0,
 	"FLAG_NO_RECORDED_VALUE":                 1,
-	"METRIC_DATA_TYPE_NONE":                  ottl.Enum(pmetric.MetricTypeNone),
+	"METRIC_DATA_TYPE_NONE":                  ottl.Enum(pmetric.MetricTypeEmpty),
 	"METRIC_DATA_TYPE_GAUGE":                 ottl.Enum(pmetric.MetricTypeGauge),
 	"METRIC_DATA_TYPE_SUM":                   ottl.Enum(pmetric.MetricTypeSum),
 	"METRIC_DATA_TYPE_HISTOGRAM":             ottl.Enum(pmetric.MetricTypeHistogram),
@@ -265,11 +265,11 @@ func accessMetricAggTemporality() ottl.StandardGetSetter[TransformContext] {
 				metric := ctx.GetMetric()
 				switch metric.Type() {
 				case pmetric.MetricTypeSum:
-					metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporality(newAggTemporality))
+					metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporality(newAggTemporality))
 				case pmetric.MetricTypeHistogram:
-					metric.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporality(newAggTemporality))
+					metric.Histogram().SetAggregationTemporality(pmetric.AggregationTemporality(newAggTemporality))
 				case pmetric.MetricTypeExponentialHistogram:
-					metric.ExponentialHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporality(newAggTemporality))
+					metric.ExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporality(newAggTemporality))
 				}
 			}
 		},
@@ -511,13 +511,13 @@ func accessFlags() ottl.StandardGetSetter[TransformContext] {
 			if newFlags, ok := val.(int64); ok {
 				switch ctx.GetDataPoint().(type) {
 				case pmetric.NumberDataPoint:
-					ctx.GetDataPoint().(pmetric.NumberDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
+					ctx.GetDataPoint().(pmetric.NumberDataPoint).SetFlags(pmetric.DataPointFlags(newFlags))
 				case pmetric.HistogramDataPoint:
-					ctx.GetDataPoint().(pmetric.HistogramDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
+					ctx.GetDataPoint().(pmetric.HistogramDataPoint).SetFlags(pmetric.DataPointFlags(newFlags))
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
+					ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).SetFlags(pmetric.DataPointFlags(newFlags))
 				case pmetric.SummaryDataPoint:
-					ctx.GetDataPoint().(pmetric.SummaryDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
+					ctx.GetDataPoint().(pmetric.SummaryDataPoint).SetFlags(pmetric.DataPointFlags(newFlags))
 				}
 			}
 		},
@@ -661,7 +661,7 @@ func accessPositive() ottl.StandardGetSetter[TransformContext] {
 			return nil
 		},
 		Setter: func(ctx TransformContext, val interface{}) {
-			if newPositive, ok := val.(pmetric.Buckets); ok {
+			if newPositive, ok := val.(pmetric.ExponentialHistogramDataPointBuckets); ok {
 				if expoHistogramDataPoint, ok := ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint); ok {
 					newPositive.CopyTo(expoHistogramDataPoint.Positive())
 				}
@@ -715,7 +715,7 @@ func accessNegative() ottl.StandardGetSetter[TransformContext] {
 			return nil
 		},
 		Setter: func(ctx TransformContext, val interface{}) {
-			if newNegative, ok := val.(pmetric.Buckets); ok {
+			if newNegative, ok := val.(pmetric.ExponentialHistogramDataPointBuckets); ok {
 				if expoHistogramDataPoint, ok := ctx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint); ok {
 					newNegative.CopyTo(expoHistogramDataPoint.Negative())
 				}
@@ -769,7 +769,7 @@ func accessQuantileValues() ottl.StandardGetSetter[TransformContext] {
 			return nil
 		},
 		Setter: func(ctx TransformContext, val interface{}) {
-			if newQuantileValues, ok := val.(pmetric.ValueAtQuantileSlice); ok {
+			if newQuantileValues, ok := val.(pmetric.SummaryDataPointValueAtQuantileSlice); ok {
 				if summaryDataPoint, ok := ctx.GetDataPoint().(pmetric.SummaryDataPoint); ok {
 					newQuantileValues.CopyTo(summaryDataPoint.QuantileValues())
 				}

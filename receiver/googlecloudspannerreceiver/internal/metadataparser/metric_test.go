@@ -39,12 +39,12 @@ func TestMetric_ToMetricValueMetadata(t *testing.T) {
 	}{
 		"Value type is int and data type is gauge":     {metadata.IntValueType, MetricType{DataType: GaugeMetricDataType}, pmetric.MetricTypeGauge, false},
 		"Value type is int and data type is sum":       {metadata.IntValueType, MetricType{DataType: SumMetricDataType, Aggregation: DeltaAggregationType, Monotonic: true}, pmetric.MetricTypeSum, false},
-		"Value type is int and data type is unknown":   {metadata.IntValueType, MetricType{DataType: UnknownMetricDataType}, pmetric.MetricTypeNone, true},
+		"Value type is int and data type is unknown":   {metadata.IntValueType, MetricType{DataType: UnknownMetricDataType}, pmetric.MetricTypeEmpty, true},
 		"Value type is float and data type is gauge":   {metadata.FloatValueType, MetricType{DataType: GaugeMetricDataType}, pmetric.MetricTypeGauge, false},
 		"Value type is float and data type is sum":     {metadata.FloatValueType, MetricType{DataType: SumMetricDataType, Aggregation: DeltaAggregationType, Monotonic: true}, pmetric.MetricTypeSum, false},
-		"Value type is float and data type is unknown": {metadata.FloatValueType, MetricType{DataType: UnknownMetricDataType}, pmetric.MetricTypeNone, true},
-		"Value type is unknown and data type is gauge": {metadata.UnknownValueType, MetricType{DataType: GaugeMetricDataType}, pmetric.MetricTypeNone, true},
-		"Value type is unknown and data type is sum":   {metadata.UnknownValueType, MetricType{DataType: SumMetricDataType, Aggregation: DeltaAggregationType, Monotonic: true}, pmetric.MetricTypeNone, true},
+		"Value type is float and data type is unknown": {metadata.FloatValueType, MetricType{DataType: UnknownMetricDataType}, pmetric.MetricTypeEmpty, true},
+		"Value type is unknown and data type is gauge": {metadata.UnknownValueType, MetricType{DataType: GaugeMetricDataType}, pmetric.MetricTypeEmpty, true},
+		"Value type is unknown and data type is sum":   {metadata.UnknownValueType, MetricType{DataType: SumMetricDataType, Aggregation: DeltaAggregationType, Monotonic: true}, pmetric.MetricTypeEmpty, true},
 	}
 
 	for name, testCase := range testCases {

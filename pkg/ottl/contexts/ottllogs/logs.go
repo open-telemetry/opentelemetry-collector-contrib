@@ -62,7 +62,7 @@ func NewParser(functions map[string]interface{}, telemetrySettings component.Tel
 }
 
 var symbolTable = map[ottl.EnumSymbol]ottl.Enum{
-	"SEVERITY_NUMBER_UNSPECIFIED": ottl.Enum(plog.SeverityNumberUndefined),
+	"SEVERITY_NUMBER_UNSPECIFIED": ottl.Enum(plog.SeverityNumberUnspecified),
 	"SEVERITY_NUMBER_TRACE":       ottl.Enum(plog.SeverityNumberTrace),
 	"SEVERITY_NUMBER_TRACE2":      ottl.Enum(plog.SeverityNumberTrace2),
 	"SEVERITY_NUMBER_TRACE3":      ottl.Enum(plog.SeverityNumberTrace3),

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package elasticsearchexporter
 
 import (
@@ -320,7 +319,9 @@ func newTestExporter(t *testing.T, url string, fns ...func(*Config)) *elasticsea
 	exporter, err := newLogsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(url))
 	require.NoError(t, err)
 
-	t.Cleanup(func() { exporter.Shutdown(context.TODO()) })
+	t.Cleanup(func() {
+		require.NoError(t, exporter.Shutdown(context.TODO()))
+	})
 	return exporter
 }
 

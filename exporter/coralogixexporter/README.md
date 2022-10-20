@@ -10,7 +10,7 @@
 The Coralogix exporter sends traces, metrics and logs to [Coralogix](https://coralogix.com/).
 
 > Please review the Collector's [security
-> documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
+> documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security-best-practices.md),
 > which contains recommendations on securing sensitive information such as the
 > API key required by this exporter.
 
@@ -212,8 +212,8 @@ exporters:
 
 ### Need help?
 
-We love to assist our customers, simply [book your implementation session](https://calendly.com/info-coralogix/implementation),
-and we will walk you through setting up this exporter, step by step.
+Our world-class customer success team is available 24/7 to walk you through the setup for this exporter and answer any questions that may come up.
+Feel free to reach out to us **via our in-app chat** or by sending us an email to [support@coralogix.com](mailto:support@coralogix.com).
 
 [alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta

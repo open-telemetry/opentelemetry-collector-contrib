@@ -782,7 +782,7 @@ func constructClientSpan(parentSpanID pcommon.SpanID, name string, code ptrace.S
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 
-	status := ptrace.NewSpanStatus()
+	status := ptrace.NewStatus()
 	status.SetCode(code)
 	status.SetMessage(message)
 	status.CopyTo(span.Status())
@@ -809,7 +809,7 @@ func constructServerSpan(parentSpanID pcommon.SpanID, name string, code ptrace.S
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 
-	status := ptrace.NewSpanStatus()
+	status := ptrace.NewStatus()
 	status.SetCode(code)
 	status.SetMessage(message)
 	status.CopyTo(span.Status())

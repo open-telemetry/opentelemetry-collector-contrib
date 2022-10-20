@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/otel v1.10.0
+	go.opentelemetry.io/otel v1.11.1
 )
 
 require (

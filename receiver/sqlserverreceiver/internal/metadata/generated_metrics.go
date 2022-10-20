@@ -929,7 +929,7 @@ func (m *metricSqlserverTransactionLogGrowthCount) init() {
 	m.data.SetUnit("{growths}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricSqlserverTransactionLogGrowthCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -980,7 +980,7 @@ func (m *metricSqlserverTransactionLogShrinkCount) init() {
 	m.data.SetUnit("{shrinks}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricSqlserverTransactionLogShrinkCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {

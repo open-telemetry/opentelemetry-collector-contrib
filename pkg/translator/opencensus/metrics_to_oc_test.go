@@ -196,7 +196,7 @@ func TestMetricsType(t *testing.T) {
 			internal: func() pmetric.Metric {
 				m := pmetric.NewMetric()
 				m.SetEmptySum().SetIsMonotonic(false)
-				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				m.Sum().DataPoints().AppendEmpty().SetIntValue(1)
 				return m
 			},
@@ -207,7 +207,7 @@ func TestMetricsType(t *testing.T) {
 			internal: func() pmetric.Metric {
 				m := pmetric.NewMetric()
 				m.SetEmptySum().SetIsMonotonic(false)
-				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				m.Sum().DataPoints().AppendEmpty().SetIntValue(1)
 				return m
 			},
@@ -218,7 +218,7 @@ func TestMetricsType(t *testing.T) {
 			internal: func() pmetric.Metric {
 				m := pmetric.NewMetric()
 				m.SetEmptySum().SetIsMonotonic(true)
-				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				m.Sum().DataPoints().AppendEmpty().SetIntValue(1)
 				return m
 			},
@@ -229,7 +229,7 @@ func TestMetricsType(t *testing.T) {
 			internal: func() pmetric.Metric {
 				m := pmetric.NewMetric()
 				m.SetEmptySum().SetIsMonotonic(true)
-				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				m.Sum().DataPoints().AppendEmpty().SetIntValue(1)
 				return m
 			},
@@ -240,7 +240,7 @@ func TestMetricsType(t *testing.T) {
 			internal: func() pmetric.Metric {
 				m := pmetric.NewMetric()
 				m.SetEmptySum().SetIsMonotonic(false)
-				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1)
 				return m
 			},
@@ -251,7 +251,7 @@ func TestMetricsType(t *testing.T) {
 			internal: func() pmetric.Metric {
 				m := pmetric.NewMetric()
 				m.SetEmptySum().SetIsMonotonic(false)
-				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1)
 				return m
 			},
@@ -262,7 +262,7 @@ func TestMetricsType(t *testing.T) {
 			internal: func() pmetric.Metric {
 				m := pmetric.NewMetric()
 				m.SetEmptySum().SetIsMonotonic(true)
-				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1)
 				return m
 			},
@@ -273,7 +273,7 @@ func TestMetricsType(t *testing.T) {
 			internal: func() pmetric.Metric {
 				m := pmetric.NewMetric()
 				m.SetEmptySum().SetIsMonotonic(true)
-				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1)
 				return m
 			},

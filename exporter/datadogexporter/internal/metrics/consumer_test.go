@@ -28,7 +28,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 type testProvider string
@@ -91,7 +91,7 @@ func TestTagsMetrics(t *testing.T) {
 	rms := ms.ResourceMetrics()
 
 	rm := rms.AppendEmpty()
-	baseAttrs := testutils.NewAttributeMap(map[string]string{
+	baseAttrs := testutil.NewAttributeMap(map[string]string{
 		conventions.AttributeCloudProvider:      conventions.AttributeCloudProviderAWS,
 		conventions.AttributeCloudPlatform:      conventions.AttributeCloudPlatformAWSECS,
 		conventions.AttributeAWSECSTaskFamily:   "example-task-family",

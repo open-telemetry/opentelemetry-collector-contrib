@@ -27,7 +27,7 @@ func serializeGaugePoint(name, prefix string, dims dimensions.NormalizedDimensio
 	var metricOption dtMetric.MetricOption
 
 	switch dp.ValueType() {
-	case pmetric.NumberDataPointValueTypeNone:
+	case pmetric.NumberDataPointValueTypeEmpty:
 		return "", fmt.Errorf("unsupported value type none")
 	case pmetric.NumberDataPointValueTypeInt:
 		metricOption = dtMetric.WithIntGaugeValue(dp.IntValue())

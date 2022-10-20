@@ -55,7 +55,7 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			statement: `keep_keys(attributes, "http.method") where body == "operationA"`,
+			statement: `keep_keys(attributes, ["http.method"]) where body == "operationA"`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("http.method",
@@ -87,15 +87,15 @@ func TestProcess(t *testing.T) {
 			statement: `replace_all_patterns(attributes, "key", "http.url", "url")`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("http.method", "get")
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("http.path", "/health")
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("url", "http://localhost/health")
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("flags", "A|B|C")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("http.method", "get")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("http.path", "/health")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("url", "http://localhost/health")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("flags", "A|B|C")
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().Clear()
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutString("http.method", "get")
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutString("http.path", "/health")
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutString("url", "http://localhost/health")
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutString("flags", "C|D")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("http.method", "get")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("http.path", "/health")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("url", "http://localhost/health")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("flags", "C|D")
 			},
 		},
 		{
@@ -163,7 +163,7 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], Concat(": ", attributes["http.method"], attributes["http.url"])) where body == Concat("", "operation", "A")`,
+			statement: `set(attributes["test"], Concat([attributes["http.method"], attributes["http.url"]], ": ")) where body == Concat(["operation", "A"], "")`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "get: http://localhost/health")
 			},

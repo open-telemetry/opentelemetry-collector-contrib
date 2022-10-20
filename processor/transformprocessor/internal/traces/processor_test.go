@@ -56,7 +56,7 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			statement: `keep_keys(attributes, "http.method") where name == "operationA"`,
+			statement: `keep_keys(attributes, ["http.method"]) where name == "operationA"`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Clear()
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("http.method", "get")
@@ -129,16 +129,16 @@ func TestProcess(t *testing.T) {
 			statement: `replace_all_patterns(attributes, "key", "http.url", "url")`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Clear()
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("http.method", "get")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("http.path", "/health")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("url", "http://localhost/health")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("flags", "A|B|C")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("http.method", "get")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("http.path", "/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("url", "http://localhost/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("flags", "A|B|C")
 
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().Clear()
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutString("http.method", "get")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutString("http.path", "/health")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutString("url", "http://localhost/health")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutString("flags", "C|D")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("http.method", "get")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("http.path", "/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("url", "http://localhost/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("flags", "C|D")
 			},
 		},
 		{
@@ -184,27 +184,27 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], Concat(": ", attributes["http.method"], attributes["http.url"]))`,
+			statement: `set(attributes["test"], Concat([attributes["http.method"], attributes["http.url"]], ": "))`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "get: http://localhost/health")
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("test", "get: http://localhost/health")
 			},
 		},
 		{
-			statement: `set(attributes["test"], Concat("", attributes["http.method"], ": ", attributes["http.url"]))`,
+			statement: `set(attributes["test"], Concat([attributes["http.method"], ": ", attributes["http.url"]], ""))`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "get: http://localhost/health")
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("test", "get: http://localhost/health")
 			},
 		},
 		{
-			statement: `set(attributes["test"], Concat(": ", attributes["http.method"], attributes["http.url"])) where name == Concat("", "operation", "A")`,
+			statement: `set(attributes["test"], Concat([attributes["http.method"], attributes["http.url"]], ": ")) where name == Concat(["operation", "A"], "")`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "get: http://localhost/health")
 			},
 		},
 		{
-			statement: `set(attributes["kind"], Concat("", "kind", ": ", kind)) where kind == 1`,
+			statement: `set(attributes["kind"], Concat(["kind", ": ", kind], "")) where kind == 1`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("kind", "kind: 1")
 			},
@@ -268,11 +268,11 @@ func BenchmarkTwoSpans(b *testing.B) {
 		},
 		{
 			name:       "keep_keys attribute",
-			statements: []string{`keep_keys(attributes, "http.method") where name == "operationA"`},
+			statements: []string{`keep_keys(attributes, ["http.method"]) where name == "operationA"`},
 		},
 		{
 			name:       "no match",
-			statements: []string{`keep_keys(attributes, "http.method") where name == "unknownOperation"`},
+			statements: []string{`keep_keys(attributes, ["http.method"]) where name == "unknownOperation"`},
 		},
 		{
 			name:       "inner field",
@@ -323,7 +323,7 @@ func BenchmarkHundredSpans(b *testing.B) {
 				var statements []string
 				statements = append(statements, `set(status.code, 1) where name == "operationA"`)
 				for i := 0; i < 99; i++ {
-					statements = append(statements, `keep_keys(attributes, "http.method") where name == "unknownOperation"`)
+					statements = append(statements, `keep_keys(attributes, ["http.method"]) where name == "unknownOperation"`)
 				}
 				return statements
 			}(),

@@ -155,7 +155,7 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 	return err
 }
 
-func populateSpanStatus(tags map[string]string, status ptrace.SpanStatus) {
+func populateSpanStatus(tags map[string]string, status ptrace.Status) {
 	if value, ok := tags[conventions.OtelStatusCode]; ok {
 		status.SetCode(ptrace.StatusCode(statusCodeValue[value]))
 		delete(tags, conventions.OtelStatusCode)
