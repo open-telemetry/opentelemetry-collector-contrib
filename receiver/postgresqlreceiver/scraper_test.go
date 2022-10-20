@@ -243,8 +243,8 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 		m.On("getBGWriterStats", mock.Anything).Return(&bgStat{
 			checkpointsReq:       1,
 			checkpointsScheduled: 2,
-			checkpointWriteTime:  3,
-			checkpointSyncTime:   4,
+			checkpointWriteTime:  3.12,
+			checkpointSyncTime:   4.23,
 			bgWrites:             5,
 			backendWrites:        6,
 			bufferBackendWrites:  7,

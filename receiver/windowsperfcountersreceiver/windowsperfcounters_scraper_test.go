@@ -65,7 +65,6 @@ func mockPerfCounterFactory(mpc mockPerfCounter) newWatcherFunc {
 }
 
 func Test_WindowsPerfCounterScraper(t *testing.T) {
-	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11445")
 	type testCase struct {
 		name string
 		cfg  *Config

@@ -21,11 +21,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -34,11 +32,7 @@ func TestCreateReceiver(t *testing.T) {
 	ctx := context.Background()
 	receiver, err := createReceiver(
 		ctx,
-		component.ReceiverCreateSettings{
-			TelemetrySettings: component.TelemetrySettings{
-				TracerProvider: trace.NewNoopTracerProvider(),
-			},
-		},
+		componenttest.NewNopReceiverCreateSettings(),
 		&Config{
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 				CollectionInterval: 10 * time.Second,

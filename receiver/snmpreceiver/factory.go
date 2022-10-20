@@ -106,11 +106,11 @@ func addMissingConfigDefaults(cfg *Config) error {
 			metricCfg.Unit = "1"
 		}
 		if metricCfg.Gauge != nil && metricCfg.Gauge.ValueType == "" {
-			metricCfg.Gauge.ValueType = "float"
+			metricCfg.Gauge.ValueType = "double"
 		}
 		if metricCfg.Sum != nil {
 			if metricCfg.Sum.ValueType == "" {
-				metricCfg.Sum.ValueType = "float"
+				metricCfg.Sum.ValueType = "double"
 			}
 			if metricCfg.Sum.Aggregation == "" {
 				metricCfg.Sum.Aggregation = "cumulative"

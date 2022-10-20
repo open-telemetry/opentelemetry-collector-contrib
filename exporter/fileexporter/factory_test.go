@@ -35,7 +35,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateMetricsExporterError(t *testing.T) {
-	cfg := createDefaultConfig()
+	cfg := &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		FormatType:       formatTypeJSON,
+	}
 	_, err := createMetricsExporter(
 		context.Background(),
 		componenttest.NewNopExporterCreateSettings(),

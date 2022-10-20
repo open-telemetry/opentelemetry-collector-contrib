@@ -132,7 +132,10 @@ func (t *transaction) Append(ref storage.SeriesRef, ls labels.Labels, atMs int64
 func (t *transaction) getOrCreateMetricFamily(mn string) *metricFamily {
 	curMf, ok := t.families[mn]
 	if !ok {
-		fn := normalizeMetricName(mn)
+		fn := mn
+		if _, ok := t.mc.GetMetadata(mn); !ok {
+			fn = normalizeMetricName(mn)
+		}
 		if mf, ok := t.families[fn]; ok && mf.includesMetric(mn) {
 			curMf = mf
 		} else {

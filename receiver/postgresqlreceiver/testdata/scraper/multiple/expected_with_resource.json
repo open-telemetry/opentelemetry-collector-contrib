@@ -2460,7 +2460,7 @@
                                         ],
                                         "startTimeUnixNano": "1660755376404913000",
                                         "timeUnixNano": "1660755376405089000",
-                                        "asInt": "4"
+                                        "asDouble": "4.23"
                                     },
                                     {
                                         "attributes": [
@@ -2473,7 +2473,7 @@
                                         ],
                                         "startTimeUnixNano": "1660755376404913000",
                                         "timeUnixNano": "1660755376405089000",
-                                        "asInt": "3"
+                                        "asDouble": "3.12"
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",

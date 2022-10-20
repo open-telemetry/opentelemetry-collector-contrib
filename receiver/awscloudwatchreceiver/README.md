@@ -10,7 +10,7 @@ Receives Cloudwatch events from [AWS Cloudwatch](https://aws.amazon.com/cloudwat
 
 ## Getting Started
 
-This receiver uses the [AWS SDK Profiles](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html) as  mode of authentication.
+This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html) as mode of authentication, which includes [Profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html) and [IMDS](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html) authentication for EC2 instances.
 
 ## Configuration
 
@@ -77,7 +77,6 @@ awscloudwatch:
             names: [kube-apiserver-ea9c831555adca1815ae04b87661klasdj]
 ```
 
-
 ## Sample Configs
 
 This receiver has a number of sample configs for reference.
@@ -109,3 +108,6 @@ This receiver has a number of sample configs for reference.
    - Specifies the names of the log groups to collect
    - Does not attempt autodiscovery
    - Only collects from log streams matching a prefix
+
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

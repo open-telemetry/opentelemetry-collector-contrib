@@ -42,7 +42,7 @@ func TestLoadConfigConnectionConfigs(t *testing.T) {
 		"m3": {
 			Unit: "By",
 			Gauge: &GaugeMetric{
-				ValueType: "float",
+				ValueType: "double",
 			},
 			ScalarOIDs: []ScalarOID{
 				{
@@ -283,13 +283,13 @@ func getBaseMetricConfig(gauge bool, scalar bool) map[string]*MetricConfig {
 
 	if gauge {
 		metricCfg["m3"].Gauge = &GaugeMetric{
-			ValueType: "float",
+			ValueType: "double",
 		}
 	} else {
 		metricCfg["m3"].Sum = &SumMetric{
 			Aggregation: "cumulative",
 			Monotonic:   true,
-			ValueType:   "float",
+			ValueType:   "double",
 		}
 	}
 
@@ -876,7 +876,7 @@ func TestValidate(t *testing.T) {
 					"m3": {
 						Unit: "By",
 						Gauge: &GaugeMetric{
-							ValueType: "float",
+							ValueType: "double",
 						},
 						ScalarOIDs: []ScalarOID{
 							{
@@ -897,7 +897,7 @@ func TestValidate(t *testing.T) {
 					"m3": {
 						Unit: "By",
 						Gauge: &GaugeMetric{
-							ValueType: "float",
+							ValueType: "double",
 						},
 						ScalarOIDs: []ScalarOID{
 							{
@@ -919,7 +919,7 @@ func TestValidate(t *testing.T) {
 					"m3": {
 						Unit: "By",
 						Gauge: &GaugeMetric{
-							ValueType: "float",
+							ValueType: "double",
 						},
 						ScalarOIDs: []ScalarOID{
 							{
@@ -943,7 +943,7 @@ func TestValidate(t *testing.T) {
 					"m3": {
 						Unit: "By",
 						Gauge: &GaugeMetric{
-							ValueType: "float",
+							ValueType: "double",
 						},
 						ScalarOIDs: []ScalarOID{
 							{
@@ -969,7 +969,7 @@ func TestValidate(t *testing.T) {
 					"m3": {
 						Unit: "By",
 						Gauge: &GaugeMetric{
-							ValueType: "float",
+							ValueType: "double",
 						},
 						ScalarOIDs: []ScalarOID{
 							{

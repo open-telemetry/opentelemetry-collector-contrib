@@ -30,8 +30,8 @@ type messagingService interface {
 	dial() error
 	close(ctx context.Context)
 	receiveMessage(ctx context.Context) (*inboundMessage, error)
-	ack(ctx context.Context, msg *inboundMessage) error
-	nack(ctx context.Context, msg *inboundMessage) error
+	accept(ctx context.Context, msg *inboundMessage) error
+	failed(ctx context.Context, msg *inboundMessage) error
 }
 
 // messagingServiceFactory is a factory to create new messagingService instances
@@ -175,12 +175,12 @@ func (m *amqpMessagingService) receiveMessage(ctx context.Context) (*inboundMess
 	return m.receiver.Receive(ctx)
 }
 
-func (m *amqpMessagingService) ack(ctx context.Context, msg *inboundMessage) error {
+func (m *amqpMessagingService) accept(ctx context.Context, msg *inboundMessage) error {
 	return m.receiver.AcceptMessage(ctx, msg)
 }
 
-func (m *amqpMessagingService) nack(ctx context.Context, msg *inboundMessage) error {
-	return m.receiver.RejectMessage(ctx, msg, nil)
+func (m *amqpMessagingService) failed(ctx context.Context, msg *inboundMessage) error {
+	return m.receiver.ModifyMessage(ctx, msg, true, false, nil)
 }
 
 // Allow for substitution in testing to assert correct data is passed to AMQP
