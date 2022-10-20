@@ -9,6 +9,8 @@ import (
 
 func ToSnakeCase(metric pmetric.Metric) {
 
+	// https://gist.github.com/hxsf/7f5392c0153d3a8607c42eefed02b8cd
+
 	s := metric.Name()
 
 	if s == "" {
@@ -20,7 +22,7 @@ func ToSnakeCase(metric pmetric.Metric) {
 	}
 	source := []rune(s)
 	dist := strings.Builder{}
-	dist.Grow(len(s) + len(s)/3) // avoid reallocation memory, 33% ~ 50% is recommended
+	dist.Grow(len(s) + len(s)/3)
 	skipNext := false
 	for i := 0; i < len(source); i++ {
 		cur := source[i]
