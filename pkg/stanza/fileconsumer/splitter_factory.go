@@ -105,7 +105,8 @@ type splitterBuilder struct {
 
 type FactoryOption func(*splitterBuilder)
 
-func WithFlusher(flusher *helper.Flusher) func(*splitterBuilder) {
+func WithFlusherConfig(flusherConfig helper.FlusherConfig) func(*splitterBuilder) {
+	flusher := flusherConfig.Build()
 	return func(builder *splitterBuilder) {
 		builder.flusher = flusher
 	}
