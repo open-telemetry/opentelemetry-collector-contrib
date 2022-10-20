@@ -59,6 +59,8 @@ jobs:
         run: ./.github/workflows/scripts/check-codeowners.sh check_code_owner_existence
       - name: Check Component Existence
         run: ./.github/workflows/scripts/check-codeowners.sh check_component_existence
+      - name: Validate Allowlist entries
+        run: ./.github/workflows/scripts/check-codeowners.sh check_entries_in_allowlist
   lint-matrix:
     strategy:
       matrix:

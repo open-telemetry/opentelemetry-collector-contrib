@@ -84,7 +84,7 @@ processors:
 
 ## Tenant information
 
-It is recommended to use the [`header_setter`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/headerssetter) extension to configure the tenant information to send to Loki. In case a static tenant
+It is recommended to use the [`header_setter`](../../extension/headerssetterextension/README.md) extension to configure the tenant information to send to Loki. In case a static tenant
 should be used, you can make use of the `headers` option for regular HTTP client settings, like the following:
 
 ```yaml

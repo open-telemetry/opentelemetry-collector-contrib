@@ -27,7 +27,7 @@ import (
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
-	assert.Equal(t, &Config{ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr))}, cfg)
+	assert.Equal(t, &Config{ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)), Scheme: defaultScheme}, cfg)
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
