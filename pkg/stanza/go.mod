@@ -15,7 +15,7 @@ require (
 	go.uber.org/zap v1.23.0
 	golang.org/x/exp v0.0.0-20200331195152-e8c3332aa8e5 // indirect
 	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8
-	golang.org/x/text v0.3.7
+	golang.org/x/text v0.4.0
 	gonum.org/v1/gonum v0.12.0
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -44,10 +44,10 @@ require (
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/stretchr/objx v0.4.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel v1.11.0 // indirect
-	go.opentelemetry.io/otel/metric v0.32.3 // indirect
-	go.opentelemetry.io/otel/sdk v1.11.0 // indirect
-	go.opentelemetry.io/otel/trace v1.11.0 // indirect
+	go.opentelemetry.io/otel v1.11.1 // indirect
+	go.opentelemetry.io/otel/metric v0.33.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.11.1 // indirect
+	go.opentelemetry.io/otel/trace v1.11.1 // indirect
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
 	google.golang.org/grpc v1.50.1 // indirect

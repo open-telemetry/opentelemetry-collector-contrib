@@ -31,15 +31,15 @@ require (
 	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c // indirect
-	go.opentelemetry.io/otel v1.11.0 // indirect
-	go.opentelemetry.io/otel/metric v0.32.3 // indirect
-	go.opentelemetry.io/otel/sdk v1.11.0 // indirect
-	go.opentelemetry.io/otel/trace v1.11.0 // indirect
+	go.opentelemetry.io/otel v1.11.1 // indirect
+	go.opentelemetry.io/otel/metric v0.33.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.11.1 // indirect
+	go.opentelemetry.io/otel/trace v1.11.1 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.23.0 // indirect
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/text v0.4.0 // indirect
 	gonum.org/v1/gonum v0.12.0 // indirect
 	google.golang.org/genproto v0.0.0-20220218161850-94dd64e39d7c // indirect
 	google.golang.org/grpc v1.50.1 // indirect
