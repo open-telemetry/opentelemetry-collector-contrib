@@ -283,6 +283,23 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 				`{"traceid":"03000000000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
 			},
 		},
+		{
+			desc: "with logfmt format",
+			attrs: map[string]interface{}{
+				"host.name":   "guarana",
+				"http.status": 200,
+			},
+			hints: map[string]interface{}{
+				hintAttributes: "host.name",
+				hintFormat:     formatLogfmt,
+			},
+			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
+			expectedLines: []string{
+				`traceID=01000000000000000000000000000000 attribute_http.status=200`,
+				`traceID=02000000000000000000000000000000 attribute_http.status=200`,
+				`traceID=03000000000000000000000000000000 attribute_http.status=200`,
+			},
+		},
 	}
 	for _, tt := range testCases {
 		t.Run(tt.desc, func(t *testing.T) {
@@ -375,6 +392,23 @@ func TestLogsToLoki(t *testing.T) {
 				`{"traceid":"01020304000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
 				`{"traceid":"01020304050000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
 				`{"traceid":"01020304050600000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
+			},
+		},
+		{
+			desc: "with logfmt format",
+			res: map[string]interface{}{
+				"host.name": "guarana",
+				"region.az": "eu-west-1a",
+			},
+			hints: map[string]interface{}{
+				hintResources: "host.name",
+				hintFormat:    formatLogfmt,
+			},
+			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
+			expectedLines: []string{
+				`traceID=01020304000000000000000000000000 resource_region.az=eu-west-1a`,
+				`traceID=01020304050000000000000000000000 resource_region.az=eu-west-1a`,
+				`traceID=01020304050600000000000000000000 resource_region.az=eu-west-1a`,
 			},
 		},
 	}
