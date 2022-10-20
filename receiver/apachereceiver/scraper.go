@@ -17,6 +17,7 @@ package apachereceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -24,6 +25,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -32,22 +34,49 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
 )
 
+const (
+	EmitServerNameAsResourceAttribute = "receiver.apache.emitServerNameAsResourceAttribute"
+)
+
+var (
+	emitServerNameAsResourceAttribute = featuregate.Gate{
+		ID:      EmitServerNameAsResourceAttribute,
+		Enabled: false,
+		Description: "When enabled, the name of the server will be sent as an apache.server.name resource attribute " +
+			"instead of a metric-level server_name attribute.",
+	}
+)
+
+func init() {
+	featuregate.GetRegistry().MustRegister(emitServerNameAsResourceAttribute)
+}
+
 type apacheScraper struct {
 	settings   component.TelemetrySettings
 	cfg        *Config
 	httpClient *http.Client
 	mb         *metadata.MetricsBuilder
+
+	// Feature gates regarding resource attributes
+	emitMetricsWithServerNameAsResourceAttribute bool
 }
 
 func newApacheScraper(
 	settings component.ReceiverCreateSettings,
 	cfg *Config,
 ) *apacheScraper {
-	return &apacheScraper{
+	a := &apacheScraper{
 		settings: settings.TelemetrySettings,
 		cfg:      cfg,
 		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+		emitMetricsWithServerNameAsResourceAttribute: featuregate.GetRegistry().IsEnabled(EmitServerNameAsResourceAttribute),
 	}
+
+	if !a.emitMetricsWithServerNameAsResourceAttribute {
+		settings.Logger.Warn(fmt.Sprintf("Feature gate %s is not enabled. Please see the README.md file of apache receiver for more information.", EmitServerNameAsResourceAttribute))
+	}
+
+	return a
 }
 
 func (r *apacheScraper) start(_ context.Context, host component.Host) error {
@@ -72,7 +101,7 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	emitWith := []metadata.ResourceMetricsOption{}
 
-	if r.cfg.emitServerNameAsResourceAttribute {
+	if r.emitMetricsWithServerNameAsResourceAttribute {
 		err = r.scrapeWithoutServerNameAttr(stats)
 		emitWith = append(emitWith, metadata.WithApacheServerName(r.cfg.serverName))
 	} else {

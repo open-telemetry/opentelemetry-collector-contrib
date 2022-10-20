@@ -16,37 +16,21 @@ package apachereceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
 )
 
 const (
-	typeStr                           = "apache"
-	stability                         = component.StabilityLevelBeta
-	EmitServerNameAsResourceAttribute = "receiver.apache.emitServerNameAsResourceAttribute"
+	typeStr   = "apache"
+	stability = component.StabilityLevelBeta
 )
-
-var (
-	emitServerNameAsResourceAttribute = featuregate.Gate{
-		ID:      EmitServerNameAsResourceAttribute,
-		Enabled: false,
-		Description: "When enabled, the name of the server will be sent as an apache.server.name resource attribute " +
-			"instead of a metric-level server_name attribute.",
-	}
-)
-
-func init() {
-	featuregate.GetRegistry().MustRegister(emitServerNameAsResourceAttribute)
-}
 
 // NewFactory creates a factory for apache receiver.
 func NewFactory() component.ReceiverFactory {
@@ -77,14 +61,6 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
-
-	emitServerNameAsResourceAttributeEnabled := featuregate.GetRegistry().IsEnabled(EmitServerNameAsResourceAttribute)
-
-	if !emitServerNameAsResourceAttributeEnabled {
-		params.Logger.Warn(fmt.Sprintf("Feature gate %s is not enabled. Please see the README.md file of apache receiver for more information.", EmitServerNameAsResourceAttribute))
-	}
-
-	cfg.emitServerNameAsResourceAttribute = emitServerNameAsResourceAttributeEnabled
 
 	ns := newApacheScraper(params, cfg)
 	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape, scraperhelper.WithStart(ns.start))
