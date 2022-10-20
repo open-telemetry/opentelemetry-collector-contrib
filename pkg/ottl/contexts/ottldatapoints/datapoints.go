@@ -240,7 +240,7 @@ func accessMetricType() ottl.StandardGetSetter[TransformContext] {
 			return int64(ctx.GetMetric().Type())
 		},
 		Setter: func(ctx TransformContext, val interface{}) {
-			fmt.Errorf("setting metric type is not allowed")
+			fmt.Println("setting metric type is not allowed")
 		},
 	}
 }
