@@ -171,6 +171,15 @@ func TestCollectorID(t *testing.T) {
 	assert.NotZero(t, p1.collectorID)
 	assert.NotEqual(t, p0.collectorID, p1.collectorID)
 	assert.NotZero(t, uuid.MustParse(p1.collectorID))
+
+	// Set a custom CollectorID should respect the configured ID,
+	// and no generate a random UUID.
+	cfg.CollectorID = "foo"
+	p2, err := newProcessor(zaptest.NewLogger(t), cfg, next)
+	require.NoError(t, err)
+
+	// Verify
+	assert.Equal(t, "foo", p2.collectorID)
 }
 
 func TestConfigureLatencyBounds(t *testing.T) {

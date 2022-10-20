@@ -65,6 +65,8 @@ The following settings can be optionally configured:
 - `aggregation_temporality`: Defines the aggregation temporality of the generated metrics. 
   One of either `AGGREGATION_TEMPORALITY_CUMULATIVE` or `AGGREGATION_TEMPORALITY_DELTA`.
   - Default: `AGGREGATION_TEMPORALITY_CUMULATIVE`
+- `collector_id`: Allows users to define an identifier for this collector which is manifested as a `collector_id` dimension in all metrics.
+  - Default: a v4 UUID that is randomly generated on collector startup.
 
 ## Examples
 

@@ -62,6 +62,10 @@ processors:
     # Default: "AGGREGATION_TEMPORALITY_CUMULATIVE"
     aggregation_temporality: "AGGREGATION_TEMPORALITY_DELTA"
 
+    # CollectorID is the custom ID used to identify this Opentelemetry collector instance.
+    # Optional. If unset, a random v4 UUID will be generated on startup.
+    collector_id: "foo"
+
 service:
   pipelines:
     traces:

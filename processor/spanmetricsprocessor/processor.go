@@ -119,9 +119,14 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		return nil, err
 	}
 
-	id, err := uuid.NewRandom()
-	if err != nil {
-		return nil, err
+	id := pConfig.CollectorID
+
+	if id == "" {
+		uid, err := uuid.NewRandom()
+		if err != nil {
+			return nil, err
+		}
+		id = uid.String()
 	}
 
 	return &processorImp{
@@ -137,7 +142,7 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		nextConsumer:          nextConsumer,
 		dimensions:            pConfig.Dimensions,
 		metricKeyToDimensions: metricKeyToDimensionsCache,
-		collectorID:           id.String(),
+		collectorID:           id,
 	}, nil
 }
 

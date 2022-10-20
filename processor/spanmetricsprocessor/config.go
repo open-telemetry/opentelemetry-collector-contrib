@@ -60,6 +60,10 @@ type Config struct {
 
 	AggregationTemporality string `mapstructure:"aggregation_temporality"`
 
+	// CollectorID is the custom ID used to identify this Opentelemetry collector instance.
+	// Optional. If unset, a random v4 UUID will be generated on startup.
+	CollectorID string `mapstructure:"collector_id"`
+
 	// skipSanitizeLabel if enabled, labels that start with _ are not sanitized
 	skipSanitizeLabel bool
 }

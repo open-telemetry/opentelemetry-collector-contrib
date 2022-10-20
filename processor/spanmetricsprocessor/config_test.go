@@ -43,6 +43,7 @@ func TestLoadConfig(t *testing.T) {
 		wantDimensions              []Dimension
 		wantDimensionsCacheSize     int
 		wantAggregationTemporality  string
+		wantCollectorID             string
 	}{
 		{
 			configFile:                 "config-2-pipelines.yaml",
@@ -74,6 +75,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 			wantDimensionsCacheSize:    1500,
 			wantAggregationTemporality: delta,
+			wantCollectorID:            "foo",
 		},
 	}
 	for _, tc := range testcases {
@@ -106,6 +108,7 @@ func TestLoadConfig(t *testing.T) {
 					Dimensions:              tc.wantDimensions,
 					DimensionsCacheSize:     tc.wantDimensionsCacheSize,
 					AggregationTemporality:  tc.wantAggregationTemporality,
+					CollectorID:             tc.wantCollectorID,
 				},
 				cfg.Processors[config.NewComponentID(typeStr)],
 			)
