@@ -26,13 +26,12 @@ import (
 func Test_concat(t *testing.T) {
 	tests := []struct {
 		name      string
-		delimiter string
 		vals      []ottl.StandardGetSetter[interface{}]
+		delimiter string
 		expected  string
 	}{
 		{
-			name:      "concat strings",
-			delimiter: " ",
+			name: "concat strings",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
 					Getter: func(ctx interface{}) interface{} {
@@ -45,11 +44,11 @@ func Test_concat(t *testing.T) {
 					},
 				},
 			},
-			expected: "hello world",
+			delimiter: " ",
+			expected:  "hello world",
 		},
 		{
-			name:      "nil",
-			delimiter: "",
+			name: "nil",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
 					Getter: func(ctx interface{}) interface{} {
@@ -67,11 +66,11 @@ func Test_concat(t *testing.T) {
 					},
 				},
 			},
-			expected: "hello<nil>world",
+			delimiter: "",
+			expected:  "hello<nil>world",
 		},
 		{
-			name:      "integers",
-			delimiter: "",
+			name: "integers",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
 					Getter: func(ctx interface{}) interface{} {
@@ -84,11 +83,11 @@ func Test_concat(t *testing.T) {
 					},
 				},
 			},
-			expected: "hello1",
+			delimiter: "",
+			expected:  "hello1",
 		},
 		{
-			name:      "floats",
-			delimiter: "",
+			name: "floats",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
 					Getter: func(ctx interface{}) interface{} {
@@ -101,11 +100,11 @@ func Test_concat(t *testing.T) {
 					},
 				},
 			},
-			expected: "hello3.14159",
+			delimiter: "",
+			expected:  "hello3.14159",
 		},
 		{
-			name:      "booleans",
-			delimiter: " ",
+			name: "booleans",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
 					Getter: func(ctx interface{}) interface{} {
@@ -118,11 +117,11 @@ func Test_concat(t *testing.T) {
 					},
 				},
 			},
-			expected: "hello true",
+			delimiter: " ",
+			expected:  "hello true",
 		},
 		{
-			name:      "byte slices",
-			delimiter: "",
+			name: "byte slices",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
 					Getter: func(ctx interface{}) interface{} {
@@ -130,11 +129,11 @@ func Test_concat(t *testing.T) {
 					},
 				},
 			},
-			expected: "00000000000000000ed2e63cbe71f5a8",
+			delimiter: "",
+			expected:  "00000000000000000ed2e63cbe71f5a8",
 		},
 		{
-			name:      "non-byte slices",
-			delimiter: "",
+			name: "non-byte slices",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
 					Getter: func(ctx interface{}) interface{} {
@@ -142,11 +141,11 @@ func Test_concat(t *testing.T) {
 					},
 				},
 			},
-			expected: "",
+			delimiter: "",
+			expected:  "",
 		},
 		{
-			name:      "maps",
-			delimiter: "",
+			name: "maps",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
 					Getter: func(ctx interface{}) interface{} {
@@ -154,11 +153,11 @@ func Test_concat(t *testing.T) {
 					},
 				},
 			},
-			expected: "",
+			delimiter: "",
+			expected:  "",
 		},
 		{
-			name:      "unprintable value in the middle",
-			delimiter: "-",
+			name: "unprintable value in the middle",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
 					Getter: func(ctx interface{}) interface{} {
@@ -176,11 +175,11 @@ func Test_concat(t *testing.T) {
 					},
 				},
 			},
-			expected: "hello--world",
+			delimiter: "-",
+			expected:  "hello--world",
 		},
 		{
-			name:      "empty string values",
-			delimiter: "__",
+			name: "empty string values",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
 					Getter: func(ctx interface{}) interface{} {
@@ -198,11 +197,11 @@ func Test_concat(t *testing.T) {
 					},
 				},
 			},
-			expected: "____",
+			delimiter: "__",
+			expected:  "____",
 		},
 		{
-			name:      "single argument",
-			delimiter: "-",
+			name: "single argument",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
 					Getter: func(ctx interface{}) interface{} {
@@ -210,18 +209,19 @@ func Test_concat(t *testing.T) {
 					},
 				},
 			},
-			expected: "hello",
+			delimiter: "-",
+			expected:  "hello",
 		},
 		{
 			name:      "no arguments",
-			delimiter: "-",
 			vals:      []ottl.StandardGetSetter[interface{}]{},
+			delimiter: "-",
 			expected:  "",
 		},
 		{
 			name:      "no arguments with an empty delimiter",
-			delimiter: "",
 			vals:      []ottl.StandardGetSetter[interface{}]{},
+			delimiter: "",
 			expected:  "",
 		},
 	}
@@ -233,7 +233,7 @@ func Test_concat(t *testing.T) {
 				getters[i] = val
 			}
 
-			exprFunc, err := Concat(tt.delimiter, getters)
+			exprFunc, err := Concat(getters, tt.delimiter)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, exprFunc(nil))
 		})
