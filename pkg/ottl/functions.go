@@ -58,14 +58,13 @@ func (p *Parser[K]) buildArgs(inv invocation, fType reflect.Type) ([]reflect.Val
 	for i := 0; i < fType.NumIn(); i++ {
 		argType := fType.In(i)
 
-		switch {
-		case argType.Kind() == reflect.Slice:
+		if argType.Kind() == reflect.Slice {
 			arg, err := p.buildSliceArg(inv, argType, i)
 			if err != nil {
 				return nil, err
 			}
 			args = append(args, arg)
-		default:
+		} else {
 			arg, isInternalArg := p.buildInternalArg(argType)
 
 			if isInternalArg {
@@ -158,22 +157,22 @@ func (p *Parser[K]) buildArg(argDef value, argType reflect.Type, index int) (any
 			return nil, fmt.Errorf("invalid argument at position %v must be an Enum", index)
 		}
 		return *arg, nil
-	case name == "string":
+	case name == reflect.String.String():
 		if argDef.String == nil {
 			return nil, fmt.Errorf("invalid argument at position %v, must be an string", index)
 		}
 		return *argDef.String, nil
-	case name == "float64":
+	case name == reflect.Float64.String():
 		if argDef.Float == nil {
 			return nil, fmt.Errorf("invalid argument at position %v, must be an float", index)
 		}
 		return *argDef.Float, nil
-	case name == "int64":
+	case name == reflect.Int64.String():
 		if argDef.Int == nil {
 			return nil, fmt.Errorf("invalid argument at position %v, must be an int", index)
 		}
 		return *argDef.Int, nil
-	case name == "bool":
+	case name == reflect.Bool.String():
 		if argDef.Bool == nil {
 			return nil, fmt.Errorf("invalid argument at position %v, must be a bool", index)
 		}
@@ -186,12 +185,10 @@ func (p *Parser[K]) buildArg(argDef value, argType reflect.Type, index int) (any
 // Handle interfaces that can be declared as parameters to a OTTL function, but will
 // never be called in an invocation. Returns whether the arg is an internal arg.
 func (p *Parser[K]) buildInternalArg(argType reflect.Type) (reflect.Value, bool) {
-	switch argType.Name() {
-	case "TelemetrySettings":
+	if argType.Name() == "TelemetrySettings" {
 		return reflect.ValueOf(p.telemetrySettings), true
-	default:
-		return reflect.ValueOf(nil), false
 	}
+	return reflect.ValueOf(nil), false
 }
 
 type buildArgFunc func(value, reflect.Type, int) (any, error)
