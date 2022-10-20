@@ -68,10 +68,7 @@ func Encode(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 // string representing a Loki entry. An error is returned when the record can't
 // be marshaled into logfmt.
 func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource) (string, error) {
-	keyvals, err := bodyToKeyvals(lr.Body())
-	if err != nil {
-		return "", err
-	}
+	keyvals := bodyToKeyvals(lr.Body())
 
 	traceID := lr.TraceID().HexString()
 	if traceID != "" {
@@ -140,24 +137,24 @@ func serializeBodyJSON(body pcommon.Value) ([]byte, error) {
 	return str, err
 }
 
-func bodyToKeyvals(body pcommon.Value) ([]interface{}, error) {
+func bodyToKeyvals(body pcommon.Value) []interface{} {
 	switch body.Type() {
 	case pcommon.ValueTypeEmpty:
-		return nil, nil
+		return nil
 	case pcommon.ValueTypeStr:
 		// try to parse record body as logfmt, but failing that assume it's plain text
 		value := body.Str()
 		keyvals, err := parseLogfmtLine(value)
 		if err != nil {
-			return []interface{}{"msg", body.Str()}, nil
+			return []interface{}{"msg", body.Str()}
 		}
-		return *keyvals, nil
+		return *keyvals
 	case pcommon.ValueTypeMap:
-		return valueToKeyvals("", body), nil
+		return valueToKeyvals("", body)
 	case pcommon.ValueTypeSlice:
-		return valueToKeyvals("body", body), nil
+		return valueToKeyvals("body", body)
 	default:
-		return []interface{}{"msg", body.AsRaw()}, nil
+		return []interface{}{"msg", body.AsRaw()}
 	}
 }
 

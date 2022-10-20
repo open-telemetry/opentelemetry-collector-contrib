@@ -85,7 +85,7 @@ func TestSerializeComplexBody(t *testing.T) {
 
 	testcases := []struct {
 		input          pcommon.Value
-		expectedJson   []byte
+		expectedJSON   []byte
 		expectedLogfmt []byte
 	}{
 		{
@@ -138,10 +138,9 @@ func TestSerializeComplexBody(t *testing.T) {
 	for _, test := range testcases {
 		out, err := serializeBodyJSON(test.input)
 		assert.NoError(t, err)
-		assert.Equal(t, test.expectedJson, out)
+		assert.Equal(t, test.expectedJSON, out)
 
-		keyvals, err := bodyToKeyvals(test.input)
-		assert.NoError(t, err)
+		keyvals := bodyToKeyvals(test.input)
 		out, err = logfmt.MarshalKeyvals(keyvals...)
 		assert.NoError(t, err)
 		assert.Equal(t, string(test.expectedLogfmt), string(out))
