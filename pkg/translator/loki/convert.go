@@ -33,8 +33,8 @@ const (
 )
 
 const (
-	formatJson   string = "json"
-	formatLogfmt        = "logfmt"
+	formatJSON   string = "json"
+	formatLogfmt string = "logfmt"
 )
 
 var defaultExporterLabels = model.LabelSet{"exporter": "OTLP"}
@@ -116,7 +116,7 @@ func removeAttributes(attrs pcommon.Map, labels model.LabelSet) {
 }
 
 func convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource) (*logproto.Entry, error) {
-	line, err := EncodeJson(lr, res)
+	line, err := Encode(lr, res)
 	if err != nil {
 		return nil, err
 	}
@@ -139,12 +139,12 @@ func convertLogToLogfmtEntry(lr plog.LogRecord, res pcommon.Resource) (*logproto
 
 func convertLogToLokiEntry(lr plog.LogRecord, res pcommon.Resource, format string) (*logproto.Entry, error) {
 	switch format {
-	case formatJson:
+	case formatJSON:
 		return convertLogToJSONEntry(lr, res)
 	case formatLogfmt:
 		return convertLogToLogfmtEntry(lr, res)
 	default:
-		return nil, fmt.Errorf("invalid format %s. Expected one of: %s, %s", format, formatJson, formatLogfmt)
+		return nil, fmt.Errorf("invalid format %s. Expected one of: %s, %s", format, formatJSON, formatLogfmt)
 	}
 
 }

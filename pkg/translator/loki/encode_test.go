@@ -43,7 +43,7 @@ func exampleLog() (plog.LogRecord, pcommon.Resource) {
 func TestEncodeJsonWithStringBody(t *testing.T) {
 	in := `{"body":"Example log","traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resources":{"host.name":"something"}}`
 
-	out, err := EncodeJson(exampleLog())
+	out, err := Encode(exampleLog())
 	assert.NoError(t, err)
 	assert.Equal(t, in, out)
 }
@@ -57,7 +57,7 @@ func TestEncodeJsonWithMapBody(t *testing.T) {
 	mapVal.Map().PutStr("key2", "value")
 	mapVal.CopyTo(log.Body())
 
-	out, err := EncodeJson(log, resource)
+	out, err := Encode(log, resource)
 	assert.NoError(t, err)
 	assert.Equal(t, in, out)
 }
@@ -137,7 +137,7 @@ func TestSerializeComplexBody(t *testing.T) {
 	}
 
 	for _, test := range testcases {
-		out, err := serializeBodyJson(test.input)
+		out, err := serializeBodyJSON(test.input)
 		assert.NoError(t, err)
 		assert.Equal(t, test.expectedJson, out)
 

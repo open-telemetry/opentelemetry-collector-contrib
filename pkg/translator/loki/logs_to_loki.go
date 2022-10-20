@@ -133,12 +133,12 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 }
 
 func getFormatFromFormatHint(logAttr pcommon.Map, resourceAttr pcommon.Map) string {
-	format := formatJson
+	format := formatJSON
 	formatVal, found := resourceAttr.Get(hintFormat)
 	if !found {
 		formatVal, found = logAttr.Get(hintFormat)
-	} else {
 	}
+
 	if found {
 		format = formatVal.AsString()
 	}

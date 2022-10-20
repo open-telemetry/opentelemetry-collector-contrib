@@ -35,16 +35,16 @@ type lokiEntry struct {
 	Resources  map[string]interface{} `json:"resources,omitempty"`
 }
 
-// EncodeJson converts an OTLP log record and its resource attributes into a JSON
+// Encode converts an OTLP log record and its resource attributes into a JSON
 // string representing a Loki entry. An error is returned when the record can't
 // be marshaled into JSON.
-func EncodeJson(lr plog.LogRecord, res pcommon.Resource) (string, error) {
+func Encode(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 	var logRecord lokiEntry
 	var jsonRecord []byte
 	var err error
 	var body []byte
 
-	body, err = serializeBodyJson(lr.Body())
+	body, err = serializeBodyJSON(lr.Body())
 	if err != nil {
 		return "", err
 	}
@@ -64,6 +64,9 @@ func EncodeJson(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 	return string(jsonRecord), nil
 }
 
+// EncodeLogfmt converts an OTLP log record and its resource attributes into a logfmt
+// string representing a Loki entry. An error is returned when the record can't
+// be marshaled into logfmt.
 func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 	keyvals, err := bodyToKeyvals(lr.Body())
 	if err != nil {
@@ -103,7 +106,7 @@ func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 	return string(logfmtLine), nil
 }
 
-func serializeBodyJson(body pcommon.Value) ([]byte, error) {
+func serializeBodyJSON(body pcommon.Value) ([]byte, error) {
 	var str []byte
 	var err error
 	switch body.Type() {
