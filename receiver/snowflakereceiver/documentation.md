@@ -62,9 +62,9 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| snowflake.account.name | The name of the snowflake account being monitored | Str |
+| snowflake.account.name | The name of the snowflake account being monitored | String |
 | snowflake.username | The name of the snowflake user account being used | Empty |
-| snowflake.warehouse.name | The name of the warehouse being used | Str |
+| snowflake.warehouse.name | The name of the warehouse being used | String |
 
 ## Metric attributes
 
