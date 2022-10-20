@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"path/filepath"
 	"testing"
 
@@ -41,8 +42,7 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	// Let this test check if it works with the feature enabled and the integration test will test the feature disabled.
-	err := featuregate.GetRegistry().Apply(map[string]bool{EmitServerNameAsResourceAttribute: true})
-
+	err := featuregate.GetRegistry().Apply(map[string]bool{EmitServerNameAsResourceAttribute: true, EmitPortAsResourceAttribute: true})
 	require.NoError(t, err)
 
 	scraper := newApacheScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
@@ -56,7 +56,12 @@ func TestScraper(t *testing.T) {
 	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
+	url, err := url.Parse(apacheMock.URL)
+	require.NoError(t, err)
+	expectedMetrics.ResourceMetrics().At(0).Resource().Attributes().Remove("apache.server.port")
+	expectedMetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr("apache.server.port", url.Port())
 
+	// The port is random, so we shouldn't check if this value matches.
 	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 

@@ -37,6 +37,8 @@ import (
 const (
 	readmeURL                         = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/apachereceiver/README.md"
 	EmitServerNameAsResourceAttribute = "receiver.apache.emitServerNameAsResourceAttribute"
+	EmitPortAsResourceAttribute       = "receiver.apache.emitPortAsResourceAttribute"
+	featureGateWarning                = "Feature gate %s is not enabled. Please see the README.md file of apache receiver for more information."
 )
 
 var (
@@ -46,10 +48,16 @@ var (
 		Description: "When enabled, the name of the server will be sent as an apache.server.name resource attribute " +
 			"instead of a metric-level server_name attribute.",
 	}
+	emitPortAsResourceAttribute = featuregate.Gate{
+		ID:          EmitPortAsResourceAttribute,
+		Enabled:     false,
+		Description: "When enabled, the port of the server will be sent as an apache.server.name resource attribute.",
+	}
 )
 
 func init() {
 	featuregate.GetRegistry().MustRegister(emitServerNameAsResourceAttribute)
+	featuregate.GetRegistry().MustRegister(emitPortAsResourceAttribute)
 }
 
 type apacheScraper struct {
@@ -60,6 +68,7 @@ type apacheScraper struct {
 
 	// Feature gates regarding resource attributes
 	emitMetricsWithServerNameAsResourceAttribute bool
+	emitMetricsWithPortAsResourceAttribute       bool
 }
 
 func newApacheScraper(
@@ -71,11 +80,18 @@ func newApacheScraper(
 		cfg:      cfg,
 		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
 		emitMetricsWithServerNameAsResourceAttribute: featuregate.GetRegistry().IsEnabled(EmitServerNameAsResourceAttribute),
+		emitMetricsWithPortAsResourceAttribute:       featuregate.GetRegistry().IsEnabled(EmitPortAsResourceAttribute),
 	}
 
 	if !a.emitMetricsWithServerNameAsResourceAttribute {
 		settings.Logger.Warn(
 			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", EmitServerNameAsResourceAttribute, readmeURL),
+		)
+	}
+
+	if !a.emitMetricsWithPortAsResourceAttribute {
+		settings.Logger.Warn(
+			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", EmitPortAsResourceAttribute, readmeURL),
 		)
 	}
 
@@ -109,6 +125,10 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		emitWith = append(emitWith, metadata.WithApacheServerName(r.cfg.serverName))
 	} else {
 		err = r.scrapeWithServerNameAttr(stats)
+	}
+
+	if r.emitMetricsWithPortAsResourceAttribute {
+		emitWith = append(emitWith, metadata.WithApacheServerPort(r.cfg.port))
 	}
 
 	return r.mb.Emit(emitWith...), err
