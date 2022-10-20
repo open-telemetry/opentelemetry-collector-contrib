@@ -30,8 +30,8 @@ const enableHistogramSupportGateID = "processor.cumulativetodeltaprocessor.Enabl
 
 var enableHistogramSupportGate = featuregate.Gate{
 	ID:          enableHistogramSupportGateID,
-	Enabled:     false,
-	Description: "wip",
+	Enabled:     true,
+	Description: "Enables histogram conversion support",
 }
 
 func init() {
