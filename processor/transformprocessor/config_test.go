@@ -40,19 +40,19 @@ func TestLoadConfig(t *testing.T) {
 					Traces: SignalConfig{
 						Statements: []string{
 							`set(name, "bear") where attributes["http.path"] == "/animal"`,
-							`keep_keys(attributes, "http.method", "http.path")`,
+							`keep_keys(attributes, ["http.method", "http.path"])`,
 						},
 					},
 					Metrics: SignalConfig{
 						Statements: []string{
 							`set(metric.name, "bear") where attributes["http.path"] == "/animal"`,
-							`keep_keys(attributes, "http.method", "http.path")`,
+							`keep_keys(attributes, ["http.method", "http.path"])`,
 						},
 					},
 					Logs: SignalConfig{
 						Statements: []string{
 							`set(body, "bear") where attributes["http.path"] == "/animal"`,
-							`keep_keys(attributes, "http.method", "http.path")`,
+							`keep_keys(attributes, ["http.method", "http.path"])`,
 						},
 					},
 				},

@@ -25,7 +25,7 @@ Example Invocations
 
 #### Invocation parameters
 
-The OTTL will use reflection to determine parameter types when parsing an invocation within a statement.  When interpreting slice parameter types, the OTTL will attempt to build the slice from all remaining Values in the Invocation's arguments.  As a result, function implementations of Invocations may only contain one slice argument and it must be the last argument in the function definition.  See [function syntax guidelines](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#function-syntax) for more details.
+The OTTL will use reflection to determine parameter types when parsing an invocation within a statement.
 
 The following types are supported for single parameter values:
 - `Setter`
@@ -41,13 +41,14 @@ For slice parameters, the following types are supported:
 - `string`
 - `float64`
 - `int64`
-- `uint8`. Slices of bytes will be interpreted as a byte array.
+- `uint8`. Byte slice literals are parsed as byte slices by the OTTL.
 - `Getter`
 
 ### Values
 
 Values are passed as input to an Invocation or are used in an Expression. Values can take the form of:
 - [Paths](#paths).
+- [Lists](#lists).
 - [Literals](#literals).
 - [Enums](#enums).
 - [Invocations](#invocations).
@@ -67,6 +68,16 @@ Example Paths
 - `value_double`
 - `resource.name`
 - `resource.attributes["key"]`
+
+#### Lists
+
+A List Value comprises a sequence of Expressions or supported Literals.
+
+Example List Values:
+- `[]`
+- `[1]`
+- `["1", "2", "3"]`
+- `["a", attributes["key"], Concat(["a", "b"], "-")]`
 
 #### Literals
 
@@ -180,11 +191,11 @@ logs:
 
 ```
 traces:
-  keep_keys(attributes, "http.method", "http.status_code")
+  keep_keys(attributes, ["http.method", "http.status_code"])
 metrics:
-  keep_keys(attributes, "http.method", "http.status_code")
+  keep_keys(attributes, ["http.method", "http.status_code"])
 logs:
-  keep_keys(attributes, "http.method", "http.status_code")
+  keep_keys(attributes, ["http.method", "http.status_code"])
 ```
 
 ### Reduce cardinality of an attribute
