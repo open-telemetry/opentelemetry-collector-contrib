@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcente
 go 1.18
 
 require (
+	github.com/google/go-cmp v0.5.9
 	github.com/vmware/govmomi v0.29.0
 	go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c
 	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
