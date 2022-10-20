@@ -49,10 +49,14 @@ func newNextExporter(config *Config, settings component.TelemetrySettings) *next
 }
 
 func (l *nextLokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
+	requests := loki.LogsToLokiRequests(ld)
+
 	var errs error
-	for tenant, request := range loki.LogsToLokiRequests(ld) {
-		errs = multierr.Append(errs, l.sendPushRequest(ctx, tenant, request, ld))
+	for tenant, request := range requests {
+		err := l.sendPushRequest(ctx, tenant, request, ld)
+		errs = multierr.Append(errs, err)
 	}
+
 	return errs
 }
 

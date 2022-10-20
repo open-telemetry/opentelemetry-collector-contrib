@@ -177,6 +177,70 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "tenant hint is not found in attributes",
+			logs: func() plog.Logs {
+				logs := plog.NewLogs()
+				rl := logs.ResourceLogs().AppendEmpty()
+
+				sl := rl.ScopeLogs().AppendEmpty()
+				logRecord := sl.LogRecords().AppendEmpty()
+				logRecord.Attributes().PutStr("loki.tenant", "tenant.id")
+				logRecord.Attributes().PutInt("http.status", 200)
+
+				return logs
+			}(),
+			expected: map[string]struct {
+				line  string
+				label string
+			}{
+				"": {
+					label: `{exporter="OTLP"}`,
+					line:  `{"attributes":{"http.status":200}}`,
+				},
+			},
+		},
+		{
+			desc: "use tenant resource attributes if both logs and resource attributes provided",
+			logs: func() plog.Logs {
+				logs := plog.NewLogs()
+
+				rl := logs.ResourceLogs().AppendEmpty()
+				rl.Resource().Attributes().PutStr("loki.tenant", "tenant.id")
+				rl.Resource().Attributes().PutStr("tenant.id", "1")
+
+				sl := rl.ScopeLogs().AppendEmpty()
+				logRecord := sl.LogRecords().AppendEmpty()
+				logRecord.Attributes().PutStr("loki.tenant", "tenant.id")
+				logRecord.Attributes().PutStr("tenant.id", "11")
+				logRecord.Attributes().PutInt("http.status", 200)
+
+				rl = logs.ResourceLogs().AppendEmpty()
+				rl.Resource().Attributes().PutStr("loki.tenant", "tenant.id")
+				rl.Resource().Attributes().PutStr("tenant.id", "2")
+
+				sl = rl.ScopeLogs().AppendEmpty()
+				logRecord = sl.LogRecords().AppendEmpty()
+				logRecord.Attributes().PutStr("loki.tenant", "tenant.id")
+				logRecord.Attributes().PutStr("tenant.id", "22")
+				logRecord.Attributes().PutInt("http.status", 200)
+
+				return logs
+			}(),
+			expected: map[string]struct {
+				line  string
+				label string
+			}{
+				"1": {
+					label: `{exporter="OTLP", tenant.id="1"}`,
+					line:  `{"attributes":{"http.status":200}}`,
+				},
+				"2": {
+					label: `{exporter="OTLP", tenant.id="2"}`,
+					line:  `{"attributes":{"http.status":200}}`,
+				},
+			},
+		},
 	}
 	for _, tC := range tests {
 		t.Run(tC.desc, func(t *testing.T) {
