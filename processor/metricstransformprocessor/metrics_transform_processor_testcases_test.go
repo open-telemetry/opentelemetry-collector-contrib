@@ -1664,10 +1664,10 @@ var (
 				},
 			},
 			in: []pmetric.Metric{
-				metricBuilder(pmetric.MetricTypeGauge, "HTTPMetric").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "CPUUtilizationMetric").build(),
 			},
 			out: []pmetric.Metric{
-				metricBuilder(pmetric.MetricTypeGauge, "http_metric").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "cpu_utilization_metric").build(),
 			},
 		},
 		{
