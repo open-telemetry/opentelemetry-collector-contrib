@@ -102,13 +102,13 @@ Attribute configurations are used to define what resource attributes will be use
 
 | Field Name  | Description                                                    | Value                       | Default |
 | --          | --                                                             | --                          | --      |
-| `value_type`  | The value type of this metric's data. Can be either `int` or `float` | string              | float   |
+| `value_type`  | The value type of this metric's data. Can be either `int` or `double` | string             | double   |
 
 #### SumMetric Configuration
 
 | Field Name  | Description                                                    | Value                       | Default |
 | --          | --                                                             | --                          | --      |
-| `value_type` | The value type of this metric's data. Can be either `int` or `float` | string               | float   |
+| `value_type` | The value type of this metric's data. Can be either `int` or `double` | string              | double   |
 | `monotonic` | Whether this is a monotonic sum or not                         | bool                        | false   |
 | `aggregation` | The aggregation type of this metric's data. Can be either `cumulative` or `delta` | string | cumulative |
 
@@ -206,7 +206,7 @@ receivers:
         sum:
           aggregation: delta
           monotonic: false
-          value_type: float
+          value_type: double
         scalar_oids:
           - oid: "4.4.4.4.0"  
             attributes:
