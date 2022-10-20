@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 go 1.18
 
 require (
+	github.com/go-logfmt/logfmt v0.5.1
 	github.com/grafana/loki v1.6.2-0.20220718071907-6bd05c9a4399
 	github.com/prometheus/common v0.37.0
 	github.com/stretchr/testify v1.8.0
@@ -24,7 +25,6 @@ require (
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
-	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/gogo/googleapis v1.4.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/gogo/status v1.1.0 // indirect

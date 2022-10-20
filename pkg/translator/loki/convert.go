@@ -29,6 +29,12 @@ const (
 	hintAttributes = "loki.attribute.labels"
 	hintResources  = "loki.resource.labels"
 	hintTenant     = "loki.tenant"
+	hintFormat     = "loki.format"
+)
+
+const (
+	formatJSON   string = "json"
+	formatLogfmt string = "logfmt"
 )
 
 var defaultExporterLabels = model.LabelSet{"exporter": "OTLP"}
@@ -100,7 +106,7 @@ func parseAttributeNames(attrsToSelect pcommon.Value) []string {
 
 func removeAttributes(attrs pcommon.Map, labels model.LabelSet) {
 	attrs.RemoveIf(func(s string, v pcommon.Value) bool {
-		if s == hintAttributes || s == hintResources || s == hintTenant {
+		if s == hintAttributes || s == hintResources || s == hintTenant || s == hintFormat {
 			return true
 		}
 
@@ -118,6 +124,29 @@ func convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource) (*logproto.E
 		Timestamp: timestampFromLogRecord(lr),
 		Line:      line,
 	}, nil
+}
+
+func convertLogToLogfmtEntry(lr plog.LogRecord, res pcommon.Resource) (*logproto.Entry, error) {
+	line, err := EncodeLogfmt(lr, res)
+	if err != nil {
+		return nil, err
+	}
+	return &logproto.Entry{
+		Timestamp: timestampFromLogRecord(lr),
+		Line:      line,
+	}, nil
+}
+
+func convertLogToLokiEntry(lr plog.LogRecord, res pcommon.Resource, format string) (*logproto.Entry, error) {
+	switch format {
+	case formatJSON:
+		return convertLogToJSONEntry(lr, res)
+	case formatLogfmt:
+		return convertLogToLogfmtEntry(lr, res)
+	default:
+		return nil, fmt.Errorf("invalid format %s. Expected one of: %s, %s", format, formatJSON, formatLogfmt)
+	}
+
 }
 
 func timestampFromLogRecord(lr plog.LogRecord) time.Time {
