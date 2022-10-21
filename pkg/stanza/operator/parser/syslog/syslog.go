@@ -126,8 +126,7 @@ func (s *Parser) buildParseFunc() (parseFunc, error) {
 	switch s.protocol {
 	case RFC3164:
 		return func(input []byte) (sl.Message, error) {
-			machine := rfc3164.NewMachine(rfc3164.WithLocaleTimezone(s.location))
-			return machine.Parse(input)
+			return rfc3164.NewMachine(rfc3164.WithLocaleTimezone(s.location)).Parse(input)
 		}, nil
 	case RFC5424:
 		switch {
@@ -140,8 +139,7 @@ func (s *Parser) buildParseFunc() (parseFunc, error) {
 		// Raw RFC5424 parsing
 		default:
 			return func(input []byte) (sl.Message, error) {
-				machine := rfc5424.NewMachine()
-				return machine.Parse(input)
+				return rfc5424.NewMachine().Parse(input)
 			}, nil
 		}
 
