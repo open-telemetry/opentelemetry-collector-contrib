@@ -133,12 +133,10 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 }
 
 func newRetryOnError(req *http.Request, err error) bool {
-	//on Timeout (Proposal: predefined configuratble rules)
 	shouldRetry := false
-	if netErr, ok := err.(net.Error); ok {
-		if !netErr.Timeout() {
-			shouldRetry = true
-		}
+	if netErr, ok := err.(net.Error); ok && netErr != nil {
+		//on Timeout (Proposal: predefined configuratble rules)
+		shouldRetry = true
 	}
 	return shouldRetry
 }
