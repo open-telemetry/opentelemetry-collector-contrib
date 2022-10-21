@@ -14,19 +14,13 @@
 #
 
 cmd/configschema
-examples/demo/client
-examples/demo/server
 exporter/parquetexporter
 extension/fluentbitextension
 extension/httpforwarder
 internal/common
 internal/containertest
-internal/coreinternal
-internal/sharedcomponent
-internal/tools
 pkg/batchperresourceattr
 pkg/experimentalmetricmetadata
 processor/deltatorateprocessor
 processor/metricsgenerationprocessor
 receiver/dotnetdiagnosticsreceiver
-testbed
