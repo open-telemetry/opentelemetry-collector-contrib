@@ -135,7 +135,7 @@ func TestExporter_New(t *testing.T) {
 	}
 }
 
-func TestExporter_PushEvent(t *testing.T) {
+func TestExporter_PushEvent(t *testing.T) { //FIXME:
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10178")
 	}
