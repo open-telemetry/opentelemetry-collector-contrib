@@ -13,7 +13,6 @@
 #  https://help.github.com/en/articles/about-code-owners
 #
 
-cmd/configschema
 examples/demo/client
 examples/demo/server
 exporter/parquetexporter
