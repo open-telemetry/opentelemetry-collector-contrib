@@ -102,7 +102,7 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 		maxRetries = 0
 		retryOnError = nil
 	}
-	retryOnError = nil
+
 	return elasticsearch.NewClient(esConfigCurrent{
 		Transport: transport,
 
@@ -132,10 +132,12 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 	})
 }
 
-func newRetryOnError(req *http.Request, err error) bool {
+func newRetryOnError(_ *http.Request, err error) bool {
 	shouldRetry := false
+	// nolint:errorlint
 	if netErr, ok := err.(net.Error); ok && netErr != nil {
-		//on Timeout (Proposal: predefined configuratble rules)
+		// on Timeout (Proposal: predefined configuratble rules)
+
 		shouldRetry = true
 	}
 
