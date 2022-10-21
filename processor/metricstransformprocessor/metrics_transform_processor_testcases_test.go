@@ -1611,11 +1611,18 @@ var (
 			out: []pmetric.Metric{},
 		},
 		{
-			name: "simple_convert_to_snake_case",
+			name: "strict_convert_to_snake_case",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterStrict{include: "metric"},
-					Action:              CaseConvert,
+					MetricIncludeFilter: internalFilterStrict{include: "metricTest"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: CaseConvert,
+							},
+						},
+					},
 				},
 			},
 			in: []pmetric.Metric{
@@ -1626,41 +1633,87 @@ var (
 			},
 		},
 		{
-			name: "complex_convert_to_snake_case",
+			name: "regexp_convert_to_snake_case",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterStrict{include: "metric"},
-					Action:              CaseConvert,
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile(".*")},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: CaseConvert,
+							},
+						},
+					},
 				},
 			},
 			in: []pmetric.Metric{
-				metricBuilder(pmetric.MetricTypeGauge, "Base_MetricTest").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metricTest").build(),
 			},
 			out: []pmetric.Metric{
-				metricBuilder(pmetric.MetricTypeGauge, "base_metric_test").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric_test").build(),
+			},
+		},
+		// Only convert to snake case metrics starting with test
+		{
+			name: "complex_regexp_convert_to_snake_case",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("test.*[A-Z]")},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: CaseConvert,
+							},
+						},
+					},
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "testMetric").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "Metric").build(),
+			},
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "test_metric").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "Metric").build(),
 			},
 		},
 		{
 			name: "no_change_convert_to_snake_case",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterStrict{include: "metric"},
-					Action:              CaseConvert,
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile(".*")},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: CaseConvert,
+							},
+						},
+					},
 				},
 			},
 			in: []pmetric.Metric{
-				metricBuilder(pmetric.MetricTypeGauge, "simple_metric").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric_test").build(),
 			},
 			out: []pmetric.Metric{
-				metricBuilder(pmetric.MetricTypeGauge, "simple_metric").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric_test").build(),
 			},
 		},
 		{
 			name: "multiple_uppercase_convert_to_snake_case",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterStrict{include: "metric"},
-					Action:              CaseConvert,
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile(".*")},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: CaseConvert,
+							},
+						},
+					},
 				},
 			},
 			in: []pmetric.Metric{
@@ -1674,15 +1727,22 @@ var (
 			name: "dash_replacement_convert_to_snake_case",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterStrict{include: "metric"},
-					Action:              CaseConvert,
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile(".*")},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: CaseConvert,
+							},
+						},
+					},
 				},
 			},
 			in: []pmetric.Metric{
-				metricBuilder(pmetric.MetricTypeGauge, "simple-metric").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric-test").build(),
 			},
 			out: []pmetric.Metric{
-				metricBuilder(pmetric.MetricTypeGauge, "simple_metric").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric_test").build(),
 			},
 		},
 	}
