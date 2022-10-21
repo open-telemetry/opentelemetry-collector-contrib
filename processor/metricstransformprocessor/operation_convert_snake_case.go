@@ -23,8 +23,6 @@ import (
 
 func ToSnakeCase(metric pmetric.Metric) {
 
-	// https://gist.github.com/hxsf/7f5392c0153d3a8607c42eefed02b8cd
-
 	s := metric.Name()
 
 	if s == "" {
@@ -38,8 +36,10 @@ func ToSnakeCase(metric pmetric.Metric) {
 	dist := strings.Builder{}
 	dist.Grow(len(s) + len(s)/3)
 	skipNext := false
+
 	for i := 0; i < len(source); i++ {
 		cur := source[i]
+
 		switch cur {
 		case '-', '_':
 			dist.WriteRune('_')
@@ -57,6 +57,7 @@ func ToSnakeCase(metric pmetric.Metric) {
 		}
 
 		last := source[i-1]
+
 		if (!unicode.IsLetter(last)) || unicode.IsLower(last) {
 			if skipNext {
 				skipNext = false
@@ -66,7 +67,7 @@ func ToSnakeCase(metric pmetric.Metric) {
 			dist.WriteRune(unicode.ToLower(cur))
 			continue
 		}
-		// last is upper case
+
 		if i < len(source)-1 {
 			next := source[i+1]
 			if unicode.IsLower(next) {
@@ -79,6 +80,7 @@ func ToSnakeCase(metric pmetric.Metric) {
 				continue
 			}
 		}
+
 		dist.WriteRune(unicode.ToLower(cur))
 	}
 
