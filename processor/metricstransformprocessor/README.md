@@ -31,6 +31,7 @@ or clients).
 | Scale value                   | Multiply values by 1000 to convert from seconds to milliseconds                                 |
 | Aggregate across label sets   | Retain only the label `state`, average all points with the same value for this label            |
 | Aggregate across label values | For label `state`, sum points where the value is `user` or `system` into `used = user + system` |
+| Convert camel to snake case   | For example `systemCPUUsage`, rename to `system.cpu.usage`                                      |
 
 In addition to the above:
 
@@ -73,7 +74,7 @@ processors:
         
         # SPECIFY THE ACTION TO TAKE ON THE MATCHED METRIC(S)
         
-        # action specifies if the operations (specified below) are performed on metrics in place (update), on an inserted clone (insert), or on a new combined metric (combine)
+        # action specifies if the operations (specified below) are performed on metrics in place (update), on an inserted clone (insert), on a new combined metric (combine)
         action: {update, insert, combine}
         
         # SPECIFY HOW TO TRANSFORM THE METRIC GENERATED AS A RESULT OF APPLYING THE ABOVE ACTION
@@ -87,7 +88,7 @@ processors:
         # operations contain a list of operations that will be performed on the resulting metric(s)
         operations:
             # action defines the type of operation that will be performed, see examples below for more details
-          - action: {add_label, update_label, delete_label_value, toggle_scalar_data_type, experimental_scale_value, aggregate_labels, aggregate_label_values}
+          - action: {add_label, update_label, delete_label_value, toggle_scalar_data_type, experimental_scale_value, aggregate_labels, aggregate_label_values, convert_case}
             # label specifies the label to operate on
             label: <label>
             # new_label specifies the updated name of the label; if action is add_label, new_label is required
@@ -315,6 +316,16 @@ operations:
   match_type: regexp
   action: group
   group_resource_labels: {"resouce.type": "container", "source": "kubelet"}
+```
+
+### Convert camel case to snake case
+```yaml
+# convert all camel case metric names to snake case: e.g. MyMetric -> my_metric
+include: (.*)
+match_type: regexp
+action: update
+operations:
+  - action: case_convert
 ```
 
 ### Metric Transform Processor vs. [Attributes Processor for Metrics](../attributesprocessor)
