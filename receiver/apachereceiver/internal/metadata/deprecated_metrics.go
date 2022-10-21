@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func (m *metricApacheCPULoad) RecordApacheLoadDataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, serverNameAttributeValue string) {
+func (m *metricApacheCPULoad) recordDataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, serverNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -20,7 +20,7 @@ func (m *metricApacheCPULoad) RecordApacheLoadDataPointWithServerName(start pcom
 	dp.Attributes().PutStr("server_name", serverNameAttributeValue)
 }
 
-func (m *metricApacheCPUTime) RecordApacheLoad1DataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, serverNameAttributeValue string, cpuLevelAttributeValue string, cpuModeAttributeValue string) {
+func (m *metricApacheCPUTime) recordDataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, serverNameAttributeValue string, cpuLevelAttributeValue string, cpuModeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -33,7 +33,7 @@ func (m *metricApacheCPUTime) RecordApacheLoad1DataPointWithServerName(start pco
 	dp.Attributes().PutStr("mode", cpuModeAttributeValue)
 }
 
-func (m *metricApacheCurrentConnections) RecordApacheLoad1DataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serverNameAttributeValue string) {
+func (m *metricApacheCurrentConnections) recordDataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serverNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -44,7 +44,7 @@ func (m *metricApacheCurrentConnections) RecordApacheLoad1DataPointWithServerNam
 	dp.Attributes().PutStr("server_name", serverNameAttributeValue)
 }
 
-func (m *metricApacheLoad1) RecordApacheLoad1DataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, serverNameAttributeValue string) {
+func (m *metricApacheLoad1) recordDataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, serverNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -55,7 +55,7 @@ func (m *metricApacheLoad1) RecordApacheLoad1DataPointWithServerName(start pcomm
 	dp.Attributes().PutStr("server_name", serverNameAttributeValue)
 }
 
-func (m *metricApacheLoad15) RecordApacheLoad1DataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, serverNameAttributeValue string) {
+func (m *metricApacheLoad15) recordDataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, serverNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -66,7 +66,7 @@ func (m *metricApacheLoad15) RecordApacheLoad1DataPointWithServerName(start pcom
 	dp.Attributes().PutStr("server_name", serverNameAttributeValue)
 }
 
-func (m *metricApacheLoad5) RecordApacheLoad1DataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, serverNameAttributeValue string) {
+func (m *metricApacheLoad5) recordDataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, serverNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -77,7 +77,7 @@ func (m *metricApacheLoad5) RecordApacheLoad1DataPointWithServerName(start pcomm
 	dp.Attributes().PutStr("server_name", serverNameAttributeValue)
 }
 
-func (m *metricApacheRequestTime) RecordApacheLoad1DataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serverNameAttributeValue string) {
+func (m *metricApacheRequestTime) recordDataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serverNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -88,7 +88,7 @@ func (m *metricApacheRequestTime) RecordApacheLoad1DataPointWithServerName(start
 	dp.Attributes().PutStr("server_name", serverNameAttributeValue)
 }
 
-func (m *metricApacheRequests) RecordApacheLoad1DataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serverNameAttributeValue string) {
+func (m *metricApacheRequests) recordDataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serverNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -99,7 +99,7 @@ func (m *metricApacheRequests) RecordApacheLoad1DataPointWithServerName(start pc
 	dp.Attributes().PutStr("server_name", serverNameAttributeValue)
 }
 
-func (m *metricApacheScoreboard) RecordApacheLoad1DataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serverNameAttributeValue string, scoreboardStateAttributeValue string) {
+func (m *metricApacheScoreboard) recordDataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serverNameAttributeValue string, scoreboardStateAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -111,7 +111,7 @@ func (m *metricApacheScoreboard) RecordApacheLoad1DataPointWithServerName(start 
 	dp.Attributes().PutStr("state", scoreboardStateAttributeValue)
 }
 
-func (m *metricApacheTraffic) RecordApacheLoad1DataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serverNameAttributeValue string) {
+func (m *metricApacheTraffic) recordDataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serverNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -122,7 +122,7 @@ func (m *metricApacheTraffic) RecordApacheLoad1DataPointWithServerName(start pco
 	dp.Attributes().PutStr("server_name", serverNameAttributeValue)
 }
 
-func (m *metricApacheUptime) RecordApacheLoad1DataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serverNameAttributeValue string) {
+func (m *metricApacheUptime) recordDataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serverNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -133,7 +133,7 @@ func (m *metricApacheUptime) RecordApacheLoad1DataPointWithServerName(start pcom
 	dp.Attributes().PutStr("server_name", serverNameAttributeValue)
 }
 
-func (m *metricApacheWorkers) RecordApacheLoad1DataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serverNameAttributeValue string, workersStateAttributeValue string) {
+func (m *metricApacheWorkers) recordDataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serverNameAttributeValue string, workersStateAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -151,7 +151,7 @@ func (mb *MetricsBuilder) RecordApacheCPULoadDataPointWithServerName(ts pcommon.
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for ApacheCPULoad, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheCPULoad.RecordApacheLoadDataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue)
+	mb.metricApacheCPULoad.recordDataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue)
 	return nil
 }
 
@@ -161,7 +161,7 @@ func (mb *MetricsBuilder) RecordApacheCPUTimeDataPointWithServerName(ts pcommon.
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for ApacheCPUTime, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheCPUTime.RecordApacheLoad1DataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue, cpuLevelAttributeValue.String(), cpuModeAttributeValue.String())
+	mb.metricApacheCPUTime.recordDataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue, cpuLevelAttributeValue.String(), cpuModeAttributeValue.String())
 	return nil
 }
 
@@ -171,7 +171,7 @@ func (mb *MetricsBuilder) RecordApacheCurrentConnectionsDataPointWithServerName(
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for ApacheCurrentConnections, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheCurrentConnections.RecordApacheLoad1DataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue)
+	mb.metricApacheCurrentConnections.recordDataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue)
 	return nil
 }
 
@@ -181,7 +181,7 @@ func (mb *MetricsBuilder) RecordApacheLoad1DataPointWithServerName(ts pcommon.Ti
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for ApacheLoad1, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheLoad1.RecordApacheLoad1DataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue)
+	mb.metricApacheLoad1.recordDataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue)
 	return nil
 }
 
@@ -191,7 +191,7 @@ func (mb *MetricsBuilder) RecordApacheLoad15DataPointWithServerName(ts pcommon.T
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for ApacheLoad15, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheLoad15.RecordApacheLoad1DataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue)
+	mb.metricApacheLoad15.recordDataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue)
 	return nil
 }
 
@@ -201,7 +201,7 @@ func (mb *MetricsBuilder) RecordApacheLoad5DataPointWithServerName(ts pcommon.Ti
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for ApacheLoad5, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheLoad5.RecordApacheLoad1DataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue)
+	mb.metricApacheLoad5.recordDataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue)
 	return nil
 }
 
@@ -211,7 +211,7 @@ func (mb *MetricsBuilder) RecordApacheRequestTimeDataPointWithServerName(ts pcom
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for ApacheRequestTime, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheRequestTime.RecordApacheLoad1DataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue)
+	mb.metricApacheRequestTime.recordDataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue)
 	return nil
 }
 
@@ -221,18 +221,18 @@ func (mb *MetricsBuilder) RecordApacheRequestsDataPointWithServerName(ts pcommon
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for ApacheRequests, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheRequests.RecordApacheLoad1DataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue)
+	mb.metricApacheRequests.recordDataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue)
 	return nil
 }
 
 // RecordApacheScoreboardDataPoint adds a data point to apache.scoreboard metric.
 func (mb *MetricsBuilder) RecordApacheScoreboardDataPointWithServerName(ts pcommon.Timestamp, val int64, serverNameAttributeValue string, scoreboardStateAttributeValue AttributeScoreboardState) {
-	mb.metricApacheScoreboard.RecordApacheLoad1DataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue, scoreboardStateAttributeValue.String())
+	mb.metricApacheScoreboard.recordDataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue, scoreboardStateAttributeValue.String())
 }
 
 // RecordApacheTrafficDataPoint adds a data point to apache.traffic metric.
 func (mb *MetricsBuilder) RecordApacheTrafficDataPointWithServerName(ts pcommon.Timestamp, val int64, serverNameAttributeValue string) {
-	mb.metricApacheTraffic.RecordApacheLoad1DataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue)
+	mb.metricApacheTraffic.recordDataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue)
 }
 
 // RecordApacheUptimeDataPoint adds a data point to apache.uptime metric.
@@ -241,7 +241,7 @@ func (mb *MetricsBuilder) RecordApacheUptimeDataPointWithServerName(ts pcommon.T
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for ApacheUptime, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheUptime.RecordApacheLoad1DataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue)
+	mb.metricApacheUptime.recordDataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue)
 	return nil
 }
 
@@ -251,6 +251,6 @@ func (mb *MetricsBuilder) RecordApacheWorkersDataPointWithServerName(ts pcommon.
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for ApacheWorkers, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheWorkers.RecordApacheLoad1DataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue, workersStateAttributeValue.String())
+	mb.metricApacheWorkers.recordDataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue, workersStateAttributeValue.String())
 	return nil
 }
