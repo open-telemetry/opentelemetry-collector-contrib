@@ -21,49 +21,68 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
 )
 
+const defaultDSN = "tcp://127.0.0.1:9000/otel"
+
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	t.Parallel()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	assert.Equal(t, len(cfg.Exporters), 2)
-
-	defaultCfg := factory.CreateDefaultConfig()
+	defaultCfg := createDefaultConfig()
 	defaultCfg.(*Config).DSN = defaultDSN
-	r0 := cfg.Exporters[config.NewComponentID(typeStr)]
-	assert.Equal(t, r0, defaultCfg)
 
-	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "full")].(*Config)
-	assert.Equal(t, r1, &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "full")),
-		DSN:              defaultDSN,
-		TTLDays:          3,
-		LogsTableName:    "otel_logs",
-		TracesTableName:  "otel_traces",
-		TimeoutSettings: exporterhelper.TimeoutSettings{
-			Timeout: 5 * time.Second,
+	tests := []struct {
+		id       config.ComponentID
+		expected config.Exporter
+	}{
+
+		{
+			id:       config.NewComponentIDWithName(typeStr, ""),
+			expected: defaultCfg,
 		},
-		RetrySettings: exporterhelper.RetrySettings{
-			Enabled:         true,
-			InitialInterval: 5 * time.Second,
-			MaxInterval:     30 * time.Second,
-			MaxElapsedTime:  300 * time.Second,
+		{
+			id: config.NewComponentIDWithName(typeStr, "full"),
+			expected: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				DSN:              defaultDSN,
+				TTLDays:          3,
+				LogsTableName:    "otel_logs",
+				TracesTableName:  "otel_traces",
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: 5 * time.Second,
+				},
+				RetrySettings: exporterhelper.RetrySettings{
+					Enabled:         true,
+					InitialInterval: 5 * time.Second,
+					MaxInterval:     30 * time.Second,
+					MaxElapsedTime:  300 * time.Second,
+				},
+				QueueSettings: QueueSettings{
+					QueueSize: 100,
+				},
+			},
 		},
-		QueueSettings: QueueSettings{
-			QueueSize: 100,
-		},
-	})
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalExporter(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
 
 func withDefaultConfig(fns ...func(*Config)) *Config {
@@ -73,7 +92,3 @@ func withDefaultConfig(fns ...func(*Config)) *Config {
 	}
 	return cfg
 }
-
-const (
-	defaultDSN = "tcp://127.0.0.1:9000/otel"
-)
