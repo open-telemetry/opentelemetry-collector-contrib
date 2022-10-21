@@ -33,9 +33,10 @@ const (
 	cpuMetricsLen    = 1
 	memoryMetricsLen = 2
 	diskMetricsLen   = 1
+	pagingMetricsLen = 1
 	threadMetricsLen = 1
 
-	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + threadMetricsLen
+	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + pagingMetricsLen + threadMetricsLen
 )
 
 // scraper for Process Metrics
@@ -111,6 +112,10 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 		if err = s.scrapeAndAppendDiskIOMetric(now, md.handle); err != nil {
 			errs.AddPartial(diskMetricsLen, fmt.Errorf("error reading disk usage for process %q (pid %v): %w", md.executable.name, md.pid, err))
+		}
+
+		if err = s.scrapeAndAppendPagingMetric(now, md.handle); err != nil {
+			errs.AddPartial(pagingMetricsLen, fmt.Errorf("error reading memory paging info for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
 		if err = s.scrapeAndAppendThreadsMetrics(now, md.handle); err != nil {
@@ -226,6 +231,21 @@ func (s *scraper) scrapeAndAppendDiskIOMetric(now pcommon.Timestamp, handle proc
 	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirectionRead)
 	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirectionWrite)
 
+	return nil
+}
+
+func (s *scraper) scrapeAndAppendPagingMetric(now pcommon.Timestamp, handle processHandle) error {
+	if !s.config.Metrics.ProcessPagingFaults.Enabled {
+		return nil
+	}
+
+	pageFaultsStat, err := handle.PageFaults()
+	if err != nil {
+		return err
+	}
+
+	s.mb.RecordProcessPagingFaultsDataPoint(now, int64(pageFaultsStat.MajorFaults), metadata.AttributeTypeMajor)
+	s.mb.RecordProcessPagingFaultsDataPoint(now, int64(pageFaultsStat.MinorFaults), metadata.AttributeTypeMinor)
 	return nil
 }
 
