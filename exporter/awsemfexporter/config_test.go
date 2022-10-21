@@ -20,9 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -30,63 +29,75 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
-	assert.Equal(t, 3, len(cfg.Exporters))
-
-	r0 := cfg.Exporters[config.NewComponentID(typeStr)]
-	assert.Equal(t, factory.CreateDefaultConfig(), r0)
-
-	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "1")].(*Config)
-	assert.NoError(t, r1.Validate())
-	assert.Equal(t,
-		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "1")),
-			AWSSessionSettings: awsutil.AWSSessionSettings{
-				NumberOfWorkers:       8,
-				Endpoint:              "",
-				RequestTimeoutSeconds: 30,
-				MaxRetries:            2,
-				NoVerifySSL:           false,
-				ProxyAddress:          "",
-				Region:                "us-west-2",
-				RoleARN:               "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole",
+	tests := []struct {
+		id       config.ComponentID
+		expected config.Exporter
+	}{
+		{
+			id:       config.NewComponentIDWithName(typeStr, ""),
+			expected: createDefaultConfig(),
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "1"),
+			expected: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				AWSSessionSettings: awsutil.AWSSessionSettings{
+					NumberOfWorkers:       8,
+					Endpoint:              "",
+					RequestTimeoutSeconds: 30,
+					MaxRetries:            2,
+					NoVerifySSL:           false,
+					ProxyAddress:          "",
+					Region:                "us-west-2",
+					RoleARN:               "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole",
+				},
+				LogGroupName:          "",
+				LogStreamName:         "",
+				DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+				OutputDestination:     "cloudwatch",
 			},
-			LogGroupName:          "",
-			LogStreamName:         "",
-			DimensionRollupOption: "ZeroAndSingleDimensionRollup",
-			OutputDestination:     "cloudwatch",
-		}, r1)
-
-	r2 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "resource_attr_to_label")].(*Config)
-	assert.NoError(t, r2.Validate())
-	assert.Equal(t, r2,
-		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "resource_attr_to_label")),
-			AWSSessionSettings: awsutil.AWSSessionSettings{
-				NumberOfWorkers:       8,
-				Endpoint:              "",
-				RequestTimeoutSeconds: 30,
-				MaxRetries:            2,
-				NoVerifySSL:           false,
-				ProxyAddress:          "",
-				Region:                "",
-				RoleARN:               "",
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "resource_attr_to_label"),
+			expected: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				AWSSessionSettings: awsutil.AWSSessionSettings{
+					NumberOfWorkers:       8,
+					Endpoint:              "",
+					RequestTimeoutSeconds: 30,
+					MaxRetries:            2,
+					NoVerifySSL:           false,
+					ProxyAddress:          "",
+					Region:                "",
+					RoleARN:               "",
+				},
+				LogGroupName:                "",
+				LogStreamName:               "",
+				DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+				OutputDestination:           "cloudwatch",
+				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 			},
-			LogGroupName:                "",
-			LogStreamName:               "",
-			DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
-			OutputDestination:           "cloudwatch",
-			ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalExporter(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
+	}
 }
 
 func TestConfigValidate(t *testing.T) {

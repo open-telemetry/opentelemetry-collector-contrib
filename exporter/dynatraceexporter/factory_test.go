@@ -21,12 +21,11 @@ import (
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/apiconstants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
 
 	dtconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -52,98 +51,106 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
-// TestLoadConfig tests that the configuration is loaded correctly
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfig(filepath.Join("testdata", "config.yml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
-	t.Run("defaults", func(t *testing.T) {
-		defaultConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "defaults")].(*dtconfig.Config)
-		err = defaultConfig.Validate()
-		require.NoError(t, err)
-		assert.Equal(t, &dtconfig.Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "defaults")),
-			RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-			QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+	tests := []struct {
+		id           config.ComponentID
+		expected     config.Exporter
+		errorMessage string
+	}{
+		{
+			id: config.NewComponentIDWithName(typeStr, "defaults"),
+			expected: &dtconfig.Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
-			HTTPClientSettings: confighttp.HTTPClientSettings{
-				Endpoint: apiconstants.GetDefaultOneAgentEndpoint(),
-				Headers: map[string]string{
-					"Content-Type": "text/plain; charset=UTF-8",
-					"User-Agent":   "opentelemetry-collector"},
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: apiconstants.GetDefaultOneAgentEndpoint(),
+					Headers: map[string]string{
+						"Content-Type": "text/plain; charset=UTF-8",
+						"User-Agent":   "opentelemetry-collector"},
+				},
+				Tags:              []string{},
+				DefaultDimensions: make(map[string]string),
 			},
-			Tags:              []string{},
-			DefaultDimensions: make(map[string]string),
-		}, defaultConfig)
-	})
-	t.Run("valid config", func(t *testing.T) {
-		validConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "valid")].(*dtconfig.Config)
-		err = validConfig.Validate()
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "valid"),
+			expected: &dtconfig.Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
-		require.NoError(t, err)
-		assert.Equal(t, &dtconfig.Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid")),
-			RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-			QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "http://example.com/api/v2/metrics/ingest",
+					Headers: map[string]string{
+						"Authorization": "Api-Token token",
+						"Content-Type":  "text/plain; charset=UTF-8",
+						"User-Agent":    "opentelemetry-collector"},
+				},
+				APIToken: "token",
 
-			HTTPClientSettings: confighttp.HTTPClientSettings{
-				Endpoint: "http://example.com/api/v2/metrics/ingest",
-				Headers: map[string]string{
-					"Authorization": "Api-Token token",
-					"Content-Type":  "text/plain; charset=UTF-8",
-					"User-Agent":    "opentelemetry-collector"},
+				Prefix: "myprefix",
+
+				Tags: []string{},
+				DefaultDimensions: map[string]string{
+					"dimension_example": "dimension_value",
+				},
 			},
-			APIToken: "token",
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "valid_tags"),
+			expected: &dtconfig.Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
-			Prefix: "myprefix",
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "http://example.com/api/v2/metrics/ingest",
+					Headers: map[string]string{
+						"Authorization": "Api-Token token",
+						"Content-Type":  "text/plain; charset=UTF-8",
+						"User-Agent":    "opentelemetry-collector"},
+				},
+				APIToken: "token",
 
-			Tags: []string{},
-			DefaultDimensions: map[string]string{
-				"dimension_example": "dimension_value",
+				Prefix: "myprefix",
+
+				Tags:              []string{"tag_example=tag_value"},
+				DefaultDimensions: make(map[string]string),
 			},
-		}, validConfig)
-	})
-	t.Run("valid config with tags", func(t *testing.T) {
-		validConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "valid_tags")].(*dtconfig.Config)
-		err = validConfig.Validate()
+		},
+		{
+			id:           config.NewComponentIDWithName(typeStr, "bad_endpoint"),
+			errorMessage: "endpoint must start with https:// or http://",
+		},
+		{
+			id:           config.NewComponentIDWithName(typeStr, "missing_token"),
+			errorMessage: "api_token is required if Endpoint is provided",
+		},
+	}
 
-		require.NoError(t, err)
-		assert.Equal(t, &dtconfig.Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid_tags")),
-			RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-			QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
 
-			HTTPClientSettings: confighttp.HTTPClientSettings{
-				Endpoint: "http://example.com/api/v2/metrics/ingest",
-				Headers: map[string]string{
-					"Authorization": "Api-Token token",
-					"Content-Type":  "text/plain; charset=UTF-8",
-					"User-Agent":    "opentelemetry-collector"},
-			},
-			APIToken: "token",
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalExporter(sub, cfg))
 
-			Prefix: "myprefix",
+			if tt.expected == nil {
+				assert.EqualError(t, cfg.Validate(), tt.errorMessage)
+				return
+			}
 
-			Tags:              []string{"tag_example=tag_value"},
-			DefaultDimensions: make(map[string]string),
-		}, validConfig)
-	})
-	t.Run("bad endpoint", func(t *testing.T) {
-		badEndpointConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "bad_endpoint")].(*dtconfig.Config)
-		err = badEndpointConfig.Validate()
-		require.Error(t, err)
-	})
-
-	t.Run("missing api token", func(t *testing.T) {
-		missingTokenConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "missing_token")].(*dtconfig.Config)
-		err = missingTokenConfig.Validate()
-		require.Error(t, err)
-	})
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
