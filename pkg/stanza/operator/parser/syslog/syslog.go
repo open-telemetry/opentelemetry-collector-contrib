@@ -96,8 +96,8 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	case c.Protocol == RFC5424 && (c.NonTransparentFramingTrailer != nil && c.EnableOctetCounting):
 		return nil, errors.New("only one of octet_counting or non_transparent_framing can be enabled")
 	case c.Protocol == RFC5424 && c.NonTransparentFramingTrailer != nil:
-		if err := validateNonTransparentFramingTrailer(c.NonTransparentFramingTrailer); err != nil {
-			return nil, err
+		if validationErr := validateNonTransparentFramingTrailer(c.NonTransparentFramingTrailer); validationErr != nil {
+			return nil, validationErr
 		}
 	}
 
