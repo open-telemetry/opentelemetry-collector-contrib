@@ -277,6 +277,7 @@ class _InstrumentedFalconAPI(getattr(falcon, _instrument_app)):
     def __call__(self, env, start_response):
         # pylint: disable=E1101
         # pylint: disable=too-many-locals
+        # pylint: disable=too-many-branches
         if self._otel_excluded_urls.url_disabled(env.get("PATH_INFO", "/")):
             return super().__call__(env, start_response)
 
@@ -313,35 +314,38 @@ class _InstrumentedFalconAPI(getattr(falcon, _instrument_app)):
         activation.__enter__()
         env[_ENVIRON_SPAN_KEY] = span
         env[_ENVIRON_ACTIVATION_KEY] = activation
+        exception = None
 
         def _start_response(status, response_headers, *args, **kwargs):
             response = start_response(
                 status, response_headers, *args, **kwargs
             )
-            activation.__exit__(None, None, None)
-            if token is not None:
-                context.detach(token)
             return response
 
         start = default_timer()
         try:
             return super().__call__(env, _start_response)
         except Exception as exc:
-            activation.__exit__(
-                type(exc),
-                exc,
-                getattr(exc, "__traceback__", None),
-            )
-            if token is not None:
-                context.detach(token)
+            exception = exc
             raise
         finally:
-            duration_attrs[
-                SpanAttributes.HTTP_STATUS_CODE
-            ] = span.attributes.get(SpanAttributes.HTTP_STATUS_CODE)
+            if span.is_recording():
+                duration_attrs[
+                    SpanAttributes.HTTP_STATUS_CODE
+                ] = span.attributes.get(SpanAttributes.HTTP_STATUS_CODE)
             duration = max(round((default_timer() - start) * 1000), 0)
             self.duration_histogram.record(duration, duration_attrs)
             self.active_requests_counter.add(-1, active_requests_count_attrs)
+            if exception is None:
+                activation.__exit__(None, None, None)
+            else:
+                activation.__exit__(
+                    type(exception),
+                    exception,
+                    getattr(exception, "__traceback__", None),
+                )
+            if token is not None:
+                context.detach(token)
 
 
 class _TraceMiddleware:
