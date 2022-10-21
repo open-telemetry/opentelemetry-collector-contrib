@@ -31,7 +31,7 @@ or clients).
 | Scale value                   | Multiply values by 1000 to convert from seconds to milliseconds                                 |
 | Aggregate across label sets   | Retain only the label `state`, average all points with the same value for this label            |
 | Aggregate across label values | For label `state`, sum points where the value is `user` or `system` into `used = user + system` |
-| Convert camel to snake case   | For example `systemCPUUsage`, rename to `system.cpu.usage`                                      |
+| Convert camel to snake case   | For example `SystemCPUUsage`, rename to `system.cpu.usage`                                      |
 
 In addition to the above:
 
@@ -74,7 +74,7 @@ processors:
         
         # SPECIFY THE ACTION TO TAKE ON THE MATCHED METRIC(S)
         
-        # action specifies if the operations (specified below) are performed on metrics in place (update), on an inserted clone (insert), on a new combined metric (combine)
+        # action specifies if the operations (specified below) are performed on metrics in place (update), on an inserted clone (insert), or on a new combined metric (combine)
         action: {update, insert, combine}
         
         # SPECIFY HOW TO TRANSFORM THE METRIC GENERATED AS A RESULT OF APPLYING THE ABOVE ACTION
