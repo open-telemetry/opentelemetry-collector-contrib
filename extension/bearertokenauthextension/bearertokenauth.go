@@ -48,6 +48,7 @@ func (c *PerRPCAuth) RequireTransportSecurity() bool {
 // BearerTokenAuth is an implementation of configauth.GRPCClientAuthenticator. It embeds a static authorization "bearer" token in every rpc call.
 type BearerTokenAuth struct {
 	muTokenString sync.RWMutex
+	scheme        string
 	tokenString   string
 
 	shutdownCH chan struct{}
@@ -63,6 +64,7 @@ func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
 		logger.Warn("a filename is specified. Configured token is ignored!")
 	}
 	return &BearerTokenAuth{
+		scheme:      cfg.Scheme,
 		tokenString: cfg.BearerToken,
 		filename:    cfg.Filename,
 		logger:      logger,
@@ -167,7 +169,7 @@ func (b *BearerTokenAuth) PerRPCCredentials() (credentials.PerRPCCredentials, er
 
 func (b *BearerTokenAuth) bearerToken() string {
 	b.muTokenString.RLock()
-	token := fmt.Sprintf("Bearer %s", b.tokenString)
+	token := fmt.Sprintf("%s %s", b.scheme, b.tokenString)
 	b.muTokenString.RUnlock()
 	return token
 }
