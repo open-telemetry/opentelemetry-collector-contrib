@@ -117,6 +117,9 @@ func TestLoadConfig(t *testing.T) {
 								AggregatedValues: []string{"value1", "value2"},
 								NewValue:         "new_value",
 							},
+							{
+								Action: "case_convert",
+							},
 						},
 					},
 					{

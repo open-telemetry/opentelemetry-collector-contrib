@@ -44,6 +44,7 @@ metricstransform/multiple:
           aggregated_values: [value1, value2]
           new_value: new_value
           aggregation_type: sum
+        - action: case_convert
 
     - include: name3
       match_type: strict
