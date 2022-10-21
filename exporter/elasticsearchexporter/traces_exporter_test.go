@@ -131,7 +131,7 @@ func TestTracesExporter_New(t *testing.T) {
 	}
 }
 
-func TestExporter_PushTraceRecord(t *testing.T) { //FIXME:
+func TestExporter_PushTraceRecord(t *testing.T) {
 	t.Run("publish with success", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
