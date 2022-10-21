@@ -10,45 +10,44 @@ resource_attributes:
     type: string
   snowflake.username:
     description: The name of the snowflake user account being used
+    type: string
 
-# dimensions are called attributes in otel-land these attributes
-# are specific to each group
 attributes:
-  service.type:
+  service_type:
     description: Service type
     type: string
-  error.message:
+  error_message:
     description: Error message if present
     type: string 
-  reported.client.type:
+  reported_client_type:
     description: Client type used for attempt
     type: string
-  is.success:
+  is_success:
     description: Login status
     type: string
-  schema.name:
+  schema_name:
     description: name of schema 
     type: string
   # this should probably be an enum, investigate
-  execution.status:
+  execution_status:
     description: execution status 
     type: string
-  query.type:
+  query_type:
     description: type of query performed
     type: string
-  database.name:
+  database_name:
     description: name of database (default is snowflake)
     type: string
-  warehouse.size:
+  warehouse_size:
     description: size of Warehouse in query
     type: string
-  pipe.name:
+  pipe_name:
     description: name of snowpipe 
     type: string
-  warehouse.name:
+  warehouse_name:
     description: name of Warehouse in query
     type: string
-  user.name:
+  user_name:
     description: username in query
     type: string
 
