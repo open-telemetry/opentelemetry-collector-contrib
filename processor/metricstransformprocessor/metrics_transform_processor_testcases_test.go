@@ -1615,7 +1615,7 @@ var (
 			transforms: []internalTransform{
 				{
 					MetricIncludeFilter: internalFilterStrict{include: "metric"},
-					Action:              ConvertSnakeCase,
+					Action:              CaseConvert,
 				},
 			},
 			in: []pmetric.Metric{
@@ -1630,7 +1630,7 @@ var (
 			transforms: []internalTransform{
 				{
 					MetricIncludeFilter: internalFilterStrict{include: "metric"},
-					Action:              ConvertSnakeCase,
+					Action:              CaseConvert,
 				},
 			},
 			in: []pmetric.Metric{
@@ -1645,7 +1645,7 @@ var (
 			transforms: []internalTransform{
 				{
 					MetricIncludeFilter: internalFilterStrict{include: "metric"},
-					Action:              ConvertSnakeCase,
+					Action:              CaseConvert,
 				},
 			},
 			in: []pmetric.Metric{
@@ -1660,7 +1660,7 @@ var (
 			transforms: []internalTransform{
 				{
 					MetricIncludeFilter: internalFilterStrict{include: "metric"},
-					Action:              ConvertSnakeCase,
+					Action:              CaseConvert,
 				},
 			},
 			in: []pmetric.Metric{
@@ -1675,7 +1675,7 @@ var (
 			transforms: []internalTransform{
 				{
 					MetricIncludeFilter: internalFilterStrict{include: "metric"},
-					Action:              ConvertSnakeCase,
+					Action:              CaseConvert,
 				},
 			},
 			in: []pmetric.Metric{

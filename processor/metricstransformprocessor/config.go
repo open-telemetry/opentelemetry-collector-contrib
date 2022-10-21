@@ -171,10 +171,10 @@ const (
 	// Group groups mutiple metrics matching the predicate into multiple ResourceMetrics messages
 	Group ConfigAction = "group"
 
-	ConvertSnakeCase ConfigAction = "convert_snake_case"
+	CaseConvert ConfigAction = "case_convert"
 )
 
-var actions = []ConfigAction{Insert, Update, Combine, Group}
+var actions = []ConfigAction{Insert, Update, Combine, Group, CaseConvert}
 
 func (ca ConfigAction) isValid() bool {
 	for _, configAction := range actions {
