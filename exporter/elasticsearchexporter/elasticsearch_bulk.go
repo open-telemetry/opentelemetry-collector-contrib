@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -133,11 +134,12 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 }
 
 func newRetryOnError(_ *http.Request, err error) bool {
+	var netError net.Error
 	shouldRetry := false
-	// nolint:errorlint
-	if netErr, ok := err.(net.Error); ok && netErr != nil {
+
+	if isNetError := errors.As(err, &netError); isNetError && netError != nil {
 		// on Timeout (Proposal: predefined configuratble rules)
-		if !netErr.Timeout() {
+		if !netError.Timeout() {
 			shouldRetry = true
 		}
 	}
