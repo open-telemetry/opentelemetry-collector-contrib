@@ -16,7 +16,6 @@
 cmd/configschema
 examples/demo/client
 examples/demo/server
-exporter/parquetexporter
 extension/fluentbitextension
 extension/httpforwarder
 internal/common
