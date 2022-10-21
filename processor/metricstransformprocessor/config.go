@@ -170,11 +170,9 @@ const (
 
 	// Group groups mutiple metrics matching the predicate into multiple ResourceMetrics messages
 	Group ConfigAction = "group"
-
-	CaseConvert ConfigAction = "case_convert"
 )
 
-var actions = []ConfigAction{Insert, Update, Combine, Group, CaseConvert}
+var actions = []ConfigAction{Insert, Update, Combine, Group}
 
 func (ca ConfigAction) isValid() bool {
 	for _, configAction := range actions {
@@ -220,9 +218,12 @@ const (
 	// Metric has to match the FilterConfig with all its data points if used with Update ConfigAction,
 	// otherwise the operation will be ignored.
 	AggregateLabelValues OperationAction = "aggregate_label_values"
+
+	// CaseConvert changes camel case metrics to snake case metrics
+	CaseConvert OperationAction = "case_convert"
 )
 
-var operationActions = []OperationAction{AddLabel, UpdateLabel, DeleteLabelValue, ToggleScalarDataType, ScaleValue, AggregateLabels, AggregateLabelValues}
+var operationActions = []OperationAction{AddLabel, UpdateLabel, DeleteLabelValue, ToggleScalarDataType, ScaleValue, AggregateLabels, AggregateLabelValues, CaseConvert}
 
 func (oa OperationAction) isValid() bool {
 	for _, operationAction := range operationActions {

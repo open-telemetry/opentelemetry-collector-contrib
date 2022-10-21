@@ -293,12 +293,6 @@ func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetr
 						// Drop the metric if all the data points were dropped after transformations.
 						return !transformMetric(metric, transform)
 					})
-				case CaseConvert:
-					mLen := metrics.Len()
-					for i := 0; i < mLen; i++ {
-						metric := metrics.At(i)
-						ToSnakeCase(metric)
-					}
 				}
 
 			}
@@ -571,6 +565,10 @@ func transformMetric(metric pmetric.Metric, transform internalTransform) bool {
 		case DeleteLabelValue:
 			if canChangeMetric {
 				deleteLabelValueOp(metric, op)
+			}
+		case CaseConvert:
+			if canChangeMetric {
+				ToSnakeCase(metric)
 			}
 		}
 	}
