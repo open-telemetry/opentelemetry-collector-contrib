@@ -61,18 +61,18 @@ metrics:
     gauge:
       value_type: double
     enabled: true
-    attributes: [service.type]
+    attributes: [service_type]
   snowflake.billing.total_credit.sum:
     description: billing total sum 
     unit: credits
     gauge:
       value_type: double
     enabled: true
-    attributes: [service.type]
+    attributes: [service_type]
   snowflake.billing.virtual_warehouse.sum:
     enabled: true
     description: compute credits used sum
-    attributes: [service.type]
+    attributes: [service_type]
     gauge:
       value_type: double
 
@@ -83,21 +83,21 @@ metrics:
     gauge: 
       value_type: double
     enabled: true
-    attributes: [warehouse.name]
+    attributes: [warehouse_name]
   snowflake.billing.warehouse.total_credit.sum:
     description: warehouse total credits
     unit: credits
     gauge: 
       value_type: double
     enabled: true
-    attributes: [warehouse.name]
+    attributes: [warehouse_name]
   snowflake.billing.warehouse.virtual_warehouse.sum:
     description: virtual warehouse credits used
     unit: credits
     gauge:
       value_type: double
     enabled: true
-    attributes: [warehouse.name]
+    attributes: [warehouse_name]
 
   # Login (Security) metrics 
   snowflake.logins.total:
@@ -106,7 +106,7 @@ metrics:
     gauge:
       value_type: int 
     enabled: true 
-    attributes: [error.message, reported.client.type, is.success]
+    attributes: [error_message, reported_client_type, is_success]
 
   # High level low dimensionality query metrics 
   snowflake.query.blocked:
@@ -115,28 +115,28 @@ metrics:
     gauge:
       value_type: double
     enabled: true 
-    attributes: [warehouse.name]
+    attributes: [warehouse_name]
   snowflake.query.executed:
     description: number of executed queries
     unit: 1
     gauge:
       value_type: double
     enabled: true 
-    attributes: [warehouse.name]
+    attributes: [warehouse_name]
   snowflake.query.queued_overload:
     description: queue overload count
     unit: 1
     gauge:
       value_type: double
     enabled: true 
-    attributes: [warehouse.name]
+    attributes: [warehouse_name]
   snowflake.query.queued_provision:
     description: queue provision count
     unit: 1
     gauge:
       value_type: double 
     enabled: true 
-    attributes: [warehouse.name]
+    attributes: [warehouse_name]
 
   # DB metrics
   snowflake.database.query.count:
@@ -145,49 +145,49 @@ metrics:
     gauge:
       value_type: int 
     enabled: true
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.database.bytes_scanned.avg:
     description: average bytes scanned
     unit: bytes
     gauge:
       value_type: double
     enabled: true
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.query.bytes_scanned.sum:
     description: total bytes scanend
     unit: bytes
     gauge:
       value_type: int 
     enabled: true 
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.query.bytes_deleted.sum:
     description: total bytes bytes deleted 
     unit: bytes 
     gauge:
       value_type: int 
     enabled: true
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.query.bytes_spilled.local.sum:
     description: total bytes spilled 
     unit: bytes 
     gauge:
       value_type: int
     enabled: true 
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.query.bytes_spilled.remote.sum:
     description: remote bytes spilled
     unit: bytes 
     gauge:
       value_type: int
     enabled: true
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.query.bytes_written.sum:
     description: total bytes bytes
     unit: bytes 
     gauge: 
       value_type: int
     enabled: true
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.query.compilation_time.sum:
     description: total compilation time
     unit: s 
@@ -195,119 +195,119 @@ metrics:
       # maybe int, unclear
       value_type: double
     enabled: true
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.query.data_scanned_cache.avg:
     description: average data scanned cache 
     unit: 1
     gauge:
       value_type: double
     enabled: true
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.query.execution_time.sum:
     description: query execution time 
     unit: s 
     gauge: 
       value_type: double
     enabled: true
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.query.partitions_scanned.sum:
     description: number of partitions scanned 
     unit: 1
     gauge:
       value_type: int
     enabled: true
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.queued_overload_time.avg:
     description: average queued overload time 
     unit: s 
     gauge: 
       value_type: double
     enabled: true 
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.queued_overload_time.sum:
     description: total queued overload time 
     unit: s 
     gauge: 
       value_type: int
     enabled: true 
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.queued_provisioning_time.avg:
     description: average queued provisioning time
     unit: s 
     gauge:
       value_type: double
     enabled: true
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.queued_provisioning_time.sum:
     description: total queued provisioning time
     unit: s 
     gauge:
       value_type: int
     enabled: true
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.queued_repair_time.sum:
     description: total queued repair time
     unit: s 
     gauge:
       value_type: int
     enabled: true
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.queued_repair_time.avg:
     description: average queued repair time
     unit: s 
     gauge:
       value_type: double
     enabled: true
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.rows_inserted.sum:
     description: rows inserted
     unit: rows
     gauge:
       value_type: int
     enabled: true
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.rows_deleted.sum:
     description: rows deleted
     unit: rows 
     gauge:
       value_type: int
     enabled: true
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.rows_produced.sum:
     description: rows produced
     unit: rows 
     gauge:
       value_type: int
     enabled: true
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.rows_unloaded.sum:
     description: rows unloaded
     unit: rows 
     gauge:
       value_type: int
     enabled: true
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.rows_updated.sum:
     description: rows updated
     unit: rows 
     gauge:
       value_type: int
     enabled: true
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.total_elapsed_time.sum:
     description: total elapsed time
     unit: s 
     gauge:
       value_type: int 
     enabled: true 
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.total_elapsed_time.avg:
     description: average elapsed time
     unit: s 
     gauge:
       value_type: double 
     enabled: true 
-    attributes: [schema.name, execution.status, error.message, query.type, warehouse.name, database.name, warehouse.size]
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
 
   # Session metric 
   snowflake.session_id.count:
@@ -316,7 +316,7 @@ metrics:
     gauge:
       value_type: int
     enabled: true
-    attributes: [user.name]
+    attributes: [user_name]
   
   # Snowpipe usage metrics
   snowflake.pipe.credits_used.sum:
@@ -325,7 +325,7 @@ metrics:
     gauge:
       value_type: double
     enabled: true
-    attributes: [pipe.name]
+    attributes: [pipe_name]
 
   # Storage usage metrics 
   snowflake.storage.storage_bytes.total:
