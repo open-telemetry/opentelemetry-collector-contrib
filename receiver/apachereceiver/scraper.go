@@ -35,6 +35,7 @@ import (
 )
 
 const (
+	readmeURL                         = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/apachereceiver/README.md"
 	EmitServerNameAsResourceAttribute = "receiver.apache.emitServerNameAsResourceAttribute"
 )
 
@@ -73,7 +74,9 @@ func newApacheScraper(
 	}
 
 	if !a.emitMetricsWithServerNameAsResourceAttribute {
-		settings.Logger.Warn(fmt.Sprintf("Feature gate %s is not enabled. Please see the README.md file of apache receiver for more information.", EmitServerNameAsResourceAttribute))
+		settings.Logger.Warn(
+			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", EmitServerNameAsResourceAttribute, readmeURL),
+		)
 	}
 
 	return a
@@ -108,8 +111,7 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		err = r.scrapeWithServerNameAttr(stats)
 	}
 
-	r.mb.EmitForResource(emitWith...)
-	return r.mb.Emit(), err
+	return r.mb.Emit(emitWith...), err
 }
 
 func (r *apacheScraper) scrapeWithServerNameAttr(stats string) error {

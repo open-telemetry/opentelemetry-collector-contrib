@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func (m *metricApacheCPULoad) RecordApacheLoad1DataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, serverNameAttributeValue string) {
+func (m *metricApacheCPULoad) RecordApacheLoadDataPointWithServerName(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, serverNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -151,7 +151,7 @@ func (mb *MetricsBuilder) RecordApacheCPULoadDataPointWithServerName(ts pcommon.
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for ApacheCPULoad, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheCPULoad.RecordApacheLoad1DataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue)
+	mb.metricApacheCPULoad.RecordApacheLoadDataPointWithServerName(mb.startTime, ts, val, serverNameAttributeValue)
 	return nil
 }
 
