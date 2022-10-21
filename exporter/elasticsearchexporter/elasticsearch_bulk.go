@@ -137,8 +137,9 @@ func newRetryOnError(_ *http.Request, err error) bool {
 	// nolint:errorlint
 	if netErr, ok := err.(net.Error); ok && netErr != nil {
 		// on Timeout (Proposal: predefined configuratble rules)
-
-		shouldRetry = true
+		if !netErr.Timeout() {
+			shouldRetry = true
+		}
 	}
 
 	return shouldRetry
