@@ -22,22 +22,23 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
-	esutil7 "github.com/elastic/go-elasticsearch/v7/esutil"
+	elasticsearch "github.com/elastic/go-elasticsearch/v8"
+	esutil "github.com/elastic/go-elasticsearch/v8/esutil"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
-type esClientCurrent = elasticsearch7.Client
-type esConfigCurrent = elasticsearch7.Config
-type esBulkIndexerCurrent = esutil7.BulkIndexer
-type esBulkIndexerItem = esutil7.BulkIndexerItem
-type esBulkIndexerResponseItem = esutil7.BulkIndexerResponseItem
+type esClientCurrent = elasticsearch.Client
+type esConfigCurrent = elasticsearch.Config
+type esBulkIndexerCurrent = esutil.BulkIndexer
+type esBulkIndexerItem = esutil.BulkIndexerItem
+type esBulkIndexerResponseItem = esutil.BulkIndexerResponseItem
 
 // clientLogger implements the estransport.Logger interface
 // that is required by the Elasticsearch client for logging.
@@ -95,11 +96,14 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 	// including the first send and additional retries.
 	maxRetries := config.Retry.MaxRequests - 1
 	retryDisabled := !config.Retry.Enabled || maxRetries <= 0
+	retryOnError := newRetryOnError
+
 	if retryDisabled {
 		maxRetries = 0
+		retryOnError = nil
 	}
 
-	return elasticsearch7.NewClient(esConfigCurrent{
+	return elasticsearch.NewClient(esConfigCurrent{
 		Transport: transport,
 
 		// configure connection setup
@@ -111,11 +115,11 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 		Header:    headers,
 
 		// configure retry behavior
-		RetryOnStatus:        retryOnStatus,
-		DisableRetry:         retryDisabled,
-		EnableRetryOnTimeout: config.Retry.Enabled,
-		MaxRetries:           maxRetries,
-		RetryBackoff:         createElasticsearchBackoffFunc(&config.Retry),
+		RetryOnStatus: retryOnStatus,
+		DisableRetry:  retryDisabled,
+		RetryOnError:  retryOnError,
+		MaxRetries:    maxRetries,
+		RetryBackoff:  createElasticsearchBackoffFunc(&config.Retry),
 
 		// configure sniffing
 		DiscoverNodesOnStart:  config.Discovery.OnStart,
@@ -126,6 +130,17 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 		EnableDebugLogger: false, // TODO
 		Logger:            (*clientLogger)(logger),
 	})
+}
+
+func newRetryOnError(req *http.Request, err error) bool {
+	//on Timeout (Proposal: predefined configuratble rules)
+	shouldRetry := false
+	if netErr, ok := err.(net.Error); ok {
+		if !netErr.Timeout() {
+			shouldRetry = true
+		}
+	}
+	return shouldRetry
 }
 
 func newTransport(config *Config, tlsCfg *tls.Config) *http.Transport {
@@ -143,9 +158,9 @@ func newTransport(config *Config, tlsCfg *tls.Config) *http.Transport {
 	return transport
 }
 
-func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *Config) (esBulkIndexerCurrent, error) {
+func newBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Config) (esBulkIndexerCurrent, error) {
 	// TODO: add debug logger
-	return esutil7.NewBulkIndexer(esutil7.BulkIndexerConfig{
+	return esutil.NewBulkIndexer(esutil.BulkIndexerConfig{
 		NumWorkers:    config.NumWorkers,
 		FlushBytes:    config.Flush.Bytes,
 		FlushInterval: config.Flush.Interval,
