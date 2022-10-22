@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=too-many-lines
+
 import sys
 import unittest
 from timeit import default_timer
@@ -626,6 +628,37 @@ class TestAsgiApplication(AsgiTestBase):
                             )
                             self.assertEqual(point.value, 0)
 
+    def test_metric_target_attribute(self):
+        expected_target = "/api/user/{id}"
+
+        class TestRoute:
+            path_format = expected_target
+
+        self.scope["route"] = TestRoute()
+        app = otel_asgi.OpenTelemetryMiddleware(simple_asgi)
+        self.seed_app(app)
+        self.send_default_request()
+
+        metrics_list = self.memory_metrics_reader.get_metrics_data()
+        assertions = 0
+        for resource_metric in metrics_list.resource_metrics:
+            for scope_metrics in resource_metric.scope_metrics:
+                for metric in scope_metrics.metrics:
+                    for point in metric.data.data_points:
+                        if isinstance(point, HistogramDataPoint):
+                            self.assertEqual(
+                                point.attributes["http.target"],
+                                expected_target,
+                            )
+                            assertions += 1
+                        elif isinstance(point, NumberDataPoint):
+                            self.assertEqual(
+                                point.attributes["http.target"],
+                                expected_target,
+                            )
+                            assertions += 1
+        self.assertEqual(assertions, 2)
+
     def test_no_metric_for_websockets(self):
         self.scope = {
             "type": "websocket",
@@ -717,6 +750,37 @@ class TestAsgiAttributes(unittest.TestCase):
         attrs = otel_asgi.collect_request_attributes(self.scope)
         self.assertEqual(
             attrs[SpanAttributes.HTTP_URL], "http://httpbin.org/status/200"
+        )
+
+    def test_collect_target_attribute_missing(self):
+        self.assertIsNone(otel_asgi._collect_target_attribute(self.scope))
+
+    def test_collect_target_attribute_fastapi(self):
+        class TestRoute:
+            path_format = "/api/users/{user_id}"
+
+        self.scope["route"] = TestRoute()
+        self.assertEqual(
+            otel_asgi._collect_target_attribute(self.scope),
+            "/api/users/{user_id}",
+        )
+
+    def test_collect_target_attribute_fastapi_mounted(self):
+        class TestRoute:
+            path_format = "/users/{user_id}"
+
+        self.scope["route"] = TestRoute()
+        self.scope["root_path"] = "/api/v2"
+        self.assertEqual(
+            otel_asgi._collect_target_attribute(self.scope),
+            "/api/v2/users/{user_id}",
+        )
+
+    def test_collect_target_attribute_fastapi_starlette_invalid(self):
+        self.scope["route"] = object()
+        self.assertIsNone(
+            otel_asgi._collect_target_attribute(self.scope),
+            "HTTP_TARGET values is not None",
         )
 
 
