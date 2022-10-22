@@ -108,10 +108,10 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc, opts ...FactoryO
 		return nil, err
 	}
 
+	flusher := c.Flusher.Build()
 	// Ensure that splitter is buildable
-	opts = append(opts, WithEncoding(enc.Encoding), WithFlusherConfig(c.Flusher))
 	factory := NewFactory(opts...)
-	_, err = factory.Build(int(c.MaxLogSize))
+	_, err = factory.Build(int(c.MaxLogSize), enc.Encoding, flusher)
 	if err != nil {
 		return nil, err
 	}
@@ -139,6 +139,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc, opts ...FactoryO
 			fromBeginning:   startAtBeginning,
 			splitterFactory: factory,
 			encodingConfig:  c.EncodingConfig,
+			flusherConfig:   c.Flusher,
 		},
 		finder:        c.Finder,
 		roller:        newRoller(),

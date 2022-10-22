@@ -29,6 +29,7 @@ type readerFactory struct {
 	fromBeginning   bool
 	splitterFactory splitterFactory
 	encodingConfig  helper.EncodingConfig
+	flusherConfig   helper.FlusherConfig
 }
 
 func (f *readerFactory) newReader(file *os.File, fp *Fingerprint) (*Reader, error) {
@@ -94,20 +95,21 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 		Offset:       b.offset,
 	}
 
-	if b.splitFunc != nil {
-		r.splitFunc = b.splitFunc
-	} else {
-		r.splitFunc, err = b.splitterFactory.Build(b.readerConfig.maxLogSize)
-		if err != nil {
-			return
-		}
-	}
-
 	enc, err := b.encodingConfig.Build()
 	if err != nil {
 		return
 	}
 	r.encoding = enc
+
+	force := b.flusherConfig.Build()
+	if b.splitFunc != nil {
+		r.splitFunc = b.splitFunc
+	} else {
+		r.splitFunc, err = b.splitterFactory.Build(b.readerConfig.maxLogSize, enc.Encoding, force)
+		if err != nil {
+			return
+		}
+	}
 
 	if b.file != nil {
 		r.file = b.file

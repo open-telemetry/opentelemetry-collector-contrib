@@ -23,7 +23,7 @@ import (
 )
 
 type splitterFactory interface {
-	Build(maxLogSize int) (bufio.SplitFunc, error)
+	Build(maxLogSize int, enc encoding.Encoding, force *helper.Flusher) (bufio.SplitFunc, error)
 }
 
 func NewFactory(opts ...FactoryOption) splitterFactory {
@@ -32,35 +32,28 @@ func NewFactory(opts ...FactoryOption) splitterFactory {
 		opt(builder)
 	}
 	if builder.multiline.LineStartPattern != "" || builder.multiline.LineEndPattern != "" {
-		return newMultilineSplitterFactory(builder.encoding, builder.flusher, builder.multiline)
+		return newMultilineSplitterFactory(builder.multiline)
 	}
-	return newDefaultSplitterFactory(builder.encoding, builder.flusher)
+	return newDefaultSplitterFactory()
 }
 
 type multilineSplitterFactory struct {
-	Encoding  encoding.Encoding
-	Flusher   helper.FlusherConfig
 	Multiline helper.MultilineConfig
 }
 
 var _ splitterFactory = (*multilineSplitterFactory)(nil)
 
 func newMultilineSplitterFactory(
-	encoding encoding.Encoding,
-	flusher helper.FlusherConfig,
 	multiline helper.MultilineConfig) *multilineSplitterFactory {
 	return &multilineSplitterFactory{
-		Encoding:  encoding,
-		Flusher:   flusher,
 		Multiline: multiline,
 	}
 
 }
 
 // Build builds Multiline Splitter struct
-func (factory *multilineSplitterFactory) Build(maxLogSize int) (bufio.SplitFunc, error) {
-	flusher := factory.Flusher.Build()
-	splitter, err := factory.Multiline.Build(factory.Encoding, false, flusher, maxLogSize)
+func (factory *multilineSplitterFactory) Build(maxLogSize int, enc encoding.Encoding, force *helper.Flusher) (bufio.SplitFunc, error) {
+	splitter, err := factory.Multiline.Build(enc, false, force, maxLogSize)
 	if err != nil {
 		return nil, err
 	}
@@ -68,33 +61,25 @@ func (factory *multilineSplitterFactory) Build(maxLogSize int) (bufio.SplitFunc,
 }
 
 type defaultSplitterFactory struct {
-	Encoding encoding.Encoding
-	Flusher  helper.FlusherConfig
 }
 
 var _ splitterFactory = (*defaultSplitterFactory)(nil)
 
-func newDefaultSplitterFactory(
-	encoding encoding.Encoding,
-	flusher helper.FlusherConfig) *defaultSplitterFactory {
-	return &defaultSplitterFactory{
-		Encoding: encoding,
-		Flusher:  flusher,
-	}
+func newDefaultSplitterFactory() *defaultSplitterFactory {
+	return &defaultSplitterFactory{}
 }
 
 // Build builds default Splitter struct
-func (factory *defaultSplitterFactory) Build(maxLogSize int) (bufio.SplitFunc, error) {
-	if factory.Encoding == encoding.Nop {
+func (factory *defaultSplitterFactory) Build(maxLogSize int, enc encoding.Encoding, force *helper.Flusher) (bufio.SplitFunc, error) {
+	if enc == encoding.Nop {
 		return helper.SplitNone(maxLogSize), nil
 	}
-	splitFunc, err := helper.NewNewlineSplitFunc(factory.Encoding, false)
+	splitFunc, err := helper.NewNewlineSplitFunc(enc, false)
 	if err != nil {
 		return nil, err
 	}
-	flusher := factory.Flusher.Build()
-	if flusher != nil {
-		splitFunc = flusher.SplitFunc(splitFunc)
+	if force != nil {
+		splitFunc = force.SplitFunc(splitFunc)
 	}
 	return splitFunc, nil
 }
@@ -107,20 +92,8 @@ type splitterBuilder struct {
 
 type FactoryOption func(*splitterBuilder)
 
-func WithFlusherConfig(flusherConfig helper.FlusherConfig) func(*splitterBuilder) {
-	return func(builder *splitterBuilder) {
-		builder.flusher = flusherConfig
-	}
-}
-
 func WithMultiline(multiline helper.MultilineConfig) func(*splitterBuilder) {
 	return func(builder *splitterBuilder) {
 		builder.multiline = multiline
-	}
-}
-
-func WithEncoding(encoding encoding.Encoding) func(*splitterBuilder) {
-	return func(builder *splitterBuilder) {
-		builder.encoding = encoding
 	}
 }

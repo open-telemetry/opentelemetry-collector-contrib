@@ -68,12 +68,11 @@ func Test_multilineSplitterFactory_Build(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			enc, _ := tt.fields.EncodingConfig.Build()
+			flusher := tt.fields.Flusher.Build()
 			factory := &multilineSplitterFactory{
-				Encoding:  enc.Encoding,
-				Flusher:   tt.fields.Flusher,
 				Multiline: tt.fields.Multiline,
 			}
-			got, err := factory.Build(tt.args.maxLogSize)
+			got, err := factory.Build(tt.args.maxLogSize, enc.Encoding, flusher)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -86,8 +85,6 @@ func Test_multilineSplitterFactory_Build(t *testing.T) {
 }
 
 func Test_newMultilineSplitterFactory(t *testing.T) {
-	enc, _ := helper.NewEncodingConfig().Build()
-	flusherConfig := helper.NewFlusherConfig()
-	splitter := newMultilineSplitterFactory(enc.Encoding, flusherConfig, helper.NewMultilineConfig())
+	splitter := newMultilineSplitterFactory(helper.NewMultilineConfig())
 	assert.NotNil(t, splitter)
 }
