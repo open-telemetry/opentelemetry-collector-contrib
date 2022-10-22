@@ -85,8 +85,6 @@ func (factory *defaultSplitterFactory) Build(maxLogSize int, enc encoding.Encodi
 }
 
 type splitterBuilder struct {
-	flusher   helper.FlusherConfig
-	encoding  encoding.Encoding
 	multiline helper.MultilineConfig
 }
 
