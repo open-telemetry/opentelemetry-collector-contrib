@@ -25,7 +25,5 @@ internal/sharedcomponent
 internal/tools
 pkg/batchperresourceattr
 pkg/experimentalmetricmetadata
-processor/deltatorateprocessor
-processor/metricsgenerationprocessor
 receiver/dotnetdiagnosticsreceiver
 testbed
