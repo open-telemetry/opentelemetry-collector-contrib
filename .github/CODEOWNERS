@@ -20,6 +20,7 @@
 
 * @open-telemetry/collector-contrib-approvers
 
+cmd/configschema/                                    @open-telemetry/collector-contrib-approvers @mx-psi @dmitryax @pmcollins
 cmd/mdatagen/                                        @open-telemetry/collector-contrib-approvers @dmitryax
 cmd/otelcontribcol/                                  @open-telemetry/collector-contrib-approvers @codeboten
 cmd/telemetrygen/                                    @open-telemetry/collector-contrib-approvers @mx-psi @amenasria @codeboten
@@ -58,6 +59,7 @@ exporter/logzioexporter/                             @open-telemetry/collector-c
 exporter/lokiexporter/                               @open-telemetry/collector-contrib-approvers @gramidt @gouthamve @jpkrohling @kovrus @mar4uk
 exporter/mezmoexporter/                              @open-telemetry/collector-contrib-approvers @dashpole @billmeyer @gjanco
 exporter/opencensusexporter/                         @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
+exporter/parquetexporter/                            @open-telemetry/collector-contrib-approvers @atoulme
 exporter/prometheusexporter/                         @open-telemetry/collector-contrib-approvers @Aneurysm9
 exporter/prometheusremotewriteexporter/              @open-telemetry/collector-contrib-approvers @Aneurysm9
 exporter/pulsarexporter/                             @open-telemetry/collector-contrib-approvers @dmitryax @tjiuming
@@ -118,11 +120,13 @@ pkg/winperfcounters/                                 @open-telemetry/collector-c
 
 processor/attributesprocessor/                       @open-telemetry/collector-contrib-approvers @boostchicken
 processor/cumulativetodeltaprocessor/                @open-telemetry/collector-contrib-approvers @TylerHelmuth
+processor/deltatorateprocessor/                      @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/filterprocessor/                           @open-telemetry/collector-contrib-approvers @boostchicken
 processor/groupbyattrsprocessor/                     @open-telemetry/collector-contrib-approvers
 processor/groupbytraceprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/k8sattributesprocessor/                    @open-telemetry/collector-contrib-approvers @owais @dmitryax
 processor/logstransformprocessor/                    @open-telemetry/collector-contrib-approvers @djaglowski @dehaansa
+processor/metricsgenerationprocessor/                @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/metricstransformprocessor/                 @open-telemetry/collector-contrib-approvers @dmitryax
 processor/probabilisticsamplerprocessor/             @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/redactionprocessor/                        @open-telemetry/collector-contrib-approvers @leonsp-ai @dmitryax @mx-psi

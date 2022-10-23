@@ -13,14 +13,10 @@
 #  https://help.github.com/en/articles/about-code-owners
 #
 
-cmd/configschema
-exporter/parquetexporter
 extension/fluentbitextension
 extension/httpforwarder
 internal/common
 internal/containertest
 pkg/batchperresourceattr
 pkg/experimentalmetricmetadata
-processor/deltatorateprocessor
-processor/metricsgenerationprocessor
 receiver/dotnetdiagnosticsreceiver
