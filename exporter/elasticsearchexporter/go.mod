@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.3
-	github.com/elastic/go-elasticsearch/v7 v7.17.1
+	github.com/elastic/go-elasticsearch/v8 v8.4.0
 	github.com/elastic/go-structform v0.0.10
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.62.0
 	github.com/stretchr/testify v1.8.0
@@ -19,6 +19,7 @@ require (
 require (
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/elastic/elastic-transport-go/v8 v8.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
