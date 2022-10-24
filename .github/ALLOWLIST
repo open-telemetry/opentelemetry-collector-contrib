@@ -13,16 +13,27 @@
 #  https://help.github.com/en/articles/about-code-owners
 #
 
+## 
+# NOTE: New components MUST have a codeowner. Add new components to the CODEOWNERS file instead of here.
+##
+
+## COMMON & SHARED components
 examples/demo/client
 examples/demo/server
-extension/fluentbitextension
-extension/httpforwarder
 internal/common
 internal/containertest
 internal/coreinternal
 internal/sharedcomponent
 internal/tools
+testbed
+
+## DEPRECATED components
+extension/fluentbitextension
+
+## UNMANTAINED components
+extension/httpforwarder
+receiver/dotnetdiagnosticsreceiver
+
+# OTHER; Looking for an owner
 pkg/batchperresourceattr
 pkg/experimentalmetricmetadata
-receiver/dotnetdiagnosticsreceiver
-testbed
