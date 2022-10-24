@@ -18,14 +18,8 @@
 ##
 
 ## COMMON & SHARED components
-examples/demo/client
-examples/demo/server
 internal/common
 internal/containertest
-internal/coreinternal
-internal/sharedcomponent
-internal/tools
-testbed
 
 ## DEPRECATED components
 extension/fluentbitextension
