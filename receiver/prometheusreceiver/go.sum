@@ -648,8 +648,8 @@ go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c h1:lDj
 go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c/go.mod h1:s0F5Ectarjz1zy1N1ztxFOtMo1Rq/xMQsyheFSoQCLQ=
 go.opentelemetry.io/collector/semconv v0.62.2-0.20221017171445-6313054b642c h1:FypXnc5gp2lVYdzLlV2VNyiMrswa5jcZvZ/tAj7OwrU=
 go.opentelemetry.io/collector/semconv v0.62.2-0.20221017171445-6313054b642c/go.mod h1:aRkHuJ/OshtDFYluKEtnG5nkKTsy1HZuvZVHmakx+Vo=
-go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.3 h1:SGz6Fnp7blR+sskRZkyuFDb3qI1d8I0ygLh13F+sw6I=
-go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.3/go.mod h1:+OXcluxum2GicWQ9lMXLQkLkOWoaw20OrVbYq6kkPks=
+go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4 h1:aUEBEdCa6iamGzg6fuYxDA8ThxvOG240mAvWDU+XLio=
+go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4/go.mod h1:l2MdsbKTocpPS5nQZscqTR9jd8u96VYZdcpF8Sye7mA=
 go.opentelemetry.io/contrib/propagators/b3 v1.11.0 h1:LAzUx5os6NwhtEv166/k3m6TWHabuN2jJYoMFws6t1M=
 go.opentelemetry.io/contrib/propagators/b3 v1.11.0/go.mod h1:mD7gBpRoRgGxheDunJ5SnNQNlo13EhfnLtqhs3rsDV0=
 go.opentelemetry.io/contrib/zpages v0.36.3 h1:urP6bzTDreSMEj0BcrFzNVu/WthjvaXClDVHuK2DfGI=
