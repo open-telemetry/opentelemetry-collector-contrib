@@ -6,7 +6,7 @@ require (
 	github.com/klauspost/compress v1.15.11
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.62.0
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c
 	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
