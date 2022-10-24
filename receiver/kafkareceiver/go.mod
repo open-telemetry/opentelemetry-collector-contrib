@@ -12,7 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.62.0
 	github.com/openzipkin/zipkin-go v0.4.1
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c
 	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
@@ -21,7 +21,7 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.44.119 // indirect
+	github.com/aws/aws-sdk-go v1.44.121 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/eapache/go-resiliency v1.3.0 // indirect

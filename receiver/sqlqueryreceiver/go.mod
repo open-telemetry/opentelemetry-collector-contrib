@@ -10,8 +10,8 @@ require (
 	github.com/lib/pq v1.10.7
 	github.com/sijms/go-ora/v2 v2.5.3
 	github.com/snowflakedb/gosnowflake v1.6.13
-	github.com/stretchr/testify v1.8.0
-	github.com/testcontainers/testcontainers-go v0.14.0
+	github.com/stretchr/testify v1.8.1
+	github.com/testcontainers/testcontainers-go v0.15.0
 	go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c
 	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
 	go.uber.org/multierr v1.8.0
@@ -25,14 +25,14 @@ require (
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/Microsoft/hcsshim v0.9.4 // indirect
 	github.com/apache/arrow/go/arrow v0.0.0-20211112161151-bc219186db40 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.16.16 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.17.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.0.0 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.12.21 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.12.22 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.7.1 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.23 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.17 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.24 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.18 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.5.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.17 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.18 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.9.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.19.0 // indirect
 	github.com/aws/smithy-go v1.13.3 // indirect
