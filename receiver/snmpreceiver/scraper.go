@@ -110,6 +110,13 @@ func (s *snmpScraper) scrapeScalarMetrics(
 
 	// Retrieve all SNMP data from scalar metric OIDs
 	scalarData := s.client.GetScalarData(metricScalarOIDs, scraperErrors)
+
+	// Create general resource if we're about to make scalar metrics
+	resource := metricHelper.getResource(generalResourceKey)
+	if resource == nil {
+		metricHelper.createResource(generalResourceKey, map[string]string{})
+	}
+
 	// For each piece of SNMP data, attempt to create the necessary OTEL structures (resources/metrics/datapoints)
 	for _, data := range scalarData {
 		if err := s.scalarDataToMetric(data, metricHelper, configHelper); err != nil {
@@ -133,12 +140,6 @@ func (s *snmpScraper) scalarDataToMetric(
 	// Retrieve the metric config for this SNMP data
 	metricName := configHelper.getMetricName(data.oid)
 	metricCfg := configHelper.getMetricConfig(metricName)
-
-	// Create new general resource if needed
-	resource := metricHelper.getResource(generalResourceKey)
-	if resource == nil {
-		metricHelper.createResource(generalResourceKey, map[string]string{})
-	}
 
 	// Create a new metric if needed
 	metric := metricHelper.getMetric(generalResourceKey, metricName)
@@ -345,26 +346,10 @@ func (s *snmpScraper) scrapeIndexedAttributes(
 	configHelper *configHelper,
 	scraperErrors *scrapererror.ScrapeErrors,
 ) map[indexedAttributeKey]string {
-	indexedAttributeValues := map[indexedAttributeKey]string{}
-
 	// Find all attribute column OIDs
 	attributeColumnOIDs := configHelper.getAttributeColumnOIDs()
 
-	// If no oid attribute configs, nothing else to do
-	if len(attributeColumnOIDs) == 0 {
-		return indexedAttributeValues
-	}
-
-	// Retrieve all SNMP indexed data from column attribute OIDs
-	indexedData := s.client.GetIndexedData(attributeColumnOIDs, scraperErrors)
-	// For each piece of SNMP data, store the necessary info to help create metric attributes later if needed
-	for _, data := range indexedData {
-		if err := indexedDataToAttribute(data, indexedAttributeValues); err != nil {
-			scraperErrors.AddPartial(1, fmt.Errorf(errMsgIndexedAttributeOIDProcessing, data.oid, data.parentOID, err))
-		}
-	}
-
-	return indexedAttributeValues
+	return s.scrapeGenericIndexedAttributes(attributeColumnOIDs, scraperErrors, errMsgIndexedAttributeOIDProcessing)
 }
 
 // scrapeIndexedResourceAttributes retrieves all SNMP data from resource attribute config column OIDs and
@@ -373,26 +358,36 @@ func (s *snmpScraper) scrapeIndexedResourceAttributes(
 	configHelper *configHelper,
 	scraperErrors *scrapererror.ScrapeErrors,
 ) map[indexedAttributeKey]string {
-	indexedResourceAttributeValues := map[indexedAttributeKey]string{}
-
 	// Find all resource attribute column OIDs
 	resourceAttributeColumnOIDs := configHelper.getResourceAttributeColumnOIDs()
 
+	return s.scrapeGenericIndexedAttributes(resourceAttributeColumnOIDs, scraperErrors, errMsgIndexedResourceAttributeOIDProcessing)
+}
+
+// scrapeGenericIndexedAttributes scrapes any type of attributes as long as the column OIDs are passed in
+func (s *snmpScraper) scrapeGenericIndexedAttributes(
+	columnOIDs []string,
+	scraperErrors *scrapererror.ScrapeErrors,
+	errorString string,
+) map[indexedAttributeKey]string {
+	indexedAttributeValues := map[indexedAttributeKey]string{}
+
 	// If no OID resource attribute configs, nothing else to do
-	if len(resourceAttributeColumnOIDs) == 0 {
-		return indexedResourceAttributeValues
+	if len(columnOIDs) == 0 {
+		return indexedAttributeValues
 	}
 
 	// Retrieve all SNMP indexed data from column resource attribute OIDs
-	indexedData := s.client.GetIndexedData(resourceAttributeColumnOIDs, scraperErrors)
+	indexedData := s.client.GetIndexedData(columnOIDs, scraperErrors)
+
 	// For each piece of SNMP data, store the necessary info to help create resources later if needed
 	for _, data := range indexedData {
-		if err := indexedDataToAttribute(data, indexedResourceAttributeValues); err != nil {
-			scraperErrors.AddPartial(1, fmt.Errorf(errMsgIndexedResourceAttributeOIDProcessing, data.oid, data.parentOID, err))
+		if err := indexedDataToAttribute(data, indexedAttributeValues); err != nil {
+			scraperErrors.AddPartial(1, fmt.Errorf(errorString, data.oid, data.parentOID, err))
 		}
 	}
 
-	return indexedResourceAttributeValues
+	return indexedAttributeValues
 }
 
 // indexedDataToAttribute provides a function which will take one piece of column OID SNMP indexed data
