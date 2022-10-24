@@ -68,8 +68,7 @@ require (
 )
 
 require (
-	github.com/rogpeppe/go-internal v1.6.2 // indirect
-	github.com/testcontainers/testcontainers-go v0.14.0
+	github.com/testcontainers/testcontainers-go v0.15.0
 	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
 )
 
