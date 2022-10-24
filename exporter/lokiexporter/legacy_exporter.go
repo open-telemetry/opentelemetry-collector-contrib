@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -63,21 +61,7 @@ func newLegacyExporter(config *Config, settings component.TelemetrySettings) *lo
 		settings: settings,
 	}
 
-	if config.Format != nil && *config.Format == "body" {
-		lokiexporter.settings.Logger.Warn("The `body` format for this exporter will be removed soon. Set the value explicitly to `json` instead.")
-	}
-
-	if config.Format == nil {
-		lokiexporter.settings.Logger.Warn("The format attribute wasn't specified and the current default, `body`, was applied. Set the value explicitly to `json` to be compatible with future versions of this exporter.")
-		formatBody := "body"
-		config.Format = &formatBody
-	}
-
-	if *config.Format == "json" {
-		lokiexporter.convert = lokiexporter.convertLogToJSONEntry
-	} else {
-		lokiexporter.convert = lokiexporter.convertLogBodyToEntry
-	}
+	lokiexporter.convert = lokiexporter.convertLogToJSONEntry
 
 	if config.Tenant == nil {
 		if config.TenantID != nil {
@@ -232,7 +216,7 @@ func (l *lokiExporter) logDataToLoki(ld plog.Logs) (pr *logproto.PushRequest, nu
 						errors.New(
 							fmt.Sprint(
 								"failed to convert, dropping log",
-								zap.String("format", *l.config.Format),
+								zap.String("format", "json"),
 								zap.Error(err),
 							),
 						),
@@ -322,63 +306,6 @@ func (l *lokiExporter) convertRecordAttributesToLabels(log plog.LogRecord) model
 	}
 
 	return ls
-}
-
-func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Resource) (*logproto.Entry, error) {
-	var b strings.Builder
-
-	if _, ok := l.config.Labels.RecordAttributes["severity"]; !ok && len(lr.SeverityText()) > 0 {
-		b.WriteString("severity=")
-		b.WriteString(lr.SeverityText())
-		b.WriteRune(' ')
-	}
-	if _, ok := l.config.Labels.RecordAttributes["severityN"]; !ok && lr.SeverityNumber() > 0 {
-		b.WriteString("severityN=")
-		b.WriteString(strconv.Itoa(int(lr.SeverityNumber())))
-		b.WriteRune(' ')
-	}
-	if _, ok := l.config.Labels.RecordAttributes["traceID"]; !ok && !lr.TraceID().IsEmpty() {
-		b.WriteString("traceID=")
-		b.WriteString(lr.TraceID().HexString())
-		b.WriteRune(' ')
-	}
-	if _, ok := l.config.Labels.RecordAttributes["spanID"]; !ok && !lr.SpanID().IsEmpty() {
-		b.WriteString("spanID=")
-		b.WriteString(lr.SpanID().HexString())
-		b.WriteRune(' ')
-	}
-
-	// fields not added to the accept-list as part of the component's config
-	// are added to the body, so that they can still be seen under "detected fields"
-	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
-		if _, found := l.config.Labels.Attributes[k]; !found {
-			b.WriteString(k)
-			b.WriteString("=")
-			// encapsulate with double quotes. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11827
-			b.WriteString(strconv.Quote(v.AsString()))
-			b.WriteRune(' ')
-		}
-		return true
-	})
-
-	// same for resources: include all, except the ones that are explicitly added
-	// as part of the config, which are showing up at the top-level already
-	res.Attributes().Range(func(k string, v pcommon.Value) bool {
-		if _, found := l.config.Labels.ResourceAttributes[k]; !found {
-			b.WriteString(k)
-			b.WriteString("=")
-			b.WriteString(v.AsString())
-			b.WriteRune(' ')
-		}
-		return true
-	})
-
-	b.WriteString(lr.Body().Str())
-
-	return &logproto.Entry{
-		Timestamp: timestampFromLogRecord(lr),
-		Line:      b.String(),
-	}, nil
 }
 
 func (l *lokiExporter) convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource) (*logproto.Entry, error) {

@@ -19,7 +19,6 @@ The following options are now deprecated:
 - `labels.{attributes/resource}`. Deprecated and will be removed by v0.59.0. See the [Labels](#labels) section for more information.
 - `labels.record`. Deprecated and will be removed by v0.59.0. See the [Labels](#labels) section for more information.
 - `tenant`: Deprecated and will be removed by v0.59.0. See the [Labels](#tenant-information) section for more information.
-- `format` Deprecated without replacement. If you rely on this, let us know by opening an issue before v0.59.0 and we'll assist you in finding a solution.
 
 Example:
 ```yaml
@@ -81,6 +80,25 @@ processors:
       key: loki.resource.labels
       value: pod.name
 ```
+
+## Format
+
+To choose the format used for writing log lines by the exporter use the `loki.format` hint. For example:
+
+```yaml
+processors:
+  resource:
+    attributes:
+    - action: insert
+      key: loki.format
+      value: logfmt
+```
+
+The following formats are supported:
+
+- `logfmt`: Write logs as [logfmt](https://brandur.org/logfmt) lines.
+- `json`: Write logs as JSON objects. It is the default format if no hint is present.
+
 
 ## Tenant information
 

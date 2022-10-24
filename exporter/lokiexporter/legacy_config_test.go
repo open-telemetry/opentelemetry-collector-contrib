@@ -125,7 +125,6 @@ func TestLoadConfig(t *testing.T) {
 						"traceID": "traceid",
 					},
 				},
-				Format: stringp("json"),
 			},
 		},
 	}

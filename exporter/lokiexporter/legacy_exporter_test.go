@@ -561,38 +561,6 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 	})
 }
 
-func TestExporter_convertLogBodyToEntry(t *testing.T) {
-	res := pcommon.NewResource()
-	res.Attributes().PutStr("host.name", "something")
-	res.Attributes().PutStr("pod.name", "something123")
-
-	lr := plog.NewLogRecord()
-	lr.Body().SetStr("Payment succeeded")
-	lr.SetTraceID([16]byte{1, 2, 3, 4})
-	lr.SetSpanID([8]byte{5, 6, 7, 8})
-	lr.SetSeverityText("DEBUG")
-	lr.SetSeverityNumber(plog.SeverityNumberDebug)
-	lr.Attributes().PutStr("payment_method", "credit_card")
-
-	ts := pcommon.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
-	lr.SetTimestamp(ts)
-
-	exp := newLegacyExporter(&Config{
-		Labels: &LabelsConfig{
-			Attributes:         map[string]string{"payment_method": "payment_method"},
-			ResourceAttributes: map[string]string{"pod.name": "pod.name"},
-		},
-	}, componenttest.NewNopTelemetrySettings())
-	entry, _ := exp.convertLogBodyToEntry(lr, res)
-
-	expEntry := &logproto.Entry{
-		Timestamp: time.Unix(0, int64(lr.Timestamp())),
-		Line:      "severity=DEBUG severityN=5 traceID=01020304000000000000000000000000 spanID=0506070800000000 host.name=something Payment succeeded",
-	}
-	require.NotNil(t, entry)
-	require.Equal(t, expEntry, entry)
-}
-
 type badProtoForCoverage struct {
 	Foo string `protobuf:"bytes,1,opt,name=labels,proto3" json:"foo"`
 }

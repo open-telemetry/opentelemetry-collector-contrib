@@ -40,12 +40,6 @@ type Config struct {
 	// See this component's documentation for more information on how to specify the hint.
 	Labels *LabelsConfig `mapstructure:"labels"`
 
-	// Allows you to choose the entry format in the exporter.
-	// Deprecated: [v0.57.0] Only the JSON format will be supported in the future. If you rely on the
-	// "body" format and can't change to JSON, let us know before v0.59.0 by opening a GitHub issue
-	// and we'll work with you to find a solution.
-	Format *string `mapstructure:"format"`
-
 	// Tenant defines how to obtain the tenant ID
 	// Deprecated: [v0.57.0] use the attribute processor to add a `loki.tenant` hint.
 	// See this component's documentation for more information on how to specify the hint.
@@ -80,10 +74,6 @@ func (c *Config) Validate() error {
 }
 
 func (c *Config) isLegacy() bool {
-	if c.Format != nil && *c.Format == "body" {
-		return true
-	}
-
 	if c.Labels != nil {
 		return true
 	}

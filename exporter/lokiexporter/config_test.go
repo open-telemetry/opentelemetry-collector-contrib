@@ -106,16 +106,6 @@ func TestIsLegacy(t *testing.T) {
 			outcome: false,
 		},
 		{
-			desc: "format is set to body",
-			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://loki.example.com",
-				},
-				Format: stringp("body"),
-			},
-			outcome: true,
-		},
-		{
 			desc: "a label is specified",
 			cfg: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{

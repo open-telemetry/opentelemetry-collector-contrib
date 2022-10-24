@@ -9,7 +9,6 @@ loki:
 loki/json:
   endpoint: "https://loki:3100/loki/api/v1/push"
   tenant_id: "example"
-  format: "json"
   labels:
     record:
       traceID: traceid
