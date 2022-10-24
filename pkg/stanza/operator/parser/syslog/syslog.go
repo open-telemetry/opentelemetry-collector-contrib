@@ -91,13 +91,13 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	switch {
 	case c.Protocol == "":
 		return nil, fmt.Errorf("missing field 'protocol'")
-	case c.Protocol == RFC3164 && (c.NonTransparentFramingTrailer != nil || c.EnableOctetCounting):
+	case c.Protocol != RFC5424 && (c.NonTransparentFramingTrailer != nil || c.EnableOctetCounting):
 		return nil, errors.New("octet_counting and non_transparent_framing are only compatible with protocol rfc5424")
 	case c.Protocol == RFC5424 && (c.NonTransparentFramingTrailer != nil && c.EnableOctetCounting):
 		return nil, errors.New("only one of octet_counting or non_transparent_framing can be enabled")
 	case c.Protocol == RFC5424 && c.NonTransparentFramingTrailer != nil:
-		if validationErr := validateNonTransparentFramingTrailer(c.NonTransparentFramingTrailer); validationErr != nil {
-			return nil, validationErr
+		if *c.NonTransparentFramingTrailer != NULTrailer && *c.NonTransparentFramingTrailer != LFTrailer {
+			return nil, fmt.Errorf("invalid non_transparent_framing_trailer '%s'. Must be either 'LF' or 'NUL'", *c.NonTransparentFramingTrailer)
 		}
 	}
 
@@ -134,8 +134,10 @@ func (s *Parser) buildParseFunc() (parseFunc, error) {
 		case s.enableOctetCounting:
 			return newOctetCountingParseFunc(), nil
 		// Non-Transparent-Framing Parsing RFC6587
-		case s.nonTransparentFramingTrailer != nil:
-			return newNonTransparentFramingParseFunc(*s.nonTransparentFramingTrailer), nil
+		case s.nonTransparentFramingTrailer != nil && *s.nonTransparentFramingTrailer == LFTrailer:
+			return newNonTransparentFramingParseFunc(nontransparent.LF), nil
+		case s.nonTransparentFramingTrailer != nil && *s.nonTransparentFramingTrailer == NULTrailer:
+			return newNonTransparentFramingParseFunc(nontransparent.NUL), nil
 		// Raw RFC5424 parsing
 		default:
 			return func(input []byte) (sl.Message, error) {
@@ -320,18 +322,6 @@ func postprocess(e *entry.Entry) error {
 	return nil
 }
 
-func validateNonTransparentFramingTrailer(trailer *string) error {
-	if trailer == nil {
-		return nil
-	}
-
-	if *trailer != NULTrailer && *trailer != LFTrailer {
-		return fmt.Errorf("invalid non_transparent_framing_trailer '%s'. Must be either 'LF' or 'NUL'", *trailer)
-	}
-
-	return nil
-}
-
 func newOctetCountingParseFunc() parseFunc {
 	return func(input []byte) (message sl.Message, err error) {
 		listener := func(res *sl.Result) {
@@ -345,16 +335,11 @@ func newOctetCountingParseFunc() parseFunc {
 	}
 }
 
-func newNonTransparentFramingParseFunc(trailer string) parseFunc {
+func newNonTransparentFramingParseFunc(trailerType nontransparent.TrailerType) parseFunc {
 	return func(input []byte) (message sl.Message, err error) {
 		listener := func(res *sl.Result) {
 			message = res.Message
 			err = res.Error
-		}
-
-		trailerType := nontransparent.LF
-		if trailer == NULTrailer {
-			trailerType = nontransparent.NUL
 		}
 
 		parser := nontransparent.NewParser(sl.WithBestEffort(), nontransparent.WithTrailer(trailerType), sl.WithListener(listener))
