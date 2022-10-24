@@ -79,6 +79,34 @@ class SanitizeValue:
             else value
         )
 
+    def sanitize_header_values(
+        self, headers: dict, header_regexes: list, normalize_function: callable
+    ) -> dict:
+        values = {}
+
+        if header_regexes:
+            header_regexes_compiled = re_compile(
+                "|".join("^" + i + "$" for i in header_regexes),
+                RE_IGNORECASE,
+            )
+
+            for header_name in list(
+                filter(
+                    header_regexes_compiled.match,
+                    headers.keys(),
+                )
+            ):
+                header_values = headers.get(header_name)
+                if header_values:
+                    key = normalize_function(header_name.lower())
+                    values[key] = [
+                        self.sanitize_header_value(
+                            header=header_name, value=header_values
+                        )
+                    ]
+
+        return values
+
 
 _root = r"OTEL_PYTHON_{}"
 
