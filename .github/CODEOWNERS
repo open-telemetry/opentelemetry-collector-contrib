@@ -217,6 +217,5 @@ receiver/windowsperfcountersreceiver/                @open-telemetry/collector-c
 receiver/zipkinreceiver/                             @open-telemetry/collector-contrib-approvers
 receiver/zookeeperreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski
 
-
 testbed/                                             @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 testbed/mockdatareceivers/mockawsxrayreceiver/       @open-telemetry/collector-contrib-approvers @willarmiros
