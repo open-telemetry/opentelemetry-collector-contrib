@@ -72,17 +72,14 @@ func NewParser(functions map[string]interface{}, telemetrySettings component.Tel
 }
 
 var symbolTable = map[ottl.EnumSymbol]ottl.Enum{
-	"AGGREGATION_TEMPORALITY_UNSPECIFIED":    ottl.Enum(pmetric.AggregationTemporalityUnspecified),
-	"AGGREGATION_TEMPORALITY_DELTA":          ottl.Enum(pmetric.AggregationTemporalityDelta),
-	"AGGREGATION_TEMPORALITY_CUMULATIVE":     ottl.Enum(pmetric.AggregationTemporalityCumulative),
-	"FLAG_NONE":                              0,
-	"FLAG_NO_RECORDED_VALUE":                 1,
-	"METRIC_DATA_TYPE_NONE":                  ottl.Enum(pmetric.MetricTypeEmpty),
-	"METRIC_DATA_TYPE_GAUGE":                 ottl.Enum(pmetric.MetricTypeGauge),
-	"METRIC_DATA_TYPE_SUM":                   ottl.Enum(pmetric.MetricTypeSum),
-	"METRIC_DATA_TYPE_HISTOGRAM":             ottl.Enum(pmetric.MetricTypeHistogram),
-	"METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM": ottl.Enum(pmetric.MetricTypeExponentialHistogram),
-	"METRIC_DATA_TYPE_SUMMARY":               ottl.Enum(pmetric.MetricTypeSummary),
+	"FLAG_NONE":              0,
+	"FLAG_NO_RECORDED_VALUE": 1,
+}
+
+func init() {
+	for k, v := range ottlcommon.MetricSymbolTable {
+		symbolTable[k] = v
+	}
 }
 
 func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
@@ -109,23 +106,7 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 	case "instrumentation_scope":
 		return ottlcommon.ScopePathGetSetter[TransformContext](path[1:])
 	case "metric":
-		if len(path) == 1 {
-			return accessMetric(), nil
-		}
-		switch path[1].Name {
-		case "name":
-			return accessMetricName(), nil
-		case "description":
-			return accessMetricDescription(), nil
-		case "unit":
-			return accessMetricUnit(), nil
-		case "type":
-			return accessMetricType(), nil
-		case "aggregation_temporality":
-			return accessMetricAggTemporality(), nil
-		case "is_monotonic":
-			return accessMetricIsMonotonic(), nil
-		}
+		return ottlcommon.MetricPathGetSetter[TransformContext](path[1:])
 	case "attributes":
 		mapKey := path[0].MapKey
 		if mapKey == nil {
@@ -180,120 +161,6 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 		return accessQuantileValues(), nil
 	}
 	return nil, fmt.Errorf("invalid path expression %v", path)
-}
-
-func accessMetric() ottl.StandardGetSetter[TransformContext] {
-	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(ctx TransformContext) interface{} {
-			return ctx.GetMetric()
-		},
-		Setter: func(ctx TransformContext, val interface{}) {
-			if newMetric, ok := val.(pmetric.Metric); ok {
-				newMetric.CopyTo(ctx.GetMetric())
-			}
-		},
-	}
-}
-
-func accessMetricName() ottl.StandardGetSetter[TransformContext] {
-	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(ctx TransformContext) interface{} {
-			return ctx.GetMetric().Name()
-		},
-		Setter: func(ctx TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				ctx.GetMetric().SetName(str)
-			}
-		},
-	}
-}
-
-func accessMetricDescription() ottl.StandardGetSetter[TransformContext] {
-	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(ctx TransformContext) interface{} {
-			return ctx.GetMetric().Description()
-		},
-		Setter: func(ctx TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				ctx.GetMetric().SetDescription(str)
-			}
-		},
-	}
-}
-
-func accessMetricUnit() ottl.StandardGetSetter[TransformContext] {
-	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(ctx TransformContext) interface{} {
-			return ctx.GetMetric().Unit()
-		},
-		Setter: func(ctx TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				ctx.GetMetric().SetUnit(str)
-			}
-		},
-	}
-}
-
-func accessMetricType() ottl.StandardGetSetter[TransformContext] {
-	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(ctx TransformContext) interface{} {
-			return int64(ctx.GetMetric().Type())
-		},
-		Setter: func(ctx TransformContext, val interface{}) {
-			// TODO Implement methods so correctly convert data types.
-			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10130
-		},
-	}
-}
-
-func accessMetricAggTemporality() ottl.StandardGetSetter[TransformContext] {
-	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(ctx TransformContext) interface{} {
-			metric := ctx.GetMetric()
-			switch metric.Type() {
-			case pmetric.MetricTypeSum:
-				return int64(metric.Sum().AggregationTemporality())
-			case pmetric.MetricTypeHistogram:
-				return int64(metric.Histogram().AggregationTemporality())
-			case pmetric.MetricTypeExponentialHistogram:
-				return int64(metric.ExponentialHistogram().AggregationTemporality())
-			}
-			return nil
-		},
-		Setter: func(ctx TransformContext, val interface{}) {
-			if newAggTemporality, ok := val.(int64); ok {
-				metric := ctx.GetMetric()
-				switch metric.Type() {
-				case pmetric.MetricTypeSum:
-					metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporality(newAggTemporality))
-				case pmetric.MetricTypeHistogram:
-					metric.Histogram().SetAggregationTemporality(pmetric.AggregationTemporality(newAggTemporality))
-				case pmetric.MetricTypeExponentialHistogram:
-					metric.ExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporality(newAggTemporality))
-				}
-			}
-		},
-	}
-}
-
-func accessMetricIsMonotonic() ottl.StandardGetSetter[TransformContext] {
-	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(ctx TransformContext) interface{} {
-			metric := ctx.GetMetric()
-			if metric.Type() == pmetric.MetricTypeSum {
-				return metric.Sum().IsMonotonic()
-			}
-			return nil
-		},
-		Setter: func(ctx TransformContext, val interface{}) {
-			if newIsMonotonic, ok := val.(bool); ok {
-				metric := ctx.GetMetric()
-				if metric.Type() == pmetric.MetricTypeSum {
-					metric.Sum().SetIsMonotonic(newIsMonotonic)
-				}
-			}
-		},
-	}
 }
 
 func accessAttributes() ottl.StandardGetSetter[TransformContext] {
