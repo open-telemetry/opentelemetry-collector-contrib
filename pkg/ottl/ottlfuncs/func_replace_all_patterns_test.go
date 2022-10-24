@@ -131,7 +131,9 @@ func Test_replaceAllPatterns(t *testing.T) {
 
 			exprFunc, err := ReplaceAllPatterns[pcommon.Map](tt.target, tt.mode, tt.pattern, tt.replacement)
 			require.NoError(t, err)
-			exprFunc(scenarioMap)
+
+			_, err = exprFunc(scenarioMap)
+			assert.Nil(t, err)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
@@ -157,7 +159,8 @@ func Test_replaceAllPatterns_bad_input(t *testing.T) {
 	exprFunc, err := ReplaceAllPatterns[interface{}](target, modeValue, "regexpattern", "{replacement}")
 	assert.Nil(t, err)
 
-	exprFunc(input)
+	_, err = exprFunc(input)
+	assert.Nil(t, err)
 
 	assert.Equal(t, pcommon.NewValueStr("not a map"), input)
 }
@@ -175,7 +178,9 @@ func Test_replaceAllPatterns_get_nil(t *testing.T) {
 
 	exprFunc, err := ReplaceAllPatterns[interface{}](target, modeValue, "regexp", "{anything}")
 	require.NoError(t, err)
-	exprFunc(nil)
+
+	_, err = exprFunc(nil)
+	assert.Nil(t, err)
 }
 
 func Test_replaceAllPatterns_invalid_pattern(t *testing.T) {

@@ -146,7 +146,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			got, _ := accessor.Get(ctx)
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(ctx, tt.newVal)
+			err = accessor.Set(ctx, tt.newVal)
+			assert.Nil(t, err)
 
 			exMetric := createMetricTelemetry()
 			tt.modified(exMetric)

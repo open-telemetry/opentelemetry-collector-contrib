@@ -50,7 +50,7 @@ func TruncateAll[K any](target ottl.GetSetter[K], limit int64) (ottl.ExprFunc[K]
 			}
 			return true
 		})
-		target.Set(ctx, updated)
+		_ = target.Set(ctx, updated)
 		// TODO: Write log when truncation is performed
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9730
 		return nil, nil

@@ -22,7 +22,7 @@ func Set[K any](target ottl.Setter[K], value ottl.Getter[K]) (ottl.ExprFunc[K], 
 
 		// No fields currently support `null` as a valid type.
 		if val != nil {
-			target.Set(ctx, val)
+			_ = target.Set(ctx, val)
 		}
 		return nil, nil
 	}, nil

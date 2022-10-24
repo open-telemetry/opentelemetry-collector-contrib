@@ -76,7 +76,9 @@ func Test_deleteMatchingKeys(t *testing.T) {
 
 			exprFunc, err := DeleteMatchingKeys(tt.target, tt.pattern)
 			require.NoError(t, err)
-			exprFunc(scenarioMap)
+
+			_, err = exprFunc(scenarioMap)
+			assert.Nil(t, err)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
@@ -96,7 +98,9 @@ func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 
 	exprFunc, err := DeleteMatchingKeys[interface{}](target, "anything")
 	require.NoError(t, err)
-	exprFunc(input)
+
+	_, err = exprFunc(input)
+	assert.Nil(t, err)
 
 	assert.Equal(t, pcommon.NewValueInt(1), input)
 }

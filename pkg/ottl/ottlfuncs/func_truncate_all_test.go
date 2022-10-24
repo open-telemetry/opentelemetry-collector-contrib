@@ -94,6 +94,7 @@ func Test_truncateAll(t *testing.T) {
 
 			exprFunc, err := TruncateAll(tt.target, tt.limit)
 			require.NoError(t, err)
+
 			result, _ := exprFunc(scenarioMap)
 			assert.Nil(t, result)
 

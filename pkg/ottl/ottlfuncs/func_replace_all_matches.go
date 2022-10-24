@@ -45,7 +45,7 @@ func ReplaceAllMatches[K any](target ottl.GetSetter[K], pattern string, replacem
 			}
 			return true
 		})
-		target.Set(ctx, updated)
+		_ = target.Set(ctx, updated)
 		return nil, nil
 	}, nil
 }

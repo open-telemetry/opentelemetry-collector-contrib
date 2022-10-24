@@ -78,7 +78,9 @@ func Test_deleteKey(t *testing.T) {
 
 			exprFunc, err := DeleteKey(tt.target, tt.key)
 			require.NoError(t, err)
-			exprFunc(scenarioMap)
+
+			_, err = exprFunc(scenarioMap)
+			assert.Nil(t, err)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)

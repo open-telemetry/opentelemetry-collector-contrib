@@ -77,6 +77,7 @@ func Test_replaceAllMatches(t *testing.T) {
 
 			exprFunc, err := ReplaceAllMatches(tt.target, tt.pattern, tt.replacement)
 			require.NoError(t, err)
+
 			result, _ := exprFunc(scenarioMap)
 			assert.Nil(t, result)
 

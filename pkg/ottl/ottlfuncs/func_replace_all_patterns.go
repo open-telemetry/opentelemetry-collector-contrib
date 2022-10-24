@@ -67,7 +67,7 @@ func ReplaceAllPatterns[K any](target ottl.GetSetter[K], mode string, regexPatte
 			}
 			return true
 		})
-		target.Set(ctx, updated)
+		_ = target.Set(ctx, updated)
 
 		return nil, nil
 	}, nil

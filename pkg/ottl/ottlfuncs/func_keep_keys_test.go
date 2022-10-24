@@ -89,7 +89,9 @@ func Test_keepKeys(t *testing.T) {
 
 			exprFunc, err := KeepKeys(tt.target, tt.keys)
 			require.NoError(t, err)
-			exprFunc(scenarioMap)
+
+			_, err = exprFunc(scenarioMap)
+			assert.Nil(t, err)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
@@ -115,7 +117,9 @@ func Test_keepKeys_bad_input(t *testing.T) {
 
 	exprFunc, err := KeepKeys[interface{}](target, keys)
 	require.NoError(t, err)
-	exprFunc(input)
+
+	_, err = exprFunc(input)
+	assert.Nil(t, err)
 
 	assert.Equal(t, pcommon.NewValueStr("not a map"), input)
 }

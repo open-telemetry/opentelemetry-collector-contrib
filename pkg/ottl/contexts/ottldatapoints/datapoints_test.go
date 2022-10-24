@@ -299,7 +299,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			got, _ := accessor.Get(ctx)
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(ctx, tt.newVal)
+			err = accessor.Set(ctx, tt.newVal)
+			assert.Nil(t, err)
 
 			exNumberDataPoint := createNumberDataPointTelemetry(tt.valueType)
 			tt.modified(exNumberDataPoint)
@@ -624,7 +625,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			got, _ := accessor.Get(ctx)
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(ctx, tt.newVal)
+			err = accessor.Set(ctx, tt.newVal)
+			assert.Nil(t, err)
 
 			exNumberDataPoint := createHistogramDataPointTelemetry()
 			tt.modified(exNumberDataPoint)
@@ -1045,7 +1047,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			got, _ := accessor.Get(ctx)
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(ctx, tt.newVal)
+			err = accessor.Set(ctx, tt.newVal)
+			assert.Nil(t, err)
 
 			exNumberDataPoint := createExpoHistogramDataPointTelemetry()
 			tt.modified(exNumberDataPoint)
@@ -1351,7 +1354,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			got, _ := accessor.Get(ctx)
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(ctx, tt.newVal)
+			err = accessor.Set(ctx, tt.newVal)
+			assert.Nil(t, err)
 
 			exNumberDataPoint := createSummaryDataPointTelemetry()
 			tt.modified(exNumberDataPoint)
@@ -1536,7 +1540,8 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 			got, _ := accessor.Get(ctx)
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(ctx, tt.newVal)
+			err = accessor.Set(ctx, tt.newVal)
+			assert.Nil(t, err)
 
 			exMetric := createMetricTelemetry()
 			tt.modified(exMetric)

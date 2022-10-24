@@ -34,7 +34,7 @@ func ReplaceMatch[K any](target ottl.GetSetter[K], pattern string, replacement s
 		}
 		if valStr, ok := val.(string); ok {
 			if glob.Match(valStr) {
-				target.Set(ctx, replacement)
+				_ = target.Set(ctx, replacement)
 			}
 		}
 		return nil, nil

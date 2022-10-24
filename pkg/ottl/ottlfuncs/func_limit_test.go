@@ -130,6 +130,7 @@ func Test_limit(t *testing.T) {
 
 			exprFunc, err := Limit(tt.target, tt.limit, tt.keep)
 			require.NoError(t, err)
+
 			result, _ := exprFunc(scenarioMap)
 			assert.Nil(t, result)
 
