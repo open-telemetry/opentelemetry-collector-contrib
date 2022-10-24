@@ -10,7 +10,7 @@ require (
 	github.com/DataDog/datadog-api-client-go/v2 v2.4.0
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.34.1
-	github.com/aws/aws-sdk-go v1.44.121
+	github.com/aws/aws-sdk-go v1.44.122
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.62.0
@@ -81,7 +81,7 @@ require (
 	github.com/google/gnostic v0.5.7-v3refs // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/hashicorp/consul/api v1.15.2 // indirect
+	github.com/hashicorp/consul/api v1.15.3 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.3.1 // indirect
