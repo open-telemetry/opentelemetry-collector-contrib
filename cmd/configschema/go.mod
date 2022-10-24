@@ -273,6 +273,7 @@ require (
 	github.com/knadh/koanf v1.4.3 // indirect
 	github.com/kolo/xmlrpc v0.0.0-20201022064351-38db28db192b // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
+	github.com/leodido/ragel-machinery v0.0.0-20181214104525-299bdde78165 // indirect
 	github.com/leoluk/perflib_exporter v0.2.0 // indirect
 	github.com/lib/pq v1.10.7 // indirect
 	github.com/lightstep/go-expohisto v1.0.0 // indirect
