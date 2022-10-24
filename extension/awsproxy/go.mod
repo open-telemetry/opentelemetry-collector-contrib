@@ -5,13 +5,13 @@ go 1.18
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.62.0
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c
 	go.uber.org/zap v1.23.0
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.44.119 // indirect
+	github.com/aws/aws-sdk-go v1.44.121 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

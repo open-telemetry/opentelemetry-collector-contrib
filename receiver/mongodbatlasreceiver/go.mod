@@ -32,7 +32,7 @@ require (
 	github.com/openlyinc/pointy v1.1.2 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/stretchr/objx v0.4.0 // indirect
+	github.com/stretchr/objx v0.5.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect
@@ -52,7 +52,7 @@ require (
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.62.0
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
 	go.uber.org/multierr v1.8.0
 )
