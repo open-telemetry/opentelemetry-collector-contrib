@@ -13,10 +13,8 @@
 #  https://help.github.com/en/articles/about-code-owners
 #
 
-cmd/configschema
 examples/demo/client
 examples/demo/server
-exporter/parquetexporter
 extension/fluentbitextension
 extension/httpforwarder
 internal/common
@@ -26,7 +24,5 @@ internal/sharedcomponent
 internal/tools
 pkg/batchperresourceattr
 pkg/experimentalmetricmetadata
-processor/deltatorateprocessor
-processor/metricsgenerationprocessor
 receiver/dotnetdiagnosticsreceiver
 testbed
