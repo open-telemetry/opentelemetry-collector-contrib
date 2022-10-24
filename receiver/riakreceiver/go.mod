@@ -8,11 +8,11 @@ require (
 	go.uber.org/zap v1.23.0
 )
 
-require github.com/stretchr/testify v1.8.0
+require github.com/stretchr/testify v1.8.1
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.62.0
-	github.com/testcontainers/testcontainers-go v0.14.0
+	github.com/testcontainers/testcontainers-go v0.15.0
 	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
 )
 
@@ -55,10 +55,9 @@ require (
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
-	github.com/stretchr/objx v0.4.0 // indirect
+	github.com/stretchr/objx v0.5.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.3 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect

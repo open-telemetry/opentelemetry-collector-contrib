@@ -6,7 +6,7 @@ require (
 	github.com/Shopify/sarama v1.37.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.62.0
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c
 	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
 	go.uber.org/multierr v1.8.0
@@ -17,7 +17,7 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.5.1 // indirect
 	github.com/apache/thrift v0.17.0 // indirect
-	github.com/aws/aws-sdk-go v1.44.119 // indirect
+	github.com/aws/aws-sdk-go v1.44.121 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
@@ -60,7 +60,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
-	github.com/stretchr/objx v0.4.0 // indirect
+	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
