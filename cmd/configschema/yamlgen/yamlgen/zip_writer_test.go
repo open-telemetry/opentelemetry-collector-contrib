@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// skipping windows to avoid this golang bug: https://github.com/golang/go/issues/51442
+//go:build !windows
+
 package yamlgen
 
 import (
