@@ -35,9 +35,5 @@ extension/httpforwarder
 receiver/dotnetdiagnosticsreceiver
 
 # OTHER; Looking for an owner
-cmd/configschema
-exporter/parquetexporter
-processor/deltatorateprocessor
-processor/metricsgenerationprocessor
 pkg/batchperresourceattr
 pkg/experimentalmetricmetadata
