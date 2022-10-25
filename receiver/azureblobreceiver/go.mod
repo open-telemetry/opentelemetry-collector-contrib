@@ -7,8 +7,8 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.62.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c
-	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
+	go.opentelemetry.io/collector v0.62.2-0.20221025161912-71e69525434d
+	go.opentelemetry.io/collector/pdata v0.62.2-0.20221025161912-71e69525434d
 	go.uber.org/zap v1.23.0
 )
 
@@ -36,7 +36,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/knadh/koanf v1.4.3 // indirect
+	github.com/knadh/koanf v1.4.4 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect

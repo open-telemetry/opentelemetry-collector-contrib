@@ -8,9 +8,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.62.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c
-	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
-	go.opentelemetry.io/collector/semconv v0.62.2-0.20221017171445-6313054b642c
+	go.opentelemetry.io/collector v0.62.2-0.20221025161912-71e69525434d
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.0.0-20221025161912-71e69525434d
+	go.opentelemetry.io/collector/pdata v0.62.2-0.20221025161912-71e69525434d
+	go.opentelemetry.io/collector/semconv v0.62.2-0.20221025161912-71e69525434d
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 	google.golang.org/grpc v1.50.1
@@ -41,7 +42,7 @@ require (
 	github.com/jaegertracing/jaeger v1.38.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
-	github.com/knadh/koanf v1.4.3 // indirect
+	github.com/knadh/koanf v1.4.4 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -65,7 +66,7 @@ require (
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
-	github.com/spf13/cobra v1.6.0 // indirect
+	github.com/spf13/cobra v1.6.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.13.0 // indirect
@@ -84,7 +85,7 @@ require (
 	golang.org/x/net v0.1.0 // indirect
 	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
-	google.golang.org/genproto v0.0.0-20221014213838-99cd37c6964a // indirect
+	google.golang.org/genproto v0.0.0-20221018160656-63c7b68cfc55 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

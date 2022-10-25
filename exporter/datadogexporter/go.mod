@@ -23,9 +23,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.62.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c
-	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
-	go.opentelemetry.io/collector/semconv v0.62.2-0.20221017171445-6313054b642c
+	go.opentelemetry.io/collector v0.62.2-0.20221025161912-71e69525434d
+	go.opentelemetry.io/collector/pdata v0.62.2-0.20221025161912-71e69525434d
+	go.opentelemetry.io/collector/semconv v0.62.2-0.20221025161912-71e69525434d
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -96,7 +96,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/karrick/godirwalk v1.17.0 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
-	github.com/knadh/koanf v1.4.3 // indirect
+	github.com/knadh/koanf v1.4.4 // indirect
 	github.com/leoluk/perflib_exporter v0.2.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20220517141722-cf486979b281 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
