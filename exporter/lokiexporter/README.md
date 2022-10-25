@@ -14,13 +14,6 @@ The following settings are required:
 
 - `endpoint` (no default): The target URL to send Loki log streams to (e.g.: `http://loki:3100/loki/api/v1/push`).
 
-The following options are now deprecated:
-
-- `labels.{attributes/resource}`. Deprecated and will be removed by v0.59.0. See the [Labels](#labels) section for more information.
-- `labels.record`. Deprecated and will be removed by v0.59.0. See the [Labels](#labels) section for more information.
-- `tenant`: Deprecated and will be removed by v0.59.0. See the [Labels](#tenant-information) section for more information.
-- `format` Deprecated without replacement. If you rely on this, let us know by opening an issue before v0.59.0 and we'll assist you in finding a solution.
-
 Example:
 ```yaml
 receivers:
