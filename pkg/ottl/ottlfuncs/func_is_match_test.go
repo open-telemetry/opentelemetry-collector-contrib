@@ -84,8 +84,9 @@ func Test_isMatch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := IsMatch(tt.target, tt.pattern)
-			require.NoError(t, err)
-			result, _ := exprFunc(nil)
+			assert.NoError(t, err)
+			result, err := exprFunc(nil)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

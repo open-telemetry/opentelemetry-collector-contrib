@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -70,9 +69,10 @@ func Test_set(t *testing.T) {
 			scenarioValue := pcommon.NewValueStr(input.Str())
 
 			exprFunc, err := Set(tt.setter, tt.getter)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
-			result, _ := exprFunc(scenarioValue)
+			result, err := exprFunc(scenarioValue)
+			assert.NoError(t, err)
 			assert.Nil(t, result)
 
 			expected := pcommon.NewValueStr("")
@@ -98,8 +98,9 @@ func Test_set_get_nil(t *testing.T) {
 	}
 
 	exprFunc, err := Set[interface{}](setter, getter)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
-	result, _ := exprFunc(nil)
+	result, err := exprFunc(nil)
+	assert.NoError(t, err)
 	assert.Nil(t, result)
 }

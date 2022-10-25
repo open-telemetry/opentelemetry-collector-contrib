@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -68,8 +67,9 @@ func Test_replaceMatch(t *testing.T) {
 			scenarioValue := pcommon.NewValueStr(input.Str())
 
 			exprFunc, err := ReplaceMatch(tt.target, tt.pattern, tt.replacement)
-			require.NoError(t, err)
-			result, _ := exprFunc(scenarioValue)
+			assert.NoError(t, err)
+			result, err := exprFunc(scenarioValue)
+			assert.NoError(t, err)
 			assert.Nil(t, result)
 
 			expected := pcommon.NewValueStr("")
@@ -93,9 +93,10 @@ func Test_replaceMatch_bad_input(t *testing.T) {
 	}
 
 	exprFunc, err := ReplaceMatch[interface{}](target, "*", "{replacement}")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
-	result, _ := exprFunc(input)
+	result, err := exprFunc(input)
+	assert.NoError(t, err)
 	assert.Nil(t, result)
 
 	assert.Equal(t, pcommon.NewValueInt(1), input)
@@ -113,8 +114,9 @@ func Test_replaceMatch_get_nil(t *testing.T) {
 	}
 
 	exprFunc, err := ReplaceMatch[interface{}](target, "*", "{anything}")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
-	result, _ := exprFunc(nil)
+	result, err := exprFunc(nil)
+	assert.NoError(t, err)
 	assert.Nil(t, result)
 }

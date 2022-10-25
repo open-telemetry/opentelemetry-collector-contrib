@@ -75,7 +75,7 @@ func Test_deleteMatchingKeys(t *testing.T) {
 			input.CopyTo(scenarioMap)
 
 			exprFunc, err := DeleteMatchingKeys(tt.target, tt.pattern)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			_, err = exprFunc(scenarioMap)
 			assert.Nil(t, err)
@@ -97,7 +97,7 @@ func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 	}
 
 	exprFunc, err := DeleteMatchingKeys[interface{}](target, "anything")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	_, err = exprFunc(input)
 	assert.Nil(t, err)
@@ -113,8 +113,9 @@ func Test_deleteMatchingKeys_get_nil(t *testing.T) {
 	}
 
 	exprFunc, err := DeleteMatchingKeys[interface{}](target, "anything")
-	require.NoError(t, err)
-	result, _ := exprFunc(nil)
+	assert.NoError(t, err)
+	result, err := exprFunc(nil)
+	assert.NoError(t, err)
 	assert.Nil(t, result)
 }
 

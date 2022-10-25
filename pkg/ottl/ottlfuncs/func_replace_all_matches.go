@@ -29,7 +29,10 @@ func ReplaceAllMatches[K any](target ottl.GetSetter[K], pattern string, replacem
 		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern: %w", err)
 	}
 	return func(ctx K) (interface{}, error) {
-		val, _ := target.Get(ctx)
+		val, err := target.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
 		if val == nil {
 			return nil, nil
 		}
@@ -45,7 +48,10 @@ func ReplaceAllMatches[K any](target ottl.GetSetter[K], pattern string, replacem
 			}
 			return true
 		})
-		_ = target.Set(ctx, updated)
+		err = target.Set(ctx, updated)
+		if err != nil {
+			return nil, err
+		}
 		return nil, nil
 	}, nil
 }

@@ -398,7 +398,8 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			log, il, resource := createTelemetry()
 
-			got, _ := accessor.Get(NewTransformContext(log, il, resource))
+			got, err := accessor.Get(NewTransformContext(log, il, resource))
+			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(NewTransformContext(log, il, resource), tt.newVal)

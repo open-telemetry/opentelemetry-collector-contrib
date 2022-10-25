@@ -143,7 +143,8 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			ctx := NewTransformContext(metric, pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
-			got, _ := accessor.Get(ctx)
+			got, err := accessor.Get(ctx)
+			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(ctx, tt.newVal)

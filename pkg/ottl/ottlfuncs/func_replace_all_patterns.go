@@ -38,7 +38,10 @@ func ReplaceAllPatterns[K any](target ottl.GetSetter[K], mode string, regexPatte
 	}
 
 	return func(ctx K) (interface{}, error) {
-		val, _ := target.Get(ctx)
+		val, err := target.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
 		if val == nil {
 			return nil, nil
 		}
@@ -67,7 +70,10 @@ func ReplaceAllPatterns[K any](target ottl.GetSetter[K], mode string, regexPatte
 			}
 			return true
 		})
-		_ = target.Set(ctx, updated)
+		err = target.Set(ctx, updated)
+		if err != nil {
+			return nil, err
+		}
 
 		return nil, nil
 	}, nil

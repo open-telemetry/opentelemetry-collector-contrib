@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -88,7 +87,7 @@ func Test_keepKeys(t *testing.T) {
 			input.CopyTo(scenarioMap)
 
 			exprFunc, err := KeepKeys(tt.target, tt.keys)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			_, err = exprFunc(scenarioMap)
 			assert.Nil(t, err)
@@ -116,7 +115,7 @@ func Test_keepKeys_bad_input(t *testing.T) {
 	keys := []string{"anything"}
 
 	exprFunc, err := KeepKeys[interface{}](target, keys)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	_, err = exprFunc(input)
 	assert.Nil(t, err)
@@ -138,7 +137,8 @@ func Test_keepKeys_get_nil(t *testing.T) {
 	keys := []string{"anything"}
 
 	exprFunc, err := KeepKeys[interface{}](target, keys)
-	require.NoError(t, err)
-	result, _ := exprFunc(nil)
+	assert.NoError(t, err)
+	result, err := exprFunc(nil)
+	assert.NoError(t, err)
 	assert.Nil(t, result)
 }

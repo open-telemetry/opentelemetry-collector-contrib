@@ -27,7 +27,11 @@ func IsMatch[K any](target ottl.Getter[K], pattern string) (ottl.ExprFunc[K], er
 		return nil, fmt.Errorf("the pattern supplied to IsMatch is not a valid regexp pattern: %w", err)
 	}
 	return func(ctx K) (interface{}, error) {
-		if val, _ := target.Get(ctx); val != nil {
+		val, err := target.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if val != nil {
 			if valStr, ok := val.(string); ok {
 				return compiledPattern.MatchString(valStr), nil
 			}

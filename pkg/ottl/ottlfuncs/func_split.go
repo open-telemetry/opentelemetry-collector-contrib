@@ -22,7 +22,11 @@ import (
 
 func Split[K any](target ottl.Getter[K], delimiter string) (ottl.ExprFunc[K], error) {
 	return func(ctx K) (interface{}, error) {
-		if val, _ := target.Get(ctx); val != nil {
+		val, err := target.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if val != nil {
 			if valStr, ok := val.(string); ok {
 				return strings.Split(valStr, delimiter), nil
 			}

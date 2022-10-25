@@ -22,7 +22,10 @@ import (
 
 func Int[K any](target ottl.Getter[K]) (ottl.ExprFunc[K], error) {
 	return func(ctx K) (interface{}, error) {
-		value, _ := target.Get(ctx)
+		value, err := target.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
 		switch value := value.(type) {
 		case int64:
 			return value, nil

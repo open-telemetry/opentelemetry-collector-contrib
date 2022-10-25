@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -84,8 +83,9 @@ func Test_split(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := Split(tt.target, tt.delimiter)
-			require.NoError(t, err)
-			result, _ := exprFunc(nil)
+			assert.NoError(t, err)
+			result, err := exprFunc(nil)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

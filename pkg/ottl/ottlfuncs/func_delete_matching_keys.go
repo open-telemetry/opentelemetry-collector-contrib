@@ -29,7 +29,10 @@ func DeleteMatchingKeys[K any](target ottl.Getter[K], pattern string) (ottl.Expr
 		return nil, fmt.Errorf("the regex pattern supplied to delete_matching_keys is not a valid pattern: %w", err)
 	}
 	return func(ctx K) (interface{}, error) {
-		val, _ := target.Get(ctx)
+		val, err := target.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
 		if val == nil {
 			return nil, nil
 		}

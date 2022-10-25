@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -129,9 +128,10 @@ func Test_limit(t *testing.T) {
 			input.CopyTo(scenarioMap)
 
 			exprFunc, err := Limit(tt.target, tt.limit, tt.keep)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
-			result, _ := exprFunc(scenarioMap)
+			result, err := exprFunc(scenarioMap)
+			assert.NoError(t, err)
 			assert.Nil(t, result)
 
 			expected := pcommon.NewMap()
@@ -182,8 +182,9 @@ func Test_limit_bad_input(t *testing.T) {
 	}
 
 	exprFunc, err := Limit[interface{}](target, 1, []string{})
-	require.NoError(t, err)
-	result, _ := exprFunc(input)
+	assert.NoError(t, err)
+	result, err := exprFunc(input)
+	assert.NoError(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, pcommon.NewValueStr("not a map"), input)
 }
@@ -200,8 +201,9 @@ func Test_limit_get_nil(t *testing.T) {
 	}
 
 	exprFunc, err := Limit[interface{}](target, 1, []string{})
-	require.NoError(t, err)
-	result, _ := exprFunc(nil)
+	assert.NoError(t, err)
+	result, err := exprFunc(nil)
+	assert.NoError(t, err)
 	assert.Nil(t, result)
 	assert.Nil(t, result)
 }

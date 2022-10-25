@@ -25,7 +25,10 @@ func Concat[K any](vals []ottl.Getter[K], delimiter string) (ottl.ExprFunc[K], e
 	return func(ctx K) (interface{}, error) {
 		builder := strings.Builder{}
 		for i, rv := range vals {
-			val, _ := rv.Get(ctx)
+			val, err := rv.Get(ctx)
+			if err != nil {
+				return nil, err
+			}
 			switch v := val.(type) {
 			case string:
 				builder.WriteString(v)

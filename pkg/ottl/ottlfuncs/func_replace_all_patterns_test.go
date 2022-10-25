@@ -130,7 +130,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 			input.CopyTo(scenarioMap)
 
 			exprFunc, err := ReplaceAllPatterns[pcommon.Map](tt.target, tt.mode, tt.pattern, tt.replacement)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			_, err = exprFunc(scenarioMap)
 			assert.Nil(t, err)
@@ -177,7 +177,7 @@ func Test_replaceAllPatterns_get_nil(t *testing.T) {
 	}
 
 	exprFunc, err := ReplaceAllPatterns[interface{}](target, modeValue, "regexp", "{anything}")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	_, err = exprFunc(nil)
 	assert.Nil(t, err)

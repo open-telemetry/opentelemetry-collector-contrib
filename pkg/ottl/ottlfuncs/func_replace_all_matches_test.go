@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -76,9 +75,10 @@ func Test_replaceAllMatches(t *testing.T) {
 			input.CopyTo(scenarioMap)
 
 			exprFunc, err := ReplaceAllMatches(tt.target, tt.pattern, tt.replacement)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
-			result, _ := exprFunc(scenarioMap)
+			result, err := exprFunc(scenarioMap)
+			assert.NoError(t, err)
 			assert.Nil(t, result)
 
 			expected := pcommon.NewMap()
@@ -102,8 +102,9 @@ func Test_replaceAllMatches_bad_input(t *testing.T) {
 	}
 
 	exprFunc, err := ReplaceAllMatches[interface{}](target, "*", "{replacement}")
-	require.NoError(t, err)
-	result, _ := exprFunc(input)
+	assert.NoError(t, err)
+	result, err := exprFunc(input)
+	assert.NoError(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, pcommon.NewValueStr("not a map"), input)
 }
@@ -120,7 +121,8 @@ func Test_replaceAllMatches_get_nil(t *testing.T) {
 	}
 
 	exprFunc, err := ReplaceAllMatches[interface{}](target, "*", "{anything}")
-	require.NoError(t, err)
-	result, _ := exprFunc(nil)
+	assert.NoError(t, err)
+	result, err := exprFunc(nil)
+	assert.NoError(t, err)
 	assert.Nil(t, result)
 }

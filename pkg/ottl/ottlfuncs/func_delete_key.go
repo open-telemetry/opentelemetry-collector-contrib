@@ -22,7 +22,10 @@ import (
 
 func DeleteKey[K any](target ottl.Getter[K], key string) (ottl.ExprFunc[K], error) {
 	return func(ctx K) (interface{}, error) {
-		val, _ := target.Get(ctx)
+		val, err := target.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
 		if val == nil {
 			return nil, nil
 		}

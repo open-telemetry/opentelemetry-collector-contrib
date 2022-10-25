@@ -296,7 +296,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 
 			ctx := NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
-			got, _ := accessor.Get(ctx)
+			got, err := accessor.Get(ctx)
+			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(ctx, tt.newVal)
@@ -622,7 +623,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 
 			ctx := NewTransformContext(histogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
-			got, _ := accessor.Get(ctx)
+			got, err := accessor.Get(ctx)
+			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(ctx, tt.newVal)
@@ -1044,7 +1046,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 
 			ctx := NewTransformContext(expoHistogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
-			got, _ := accessor.Get(ctx)
+			got, err := accessor.Get(ctx)
+			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(ctx, tt.newVal)
@@ -1351,7 +1354,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 
 			ctx := NewTransformContext(summaryDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
-			got, _ := accessor.Get(ctx)
+			got, err := accessor.Get(ctx)
+			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(ctx, tt.newVal)
@@ -1537,7 +1541,8 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 
 			ctx := NewTransformContext(pmetric.NewNumberDataPoint(), metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
-			got, _ := accessor.Get(ctx)
+			got, err := accessor.Get(ctx)
+			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(ctx, tt.newVal)

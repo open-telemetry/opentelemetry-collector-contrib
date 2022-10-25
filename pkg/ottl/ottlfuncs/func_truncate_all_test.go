@@ -93,9 +93,10 @@ func Test_truncateAll(t *testing.T) {
 			input.CopyTo(scenarioMap)
 
 			exprFunc, err := TruncateAll(tt.target, tt.limit)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
-			result, _ := exprFunc(scenarioMap)
+			result, err := exprFunc(scenarioMap)
+			assert.NoError(t, err)
 			assert.Nil(t, result)
 
 			expected := pcommon.NewMap()
@@ -125,9 +126,10 @@ func Test_truncateAll_bad_input(t *testing.T) {
 	}
 
 	exprFunc, err := TruncateAll[interface{}](target, 1)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
-	result, _ := exprFunc(input)
+	result, err := exprFunc(input)
+	assert.NoError(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, pcommon.NewValueStr("not a map"), input)
 }
@@ -144,8 +146,9 @@ func Test_truncateAll_get_nil(t *testing.T) {
 	}
 
 	exprFunc, err := TruncateAll[interface{}](target, 1)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
-	result, _ := exprFunc(nil)
+	result, err := exprFunc(nil)
+	assert.NoError(t, err)
 	assert.Nil(t, result)
 }

@@ -77,9 +77,10 @@ func Test_replacePattern(t *testing.T) {
 			scenarioValue := pcommon.NewValueStr(input.Str())
 
 			exprFunc, err := ReplacePattern(tt.target, tt.pattern, tt.replacement)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
-			result, _ := exprFunc(scenarioValue)
+			result, err := exprFunc(scenarioValue)
+			assert.NoError(t, err)
 			assert.Nil(t, result)
 
 			expected := pcommon.NewValueStr("")
@@ -103,9 +104,10 @@ func Test_replacePattern_bad_input(t *testing.T) {
 	}
 
 	exprFunc, err := ReplacePattern[interface{}](target, "regexp", "{replacement}")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
-	result, _ := exprFunc(input)
+	result, err := exprFunc(input)
+	assert.NoError(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, pcommon.NewValueInt(1), input)
 }
@@ -122,9 +124,10 @@ func Test_replacePattern_get_nil(t *testing.T) {
 	}
 
 	exprFunc, err := ReplacePattern[interface{}](target, `nomatch\=[^\s]*(\s?)`, "{anything}")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
-	result, _ := exprFunc(nil)
+	result, err := exprFunc(nil)
+	assert.NoError(t, err)
 	assert.Nil(t, result)
 }
 

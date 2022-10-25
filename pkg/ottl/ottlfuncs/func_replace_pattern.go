@@ -27,14 +27,20 @@ func ReplacePattern[K any](target ottl.GetSetter[K], regexPattern string, replac
 		return nil, fmt.Errorf("the regex pattern supplied to replace_pattern is not a valid pattern: %w", err)
 	}
 	return func(ctx K) (interface{}, error) {
-		originalVal, _ := target.Get(ctx)
+		originalVal, err := target.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
 		if originalVal == nil {
 			return nil, nil
 		}
 		if originalValStr, ok := originalVal.(string); ok {
 			if compiledPattern.MatchString(originalValStr) {
 				updatedStr := compiledPattern.ReplaceAllLiteralString(originalValStr, replacement)
-				_ = target.Set(ctx, updatedStr)
+				err = target.Set(ctx, updatedStr)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 		return nil, nil

@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -87,8 +86,9 @@ func Test_Int(t *testing.T) {
 					return tt.value, nil
 				},
 			})
-			require.NoError(t, err)
-			result, _ := exprFunc(nil)
+			assert.NoError(t, err)
+			result, err := exprFunc(nil)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

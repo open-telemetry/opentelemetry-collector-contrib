@@ -38,7 +38,10 @@ func Limit[K any](target ottl.GetSetter[K], limit int64, priorityKeys []string) 
 	}
 
 	return func(ctx K) (interface{}, error) {
-		val, _ := target.Get(ctx)
+		val, err := target.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
 		if val == nil {
 			return nil, nil
 		}
