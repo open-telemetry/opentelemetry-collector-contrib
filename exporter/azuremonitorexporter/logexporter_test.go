@@ -105,7 +105,7 @@ func TestLogRecordToEnvelope(t *testing.T) {
 	}
 }
 
-// Test conversion from logRecord.SeverityText() to contracts.SeverityLevel()
+// Test conversion from logRecord.SeverityNumber() to contracts.SeverityLevel()
 func TestToAiSeverityLevel(t *testing.T) {
 	logPacker := getLogPacker()
 	for sn, expectedSeverityLevel := range severityLevelMap {
