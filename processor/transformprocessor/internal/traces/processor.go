@@ -69,7 +69,7 @@ func (p *Processor) ProcessTraces(_ context.Context, td ptrace.Traces) (ptrace.T
 		}
 	} else {
 		for _, contexts := range p.contexts {
-			contexts.ProcessTraces(td)
+			contexts.(common.TracesContext).ProcessTraces(td)
 		}
 	}
 	return td, nil

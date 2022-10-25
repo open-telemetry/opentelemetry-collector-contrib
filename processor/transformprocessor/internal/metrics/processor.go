@@ -78,7 +78,7 @@ func (p *Processor) ProcessMetrics(_ context.Context, td pmetric.Metrics) (pmetr
 		}
 	} else {
 		for _, contexts := range p.contexts {
-			contexts.ProcessMetrics(td)
+			contexts.(common.MetricsContext).ProcessMetrics(td)
 		}
 	}
 	return td, nil

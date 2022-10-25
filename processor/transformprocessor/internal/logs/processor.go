@@ -68,7 +68,7 @@ func (p *Processor) ProcessLogs(_ context.Context, td plog.Logs) (plog.Logs, err
 		}
 	} else {
 		for _, contexts := range p.contexts {
-			contexts.ProcessLogs(td)
+			contexts.(common.LogsContext).ProcessLogs(td)
 		}
 	}
 	return td, nil
