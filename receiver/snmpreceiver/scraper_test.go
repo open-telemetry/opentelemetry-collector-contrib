@@ -668,9 +668,9 @@ func TestScrape(t *testing.T) {
 					value:     "test2",
 					valueType: stringVal,
 				}
-				innerError1 := fmt.Errorf(errMsgIndexedBadValueType, oid1, parentOID)
+				innerError1 := fmt.Errorf(errMsgBadValueType, oid1)
 				expectedScrapeErr1 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid1, parentOID, innerError1)
-				innerError2 := fmt.Errorf(errMsgIndexedBadValueType, oid2, parentOID)
+				innerError2 := fmt.Errorf(errMsgBadValueType, oid2)
 				expectedScrapeErr2 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid2, parentOID, innerError2)
 				expectedScrapeErrMsg := expectedScrapeErr1.Error() + "; " + expectedScrapeErr2.Error()
 				mockClient.On("Connect").Return(nil)
@@ -1876,9 +1876,9 @@ func TestScrape(t *testing.T) {
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
 				innerErr1 := fmt.Errorf(errMsgIndexedAttributesBadValueType, oid1, parentOID1)
-				expectedErr1 := fmt.Errorf(errMsgIndexedResourceAttributeOIDProcessing, oid1, parentOID1, innerErr1)
+				expectedErr1 := fmt.Errorf(errMsgIndexedAttributeOIDProcessing, oid1, parentOID1, innerErr1)
 				innerErr2 := fmt.Errorf(errMsgIndexedAttributesBadValueType, oid2, parentOID1)
-				expectedErr2 := fmt.Errorf(errMsgIndexedResourceAttributeOIDProcessing, oid2, parentOID1, innerErr2)
+				expectedErr2 := fmt.Errorf(errMsgIndexedAttributeOIDProcessing, oid2, parentOID1, innerErr2)
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]SNMPData{snmpData0, snmpData1}).Once()
 				innerInnerErr := errors.New(errMsgResourceAttributeEmptyValue)
 				innerErr := fmt.Errorf(errMsgOIDResourceAttributeEmptyValue, metricName, innerInnerErr)
