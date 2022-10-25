@@ -22,6 +22,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 )
 
+// zipWriter is a YAMLWriter implementation that creates a zip archive
+// comprising multiple configschema yaml files.
 type zipWriter struct {
 	zw *zip.Writer
 }

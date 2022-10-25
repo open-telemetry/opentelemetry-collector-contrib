@@ -23,8 +23,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 )
 
-// fileYAMLWriter creates yaml files in a collector repo source root, one for
-// each component. Fields writeFile and log are swappable for testing.
+// fileYAMLWriter is a YAMLWriter implementation that creates yaml files in a collector repo
+// source root, one for each component.
 type fileYAMLWriter struct {
 	dr configschema.DirResolverIntf
 }
