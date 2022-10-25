@@ -27,12 +27,12 @@ require (
 	github.com/prometheus/prometheus v0.38.0
 	github.com/shirou/gopsutil/v3 v3.22.9
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.62.2-0.20221025161912-71e69525434d
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.0.0-20221025161912-71e69525434d
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.0.0-20221025161912-71e69525434d
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.0.0-20221025161912-71e69525434d
-	go.opentelemetry.io/collector/pdata v0.62.2-0.20221025161912-71e69525434d
-	go.opentelemetry.io/collector/semconv v0.62.2-0.20221025161912-71e69525434d
+	go.opentelemetry.io/collector v0.62.2-0.20221025202712-36d142f003d8
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.0.0-20221025202028-2f42fa13e018
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.0.0-20221025202712-36d142f003d8
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.0.0-20221025202712-36d142f003d8
+	go.opentelemetry.io/collector/pdata v0.62.2-0.20221025202712-36d142f003d8
+	go.opentelemetry.io/collector/semconv v0.62.2-0.20221025202712-36d142f003d8
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0

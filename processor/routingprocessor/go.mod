@@ -5,9 +5,9 @@ go 1.18
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.62.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.62.2-0.20221025161912-71e69525434d
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.0.0-20221025161912-71e69525434d
-	go.opentelemetry.io/collector/pdata v0.62.2-0.20221025161912-71e69525434d
+	go.opentelemetry.io/collector v0.62.2-0.20221025202712-36d142f003d8
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.0.0-20221025202712-36d142f003d8
+	go.opentelemetry.io/collector/pdata v0.62.2-0.20221025202712-36d142f003d8
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 	google.golang.org/grpc v1.50.1
