@@ -32,13 +32,29 @@ import (
 )
 
 type Context interface {
+	IsContext() bool
+}
+
+type TracesContext interface {
 	ProcessTraces(td ptrace.Traces)
+}
+
+type MetricsContext interface {
 	ProcessMetrics(td pmetric.Metrics)
+}
+
+type LogsContext interface {
 	ProcessLogs(td plog.Logs)
 }
 
+var _ Context = &ResourceStatements{}
+
 type ResourceStatements struct {
 	Statements []*ottl.Statement[ottlresource.TransformContext]
+}
+
+func (r *ResourceStatements) IsContext() bool {
+	return true
 }
 
 func (r *ResourceStatements) ProcessTraces(td ptrace.Traces) {
@@ -71,8 +87,14 @@ func (r *ResourceStatements) ProcessLogs(td plog.Logs) {
 	}
 }
 
+var _ Context = &ScopeStatements{}
+
 type ScopeStatements struct {
 	Statements []*ottl.Statement[ottlscope.TransformContext]
+}
+
+func (s *ScopeStatements) IsContext() bool {
+	return true
 }
 
 func (s *ScopeStatements) ProcessTraces(td ptrace.Traces) {
@@ -114,8 +136,14 @@ func (s *ScopeStatements) ProcessLogs(td plog.Logs) {
 	}
 }
 
+var _ Context = &TraceStatements{}
+
 type TraceStatements struct {
 	statements []*ottl.Statement[ottltraces.TransformContext]
+}
+
+func (t *TraceStatements) IsContext() bool {
+	return true
 }
 
 func (t *TraceStatements) ProcessTraces(td ptrace.Traces) {
@@ -134,17 +162,15 @@ func (t *TraceStatements) ProcessTraces(td ptrace.Traces) {
 	}
 }
 
-func (t *TraceStatements) ProcessMetrics(td pmetric.Metrics) {}
-
-func (t *TraceStatements) ProcessLogs(td plog.Logs) {}
+var _ Context = &LogStatements{}
 
 type LogStatements struct {
 	statements []*ottl.Statement[ottllogs.TransformContext]
 }
 
-func (l *LogStatements) ProcessTraces(td ptrace.Traces) {}
-
-func (l *LogStatements) ProcessMetrics(td pmetric.Metrics) {}
+func (l *LogStatements) IsContext() bool {
+	return true
+}
 
 func (l *LogStatements) ProcessLogs(td plog.Logs) {
 	for i := 0; i < td.ResourceLogs().Len(); i++ {
@@ -162,13 +188,15 @@ func (l *LogStatements) ProcessLogs(td plog.Logs) {
 	}
 }
 
+var _ Context = &DataPointStatements{}
+
 type DataPointStatements struct {
 	statements []*ottl.Statement[ottldatapoints.TransformContext]
 }
 
-func (d *DataPointStatements) ProcessTraces(td ptrace.Traces) {}
-
-func (d *DataPointStatements) ProcessLogs(td plog.Logs) {}
+func (d *DataPointStatements) IsContext() bool {
+	return true
+}
 
 func (d *DataPointStatements) ProcessMetrics(td pmetric.Metrics) {
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
