@@ -15,7 +15,6 @@
 package signalfxexporter
 
 import (
-	"context"
 	"net/url"
 	"path/filepath"
 	"testing"
@@ -24,11 +23,10 @@ import (
 	apmcorrelation "github.com/signalfx/signalfx-agent/pkg/apm/correlations"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
@@ -37,153 +35,165 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	e0 := cfg.Exporters[config.NewComponentID(typeStr)]
 
 	// Realm doesn't have a default value so set it directly.
-	defaultCfg := factory.CreateDefaultConfig().(*Config)
+	defaultCfg := createDefaultConfig().(*Config)
 	defaultCfg.Realm = "ap0"
 	defaultTranslationRules, err := loadDefaultTranslationRules()
 	require.NoError(t, err)
 	defaultCfg.TranslationRules = defaultTranslationRules
-	assert.Equal(t, defaultCfg, e0)
 
-	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "allsettings")]
-	expectedCfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "allsettings")),
-		AccessToken:      "testToken",
-		Realm:            "us1",
-		MaxConnections:   70,
-		Headers: map[string]string{
-			"added-entry": "added value",
-			"dot.test":    "test",
+	tests := []struct {
+		id       config.ComponentID
+		expected config.Exporter
+	}{
+		{
+			id:       config.NewComponentIDWithName(typeStr, ""),
+			expected: defaultCfg,
 		},
-		TimeoutSettings: exporterhelper.TimeoutSettings{
-			Timeout: 2 * time.Second,
+		{
+			id: config.NewComponentIDWithName(typeStr, "allsettings"),
+			expected: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				AccessToken:      "testToken",
+				Realm:            "us1",
+				MaxConnections:   70,
+				Headers: map[string]string{
+					"added-entry": "added value",
+					"dot.test":    "test",
+				},
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: 2 * time.Second,
+				},
+				RetrySettings: exporterhelper.RetrySettings{
+					Enabled:         true,
+					InitialInterval: 10 * time.Second,
+					MaxInterval:     1 * time.Minute,
+					MaxElapsedTime:  10 * time.Minute,
+				},
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: 2,
+					QueueSize:    10,
+				}, AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+					AccessTokenPassthrough: false,
+				},
+				TranslationRules: []translation.Rule{
+					{
+						Action: translation.ActionRenameDimensionKeys,
+						Mapping: map[string]string{
+							"k8s.cluster.name": "kubernetes_cluster",
+						},
+					},
+					{
+						Action: translation.ActionDropDimensions,
+						DimensionPairs: map[string]map[string]bool{
+							"foo":  nil,
+							"foo1": {"bar": true},
+						},
+					},
+					{
+						Action:     translation.ActionDropDimensions,
+						MetricName: "metric",
+						DimensionPairs: map[string]map[string]bool{
+							"foo":  nil,
+							"foo1": {"bar": true},
+						},
+					},
+					{
+						Action: translation.ActionDropDimensions,
+						MetricNames: map[string]bool{
+							"metric1": true,
+							"metric2": true,
+						},
+						DimensionPairs: map[string]map[string]bool{
+							"foo":  nil,
+							"foo1": {"bar": true},
+						},
+					},
+				},
+				ExcludeMetrics: []dpfilters.MetricFilter{
+					{
+						MetricName: "metric1",
+					},
+					{
+						MetricNames: []string{"metric2", "metric3"},
+					},
+					{
+						MetricName: "metric4",
+						Dimensions: map[string]interface{}{
+							"dimension_key": "dimension_val",
+						},
+					},
+					{
+						MetricName: "metric5",
+						Dimensions: map[string]interface{}{
+							"dimension_key": []interface{}{"dimension_val1", "dimension_val2"},
+						},
+					},
+					{
+						MetricName: `/cpu\..*/`,
+					},
+					{
+						MetricNames: []string{"cpu.util*", "memory.util*"},
+					},
+					{
+						MetricName: "cpu.utilization",
+						Dimensions: map[string]interface{}{
+							"container_name": "/^[A-Z][A-Z]$/",
+						},
+					},
+				},
+				IncludeMetrics: []dpfilters.MetricFilter{
+					{
+						MetricName: "metric1",
+					},
+					{
+						MetricNames: []string{"metric2", "metric3"},
+					},
+				},
+				DeltaTranslationTTL: 3600,
+				Correlation: &correlation.Config{
+					HTTPClientSettings: confighttp.HTTPClientSettings{
+						Endpoint: "",
+						Timeout:  5 * time.Second,
+					},
+					StaleServiceTimeout: 5 * time.Minute,
+					SyncAttributes: map[string]string{
+						"k8s.pod.uid":  "k8s.pod.uid",
+						"container.id": "container.id",
+					},
+					Config: apmcorrelation.Config{
+						MaxRequests:     20,
+						MaxBuffered:     10_000,
+						MaxRetries:      2,
+						LogUpdates:      false,
+						RetryDelay:      30 * time.Second,
+						CleanupInterval: 1 * time.Minute,
+					},
+				},
+				NonAlphanumericDimensionChars: "_-.",
+			},
 		},
-		RetrySettings: exporterhelper.RetrySettings{
-			Enabled:         true,
-			InitialInterval: 10 * time.Second,
-			MaxInterval:     1 * time.Minute,
-			MaxElapsedTime:  10 * time.Minute,
-		},
-		QueueSettings: exporterhelper.QueueSettings{
-			Enabled:      true,
-			NumConsumers: 2,
-			QueueSize:    10,
-		}, AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
-			AccessTokenPassthrough: false,
-		},
-		TranslationRules: []translation.Rule{
-			{
-				Action: translation.ActionRenameDimensionKeys,
-				Mapping: map[string]string{
-					"k8s.cluster.name": "kubernetes_cluster",
-				},
-			},
-			{
-				Action: translation.ActionDropDimensions,
-				DimensionPairs: map[string]map[string]bool{
-					"foo":  nil,
-					"foo1": {"bar": true},
-				},
-			},
-			{
-				Action:     translation.ActionDropDimensions,
-				MetricName: "metric",
-				DimensionPairs: map[string]map[string]bool{
-					"foo":  nil,
-					"foo1": {"bar": true},
-				},
-			},
-			{
-				Action: translation.ActionDropDimensions,
-				MetricNames: map[string]bool{
-					"metric1": true,
-					"metric2": true,
-				},
-				DimensionPairs: map[string]map[string]bool{
-					"foo":  nil,
-					"foo1": {"bar": true},
-				},
-			},
-		},
-		ExcludeMetrics: []dpfilters.MetricFilter{
-			{
-				MetricName: "metric1",
-			},
-			{
-				MetricNames: []string{"metric2", "metric3"},
-			},
-			{
-				MetricName: "metric4",
-				Dimensions: map[string]interface{}{
-					"dimension_key": "dimension_val",
-				},
-			},
-			{
-				MetricName: "metric5",
-				Dimensions: map[string]interface{}{
-					"dimension_key": []interface{}{"dimension_val1", "dimension_val2"},
-				},
-			},
-			{
-				MetricName: `/cpu\..*/`,
-			},
-			{
-				MetricNames: []string{"cpu.util*", "memory.util*"},
-			},
-			{
-				MetricName: "cpu.utilization",
-				Dimensions: map[string]interface{}{
-					"container_name": "/^[A-Z][A-Z]$/",
-				},
-			},
-		},
-		IncludeMetrics: []dpfilters.MetricFilter{
-			{
-				MetricName: "metric1",
-			},
-			{
-				MetricNames: []string{"metric2", "metric3"},
-			},
-		},
-		DeltaTranslationTTL: 3600,
-		Correlation: &correlation.Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
-				Endpoint: "",
-				Timeout:  5 * time.Second,
-			},
-			StaleServiceTimeout: 5 * time.Minute,
-			SyncAttributes: map[string]string{
-				"k8s.pod.uid":  "k8s.pod.uid",
-				"container.id": "container.id",
-			},
-			Config: apmcorrelation.Config{
-				MaxRequests:     20,
-				MaxBuffered:     10_000,
-				MaxRetries:      2,
-				LogUpdates:      false,
-				RetryDelay:      30 * time.Second,
-				CleanupInterval: 1 * time.Minute,
-			},
-		},
-		NonAlphanumericDimensionChars: "_-.",
 	}
-	assert.Equal(t, &expectedCfg, e1)
 
-	te, err := factory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), e1)
-	require.NoError(t, err)
-	require.NotNil(t, te)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalExporter(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
 
 func TestConfig_getOptionsFromConfig(t *testing.T) {

@@ -40,7 +40,16 @@ func TestLoadConfig(t *testing.T) {
 			id: config.NewComponentIDWithName(typeStr, "sometoken"),
 			expected: &Config{
 				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+				Scheme:            defaultScheme,
 				BearerToken:       "sometoken",
+			},
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "withscheme"),
+			expected: &Config{
+				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+				Scheme:            "MyScheme",
+				BearerToken:       "my-token",
 			},
 		},
 	}

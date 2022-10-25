@@ -12,7 +12,7 @@ These are the metrics available for this scraper.
 | **postgresql.bgwriter.buffers.allocated** | Number of buffers allocated. | {buffers} | Sum(Int) | <ul> </ul> |
 | **postgresql.bgwriter.buffers.writes** | Number of buffers written. | {buffers} | Sum(Int) | <ul> <li>bg_buffer_source</li> </ul> |
 | **postgresql.bgwriter.checkpoint.count** | The number of checkpoints performed. | {checkpoints} | Sum(Int) | <ul> <li>bg_checkpoint_type</li> </ul> |
-| **postgresql.bgwriter.duration** | Total time spent writing and syncing files to disk by checkpoints. | ms | Sum(Int) | <ul> <li>bg_duration_type</li> </ul> |
+| **postgresql.bgwriter.duration** | Total time spent writing and syncing files to disk by checkpoints. | ms | Sum(Double) | <ul> <li>bg_duration_type</li> </ul> |
 | **postgresql.bgwriter.maxwritten** | Number of times the background writer stopped a cleaning scan because it had written too many buffers. |  | Sum(Int) | <ul> </ul> |
 | **postgresql.blocks_read** | The number of blocks read. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>source</li> </ul> |
 | **postgresql.commits** | The number of commits. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |

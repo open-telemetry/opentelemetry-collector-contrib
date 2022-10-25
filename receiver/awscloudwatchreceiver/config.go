@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 	"go.uber.org/multierr"
 )
 
@@ -91,6 +92,23 @@ func (c *Config) Validate() error {
 	errs = multierr.Append(errs, c.ReceiverSettings.Validate())
 	errs = multierr.Append(errs, c.validateLogsConfig())
 	return errs
+}
+
+// Unmarshal is a custom unmarshaller that ensures that autodiscover is nil if
+// autodiscover is not specified
+func (c *Config) Unmarshal(componentParser *confmap.Conf) error {
+	if componentParser == nil {
+		return errors.New("")
+	}
+	err := componentParser.Unmarshal(c, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+
+	if componentParser.IsSet("logs::groups::named") && !componentParser.IsSet("logs::groups::autodiscover") {
+		c.Logs.Groups.AutodiscoverConfig = nil
+	}
+	return nil
 }
 
 func (c *Config) validateLogsConfig() error {

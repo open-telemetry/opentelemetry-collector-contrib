@@ -21,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Concat[K any](delimiter string, vals []ottl.Getter[K]) (ottl.ExprFunc[K], error) {
+func Concat[K any](vals []ottl.Getter[K], delimiter string) (ottl.ExprFunc[K], error) {
 	return func(ctx K) interface{} {
 		builder := strings.Builder{}
 		for i, rv := range vals {
