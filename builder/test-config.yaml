@@ -1,0 +1,50 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        auth:
+          authenticator: lumigoauth
+
+extensions:
+  health_check:
+  lumigoauth:
+
+exporters:
+  logging:
+    loglevel: debug
+
+processors:
+  redaction/remove_secrets:
+    allow_all_keys: true
+    blocked_values:
+      - "[^=]+[a-zA-Z]*pass[a-zA-Z]*=[^=]"
+  resource/lumigo_token_from_auth:
+    # Store the Lumigo token provided via the Authorization
+    # header as the `lumigoToken` resource attribute.
+    attributes:
+    - key: lumigoToken
+      action: upsert
+      from_context: auth.lumigo-token
+  transform/normalize_spans:
+    traces:
+      queries:
+      - set(attributes["lumigo-otlp-pipeline"], "true")  # This attribute marks spans that go through the OpenTelemetry collector in our pipeline; we use it to differentiate with the spans from the /api/spans pipeline
+      - truncate_all(attributes, 2048)  # Enforce a max length for string attributes of 2048 characters
+  batch:
+    # Process data in batches so that the file exporter
+    # and logrotate have a chance to work with the file
+    # being truncated in place
+    send_batch_size: 1000
+    timeout: 30
+
+service:
+  extensions: [health_check,lumigoauth]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [resource/lumigo_token_from_auth,transform/normalize_spans,redaction/remove_secrets,batch]
+      exporters:
+       - logging
+  telemetry:
+    logs:
+      level: "debug"

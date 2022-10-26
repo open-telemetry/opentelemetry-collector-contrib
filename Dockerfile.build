@@ -1,0 +1,8 @@
+FROM golang:1.18
+
+ARG builder_version=v0.60.0
+RUN GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@${builder_version}
+
+ADD . /repo
+
+RUN /go/bin/builder --config=/repo/builder/builder_configuration.yaml --output-path=/repo/dist
