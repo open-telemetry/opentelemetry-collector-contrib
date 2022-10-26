@@ -1,4 +1,0 @@
-k8sobjects/invalid_resource:
-  objects:
-    - name: fake_resource
-      mode: watch
