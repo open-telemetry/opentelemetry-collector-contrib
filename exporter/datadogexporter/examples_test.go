@@ -50,8 +50,7 @@ func TestExamples(t *testing.T) {
 			continue
 		}
 		t.Run(filepath.Base(f.Name()), func(t *testing.T) {
-			os.Setenv("DD_API_KEY", "testvalue")
-			defer os.Unsetenv("DD_API_KEY")
+			t.Setenv("DD_API_KEY", "testvalue")
 			name := filepath.Join(folder, f.Name())
 			_, err := servicetest.LoadConfigAndValidate(name, factories)
 			require.NoError(t, err, "All yaml config must validate. Please ensure that all necessary component factories are added in newTestComponents()")
