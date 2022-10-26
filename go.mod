@@ -102,6 +102,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.62.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filereloadreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver v0.62.0
@@ -903,6 +904,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elast
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver => ./receiver/expvarreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver => ./receiver/filelogreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filereloadreceiver => ./receiver/filereloadreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver => ./receiver/googlecloudspannerreceiver
 
