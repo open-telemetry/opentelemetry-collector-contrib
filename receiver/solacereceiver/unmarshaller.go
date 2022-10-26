@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/baggage"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -290,6 +291,14 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 	}
 	attrMap.PutInt(peerPortAttrKey, int64(spanData.PeerPort))
 
+	if spanData.Baggage != nil {
+		err := u.unmarshalBaggage(attrMap, *spanData.Baggage)
+		if err != nil {
+			u.logger.Warn("Received malformed baggage string in span data")
+			u.metrics.recordRecoverableUnmarshallingError()
+		}
+	}
+
 	attrMap.PutBool(droppedUserPropertiesAttrKey, spanData.DroppedApplicationMessageProperties)
 	for key, value := range spanData.UserProperties {
 		if value != nil {
@@ -432,6 +441,36 @@ func (u *solaceMessageUnmarshallerV1) rgmidToString(rgmid []byte) string {
 	// format: rmid1:aaaaa-bbbbbbbbbbb-cccccccc-dddddddd
 	rgmidString := "rmid1:" + string(rgmidEncoded[0:5]) + "-" + string(rgmidEncoded[5:16]) + "-" + string(rgmidEncoded[16:24]) + "-" + string(rgmidEncoded[24:32])
 	return rgmidString
+}
+
+// unmarshalBaggage will unmarshal a baggage string
+// See spec https://github.com/open-telemetry/opentelemetry-go/blob/v1.11.1/baggage/baggage.go
+func (u *solaceMessageUnmarshallerV1) unmarshalBaggage(toMap pcommon.Map, baggageString string) error {
+	const (
+		baggageValuePrefix    = "messaging.solace.message.baggage."
+		baggageMetadataPrefix = "messaging.solace.message.baggage_metadata."
+		propertyDelimiter     = ";"
+	)
+	bg, err := baggage.Parse(baggageString)
+	if err != nil {
+		return err
+	}
+	// we got a valid baggage string, assume everything else is valid
+	for _, member := range bg.Members() {
+		toMap.PutStr(baggageValuePrefix+member.Key(), member.Value())
+		// member.Properties copies, we should cache
+		properties := member.Properties()
+		if len(properties) > 0 {
+			// Re-encode the properties and save them as a parameter
+			var propertyString strings.Builder
+			propertyString.WriteString(properties[0].String())
+			for i := 1; i < len(properties); i++ {
+				propertyString.WriteString(propertyDelimiter + properties[i].String())
+			}
+			toMap.PutStr(baggageMetadataPrefix+member.Key(), propertyString.String())
+		}
+	}
+	return nil
 }
 
 // insertUserProperty will instert a user property value with the given key to an attribute if possible.
