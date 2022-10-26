@@ -758,3 +758,12 @@ metrics:
       value_type: int
     attributes: [operation, index_aggregation_type]
     enabled: true
+  elasticsearch.index.shards.size:
+    description: The size of the shards assigned to this index.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [index_aggregation_type]
+    enabled: true
