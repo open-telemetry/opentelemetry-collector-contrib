@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/gosnmp/gosnmp v1.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.62.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.62.2-0.20221025202712-36d142f003d8
 	go.opentelemetry.io/collector/pdata v0.62.2-0.20221025202712-36d142f003d8
@@ -19,7 +20,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf v1.4.4 // indirect
-	github.com/kr/pretty v0.3.0 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
