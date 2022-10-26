@@ -108,7 +108,7 @@ func TestLoadInvalidConfig_NoScrapers(t *testing.T) {
 	factories.Receivers[typeStr] = factory
 	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-noscrapers.yaml"), factories)
 
-	require.EqualError(t, err, "receiver \"hostmetrics\" has invalid configuration: must specify at least one scraper when using hostmetrics receiver")
+	require.Contains(t, err.Error(), "receiver \"hostmetrics\" has invalid configuration: must specify at least one scraper when using hostmetrics receiver")
 }
 
 func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
@@ -119,5 +119,5 @@ func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
 	factories.Receivers[typeStr] = factory
 	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-invalidscraperkey.yaml"), factories)
 
-	require.EqualError(t, err, "error reading receivers configuration for \"hostmetrics\": invalid scraper key: invalidscraperkey")
+	require.Contains(t, err.Error(), "error reading receivers configuration for \"hostmetrics\": invalid scraper key: invalidscraperkey")
 }

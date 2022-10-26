@@ -8,8 +8,8 @@ require (
 	github.com/elastic/go-structform v0.0.10
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.62.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c
-	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
+	go.opentelemetry.io/collector v0.62.2-0.20221025202712-36d142f003d8
+	go.opentelemetry.io/collector/pdata v0.62.2-0.20221025202712-36d142f003d8
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
@@ -26,7 +26,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/knadh/koanf v1.4.3 // indirect
+	github.com/knadh/koanf v1.4.4 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect

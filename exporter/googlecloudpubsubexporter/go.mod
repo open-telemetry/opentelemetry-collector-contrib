@@ -6,8 +6,8 @@ require (
 	cloud.google.com/go/pubsub v1.26.0
 	github.com/google/uuid v1.3.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c
-	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
+	go.opentelemetry.io/collector v0.62.2-0.20221025202712-36d142f003d8
+	go.opentelemetry.io/collector/pdata v0.62.2-0.20221025202712-36d142f003d8
 	go.uber.org/zap v1.23.0
 	google.golang.org/api v0.100.0
 	google.golang.org/genproto v0.0.0-20221014213838-99cd37c6964a
@@ -30,7 +30,7 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.2.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.6.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/knadh/koanf v1.4.3 // indirect
+	github.com/knadh/koanf v1.4.4 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
