@@ -45,14 +45,18 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "float literal",
 			val: value{
-				Float: ottltest.Floatp(1.2),
+				Literal: &exprLiteral{
+					Float: ottltest.Floatp(1.2),
+				},
 			},
 			want: 1.2,
 		},
 		{
 			name: "int literal",
 			val: value{
-				Int: ottltest.Intp(12),
+				Literal: &exprLiteral{
+					Int: ottltest.Intp(12),
+				},
 			},
 			want: int64(12),
 		},
@@ -80,10 +84,12 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "path expression",
 			val: value{
-				Path: &Path{
-					Fields: []Field{
-						{
-							Name: "name",
+				Literal: &exprLiteral{
+					Path: &Path{
+						Fields: []Field{
+							{
+								Name: "name",
+							},
 						},
 					},
 				},
@@ -93,8 +99,10 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "function call",
 			val: value{
-				Invocation: &invocation{
-					Function: "hello",
+				Literal: &exprLiteral{
+					Invocation: &invocation{
+						Function: "hello",
+					},
 				},
 			},
 			want: "world",
