@@ -352,8 +352,7 @@ func TestLogRetention_NeverExpire(t *testing.T) {
 	svc.On("CreateLogGroup",
 		&cloudwatchlogs.CreateLogGroupInput{LogGroupName: &logGroup}).Return(new(cloudwatchlogs.CreateLogGroupOutput), nil).Once()
 
-	/*svc.On("PutRetentionPolicy",
-	&cloudwatchlogs.PutRetentionPolicyInput{LogGroupName: &logGroup, RetentionInDays: aws.Int64(0)}).Return(new(cloudwatchlogs.PutRetentionPolicyOutput), nil).Once()*/
+	// PutRetentionPolicy is not called because it is set to 0
 
 	svc.On("CreateLogStream",
 		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(new(cloudwatchlogs.CreateLogStreamOutput), nil).Once()
