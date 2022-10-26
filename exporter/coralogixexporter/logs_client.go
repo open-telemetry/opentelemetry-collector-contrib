@@ -65,7 +65,7 @@ func (e *logsExporter) start(ctx context.Context, host component.Host) (err erro
 		return err
 	}
 
-	e.logExporter = plogotlp.NewClient(e.clientConn)
+	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
 	if e.config.Logs.Headers == nil {
 		e.config.Logs.Headers = make(map[string]string)
 	}
@@ -93,7 +93,7 @@ func (e *logsExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 		newRss := ld.ResourceLogs().AppendEmpty()
 		resourceLog.CopyTo(newRss)
 
-		req := plogotlp.NewRequestFromLogs(ld)
+		req := plogotlp.NewExportRequestFromLogs(ld)
 		_, err := e.logExporter.Export(e.enhanceContext(ctx, appName, subsystem), req, e.callOptions...)
 		if err != nil {
 			return processError(err)

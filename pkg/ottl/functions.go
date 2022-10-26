@@ -58,18 +58,17 @@ func (p *Parser[K]) buildArgs(inv invocation, fType reflect.Type) ([]reflect.Val
 	for i := 0; i < fType.NumIn(); i++ {
 		argType := fType.In(i)
 
-		switch argType.Kind() {
-		case reflect.Slice:
-			err := p.buildSliceArg(inv, argType, i, &args)
+		if argType.Kind() == reflect.Slice {
+			arg, err := p.buildSliceArg(inv, argType, i)
 			if err != nil {
 				return nil, err
 			}
-			// Slice arguments must be the final argument in an invocation.
-			return args, nil
-		default:
-			isInternalArg := p.buildInternalArg(argType, &args)
+			args = append(args, arg)
+		} else {
+			arg, isInternalArg := p.buildInternalArg(argType)
 
 			if isInternalArg {
+				args = append(args, arg)
 				continue
 			}
 
@@ -78,12 +77,16 @@ func (p *Parser[K]) buildArgs(inv invocation, fType reflect.Type) ([]reflect.Val
 			}
 
 			argDef := inv.Arguments[DSLArgumentIndex]
-			err := p.buildArg(argDef, argType, DSLArgumentIndex, &args)
-			DSLArgumentIndex++
+			val, err := p.buildArg(argDef, argType, DSLArgumentIndex)
+
 			if err != nil {
 				return nil, err
 			}
+
+			args = append(args, reflect.ValueOf(val))
 		}
+
+		DSLArgumentIndex++
 	}
 
 	if len(inv.Arguments) > DSLArgumentIndex {
@@ -93,59 +96,45 @@ func (p *Parser[K]) buildArgs(inv invocation, fType reflect.Type) ([]reflect.Val
 	return args, nil
 }
 
-func (p *Parser[K]) buildSliceArg(inv invocation, argType reflect.Type, startingIndex int, args *[]reflect.Value) error {
+func (p *Parser[K]) buildSliceArg(inv invocation, argType reflect.Type, index int) (reflect.Value, error) {
 	name := argType.Elem().Name()
 	switch {
-	case name == reflect.String.String():
-		var arg []string
-		for j := startingIndex; j < len(inv.Arguments); j++ {
-			if inv.Arguments[j].String == nil {
-				return fmt.Errorf("invalid argument for slice parameter at position %v, must be a string", j)
-			}
-			arg = append(arg, *inv.Arguments[j].String)
-		}
-		*args = append(*args, reflect.ValueOf(arg))
-	case name == reflect.Float64.String():
-		var arg []float64
-		for j := startingIndex; j < len(inv.Arguments); j++ {
-			if inv.Arguments[j].Float == nil {
-				return fmt.Errorf("invalid argument for slice parameter at position %v, must be a float", j)
-			}
-			arg = append(arg, *inv.Arguments[j].Float)
-		}
-		*args = append(*args, reflect.ValueOf(arg))
-	case name == reflect.Int64.String():
-		var arg []int64
-		for j := startingIndex; j < len(inv.Arguments); j++ {
-			if inv.Arguments[j].Int == nil {
-				return fmt.Errorf("invalid argument for slice parameter at position %v, must be an int", j)
-			}
-			arg = append(arg, *inv.Arguments[j].Int)
-		}
-		*args = append(*args, reflect.ValueOf(arg))
 	case name == reflect.Uint8.String():
-		if inv.Arguments[startingIndex].Bytes == nil {
-			return fmt.Errorf("invalid argument for slice parameter at position %v, must be a byte slice literal", startingIndex)
+		if inv.Arguments[index].Bytes == nil {
+			return reflect.ValueOf(nil), fmt.Errorf("invalid argument for slice parameter at position %v, must be a byte slice literal", index)
 		}
-		*args = append(*args, reflect.ValueOf(([]byte)(*inv.Arguments[startingIndex].Bytes)))
+		return reflect.ValueOf(([]byte)(*inv.Arguments[index].Bytes)), nil
+	case name == reflect.String.String():
+		arg, err := buildSlice[string](inv, argType, index, p.buildArg, name)
+		if err != nil {
+			return reflect.ValueOf(nil), err
+		}
+		return arg, nil
+	case name == reflect.Float64.String():
+		arg, err := buildSlice[float64](inv, argType, index, p.buildArg, name)
+		if err != nil {
+			return reflect.ValueOf(nil), err
+		}
+		return arg, nil
+	case name == reflect.Int64.String():
+		arg, err := buildSlice[int64](inv, argType, index, p.buildArg, name)
+		if err != nil {
+			return reflect.ValueOf(nil), err
+		}
+		return arg, nil
 	case strings.HasPrefix(name, "Getter"):
-		var arg []Getter[K]
-		for j := startingIndex; j < len(inv.Arguments); j++ {
-			val, err := p.newGetter(inv.Arguments[j])
-			if err != nil {
-				return err
-			}
-			arg = append(arg, val)
+		arg, err := buildSlice[Getter[K]](inv, argType, index, p.buildArg, name)
+		if err != nil {
+			return reflect.ValueOf(nil), err
 		}
-		*args = append(*args, reflect.ValueOf(arg))
+		return arg, nil
 	default:
-		return fmt.Errorf("unsupported slice type '%s' for function '%v'", argType.Elem().Name(), inv.Function)
+		return reflect.ValueOf(nil), fmt.Errorf("unsupported slice type '%s' for function '%v'", argType.Elem().Name(), inv.Function)
 	}
-	return nil
 }
 
 // Handle interfaces that can be passed as arguments to OTTL function invocations.
-func (p *Parser[K]) buildArg(argDef value, argType reflect.Type, index int, args *[]reflect.Value) error {
+func (p *Parser[K]) buildArg(argDef value, argType reflect.Type, index int) (any, error) {
 	name := argType.Name()
 	switch {
 	case strings.HasPrefix(name, "Setter"):
@@ -153,56 +142,78 @@ func (p *Parser[K]) buildArg(argDef value, argType reflect.Type, index int, args
 	case strings.HasPrefix(name, "GetSetter"):
 		arg, err := p.pathParser(argDef.Path)
 		if err != nil {
-			return fmt.Errorf("invalid argument at position %v %w", index, err)
+			return nil, fmt.Errorf("invalid argument at position %v %w", index, err)
 		}
-		*args = append(*args, reflect.ValueOf(arg))
+		return arg, nil
 	case strings.HasPrefix(name, "Getter"):
 		arg, err := p.newGetter(argDef)
 		if err != nil {
-			return fmt.Errorf("invalid argument at position %v %w", index, err)
+			return nil, fmt.Errorf("invalid argument at position %v %w", index, err)
 		}
-		*args = append(*args, reflect.ValueOf(arg))
+		return arg, nil
 	case name == "Enum":
 		arg, err := p.enumParser(argDef.Enum)
 		if err != nil {
-			return fmt.Errorf("invalid argument at position %v must be an Enum", index)
+			return nil, fmt.Errorf("invalid argument at position %v must be an Enum", index)
 		}
-		*args = append(*args, reflect.ValueOf(*arg))
-	case name == "string":
+		return *arg, nil
+	case name == reflect.String.String():
 		if argDef.String == nil {
-			return fmt.Errorf("invalid argument at position %v, must be an string", index)
+			return nil, fmt.Errorf("invalid argument at position %v, must be an string", index)
 		}
-		*args = append(*args, reflect.ValueOf(*argDef.String))
-	case name == "float64":
+		return *argDef.String, nil
+	case name == reflect.Float64.String():
 		if argDef.Float == nil {
-			return fmt.Errorf("invalid argument at position %v, must be an float", index)
+			return nil, fmt.Errorf("invalid argument at position %v, must be an float", index)
 		}
-		*args = append(*args, reflect.ValueOf(*argDef.Float))
-	case name == "int64":
+		return *argDef.Float, nil
+	case name == reflect.Int64.String():
 		if argDef.Int == nil {
-			return fmt.Errorf("invalid argument at position %v, must be an int", index)
+			return nil, fmt.Errorf("invalid argument at position %v, must be an int", index)
 		}
-		*args = append(*args, reflect.ValueOf(*argDef.Int))
-	case name == "bool":
+		return *argDef.Int, nil
+	case name == reflect.Bool.String():
 		if argDef.Bool == nil {
-			return fmt.Errorf("invalid argument at position %v, must be a bool", index)
+			return nil, fmt.Errorf("invalid argument at position %v, must be a bool", index)
 		}
-		*args = append(*args, reflect.ValueOf(bool(*argDef.Bool)))
+		return bool(*argDef.Bool), nil
 	default:
-		return errors.New("unsupported argument type")
+		return nil, errors.New("unsupported argument type")
 	}
-	return nil
 }
 
 // Handle interfaces that can be declared as parameters to a OTTL function, but will
 // never be called in an invocation. Returns whether the arg is an internal arg.
-func (p *Parser[K]) buildInternalArg(argType reflect.Type, args *[]reflect.Value) bool {
-	switch argType.Name() {
-	case "TelemetrySettings":
-		*args = append(*args, reflect.ValueOf(p.telemetrySettings))
-	default:
-		return false
+func (p *Parser[K]) buildInternalArg(argType reflect.Type) (reflect.Value, bool) {
+	if argType.Name() == "TelemetrySettings" {
+		return reflect.ValueOf(p.telemetrySettings), true
+	}
+	return reflect.ValueOf(nil), false
+}
+
+type buildArgFunc func(value, reflect.Type, int) (any, error)
+
+func buildSlice[T any](inv invocation, argType reflect.Type, index int, buildArg buildArgFunc, name string) (reflect.Value, error) {
+	if inv.Arguments[index].List == nil {
+		return reflect.ValueOf(nil), fmt.Errorf("invalid argument for parameter at position %v, must be a list of type %v", index, name)
 	}
 
-	return true
+	vals := []T{}
+	values := inv.Arguments[index].List.Values
+	for j := 0; j < len(values); j++ {
+		untypedVal, err := buildArg(values[j], argType.Elem(), j)
+		if err != nil {
+			return reflect.ValueOf(nil), err
+		}
+
+		val, ok := untypedVal.(T)
+
+		if !ok {
+			return reflect.ValueOf(nil), fmt.Errorf("invalid element type at list index %v for argument at position %v, must be of type %v", j, index, name)
+		}
+
+		vals = append(vals, val)
+	}
+
+	return reflect.ValueOf(vals), nil
 }

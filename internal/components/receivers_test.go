@@ -174,6 +174,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "hostmetrics",
 		},
 		{
+			receiver: "httpcheck",
+		},
+		{
 			receiver: "influxdb",
 		},
 		{
@@ -193,6 +196,10 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver:     "k8s_events",
+			skipLifecyle: true, // need a valid Kubernetes host and port
+		},
+		{
+			receiver:     "k8sobjects",
 			skipLifecyle: true, // need a valid Kubernetes host and port
 		},
 		{

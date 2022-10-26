@@ -223,7 +223,7 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/extension/headerssetter"
+    directory: "/extension/headerssetterextension"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

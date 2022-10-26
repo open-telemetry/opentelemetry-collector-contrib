@@ -102,7 +102,7 @@ metrics:
     sum:
       aggregation: cumulative
       monotonic: true
-      value_type: int
+      value_type: double
     unit: ms
   postgresql.bgwriter.maxwritten:
     description: Number of times the background writer stopped a cleaning scan because it had written too many buffers.
@@ -237,11 +237,11 @@ metrics:
     sum:
       aggregation: cumulative
       monotonic: true
-      value_type: int 
+      value_type: int
   postgresql.wal.age:
     attributes: []
     description: Age of the oldest WAL file.
-    extended_documentation: | 
+    extended_documentation: |
      This metric requires WAL to be enabled with at least one replica.
     enabled: true
     unit: s

@@ -56,13 +56,13 @@ func NewEncoder(named string, batchOptions ...Option) (Encoder, error) {
 	case "zipkin_json":
 		bm.tracesMarshaller = zipkinv2.NewJSONTracesMarshaler()
 	case "otlp", "otlp_proto":
-		bm.logsMarshaller = plog.NewProtoMarshaler()
-		bm.metricsMarshaller = pmetric.NewProtoMarshaler()
-		bm.tracesMarshaller = ptrace.NewProtoMarshaler()
+		bm.logsMarshaller = &plog.ProtoMarshaler{}
+		bm.metricsMarshaller = &pmetric.ProtoMarshaler{}
+		bm.tracesMarshaller = &ptrace.ProtoMarshaler{}
 	case "otlp_json":
-		bm.logsMarshaller = plog.NewJSONMarshaler()
-		bm.metricsMarshaller = pmetric.NewJSONMarshaler()
-		bm.tracesMarshaller = ptrace.NewJSONMarshaler()
+		bm.logsMarshaller = &plog.JSONMarshaler{}
+		bm.metricsMarshaller = &pmetric.JSONMarshaler{}
+		bm.tracesMarshaller = &ptrace.JSONMarshaler{}
 	case "jaeger_proto":
 		// Jaeger encoding is a special case
 		// since the internal libraries offer no means of ptrace.TraceMarshaller.

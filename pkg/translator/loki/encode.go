@@ -17,7 +17,9 @@ package loki // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
+	"github.com/go-logfmt/logfmt"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
@@ -42,7 +44,7 @@ func Encode(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 	var err error
 	var body []byte
 
-	body, err = serializeBody(lr.Body())
+	body, err = serializeBodyJSON(lr.Body())
 	if err != nil {
 		return "", err
 	}
@@ -62,7 +64,46 @@ func Encode(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 	return string(jsonRecord), nil
 }
 
-func serializeBody(body pcommon.Value) ([]byte, error) {
+// EncodeLogfmt converts an OTLP log record and its resource attributes into a logfmt
+// string representing a Loki entry. An error is returned when the record can't
+// be marshaled into logfmt.
+func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource) (string, error) {
+	keyvals := bodyToKeyvals(lr.Body())
+
+	traceID := lr.TraceID().HexString()
+	if traceID != "" {
+		keyvals = keyvalsReplaceOrAppend(keyvals, "traceID", traceID)
+	}
+
+	spanID := lr.SpanID().HexString()
+	if spanID != "" {
+		keyvals = keyvalsReplaceOrAppend(keyvals, "spanID", spanID)
+	}
+
+	severity := lr.SeverityText()
+	if severity != "" {
+		keyvals = keyvalsReplaceOrAppend(keyvals, "severity", severity)
+	}
+
+	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
+		keyvals = append(keyvals, valueToKeyvals(fmt.Sprintf("attribute_%s", k), v)...)
+		return true
+	})
+
+	res.Attributes().Range(func(k string, v pcommon.Value) bool {
+		// todo handle maps, slices
+		keyvals = append(keyvals, valueToKeyvals(fmt.Sprintf("resource_%s", k), v)...)
+		return true
+	})
+
+	logfmtLine, err := logfmt.MarshalKeyvals(keyvals...)
+	if err != nil {
+		return "", err
+	}
+	return string(logfmtLine), nil
+}
+
+func serializeBodyJSON(body pcommon.Value) ([]byte, error) {
 	var str []byte
 	var err error
 	switch body.Type() {
@@ -94,4 +135,91 @@ func serializeBody(body pcommon.Value) ([]byte, error) {
 		err = fmt.Errorf("unsuported body type to serialize")
 	}
 	return str, err
+}
+
+func bodyToKeyvals(body pcommon.Value) []interface{} {
+	switch body.Type() {
+	case pcommon.ValueTypeEmpty:
+		return nil
+	case pcommon.ValueTypeStr:
+		// try to parse record body as logfmt, but failing that assume it's plain text
+		value := body.Str()
+		keyvals, err := parseLogfmtLine(value)
+		if err != nil {
+			return []interface{}{"msg", body.Str()}
+		}
+		return *keyvals
+	case pcommon.ValueTypeMap:
+		return valueToKeyvals("", body)
+	case pcommon.ValueTypeSlice:
+		return valueToKeyvals("body", body)
+	default:
+		return []interface{}{"msg", body.AsRaw()}
+	}
+}
+
+func valueToKeyvals(key string, value pcommon.Value) []interface{} {
+	switch value.Type() {
+	case pcommon.ValueTypeEmpty:
+		return nil
+	case pcommon.ValueTypeStr:
+		return []interface{}{key, value.Str()}
+	case pcommon.ValueTypeBool:
+		return []interface{}{key, value.Bool()}
+	case pcommon.ValueTypeInt:
+		return []interface{}{key, value.Int()}
+	case pcommon.ValueTypeDouble:
+		return []interface{}{key, value.Double()}
+	case pcommon.ValueTypeMap:
+		var keyvals []interface{}
+		prefix := ""
+		if key != "" {
+			prefix = key + "_"
+		}
+		value.Map().Range(func(k string, v pcommon.Value) bool {
+
+			keyvals = append(keyvals, valueToKeyvals(prefix+k, v)...)
+			return true
+		})
+		return keyvals
+	case pcommon.ValueTypeSlice:
+		prefix := ""
+		if key != "" {
+			prefix = key + "_"
+		}
+		var keyvals []interface{}
+		for i := 0; i < value.Slice().Len(); i++ {
+			v := value.Slice().At(i)
+			keyvals = append(keyvals, valueToKeyvals(fmt.Sprintf("%s%d", prefix, i), v)...)
+		}
+		return keyvals
+	default:
+		return []interface{}{key, value.AsRaw()}
+	}
+}
+
+// if given key:value pair already exists in keyvals, replace value. Otherwise append
+func keyvalsReplaceOrAppend(keyvals []interface{}, key string, value interface{}) []interface{} {
+	for i := 0; i < len(keyvals); i += 2 {
+		if keyvals[i] == key {
+			keyvals[i+1] = value
+			return keyvals
+		}
+	}
+	return append(keyvals, key, value)
+}
+
+func parseLogfmtLine(line string) (*[]interface{}, error) {
+	var keyvals []interface{}
+	decoder := logfmt.NewDecoder(strings.NewReader(line))
+	decoder.ScanRecord()
+	for decoder.ScanKeyval() {
+		keyvals = append(keyvals, decoder.Key(), decoder.Value())
+	}
+
+	err := decoder.Err()
+	if err != nil {
+		return nil, err
+	}
+	return &keyvals, nil
 }

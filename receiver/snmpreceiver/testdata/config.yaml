@@ -7,7 +7,7 @@ snmp/v2c_connection_good:
     m3:
       unit: "By"
       gauge:
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"  
 snmp/no_endpoint:
@@ -18,7 +18,7 @@ snmp/no_endpoint:
     m3:
       unit: "By"
       gauge:
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"  
 snmp/invalid_endpoint:
@@ -30,7 +30,7 @@ snmp/invalid_endpoint:
     m3:
       unit: "By"
       gauge:
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"
 snmp/no_port:
@@ -42,7 +42,7 @@ snmp/no_port:
     m3:
       unit: "By"
       gauge:
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"  
 snmp/no_port_trailing_colon:
@@ -54,7 +54,7 @@ snmp/no_port_trailing_colon:
     m3:
       unit: "By"
       gauge:
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"  
 snmp/bad_endpoint_scheme:
@@ -66,7 +66,7 @@ snmp/bad_endpoint_scheme:
     m3:
       unit: "By"
       gauge:
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"  
 snmp/no_endpoint_scheme:
@@ -78,7 +78,7 @@ snmp/no_endpoint_scheme:
     m3:
       unit: "By"
       gauge:
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"  
 snmp/no_version:
@@ -89,7 +89,7 @@ snmp/no_version:
     m3:
       unit: "By"
       gauge:
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1" 
 snmp/bad_version:
@@ -101,7 +101,7 @@ snmp/bad_version:
     m3:
       unit: "By"
       gauge:
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"  
 snmp/v3_connection_good:
@@ -118,7 +118,7 @@ snmp/v3_connection_good:
     m3:
       unit: "By"
       gauge:
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"  
 snmp/v3_no_user:
@@ -130,7 +130,7 @@ snmp/v3_no_user:
     m3:
       unit: "By"
       gauge:
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"  
 snmp/v3_no_security_level:
@@ -142,7 +142,7 @@ snmp/v3_no_security_level:
     m3:
       unit: "By"
       gauge:
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"  
 snmp/v3_bad_security_level:
@@ -155,7 +155,7 @@ snmp/v3_bad_security_level:
     m3:
       unit: "By"
       gauge:
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"  
 snmp/v3_no_auth_type:
@@ -169,7 +169,7 @@ snmp/v3_no_auth_type:
     m3:
       unit: "By"
       gauge:
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"  
 snmp/v3_bad_auth_type:
@@ -184,7 +184,7 @@ snmp/v3_bad_auth_type:
     m3:
       unit: "By"
       gauge:
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"  
 snmp/v3_no_auth_password:
@@ -198,7 +198,7 @@ snmp/v3_no_auth_password:
     m3:
       unit: "By"
       gauge:
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"  
 snmp/v3_no_privacy_type:
@@ -214,7 +214,7 @@ snmp/v3_no_privacy_type:
     m3:
       unit: "By"
       gauge:
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"  
 snmp/v3_bad_privacy_type:
@@ -231,7 +231,7 @@ snmp/v3_bad_privacy_type:
     m3:
       unit: "By"
       gauge:
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"  
 snmp/v3_no_privacy_password:
@@ -247,7 +247,7 @@ snmp/v3_no_privacy_password:
     m3:
       unit: "By"
       gauge:
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"  
 snmp/no_metric_config:
@@ -263,7 +263,7 @@ snmp/no_metric_unit:
   metrics:
     m3:
       gauge:
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"  
 snmp/no_metric_gauge_or_sum:
@@ -285,7 +285,7 @@ snmp/no_metric_oids:
     m3:
       unit: "By"
       gauge:
-        value_type: float
+        value_type: double
 snmp/no_metric_gauge_type:
   collection_interval: 10s
   endpoint: udp://localhost:161
@@ -347,7 +347,7 @@ snmp/no_metric_sum_aggregation:
       unit: "By"
       sum:
         monotonic: true
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"  
 snmp/bad_metric_sum_aggregation:
@@ -361,7 +361,7 @@ snmp/bad_metric_sum_aggregation:
       sum:
         aggregation: Counter
         monotonic: true
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"  
 snmp/no_scalar_oid_oid:
@@ -373,7 +373,7 @@ snmp/no_scalar_oid_oid:
     m3:
       unit: "By"
       gauge:
-        value_type: "float"
+        value_type: "double"
       scalar_oids:
         - attributes:
 snmp/no_attribute_oid_prefix_or_enums:
@@ -387,7 +387,7 @@ snmp/no_attribute_oid_prefix_or_enums:
     m3:
       unit: "By"
       gauge:
-        value_type: "float"
+        value_type: "double"
       scalar_oids:
         - oid: "1"
 snmp/no_scalar_oid_attribute_name:
@@ -399,7 +399,7 @@ snmp/no_scalar_oid_attribute_name:
     m3:
       unit: "By"
       gauge:
-        value_type: "float"
+        value_type: "double"
       scalar_oids:
         - oid: "1"
           attributes:
@@ -418,7 +418,7 @@ snmp/bad_scalar_oid_attribute_name:
     m3:
       unit: "By"
       gauge:
-        value_type: "float"
+        value_type: "double"
       scalar_oids:
         - oid: "1"
           attributes:
@@ -436,7 +436,7 @@ snmp/bad_scalar_oid_attribute:
     m3:
       unit: "By"
       gauge:
-        value_type: "float"
+        value_type: "double"
       scalar_oids:
         - oid: "1"
           attributes:
@@ -456,7 +456,7 @@ snmp/bad_scalar_oid_attribute_value:
     m3:
       unit: "By"
       gauge:
-        value_type: "float"
+        value_type: "double"
       scalar_oids:
         - oid: "1"
           attributes:
@@ -471,7 +471,7 @@ snmp/no_column_oid_oid:
     m3:
       unit: "By"
       gauge:
-        value_type: "float"
+        value_type: "double"
       column_oids:
         - attributes:
 snmp/no_column_oid_attribute_name:
@@ -483,7 +483,7 @@ snmp/no_column_oid_attribute_name:
     m3:
       unit: "By"
       gauge:
-        value_type: "float"
+        value_type: "double"
       column_oids:
         - oid: "1"
           attributes:
@@ -500,7 +500,7 @@ snmp/bad_column_oid_attribute_name:
     m3:
       unit: "By"
       gauge:
-        value_type: "float"
+        value_type: "double"
       column_oids:
         - oid: "1"
           attributes:
@@ -519,7 +519,7 @@ snmp/bad_column_oid_attribute_value:
     m3:
       unit: "By"
       gauge:
-        value_type: "float"
+        value_type: "double"
       column_oids:
         - oid: "1"
           attributes:
@@ -537,7 +537,7 @@ snmp/bad_column_oid_resource_attribute_name:
     m3:
       unit: "By"
       gauge:
-        value_type: "float"
+        value_type: "double"
       column_oids:
         - oid: "1"
           resource_attributes:
@@ -556,7 +556,7 @@ snmp/column_oid_no_indexed_attribute_or_resource_attribute:
     m3:
       unit: "By"
       gauge:
-        value_type: "float"
+        value_type: "double"
       column_oids:
         - oid: "1"
           attributes:
@@ -573,7 +573,7 @@ snmp/no_resource_attribute_oid_or_prefix:
     m3:
       unit: "By"
       gauge:
-        value_type: "float"
+        value_type: "double"
       column_oids:
         - oid: "1"
           resource_attributes:
@@ -630,7 +630,7 @@ snmp/complex_good:
     m3:
       unit: "By"
       gauge:
-        value_type: float
+        value_type: double
       scalar_oids:
         - oid: "1"  
           attributes:
