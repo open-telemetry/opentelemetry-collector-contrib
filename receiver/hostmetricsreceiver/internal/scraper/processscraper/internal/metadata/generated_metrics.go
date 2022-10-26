@@ -42,6 +42,7 @@ type MetricsSettings struct {
 	ProcessDiskIo              MetricSettings `mapstructure:"process.disk.io"`
 	ProcessMemoryPhysicalUsage MetricSettings `mapstructure:"process.memory.physical_usage"`
 	ProcessMemoryVirtualUsage  MetricSettings `mapstructure:"process.memory.virtual_usage"`
+	ProcessPagingFaults        MetricSettings `mapstructure:"process.paging.faults"`
 	ProcessThreads             MetricSettings `mapstructure:"process.threads"`
 }
 
@@ -58,6 +59,9 @@ func DefaultMetricsSettings() MetricsSettings {
 		},
 		ProcessMemoryVirtualUsage: MetricSettings{
 			Enabled: true,
+		},
+		ProcessPagingFaults: MetricSettings{
+			Enabled: false,
 		},
 		ProcessThreads: MetricSettings{
 			Enabled: false,
@@ -119,6 +123,32 @@ var MapAttributeState = map[string]AttributeState{
 	"system": AttributeStateSystem,
 	"user":   AttributeStateUser,
 	"wait":   AttributeStateWait,
+}
+
+// AttributeType specifies the a value type attribute.
+type AttributeType int
+
+const (
+	_ AttributeType = iota
+	AttributeTypeMajor
+	AttributeTypeMinor
+)
+
+// String returns the string representation of the AttributeType.
+func (av AttributeType) String() string {
+	switch av {
+	case AttributeTypeMajor:
+		return "major"
+	case AttributeTypeMinor:
+		return "minor"
+	}
+	return ""
+}
+
+// MapAttributeType is a helper map of string to AttributeType attribute value.
+var MapAttributeType = map[string]AttributeType{
+	"major": AttributeTypeMajor,
+	"minor": AttributeTypeMinor,
 }
 
 type metricProcessCPUTime struct {
@@ -329,6 +359,59 @@ func newMetricProcessMemoryVirtualUsage(settings MetricSettings) metricProcessMe
 	return m
 }
 
+type metricProcessPagingFaults struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills process.paging.faults metric with initial data.
+func (m *metricProcessPagingFaults) init() {
+	m.data.SetName("process.paging.faults")
+	m.data.SetDescription("Number of page faults the process has made. This metric is only available on Linux.")
+	m.data.SetUnit("{faults}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricProcessPagingFaults) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, typeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("type", typeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricProcessPagingFaults) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricProcessPagingFaults) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricProcessPagingFaults(settings MetricSettings) metricProcessPagingFaults {
+	m := metricProcessPagingFaults{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricProcessThreads struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -392,6 +475,7 @@ type MetricsBuilder struct {
 	metricProcessDiskIo              metricProcessDiskIo
 	metricProcessMemoryPhysicalUsage metricProcessMemoryPhysicalUsage
 	metricProcessMemoryVirtualUsage  metricProcessMemoryVirtualUsage
+	metricProcessPagingFaults        metricProcessPagingFaults
 	metricProcessThreads             metricProcessThreads
 }
 
@@ -414,6 +498,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricProcessDiskIo:              newMetricProcessDiskIo(settings.ProcessDiskIo),
 		metricProcessMemoryPhysicalUsage: newMetricProcessMemoryPhysicalUsage(settings.ProcessMemoryPhysicalUsage),
 		metricProcessMemoryVirtualUsage:  newMetricProcessMemoryVirtualUsage(settings.ProcessMemoryVirtualUsage),
+		metricProcessPagingFaults:        newMetricProcessPagingFaults(settings.ProcessPagingFaults),
 		metricProcessThreads:             newMetricProcessThreads(settings.ProcessThreads),
 	}
 	for _, op := range options {
@@ -521,6 +606,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricProcessDiskIo.emit(ils.Metrics())
 	mb.metricProcessMemoryPhysicalUsage.emit(ils.Metrics())
 	mb.metricProcessMemoryVirtualUsage.emit(ils.Metrics())
+	mb.metricProcessPagingFaults.emit(ils.Metrics())
 	mb.metricProcessThreads.emit(ils.Metrics())
 	for _, op := range rmo {
 		op(rm)
@@ -559,6 +645,11 @@ func (mb *MetricsBuilder) RecordProcessMemoryPhysicalUsageDataPoint(ts pcommon.T
 // RecordProcessMemoryVirtualUsageDataPoint adds a data point to process.memory.virtual_usage metric.
 func (mb *MetricsBuilder) RecordProcessMemoryVirtualUsageDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricProcessMemoryVirtualUsage.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordProcessPagingFaultsDataPoint adds a data point to process.paging.faults metric.
+func (mb *MetricsBuilder) RecordProcessPagingFaultsDataPoint(ts pcommon.Timestamp, val int64, typeAttributeValue AttributeType) {
+	mb.metricProcessPagingFaults.recordDataPoint(mb.startTime, ts, val, typeAttributeValue.String())
 }
 
 // RecordProcessThreadsDataPoint adds a data point to process.threads metric.

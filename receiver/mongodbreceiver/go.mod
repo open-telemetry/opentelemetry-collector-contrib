@@ -3,17 +3,17 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongod
 go 1.18
 
 require (
-	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c
+	github.com/stretchr/testify v1.8.1
+	go.opentelemetry.io/collector v0.62.2-0.20221025202712-36d142f003d8
 	go.uber.org/multierr v1.8.0
 )
 
 require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.62.0
-	github.com/testcontainers/testcontainers-go v0.14.0
+	github.com/testcontainers/testcontainers-go v0.15.0
 	go.mongodb.org/mongo-driver v1.10.3
-	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
+	go.opentelemetry.io/collector/pdata v0.62.2-0.20221025202712-36d142f003d8
 	go.uber.org/zap v1.23.0
 )
 
@@ -39,7 +39,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
-	github.com/knadh/koanf v1.4.3 // indirect
+	github.com/knadh/koanf v1.4.4 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
@@ -57,9 +57,8 @@ require (
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
-	github.com/stretchr/objx v0.4.0 // indirect
+	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.1 // indirect
 	github.com/xdg-go/stringprep v1.0.3 // indirect

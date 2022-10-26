@@ -24,7 +24,7 @@
                      "description": "The memory used in all columns.",
                      "name": "saphana.column.memory.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "12",
@@ -186,7 +186,7 @@
                      "description": "The memory used in components.",
                      "name": "saphana.component.memory.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "99292",
@@ -209,7 +209,7 @@
                      "description": "The number of current connections.",
                      "name": "saphana.connection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "15",
@@ -245,7 +245,7 @@
                      "description": "Total CPU time spent.",
                      "name": "saphana.cpu.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "82",
@@ -308,7 +308,7 @@
                      "description": "The disk size.",
                      "name": "saphana.disk.size.current",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "123",
@@ -418,7 +418,7 @@
                      "description": "The amount of physical memory on the host.",
                      "name": "saphana.host.memory.current",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "123",
@@ -454,7 +454,7 @@
                      "description": "The amount of swap space on the host.",
                      "name": "saphana.host.swap.current",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "44",
@@ -490,7 +490,7 @@
                      "description": "The instance code size, including shared libraries of SAP HANA processes.",
                      "name": "saphana.instance.code_size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "5454",
@@ -505,7 +505,7 @@
                      "description": "The size of the memory pool for all SAP HANA processes.",
                      "name": "saphana.instance.memory.current",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "62727",
@@ -541,7 +541,7 @@
                      "description": "The shared memory size of SAP HANA processes.",
                      "name": "saphana.instance.memory.shared.allocated",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "82568",
@@ -556,7 +556,7 @@
                      "description": "The peak memory from the memory pool used by SAP HANA processes since the instance started (this is a sample-based value).",
                      "name": "saphana.instance.memory.used.peak",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "342",
@@ -585,7 +585,7 @@
                      "description": "The number of active and pending service requests.",
                      "name": "saphana.network.request.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "12",
@@ -621,7 +621,7 @@
                      "description": "The number of service requests that have completed.",
                      "name": "saphana.network.request.finished.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "12",
@@ -658,7 +658,7 @@
                      "description": "The used memory for all row tables.",
                      "name": "saphana.row_store.memory.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "123123",
@@ -694,7 +694,7 @@
                      "description": "The memory size for all tables in schema.",
                      "name": "saphana.schema.memory.used.current",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "123123",
@@ -780,7 +780,7 @@
                      "description": "The estimated maximum memory consumption for all fully loaded tables in schema (data for open transactions is not included).",
                      "name": "saphana.schema.memory.used.max",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "2222",
@@ -803,7 +803,7 @@
                      "description": "The number of operations done on all tables in schema.",
                      "name": "saphana.schema.operation.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "123",
@@ -871,7 +871,7 @@
                      "description": "The number of entries in main during the last optimize compression run for all tables in schema.",
                      "name": "saphana.schema.record.compressed.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "12",
@@ -894,7 +894,7 @@
                      "description": "The number of records for all tables in schema.",
                      "name": "saphana.schema.record.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1234",
@@ -980,7 +980,7 @@
                      "description": "The service code size, including shared libraries.",
                      "name": "saphana.service.code_size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "3",
@@ -1003,7 +1003,7 @@
                      "description": "The number of services in a given status.",
                      "name": "saphana.service.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -1039,7 +1039,7 @@
                      "description": "The part of the memory pool that can potentially (if unpinned) be freed during a memory shortage.",
                      "name": "saphana.service.memory.compactors.allocated",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "9",
@@ -1062,7 +1062,7 @@
                      "description": "The memory that can be freed during a memory shortage.",
                      "name": "saphana.service.memory.compactors.freeable",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "10",
@@ -1085,7 +1085,7 @@
                      "description": "The effective maximum memory pool size, calculated considering the pool sizes of other processes.",
                      "name": "saphana.service.memory.effective_limit",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "12",
@@ -1108,7 +1108,7 @@
                      "description": "The size of the heap portion of the memory pool.",
                      "name": "saphana.service.memory.heap.current",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "5",
@@ -1156,7 +1156,7 @@
                      "description": "The configured maximum memory pool size.",
                      "name": "saphana.service.memory.limit",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "11",
@@ -1179,7 +1179,7 @@
                      "description": "The size of the shared portion of the memory pool.",
                      "name": "saphana.service.memory.shared.current",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "7",
@@ -1227,7 +1227,7 @@
                      "description": "The used memory from the operating system perspective.",
                      "name": "saphana.service.memory.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -1275,7 +1275,7 @@
                      "description": "The service stack size.",
                      "name": "saphana.service.stack_size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "4",
@@ -1298,7 +1298,7 @@
                      "description": "The number of service threads in a given status.",
                      "name": "saphana.service.thread.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "101",
@@ -1334,7 +1334,7 @@
                      "description": "The number of transactions waiting for a lock.",
                      "name": "saphana.transaction.blocked",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1349,7 +1349,7 @@
                      "description": "The number of transactions.",
                      "name": "saphana.transaction.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "100",
@@ -1399,7 +1399,7 @@
                      "description": "The uptime of the database.",
                      "name": "saphana.uptime",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "123123",
@@ -1428,7 +1428,7 @@
                      "description": "The number of operations executed.",
                      "name": "saphana.volume.operation.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -1489,7 +1489,7 @@
                      "description": "The size of operations executed.",
                      "name": "saphana.volume.operation.size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -1550,7 +1550,7 @@
                      "description": "The time spent executing operations.",
                      "name": "saphana.volume.operation.time",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -1639,7 +1639,7 @@
                      "description": "The memory used in all columns.",
                      "name": "saphana.column.memory.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "100",
@@ -1801,7 +1801,7 @@
                      "description": "The memory used in components.",
                      "name": "saphana.component.memory.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "99991",
@@ -1824,7 +1824,7 @@
                      "description": "The number of current connections.",
                      "name": "saphana.connection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "27",
@@ -1847,7 +1847,7 @@
                      "description": "Total CPU time spent.",
                      "name": "saphana.cpu.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "412",
@@ -1910,7 +1910,7 @@
                      "description": "The disk size.",
                      "name": "saphana.disk.size.current",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "13124324",
@@ -1970,7 +1970,7 @@
                      "description": "The amount of physical memory on the host.",
                      "name": "saphana.host.memory.current",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -2006,7 +2006,7 @@
                      "description": "The amount of swap space on the host.",
                      "name": "saphana.host.swap.current",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "3",
@@ -2042,7 +2042,7 @@
                      "description": "The instance code size, including shared libraries of SAP HANA processes.",
                      "name": "saphana.instance.code_size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "44",
@@ -2057,7 +2057,7 @@
                      "description": "The size of the memory pool for all SAP HANA processes.",
                      "name": "saphana.instance.memory.current",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "451",
@@ -2093,7 +2093,7 @@
                      "description": "The shared memory size of SAP HANA processes.",
                      "name": "saphana.instance.memory.shared.allocated",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "4123123",
@@ -2108,7 +2108,7 @@
                      "description": "The peak memory from the memory pool used by SAP HANA processes since the instance started (this is a sample-based value).",
                      "name": "saphana.instance.memory.used.peak",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "212",
@@ -2137,7 +2137,7 @@
                      "description": "The number of active and pending service requests.",
                      "name": "saphana.network.request.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -2173,7 +2173,7 @@
                      "description": "The number of service requests that have completed.",
                      "name": "saphana.network.request.finished.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "12",
@@ -2210,7 +2210,7 @@
                      "description": "The used memory for all row tables.",
                      "name": "saphana.row_store.memory.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1231233123",
@@ -2246,7 +2246,7 @@
                      "description": "The memory size for all tables in schema.",
                      "name": "saphana.schema.memory.used.current",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "2",
@@ -2332,7 +2332,7 @@
                      "description": "The estimated maximum memory consumption for all fully loaded tables in schema (data for open transactions is not included).",
                      "name": "saphana.schema.memory.used.max",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "4334",
@@ -2355,7 +2355,7 @@
                      "description": "The number of operations done on all tables in schema.",
                      "name": "saphana.schema.operation.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "76578",
@@ -2423,7 +2423,7 @@
                      "description": "The number of entries in main during the last optimize compression run for all tables in schema.",
                      "name": "saphana.schema.record.compressed.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "4343434",
@@ -2446,7 +2446,7 @@
                      "description": "The number of records for all tables in schema.",
                      "name": "saphana.schema.record.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "654",
@@ -2532,7 +2532,7 @@
                      "description": "The service code size, including shared libraries.",
                      "name": "saphana.service.code_size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "6",
@@ -2555,7 +2555,7 @@
                      "description": "The number of services in a given status.",
                      "name": "saphana.service.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "4",
@@ -2591,7 +2591,7 @@
                      "description": "The part of the memory pool that can potentially (if unpinned) be freed during a memory shortage.",
                      "name": "saphana.service.memory.compactors.allocated",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "12",
@@ -2614,7 +2614,7 @@
                      "description": "The memory that can be freed during a memory shortage.",
                      "name": "saphana.service.memory.compactors.freeable",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "13",
@@ -2637,7 +2637,7 @@
                      "description": "The effective maximum memory pool size, calculated considering the pool sizes of other processes.",
                      "name": "saphana.service.memory.effective_limit",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "15",
@@ -2660,7 +2660,7 @@
                      "description": "The size of the heap portion of the memory pool.",
                      "name": "saphana.service.memory.heap.current",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "8",
@@ -2708,7 +2708,7 @@
                      "description": "The configured maximum memory pool size.",
                      "name": "saphana.service.memory.limit",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "14",
@@ -2731,7 +2731,7 @@
                      "description": "The size of the shared portion of the memory pool.",
                      "name": "saphana.service.memory.shared.current",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "10",
@@ -2779,7 +2779,7 @@
                      "description": "The used memory from the operating system perspective.",
                      "name": "saphana.service.memory.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "4",
@@ -2827,7 +2827,7 @@
                      "description": "The service stack size.",
                      "name": "saphana.service.stack_size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "7",
@@ -2850,7 +2850,7 @@
                      "description": "The number of service threads in a given status.",
                      "name": "saphana.service.thread.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "12",
@@ -2886,7 +2886,7 @@
                      "description": "The number of transactions waiting for a lock.",
                      "name": "saphana.transaction.blocked",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "292393",
@@ -2901,7 +2901,7 @@
                      "description": "The number of transactions.",
                      "name": "saphana.transaction.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -2951,7 +2951,7 @@
                      "description": "The number of operations executed.",
                      "name": "saphana.volume.operation.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "10",
@@ -3012,7 +3012,7 @@
                      "description": "The size of operations executed.",
                      "name": "saphana.volume.operation.size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "11",
@@ -3073,7 +3073,7 @@
                      "description": "The time spent executing operations.",
                      "name": "saphana.volume.operation.time",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "11",
@@ -3156,7 +3156,7 @@
                      "description": "Number of current alerts.",
                      "name": "saphana.alert.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "123",
@@ -3247,7 +3247,7 @@
                      "description": "The allowed product usage as specified by the license (for example, main memory).",
                      "name": "saphana.license.limit",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "128",
@@ -3295,7 +3295,7 @@
                      "description": "The peak product usage value during last 13 months, measured periodically.",
                      "name": "saphana.license.peak",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "33",
@@ -3383,7 +3383,7 @@
                      "description": "The current replication backlog size.",
                      "name": "saphana.replication.backlog.size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -3424,7 +3424,7 @@
                      "description": "The current replication backlog.",
                      "name": "saphana.replication.backlog.time",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "2",
