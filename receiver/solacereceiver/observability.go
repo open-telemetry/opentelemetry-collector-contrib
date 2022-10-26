@@ -40,6 +40,13 @@ const (
 	receiverStateTerminated
 )
 
+type flowControlState uint8
+
+const (
+	flowControlStateClear flowControlState = iota
+	flowControlStateControlled
+)
+
 type opencensusMetrics struct {
 	stats struct {
 		failedReconnections            *stats.Int64Measure
@@ -50,6 +57,10 @@ type opencensusMetrics struct {
 		reportedSpans                  *stats.Int64Measure
 		receiverStatus                 *stats.Int64Measure
 		needUpgrade                    *stats.Int64Measure
+		flowControlStatus              *stats.Int64Measure
+		flowControlRecentRetries       *stats.Int64Measure
+		flowControlTotal               *stats.Int64Measure
+		flowControlSingleSuccess       *stats.Int64Measure
 	}
 	views struct {
 		failedReconnections            *view.View
@@ -60,6 +71,10 @@ type opencensusMetrics struct {
 		reportedSpans                  *view.View
 		receiverStatus                 *view.View
 		needUpgrade                    *view.View
+		flowControlStatus              *view.View
+		flowControlRecentRetries       *view.View
+		flowControlTotal               *view.View
+		flowControlSingleSuccess       *view.View
 	}
 }
 
@@ -80,6 +95,11 @@ func newOpenCensusMetrics(instanceName string) (*opencensusMetrics, error) {
 	m.stats.receiverStatus = stats.Int64(prefix+"receiver_status", "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated", stats.UnitDimensionless)
 	m.stats.needUpgrade = stats.Int64(prefix+"need_upgrade", "Indicates with value 1 that receiver requires an upgrade and is not compatible with messages received from a broker", stats.UnitDimensionless)
 
+	m.stats.flowControlStatus = stats.Int64(prefix+"receiver_flow_control_status", "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled", stats.UnitDimensionless)
+	m.stats.flowControlRecentRetries = stats.Int64(prefix+"receiver_flow_control_recent_retries", "Most recent/current retry count when flow controlled", stats.UnitDimensionless)
+	m.stats.flowControlTotal = stats.Int64(prefix+"receiver_flow_control_total", "Number of times the receiver instance became flow controlled", stats.UnitDimensionless)
+	m.stats.flowControlSingleSuccess = stats.Int64(prefix+"receiver_flow_control_with_single_successful_retry", "Number of times the receiver instance became flow controlled and resolved situations after the first retry", stats.UnitDimensionless)
+
 	m.views.failedReconnections = fromMeasure(m.stats.failedReconnections, view.Count())
 	m.views.recoverableUnmarshallingErrors = fromMeasure(m.stats.recoverableUnmarshallingErrors, view.Count())
 	m.views.fatalUnmarshallingErrors = fromMeasure(m.stats.fatalUnmarshallingErrors, view.Count())
@@ -88,6 +108,11 @@ func newOpenCensusMetrics(instanceName string) (*opencensusMetrics, error) {
 	m.views.reportedSpans = fromMeasure(m.stats.reportedSpans, view.Sum())
 	m.views.receiverStatus = fromMeasure(m.stats.receiverStatus, view.LastValue())
 	m.views.needUpgrade = fromMeasure(m.stats.needUpgrade, view.LastValue())
+
+	m.views.flowControlStatus = fromMeasure(m.stats.flowControlStatus, view.LastValue())
+	m.views.flowControlRecentRetries = fromMeasure(m.stats.flowControlRecentRetries, view.LastValue())
+	m.views.flowControlTotal = fromMeasure(m.stats.flowControlTotal, view.Count())
+	m.views.flowControlSingleSuccess = fromMeasure(m.stats.flowControlSingleSuccess, view.Count())
 
 	err := view.Register(
 		m.views.failedReconnections,
@@ -98,6 +123,10 @@ func newOpenCensusMetrics(instanceName string) (*opencensusMetrics, error) {
 		m.views.reportedSpans,
 		m.views.receiverStatus,
 		m.views.needUpgrade,
+		m.views.flowControlStatus,
+		m.views.flowControlRecentRetries,
+		m.views.flowControlTotal,
+		m.views.flowControlSingleSuccess,
 	)
 	if err != nil {
 		return nil, err
@@ -156,4 +185,20 @@ func (m *opencensusMetrics) recordReceiverStatus(status receiverState) {
 // RecordNeedRestart turns a need restart flag on
 func (m *opencensusMetrics) recordNeedUpgrade() {
 	stats.Record(context.Background(), m.stats.needUpgrade.M(1))
+}
+
+func (m *opencensusMetrics) recordFlowControlStatus(status flowControlState) {
+	stats.Record(context.Background(), m.stats.flowControlStatus.M(int64(status)))
+}
+
+func (m *opencensusMetrics) recordFlowControlRecentRetries(retries int64) {
+	stats.Record(context.Background(), m.stats.flowControlRecentRetries.M(retries))
+}
+
+func (m *opencensusMetrics) recordFlowControlTotal() {
+	stats.Record(context.Background(), m.stats.flowControlTotal.M(1))
+}
+
+func (m *opencensusMetrics) recordFlowControlSingleSuccess() {
+	stats.Record(context.Background(), m.stats.flowControlSingleSuccess.M(1))
 }

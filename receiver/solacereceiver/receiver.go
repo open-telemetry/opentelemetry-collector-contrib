@@ -17,6 +17,7 @@ package solacereceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -92,6 +93,7 @@ func newTracesReceiver(config *Config, receiverCreateSettings component.Receiver
 // Start implements component.Receiver::Start
 func (s *solaceTracesReceiver) Start(_ context.Context, _ component.Host) error {
 	s.metrics.recordReceiverStatus(receiverStateStarting)
+	s.metrics.recordFlowControlStatus(flowControlStateClear)
 	var cancelableContext context.Context
 	cancelableContext, s.cancel = context.WithCancel(context.Background())
 
@@ -210,8 +212,10 @@ func (s *solaceTracesReceiver) receiveMessage(ctx context.Context, service messa
 	// only set the disposition action after we have received a message successfully
 	disposition := service.accept
 	defer func() { // on return of receiveMessage, we want to either ack or nack the message
-		if actionErr := disposition(ctx, msg); err == nil && actionErr != nil {
-			err = actionErr
+		if disposition != nil {
+			if actionErr := disposition(ctx, msg); err == nil && actionErr != nil {
+				err = actionErr
+			}
 		}
 	}()
 	// message received successfully
@@ -228,19 +232,50 @@ func (s *solaceTracesReceiver) receiveMessage(ctx context.Context, service messa
 		s.metrics.recordDroppedSpanMessages() // if the error is some other unmarshalling error, we will ack the message and drop the content
 		return nil                            // don't propagate error, but don't continue forwarding traces
 	}
-	// forward to next consumer. Forwarding errors are not fatal so are not propagated to the caller.
-	// Temporary consumer errors will lead to redelivered messages, permanent will be accepted
-	forwardErr := s.nextConsumer.ConsumeTraces(ctx, traces)
-	if forwardErr != nil {
-		if !consumererror.IsPermanent(forwardErr) { // reject the message if the error is not permanent so we can retry, don't increment dropped span messages
-			s.settings.Logger.Warn("Encountered temporary error while forwarding traces to next receiver, will allow redelivery", zap.Error(forwardErr))
-			disposition = service.failed
-		} else { // error is permanent, we want to accept the message and increment the number of dropped messages
-			s.settings.Logger.Warn("Encountered permanent error while forwarding traces to next receiver, will swallow trace", zap.Error(forwardErr))
-			s.metrics.recordDroppedSpanMessages()
+
+	var flowControlCount int64
+flowControlLoop:
+	for {
+		// forward to next consumer. Forwarding errors are not fatal so are not propagated to the caller.
+		// Temporary consumer errors will lead to redelivered messages, permanent will be accepted
+		forwardErr := s.nextConsumer.ConsumeTraces(ctx, traces)
+		if forwardErr != nil {
+			if !consumererror.IsPermanent(forwardErr) {
+				s.settings.Logger.Info("Encountered temporary error while forwarding traces to next receiver, will allow redelivery", zap.Error(forwardErr))
+				// handle flow control metrics
+				if flowControlCount == 0 {
+					s.metrics.recordFlowControlStatus(flowControlStateControlled)
+				}
+				flowControlCount++
+				s.metrics.recordFlowControlRecentRetries(flowControlCount)
+				// Backpressure scenario. For now, we are only delayed retry, eventually we may need to handle this
+				delayTimer := time.NewTimer(s.config.Flow.DelayedRetry.Delay)
+				select {
+				case <-delayTimer.C:
+					continue flowControlLoop
+				case <-ctx.Done():
+					s.settings.Logger.Info("Context was cancelled while attempting redelivery, exiting")
+					disposition = nil // do not make any network requests, we are shutting down
+					return fmt.Errorf("delayed retry interrupted by shutdown request")
+				}
+			} else { // error is permanent, we want to accept the message and increment the number of dropped messages
+				s.settings.Logger.Warn("Encountered permanent error while forwarding traces to next receiver, will swallow trace", zap.Error(forwardErr))
+				s.metrics.recordDroppedSpanMessages()
+				break flowControlLoop
+			}
+		} else {
+			// no forward error
+			s.metrics.recordReportedSpans()
+			break flowControlLoop
 		}
-	} else {
-		s.metrics.recordReportedSpans()
+	}
+	// Make sure to clear the stats no matter what, unless we were interrupted in which case we should preserve the last state
+	if flowControlCount != 0 {
+		s.metrics.recordFlowControlStatus(flowControlStateClear)
+		s.metrics.recordFlowControlTotal()
+		if flowControlCount == 1 {
+			s.metrics.recordFlowControlSingleSuccess()
+		}
 	}
 	return nil
 }

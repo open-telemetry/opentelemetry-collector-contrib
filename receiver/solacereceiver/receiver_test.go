@@ -17,13 +17,16 @@ package solacereceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -82,26 +85,12 @@ func TestReceiveMessage(t *testing.T) {
 			nextConsumer: consumertest.NewErr(consumererror.NewPermanent(errors.New("a permanent error"))),
 			validation:   validateMetrics(1, 1, nil, nil),
 		},
-		{ // expect forward to error and message to be rejected with nack, no error returned
-			name:         "Forward Temporary Error",
-			nextConsumer: consumertest.NewErr(errors.New("a temporary error")),
-			expectNack:   true,
-			validation:   validateMetrics(1, nil, nil, nil),
-		},
 		{ // expect forward to error and message to be swallowed with ack which fails returning an error
 			name:         "Forward Permanent Error with Ack Error",
 			nextConsumer: consumertest.NewErr(consumererror.NewPermanent(errors.New("a permanent error"))),
 			ackErr:       someError,
 			expectedErr:  someError,
 			validation:   validateMetrics(1, 1, nil, nil),
-		},
-		{ // expect forward to error and message to be rejected with nack, no error returned
-			name:         "Forward Temporary Error with Nack Error",
-			nextConsumer: consumertest.NewErr(errors.New("a temporary error")),
-			expectNack:   true,
-			nackErr:      someError,
-			expectedErr:  someError,
-			validation:   validateMetrics(1, nil, nil, nil),
 		},
 	}
 
@@ -207,6 +196,7 @@ func TestReceiverLifecycle(t *testing.T) {
 	dialCalled := make(chan struct{})
 	messagingService.dialFunc = func() error {
 		validateMetric(t, receiver.metrics.views.receiverStatus, receiverStateConnecting)
+		validateMetric(t, receiver.metrics.views.flowControlStatus, flowControlStateClear)
 		close(dialCalled)
 		return nil
 	}
@@ -340,6 +330,192 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 	validateMetric(t, receiver.metrics.views.receiverStatus, receiverStateTerminated)
 }
 
+func TestReceiverFlowControlDelayedRetry(t *testing.T) {
+	someError := consumererror.NewPermanent(fmt.Errorf("some error"))
+	testCases := []struct {
+		name         string
+		nextConsumer consumer.Traces
+		validation   func(*testing.T, *opencensusMetrics)
+	}{
+		{
+			name:         "Without error",
+			nextConsumer: consumertest.NewNop(),
+		},
+		{
+			name:         "With error",
+			nextConsumer: consumertest.NewErr(someError),
+			validation: func(t *testing.T, metrics *opencensusMetrics) {
+				validateMetric(t, metrics.views.droppedSpanMessages, 1)
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			receiver, messagingService, unmarshaller := newReceiver(t)
+			delay := 5 * time.Millisecond
+			receiver.config.Flow.DelayedRetry.Delay = delay
+			var err error
+			// we want to return an error at first, then set the next consumer to a noop consumer
+			receiver.nextConsumer, err = consumer.NewTraces(func(ctx context.Context, ld ptrace.Traces) error {
+				receiver.nextConsumer = tc.nextConsumer
+				return fmt.Errorf("Some temporary error")
+			})
+			require.NoError(t, err)
+
+			// populate mock messagingService and unmarshaller functions, expecting them each to be called at most once
+			var ackCalled bool
+			messagingService.ackFunc = func(ctx context.Context, msg *inboundMessage) error {
+				assert.False(t, ackCalled)
+				ackCalled = true
+				return nil
+			}
+			messagingService.receiveMessageFunc = func(ctx context.Context) (*inboundMessage, error) {
+				return &inboundMessage{}, nil
+			}
+			unmarshaller.unmarshalFunc = func(msg *inboundMessage) (ptrace.Traces, error) {
+				return ptrace.NewTraces(), nil
+			}
+
+			receiveMessageComplete := make(chan error, 1)
+			go func() {
+				receiveMessageComplete <- receiver.receiveMessage(context.Background(), messagingService)
+			}()
+			select {
+			case <-time.After(delay / 2):
+				// success
+			case <-receiveMessageComplete:
+				require.Fail(t, "Did not expect receiveMessage to return before delay interval")
+			}
+			// Check that we are currently flow controlled
+			validateMetric(t, receiver.metrics.views.flowControlStatus, flowControlStateControlled)
+			// since we set the next consumer to a noop, this should succeed
+			select {
+			case <-time.After(delay):
+				require.Fail(t, "receiveMessage did not return after delay interval")
+			case err := <-receiveMessageComplete:
+				assert.NoError(t, err)
+			}
+			assert.True(t, ackCalled)
+			if tc.validation != nil {
+				tc.validation(t, receiver.metrics)
+			}
+			validateMetric(t, receiver.metrics.views.flowControlRecentRetries, 1)
+			validateMetric(t, receiver.metrics.views.flowControlStatus, flowControlStateClear)
+			validateMetric(t, receiver.metrics.views.flowControlTotal, 1)
+			validateMetric(t, receiver.metrics.views.flowControlSingleSuccess, 1)
+		})
+	}
+}
+
+func TestReceiverFlowControlDelayedRetryInterrupt(t *testing.T) {
+	receiver, messagingService, unmarshaller := newReceiver(t)
+	// we won't wait 10 seconds since we will interrupt well before
+	receiver.config.Flow.DelayedRetry.Delay = 10 * time.Second
+	var err error
+	// we want to return an error at first, then set the next consumer to a noop consumer
+	receiver.nextConsumer, err = consumer.NewTraces(func(ctx context.Context, ld ptrace.Traces) error {
+		// if we are called again, fatal
+		receiver.nextConsumer, err = consumer.NewTraces(func(ctx context.Context, ld ptrace.Traces) error {
+			require.Fail(t, "Did not expect next consumer to be called again")
+			return nil
+		})
+		require.NoError(t, err)
+		return fmt.Errorf("Some temporary error")
+	})
+	require.NoError(t, err)
+
+	// populate mock messagingService and unmarshaller functions, expecting them each to be called at most once
+	messagingService.receiveMessageFunc = func(ctx context.Context) (*inboundMessage, error) {
+		return &inboundMessage{}, nil
+	}
+	unmarshaller.unmarshalFunc = func(msg *inboundMessage) (ptrace.Traces, error) {
+		return ptrace.NewTraces(), nil
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	receiveMessageComplete := make(chan error, 1)
+	go func() {
+		receiveMessageComplete <- receiver.receiveMessage(ctx, messagingService)
+	}()
+	select {
+	case <-time.After(2 * time.Millisecond):
+		// success
+	case <-receiveMessageComplete:
+		require.Fail(t, "Did not expect receiveMessage to return before delay interval")
+	}
+	cancel()
+	// since we set the next consumer to a noop, this should succeed
+	select {
+	case <-time.After(2 * time.Millisecond):
+		require.Fail(t, "receiveMessage did not return after some time")
+	case err := <-receiveMessageComplete:
+		assert.ErrorContains(t, err, "delayed retry interrupted by shutdown request")
+	}
+}
+
+func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
+	receiver, messagingService, unmarshaller := newReceiver(t)
+	// we won't wait 10 seconds since we will interrupt well before
+	retryInterval := 2 * time.Millisecond
+	var retryCount int64 = 5
+	receiver.config.Flow.DelayedRetry.Delay = retryInterval
+	var err error
+	var currentRetries int64
+	// we want to return an error at first, then set the next consumer to a noop consumer
+	receiver.nextConsumer, err = consumer.NewTraces(func(ctx context.Context, ld ptrace.Traces) error {
+		if currentRetries > 0 {
+			validateMetric(t, receiver.metrics.views.flowControlRecentRetries, currentRetries)
+		}
+		currentRetries++
+		if currentRetries == retryCount {
+			receiver.nextConsumer, err = consumer.NewTraces(func(ctx context.Context, ld ptrace.Traces) error {
+				return nil
+			})
+		}
+		require.NoError(t, err)
+		return fmt.Errorf("Some temporary error")
+	})
+	require.NoError(t, err)
+
+	// populate mock messagingService and unmarshaller functions, expecting them each to be called at most once
+	var ackCalled bool
+	messagingService.ackFunc = func(ctx context.Context, msg *inboundMessage) error {
+		assert.False(t, ackCalled)
+		ackCalled = true
+		return nil
+	}
+	messagingService.receiveMessageFunc = func(ctx context.Context) (*inboundMessage, error) {
+		return &inboundMessage{}, nil
+	}
+	unmarshaller.unmarshalFunc = func(msg *inboundMessage) (ptrace.Traces, error) {
+		return ptrace.NewTraces(), nil
+	}
+
+	receiveMessageComplete := make(chan error, 1)
+	go func() {
+		receiveMessageComplete <- receiver.receiveMessage(context.Background(), messagingService)
+	}()
+	select {
+	case <-time.After(retryInterval * time.Duration(retryCount) / 2):
+		// success
+	case <-receiveMessageComplete:
+		require.Fail(t, "Did not expect receiveMessage to return before delay interval")
+	}
+	validateMetric(t, receiver.metrics.views.flowControlStatus, flowControlStateControlled)
+	// since we set the next consumer to a noop, this should succeed
+	select {
+	case <-time.After(2 * retryInterval * time.Duration(retryCount)):
+		require.Fail(t, "receiveMessage did not return after some time")
+	case err := <-receiveMessageComplete:
+		assert.NoError(t, err)
+	}
+	assert.True(t, ackCalled)
+	validateMetric(t, receiver.metrics.views.flowControlRecentRetries, retryCount)
+	validateMetric(t, receiver.metrics.views.flowControlStatus, flowControlStateClear)
+	validateMetric(t, receiver.metrics.views.flowControlTotal, 1)
+	validateMetric(t, receiver.metrics.views.flowControlSingleSuccess, nil)
+}
+
 func newReceiver(t *testing.T) (*solaceTracesReceiver, *mockMessagingService, *mockUnmarshaller) {
 	unmarshaller := &mockUnmarshaller{}
 	service := &mockMessagingService{}
@@ -348,9 +524,15 @@ func newReceiver(t *testing.T) (*solaceTracesReceiver, *mockMessagingService, *m
 	}
 	metrics := newTestMetrics(t)
 	receiver := &solaceTracesReceiver{
-		settings:          componenttest.NewNopReceiverCreateSettings(),
-		instanceID:        config.NewComponentID(config.Type(t.Name())),
-		config:            &Config{},
+		settings:   componenttest.NewNopReceiverCreateSettings(),
+		instanceID: config.NewComponentID(config.Type(t.Name())),
+		config: &Config{
+			Flow: FlowControl{
+				DelayedRetry: &FlowControlDelayedRetry{
+					Delay: 10 * time.Millisecond,
+				},
+			},
+		},
 		nextConsumer:      consumertest.NewNop(),
 		metrics:           metrics,
 		unmarshaller:      unmarshaller,
