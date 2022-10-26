@@ -4076,6 +4076,12 @@
                   "value": {
                      "stringValue": ".geoip_databases"
                   }
+               },
+               {
+                  "key": "elasticsearch.cluster.name",
+                  "value": {
+                     "stringValue": "docker-cluster"
+                  }
                }
             ]
          },
@@ -4179,6 +4185,30 @@
                         ]
                      },
                      "unit": "ms"
+                  },
+                  {
+                     "description": "The size of the shards assigned to this index.",
+                     "name": "elasticsearch.index.shards.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": false,
+                        "dataPoints": [
+                           {
+                              "asInt": "40230884",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
                   }
                ],
                "scope": {
@@ -4196,6 +4226,12 @@
                   "value": {
                      "stringValue": "_all"
                   }
+               },
+               {
+                  "key": "elasticsearch.cluster.name",
+                  "value": {
+                     "stringValue": "docker-cluster"
+                  }
                }
             ]
          },
@@ -4299,6 +4335,30 @@
                         ]
                      },
                      "unit": "ms"
+                  },
+                  {
+                     "description": "The size of the shards assigned to this index.",
+                     "name": "elasticsearch.index.shards.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": false,
+                        "dataPoints": [
+                           {
+                              "asInt": "40230884",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
                   }
                ],
                "scope": {
