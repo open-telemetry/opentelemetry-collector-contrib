@@ -58,21 +58,9 @@ func NewParser(functions map[string]interface{}, telemetrySettings component.Tel
 	return ottl.NewParser[TransformContext](functions, parsePath, parseEnum, telemetrySettings)
 }
 
-var symbolTable = map[ottl.EnumSymbol]ottl.Enum{
-	"SPAN_KIND_UNSPECIFIED": ottl.Enum(ptrace.SpanKindUnspecified),
-	"SPAN_KIND_INTERNAL":    ottl.Enum(ptrace.SpanKindInternal),
-	"SPAN_KIND_SERVER":      ottl.Enum(ptrace.SpanKindServer),
-	"SPAN_KIND_CLIENT":      ottl.Enum(ptrace.SpanKindClient),
-	"SPAN_KIND_PRODUCER":    ottl.Enum(ptrace.SpanKindProducer),
-	"SPAN_KIND_CONSUMER":    ottl.Enum(ptrace.SpanKindConsumer),
-	"STATUS_CODE_UNSET":     ottl.Enum(ptrace.StatusCodeUnset),
-	"STATUS_CODE_OK":        ottl.Enum(ptrace.StatusCodeOk),
-	"STATUS_CODE_ERROR":     ottl.Enum(ptrace.StatusCodeError),
-}
-
 func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	if val != nil {
-		if enum, ok := symbolTable[*val]; ok {
+		if enum, ok := ottlcommon.SpanSymbolTable[*val]; ok {
 			return &enum, nil
 		}
 		return nil, fmt.Errorf("enum symbol, %s, not found", *val)

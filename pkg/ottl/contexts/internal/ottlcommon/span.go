@@ -31,6 +31,18 @@ type SpanContext interface {
 	GetSpan() ptrace.Span
 }
 
+var SpanSymbolTable = map[ottl.EnumSymbol]ottl.Enum{
+	"SPAN_KIND_UNSPECIFIED": ottl.Enum(ptrace.SpanKindUnspecified),
+	"SPAN_KIND_INTERNAL":    ottl.Enum(ptrace.SpanKindInternal),
+	"SPAN_KIND_SERVER":      ottl.Enum(ptrace.SpanKindServer),
+	"SPAN_KIND_CLIENT":      ottl.Enum(ptrace.SpanKindClient),
+	"SPAN_KIND_PRODUCER":    ottl.Enum(ptrace.SpanKindProducer),
+	"SPAN_KIND_CONSUMER":    ottl.Enum(ptrace.SpanKindConsumer),
+	"STATUS_CODE_UNSET":     ottl.Enum(ptrace.StatusCodeUnset),
+	"STATUS_CODE_OK":        ottl.Enum(ptrace.StatusCodeOk),
+	"STATUS_CODE_ERROR":     ottl.Enum(ptrace.StatusCodeError),
+}
+
 func SpanPathGetSetter[K SpanContext](path []ottl.Field) (ottl.GetSetter[K], error) {
 	if len(path) == 0 {
 		return accessSpan[K](), nil
@@ -60,7 +72,7 @@ func SpanPathGetSetter[K SpanContext](path []ottl.Field) (ottl.GetSetter[K], err
 	case "parent_span_id":
 		return accessParentSpanID[K](), nil
 	case "name":
-		return accessName[K](), nil
+		return accessSpanName[K](), nil
 	case "kind":
 		return accessKind[K](), nil
 	case "start_time_unix_nano":
@@ -213,7 +225,7 @@ func accessParentSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessName[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessSpanName[K SpanContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx K) interface{} {
 			return ctx.GetSpan().Name()
