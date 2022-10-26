@@ -294,8 +294,7 @@ func renderCreateTracesTableSQL(cfg *Config) string {
 	if cfg.TTLDays > 0 {
 		ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTLDays)
 	}
-	sql := fmt.Sprintf(createTracesTableSQL, cfg.TracesTableName, ttlExpr)
-	return sql
+	return fmt.Sprintf(createTracesTableSQL, cfg.TracesTableName, ttlExpr)
 }
 
 func renderCreateTraceIDTsTableSQL(cfg *Config) string {
@@ -303,13 +302,11 @@ func renderCreateTraceIDTsTableSQL(cfg *Config) string {
 	if cfg.TTLDays > 0 {
 		ttlExpr = fmt.Sprintf(`TTL toDateTime(Start) + toIntervalDay(%d)`, cfg.TTLDays)
 	}
-	sql := fmt.Sprintf(createTraceIDTsTableSQL, cfg.TracesTableName, ttlExpr)
-	return sql
+	return fmt.Sprintf(createTraceIDTsTableSQL, cfg.TracesTableName, ttlExpr)
 }
 
 func renderTraceIDTsMaterializedViewSQL(cfg *Config) string {
 	database, _ := parseDSNDatabase(cfg.DSN)
-	sql := fmt.Sprintf(createTraceIDTsMaterializedViewSQL, cfg.TracesTableName,
+	return fmt.Sprintf(createTraceIDTsMaterializedViewSQL, cfg.TracesTableName,
 		database, cfg.TracesTableName, database, cfg.TracesTableName)
-	return sql
 }
