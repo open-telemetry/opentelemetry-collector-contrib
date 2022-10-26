@@ -29,7 +29,7 @@ func TraceID[K any](bytes []byte) (ottl.ExprFunc[K], error) {
 	var idArr [16]byte
 	copy(idArr[:16], bytes)
 	id := pcommon.TraceID(idArr)
-	return func(K) interface{} {
-		return id
+	return func(K) (interface{}, error) {
+		return id, nil
 	}, nil
 }

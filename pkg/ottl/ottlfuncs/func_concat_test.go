@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -34,13 +33,13 @@ func Test_concat(t *testing.T) {
 			name: "concat strings",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return "hello"
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "hello", nil
 					},
 				},
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return "world"
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "world", nil
 					},
 				},
 			},
@@ -51,18 +50,18 @@ func Test_concat(t *testing.T) {
 			name: "nil",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return "hello"
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "hello", nil
 					},
 				},
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return nil
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return nil, nil
 					},
 				},
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return "world"
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "world", nil
 					},
 				},
 			},
@@ -73,13 +72,13 @@ func Test_concat(t *testing.T) {
 			name: "integers",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return "hello"
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "hello", nil
 					},
 				},
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return int64(1)
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return int64(1), nil
 					},
 				},
 			},
@@ -90,13 +89,13 @@ func Test_concat(t *testing.T) {
 			name: "floats",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return "hello"
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "hello", nil
 					},
 				},
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return 3.14159
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return 3.14159, nil
 					},
 				},
 			},
@@ -107,13 +106,13 @@ func Test_concat(t *testing.T) {
 			name: "booleans",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return "hello"
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "hello", nil
 					},
 				},
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return true
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return true, nil
 					},
 				},
 			},
@@ -124,8 +123,8 @@ func Test_concat(t *testing.T) {
 			name: "byte slices",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0xd2, 0xe6, 0x3c, 0xbe, 0x71, 0xf5, 0xa8}
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0xd2, 0xe6, 0x3c, 0xbe, 0x71, 0xf5, 0xa8}, nil
 					},
 				},
 			},
@@ -136,8 +135,8 @@ func Test_concat(t *testing.T) {
 			name: "non-byte slices",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return []int64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0}
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return []int64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0}, nil
 					},
 				},
 			},
@@ -148,8 +147,8 @@ func Test_concat(t *testing.T) {
 			name: "maps",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return map[string]string{"key": "value"}
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return map[string]string{"key": "value"}, nil
 					},
 				},
 			},
@@ -160,18 +159,18 @@ func Test_concat(t *testing.T) {
 			name: "unprintable value in the middle",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return "hello"
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "hello", nil
 					},
 				},
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return map[string]string{"key": "value"}
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return map[string]string{"key": "value"}, nil
 					},
 				},
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return "world"
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "world", nil
 					},
 				},
 			},
@@ -182,18 +181,18 @@ func Test_concat(t *testing.T) {
 			name: "empty string values",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return ""
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "", nil
 					},
 				},
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return ""
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "", nil
 					},
 				},
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return ""
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "", nil
 					},
 				},
 			},
@@ -204,8 +203,8 @@ func Test_concat(t *testing.T) {
 			name: "single argument",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return "hello"
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "hello", nil
 					},
 				},
 			},
@@ -234,8 +233,10 @@ func Test_concat(t *testing.T) {
 			}
 
 			exprFunc, err := Concat(getters, tt.delimiter)
-			require.NoError(t, err)
-			assert.Equal(t, tt.expected, exprFunc(nil))
+			assert.NoError(t, err)
+			result, err := exprFunc(nil)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

@@ -110,63 +110,68 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 
 func accessSpanEventTimeUnixNano() ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(ctx TransformContext) interface{} {
-			return ctx.GetSpanEvent().Timestamp().AsTime().UnixNano()
+		Getter: func(ctx TransformContext) (interface{}, error) {
+			return ctx.GetSpanEvent().Timestamp().AsTime().UnixNano(), nil
 		},
-		Setter: func(ctx TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) error {
 			if newTimestamp, ok := val.(int64); ok {
 				ctx.GetSpanEvent().SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTimestamp)))
 			}
+			return nil
 		},
 	}
 }
 
 func accessSpanEventName() ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(ctx TransformContext) interface{} {
-			return ctx.GetSpanEvent().Name()
+		Getter: func(ctx TransformContext) (interface{}, error) {
+			return ctx.GetSpanEvent().Name(), nil
 		},
-		Setter: func(ctx TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) error {
 			if newName, ok := val.(string); ok {
 				ctx.GetSpanEvent().SetName(newName)
 			}
+			return nil
 		},
 	}
 }
 
 func accessSpanEventAttributes() ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(ctx TransformContext) interface{} {
-			return ctx.GetSpanEvent().Attributes()
+		Getter: func(ctx TransformContext) (interface{}, error) {
+			return ctx.GetSpanEvent().Attributes(), nil
 		},
-		Setter: func(ctx TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) error {
 			if attrs, ok := val.(pcommon.Map); ok {
 				attrs.CopyTo(ctx.GetSpanEvent().Attributes())
 			}
+			return nil
 		},
 	}
 }
 
 func accessSpanEventAttributesKey(mapKey *string) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(ctx TransformContext) interface{} {
-			return ottlcommon.GetMapValue(ctx.GetSpanEvent().Attributes(), *mapKey)
+		Getter: func(ctx TransformContext) (interface{}, error) {
+			return ottlcommon.GetMapValue(ctx.GetSpanEvent().Attributes(), *mapKey), nil
 		},
-		Setter: func(ctx TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) error {
 			ottlcommon.SetMapValue(ctx.GetSpanEvent().Attributes(), *mapKey, val)
+			return nil
 		},
 	}
 }
 
 func accessSpanEventDroppedAttributeCount() ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(ctx TransformContext) interface{} {
-			return int64(ctx.GetSpanEvent().DroppedAttributesCount())
+		Getter: func(ctx TransformContext) (interface{}, error) {
+			return int64(ctx.GetSpanEvent().DroppedAttributesCount()), nil
 		},
-		Setter: func(ctx TransformContext, val interface{}) {
+		Setter: func(ctx TransformContext, val interface{}) error {
 			if newCount, ok := val.(int64); ok {
 				ctx.GetSpanEvent().SetDroppedAttributesCount(uint32(newCount))
 			}
+			return nil
 		},
 	}
 }

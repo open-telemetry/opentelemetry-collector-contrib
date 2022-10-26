@@ -498,7 +498,8 @@ func TestSpanPathGetSetter(t *testing.T) {
 
 			span := createSpan()
 
-			got := accessor.Get(newSpanContext(span))
+			got, err := accessor.Get(newSpanContext(span))
+			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			accessor.Set(newSpanContext(span), tt.newVal)
