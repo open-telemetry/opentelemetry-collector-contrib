@@ -8,15 +8,20 @@ if grep -q "$MODULE " go.mod; then
   go get "$MODULE"@"$VERSION"
 fi
 
+modules=(
+  "go.opentelemetry.io/collector/exporter/loggingexporter"
+  "go.opentelemetry.io/collector/exporter/otlpexporter"
+  "go.opentelemetry.io/collector/exporter/otlphttpexporter"
+  "go.opentelemetry.io/collector/semconv"
+  "go.opentelemetry.io/collector/pdata"
+)
+
 # If MODULE is "go.opentelemetry.io/collector" need to update "go.opentelemetry.io/collector/semconv"
 # and "go.opentelemetry.io/collector/pdata" as well.
 if [ "$MODULE" == "go.opentelemetry.io/collector" ]; then
-  SEMCONV=$MODULE"/semconv"
-  if grep -q "$SEMCONV " go.mod; then
-    go get -d "$SEMCONV"@"$VERSION"
-  fi
-  PDATA=$MODULE"/pdata"
-  if grep -q "$PDATA " go.mod; then
-    go get "$PDATA"@"$VERSION"
-  fi
+  for mod in ${modules[@]}; do
+    if grep -q "$mod " go.mod; then
+      go get -d "$mod"@"$VERSION"
+    fi
+  done
 fi

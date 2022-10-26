@@ -18,7 +18,7 @@
                      "description": "The number of data nodes in the cluster.",
                      "name": "elasticsearch.cluster.data_nodes",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "25",
@@ -33,7 +33,7 @@
                      "description": "The health status of the cluster.",
                      "name": "elasticsearch.cluster.health",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -82,7 +82,7 @@
                      "description": "The number of unfinished fetches.",
                      "name": "elasticsearch.cluster.in_flight_fetch",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -97,7 +97,7 @@
                      "description": "The total number of nodes in the cluster.",
                      "name": "elasticsearch.cluster.nodes",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "46",
@@ -112,7 +112,7 @@
                      "description": "The number of cluster-level changes that have not yet been executed.",
                      "name": "elasticsearch.cluster.pending_tasks",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -127,7 +127,7 @@
                      "description": "The number of shards in the cluster.",
                      "name": "elasticsearch.cluster.shards",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "45",
@@ -217,7 +217,7 @@
                      "description": "The number of operations completed for an index.",
                      "name": "elasticsearch.index.operations.completed",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "isMonotonic": true,
                         "dataPoints": [
                            {
@@ -266,7 +266,7 @@
                      "description": "Time spent on operations for an index.",
                      "name": "elasticsearch.index.operations.time",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "isMonotonic": true,
                         "dataPoints": [
                            {
@@ -343,7 +343,7 @@
                      "description": "The number of operations completed for an index.",
                      "name": "elasticsearch.index.operations.completed",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "isMonotonic": true,
                         "dataPoints": [
                            {
@@ -392,7 +392,7 @@
                      "description": "Time spent on operations for an index.",
                      "name": "elasticsearch.index.operations.time",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "isMonotonic": true,
                         "dataPoints": [
                            {

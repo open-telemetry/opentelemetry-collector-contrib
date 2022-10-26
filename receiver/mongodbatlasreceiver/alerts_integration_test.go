@@ -282,7 +282,8 @@ func readLogs(path string) (plog.Logs, error) {
 		return plog.Logs{}, err
 	}
 
-	return plog.NewJSONUnmarshaler().UnmarshalLogs(b)
+	unmarshaler := plog.JSONUnmarshaler{}
+	return unmarshaler.UnmarshalLogs(b)
 }
 
 func clientWithCert(path string) (*http.Client, error) {

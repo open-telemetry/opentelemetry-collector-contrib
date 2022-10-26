@@ -139,7 +139,7 @@ func getLogPacker() *logPacker {
 }
 
 func getTestLogs(tb testing.TB) plog.Logs {
-	logsMarshaler := plog.NewJSONUnmarshaler()
+	logsMarshaler := &plog.JSONUnmarshaler{}
 	logs, err := logsMarshaler.UnmarshalLogs(testLogs)
 	assert.NoError(tb, err, "Can't unmarshal testing logs data -> %s", err)
 	return logs
