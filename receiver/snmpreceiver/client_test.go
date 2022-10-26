@@ -670,7 +670,7 @@ func TestGetIndexedData(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				expectedSNMPData := []SNMPData{
 					{
-						parentOID: "2",
+						columnOID: "2",
 						oid:       "2.1",
 						value:     int64(1),
 						valueType: integerVal,
@@ -753,25 +753,25 @@ func TestGetIndexedData(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				expectedSNMPData := []SNMPData{
 					{
-						parentOID: "1",
+						columnOID: "1",
 						oid:       "1.1",
 						value:     int64(1),
 						valueType: integerVal,
 					},
 					{
-						parentOID: "1",
+						columnOID: "1",
 						oid:       "1.2",
 						value:     int64(2),
 						valueType: integerVal,
 					},
 					{
-						parentOID: "2",
+						columnOID: "2",
 						oid:       "2.1",
 						value:     int64(3),
 						valueType: integerVal,
 					},
 					{
-						parentOID: "2",
+						columnOID: "2",
 						oid:       "2.2",
 						value:     int64(4),
 						valueType: integerVal,
@@ -817,7 +817,7 @@ func TestGetIndexedData(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				expectedSNMPData := []SNMPData{
 					{
-						parentOID: "1",
+						columnOID: "1",
 						oid:       "1.1",
 						value:     1.0,
 						valueType: floatVal,
@@ -915,7 +915,7 @@ func TestGetIndexedData(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				expectedSNMPData := []SNMPData{
 					{
-						parentOID: "1",
+						columnOID: "1",
 						oid:       "1.1",
 						value:     "test",
 						valueType: stringVal,
@@ -944,7 +944,7 @@ func TestGetIndexedData(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				expectedSNMPData := []SNMPData{
 					{
-						parentOID: "1",
+						columnOID: "1",
 						oid:       "1.1",
 						value:     int64(1),
 						valueType: integerVal,
