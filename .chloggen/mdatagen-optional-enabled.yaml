@@ -1,4 +1,0 @@
-change_type: enhancement
-component: cmd/mdatagen
-note: Add ability to see if `enabled` option is overridden in user settings.
-issues: [15344]
