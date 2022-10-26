@@ -621,7 +621,7 @@ func TestHostmetricsCPUTranslations(t *testing.T) {
 	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "")
 	require.NoError(t, err)
 
-	jsonpb := pmetric.NewJSONUnmarshaler()
+	jsonpb := &pmetric.JSONUnmarshaler{}
 	bytes1, err := os.ReadFile(filepath.Join("testdata", "json", "hostmetrics_system_cpu_time_1.json"))
 	require.NoError(t, err)
 	md1, err := jsonpb.UnmarshalMetrics(bytes1)
@@ -714,7 +714,7 @@ func BenchmarkMetricConversion(b *testing.B) {
 	bytes, err := os.ReadFile("testdata/json/hostmetrics.json")
 	require.NoError(b, err)
 
-	unmarshaller := pmetric.NewJSONUnmarshaler()
+	unmarshaller := &pmetric.JSONUnmarshaler{}
 	metrics, err := unmarshaller.UnmarshalMetrics(bytes)
 	require.NoError(b, err)
 

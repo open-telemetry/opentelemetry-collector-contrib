@@ -55,7 +55,7 @@
               "description": "Number of bytes transferred to/from the disk by the group and descendant groups.",
               "name": "container.blockio.io_service_bytes_recursive",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "73728",
@@ -216,7 +216,7 @@
               "description": "Number of IOs (bio) issued to the disk by the group and descendant groups.",
               "name": "container.blockio.io_serviced_recursive",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "1",
@@ -377,7 +377,7 @@
               "description": "System CPU usage, as reported by docker.",
               "name": "container.cpu.usage.system",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "14930240000000",
@@ -392,7 +392,7 @@
               "description": "Total CPU time consumed.",
               "name": "container.cpu.usage.total",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "31093384",
@@ -407,7 +407,7 @@
               "description": "Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).",
               "name": "container.cpu.usage.kernelmode",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "10000000",
@@ -422,7 +422,7 @@
               "description": "Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows).",
               "name": "container.cpu.usage.usermode",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "10000000",
@@ -437,7 +437,7 @@
               "description": "Number of periods with throttling active.",
               "name": "container.cpu.throttling_data.periods",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -452,7 +452,7 @@
               "description": "Number of periods when the container hits its throttling limit.",
               "name": "container.cpu.throttling_data.throttled_periods",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -467,7 +467,7 @@
               "description": "Aggregate time the container was throttled.",
               "name": "container.cpu.throttling_data.throttled_time",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -495,7 +495,7 @@
               "description": "Per-core CPU usage by the container.",
               "name": "container.cpu.usage.percpu",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "31093384",
@@ -518,7 +518,7 @@
               "description": "Memory limit of the container.",
               "name": "container.memory.usage.limit",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "2074079232",
@@ -532,7 +532,7 @@
               "description": "Memory usage of the container. This excludes the total cache.",
               "name": "container.memory.usage.total",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "352256",
@@ -559,7 +559,7 @@
               "description": "Maximum memory usage.",
               "name": "container.memory.usage.max",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "6172672",
@@ -573,7 +573,7 @@
               "description": "The amount of anonymous memory that has been identified as active by the kernel.",
               "name": "container.memory.active_anon",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "4096",
@@ -587,7 +587,7 @@
               "description": "Cache memory that has been identified as active by the kernel.",
               "name": "container.memory.active_file",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "73728",
@@ -601,7 +601,7 @@
               "description": "The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device.",
               "name": "container.memory.cache",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "73728",
@@ -615,7 +615,7 @@
               "description": "Bytes that are waiting to get written back to the disk, from this cgroup.",
               "name": "container.memory.dirty",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -629,7 +629,7 @@
               "description": "The maximum amount of physical memory that can be used by the processes of this control group.",
               "name": "container.memory.hierarchical_memory_limit",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "9223372036854772000",
@@ -643,7 +643,7 @@
               "description": "The maximum amount of RAM + swap that can be used by the processes of this control group.",
               "name": "container.memory.hierarchical_memsw_limit",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "9223372036854772000",
@@ -657,7 +657,7 @@
               "description": "The amount of anonymous memory that has been identified as inactive by the kernel.",
               "name": "container.memory.inactive_anon",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "106496",
@@ -671,7 +671,7 @@
               "description": "Cache memory that has been identified as inactive by the kernel.",
               "name": "container.memory.inactive_file",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -685,7 +685,7 @@
               "description": "Indicates the amount of memory mapped by the processes in the control group.",
               "name": "container.memory.mapped_file",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -699,7 +699,7 @@
               "description": "Indicate the number of times that a process of the cgroup triggered a page fault.",
               "name": "container.memory.pgfault",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "2417",
@@ -714,7 +714,7 @@
               "description": "Indicate the number of times that a process of the cgroup triggered a major fault.",
               "name": "container.memory.pgmajfault",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "1",
@@ -729,7 +729,7 @@
               "description": "Number of pages read from disk by the cgroup.",
               "name": "container.memory.pgpgin",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "1980",
@@ -744,7 +744,7 @@
               "description": "Number of pages written to disk by the cgroup.",
               "name": "container.memory.pgpgout",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "1935",
@@ -759,7 +759,7 @@
               "description": "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps.",
               "name": "container.memory.rss",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "110592",
@@ -773,7 +773,7 @@
               "description": "Number of bytes of anonymous transparent hugepages in this cgroup.",
               "name": "container.memory.rss_huge",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -787,7 +787,7 @@
               "description": "The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups.",
               "name": "container.memory.total_active_anon",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "4096",
@@ -801,7 +801,7 @@
               "description": "Cache memory that has been identified as active by the kernel. Includes descendant cgroups.",
               "name": "container.memory.total_active_file",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "73728",
@@ -815,7 +815,7 @@
               "description": "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs.",
               "name": "container.memory.total_cache",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "73728",
@@ -829,7 +829,7 @@
               "description": "Bytes that are waiting to get written back to the disk, from this cgroup and descendants.",
               "name": "container.memory.total_dirty",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -843,7 +843,7 @@
               "description": "The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups.",
               "name": "container.memory.total_inactive_anon",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "106496",
@@ -857,7 +857,7 @@
               "description": "Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups.",
               "name": "container.memory.total_inactive_file",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -871,7 +871,7 @@
               "description": "Indicates the amount of memory mapped by the processes in the control group and descendant groups.",
               "name": "container.memory.total_mapped_file",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -885,7 +885,7 @@
               "description": "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault.",
               "name": "container.memory.total_pgfault",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "2417",
@@ -900,7 +900,7 @@
               "description": "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault.",
               "name": "container.memory.total_pgmajfault",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "1",
@@ -915,7 +915,7 @@
               "description": "Number of pages read from disk by the cgroup and descendant groups.",
               "name": "container.memory.total_pgpgin",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "1980",
@@ -930,7 +930,7 @@
               "description": "Number of pages written to disk by the cgroup and descendant groups.",
               "name": "container.memory.total_pgpgout",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "1935",
@@ -945,7 +945,7 @@
               "description": "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups.",
               "name": "container.memory.total_rss",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "110592",
@@ -959,7 +959,7 @@
               "description": "Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups.",
               "name": "container.memory.total_rss_huge",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -973,7 +973,7 @@
               "description": "The amount of memory that cannot be reclaimed. Includes descendant cgroups.",
               "name": "container.memory.total_unevictable",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -987,7 +987,7 @@
               "description": "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants.",
               "name": "container.memory.total_writeback",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1001,7 +1001,7 @@
               "description": "The amount of memory that cannot be reclaimed.",
               "name": "container.memory.unevictable",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1015,7 +1015,7 @@
               "description": "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup.",
               "name": "container.memory.writeback",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1029,7 +1029,7 @@
               "description": "Bytes received by the container.",
               "name": "container.network.io.usage.rx_bytes",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "12394",
@@ -1052,7 +1052,7 @@
               "description": "Bytes sent.",
               "name": "container.network.io.usage.tx_bytes",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1075,7 +1075,7 @@
               "description": "Incoming packets dropped.",
               "name": "container.network.io.usage.rx_dropped",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1098,7 +1098,7 @@
               "description": "Received errors.",
               "name": "container.network.io.usage.rx_errors",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1121,7 +1121,7 @@
               "description": "Packets received.",
               "name": "container.network.io.usage.rx_packets",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "96",
@@ -1144,7 +1144,7 @@
               "description": "Outgoing packets dropped.",
               "name": "container.network.io.usage.tx_dropped",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1167,7 +1167,7 @@
               "description": "Sent errors.",
               "name": "container.network.io.usage.tx_errors",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1190,7 +1190,7 @@
               "description": "Packets sent.",
               "name": "container.network.io.usage.tx_packets",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1272,7 +1272,7 @@
               "description": "Number of bytes transferred to/from the disk by the group and descendant groups.",
               "name": "container.blockio.io_service_bytes_recursive",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "1187840",
@@ -1433,7 +1433,7 @@
               "description": "Number of IOs (bio) issued to the disk by the group and descendant groups.",
               "name": "container.blockio.io_serviced_recursive",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "19",
@@ -1594,7 +1594,7 @@
               "description": "System CPU usage, as reported by docker.",
               "name": "container.cpu.usage.system",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "14834790000000",
@@ -1609,7 +1609,7 @@
               "description": "Total CPU time consumed.",
               "name": "container.cpu.usage.total",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "34117917",
@@ -1624,7 +1624,7 @@
               "description": "Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).",
               "name": "container.cpu.usage.kernelmode",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "20000000",
@@ -1639,7 +1639,7 @@
               "description": "Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows).",
               "name": "container.cpu.usage.usermode",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "10000000",
@@ -1654,7 +1654,7 @@
               "description": "Number of periods with throttling active.",
               "name": "container.cpu.throttling_data.periods",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1669,7 +1669,7 @@
               "description": "Number of periods when the container hits its throttling limit.",
               "name": "container.cpu.throttling_data.throttled_periods",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1684,7 +1684,7 @@
               "description": "Aggregate time the container was throttled.",
               "name": "container.cpu.throttling_data.throttled_time",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1712,7 +1712,7 @@
               "description": "Per-core CPU usage by the container.",
               "name": "container.cpu.usage.percpu",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "34117917",
@@ -1735,7 +1735,7 @@
               "description": "Memory limit of the container.",
               "name": "container.memory.usage.limit",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "2074079232",
@@ -1749,7 +1749,7 @@
               "description": "Memory usage of the container. This excludes the total cache.",
               "name": "container.memory.usage.total",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "380928",
@@ -1776,7 +1776,7 @@
               "description": "Maximum memory usage.",
               "name": "container.memory.usage.max",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "6201344",
@@ -1790,7 +1790,7 @@
               "description": "The amount of anonymous memory that has been identified as active by the kernel.",
               "name": "container.memory.active_anon",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "4096",
@@ -1804,7 +1804,7 @@
               "description": "Cache memory that has been identified as active by the kernel.",
               "name": "container.memory.active_file",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "393216",
@@ -1818,7 +1818,7 @@
               "description": "The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device.",
               "name": "container.memory.cache",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "921600",
@@ -1832,7 +1832,7 @@
               "description": "Bytes that are waiting to get written back to the disk, from this cgroup.",
               "name": "container.memory.dirty",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1846,7 +1846,7 @@
               "description": "The maximum amount of physical memory that can be used by the processes of this control group.",
               "name": "container.memory.hierarchical_memory_limit",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "9223372036854772000",
@@ -1860,7 +1860,7 @@
               "description": "The maximum amount of RAM + swap that can be used by the processes of this control group.",
               "name": "container.memory.hierarchical_memsw_limit",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "9223372036854772000",
@@ -1874,7 +1874,7 @@
               "description": "The amount of anonymous memory that has been identified as inactive by the kernel.",
               "name": "container.memory.inactive_anon",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "147456",
@@ -1888,7 +1888,7 @@
               "description": "Cache memory that has been identified as inactive by the kernel.",
               "name": "container.memory.inactive_file",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "528384",
@@ -1902,7 +1902,7 @@
               "description": "Indicates the amount of memory mapped by the processes in the control group.",
               "name": "container.memory.mapped_file",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "843776",
@@ -1916,7 +1916,7 @@
               "description": "Indicate the number of times that a process of the cgroup triggered a page fault.",
               "name": "container.memory.pgfault",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "2469",
@@ -1931,7 +1931,7 @@
               "description": "Indicate the number of times that a process of the cgroup triggered a major fault.",
               "name": "container.memory.pgmajfault",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "8",
@@ -1946,7 +1946,7 @@
               "description": "Number of pages read from disk by the cgroup.",
               "name": "container.memory.pgpgin",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "2288",
@@ -1961,7 +1961,7 @@
               "description": "Number of pages written to disk by the cgroup.",
               "name": "container.memory.pgpgout",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "2026",
@@ -1976,7 +1976,7 @@
               "description": "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps.",
               "name": "container.memory.rss",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "151552",
@@ -1990,7 +1990,7 @@
               "description": "Number of bytes of anonymous transparent hugepages in this cgroup.",
               "name": "container.memory.rss_huge",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -2004,7 +2004,7 @@
               "description": "The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups.",
               "name": "container.memory.total_active_anon",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "4096",
@@ -2018,7 +2018,7 @@
               "description": "Cache memory that has been identified as active by the kernel. Includes descendant cgroups.",
               "name": "container.memory.total_active_file",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "393216",
@@ -2032,7 +2032,7 @@
               "description": "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs.",
               "name": "container.memory.total_cache",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "921600",
@@ -2046,7 +2046,7 @@
               "description": "Bytes that are waiting to get written back to the disk, from this cgroup and descendants.",
               "name": "container.memory.total_dirty",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -2060,7 +2060,7 @@
               "description": "The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups.",
               "name": "container.memory.total_inactive_anon",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "147456",
@@ -2074,7 +2074,7 @@
               "description": "Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups.",
               "name": "container.memory.total_inactive_file",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "528384",
@@ -2088,7 +2088,7 @@
               "description": "Indicates the amount of memory mapped by the processes in the control group and descendant groups.",
               "name": "container.memory.total_mapped_file",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "843776",
@@ -2102,7 +2102,7 @@
               "description": "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault.",
               "name": "container.memory.total_pgfault",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "2469",
@@ -2117,7 +2117,7 @@
               "description": "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault.",
               "name": "container.memory.total_pgmajfault",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "8",
@@ -2132,7 +2132,7 @@
               "description": "Number of pages read from disk by the cgroup and descendant groups.",
               "name": "container.memory.total_pgpgin",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "2288",
@@ -2147,7 +2147,7 @@
               "description": "Number of pages written to disk by the cgroup and descendant groups.",
               "name": "container.memory.total_pgpgout",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "2026",
@@ -2162,7 +2162,7 @@
               "description": "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups.",
               "name": "container.memory.total_rss",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "151552",
@@ -2176,7 +2176,7 @@
               "description": "Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups.",
               "name": "container.memory.total_rss_huge",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -2190,7 +2190,7 @@
               "description": "The amount of memory that cannot be reclaimed. Includes descendant cgroups.",
               "name": "container.memory.total_unevictable",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -2204,7 +2204,7 @@
               "description": "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants.",
               "name": "container.memory.total_writeback",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -2218,7 +2218,7 @@
               "description": "The amount of memory that cannot be reclaimed.",
               "name": "container.memory.unevictable",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -2232,7 +2232,7 @@
               "description": "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup.",
               "name": "container.memory.writeback",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -2246,7 +2246,7 @@
               "description": "Bytes received by the container.",
               "name": "container.network.io.usage.rx_bytes",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "11313",
@@ -2269,7 +2269,7 @@
               "description": "Bytes sent.",
               "name": "container.network.io.usage.tx_bytes",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -2292,7 +2292,7 @@
               "description": "Incoming packets dropped.",
               "name": "container.network.io.usage.rx_dropped",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -2315,7 +2315,7 @@
               "description": "Received errors.",
               "name": "container.network.io.usage.rx_errors",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -2338,7 +2338,7 @@
               "description": "Packets received.",
               "name": "container.network.io.usage.rx_packets",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "88",
@@ -2361,7 +2361,7 @@
               "description": "Outgoing packets dropped.",
               "name": "container.network.io.usage.tx_dropped",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -2384,7 +2384,7 @@
               "description": "Sent errors.",
               "name": "container.network.io.usage.tx_errors",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -2407,7 +2407,7 @@
               "description": "Packets sent.",
               "name": "container.network.io.usage.tx_packets",
               "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
                     "asInt": "0",
