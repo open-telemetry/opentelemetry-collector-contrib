@@ -158,6 +158,7 @@ func (client *Client) CreateStream(logGroup, streamName *string) (token string, 
 				LogGroupName: logGroup,
 			})
 			if err == nil {
+				// For newly created log groups, set the log retention polic if specified or non-zero.  Otheriwse, set to Never Expire
 				if client.logRetention != 0 {
 					_, err = client.svc.PutRetentionPolicy(&cloudwatchlogs.PutRetentionPolicyInput{LogGroupName: logGroup, RetentionInDays: &client.logRetention})
 					if err != nil {
