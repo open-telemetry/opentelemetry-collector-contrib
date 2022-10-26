@@ -31,8 +31,8 @@ func Test_deleteMatchingKeys(t *testing.T) {
 	input.PutBool("test3", true)
 
 	target := &ottl.StandardGetSetter[pcommon.Map]{
-		Getter: func(ctx pcommon.Map) interface{} {
-			return ctx
+		Getter: func(ctx pcommon.Map) (interface{}, error) {
+			return ctx, nil
 		},
 	}
 
@@ -75,8 +75,10 @@ func Test_deleteMatchingKeys(t *testing.T) {
 			input.CopyTo(scenarioMap)
 
 			exprFunc, err := DeleteMatchingKeys(tt.target, tt.pattern)
-			require.NoError(t, err)
-			exprFunc(scenarioMap)
+			assert.NoError(t, err)
+
+			_, err = exprFunc(scenarioMap)
+			assert.Nil(t, err)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
@@ -89,35 +91,39 @@ func Test_deleteMatchingKeys(t *testing.T) {
 func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
-			return ctx
+		Getter: func(ctx interface{}) (interface{}, error) {
+			return ctx, nil
 		},
 	}
 
 	exprFunc, err := DeleteMatchingKeys[interface{}](target, "anything")
-	require.NoError(t, err)
-	exprFunc(input)
+	assert.NoError(t, err)
+
+	_, err = exprFunc(input)
+	assert.Nil(t, err)
 
 	assert.Equal(t, pcommon.NewValueInt(1), input)
 }
 
 func Test_deleteMatchingKeys_get_nil(t *testing.T) {
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
-			return ctx
+		Getter: func(ctx interface{}) (interface{}, error) {
+			return ctx, nil
 		},
 	}
 
 	exprFunc, err := DeleteMatchingKeys[interface{}](target, "anything")
-	require.NoError(t, err)
-	assert.Nil(t, exprFunc(nil))
+	assert.NoError(t, err)
+	result, err := exprFunc(nil)
+	assert.NoError(t, err)
+	assert.Nil(t, result)
 }
 
 func Test_deleteMatchingKeys_invalid_pattern(t *testing.T) {
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
+		Getter: func(ctx interface{}) (interface{}, error) {
 			t.Errorf("nothing should be received in this scenario")
-			return nil
+			return nil, nil
 		},
 	}
 

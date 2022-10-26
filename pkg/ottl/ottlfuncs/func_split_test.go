@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -33,8 +32,8 @@ func Test_split(t *testing.T) {
 		{
 			name: "split string",
 			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx interface{}) interface{} {
-					return "A|B|C"
+				Getter: func(ctx interface{}) (interface{}, error) {
+					return "A|B|C", nil
 				},
 			},
 			delimiter: "|",
@@ -43,8 +42,8 @@ func Test_split(t *testing.T) {
 		{
 			name: "split empty string",
 			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx interface{}) interface{} {
-					return ""
+				Getter: func(ctx interface{}) (interface{}, error) {
+					return "", nil
 				},
 			},
 			delimiter: "|",
@@ -53,8 +52,8 @@ func Test_split(t *testing.T) {
 		{
 			name: "split empty delimiter",
 			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx interface{}) interface{} {
-					return "A|B|C"
+				Getter: func(ctx interface{}) (interface{}, error) {
+					return "A|B|C", nil
 				},
 			},
 			delimiter: "",
@@ -63,8 +62,8 @@ func Test_split(t *testing.T) {
 		{
 			name: "split empty string and empty delimiter",
 			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx interface{}) interface{} {
-					return ""
+				Getter: func(ctx interface{}) (interface{}, error) {
+					return "", nil
 				},
 			},
 			delimiter: "",
@@ -73,8 +72,8 @@ func Test_split(t *testing.T) {
 		{
 			name: "split non-string",
 			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx interface{}) interface{} {
-					return 123
+				Getter: func(ctx interface{}) (interface{}, error) {
+					return 123, nil
 				},
 			},
 			delimiter: "|",
@@ -84,8 +83,10 @@ func Test_split(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := Split(tt.target, tt.delimiter)
-			require.NoError(t, err)
-			assert.Equal(t, tt.expected, exprFunc(nil))
+			assert.NoError(t, err)
+			result, err := exprFunc(nil)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

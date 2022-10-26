@@ -18,14 +18,14 @@ import (
 	"fmt"
 )
 
-type ExprFunc[K any] func(ctx K) interface{}
+type ExprFunc[K any] func(ctx K) (interface{}, error)
 
 type Getter[K any] interface {
-	Get(ctx K) interface{}
+	Get(ctx K) (interface{}, error)
 }
 
 type Setter[K any] interface {
-	Set(ctx K, val interface{})
+	Set(ctx K, val interface{}) error
 }
 
 type GetSetter[K any] interface {
@@ -34,31 +34,31 @@ type GetSetter[K any] interface {
 }
 
 type StandardGetSetter[K any] struct {
-	Getter func(ctx K) interface{}
-	Setter func(ctx K, val interface{})
+	Getter func(ctx K) (interface{}, error)
+	Setter func(ctx K, val interface{}) error
 }
 
-func (path StandardGetSetter[K]) Get(ctx K) interface{} {
+func (path StandardGetSetter[K]) Get(ctx K) (interface{}, error) {
 	return path.Getter(ctx)
 }
 
-func (path StandardGetSetter[K]) Set(ctx K, val interface{}) {
-	path.Setter(ctx, val)
+func (path StandardGetSetter[K]) Set(ctx K, val interface{}) error {
+	return path.Setter(ctx, val)
 }
 
 type literal[K any] struct {
 	value interface{}
 }
 
-func (l literal[K]) Get(K) interface{} {
-	return l.value
+func (l literal[K]) Get(K) (interface{}, error) {
+	return l.value, nil
 }
 
 type exprGetter[K any] struct {
 	expr ExprFunc[K]
 }
 
-func (g exprGetter[K]) Get(ctx K) interface{} {
+func (g exprGetter[K]) Get(ctx K) (interface{}, error) {
 	return g.expr(ctx)
 }
 
