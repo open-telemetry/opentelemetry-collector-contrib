@@ -70,6 +70,6 @@ func TestLoadConfig(t *testing.T) {
 	r2 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "customprefix")].(*Config)
 	r2Expected := factory.CreateDefaultConfig().(*Config)
 	r2Expected.ExporterSettings = config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "customprefix"))
-	r2Expected.GMPConfig.MetricPrefix = "my-metric-domain.com"
+	r2Expected.GMPConfig.MetricConfig.Prefix = "my-metric-domain.com"
 	assert.Equal(t, r2, r2Expected)
 }

@@ -20,7 +20,8 @@ exporters:
       max_interval: 60s
       max_elapsed_time: 10m
   googlemanagedprometheus/customprefix:
-    metric_prefix: my-metric-domain.com
+    metric:
+      prefix: my-metric-domain.com
 
 
 service:
