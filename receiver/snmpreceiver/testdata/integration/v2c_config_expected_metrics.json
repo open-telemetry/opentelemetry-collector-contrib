@@ -1,0 +1,117 @@
+{
+  "resourceMetrics": [
+    {
+      "scopeMetrics": [
+        {
+          "scope": {
+            "name": "otelcol/snmpreceiver",
+            "version": "latest"
+          },
+          "metrics": [
+            {
+              "description": "System uptime",
+              "name": "snmp.test.metric.sysuptime",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                    "dataPoints": [
+                      {
+                        "asInt": "398079874",
+                        "attributes": [
+                          {
+                            "key": "test",
+                            "value": {
+                              "stringValue": "test"
+                            }
+                          }
+                        ],
+                        "startTimeUnixNano": "0",
+                        "timeUnixNano": "1665063221574308000",
+                        "flags": "0"
+                      },
+                      {
+                        "asInt": "398079840",
+                        "startTimeUnixNano": "0",
+                        "timeUnixNano": "1665063221574308000",
+                        "flags": "0"
+                      }
+                    ]
+                  }
+
+                ],
+                "unit": "By"
+              }
+            },
+
+            {
+              "description": "System services",
+              "name": "snmp.test.metric.sysservices",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "72",
+                    "attributes": [
+                      {
+                        "key": "test",
+                        "value": {
+                          "stringValue": "test"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "0",
+                    "timeUnixNano": "1665063221574308000",
+                    "flags": "0"
+                  }
+                ],
+                "unit": "By"
+              }
+            }
+          ],
+          "resource": {}
+        }
+      ]
+    },
+    {"scopeMetrics": [
+      {
+        "scope": {
+          "name": "otelcol/snmpreceiver",
+          "version": "latest"
+        },
+        "metrics": [
+          {
+            "description": "SNMP get responses",
+            "name": "snmp.test.column.out.get.reponses",
+            "sum": {
+              "isMonotonic": true,
+              "dataPoints": [
+                {
+                  "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                  "dataPoints": [
+                    {
+                      "asInt": "10963",
+                      "attributes": [
+                        {
+                          "key": "test",
+                          "value": {
+                            "stringValue": "test"
+                          }
+                        }
+                      ],
+                      "startTimeUnixNano": "0",
+                      "timeUnixNano": "1665307007671913000",
+                      "flags": "0"
+                    }
+                  ]
+                }
+
+              ],
+              "unit": "By"
+            }
+          }
+        ],
+        "resource": {}
+      }
+    ]
+    }]
+}
