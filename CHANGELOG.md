@@ -4,6 +4,94 @@
 
 <!-- next version -->
 
+## v0.63.0
+
+### 🛑 Breaking changes 🛑
+
+- `processor/cumulativetodelta`: Sets the `processor.cumulativetodeltaprocessor.EnableHistogramSupport` feature gate to enabled by default.  Histograms will be converted by default if they match include rules. (#15288)
+- `pkg/ottl`: Renames accessor for instrumentation scope from `instrumentation_library` to `instrumentation_scope` to match documentation (#14933)
+- `pkg/ottl`: Add lists to the OTTL grammar and change the function signature of `Concat`. (#13391)
+  The following functions have changed:
+  `keep_keys` now has a function signature of `keep_keys(target, keys[])`.
+  `Concat` now has a function signature of `Concat(keys[], delimiter)`.
+  
+- `pkg/ottl`: Updates `ParseStatements` to return a `[]*Statement` instead of `[]Statement`. (#14911)
+- `postgresqlreceiver`: Change postgresql.bgwriter.duration data type from int to double (#14725, #14972)
+- `extension/headerssetter`: Remove deprecated `extension/headerssetter` module. (#13774)
+  The `headerssetter` extension was superseded by `headerssetterextension`.
+- `elasticsearchreceiver`: removing direction feature gate (#14955)
+- `hostmetricsreceiver`: remove direction feature gate (#14959)
+- `kubeletstatsreceiver`: remove direction feature gate (#14961)
+- `memcachedreceiver`: removing direction feature gate (#14964)
+- `vcenterreceiver`: removing direction feature gate (#14963)
+- `zookeeperreceiver`: removing direction feature gate (#14962)
+- `exporter/routingprocessor`: Rename OTTL `expression` configuration parameter of the routing table to `statement` to align with the OTTL naming. (#14950)
+- `dockerstatsreceiver`: `container.cpu.usage.system` is no longer a default metric. Added more description for the metric. (#9794, #14558)
+  Change is not breaking unless you are have enabled the featuregate `receiver.dockerstats.useScraperV2` and are using the specified metric.
+- `processor/transform`: Convert the `keep_keys` and `Concat` functions to use list parameters and change the function signature of `Concat`. (#13391)
+  The updated functions now have the following signatures:
+  `keep_keys` now has a function signature of `keep_keys(target, keys[])`.
+  `Concat` now has a function signature of `Concat(keys[], delimiter)`.
+  
+
+### 🚩 Deprecations 🚩
+
+- `exporter/influxdb`: change status to beta (#14098)
+- `receiver/influxdb`: change status to beta (#14099)
+
+### 🚀 New components 🚀
+
+- `azureblobreciver`: Add a new component `azureblobreciver` (#8834)
+  Add a new component `azureblobreceiver` that reads logs and traces from Azure Blob Storage
+- `k8sobjectsreceiver`: Add a new k8sobjects receiver to collect(pull/watch) Kubernetes Objects (#14185)
+- `httpcheckreceiver`: New HTTP Check receiver allows users to run synthethic checks from the collector (#10607)
+
+### 💡 Enhancements 💡
+
+- `oracledbreceiver`: Add metrics captured by this receiver (#13939)
+- `hostmetricsreceiver`: Add a new metric `process.paging.faults` to the `process` scraper of the `hostmetrics` receiver. (#14084)
+- `receiver/prometheusreceiver`: Append exemplars to the metrics received by prometheus receiver (#8353)
+  Acknowledge exemplars coming from prometheus receiver and append it to otel format
+- `azureblobreceiver`: Implementation of the component (second PR) (#8834)
+- `azureeventhubreceiver`: Adds implementation of Azure event hub receiver for raw data (#12786)
+- `bearertokenauthextension`: Allow bearertokenauthextension to support custom auth schemes apart from "Bearer" (#14771)
+- `clickhouseexporter`: Add support export OTLP traces to ClickHouse (#8028)
+- `mysqlreceiver`: add mysql.opened_resources metric (#14138)
+- `receiver/mysql`: add metrics based on events_statements_summary_by_digest table (#14138)
+- `mysqlreceiver`: add mysql.mysqlx_worker_threads (#14138)
+- `receiver/statsdreceiver`: Add OTLP exponential histogram aggregator support for high-resolution histogram and timing metrics (#5742)
+- `pkg/translator/loki`: Add support for formatting Loki log lines in logfmt format, toggled by providing `loki.format` hint. It can have value `logfmt` or `json`. JSON is default if no format hint is present. (#15351)
+- `exporter/lokiexporter`: Add multi-tenancy support for Loki exporter via `loki.tenant` hint. (#14706)
+- `pkg/translator/loki`: Add support for grouping Loki requests by attribute that is resolved from the `loki.tenant` hint. (#14706)
+- `cmd/mdatagen`: Add ability to see if `enabled` option is overridden in user settings. (#15344)
+- `oracledbreceiver`: Adds DML locks and transaction metrics to capture usage and limits (#13939)
+- `pkg/ottl`: Add new Instrumentation Scope context to allow for efficient transformation of Instrumentation Scope telemetry. (#14892)
+- `pkg/ottl`: Add new Metric context to allow for efficient transformation of metric telemetry. (#14895)
+- `snmpreceiver`: adds SNMP config helper for SNMP Receiver metric scraper (#13409)
+- `snmpreceiver`: adds otel metric helper struct for SNMP metric receiver scraper (#13409)
+- `snmpreceiver`: changes the client of the SNMP metric receiver to only return data in its functions rather than try to process that data (#13409)
+- `snmpreceiver`: changes the config of the SNMP Metric Receiver to have "`double`" as an option in place of "`float`" (#13409)
+- `solacereceiver`: Updates Solace Receiver with a variety of improvements and fixes for compatibility with Solace PubSub+ Event Broker 10.2.0 (#15244)
+- `syslogreceiver`: Added RFC 6587 Octet Counting and Non-Transparent-Framing support. (#8390)
+- `elasticsearchexporter`: upgrade version of elasticsearch client to 8.4 (#15385)
+- `dockerstatsreceiver`: Log warning when using ScraperV1, and add documentation for migrating from V1 to V2. (#9794, #14968)
+- `windowsperfcountersreceiver`: Retry counter retrieval once, when error indicates possible rollover (#14343)
+
+### 🧰 Bug fixes 🧰
+
+- `servicegraph`: Add servicegraph processor to component list (#14899)
+  Bumps servicegraph stability to alpha
+- `azuremonitorexporter`: Application Insights Severity Level mapping was incorrectly based on SeverityText which was unique for every language/SDK. (#15275)
+  Application Insights Severity Level mapping was incorrectly based on SeverityText which was unique for every language/SDK. The mapping approach has been changed to analyze SeverityNumber, which is supposed to be common across languages/SDKs.
+- `awscloudwatchreceiver`: Fix config validation for some named configurations. (#14952)
+- `exporter/awsxrayexporter`: Fix an issue where the awsxrayexporter would not parse .Net stacktrace correctly. (#14780)
+- `postgresqlreceiver`: Fix issue where WAL lag stats could cause panic (#14972)
+- `prometheusremotewriteexporter`: Fix value of `+Inf` histogram bucket to be equal to total count (#4975)
+- `prometheusreceiver`: Fix metrics being grouped into the same metrics family incorrectly (#13117)
+- `spanmetricsprocessor`: Sets TraceID and SpanID fields in Exemplar type (as per the spec) and removes the use of FilteredAttributes to pass these values around. (#13401)
+- `splunkhecexporter`: Skip `SummaryDataPoint.Sum` and `HistogramDataPoint.Sum` NaN values (#14877)
+- `pkg/winperfcounters`: Fix testing with `-race` flag for winperfcounters package and winperfcounter based receivers (#10145, #10146, #10149, #10150)
+
 ## v0.62.0
 
 ### 🛑 Breaking changes 🛑

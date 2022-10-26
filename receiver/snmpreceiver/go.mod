@@ -6,8 +6,8 @@ require (
 	github.com/gosnmp/gosnmp v1.35.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.62.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.62.2-0.20221025202712-36d142f003d8
-	go.opentelemetry.io/collector/pdata v0.62.2-0.20221025202712-36d142f003d8
+	go.opentelemetry.io/collector v0.63.0
+	go.opentelemetry.io/collector/pdata v0.63.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 )
