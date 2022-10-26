@@ -22,7 +22,7 @@ require gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 
 require (
 	github.com/basgys/goxml2json v1.1.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.62.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.63.0
 	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
 )
 

@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/promet
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.62.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.62.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.62.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.62.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.63.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.63.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.63.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.63.0
 	github.com/prometheus/client_golang v1.13.1-0.20221013115219-dcea97eee2b3
 	github.com/prometheus/client_model v0.3.0
 	github.com/prometheus/common v0.37.0
