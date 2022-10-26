@@ -9,9 +9,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.62.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c
-	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
-	go.opentelemetry.io/collector/semconv v0.62.2-0.20221017171445-6313054b642c
+	go.opentelemetry.io/collector v0.62.2-0.20221025202712-36d142f003d8
+	go.opentelemetry.io/collector/pdata v0.62.2-0.20221025202712-36d142f003d8
+	go.opentelemetry.io/collector/semconv v0.62.2-0.20221025202712-36d142f003d8
 	go.uber.org/multierr v1.8.0
 	google.golang.org/grpc v1.50.1
 )
@@ -36,7 +36,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
-	github.com/knadh/koanf v1.4.3 // indirect
+	github.com/knadh/koanf v1.4.4 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -57,7 +57,7 @@ require (
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
-	github.com/spf13/cobra v1.6.0 // indirect
+	github.com/spf13/cobra v1.6.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.13.0 // indirect

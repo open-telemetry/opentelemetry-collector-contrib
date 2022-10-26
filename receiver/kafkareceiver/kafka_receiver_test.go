@@ -134,7 +134,7 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 	defer view.Unregister(views...)
 
 	c := tracesConsumerGroupHandler{
-		unmarshaler:  newPdataTracesUnmarshaler(ptrace.NewProtoUnmarshaler(), defaultEncoding),
+		unmarshaler:  newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
@@ -176,7 +176,7 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 
 func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	c := tracesConsumerGroupHandler{
-		unmarshaler:  newPdataTracesUnmarshaler(ptrace.NewProtoUnmarshaler(), defaultEncoding),
+		unmarshaler:  newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
@@ -201,7 +201,7 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	consumerError := errors.New("failed to consume")
 	c := tracesConsumerGroupHandler{
-		unmarshaler:  newPdataTracesUnmarshaler(ptrace.NewProtoUnmarshaler(), defaultEncoding),
+		unmarshaler:  newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewErr(consumerError),
@@ -221,7 +221,8 @@ func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 
 	td := ptrace.NewTraces()
 	td.ResourceSpans().AppendEmpty()
-	bts, err := ptrace.NewProtoMarshaler().MarshalTraces(td)
+	unmarshaler := &ptrace.ProtoMarshaler{}
+	bts, err := unmarshaler.MarshalTraces(td)
 	require.NoError(t, err)
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
 	close(groupClaim.messageChan)
@@ -322,7 +323,7 @@ func TestMetricsConsumerGroupHandler(t *testing.T) {
 	defer view.Unregister(views...)
 
 	c := metricsConsumerGroupHandler{
-		unmarshaler:  newPdataMetricsUnmarshaler(pmetric.NewProtoUnmarshaler(), defaultEncoding),
+		unmarshaler:  newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
@@ -364,7 +365,7 @@ func TestMetricsConsumerGroupHandler(t *testing.T) {
 
 func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	c := metricsConsumerGroupHandler{
-		unmarshaler:  newPdataMetricsUnmarshaler(pmetric.NewProtoUnmarshaler(), defaultEncoding),
+		unmarshaler:  newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
@@ -389,7 +390,7 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	consumerError := errors.New("failed to consume")
 	c := metricsConsumerGroupHandler{
-		unmarshaler:  newPdataMetricsUnmarshaler(pmetric.NewProtoUnmarshaler(), defaultEncoding),
+		unmarshaler:  newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewErr(consumerError),
@@ -408,7 +409,8 @@ func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	}()
 
 	ld := testdata.GenerateMetricsOneMetric()
-	bts, err := pmetric.NewProtoMarshaler().MarshalMetrics(ld)
+	unmarshaler := &pmetric.ProtoMarshaler{}
+	bts, err := unmarshaler.MarshalMetrics(ld)
 	require.NoError(t, err)
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
 	close(groupClaim.messageChan)
@@ -509,7 +511,7 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 	defer view.Unregister(views...)
 
 	c := logsConsumerGroupHandler{
-		unmarshaler:  newPdataLogsUnmarshaler(plog.NewProtoUnmarshaler(), defaultEncoding),
+		unmarshaler:  newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
@@ -551,7 +553,7 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 
 func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	c := logsConsumerGroupHandler{
-		unmarshaler:  newPdataLogsUnmarshaler(plog.NewProtoUnmarshaler(), defaultEncoding),
+		unmarshaler:  newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
@@ -576,7 +578,7 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	consumerError := errors.New("failed to consume")
 	c := logsConsumerGroupHandler{
-		unmarshaler:  newPdataLogsUnmarshaler(plog.NewProtoUnmarshaler(), defaultEncoding),
+		unmarshaler:  newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewErr(consumerError),
@@ -595,7 +597,8 @@ func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	}()
 
 	ld := testdata.GenerateLogsOneLogRecord()
-	bts, err := plog.NewProtoMarshaler().MarshalLogs(ld)
+	unmarshaler := &plog.ProtoMarshaler{}
+	bts, err := unmarshaler.MarshalLogs(ld)
 	require.NoError(t, err)
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
 	close(groupClaim.messageChan)

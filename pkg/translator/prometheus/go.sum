@@ -81,10 +81,10 @@ github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKs
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
-go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c h1:Dyxwp6ExRGfvo8zAROU8fgmq8GQg2ggb+YYeo0MUiUQ=
-go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c/go.mod h1:SmXDcqP/tej8usw0T8/PvSM5Y/yVNA0IvLxZdUxAFxs=
-go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c h1:lDjSYe30YHa6IrL7hXJM1aAYk5e1avBir0B3YsfLVW0=
-go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c/go.mod h1:s0F5Ectarjz1zy1N1ztxFOtMo1Rq/xMQsyheFSoQCLQ=
+go.opentelemetry.io/collector v0.62.2-0.20221025202712-36d142f003d8 h1:N8LekB6SZ5F5a5YuLhkgdxm+tGWWPHvXV02ixr/RMjc=
+go.opentelemetry.io/collector v0.62.2-0.20221025202712-36d142f003d8/go.mod h1:36pVJ16kjbF1QNPblrIoGrDEaA3PFZoZzGEJDUoQcro=
+go.opentelemetry.io/collector/pdata v0.62.2-0.20221025202712-36d142f003d8 h1:HEl9JcmCjy9rAOodu4kbNLqkUWLvpJUE7DtXYsblDdI=
+go.opentelemetry.io/collector/pdata v0.62.2-0.20221025202712-36d142f003d8/go.mod h1:IzvXUGQml2mrnvdb8zIlEW3qQs9oFLdD2hLwJdZ+pek=
 go.opentelemetry.io/proto/otlp v0.7.0/go.mod h1:PqfVotwruBrMGOCsRd/89rSnXhoiJIqeYNgFYFoEGnI=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=

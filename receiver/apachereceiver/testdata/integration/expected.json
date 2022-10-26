@@ -12,7 +12,7 @@
                      "description": "The amount of time that the server has been running in seconds.",
                      "name": "apache.uptime",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -35,7 +35,7 @@
                      "description": "The number of active connections currently attached to the HTTP server.",
                      "name": "apache.current_connections",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -57,7 +57,7 @@
                      "description": "The number of workers currently attached to the HTTP server.",
                      "name": "apache.workers",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "74",
@@ -103,7 +103,7 @@
                      "description": "The number of requests serviced by the HTTP server per second.",
                      "name": "apache.requests",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "9",
@@ -126,7 +126,7 @@
                      "description": "Total HTTP server traffic.",
                      "name": "apache.traffic",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "9216",
@@ -248,7 +248,7 @@
                            "asDouble": "0.04"
                         }
                      ],
-                     "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                     "aggregationTemporality": 2,
                      "isMonotonic": true
                      }
                   },
@@ -355,7 +355,7 @@
                            "asInt": "1501"
                         }
                      ],
-                     "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                     "aggregationTemporality": 2,
                      "isMonotonic": true
                      }
                   },
@@ -363,7 +363,7 @@
                      "description": "The number of workers in each state.",
                      "name": "apache.scoreboard",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "74",
