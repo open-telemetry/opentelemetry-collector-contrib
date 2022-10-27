@@ -25,7 +25,7 @@ import (
 // batch of spans.
 type Cache struct {
 	*lru.Cache
-	evictedItems map[interface{}]interface{}
+	EvictedItems map[interface{}]interface{}
 }
 
 // NewCache creates a Cache.
@@ -40,15 +40,15 @@ func NewCache(size int) (*Cache, error) {
 
 	return &Cache{
 		Cache:        lruCache,
-		evictedItems: evictedItems,
+		EvictedItems: evictedItems,
 	}, nil
 }
 
 // RemoveEvictedItems cleans all the evicted items.
 func (c *Cache) RemoveEvictedItems() {
 	// we need to keep the original pointer to evictedItems map as it is used in the closure of lru.NewWithEvict
-	for k := range c.evictedItems {
-		delete(c.evictedItems, k)
+	for k := range c.EvictedItems {
+		delete(c.EvictedItems, k)
 	}
 }
 
@@ -57,7 +57,7 @@ func (c *Cache) Get(key interface{}) (interface{}, bool) {
 	if val, ok := c.Cache.Get(key); ok {
 		return val, ok
 	}
-	val, ok := c.evictedItems[key]
+	val, ok := c.EvictedItems[key]
 	return val, ok
 }
 
