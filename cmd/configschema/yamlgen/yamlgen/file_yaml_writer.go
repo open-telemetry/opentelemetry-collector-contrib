@@ -36,10 +36,10 @@ func (f fileYAMLWriter) write(cfg configschema.CfgInfo, yamlBytes []byte) error 
 	}
 	fp := filepath.Join(path, "cfgschema.yaml")
 	err := os.WriteFile(fp, yamlBytes, 0600)
-	_, _ = fmt.Printf("wrote file: %v\n", fp)
 	if err != nil {
 		return fmt.Errorf("error writing yaml file: %v", fp)
 	}
+	fmt.Printf("wrote file: %v\n", fp)
 	return nil
 }
 
