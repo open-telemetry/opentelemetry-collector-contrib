@@ -16,10 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#1369](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1369))
 - `opentelemetry-instrumentation-system-metrics` add supports to collect system thread count. ([#1339](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1339))
 - `opentelemetry-exporter-richconsole` Fixing RichConsoleExpoter to allow multiple traces, fixing duplicate spans and include resources ([#1336](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1336))
-- `opentelemetry-instrumentation-asgi` Add support for regular expression matching of HTTP headers.
+- `opentelemetry-instrumentation-asgi` Add support for regular expression matching and sanitization of HTTP headers.
   ([#1333](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1333))
 - `opentelemetry-instrumentation-asgi` metrics record target attribute (FastAPI only)
   ([#1323](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1323))
+- `opentelemetry-instrumentation-wsgi` Add support for regular expression matching and sanitization of HTTP headers.
+  ([#1402](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1402))
 
 ### Fixed
 

@@ -30,6 +30,7 @@ from opentelemetry.test.test_base import TestBase
 from opentelemetry.test.wsgitestutil import WsgiTestBase
 from opentelemetry.trace import StatusCode
 from opentelemetry.util.http import (
+    OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SANITIZE_FIELDS,
     OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST,
     OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE,
 )
@@ -98,6 +99,15 @@ def wsgi_with_custom_response_headers(environ, start_response):
             ("content-type", "text/plain; charset=utf-8"),
             ("content-length", "100"),
             ("my-custom-header", "my-custom-value-1,my-custom-header-2"),
+            (
+                "my-custom-regex-header-1",
+                "my-custom-regex-value-1,my-custom-regex-value-2",
+            ),
+            (
+                "My-Custom-Regex-Header-2",
+                "my-custom-regex-value-3,my-custom-regex-value-4",
+            ),
+            ("My-Secret-Header", "My Secret Value"),
         ],
     )
     return [b"*"]
@@ -521,7 +531,8 @@ class TestAdditionOfCustomRequestResponseHeaders(WsgiTestBase):
     @mock.patch.dict(
         "os.environ",
         {
-            OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST: "Custom-Test-Header-1,Custom-Test-Header-2,Custom-Test-Header-3",
+            OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SANITIZE_FIELDS: ".*my-secret.*",
+            OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST: "Custom-Test-Header-1,Custom-Test-Header-2,Custom-Test-Header-3,Regex-Test-Header-.*,Regex-Invalid-Test-Header-.*,.*my-secret.*",
         },
     )
     def test_custom_request_headers_non_recording_span(self):
@@ -531,6 +542,9 @@ class TestAdditionOfCustomRequestResponseHeaders(WsgiTestBase):
                 {
                     "HTTP_CUSTOM_TEST_HEADER_1": "Test Value 2",
                     "HTTP_CUSTOM_TEST_HEADER_2": "TestValue2,TestValue3",
+                    "HTTP_REGEX_TEST_HEADER_1": "Regex Test Value 1",
+                    "HTTP_REGEX_TEST_HEADER_2": "RegexTestValue2,RegexTestValue3",
+                    "HTTP_MY_SECRET_HEADER": "My Secret Value",
                 }
             )
             app = otel_wsgi.OpenTelemetryMiddleware(
@@ -544,7 +558,8 @@ class TestAdditionOfCustomRequestResponseHeaders(WsgiTestBase):
     @mock.patch.dict(
         "os.environ",
         {
-            OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST: "Custom-Test-Header-1,Custom-Test-Header-2,Custom-Test-Header-3"
+            OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SANITIZE_FIELDS: ".*my-secret.*",
+            OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST: "Custom-Test-Header-1,Custom-Test-Header-2,Custom-Test-Header-3,Regex-Test-Header-.*,Regex-Invalid-Test-Header-.*,.*my-secret.*",
         },
     )
     def test_custom_request_headers_added_in_server_span(self):
@@ -552,6 +567,9 @@ class TestAdditionOfCustomRequestResponseHeaders(WsgiTestBase):
             {
                 "HTTP_CUSTOM_TEST_HEADER_1": "Test Value 1",
                 "HTTP_CUSTOM_TEST_HEADER_2": "TestValue2,TestValue3",
+                "HTTP_REGEX_TEST_HEADER_1": "Regex Test Value 1",
+                "HTTP_REGEX_TEST_HEADER_2": "RegexTestValue2,RegexTestValue3",
+                "HTTP_MY_SECRET_HEADER": "My Secret Value",
             }
         )
         app = otel_wsgi.OpenTelemetryMiddleware(simple_wsgi)
@@ -563,6 +581,11 @@ class TestAdditionOfCustomRequestResponseHeaders(WsgiTestBase):
             "http.request.header.custom_test_header_2": (
                 "TestValue2,TestValue3",
             ),
+            "http.request.header.regex_test_header_1": ("Regex Test Value 1",),
+            "http.request.header.regex_test_header_2": (
+                "RegexTestValue2,RegexTestValue3",
+            ),
+            "http.request.header.my_secret_header": ("[REDACTED]",),
         }
         self.assertSpanHasAttributes(span, expected)
 
@@ -595,7 +618,8 @@ class TestAdditionOfCustomRequestResponseHeaders(WsgiTestBase):
     @mock.patch.dict(
         "os.environ",
         {
-            OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE: "content-type,content-length,my-custom-header,invalid-header"
+            OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SANITIZE_FIELDS: ".*my-secret.*",
+            OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE: "content-type,content-length,my-custom-header,invalid-header,my-custom-regex-header-.*,invalid-regex-header-.*,.*my-secret.*",
         },
     )
     def test_custom_response_headers_added_in_server_span(self):
@@ -613,6 +637,13 @@ class TestAdditionOfCustomRequestResponseHeaders(WsgiTestBase):
             "http.response.header.my_custom_header": (
                 "my-custom-value-1,my-custom-header-2",
             ),
+            "http.response.header.my_custom_regex_header_1": (
+                "my-custom-regex-value-1,my-custom-regex-value-2",
+            ),
+            "http.response.header.my_custom_regex_header_2": (
+                "my-custom-regex-value-3,my-custom-regex-value-4",
+            ),
+            "http.response.header.my_secret_header": ("[REDACTED]",),
         }
         self.assertSpanHasAttributes(span, expected)
 
