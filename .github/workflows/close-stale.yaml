@@ -17,6 +17,6 @@ jobs:
           days-before-pr-stale: 14
           days-before-issue-stale: -1 # Stale label is applied by mark-issues-as-stale.yml
           days-before-pr-close: 14
-          days-before-issue-close: 120
+          days-before-issue-close: 60
           exempt-issue-labels: 'never stale'
 

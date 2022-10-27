@@ -33,11 +33,11 @@ if [[ -z ${DAYS_BEFORE_STALE} || -z ${DAYS_BEFORE_CLOSE} || -z ${STALE_LABEL} ||
     exit 0
 fi
 
-STALE_MESSAGE="This issue has been inactive for ${DAYS_BEFORE_STALE} days. It will be closed in ${DAYS_BEFORE_CLOSE} days if there is no activity."
+STALE_MESSAGE="This issue has been inactive for ${DAYS_BEFORE_STALE} days. It will be closed in ${DAYS_BEFORE_CLOSE} days if there is no activity. To ping code owners by adding a component label, see [Adding Labels via Comments](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-labels-via-comments), or if you are unsure of which component this issue relates to, please ping \`@open-telemetry/collector-contrib-triagers\`. If this issue is still relevant, please ping the code owners or leave a comment explaining why it is still relevant. Otherwise, please close it."
 
 # Check for the least recently-updated issues that aren't currently stale.
 # If no issues in this list are stale, the repo has no stale issues.
-ISSUES=(`gh issue list --search "is:issue is:open -label:${STALE_LABEL} -label:\"${EXEMPT_LABEL}\" sort:updated-asc" --json number --jq '.[].number'`)
+ISSUES=(`gh issue list --limit 100 --search "is:issue is:open -label:${STALE_LABEL} -label:\"${EXEMPT_LABEL}\" sort:updated-asc" --json number --jq '.[].number'`)
 
 for ISSUE in "${ISSUES[@]}"; do
     OWNERS=''
@@ -81,7 +81,7 @@ for ISSUE in "${ISSUES[@]}"; do
         echo "Pinging code owners for issue #${ISSUE}."
 
         # The GitHub CLI only offers multiline strings through file input.
-        printf "${STALE_MESSAGE} Pinging code owners:\n${OWNERS}\nSee [Adding Labels via Comments](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-labels-via-comments) if you do not have permissions to add labels yourself." \
+        printf "${STALE_MESSAGE}\nPinging code owners:\n${OWNERS}\nSee [Adding Labels via Comments](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-labels-via-comments) if you do not have permissions to add labels yourself." \
           | gh issue comment ${ISSUE} -F -
     fi
 
