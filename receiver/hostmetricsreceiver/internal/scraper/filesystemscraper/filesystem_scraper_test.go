@@ -81,6 +81,26 @@ func TestScrape(t *testing.T) {
 			expectMetrics: false,
 		},
 		{
+			name: "Include device filtering that includes virtual partitions",
+			config: Config{
+				Metrics:          metadata.DefaultMetricsSettings(),
+				IncludeVirtualFS: true,
+				IncludeFSTypes:   FSTypeMatchConfig{Config: filterset.Config{MatchType: filterset.Strict}, FSTypes: []string{"tmpfs"}},
+			},
+			partitionsFunc: func(includeVirtual bool) (paritions []disk.PartitionStat, err error) {
+				paritions = append(paritions, disk.PartitionStat{Device: "root-device", Fstype: "ext4"})
+				if includeVirtual {
+					paritions = append(paritions, disk.PartitionStat{Device: "shm", Fstype: "tmpfs"})
+				}
+				return paritions, err
+			},
+			usageFunc: func(s string) (*disk.UsageStat, error) {
+				return &disk.UsageStat{}, nil
+			},
+			expectMetrics:            true,
+			expectedDeviceDataPoints: 1,
+		},
+		{
 			name: "Include filter with devices, filesystem type and mount points",
 			config: Config{
 				Metrics: metadata.DefaultMetricsSettings(),
@@ -266,7 +286,10 @@ func TestScrape(t *testing.T) {
 	}
 
 	for _, test := range testCases {
+		test := test
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			scraper, err := newFileSystemScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &test.config)
 			if test.newErrRegex != "" {
 				require.Error(t, err)
