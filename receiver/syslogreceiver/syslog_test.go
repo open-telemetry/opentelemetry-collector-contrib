@@ -56,10 +56,10 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 
 	var conn net.Conn
 	if cfg.InputConfig.TCP != nil {
-		conn, err = net.Dial("tcp", "0.0.0.0:29018")
+		conn, err = net.Dial("tcp", "127.0.0.1:29018")
 		require.NoError(t, err)
 	} else {
-		conn, err = net.Dial("udp", "0.0.0.0:29018")
+		conn, err = net.Dial("udp", "127.0.0.1:29018")
 		require.NoError(t, err)
 	}
 
@@ -114,7 +114,7 @@ func testdataConfigYaml() *SysLogConfig {
 		InputConfig: func() syslog.Config {
 			c := syslog.NewConfig()
 			c.TCP = &tcp.NewConfig().BaseConfig
-			c.TCP.ListenAddress = "0.0.0.0:29018"
+			c.TCP.ListenAddress = "127.0.0.1:29018"
 			c.Protocol = "rfc5424"
 			return *c
 		}(),
@@ -134,7 +134,7 @@ func testdataUDPConfig() *SysLogConfig {
 		InputConfig: func() syslog.Config {
 			c := syslog.NewConfig()
 			c.UDP = &udp.NewConfig().BaseConfig
-			c.UDP.ListenAddress = "0.0.0.0:29018"
+			c.UDP.ListenAddress = "127.0.0.1:29018"
 			c.Protocol = "rfc5424"
 			return *c
 		}(),
