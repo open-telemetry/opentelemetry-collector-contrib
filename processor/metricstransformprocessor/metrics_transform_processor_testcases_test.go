@@ -1457,12 +1457,16 @@ var (
 				},
 			},
 			in: []pmetric.Metric{
-				metricBuilder(pmetric.MetricTypeHistogram, "metric1").addHistogramDatapoint(1, 1, 1, 1, []float64{1}, []uint64{1, 1}).build(),
-				metricBuilder(pmetric.MetricTypeHistogram, "metric2").addHistogramDatapoint(1, 1, 2, 400, []float64{200}, []uint64{1, 2}).build(),
+				metricBuilder(pmetric.MetricTypeHistogram, "metric1").
+					addHistogramDatapoint(1, 1, 1, 1, []float64{1}, []uint64{1, 1}).build(),
+				metricBuilder(pmetric.MetricTypeHistogram, "metric2").
+					addHistogramDatapoint(1, 1, 2, 400, []float64{200}, []uint64{1, 2}).build(),
 			},
 			out: []pmetric.Metric{
-				metricBuilder(pmetric.MetricTypeHistogram, "metric1").addHistogramDatapoint(1, 1, 1, 100, []float64{100}, []uint64{1, 1}).build(),
-				metricBuilder(pmetric.MetricTypeHistogram, "metric2").addHistogramDatapoint(1, 1, 2, 40, []float64{20}, []uint64{1, 2}).build(),
+				metricBuilder(pmetric.MetricTypeHistogram, "metric1").
+					addHistogramDatapoint(1, 1, 1, 100, []float64{100}, []uint64{1, 1}).build(),
+				metricBuilder(pmetric.MetricTypeHistogram, "metric2").
+					addHistogramDatapoint(1, 1, 2, 40, []float64{20}, []uint64{1, 2}).build(),
 			},
 		},
 		{
@@ -1489,7 +1493,7 @@ var (
 						{
 							configOperation: Operation{
 								Action: ScaleValue,
-								Scale:  100,
+								Scale:  10,
 							},
 						},
 					},
@@ -1499,7 +1503,7 @@ var (
 				metricBuilder(pmetric.MetricTypeSum, "metric1", "label1").
 					addIntDatapoint(1, 1, 1, "value1").
 					addIntDatapoint(1, 1, 3, "value2").build(),
-				metricBuilder(pmetric.MetricTypeHistogram, "metric1", "label1").
+				metricBuilder(pmetric.MetricTypeHistogram, "metric2", "label1").
 					addHistogramDatapoint(1, 1, 1, 1, []float64{1}, []uint64{1, 1}, "value1").
 					addHistogramDatapoint(1, 1, 2, 4, []float64{2}, []uint64{1, 2}, "value2").build(),
 			},
@@ -1507,8 +1511,8 @@ var (
 				metricBuilder(pmetric.MetricTypeSum, "metric1", "label1").
 					addIntDatapoint(1, 1, 100, "value1").
 					addIntDatapoint(1, 1, 3, "value2").build(),
-				metricBuilder(pmetric.MetricTypeHistogram, "metric1", "label1").
-					addHistogramDatapoint(1, 1, 1, 100, []float64{100}, []uint64{1, 1}, "value1").
+				metricBuilder(pmetric.MetricTypeHistogram, "metric2", "label1").
+					addHistogramDatapoint(1, 1, 1, 10, []float64{10}, []uint64{1, 1}, "value1").
 					addHistogramDatapoint(1, 1, 2, 4, []float64{2}, []uint64{1, 2}, "value2").build(),
 			},
 		},
