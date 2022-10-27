@@ -54,4 +54,4 @@ This is considered a breaking change for existing users of this receiver, and it
 
 This feature gate will eventually be enabled by default, and eventually the old implementation will be removed. It aims
 to give users time to migrate to the new implementation. The target release for this featuregate to be enabled by default
-is 0.65.0.
+is 0.66.0.
