@@ -345,7 +345,7 @@ func (p *processorImp) getDimensionsByMetricKey(k metricKey) (*pcommon.Map, erro
 		}
 	}
 
-	return nil, fmt.Errorf("value not found in metricKeyToDimensions cache and EvictedItems by key %q", k)
+	return nil, fmt.Errorf("value not found in metricKeyToDimensions cache and its EvictedItems by key %q", k)
 }
 
 // aggregateMetrics aggregates the raw metrics from the input trace data.
