@@ -19,7 +19,11 @@ from unittest import TestCase
 from pkg_resources import DistributionNotFound, require
 
 from opentelemetry.distro import OpenTelemetryDistro
-from opentelemetry.environment_variables import OTEL_TRACES_EXPORTER
+from opentelemetry.environment_variables import (
+    OTEL_METRICS_EXPORTER,
+    OTEL_TRACES_EXPORTER,
+)
+from opentelemetry.sdk.environment_variables import OTEL_EXPORTER_OTLP_PROTOCOL
 
 
 class TestDistribution(TestCase):
@@ -32,7 +36,14 @@ class TestDistribution(TestCase):
     def test_default_configuration(self):
         distro = OpenTelemetryDistro()
         self.assertIsNone(os.environ.get(OTEL_TRACES_EXPORTER))
+        self.assertIsNone(os.environ.get(OTEL_METRICS_EXPORTER))
         distro.configure()
         self.assertEqual(
-            "otlp_proto_grpc", os.environ.get(OTEL_TRACES_EXPORTER)
+            "otlp", os.environ.get(OTEL_TRACES_EXPORTER)
+        )
+        self.assertEqual(
+            "otlp", os.environ.get(OTEL_METRICS_EXPORTER)
+        )
+        self.assertEqual(
+            "grpc", os.environ.get(OTEL_EXPORTER_OTLP_PROTOCOL)
         )

@@ -20,6 +20,7 @@ from opentelemetry.environment_variables import (
 )
 from opentelemetry.instrumentation.distro import BaseDistro
 from opentelemetry.sdk._configuration import _OTelSDKConfigurator
+from opentelemetry.sdk.environment_variables import OTEL_EXPORTER_OTLP_PROTOCOL
 
 
 class OpenTelemetryConfigurator(_OTelSDKConfigurator):
@@ -34,5 +35,6 @@ class OpenTelemetryDistro(BaseDistro):
 
     # pylint: disable=no-self-use
     def _configure(self, **kwargs):
-        os.environ.setdefault(OTEL_TRACES_EXPORTER, "otlp_proto_grpc")
-        os.environ.setdefault(OTEL_METRICS_EXPORTER, "otlp_proto_grpc")
+        os.environ.setdefault(OTEL_TRACES_EXPORTER, "otlp")
+        os.environ.setdefault(OTEL_METRICS_EXPORTER, "otlp")
+        os.environ.setdefault(OTEL_EXPORTER_OTLP_PROTOCOL, "grpc")

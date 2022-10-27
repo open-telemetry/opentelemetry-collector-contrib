@@ -57,6 +57,7 @@ The command supports the following configuration options as CLI arguments and en
 
 
 * ``--traces_exporter`` or ``OTEL_TRACES_EXPORTER``
+* ``--metrics_exporter`` or ``OTEL_METRICS_EXPORTER``
 
 Used to specify which trace exporter to use. Can be set to one or more of the well-known exporter
 names (see below).
@@ -71,13 +72,14 @@ Well known trace exporter names:
     - jaeger_proto
     - jaeger_thrift
     - opencensus
-    - otlp
-    - otlp_proto_grpc
-    - otlp_proto_http
     - zipkin_json
     - zipkin_proto
+    - otlp
+    - otlp_proto_grpc (`deprecated`)
+    - otlp_proto_http (`deprecated`)
 
-``otlp`` is an alias for ``otlp_proto_grpc``.
+Note: The default transport protocol for ``otlp`` is gRPC.
+HTTP is currently supported for traces only, and should be set using ``OTEL_EXPORTER_OTLP_TRACES_PROTOCOL=http/protobuf``
 
 * ``--id-generator`` or ``OTEL_PYTHON_ID_GENERATOR``
 
