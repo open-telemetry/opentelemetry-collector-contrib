@@ -69,16 +69,16 @@ func TestCache_Get(t *testing.T) {
 	tests := []struct {
 		name         string
 		lruCache     func() *Cache
-		evictedItems map[interface{}]interface{}
+		EvictedItems map[interface{}]interface{}
 		key          interface{}
 		wantValue    interface{}
 		wantOk       bool
 	}{
 		{
-			name: "if key is not found in LRUCache, will get key from evictedItems",
+			name: "if key is not found in LRUCache, will get key from EvictedItems",
 			lruCache: func() *Cache {
 				cache, _ := NewCache(1)
-				cache.evictedItems["key"] = "val"
+				cache.EvictedItems["key"] = "val"
 				return cache
 			},
 			key:       "key",
@@ -90,7 +90,7 @@ func TestCache_Get(t *testing.T) {
 			lruCache: func() *Cache {
 				cache, _ := NewCache(1)
 				cache.Add("key", "val_from_LRU")
-				cache.evictedItems["key"] = "val_from_evicted_items"
+				cache.EvictedItems["key"] = "val_from_evicted_items"
 				return cache
 			},
 			key:       "key",
@@ -142,8 +142,8 @@ func TestCache_RemoveEvictedItems(t *testing.T) {
 				if err != nil {
 					return nil, err
 				}
-				cache.evictedItems["key0"] = "val0"
-				cache.evictedItems["key1"] = "val1"
+				cache.EvictedItems["key0"] = "val0"
+				cache.EvictedItems["key1"] = "val1"
 				return cache, nil
 			},
 		},
@@ -155,7 +155,7 @@ func TestCache_RemoveEvictedItems(t *testing.T) {
 			cache, err := tt.lruCache()
 			assert.NoError(t, err)
 			cache.RemoveEvictedItems()
-			assert.Empty(t, cache.evictedItems)
+			assert.Empty(t, cache.EvictedItems)
 		})
 	}
 }
@@ -178,8 +178,8 @@ func TestCache_PurgeItems(t *testing.T) {
 				if err != nil {
 					return nil, err
 				}
-				cache.evictedItems["key0"] = "val0"
-				cache.evictedItems["key1"] = "val1"
+				cache.EvictedItems["key0"] = "val0"
+				cache.EvictedItems["key1"] = "val1"
 				return cache, nil
 			},
 		},
@@ -192,8 +192,8 @@ func TestCache_PurgeItems(t *testing.T) {
 				}
 				cache.Add("key", "val")
 				cache.Add("key2", "val2")
-				cache.evictedItems["key0"] = "val0"
-				cache.evictedItems["key1"] = "val1"
+				cache.EvictedItems["key0"] = "val0"
+				cache.EvictedItems["key1"] = "val1"
 				return cache, nil
 			},
 		},
@@ -206,7 +206,7 @@ func TestCache_PurgeItems(t *testing.T) {
 			assert.NoError(t, err)
 			cache.Purge()
 			assert.Zero(t, cache.Len())
-			assert.Empty(t, cache.evictedItems)
+			assert.Empty(t, cache.EvictedItems)
 		})
 	}
 }
