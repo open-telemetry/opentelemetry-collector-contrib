@@ -37,15 +37,15 @@ type Context interface {
 }
 
 type TracesContext interface {
-	ProcessTraces(td ptrace.Traces)
+	ProcessTraces(td ptrace.Traces) error
 }
 
 type MetricsContext interface {
-	ProcessMetrics(td pmetric.Metrics)
+	ProcessMetrics(td pmetric.Metrics) error
 }
 
 type LogsContext interface {
-	ProcessLogs(td plog.Logs)
+	ProcessLogs(td plog.Logs) error
 }
 
 var _ Context = &ResourceStatements{}
@@ -59,34 +59,46 @@ type ResourceStatements struct {
 
 func (r *ResourceStatements) IsContext() {}
 
-func (r *ResourceStatements) ProcessTraces(td ptrace.Traces) {
+func (r *ResourceStatements) ProcessTraces(td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		ctx := ottlresource.NewTransformContext(rspans.Resource())
 		for _, statement := range r.Statements {
-			statement.Execute(ctx)
+			_, _, err := statement.Execute(ctx)
+			if err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
-func (r *ResourceStatements) ProcessMetrics(td pmetric.Metrics) {
+func (r *ResourceStatements) ProcessMetrics(td pmetric.Metrics) error {
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
 		rmetrics := td.ResourceMetrics().At(i)
 		ctx := ottlresource.NewTransformContext(rmetrics.Resource())
 		for _, statement := range r.Statements {
-			statement.Execute(ctx)
+			_, _, err := statement.Execute(ctx)
+			if err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
-func (r *ResourceStatements) ProcessLogs(td plog.Logs) {
+func (r *ResourceStatements) ProcessLogs(td plog.Logs) error {
 	for i := 0; i < td.ResourceLogs().Len(); i++ {
 		rlogs := td.ResourceLogs().At(i)
 		ctx := ottlresource.NewTransformContext(rlogs.Resource())
 		for _, statement := range r.Statements {
-			statement.Execute(ctx)
+			_, _, err := statement.Execute(ctx)
+			if err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
 var _ Context = &ScopeStatements{}
@@ -100,43 +112,55 @@ type ScopeStatements struct {
 
 func (s *ScopeStatements) IsContext() {}
 
-func (s *ScopeStatements) ProcessTraces(td ptrace.Traces) {
+func (s *ScopeStatements) ProcessTraces(td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
 			sspans := rspans.ScopeSpans().At(j)
 			ctx := ottlscope.NewTransformContext(sspans.Scope(), rspans.Resource())
 			for _, statement := range s.Statements {
-				statement.Execute(ctx)
+				_, _, err := statement.Execute(ctx)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
+	return nil
 }
 
-func (s *ScopeStatements) ProcessMetrics(td pmetric.Metrics) {
+func (s *ScopeStatements) ProcessMetrics(td pmetric.Metrics) error {
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
 		rmetrics := td.ResourceMetrics().At(i)
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
 			smetrics := rmetrics.ScopeMetrics().At(j)
 			ctx := ottlscope.NewTransformContext(smetrics.Scope(), rmetrics.Resource())
 			for _, statement := range s.Statements {
-				statement.Execute(ctx)
+				_, _, err := statement.Execute(ctx)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
+	return nil
 }
 
-func (s *ScopeStatements) ProcessLogs(td plog.Logs) {
+func (s *ScopeStatements) ProcessLogs(td plog.Logs) error {
 	for i := 0; i < td.ResourceLogs().Len(); i++ {
 		rlogs := td.ResourceLogs().At(i)
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
 			slogs := rlogs.ScopeLogs().At(j)
 			ctx := ottlscope.NewTransformContext(slogs.Scope(), rlogs.Resource())
 			for _, statement := range s.Statements {
-				statement.Execute(ctx)
+				_, _, err := statement.Execute(ctx)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
+	return nil
 }
 
 var _ Context = &TraceStatements{}
@@ -148,7 +172,7 @@ type TraceStatements struct {
 
 func (t *TraceStatements) IsContext() {}
 
-func (t *TraceStatements) ProcessTraces(td ptrace.Traces) {
+func (t *TraceStatements) ProcessTraces(td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
@@ -157,11 +181,15 @@ func (t *TraceStatements) ProcessTraces(td ptrace.Traces) {
 			for k := 0; k < spans.Len(); k++ {
 				ctx := ottltraces.NewTransformContext(spans.At(k), sspans.Scope(), rspans.Resource())
 				for _, statement := range t.statements {
-					statement.Execute(ctx)
+					_, _, err := statement.Execute(ctx)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}
 	}
+	return nil
 }
 
 var _ Context = &LogStatements{}
@@ -173,7 +201,7 @@ type LogStatements struct {
 
 func (l *LogStatements) IsContext() {}
 
-func (l *LogStatements) ProcessLogs(td plog.Logs) {
+func (l *LogStatements) ProcessLogs(td plog.Logs) error {
 	for i := 0; i < td.ResourceLogs().Len(); i++ {
 		rlogs := td.ResourceLogs().At(i)
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
@@ -182,11 +210,15 @@ func (l *LogStatements) ProcessLogs(td plog.Logs) {
 			for k := 0; k < logs.Len(); k++ {
 				ctx := ottllogs.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
 				for _, statement := range l.statements {
-					statement.Execute(ctx)
+					_, _, err := statement.Execute(ctx)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}
 	}
+	return nil
 }
 
 var _ Context = &DataPointStatements{}
@@ -198,7 +230,7 @@ type DataPointStatements struct {
 
 func (d *DataPointStatements) IsContext() {}
 
-func (d *DataPointStatements) ProcessMetrics(td pmetric.Metrics) {
+func (d *DataPointStatements) ProcessMetrics(td pmetric.Metrics) error {
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
 		rmetrics := td.ResourceMetrics().At(i)
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
@@ -206,55 +238,80 @@ func (d *DataPointStatements) ProcessMetrics(td pmetric.Metrics) {
 			metrics := smetrics.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
 				metric := metrics.At(k)
+				var err error
 				switch metric.Type() {
 				case pmetric.MetricTypeSum:
-					d.handleNumberDataPoints(metric.Sum().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
+					err = d.handleNumberDataPoints(metric.Sum().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
 				case pmetric.MetricTypeGauge:
-					d.handleNumberDataPoints(metric.Gauge().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
+					err = d.handleNumberDataPoints(metric.Gauge().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
 				case pmetric.MetricTypeHistogram:
-					d.handleHistogramDataPoints(metric.Histogram().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
+					err = d.handleHistogramDataPoints(metric.Histogram().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
 				case pmetric.MetricTypeExponentialHistogram:
-					d.handleExponetialHistogramDataPoints(metric.ExponentialHistogram().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
+					err = d.handleExponetialHistogramDataPoints(metric.ExponentialHistogram().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
 				case pmetric.MetricTypeSummary:
-					d.handleSummaryDataPoints(metric.Summary().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
+					err = d.handleSummaryDataPoints(metric.Summary().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
+				}
+				if err != nil {
+					return err
 				}
 			}
 		}
 	}
+	return nil
 }
 
-func (d *DataPointStatements) handleNumberDataPoints(dps pmetric.NumberDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) {
+func (d *DataPointStatements) handleNumberDataPoints(dps pmetric.NumberDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
 		ctx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
-		d.callFunctions(ctx)
+		err := d.callFunctions(ctx)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (d *DataPointStatements) handleHistogramDataPoints(dps pmetric.HistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) {
+func (d *DataPointStatements) handleHistogramDataPoints(dps pmetric.HistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
 		ctx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
-		d.callFunctions(ctx)
+		err := d.callFunctions(ctx)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (d *DataPointStatements) handleExponetialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) {
+func (d *DataPointStatements) handleExponetialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
 		ctx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
-		d.callFunctions(ctx)
+		err := d.callFunctions(ctx)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (d *DataPointStatements) handleSummaryDataPoints(dps pmetric.SummaryDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) {
+func (d *DataPointStatements) handleSummaryDataPoints(dps pmetric.SummaryDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
 		ctx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
-		d.callFunctions(ctx)
+		err := d.callFunctions(ctx)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (d *DataPointStatements) callFunctions(ctx ottldatapoints.TransformContext) {
+func (d *DataPointStatements) callFunctions(ctx ottldatapoints.TransformContext) error {
 	for _, statement := range d.statements {
-		statement.Execute(ctx)
+		_, _, err := statement.Execute(ctx)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 type ParserCollection struct {
