@@ -55,10 +55,10 @@ require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.3.0 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.37 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.40.0-rc.2.0.20220930142800-72e24cd2e404 // indirect
-	github.com/DataDog/datadog-agent/pkg/otlp/model v0.40.0-rc.2.0.20221013201707-c46e9de16283 // indirect
-	github.com/DataDog/datadog-agent/pkg/quantile v0.40.0-rc.2.0.20221013201707-c46e9de16283 // indirect
+	github.com/DataDog/datadog-agent/pkg/otlp/model v0.40.0-rc.2.0.20221027084422-34610f5c902d // indirect
+	github.com/DataDog/datadog-agent/pkg/quantile v0.40.0-rc.2.0.20221027084422-34610f5c902d // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.40.0-rc.2.0.20220930142800-72e24cd2e404 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.40.0-rc.2.0.20221013201707-c46e9de16283 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.40.0-rc.2.0.20221027084422-34610f5c902d // indirect
 	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.40.0-rc.2.0.20220930142800-72e24cd2e404 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.40.0-rc.2.0.20220930142800-72e24cd2e404 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.40.0-rc.2.0.20220930142800-72e24cd2e404 // indirect
