@@ -88,7 +88,7 @@ func TestTracesReceiverStart(t *testing.T) {
 		consumerGroup: &testConsumerGroup{},
 	}
 
-	require.NoError(t, c.Start(context.Background(), nil))
+	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, c.Shutdown(context.Background()))
 }
 
@@ -120,7 +120,7 @@ func TestTracesReceiver_error(t *testing.T) {
 		consumerGroup: &testConsumerGroup{err: expectedErr},
 	}
 
-	require.NoError(t, c.Start(context.Background(), nil))
+	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, c.Shutdown(context.Background()))
 	assert.Eventually(t, func() bool {
 		return logObserver.FilterField(zap.Error(expectedErr)).Len() > 0
@@ -277,7 +277,7 @@ func TestMetricsReceiverStart(t *testing.T) {
 		consumerGroup: &testConsumerGroup{},
 	}
 
-	require.NoError(t, c.Start(context.Background(), nil))
+	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, c.Shutdown(context.Background()))
 }
 
@@ -465,7 +465,7 @@ func TestLogsReceiverStart(t *testing.T) {
 		consumerGroup: &testConsumerGroup{},
 	}
 
-	require.NoError(t, c.Start(context.Background(), nil))
+	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, c.Shutdown(context.Background()))
 }
 
