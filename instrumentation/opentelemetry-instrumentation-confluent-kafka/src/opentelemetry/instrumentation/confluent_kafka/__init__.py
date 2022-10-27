@@ -20,7 +20,7 @@ Usage
 
 ..code:: python
 
-    from opentelemetry.instrumentation.confluentkafka import ConfluentKafkaInstrumentor
+    from opentelemetry.instrumentation.confluent_kafka import ConfluentKafkaInstrumentor
     from confluent_kafka import Producer, Consumer
 
     # Instrument kafka
@@ -69,7 +69,7 @@ instrument_consumer (Callable) - a function with extra user-defined logic to be 
                           def instrument_consumer(consumer: Consumer, tracer_provider=None)
 for example:
 .. code: python
-    from opentelemetry.instrumentation.confluentkafka import ConfluentKafkaInstrumentor
+    from opentelemetry.instrumentation.confluent_kafka import ConfluentKafkaInstrumentor
     from confluent_kafka import Producer, Consumer
 
     inst = ConfluentKafkaInstrumentor()
