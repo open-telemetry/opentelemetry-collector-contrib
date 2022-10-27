@@ -6,9 +6,9 @@ require (
 	github.com/Azure/azure-kusto-go v0.8.1
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.11
 	github.com/json-iterator/go v1.1.12
-	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c
-	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
+	github.com/stretchr/testify v1.8.1
+	go.opentelemetry.io/collector v0.63.0
+	go.opentelemetry.io/collector/pdata v0.63.0
 	go.uber.org/zap v1.23.0
 )
 
@@ -37,7 +37,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.2.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/knadh/koanf v1.4.3 // indirect
+	github.com/knadh/koanf v1.4.4 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mattn/go-ieproxy v0.0.1 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect

@@ -235,10 +235,12 @@ func TestResourcePathGetSetter(t *testing.T) {
 
 			resource := createResource()
 
-			got := accessor.Get(newResourceContext(resource))
+			got, err := accessor.Get(newResourceContext(resource))
+			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(newResourceContext(resource), tt.newVal)
+			err = accessor.Set(newResourceContext(resource), tt.newVal)
+			assert.Nil(t, err)
 
 			expectedResource := createResource()
 			tt.modified(expectedResource)

@@ -127,7 +127,7 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 								"spanId":            "0001020304050607",
 								"parentSpanId":      "08090a0b0c0d0e00",
 								"name":              t.Name(),
-								"kind":              ptrace.SpanKindInternal.String(),
+								"kind":              float64(ptrace.SpanKindInternal),
 								"startTimeUnixNano": fmt.Sprint(now.UnixNano()),
 								"endTimeUnixNano":   fmt.Sprint(now.Add(time.Second).UnixNano()),
 								"status":            map[string]interface{}{},

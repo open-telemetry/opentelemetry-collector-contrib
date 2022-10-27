@@ -68,7 +68,7 @@ func (e *tracesExporter) start(_ context.Context, host component.Host) error {
 		return err
 	}
 
-	e.traceExporter = ptraceotlp.NewClient(e.clientConn)
+	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
 	if e.config.Traces.Headers == nil {
 		e.config.Traces.Headers = make(map[string]string)
 	}
@@ -91,7 +91,7 @@ func (e *tracesExporter) pushTraces(ctx context.Context, td ptrace.Traces) error
 		tr := ptrace.NewTraces()
 		newRss := tr.ResourceSpans().AppendEmpty()
 		resourceSpan.CopyTo(newRss)
-		req := ptraceotlp.NewRequestFromTraces(tr)
+		req := ptraceotlp.NewExportRequestFromTraces(tr)
 
 		_, err := e.traceExporter.Export(e.enhanceContext(ctx, appName, subsystem), req, e.callOptions...)
 		if err != nil {

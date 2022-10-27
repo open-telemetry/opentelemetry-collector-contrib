@@ -71,7 +71,7 @@ func (e *exporter) start(_ context.Context, host component.Host) (err error) {
 		return err
 	}
 
-	e.metricExporter = pmetricotlp.NewClient(e.clientConn)
+	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
 	if e.config.Metrics.Headers == nil {
 		e.config.Metrics.Headers = make(map[string]string)
 	}
@@ -95,7 +95,7 @@ func (e *exporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 		newRss := md.ResourceMetrics().AppendEmpty()
 		resourceMetric.CopyTo(newRss)
 
-		req := pmetricotlp.NewRequestFromMetrics(md)
+		req := pmetricotlp.NewExportRequestFromMetrics(md)
 		_, err := e.metricExporter.Export(e.enhanceContext(ctx, appName, subsystem), req, e.callOptions...)
 		if err != nil {
 			return processError(err)
