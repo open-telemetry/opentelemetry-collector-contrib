@@ -17,7 +17,6 @@ package logstransformprocessor
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -61,10 +60,6 @@ func TestCreateProcessor(t *testing.T) {
 						return cfg
 					}(),
 				},
-			},
-			Converter: adapter.ConverterConfig{
-				MaxFlushCount: 500,
-				FlushInterval: 13 * time.Millisecond,
 			},
 		},
 	}

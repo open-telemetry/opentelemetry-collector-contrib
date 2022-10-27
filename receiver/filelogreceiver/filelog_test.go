@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -87,12 +88,9 @@ func TestReadStaticFile(t *testing.T) {
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
-
 	cfg := testdataConfigYaml()
-	cfg.Converter.MaxFlushCount = 10
-	cfg.Converter.FlushInterval = time.Millisecond
 
-	converter := adapter.NewConverter()
+	converter := adapter.NewConverter(zap.NewNop())
 	converter.Start()
 	defer converter.Stop()
 
@@ -183,8 +181,6 @@ func (rt *rotationTest) Run(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 
 	cfg := rotationTestConfig(tempDir)
-	cfg.Converter.MaxFlushCount = 1
-	cfg.Converter.FlushInterval = time.Millisecond
 
 	// With a max of 100 logs per file and 1 backup file, rotation will occur
 	// when more than 100 logs are written, and deletion when more than 200 are written.
@@ -194,7 +190,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 
 	// Build expected outputs
 	expectedTimestamp, _ := time.ParseInLocation("2006-01-02", "2020-08-25", time.Local)
-	converter := adapter.NewConverter()
+	converter := adapter.NewConverter(zap.NewNop())
 	converter.Start()
 
 	var wg sync.WaitGroup
@@ -284,10 +280,6 @@ func testdataConfigYaml() *FileLogConfig {
 					}(),
 				},
 			},
-			Converter: adapter.ConverterConfig{
-				MaxFlushCount: 100,
-				FlushInterval: 100 * time.Millisecond,
-			},
 		},
 		InputConfig: func() file.Config {
 			c := file.NewConfig()
@@ -316,7 +308,6 @@ func rotationTestConfig(tempDir string) *FileLogConfig {
 					}(),
 				},
 			},
-			Converter: adapter.ConverterConfig{},
 		},
 		InputConfig: func() file.Config {
 			c := file.NewConfig()

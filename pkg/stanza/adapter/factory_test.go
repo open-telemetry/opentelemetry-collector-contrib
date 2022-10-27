@@ -17,7 +17,6 @@ package adapter
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -37,18 +36,6 @@ func TestCreateReceiver(t *testing.T) {
 			{
 				Builder: json.NewConfig(),
 			},
-		}
-		receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
-		require.NoError(t, err, "receiver creation failed")
-		require.NotNil(t, receiver, "receiver creation failed")
-	})
-
-	t.Run("Success with ConverterConfig", func(t *testing.T) {
-		factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
-		cfg := factory.CreateDefaultConfig().(*TestConfig)
-		cfg.Converter = ConverterConfig{
-			MaxFlushCount: 1,
-			FlushInterval: 3 * time.Second,
 		}
 		receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
 		require.NoError(t, err, "receiver creation failed")
