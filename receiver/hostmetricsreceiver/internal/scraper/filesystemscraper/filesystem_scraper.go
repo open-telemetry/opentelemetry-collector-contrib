@@ -36,10 +36,11 @@ const (
 
 // scraper for FileSystem Metrics
 type scraper struct {
-	settings component.ReceiverCreateSettings
-	config   *Config
-	mb       *metadata.MetricsBuilder
-	fsFilter fsFilter
+	settings         component.ReceiverCreateSettings
+	config           *Config
+	mb               *metadata.MetricsBuilder
+	includeVirtualFS bool
+	fsFilter         fsFilter
 
 	// for mocking gopsutil disk.Partitions & disk.Usage
 	bootTime   func() (uint64, error)
@@ -77,7 +78,7 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	// omit logical (virtual) filesystems (not relevant for windows)
-	partitions, err := s.partitions( /*all=*/ false)
+	partitions, err := s.partitions(s.includeVirtualFS)
 	if err != nil {
 		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
