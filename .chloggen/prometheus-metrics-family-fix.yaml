@@ -1,4 +1,0 @@
-change_type: bug_fix
-component: prometheusreceiver
-note: Fix metrics being grouped into the same metrics family incorrectly
-issues: [13117]
