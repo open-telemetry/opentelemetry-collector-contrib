@@ -5,12 +5,12 @@ go 1.18
 require (
 	github.com/aws/aws-sdk-go v1.44.122
 	github.com/google/uuid v1.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.62.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.62.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.62.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.63.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.63.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.63.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.62.2-0.20221025202712-36d142f003d8
-	go.opentelemetry.io/collector/semconv v0.62.2-0.20221025202712-36d142f003d8
+	go.opentelemetry.io/collector v0.63.0
+	go.opentelemetry.io/collector/semconv v0.63.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 )
@@ -46,8 +46,8 @@ require (
 )
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.62.0
-	go.opentelemetry.io/collector/pdata v0.62.2-0.20221025202712-36d142f003d8
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.63.0
+	go.opentelemetry.io/collector/pdata v0.63.0
 	go.opentelemetry.io/otel/sdk v1.11.1 // indirect
 )
 
