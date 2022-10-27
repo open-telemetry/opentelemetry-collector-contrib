@@ -40,12 +40,17 @@ func TestInput(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, tc := range cases {
-		t.Run(fmt.Sprintf("TCP-%s", tc.Name), func(t *testing.T) {
-			InputTest(t, NewConfigWithTCP(&tc.Config.BaseConfig), tc)
-		})
-		t.Run(fmt.Sprintf("UDP-%s", tc.Name), func(t *testing.T) {
-			InputTest(t, NewConfigWithUDP(&tc.Config.BaseConfig), tc)
-		})
+		if tc.ValidForTCP {
+			t.Run(fmt.Sprintf("TCP-%s", tc.Name), func(t *testing.T) {
+				InputTest(t, NewConfigWithTCP(&tc.Config.BaseConfig), tc)
+			})
+		}
+
+		if tc.ValidForUDP {
+			t.Run(fmt.Sprintf("UDP-%s", tc.Name), func(t *testing.T) {
+				InputTest(t, NewConfigWithUDP(&tc.Config.BaseConfig), tc)
+			})
+		}
 	}
 }
 

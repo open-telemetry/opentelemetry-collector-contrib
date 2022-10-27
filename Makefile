@@ -269,7 +269,7 @@ chlog-install:
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
 chlog-new: chlog-install
-	chloggen new -filename $(FILENAME)
+	chloggen new --filename $(FILENAME)
 
 .PHONY: chlog-validate
 chlog-validate: chlog-install
@@ -277,11 +277,11 @@ chlog-validate: chlog-install
 
 .PHONY: chlog-preview
 chlog-preview: chlog-install
-	chloggen update -dry
+	chloggen update --dry
 
 .PHONY: chlog-update
 chlog-update: chlog-install
-	chloggen update -version $(VERSION)
+	chloggen update --version $(VERSION)
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
@@ -375,7 +375,8 @@ multimod-verify: install-tools
 
 .PHONY: multimod-prerelease
 multimod-prerelease: install-tools
-	multimod prerelease -v ./versions.yaml -m contrib-base
+	multimod prerelease -s=true -b=false -v ./versions.yaml -m contrib-base
+	$(MAKE) gotidy
 
 .PHONY: crosslink
 crosslink: install-tools

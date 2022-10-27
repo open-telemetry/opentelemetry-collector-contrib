@@ -23,28 +23,58 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func ReplaceAllPatterns(target ottl.GetSetter, regexPattern string, replacement string) (ottl.ExprFunc, error) {
+const (
+	modeKey   = "key"
+	modeValue = "value"
+)
+
+func ReplaceAllPatterns[K any](target ottl.GetSetter[K], mode string, regexPattern string, replacement string) (ottl.ExprFunc[K], error) {
 	compiledPattern, err := regexp.Compile(regexPattern)
 	if err != nil {
 		return nil, fmt.Errorf("the regex pattern supplied to replace_all_patterns is not a valid pattern: %w", err)
 	}
-	return func(ctx ottl.TransformContext) interface{} {
-		val := target.Get(ctx)
+	if mode != modeValue && mode != modeKey {
+		return nil, fmt.Errorf("invalid mode %v, must be either 'key' or 'value'", mode)
+	}
+
+	return func(ctx K) (interface{}, error) {
+		val, err := target.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
 		if val == nil {
-			return nil
+			return nil, nil
 		}
-		if attrs, ok := val.(pcommon.Map); ok {
-			updated := pcommon.NewMap()
-			attrs.CopyTo(updated)
-			updated.Range(func(key string, value pcommon.Value) bool {
-				stringVal := value.Str()
-				if compiledPattern.MatchString(stringVal) {
-					value.SetStr(compiledPattern.ReplaceAllLiteralString(stringVal, replacement))
+		attrs, ok := val.(pcommon.Map)
+		if !ok {
+			return nil, nil
+		}
+		updated := pcommon.NewMap()
+		updated.EnsureCapacity(attrs.Len())
+		attrs.Range(func(key string, originalValue pcommon.Value) bool {
+			switch mode {
+			case modeValue:
+				if compiledPattern.MatchString(originalValue.Str()) {
+					updatedString := compiledPattern.ReplaceAllLiteralString(originalValue.Str(), replacement)
+					updated.PutStr(key, updatedString)
+				} else {
+					updated.PutStr(key, originalValue.Str())
 				}
-				return true
-			})
-			target.Set(ctx, updated)
+			case modeKey:
+				if compiledPattern.MatchString(key) {
+					updatedKey := compiledPattern.ReplaceAllLiteralString(key, replacement)
+					updated.PutStr(updatedKey, originalValue.Str())
+				} else {
+					updated.PutStr(key, originalValue.Str())
+				}
+			}
+			return true
+		})
+		err = target.Set(ctx, updated)
+		if err != nil {
+			return nil, err
 		}
-		return nil
+
+		return nil, nil
 	}, nil
 }

@@ -55,7 +55,7 @@ func TestIntegration(t *testing.T) {
 
 	expectedFileBytes, err := os.ReadFile("./testdata/expected_metrics/test_scraper/expected.json")
 	require.NoError(t, err)
-	unmarshaller := pmetric.NewJSONUnmarshaler()
+	unmarshaller := &pmetric.JSONUnmarshaler{}
 	expectedMetrics, err := unmarshaller.UnmarshalMetrics(expectedFileBytes)
 	require.NoError(t, err)
 

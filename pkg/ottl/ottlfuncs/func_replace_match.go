@@ -22,21 +22,27 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func ReplaceMatch(target ottl.GetSetter, pattern string, replacement string) (ottl.ExprFunc, error) {
+func ReplaceMatch[K any](target ottl.GetSetter[K], pattern string, replacement string) (ottl.ExprFunc[K], error) {
 	glob, err := glob.Compile(pattern)
 	if err != nil {
 		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern: %w", err)
 	}
-	return func(ctx ottl.TransformContext) interface{} {
-		val := target.Get(ctx)
+	return func(ctx K) (interface{}, error) {
+		val, err := target.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
 		if val == nil {
-			return nil
+			return nil, nil
 		}
 		if valStr, ok := val.(string); ok {
 			if glob.Match(valStr) {
-				target.Set(ctx, replacement)
+				err = target.Set(ctx, replacement)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
-		return nil
+		return nil, nil
 	}, nil
 }

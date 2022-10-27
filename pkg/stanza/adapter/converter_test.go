@@ -188,7 +188,7 @@ func TestConvert(t *testing.T) {
 		m.PutBool("bool", true)
 		m.PutInt("int", 123)
 		m.PutDouble("double", 12.34)
-		m.PutString("string", "hello")
+		m.PutStr("string", "hello")
 		m.PutEmptyMap("object")
 		assert.EqualValues(t, m.Sort(), resAtts.Sort())
 	}
@@ -209,7 +209,7 @@ func TestConvert(t *testing.T) {
 		m.PutBool("bool", true)
 		m.PutInt("int", 123)
 		m.PutDouble("double", 12.34)
-		m.PutString("string", "hello")
+		m.PutStr("string", "hello")
 		m.PutEmptyMap("object")
 		assert.EqualValues(t, m.Sort(), atts.Sort())
 	}
@@ -221,7 +221,7 @@ func TestConvert(t *testing.T) {
 		m.PutBool("bool", true)
 		m.PutInt("int", 123)
 		m.PutDouble("double", 12.34)
-		m.PutString("string", "hello")
+		m.PutStr("string", "hello")
 		m.PutEmptyBytes("bytes").FromRaw([]byte("asdf"))
 		assert.EqualValues(t, m.Sort(), lr.Body().Map().Sort())
 	}
@@ -760,7 +760,7 @@ func TestConvertSeverity(t *testing.T) {
 		expectedNumber plog.SeverityNumber
 		expectedText   string
 	}{
-		{entry.Default, "", plog.SeverityNumberUndefined, ""},
+		{entry.Default, "", plog.SeverityNumberUnspecified, ""},
 		{entry.Trace, "Trace", plog.SeverityNumberTrace, "Trace"},
 		{entry.Trace2, "Trace2", plog.SeverityNumberTrace2, "Trace2"},
 		{entry.Trace3, "Trace3", plog.SeverityNumberTrace3, "Trace3"},

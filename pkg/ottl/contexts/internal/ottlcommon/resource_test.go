@@ -28,7 +28,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 	refResource := createResource()
 
 	newAttrs := pcommon.NewMap()
-	newAttrs.PutString("hello", "world")
+	newAttrs.PutStr("hello", "world")
 
 	tests := []struct {
 		name     string
@@ -70,7 +70,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(resource pcommon.Resource) {
-				resource.Attributes().PutString("str", "newVal")
+				resource.Attributes().PutStr("str", "newVal")
 			},
 		},
 		{
@@ -230,15 +230,17 @@ func TestResourcePathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := ResourcePathGetSetter(tt.path)
+			accessor, err := ResourcePathGetSetter[*resourceContext](tt.path)
 			assert.NoError(t, err)
 
 			resource := createResource()
 
-			got := accessor.Get(newResourceContext(resource))
+			got, err := accessor.Get(newResourceContext(resource))
+			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(newResourceContext(resource), tt.newVal)
+			err = accessor.Set(newResourceContext(resource), tt.newVal)
+			assert.Nil(t, err)
 
 			expectedResource := createResource()
 			tt.modified(expectedResource)
@@ -250,7 +252,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 
 func createResource() pcommon.Resource {
 	resource := pcommon.NewResource()
-	resource.Attributes().PutString("str", "val")
+	resource.Attributes().PutStr("str", "val")
 	resource.Attributes().PutBool("bool", true)
 	resource.Attributes().PutInt("int", 10)
 	resource.Attributes().PutDouble("double", 1.2)
@@ -289,18 +291,10 @@ type resourceContext struct {
 	resource pcommon.Resource
 }
 
-func (r *resourceContext) GetItem() interface{} {
-	return nil
-}
-
-func (r *resourceContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return pcommon.InstrumentationScope{}
-}
-
 func (r *resourceContext) GetResource() pcommon.Resource {
 	return r.resource
 }
 
-func newResourceContext(resource pcommon.Resource) ottl.TransformContext {
+func newResourceContext(resource pcommon.Resource) *resourceContext {
 	return &resourceContext{resource: resource}
 }

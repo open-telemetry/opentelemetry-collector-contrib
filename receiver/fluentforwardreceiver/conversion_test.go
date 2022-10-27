@@ -39,7 +39,7 @@ func TestMessageEventConversion(t *testing.T) {
 	expected := Logs(
 		Log{
 			Timestamp: 1593031012000000000,
-			Body:      pcommon.NewValueString("..."),
+			Body:      pcommon.NewValueStr("..."),
 			Attributes: map[string]interface{}{
 				"container_id":   "b00a67eb645849d6ab38ff8beb4aad035cc7e917bf123c3e9057c7e89fc73d2d",
 				"container_name": "/unruffled_cannon",
@@ -165,17 +165,6 @@ func TestMessageEventConversionWithErrors(t *testing.T) {
 			require.NotNil(t, err)
 		})
 	}
-
-	t.Run("Invalid timestamp type uint", func(t *testing.T) {
-		in := make([]byte, len(b))
-		copy(in, b)
-		in[8] = 0xcd
-		reader := msgp.NewReader(bytes.NewReader(in))
-
-		var event MessageEventLogRecord
-		err := event.DecodeMsg(reader)
-		require.NotNil(t, err)
-	})
 }
 
 func TestForwardEventConversionWithErrors(t *testing.T) {
@@ -253,7 +242,7 @@ func TestBodyConversion(t *testing.T) {
 	le.Attributes().Sort()
 
 	body := pcommon.NewValueMap()
-	body.Map().PutString("a", "value")
+	body.Map().PutStr("a", "value")
 
 	bv := body.Map().PutEmptySlice("b")
 	bv.AppendEmpty().SetStr("first")

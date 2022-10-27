@@ -21,28 +21,27 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_keepKeys(t *testing.T) {
 	input := pcommon.NewMap()
-	input.PutString("test", "hello world")
+	input.PutStr("test", "hello world")
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem()
+	target := &ottl.StandardGetSetter[pcommon.Map]{
+		Getter: func(ctx pcommon.Map) (interface{}, error) {
+			return ctx, nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
-			ctx.GetItem().(pcommon.Map).Clear()
-			val.(pcommon.Map).CopyTo(ctx.GetItem().(pcommon.Map))
+		Setter: func(ctx pcommon.Map, val interface{}) error {
+			val.(pcommon.Map).CopyTo(ctx)
+			return nil
 		},
 	}
 
 	tests := []struct {
 		name   string
-		target ottl.GetSetter
+		target ottl.GetSetter[pcommon.Map]
 		keys   []string
 		want   func(pcommon.Map)
 	}{
@@ -51,8 +50,7 @@ func Test_keepKeys(t *testing.T) {
 			target: target,
 			keys:   []string{"test"},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 			},
 		},
 		{
@@ -60,8 +58,7 @@ func Test_keepKeys(t *testing.T) {
 			target: target,
 			keys:   []string{"test", "test2"},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutInt("test2", 3)
 			},
 		},
@@ -69,25 +66,19 @@ func Test_keepKeys(t *testing.T) {
 			name:   "keep none",
 			target: target,
 			keys:   []string{},
-			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-			},
+			want:   func(expectedMap pcommon.Map) {},
 		},
 		{
 			name:   "no match",
 			target: target,
 			keys:   []string{"no match"},
-			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-			},
+			want:   func(expectedMap pcommon.Map) {},
 		},
 		{
 			name:   "input is not a pcommon.Map",
 			target: target,
 			keys:   []string{"no match"},
-			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-			},
+			want:   func(expectedMap pcommon.Map) {},
 		},
 	}
 	for _, tt := range tests {
@@ -95,12 +86,11 @@ func Test_keepKeys(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			ctx := ottltest.TestTransformContext{
-				Item: scenarioMap,
-			}
+			exprFunc, err := KeepKeys(tt.target, tt.keys)
+			assert.NoError(t, err)
 
-			exprFunc, _ := KeepKeys(tt.target, tt.keys)
-			exprFunc(ctx)
+			_, err = exprFunc(scenarioMap)
+			assert.Nil(t, err)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
@@ -111,44 +101,44 @@ func Test_keepKeys(t *testing.T) {
 }
 
 func Test_keepKeys_bad_input(t *testing.T) {
-	input := pcommon.NewValueString("not a map")
-	ctx := ottltest.TestTransformContext{
-		Item: input,
-	}
-
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem()
+	input := pcommon.NewValueStr("not a map")
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx interface{}) (interface{}, error) {
+			return ctx, nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
 	keys := []string{"anything"}
 
-	exprFunc, _ := KeepKeys(target, keys)
-	exprFunc(ctx)
+	exprFunc, err := KeepKeys[interface{}](target, keys)
+	assert.NoError(t, err)
 
-	assert.Equal(t, pcommon.NewValueString("not a map"), input)
+	_, err = exprFunc(input)
+	assert.Nil(t, err)
+
+	assert.Equal(t, pcommon.NewValueStr("not a map"), input)
 }
 
 func Test_keepKeys_get_nil(t *testing.T) {
-	ctx := ottltest.TestTransformContext{
-		Item: nil,
-	}
-
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem()
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx interface{}) (interface{}, error) {
+			return ctx, nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
 	keys := []string{"anything"}
 
-	exprFunc, _ := KeepKeys(target, keys)
-	exprFunc(ctx)
+	exprFunc, err := KeepKeys[interface{}](target, keys)
+	assert.NoError(t, err)
+	result, err := exprFunc(nil)
+	assert.NoError(t, err)
+	assert.Nil(t, result)
 }

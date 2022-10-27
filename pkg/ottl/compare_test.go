@@ -112,11 +112,11 @@ func Test_compare(t *testing.T) {
 		{"non-prim, int type", testA{"hi"}, 5, []bool{false, true, false, false, false, false}},
 		{"int, non-prim", 5, testA{"hi"}, []bool{false, true, false, false, false, false}},
 	}
-	ops := []CompareOp{EQ, NE, LT, LTE, GTE, GT}
+	ops := []compareOp{EQ, NE, LT, LTE, GTE, GT}
 	for _, tt := range tests {
 		for _, op := range ops {
 			t.Run(fmt.Sprintf("%s %v", tt.name, op), func(t *testing.T) {
-				p := NewParser(nil, nil, nil, componenttest.NewNopTelemetrySettings())
+				p := NewParser[interface{}](nil, nil, nil, componenttest.NewNopTelemetrySettings())
 				if got := p.compare(tt.a, tt.b, op); got != tt.want[op] {
 					t.Errorf("compare(%v, %v, %v) = %v, want %v", tt.a, tt.b, op, got, tt.want[op])
 				}
@@ -125,70 +125,113 @@ func Test_compare(t *testing.T) {
 	}
 }
 
-var testParser = NewParser(nil, nil, nil, componenttest.NewNopTelemetrySettings())
-
 // Benchmarks -- these benchmarks compare the performance of comparisons of a variety of data types.
 // It's not attempting to be exhaustive, but again, it hits most of the major types and combinations.
 // The summary is that they're pretty fast; all the calls to compare are 12 ns/op or less on a 2019 intel
 // mac pro laptop, and none of them have any allocations.
 func BenchmarkCompareEQInt64(b *testing.B) {
+	testParser := NewParser[interface{}](nil, nil, nil, componenttest.NewNopTelemetrySettings())
+	b.ReportAllocs()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testParser.compare(i64a, i64b, EQ)
 	}
 }
 
 func BenchmarkCompareEQFloat(b *testing.B) {
+	testParser := NewParser[interface{}](nil, nil, nil, componenttest.NewNopTelemetrySettings())
+	b.ReportAllocs()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testParser.compare(f64a, f64b, EQ)
 	}
 }
+
 func BenchmarkCompareEQString(b *testing.B) {
+	testParser := NewParser[interface{}](nil, nil, nil, componenttest.NewNopTelemetrySettings())
+	b.ReportAllocs()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testParser.compare(sa, sb, EQ)
 	}
 }
+
 func BenchmarkCompareEQPString(b *testing.B) {
+	testParser := NewParser[interface{}](nil, nil, nil, componenttest.NewNopTelemetrySettings())
+	b.ReportAllocs()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testParser.compare(&sa, &sb, EQ)
 	}
 }
+
 func BenchmarkCompareEQBytes(b *testing.B) {
+	testParser := NewParser[interface{}](nil, nil, nil, componenttest.NewNopTelemetrySettings())
+	b.ReportAllocs()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testParser.compare(ba, bb, EQ)
 	}
 }
+
 func BenchmarkCompareEQNil(b *testing.B) {
+	testParser := NewParser[interface{}](nil, nil, nil, componenttest.NewNopTelemetrySettings())
+	b.ReportAllocs()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testParser.compare(nil, nil, EQ)
 	}
 }
+
 func BenchmarkCompareNEInt(b *testing.B) {
+	testParser := NewParser[interface{}](nil, nil, nil, componenttest.NewNopTelemetrySettings())
+	b.ReportAllocs()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testParser.compare(i64a, i64b, NE)
 	}
 }
 
 func BenchmarkCompareNEFloat(b *testing.B) {
+	testParser := NewParser[interface{}](nil, nil, nil, componenttest.NewNopTelemetrySettings())
+	b.ReportAllocs()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testParser.compare(f64a, f64b, NE)
 	}
 }
+
 func BenchmarkCompareNEString(b *testing.B) {
+	testParser := NewParser[interface{}](nil, nil, nil, componenttest.NewNopTelemetrySettings())
+	b.ReportAllocs()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testParser.compare(sa, sb, NE)
 	}
 }
+
 func BenchmarkCompareLTFloat(b *testing.B) {
+	testParser := NewParser[interface{}](nil, nil, nil, componenttest.NewNopTelemetrySettings())
+	b.ReportAllocs()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testParser.compare(f64a, f64b, LT)
 	}
 }
+
 func BenchmarkCompareLTString(b *testing.B) {
+	testParser := NewParser[interface{}](nil, nil, nil, componenttest.NewNopTelemetrySettings())
+	b.ReportAllocs()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testParser.compare(sa, sb, LT)
 	}
 }
+
 func BenchmarkCompareLTNil(b *testing.B) {
+	testParser := NewParser[interface{}](nil, nil, nil, componenttest.NewNopTelemetrySettings())
+	b.ReportAllocs()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testParser.compare(nil, nil, LT)
 	}
@@ -196,7 +239,7 @@ func BenchmarkCompareLTNil(b *testing.B) {
 
 // this is only used for benchmarking, and is a rough equivalent of the original compare function
 // before adding LT, LTE, GTE, and GT.
-func compareEq(a any, b any, op CompareOp) bool {
+func compareEq(a any, b any, op compareOp) bool {
 	switch op {
 	case EQ:
 		return a == b

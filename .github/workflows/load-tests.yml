@@ -13,7 +13,7 @@ concurrency:
 env:
   # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
   # Cache downloads for this workflow consistently run in under 2 minutes
-  SEGMENT_DOWNLOAD_TIMEOUT_MIN: 5
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 5
 
 jobs:
   setup-environment:

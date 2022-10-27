@@ -1,7 +1,8 @@
 # Podman Stats Receiver
+
 | Status                   |                   |
 | ------------------------ |-------------------|
-| Stability                | [unmaintained]    |
+| Stability                | [in development]  |
 | Supported pipeline types | metrics           |
 | Distributions            | [contrib]         |
 
@@ -88,5 +89,5 @@ Recommended build tags to use when including this receiver in your build:
 - `exclude_graphdriver_btrfs`
 - `exclude_graphdriver_devicemapper`
 
-[unmaintained]: https://github.com/open-telemetry/opentelemetry-collector#unmaintained
+[in development]: https://github.com/open-telemetry/opentelemetry-collector#in-development
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

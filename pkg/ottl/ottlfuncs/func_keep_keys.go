@@ -20,16 +20,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func KeepKeys(target ottl.GetSetter, keys []string) (ottl.ExprFunc, error) {
+func KeepKeys[K any](target ottl.GetSetter[K], keys []string) (ottl.ExprFunc[K], error) {
 	keySet := make(map[string]struct{}, len(keys))
 	for _, key := range keys {
 		keySet[key] = struct{}{}
 	}
 
-	return func(ctx ottl.TransformContext) interface{} {
-		val := target.Get(ctx)
+	return func(ctx K) (interface{}, error) {
+		val, err := target.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
 		if val == nil {
-			return nil
+			return nil, nil
 		}
 
 		if attrs, ok := val.(pcommon.Map); ok {
@@ -41,6 +44,6 @@ func KeepKeys(target ottl.GetSetter, keys []string) (ottl.ExprFunc, error) {
 				attrs.Clear()
 			}
 		}
-		return nil
+		return nil, nil
 	}, nil
 }

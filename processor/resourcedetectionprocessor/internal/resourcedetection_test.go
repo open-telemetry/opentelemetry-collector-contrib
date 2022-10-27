@@ -204,7 +204,6 @@ func (p *MockParallelDetector) Detect(ctx context.Context) (pcommon.Resource, st
 // TestDetectResource_Parallel validates that Detect is only called once, even if there
 // are multiple calls to ResourceProvider.Get
 func TestDetectResource_Parallel(t *testing.T) {
-	t.Skip("skipping flaky test: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10292")
 	const iterations = 5
 
 	md1 := NewMockParallelDetector()
@@ -223,13 +222,16 @@ func TestDetectResource_Parallel(t *testing.T) {
 
 	// call p.Get multiple times
 	wg := &sync.WaitGroup{}
+	var m sync.Mutex
 	wg.Add(iterations)
 	for i := 0; i < iterations; i++ {
 		go func() {
 			defer wg.Done()
 			detected, _, err := p.Get(context.Background(), http.DefaultClient)
 			require.NoError(t, err)
+			m.Lock()
 			detected.Attributes().Sort()
+			m.Unlock()
 			assert.Equal(t, expectedResource, detected)
 		}()
 	}
@@ -255,9 +257,9 @@ func TestFilterAttributes_Match(t *testing.T) {
 		"host.id":   {},
 	}
 	attr := pcommon.NewMap()
-	attr.PutString("host.name", "test")
-	attr.PutString("host.id", "test")
-	attr.PutString("drop.this", "test")
+	attr.PutStr("host.name", "test")
+	attr.PutStr("host.id", "test")
+	attr.PutStr("drop.this", "test")
 
 	droppedAttributes := filterAttributes(attr, m)
 
@@ -278,8 +280,8 @@ func TestFilterAttributes_NoMatch(t *testing.T) {
 		"cloud.region": {},
 	}
 	attr := pcommon.NewMap()
-	attr.PutString("host.name", "test")
-	attr.PutString("host.id", "test")
+	attr.PutStr("host.name", "test")
+	attr.PutStr("host.id", "test")
 
 	droppedAttributes := filterAttributes(attr, m)
 
@@ -295,8 +297,8 @@ func TestFilterAttributes_NoMatch(t *testing.T) {
 func TestFilterAttributes_NilAttributes(t *testing.T) {
 	var m map[string]struct{}
 	attr := pcommon.NewMap()
-	attr.PutString("host.name", "test")
-	attr.PutString("host.id", "test")
+	attr.PutStr("host.name", "test")
+	attr.PutStr("host.id", "test")
 
 	droppedAttributes := filterAttributes(attr, m)
 
@@ -312,8 +314,8 @@ func TestFilterAttributes_NilAttributes(t *testing.T) {
 func TestFilterAttributes_NoAttributes(t *testing.T) {
 	m := make(map[string]struct{})
 	attr := pcommon.NewMap()
-	attr.PutString("host.name", "test")
-	attr.PutString("host.id", "test")
+	attr.PutStr("host.name", "test")
+	attr.PutStr("host.id", "test")
 
 	droppedAttributes := filterAttributes(attr, m)
 
@@ -341,11 +343,11 @@ func TestAttributesToMap(t *testing.T) {
 		},
 	}
 	attr := pcommon.NewMap()
-	attr.PutString("str", "a")
+	attr.PutStr("str", "a")
 	attr.PutInt("int", 5)
 	attr.PutDouble("double", 5.0)
 	attr.PutBool("bool", true)
-	attr.PutEmptyMap("map").PutString("inner", "val")
+	attr.PutEmptyMap("map").PutStr("inner", "val")
 
 	arrayAttr := attr.PutEmptySlice("array")
 	arrayAttr.EnsureCapacity(2)

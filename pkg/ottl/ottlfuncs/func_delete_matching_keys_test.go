@@ -18,27 +18,27 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_deleteMatchingKeys(t *testing.T) {
 	input := pcommon.NewMap()
-	input.PutString("test", "hello world")
+	input.PutStr("test", "hello world")
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem()
+	target := &ottl.StandardGetSetter[pcommon.Map]{
+		Getter: func(ctx pcommon.Map) (interface{}, error) {
+			return ctx, nil
 		},
 	}
 
 	tests := []struct {
 		name    string
-		target  ottl.Getter
+		target  ottl.Getter[pcommon.Map]
 		pattern string
 		want    func(pcommon.Map)
 	}{
@@ -47,7 +47,6 @@ func Test_deleteMatchingKeys(t *testing.T) {
 			target:  target,
 			pattern: "test.*",
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
 				expectedMap.EnsureCapacity(3)
 			},
 		},
@@ -56,8 +55,7 @@ func Test_deleteMatchingKeys(t *testing.T) {
 			target:  target,
 			pattern: "\\d$",
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 			},
 		},
 		{
@@ -65,8 +63,7 @@ func Test_deleteMatchingKeys(t *testing.T) {
 			target:  target,
 			pattern: "not a matching pattern",
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)
 			},
@@ -77,12 +74,11 @@ func Test_deleteMatchingKeys(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			ctx := ottltest.TestTransformContext{
-				Item: scenarioMap,
-			}
+			exprFunc, err := DeleteMatchingKeys(tt.target, tt.pattern)
+			assert.NoError(t, err)
 
-			exprFunc, _ := DeleteMatchingKeys(tt.target, tt.pattern)
-			exprFunc(ctx)
+			_, err = exprFunc(scenarioMap)
+			assert.Nil(t, err)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
@@ -94,48 +90,45 @@ func Test_deleteMatchingKeys(t *testing.T) {
 
 func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
-	ctx := ottltest.TestTransformContext{
-		Item: input,
-	}
-
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem()
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx interface{}) (interface{}, error) {
+			return ctx, nil
 		},
 	}
 
-	exprFunc, err := DeleteMatchingKeys(target, "anything")
+	exprFunc, err := DeleteMatchingKeys[interface{}](target, "anything")
+	assert.NoError(t, err)
+
+	_, err = exprFunc(input)
 	assert.Nil(t, err)
-	exprFunc(ctx)
 
 	assert.Equal(t, pcommon.NewValueInt(1), input)
 }
 
 func Test_deleteMatchingKeys_get_nil(t *testing.T) {
-	ctx := ottltest.TestTransformContext{
-		Item: nil,
-	}
-
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem()
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx interface{}) (interface{}, error) {
+			return ctx, nil
 		},
 	}
 
-	exprFunc, _ := DeleteMatchingKeys(target, "anything")
-	exprFunc(ctx)
+	exprFunc, err := DeleteMatchingKeys[interface{}](target, "anything")
+	assert.NoError(t, err)
+	result, err := exprFunc(nil)
+	assert.NoError(t, err)
+	assert.Nil(t, result)
 }
 
 func Test_deleteMatchingKeys_invalid_pattern(t *testing.T) {
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx interface{}) (interface{}, error) {
 			t.Errorf("nothing should be received in this scenario")
-			return nil
+			return nil, nil
 		},
 	}
 
 	invalidRegexPattern := "*"
-	exprFunc, err := DeleteMatchingKeys(target, invalidRegexPattern)
-	assert.Nil(t, exprFunc)
-	assert.Contains(t, err.Error(), "error parsing regexp:")
+	_, err := DeleteMatchingKeys[interface{}](target, invalidRegexPattern)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "error parsing regexp:")
 }

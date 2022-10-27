@@ -302,7 +302,7 @@ func TestSumConsumerDelta(t *testing.T) {
 		"test.delta.metric", pmetric.MetricTypeSum)
 	sum := deltaMetric.Sum()
 	mi := metricInfo{Metric: deltaMetric, Source: "test_source", SourceKey: "host.name"}
-	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 	dataPoints := sum.DataPoints()
 	dataPoints.EnsureCapacity(2)
 	addDataPoint(
@@ -354,7 +354,7 @@ func TestSumConsumerErrorOnSend(t *testing.T) {
 		"test.delta.metric", pmetric.MetricTypeSum)
 	sum := deltaMetric.Sum()
 	mi := metricInfo{Metric: deltaMetric, Source: "test_source", SourceKey: "host.name"}
-	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 	dataPoints := sum.DataPoints()
 	dataPoints.EnsureCapacity(2)
 	addDataPoint(
@@ -390,7 +390,7 @@ func TestSumConsumerCumulative(t *testing.T) {
 		"test.cumulative.metric", pmetric.MetricTypeSum)
 	sum := cumulativeMetric.Sum()
 	mi := metricInfo{Metric: cumulativeMetric, Source: "test_source", SourceKey: "host.name"}
-	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	dataPoints := sum.DataPoints()
 	dataPoints.EnsureCapacity(1)
 	addDataPoint(
@@ -428,7 +428,7 @@ func TestSumConsumerUnspecified(t *testing.T) {
 		"test.unspecified.metric", pmetric.MetricTypeSum)
 	sum := cumulativeMetric.Sum()
 	mi := metricInfo{Metric: cumulativeMetric, Source: "test_source", SourceKey: "host.name"}
-	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityUnspecified)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityUnspecified)
 	dataPoints := sum.DataPoints()
 	dataPoints.EnsureCapacity(1)
 	addDataPoint(
@@ -465,7 +465,7 @@ func TestSumConsumerMissingValue(t *testing.T) {
 	metric := newMetric("missing.value.metric", pmetric.MetricTypeSum)
 	sum := metric.Sum()
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
-	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 	dataPoints := sum.DataPoints()
 	dataPoints.EnsureCapacity(1)
 	addDataPoint(
@@ -504,7 +504,7 @@ func TestHistogramConsumerDeltaAggregation(t *testing.T) {
 	numBucketCountsForEachDataPoint := []int{2, 5, 10}
 	deltaMetric := newHistogramMetricWithDataPoints(
 		"delta.metric",
-		pmetric.MetricAggregationTemporalityDelta,
+		pmetric.AggregationTemporalityDelta,
 		numBucketCountsForEachDataPoint)
 	mi := metricInfo{Metric: deltaMetric, Source: "test_source", SourceKey: "host.name"}
 	sender := &mockGaugeSender{}
@@ -536,7 +536,7 @@ func TestHistogramConsumerCumulativeAggregation(t *testing.T) {
 	numBucketCountsForEachDataPoint := []int{2, 5, 10}
 	cumulativeMetric := newHistogramMetricWithDataPoints(
 		"cumulative.metric",
-		pmetric.MetricAggregationTemporalityCumulative,
+		pmetric.AggregationTemporalityCumulative,
 		numBucketCountsForEachDataPoint)
 	mi := metricInfo{Metric: cumulativeMetric, Source: "test_source", SourceKey: "host.name"}
 	sender := &mockGaugeSender{}
@@ -572,7 +572,7 @@ func TestHistogramConsumerNoAggregation(t *testing.T) {
 	// Create a histogram metric with missing aggregation attribute
 	metric := newHistogramMetricWithDataPoints(
 		"missing.aggregation.metric",
-		pmetric.MetricAggregationTemporalityUnspecified,
+		pmetric.AggregationTemporalityUnspecified,
 		nil)
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
 	sender := &mockGaugeSender{}
@@ -666,7 +666,7 @@ func TestCumulativeHistogramDataPointConsumer(t *testing.T) {
 	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
 	histogramDataPoint.ExplicitBounds().FromRaw([]float64{2.0, 5.0, 10.0})
 	histogramDataPoint.BucketCounts().FromRaw([]uint64{5, 1, 3, 2})
-	histogramDataPoint.Attributes().PutString("foo", "bar")
+	histogramDataPoint.Attributes().PutStr("foo", "bar")
 	sender := &mockGaugeSender{}
 	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
 	consumer := newCumulativeHistogramDataPointConsumer(sender)
@@ -784,7 +784,7 @@ func TestDeltaHistogramDataPointConsumer(t *testing.T) {
 	histogramDataPoint.ExplicitBounds().FromRaw([]float64{2.0, 5.0, 10.0})
 	histogramDataPoint.BucketCounts().FromRaw([]uint64{5, 1, 3, 2})
 	setDataPointTimestamp(1631234567, histogramDataPoint)
-	histogramDataPoint.Attributes().PutString("bar", "baz")
+	histogramDataPoint.Attributes().PutStr("bar", "baz")
 	sender := &mockDistributionSender{}
 	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
 	consumer := newDeltaHistogramDataPointConsumer(sender)
@@ -890,14 +890,14 @@ func TestSummaries(t *testing.T) {
 	mi := metricInfo{Metric: summaryMetric, Source: "test_source", SourceKey: "host.name"}
 	dataPoint := dataPoints.AppendEmpty()
 	setQuantileValues(dataPoint, 0.1, 100.0, 0.5, 200.0, 0.9, 300.0, 0.99, 400.0)
-	dataPoint.Attributes().PutString("foo", "bar")
+	dataPoint.Attributes().PutStr("foo", "bar")
 	dataPoint.SetCount(10)
 	dataPoint.SetSum(5000.0)
 	setDataPointTimestamp(1645123456, dataPoint)
 
 	dataPoint = dataPoints.AppendEmpty()
 	setQuantileValues(dataPoint, 0.2, 75.0, 0.5, 125.0, 0.8, 175.0, 0.95, 225.0)
-	dataPoint.Attributes().PutString("bar", "baz")
+	dataPoint.Attributes().PutStr("bar", "baz")
 	dataPoint.SetCount(15)
 	dataPoint.SetSum(3000.0)
 	setDataPointTimestamp(1645123556, dataPoint)
@@ -1010,7 +1010,7 @@ func TestSummaries_QuantileTagExists(t *testing.T) {
 	mi := metricInfo{Metric: summaryMetric, Source: "test_source", SourceKey: "host.name"}
 	dataPoint := dataPoints.AppendEmpty()
 	setQuantileValues(dataPoint, 0.5, 300.0)
-	dataPoint.Attributes().PutString("quantile", "exists")
+	dataPoint.Attributes().PutStr("quantile", "exists")
 	dataPoint.SetCount(12)
 	dataPoint.SetSum(4000.0)
 	setDataPointTimestamp(1650123456, dataPoint)
@@ -1082,11 +1082,11 @@ func setQuantileValues(dataPoint pmetric.SummaryDataPoint, quantileValues ...flo
 
 func TestExponentialHistogramConsumerSpec(t *testing.T) {
 	metric := newExponentialHistogramMetricWithDataPoints(
-		"a.metric", pmetric.MetricAggregationTemporalityDelta, []uint64{4, 7, 11})
+		"a.metric", pmetric.AggregationTemporalityDelta, []uint64{4, 7, 11})
 	assert.Equal(t, pmetric.MetricTypeExponentialHistogram, exponentialHistogram.Type())
 	assert.Equal(
 		t,
-		pmetric.MetricAggregationTemporalityDelta,
+		pmetric.AggregationTemporalityDelta,
 		exponentialHistogram.AggregationTemporality(metric))
 	points := exponentialHistogram.DataPoints(metric)
 	assert.Len(t, points, 3)
@@ -1109,8 +1109,8 @@ func TestExponentialHistogramDataPoint(t *testing.T) {
 	dataPoint.Positive().SetOffset(3)
 	dataPoint.Positive().BucketCounts().FromRaw([]uint64{5, 6, 7, 8})
 	dataPoint.SetZeroCount(2)
-	dataPoint.Attributes().PutString("foo", "bar")
-	dataPoint.Attributes().PutString("baz", "7")
+	dataPoint.Attributes().PutStr("foo", "bar")
+	dataPoint.Attributes().PutStr("baz", "7")
 	setDataPointTimestamp(1640198765, dataPoint)
 	point := fromOtelExponentialHistogramDataPoint(dataPoint)
 	assertBuckets(
@@ -1199,7 +1199,7 @@ func TestAttributesToTagsForMetrics(t *testing.T) {
 // data point.
 func newHistogramMetricWithDataPoints(
 	name string,
-	temporality pmetric.MetricAggregationTemporality,
+	temporality pmetric.AggregationTemporality,
 	numBucketCountsForEachDataPoint []int,
 ) pmetric.Metric {
 	result := newMetric(name, pmetric.MetricTypeHistogram)
@@ -1217,7 +1217,7 @@ func newHistogramMetricWithDataPoints(
 // Works like newHistogramMetricWithDataPoints but creates an exponential histogram metric
 func newExponentialHistogramMetricWithDataPoints(
 	name string,
-	temporality pmetric.MetricAggregationTemporality,
+	temporality pmetric.AggregationTemporality,
 	positiveAndNegativeBucketCountsForEachDataPoint []uint64,
 ) pmetric.Metric {
 	result := newMetric(name, pmetric.MetricTypeExponentialHistogram)
@@ -1297,7 +1297,7 @@ func constructMetricsWithTags(tags map[string]string, metricList ...pmetric.Metr
 	result.ResourceMetrics().EnsureCapacity(1)
 	rm := result.ResourceMetrics().AppendEmpty()
 	for key, val := range tags {
-		rm.Resource().Attributes().PutString(key, val)
+		rm.Resource().Attributes().PutStr(key, val)
 	}
 	rm.ScopeMetrics().EnsureCapacity(1)
 	ilm := rm.ScopeMetrics().AppendEmpty()

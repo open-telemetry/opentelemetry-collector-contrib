@@ -37,14 +37,14 @@ import (
 const filteredMetric = "p0_metric_1"
 const filteredAttrKey = "pt-label-key-1"
 
-var filteredAttrVal = pcommon.NewValueString("pt-label-val-1")
+var filteredAttrVal = pcommon.NewValueStr("pt-label-val-1")
 
 func TestExprError(t *testing.T) {
 	testMatchError(t, pmetric.MetricTypeGauge, pmetric.NumberDataPointValueTypeInt)
 	testMatchError(t, pmetric.MetricTypeGauge, pmetric.NumberDataPointValueTypeDouble)
 	testMatchError(t, pmetric.MetricTypeSum, pmetric.NumberDataPointValueTypeInt)
 	testMatchError(t, pmetric.MetricTypeSum, pmetric.NumberDataPointValueTypeDouble)
-	testMatchError(t, pmetric.MetricTypeHistogram, pmetric.NumberDataPointValueTypeNone)
+	testMatchError(t, pmetric.MetricTypeHistogram, pmetric.NumberDataPointValueTypeEmpty)
 }
 
 func testMatchError(t *testing.T, mdType pmetric.MetricType, mvType pmetric.NumberDataPointValueType) {
@@ -64,7 +64,7 @@ func TestExprProcessor(t *testing.T) {
 	testFilter(t, pmetric.MetricTypeGauge, pmetric.NumberDataPointValueTypeDouble)
 	testFilter(t, pmetric.MetricTypeSum, pmetric.NumberDataPointValueTypeInt)
 	testFilter(t, pmetric.MetricTypeSum, pmetric.NumberDataPointValueTypeDouble)
-	testFilter(t, pmetric.MetricTypeHistogram, pmetric.NumberDataPointValueTypeNone)
+	testFilter(t, pmetric.MetricTypeHistogram, pmetric.NumberDataPointValueTypeEmpty)
 }
 
 func testFilter(t *testing.T, mdType pmetric.MetricType, mvType pmetric.NumberDataPointValueType) {

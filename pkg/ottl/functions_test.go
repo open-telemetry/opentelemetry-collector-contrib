@@ -31,6 +31,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 	functions["testing_getter"] = functionWithGetter
 	functions["testing_multiple_args"] = functionWithMultipleArgs
 	functions["testing_string"] = functionWithString
+	functions["testing_string_slice"] = functionWithStringSlice
 	functions["testing_byte_slice"] = functionWithByteSlice
 	functions["testing_enum"] = functionWithEnum
 	functions["testing_telemetry_settings_first"] = functionWithTelemetrySettingsFirst
@@ -44,20 +45,20 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 
 	tests := []struct {
 		name string
-		inv  Invocation
+		inv  invocation
 	}{
 		{
 			name: "unknown function",
-			inv: Invocation{
+			inv: invocation{
 				Function:  "unknownfunc",
-				Arguments: []Value{},
+				Arguments: []value{},
 			},
 		},
 		{
 			name: "not accessor",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_getsetter",
-				Arguments: []Value{
+				Arguments: []value{
 					{
 						String: ottltest.Strp("not path"),
 					},
@@ -66,11 +67,11 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "not reader (invalid function)",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_getter",
-				Arguments: []Value{
+				Arguments: []value{
 					{
-						Invocation: &Invocation{
+						Invocation: &invocation{
 							Function: "unknownfunc",
 						},
 					},
@@ -79,9 +80,9 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "not enough args",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_multiple_args",
-				Arguments: []Value{
+				Arguments: []value{
 					{
 						Path: &Path{
 							Fields: []Field{
@@ -99,9 +100,9 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "too many args",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_multiple_args",
-				Arguments: []Value{
+				Arguments: []value{
 					{
 						Path: &Path{
 							Fields: []Field{
@@ -122,9 +123,9 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "not enough args with telemetrySettings",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_telemetry_settings_first",
-				Arguments: []Value{
+				Arguments: []value{
 					{
 						String: ottltest.Strp("test"),
 					},
@@ -136,9 +137,9 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "too many args with telemetrySettings",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_telemetry_settings_first",
-				Arguments: []Value{
+				Arguments: []value{
 					{
 						String: ottltest.Strp("test"),
 					},
@@ -156,9 +157,9 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "not matching arg type",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_string",
-				Arguments: []Value{
+				Arguments: []value{
 					{
 						Int: ottltest.Intp(10),
 					},
@@ -167,9 +168,9 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "not matching arg type when byte slice",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_byte_slice",
-				Arguments: []Value{
+				Arguments: []value{
 					{
 						String: ottltest.Strp("test"),
 					},
@@ -183,16 +184,47 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
+			name: "mismatching slice element type",
+			inv: invocation{
+				Function: "testing_string_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+								{
+									Int: ottltest.Intp(10),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "mismatching slice argument type",
+			inv: invocation{
+				Function: "testing_string_slice",
+				Arguments: []value{
+					{
+						String: ottltest.Strp("test"),
+					},
+				},
+			},
+		},
+		{
 			name: "function call returns error",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_error",
 			},
 		},
 		{
 			name: "Enum not found",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_enum",
-				Arguments: []Value{
+				Arguments: []value{
 					{
 						Enum: (*EnumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
 					},
@@ -219,92 +251,103 @@ func Test_NewFunctionCall(t *testing.T) {
 
 	tests := []struct {
 		name string
-		inv  Invocation
+		inv  invocation
+		want any
 	}{
 		{
-			name: "string slice arg",
-			inv: Invocation{
+			name: "empty slice arg",
+			inv: invocation{
 				Function: "testing_string_slice",
-				Arguments: []Value{
+				Arguments: []value{
 					{
-						String: ottltest.Strp("test"),
-					},
-					{
-						String: ottltest.Strp("test"),
-					},
-					{
-						String: ottltest.Strp("test"),
+						List: &list{
+							Values: []value{},
+						},
 					},
 				},
 			},
+			want: 0,
 		},
 		{
-			name: "float slice arg",
-			inv: Invocation{
-				Function: "testing_float_slice",
-				Arguments: []Value{
+			name: "string slice arg",
+			inv: invocation{
+				Function: "testing_string_slice",
+				Arguments: []value{
 					{
-						Float: ottltest.Floatp(1.1),
-					},
-					{
-						Float: ottltest.Floatp(1.2),
-					},
-					{
-						Float: ottltest.Floatp(1.3),
-					},
-				},
-			},
-		},
-		{
-			name: "int slice arg",
-			inv: Invocation{
-				Function: "testing_int_slice",
-				Arguments: []Value{
-					{
-						Int: ottltest.Intp(1),
-					},
-					{
-						Int: ottltest.Intp(1),
-					},
-					{
-						Int: ottltest.Intp(1),
-					},
-				},
-			},
-		},
-		{
-			name: "getter slice arg",
-			inv: Invocation{
-				Function: "testing_getter_slice",
-				Arguments: []Value{
-					{
-						Path: &Path{
-							Fields: []Field{
+						List: &list{
+							Values: []value{
 								{
-									Name: "name",
+									String: ottltest.Strp("test"),
+								},
+								{
+									String: ottltest.Strp("test"),
+								},
+								{
+									String: ottltest.Strp("test"),
 								},
 							},
 						},
 					},
+				},
+			},
+			want: 3,
+		},
+		{
+			name: "float slice arg",
+			inv: invocation{
+				Function: "testing_float_slice",
+				Arguments: []value{
 					{
-						String: ottltest.Strp("test"),
+						List: &list{
+							Values: []value{
+								{
+									Float: ottltest.Floatp(1.1),
+								},
+								{
+									Float: ottltest.Floatp(1.2),
+								},
+								{
+									Float: ottltest.Floatp(1.3),
+								},
+							},
+						},
 					},
+				},
+			},
+			want: 3,
+		},
+		{
+			name: "int slice arg",
+			inv: invocation{
+				Function: "testing_int_slice",
+				Arguments: []value{
 					{
-						Int: ottltest.Intp(1),
+						List: &list{
+							Values: []value{
+								{
+									Int: ottltest.Intp(1),
+								},
+								{
+									Int: ottltest.Intp(1),
+								},
+								{
+									Int: ottltest.Intp(1),
+								},
+							},
+						},
 					},
+				},
+			},
+			want: 3,
+		},
+		{
+			name: "getter slice arg",
+			inv: invocation{
+				Function: "testing_getter_slice",
+				Arguments: []value{
 					{
-						Float: ottltest.Floatp(1.1),
-					},
-					{
-						Bool: (*Boolean)(ottltest.Boolp(true)),
-					},
-					{
-						Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM")),
-					},
-					{
-						Invocation: &Invocation{
-							Function: "testing_getter",
-							Arguments: []Value{
+						List: &list{
+							Values: []value{
 								{
 									Path: &Path{
 										Fields: []Field{
@@ -314,17 +357,48 @@ func Test_NewFunctionCall(t *testing.T) {
 										},
 									},
 								},
+								{
+									String: ottltest.Strp("test"),
+								},
+								{
+									Int: ottltest.Intp(1),
+								},
+								{
+									Float: ottltest.Floatp(1.1),
+								},
+								{
+									Bool: (*boolean)(ottltest.Boolp(true)),
+								},
+								{
+									Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM")),
+								},
+								{
+									Invocation: &invocation{
+										Function: "testing_getter",
+										Arguments: []value{
+											{
+												Path: &Path{
+													Fields: []Field{
+														{
+															Name: "name",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
 							},
 						},
 					},
 				},
 			},
-		},
-		{
+			want: 7,
+		}, {
 			name: "setter arg",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_setter",
-				Arguments: []Value{
+				Arguments: []value{
 					{
 						Path: &Path{
 							Fields: []Field{
@@ -336,12 +410,13 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "getsetter arg",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_getsetter",
-				Arguments: []Value{
+				Arguments: []value{
 					{
 						Path: &Path{
 							Fields: []Field{
@@ -353,12 +428,13 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "getter arg",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_getter",
-				Arguments: []Value{
+				Arguments: []value{
 					{
 						Path: &Path{
 							Fields: []Field{
@@ -370,78 +446,85 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "getter arg with nil literal",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_getter",
-				Arguments: []Value{
+				Arguments: []value{
 					{
-						IsNil: (*IsNil)(ottltest.Boolp(true)),
+						IsNil: (*isNil)(ottltest.Boolp(true)),
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "string arg",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_string",
-				Arguments: []Value{
+				Arguments: []value{
 					{
 						String: ottltest.Strp("test"),
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "float arg",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_float",
-				Arguments: []Value{
+				Arguments: []value{
 					{
 						Float: ottltest.Floatp(1.1),
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "int arg",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_int",
-				Arguments: []Value{
+				Arguments: []value{
 					{
 						Int: ottltest.Intp(1),
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "bool arg",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_bool",
-				Arguments: []Value{
+				Arguments: []value{
 					{
-						Bool: (*Boolean)(ottltest.Boolp(true)),
+						Bool: (*boolean)(ottltest.Boolp(true)),
 					},
 				},
 			},
+			want: nil,
 		},
 		{
-			name: "bytes arg",
-			inv: Invocation{
+			name: "byteSlice arg",
+			inv: invocation{
 				Function: "testing_byte_slice",
-				Arguments: []Value{
+				Arguments: []value{
 					{
-						Bytes: (*Bytes)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+						Bytes: (*byteSlice)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "multiple args",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_multiple_args",
-				Arguments: []Value{
+				Arguments: []value{
 					{
 						Path: &Path{
 							Fields: []Field{
@@ -460,31 +543,27 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Int: ottltest.Intp(1),
 					},
-					{
-						String: ottltest.Strp("test"),
-					},
-					{
-						String: ottltest.Strp("test"),
-					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "Enum arg",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_enum",
-				Arguments: []Value{
+				Arguments: []value{
 					{
 						Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM")),
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "telemetrySettings first",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_telemetry_settings_first",
-				Arguments: []Value{
+				Arguments: []value{
 					{
 						String: ottltest.Strp("test0"),
 					},
@@ -496,12 +575,13 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "telemetrySettings middle",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_telemetry_settings_middle",
-				Arguments: []Value{
+				Arguments: []value{
 					{
 						String: ottltest.Strp("test0"),
 					},
@@ -513,12 +593,13 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: nil,
 		},
 		{
 			name: "telemetrySettings last",
-			inv: Invocation{
+			inv: invocation{
 				Function: "testing_telemetry_settings_last",
-				Arguments: []Value{
+				Arguments: []value{
 					{
 						String: ottltest.Strp("test0"),
 					},
@@ -530,122 +611,128 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
+			want: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := p.newFunctionCall(tt.inv)
+			fn, err := p.newFunctionCall(tt.inv)
 			assert.NoError(t, err)
+
+			if tt.want != nil {
+				result, _ := fn(nil)
+				assert.Equal(t, tt.want, result)
+			}
 		})
 	}
 }
 
-func functionWithStringSlice(_ []string) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
+func functionWithStringSlice(strs []string) (ExprFunc[interface{}], error) {
+	return func(interface{}) (interface{}, error) {
+		return len(strs), nil
 	}, nil
 }
 
-func functionWithFloatSlice(_ []float64) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
+func functionWithFloatSlice(floats []float64) (ExprFunc[interface{}], error) {
+	return func(interface{}) (interface{}, error) {
+		return len(floats), nil
 	}, nil
 }
 
-func functionWithIntSlice(_ []int64) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
+func functionWithIntSlice(ints []int64) (ExprFunc[interface{}], error) {
+	return func(interface{}) (interface{}, error) {
+		return len(ints), nil
 	}, nil
 }
 
-func functionWithByteSlice(_ []byte) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
+func functionWithByteSlice(bytes []byte) (ExprFunc[interface{}], error) {
+	return func(interface{}) (interface{}, error) {
+		return len(bytes), nil
 	}, nil
 }
 
-func functionWithGetterSlice(_ []Getter) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
+func functionWithGetterSlice(getters []Getter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(interface{}) (interface{}, error) {
+		return len(getters), nil
 	}, nil
 }
 
-func functionWithSetter(_ Setter) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
+func functionWithSetter(Setter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(interface{}) (interface{}, error) {
+		return "anything", nil
 	}, nil
 }
 
-func functionWithGetSetter(_ GetSetter) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
+func functionWithGetSetter(GetSetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(interface{}) (interface{}, error) {
+		return "anything", nil
 	}, nil
 }
 
-func functionWithGetter(_ Getter) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
+func functionWithGetter(Getter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(interface{}) (interface{}, error) {
+		return "anything", nil
 	}, nil
 }
 
-func functionWithString(_ string) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
+func functionWithString(string) (ExprFunc[interface{}], error) {
+	return func(interface{}) (interface{}, error) {
+		return "anything", nil
 	}, nil
 }
 
-func functionWithFloat(_ float64) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
+func functionWithFloat(float64) (ExprFunc[interface{}], error) {
+	return func(interface{}) (interface{}, error) {
+		return "anything", nil
 	}, nil
 }
 
-func functionWithInt(_ int64) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
+func functionWithInt(int64) (ExprFunc[interface{}], error) {
+	return func(interface{}) (interface{}, error) {
+		return "anything", nil
 	}, nil
 }
 
-func functionWithBool(_ bool) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
+func functionWithBool(bool) (ExprFunc[interface{}], error) {
+	return func(interface{}) (interface{}, error) {
+		return "anything", nil
 	}, nil
 }
 
-func functionWithMultipleArgs(_ GetSetter, _ string, _ float64, _ int64, _ []string) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
+func functionWithMultipleArgs(GetSetter[interface{}], string, float64, int64) (ExprFunc[interface{}], error) {
+	return func(interface{}) (interface{}, error) {
+		return "anything", nil
 	}, nil
 }
 
-func functionThatHasAnError() (ExprFunc, error) {
+func functionThatHasAnError() (ExprFunc[interface{}], error) {
 	err := errors.New("testing")
-	return func(ctx TransformContext) interface{} {
-		return "anything"
+	return func(interface{}) (interface{}, error) {
+		return "anything", nil
 	}, err
 }
 
-func functionWithEnum(_ Enum) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
+func functionWithEnum(Enum) (ExprFunc[interface{}], error) {
+	return func(interface{}) (interface{}, error) {
+		return "anything", nil
 	}, nil
 }
 
-func functionWithTelemetrySettingsFirst(_ component.TelemetrySettings, _ string, _ string, _ int64) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
+func functionWithTelemetrySettingsFirst(component.TelemetrySettings, string, string, int64) (ExprFunc[interface{}], error) {
+	return func(interface{}) (interface{}, error) {
+		return "anything", nil
 	}, nil
 }
 
-func functionWithTelemetrySettingsMiddle(_ string, _ string, _ component.TelemetrySettings, _ int64) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
+func functionWithTelemetrySettingsMiddle(string, string, component.TelemetrySettings, int64) (ExprFunc[interface{}], error) {
+	return func(interface{}) (interface{}, error) {
+		return "anything", nil
 	}, nil
 }
 
-func functionWithTelemetrySettingsLast(_ string, _ string, _ int64, _ component.TelemetrySettings) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
+func functionWithTelemetrySettingsLast(string, string, int64, component.TelemetrySettings) (ExprFunc[interface{}], error) {
+	return func(interface{}) (interface{}, error) {
+		return "anything", nil
 	}, nil
 }
 

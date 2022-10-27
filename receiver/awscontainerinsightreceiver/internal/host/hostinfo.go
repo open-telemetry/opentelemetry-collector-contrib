@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package host // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
 
 import (
@@ -101,16 +100,16 @@ func NewInfo(containerOrchestrator string, refreshInterval time.Duration, logger
 }
 
 func (m *Info) lazyInitEBSVolume(ctx context.Context) {
-	//wait until the instance id is ready
+	// wait until the instance id is ready
 	<-m.instanceIDReadyC
-	//Because ebs volumes only change occasionally, we refresh every 5 collection intervals to reduce ec2 api calls
+	// Because ebs volumes only change occasionally, we refresh every 5 collection intervals to reduce ec2 api calls
 	m.ebsVolume = m.ebsVolumeCreator(ctx, m.awsSession, m.GetInstanceID(), m.GetRegion(),
 		5*m.refreshInterval, m.logger)
 	close(m.ebsVolumeReadyC)
 }
 
 func (m *Info) lazyInitEC2Tags(ctx context.Context) {
-	//wait until the instance id is ready
+	// wait until the instance id is ready
 	<-m.instanceIDReadyC
 	m.ec2Tags = m.ec2TagsCreator(ctx, m.awsSession, m.GetInstanceID(), m.GetRegion(), m.containerOrchestrator, m.refreshInterval, m.logger)
 	close(m.ec2TagsReadyC)

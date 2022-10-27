@@ -21,49 +21,65 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
-	configDefault := cfg.Exporters[config.NewComponentID(typeStr)]
-	assert.Equal(t, configDefault, factory.CreateDefaultConfig())
+	tests := []struct {
+		id       config.ComponentID
+		expected config.Exporter
+	}{
+		{
+			id:       config.NewComponentIDWithName(typeStr, ""),
+			expected: createDefaultConfig(),
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "withsettings"),
+			expected: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "http://localhost:8080",
+					Timeout:  500 * time.Millisecond,
+					Headers:  map[string]string{"User-Agent": "OpenTelemetry -> Influx"},
+				},
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: 3,
+					QueueSize:    10,
+				},
+				RetrySettings: exporterhelper.RetrySettings{
+					Enabled:         true,
+					InitialInterval: 1 * time.Second,
+					MaxInterval:     3 * time.Second,
+					MaxElapsedTime:  10 * time.Second,
+				},
+				Org:           "my-org",
+				Bucket:        "my-bucket",
+				Token:         "my-token",
+				MetricsSchema: "telegraf-prometheus-v2",
+			},
+		},
+	}
 
-	configWithSettings := cfg.Exporters[config.NewComponentIDWithName(typeStr, "withsettings")].(*Config)
-	assert.Equal(t, configWithSettings, &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "withsettings")),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: "http://localhost:8080",
-			Timeout:  500 * time.Millisecond,
-			Headers:  map[string]string{"User-Agent": "OpenTelemetry -> Influx"},
-		},
-		QueueSettings: exporterhelper.QueueSettings{
-			Enabled:      true,
-			NumConsumers: 3,
-			QueueSize:    10,
-		},
-		RetrySettings: exporterhelper.RetrySettings{
-			Enabled:         true,
-			InitialInterval: 1 * time.Second,
-			MaxInterval:     3 * time.Second,
-			MaxElapsedTime:  10 * time.Second,
-		},
-		Org:           "my-org",
-		Bucket:        "my-bucket",
-		Token:         "my-token",
-		MetricsSchema: "telegraf-prometheus-v2",
-	})
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalExporter(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }

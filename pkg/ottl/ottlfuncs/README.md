@@ -25,23 +25,23 @@ Functions
 
 ## Concat
 
-`Concat(delimiter, ...values)`
+`Concat(values[], delimiter)`
 
 The `Concat` factory function takes a delimiter and a sequence of values and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string.
 
-`delimiter` is a string value that is placed between strings during concatenation. If no delimiter is desired, then simply pass an empty string.
+`values` is a list of values passed as arguments. It supports paths, primitive values, and byte slices (such as trace IDs or span IDs).
 
-`values` is a series of values passed as arguments. It supports paths, primitive values, and byte slices (such as trace IDs or span IDs).
+`delimiter` is a string value that is placed between strings during concatenation. If no delimiter is desired, then simply pass an empty string.
 
 Examples:
 
-- `Concat(": ", attributes["http.method"], attributes["http.path"])`
+- `Concat([attributes["http.method"], attributes["http.path"]], ": ")`
 
 
-- `Concat(" ", name, 1)`
+- `Concat([name, 1], " ")`
 
 
-- `Concat("", "HTTP method is: ", attributes["http.method"])`
+- `Concat(["HTTP method is: ", attributes["http.method"]], "")`
 
 ## Int
 
@@ -159,7 +159,7 @@ Examples:
 
 ## keep_keys
 
-`keep_keys(target, keys...)`
+`keep_keys(target, keys[])`
 
 The `keep_keys` function removes all keys from the `pdata.Map` that do not match one of the supplied keys.
 
@@ -169,14 +169,14 @@ The map will be changed to only contain the keys specified by the list of string
 
 Examples:
 
-- `keep_keys(attributes, "http.method")`
+- `keep_keys(attributes, ["http.method"])`
 
 
-- `keep_keys(resource.attributes, "http.method", "http.route", "http.url")`
+- `keep_keys(resource.attributes, ["http.method", "http.route", "http.url"])`
 
 ## limit
 
-`limit(target, limit, priority_keys)`
+`limit(target, limit, priority_keys[])`
 
 The `limit` function reduces the number of elements in a `pdata.Map` to be no greater than the limit.
 
@@ -188,14 +188,14 @@ The number of priority keys must be less than the supplied `limit`.
 The map will be mutated such that the number of items does not exceed the limit.
 The map is not copied or reallocated.
 
-Which items are dropped is random, provide `priority_keys` to preserve required keys.
+Which items are dropped is random, provide keys in `priority_keys` to preserve required keys.
 
 Examples:
 
-- `limit(attributes, 100)`
+- `limit(attributes, 100, [])`
 
 
-- `limit(resource.attributes, 50, "http.host", "http.method")`
+- `limit(resource.attributes, 50, ["http.host", "http.method"])`
 
 ## replace_all_matches
 
@@ -213,17 +213,20 @@ Examples:
 
 ## replace_all_patterns
 
-`replace_all_patterns(target, regex, replacement)`
+`replace_all_patterns(target, mode, regex, replacement)`
 
-The `replace_all_patterns` function replaces any segments in a string value that match the regex pattern with the replacement string.
+The `replace_all_patterns` function replaces any segments in a string value or key that match the regex pattern with the replacement string.
 
 `target` is a path expression to a `pdata.Map` type field. `regex` is a regex string indicating a segment to replace. `replacement` is a string.
+
+`mode` determines whether the match and replace will occur on the map's value or key. Valid values are `key` and `value`.
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
 Examples:
 
-- `replace_all_patterns(attributes, "/account/\\d{4}", "/account/{accountId}")`
+- `replace_all_patterns(attributes, "value", "/account/\\d{4}", "/account/{accountId}")`
+- `replace_all_patterns(attributes, "key", "/account/\\d{4}", "/account/{accountId}")`
 
 ## replace_pattern
 
@@ -262,7 +265,7 @@ The `set` function allows users to set a telemetry field using a value.
 
 `target` is a path expression to a telemetry field. `value` is any value type. If `value` resolves to `nil`, e.g. it references an unset map value, there will be no action.
 
-How the underlying telemetry field is updated is decided by the path expression implementation provided by the user to the `ottl.ParseQueries`.
+How the underlying telemetry field is updated is decided by the path expression implementation provided by the user to the `ottl.ParseStatements`.
 
 Examples:
 
@@ -293,3 +296,4 @@ Examples:
 
 
 - `truncate_all(resource.attributes, 50)`
+

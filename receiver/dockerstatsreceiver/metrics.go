@@ -37,16 +37,15 @@ func ContainerStatsToMetrics(
 	containerStats *dtypes.StatsJSON,
 	container docker.Container,
 	config *Config,
-) pmetric.Metrics {
-	md := pmetric.NewMetrics()
-	rs := md.ResourceMetrics().AppendEmpty()
+) pmetric.ResourceMetrics {
+	rs := pmetric.NewResourceMetrics()
 	rs.SetSchemaUrl(conventions.SchemaURL)
 	resourceAttr := rs.Resource().Attributes()
-	resourceAttr.PutString(conventions.AttributeContainerRuntime, "docker")
-	resourceAttr.PutString(conventions.AttributeContainerID, container.ID)
-	resourceAttr.PutString(conventions.AttributeContainerImageName, container.Config.Image)
-	resourceAttr.PutString(conventions.AttributeContainerName, strings.TrimPrefix(container.Name, "/"))
-	resourceAttr.PutString("container.hostname", container.Config.Hostname)
+	resourceAttr.PutStr(conventions.AttributeContainerRuntime, "docker")
+	resourceAttr.PutStr(conventions.AttributeContainerID, container.ID)
+	resourceAttr.PutStr(conventions.AttributeContainerImageName, container.Config.Image)
+	resourceAttr.PutStr(conventions.AttributeContainerName, strings.TrimPrefix(container.Name, "/"))
+	resourceAttr.PutStr("container.hostname", container.Config.Hostname)
 	updateConfiguredResourceAttributes(resourceAttr, container, config)
 	ils := rs.ScopeMetrics().AppendEmpty()
 
@@ -55,19 +54,19 @@ func ContainerStatsToMetrics(
 	appendMemoryMetrics(ils.Metrics(), &containerStats.MemoryStats, now)
 	appendNetworkMetrics(ils.Metrics(), &containerStats.Networks, now)
 
-	return md
+	return rs
 }
 
 func updateConfiguredResourceAttributes(resourceAttr pcommon.Map, container docker.Container, config *Config) {
 	for k, label := range config.EnvVarsToMetricLabels {
 		if v := container.EnvMap[k]; v != "" {
-			resourceAttr.PutString(label, v)
+			resourceAttr.PutStr(label, v)
 		}
 	}
 
 	for k, label := range config.ContainerLabelsToMetricLabels {
 		if v := container.Config.Labels[k]; v != "" {
-			resourceAttr.PutString(label, v)
+			resourceAttr.PutStr(label, v)
 		}
 	}
 }
@@ -225,7 +224,7 @@ func populateCumulative(dest pmetric.Metric, name string, unit string, val int64
 	populateMetricMetadata(dest, name, unit, pmetric.MetricTypeSum)
 	sum := dest.Sum()
 	sum.SetIsMonotonic(true)
-	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	dp := sum.DataPoints().AppendEmpty()
 	dp.SetIntValue(val)
 	dp.SetTimestamp(ts)
@@ -236,7 +235,7 @@ func populateCumulativeMultiPoints(dest pmetric.Metric, name string, unit string
 	populateMetricMetadata(dest, name, unit, pmetric.MetricTypeSum)
 	sum := dest.Sum()
 	sum.SetIsMonotonic(true)
-	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	dps := sum.DataPoints()
 	dps.EnsureCapacity(len(vals))
 	for i := range vals {
@@ -285,7 +284,7 @@ func populateMetricMetadata(dest pmetric.Metric, name string, unit string, ty pm
 
 func populateAttributes(dest pcommon.Map, labelKeys []string, labelValues []string) {
 	for i := range labelKeys {
-		dest.PutString(labelKeys[i], labelValues[i])
+		dest.PutStr(labelKeys[i], labelValues[i])
 	}
 }
 

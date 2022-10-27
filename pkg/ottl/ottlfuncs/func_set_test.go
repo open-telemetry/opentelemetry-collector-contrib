@@ -21,30 +21,30 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_set(t *testing.T) {
-	input := pcommon.NewValueString("original name")
+	input := pcommon.NewValueStr("original name")
 
-	target := &ottl.StandardGetSetter{
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
-			ctx.GetItem().(pcommon.Value).SetStr(val.(string))
+	target := &ottl.StandardGetSetter[pcommon.Value]{
+		Setter: func(ctx pcommon.Value, val interface{}) error {
+			ctx.SetStr(val.(string))
+			return nil
 		},
 	}
 
 	tests := []struct {
 		name   string
-		setter ottl.Setter
-		getter ottl.Getter
+		setter ottl.Setter[pcommon.Value]
+		getter ottl.Getter[pcommon.Value]
 		want   func(pcommon.Value)
 	}{
 		{
 			name:   "set name",
 			setter: target,
-			getter: ottl.StandardGetSetter{
-				Getter: func(ctx ottl.TransformContext) interface{} {
-					return "new name"
+			getter: ottl.StandardGetSetter[pcommon.Value]{
+				Getter: func(ctx pcommon.Value) (interface{}, error) {
+					return "new name", nil
 				},
 			},
 			want: func(expectedValue pcommon.Value) {
@@ -54,9 +54,9 @@ func Test_set(t *testing.T) {
 		{
 			name:   "set nil value",
 			setter: target,
-			getter: ottl.StandardGetSetter{
-				Getter: func(ctx ottl.TransformContext) interface{} {
-					return nil
+			getter: ottl.StandardGetSetter[pcommon.Value]{
+				Getter: func(ctx pcommon.Value) (interface{}, error) {
+					return nil, nil
 				},
 			},
 			want: func(expectedValue pcommon.Value) {
@@ -66,16 +66,16 @@ func Test_set(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scenarioValue := pcommon.NewValueString(input.Str())
+			scenarioValue := pcommon.NewValueStr(input.Str())
 
-			ctx := ottltest.TestTransformContext{
-				Item: scenarioValue,
-			}
+			exprFunc, err := Set(tt.setter, tt.getter)
+			assert.NoError(t, err)
 
-			exprFunc, _ := Set(tt.setter, tt.getter)
-			exprFunc(ctx)
+			result, err := exprFunc(scenarioValue)
+			assert.NoError(t, err)
+			assert.Nil(t, result)
 
-			expected := pcommon.NewValueString("")
+			expected := pcommon.NewValueStr("")
 			tt.want(expected)
 
 			assert.Equal(t, expected, scenarioValue)
@@ -84,22 +84,23 @@ func Test_set(t *testing.T) {
 }
 
 func Test_set_get_nil(t *testing.T) {
-	ctx := ottltest.TestTransformContext{
-		Item: nil,
-	}
-
-	setter := &ottl.StandardGetSetter{
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+	setter := &ottl.StandardGetSetter[interface{}]{
+		Setter: func(ctx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
-	getter := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem()
+	getter := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx interface{}) (interface{}, error) {
+			return ctx, nil
 		},
 	}
 
-	exprFunc, _ := Set(setter, getter)
-	exprFunc(ctx)
+	exprFunc, err := Set[interface{}](setter, getter)
+	assert.NoError(t, err)
+
+	result, err := exprFunc(nil)
+	assert.NoError(t, err)
+	assert.Nil(t, result)
 }

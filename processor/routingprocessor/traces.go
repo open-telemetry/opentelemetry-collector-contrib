@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
 
 var _ component.TracesProcessor = (*tracesProcessor)(nil)
@@ -35,7 +36,7 @@ type tracesProcessor struct {
 	config *Config
 
 	extractor extractor
-	router    router[component.TracesExporter]
+	router    router[component.TracesExporter, ottltraces.TransformContext]
 }
 
 func newTracesProcessor(settings component.TelemetrySettings, config config.Processor) *tracesProcessor {
@@ -44,10 +45,11 @@ func newTracesProcessor(settings component.TelemetrySettings, config config.Proc
 	return &tracesProcessor{
 		logger: settings.Logger,
 		config: cfg,
-		router: newRouter[component.TracesExporter](
+		router: newRouter[component.TracesExporter, ottltraces.TransformContext](
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
+			ottltraces.NewParser(common.Functions[ottltraces.TransformContext](), settings),
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
@@ -99,11 +101,14 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 
 		matchCount := len(p.router.routes)
 		for key, route := range p.router.routes {
-			if !route.expression.Condition(stx) {
+			_, isMatch, err := route.statement.Execute(stx)
+			if err != nil {
+				return err
+			}
+			if !isMatch {
 				matchCount--
 				continue
 			}
-			route.expression.Function(stx)
 			p.group(key, groups, route.exporters, rspans)
 		}
 

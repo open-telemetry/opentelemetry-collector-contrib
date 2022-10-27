@@ -26,7 +26,7 @@ import (
 
 const (
 	typeStr           = "podman_stats"
-	stability         = component.StabilityLevelUnmaintained
+	stability         = component.StabilityLevelInDevelopment
 	defaultAPIVersion = "3.3.1"
 )
 

@@ -21,24 +21,24 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_replaceMatch(t *testing.T) {
-	input := pcommon.NewValueString("hello world")
+	input := pcommon.NewValueStr("hello world")
 
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem().(pcommon.Value).Str()
+	target := &ottl.StandardGetSetter[pcommon.Value]{
+		Getter: func(ctx pcommon.Value) (interface{}, error) {
+			return ctx.Str(), nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
-			ctx.GetItem().(pcommon.Value).SetStr(val.(string))
+		Setter: func(ctx pcommon.Value, val interface{}) error {
+			ctx.SetStr(val.(string))
+			return nil
 		},
 	}
 
 	tests := []struct {
 		name        string
-		target      ottl.GetSetter
+		target      ottl.GetSetter[pcommon.Value]
 		pattern     string
 		replacement string
 		want        func(pcommon.Value)
@@ -64,16 +64,15 @@ func Test_replaceMatch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scenarioValue := pcommon.NewValueString(input.Str())
+			scenarioValue := pcommon.NewValueStr(input.Str())
 
-			ctx := ottltest.TestTransformContext{
-				Item: scenarioValue,
-			}
+			exprFunc, err := ReplaceMatch(tt.target, tt.pattern, tt.replacement)
+			assert.NoError(t, err)
+			result, err := exprFunc(scenarioValue)
+			assert.NoError(t, err)
+			assert.Nil(t, result)
 
-			exprFunc, _ := ReplaceMatch(tt.target, tt.pattern, tt.replacement)
-			exprFunc(ctx)
-
-			expected := pcommon.NewValueString("")
+			expected := pcommon.NewValueStr("")
 			tt.want(expected)
 
 			assert.Equal(t, expected, scenarioValue)
@@ -83,39 +82,41 @@ func Test_replaceMatch(t *testing.T) {
 
 func Test_replaceMatch_bad_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
-	ctx := ottltest.TestTransformContext{
-		Item: input,
-	}
-
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem()
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx interface{}) (interface{}, error) {
+			return ctx, nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
-	exprFunc, _ := ReplaceMatch(target, "*", "{replacement}")
-	exprFunc(ctx)
+	exprFunc, err := ReplaceMatch[interface{}](target, "*", "{replacement}")
+	assert.NoError(t, err)
+
+	result, err := exprFunc(input)
+	assert.NoError(t, err)
+	assert.Nil(t, result)
 
 	assert.Equal(t, pcommon.NewValueInt(1), input)
 }
 
 func Test_replaceMatch_get_nil(t *testing.T) {
-	ctx := ottltest.TestTransformContext{
-		Item: nil,
-	}
-
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem()
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx interface{}) (interface{}, error) {
+			return ctx, nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
-	exprFunc, _ := ReplaceMatch(target, "*", "{anything}")
-	exprFunc(ctx)
+	exprFunc, err := ReplaceMatch[interface{}](target, "*", "{anything}")
+	assert.NoError(t, err)
+
+	result, err := exprFunc(nil)
+	assert.NoError(t, err)
+	assert.Nil(t, result)
 }

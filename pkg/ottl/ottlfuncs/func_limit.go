@@ -22,7 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Limit(target ottl.GetSetter, limit int64, priorityKeys []string) (ottl.ExprFunc, error) {
+func Limit[K any](target ottl.GetSetter[K], limit int64, priorityKeys []string) (ottl.ExprFunc[K], error) {
 	if limit < 0 {
 		return nil, fmt.Errorf("invalid limit for limit function, %d cannot be negative", limit)
 	}
@@ -37,37 +37,43 @@ func Limit(target ottl.GetSetter, limit int64, priorityKeys []string) (ottl.Expr
 		keep[key] = struct{}{}
 	}
 
-	return func(ctx ottl.TransformContext) interface{} {
-		val := target.Get(ctx)
+	return func(ctx K) (interface{}, error) {
+		val, err := target.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
 		if val == nil {
-			return nil
+			return nil, nil
 		}
 
-		if attrs, ok := val.(pcommon.Map); ok {
-			if int64(attrs.Len()) <= limit {
-				return nil
-			}
-
-			count := int64(0)
-			for _, key := range priorityKeys {
-				if _, ok := attrs.Get(key); ok {
-					count++
-				}
-			}
-
-			attrs.RemoveIf(func(key string, value pcommon.Value) bool {
-				if _, ok := keep[key]; ok {
-					return false
-				}
-				if count < limit {
-					count++
-					return false
-				}
-				return true
-			})
-			// TODO: Write log when limiting is performed
-			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9730
+		attrs, ok := val.(pcommon.Map)
+		if !ok {
+			return nil, nil
 		}
-		return nil
+
+		if int64(attrs.Len()) <= limit {
+			return nil, nil
+		}
+
+		count := int64(0)
+		for _, key := range priorityKeys {
+			if _, ok := attrs.Get(key); ok {
+				count++
+			}
+		}
+
+		attrs.RemoveIf(func(key string, value pcommon.Value) bool {
+			if _, ok := keep[key]; ok {
+				return false
+			}
+			if count < limit {
+				count++
+				return false
+			}
+			return true
+		})
+		// TODO: Write log when limiting is performed
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9730
+		return nil, nil
 	}, nil
 }

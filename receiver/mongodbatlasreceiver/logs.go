@@ -53,17 +53,15 @@ type ProjectContext struct {
 // MongoDB Atlas Documentation reccommends a polling interval of 5  minutes: https://www.mongodb.com/docs/atlas/reference/api/logs/#logs
 const collectionInterval = time.Minute * 5
 
-func newMongoDBAtlasLogsReceiver(settings component.ReceiverCreateSettings, cfg *Config, consumer consumer.Logs) (*logsReceiver, error) {
-	client, err := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, settings.Logger)
-	if err != nil {
-		return nil, err
-	}
+func newMongoDBAtlasLogsReceiver(settings component.ReceiverCreateSettings, cfg *Config, consumer consumer.Logs) *logsReceiver {
+	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, settings.Logger)
 	return &logsReceiver{
 		log:         settings.Logger,
 		cfg:         cfg,
 		client:      client,
 		stopperChan: make(chan struct{}),
-		consumer:    consumer}, nil
+		consumer:    consumer,
+	}
 }
 
 // Log receiver logic

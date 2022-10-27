@@ -28,7 +28,7 @@ func TestScopePathGetSetter(t *testing.T) {
 	refIS := createInstrumentationScope()
 
 	newAttrs := pcommon.NewMap()
-	newAttrs.PutString("hello", "world")
+	newAttrs.PutStr("hello", "world")
 	tests := []struct {
 		name     string
 		path     []ottl.Field
@@ -95,7 +95,20 @@ func TestScopePathGetSetter(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(is pcommon.InstrumentationScope) {
-				is.Attributes().PutString("str", "newVal")
+				is.Attributes().PutStr("str", "newVal")
+			},
+		},
+		{
+			name: "dropped_attributes_count",
+			path: []ottl.Field{
+				{
+					Name: "dropped_attributes_count",
+				},
+			},
+			orig:   int64(10),
+			newVal: int64(20),
+			modified: func(is pcommon.InstrumentationScope) {
+				is.SetDroppedAttributesCount(20)
 			},
 		},
 		{
@@ -247,15 +260,17 @@ func TestScopePathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := ScopePathGetSetter(tt.path)
+			accessor, err := ScopePathGetSetter[*instrumentationScopeContext](tt.path)
 			assert.NoError(t, err)
 
 			is := createInstrumentationScope()
 
-			got := accessor.Get(newInstrumentationScopeContext(is))
+			got, err := accessor.Get(newInstrumentationScopeContext(is))
+			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(newInstrumentationScopeContext(is), tt.newVal)
+			err = accessor.Set(newInstrumentationScopeContext(is), tt.newVal)
+			assert.Nil(t, err)
 
 			expectedIS := createInstrumentationScope()
 			tt.modified(expectedIS)
@@ -269,8 +284,9 @@ func createInstrumentationScope() pcommon.InstrumentationScope {
 	is := pcommon.NewInstrumentationScope()
 	is.SetName("library")
 	is.SetVersion("version")
+	is.SetDroppedAttributesCount(10)
 
-	is.Attributes().PutString("str", "val")
+	is.Attributes().PutStr("str", "val")
 	is.Attributes().PutBool("bool", true)
 	is.Attributes().PutInt("int", 10)
 	is.Attributes().PutDouble("double", 1.2)
@@ -303,18 +319,10 @@ type instrumentationScopeContext struct {
 	is pcommon.InstrumentationScope
 }
 
-func (r *instrumentationScopeContext) GetItem() interface{} {
-	return nil
-}
-
 func (r *instrumentationScopeContext) GetInstrumentationScope() pcommon.InstrumentationScope {
 	return r.is
 }
 
-func (r *instrumentationScopeContext) GetResource() pcommon.Resource {
-	return pcommon.Resource{}
-}
-
-func newInstrumentationScopeContext(is pcommon.InstrumentationScope) ottl.TransformContext {
+func newInstrumentationScopeContext(is pcommon.InstrumentationScope) *instrumentationScopeContext {
 	return &instrumentationScopeContext{is: is}
 }

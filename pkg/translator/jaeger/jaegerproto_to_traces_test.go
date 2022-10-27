@@ -51,7 +51,7 @@ func TestCodeFromAttr(t *testing.T) {
 	}{
 		{
 			name: "ok-string",
-			attr: pcommon.NewValueString("0"),
+			attr: pcommon.NewValueStr("0"),
 			code: 0,
 		},
 
@@ -70,7 +70,7 @@ func TestCodeFromAttr(t *testing.T) {
 
 		{
 			name: "invalid-string",
-			attr: pcommon.NewValueString("inf"),
+			attr: pcommon.NewValueStr("inf"),
 			code: 0,
 			err:  strconv.ErrSyntax,
 		},
@@ -97,13 +97,13 @@ func TestGetStatusCodeFromHTTPStatusAttr(t *testing.T) {
 	}{
 		{
 			name: "string-unknown",
-			attr: pcommon.NewValueString("10"),
+			attr: pcommon.NewValueStr("10"),
 			code: ptrace.StatusCodeError,
 		},
 
 		{
 			name: "string-ok",
-			attr: pcommon.NewValueString("101"),
+			attr: pcommon.NewValueStr("101"),
 			code: ptrace.StatusCodeUnset,
 		},
 
@@ -166,9 +166,9 @@ func TestJTagsToInternalAttributes(t *testing.T) {
 	expected := pcommon.NewMap()
 	expected.PutBool("bool-val", true)
 	expected.PutInt("int-val", 123)
-	expected.PutString("string-val", "abc")
+	expected.PutStr("string-val", "abc")
 	expected.PutDouble("double-val", 1.23)
-	expected.PutString("binary-val", "AAAAAABkfZg=")
+	expected.PutStr("binary-val", "AAAAAABkfZg=")
 
 	got := pcommon.NewMap()
 	jTagsToInternalAttributes(tags, got)
@@ -326,26 +326,26 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 
 func TestSetInternalSpanStatus(t *testing.T) {
 
-	emptyStatus := ptrace.NewSpanStatus()
+	emptyStatus := ptrace.NewStatus()
 
-	okStatus := ptrace.NewSpanStatus()
+	okStatus := ptrace.NewStatus()
 	okStatus.SetCode(ptrace.StatusCodeOk)
 
-	errorStatus := ptrace.NewSpanStatus()
+	errorStatus := ptrace.NewStatus()
 	errorStatus.SetCode(ptrace.StatusCodeError)
 
-	errorStatusWithMessage := ptrace.NewSpanStatus()
+	errorStatusWithMessage := ptrace.NewStatus()
 	errorStatusWithMessage.SetCode(ptrace.StatusCodeError)
 	errorStatusWithMessage.SetMessage("Error: Invalid argument")
 
-	errorStatusWith404Message := ptrace.NewSpanStatus()
+	errorStatusWith404Message := ptrace.NewStatus()
 	errorStatusWith404Message.SetCode(ptrace.StatusCodeError)
 	errorStatusWith404Message.SetMessage("HTTP 404: Not Found")
 
 	tests := []struct {
 		name             string
 		attrs            map[string]interface{}
-		status           ptrace.SpanStatus
+		status           ptrace.Status
 		attrsModifiedLen int // Length of attributes map after dropping converted fields
 	}{
 		{
@@ -420,7 +420,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			status := ptrace.NewSpanStatus()
+			status := ptrace.NewStatus()
 			attrs := pcommon.NewMap()
 			attrs.FromRaw(test.attrs)
 			setInternalSpanStatus(attrs, status)
@@ -431,7 +431,6 @@ func TestSetInternalSpanStatus(t *testing.T) {
 }
 
 func TestProtoBatchesToInternalTraces(t *testing.T) {
-	t.Skip("skipping flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/12591")
 	batches := []*model.Batch{
 		{
 			Process: generateProtoProcess(),
@@ -459,8 +458,29 @@ func TestProtoBatchesToInternalTraces(t *testing.T) {
 	twoSpans.CopyTo(tgt)
 
 	got, err := ProtoToTraces(batches)
+
 	assert.NoError(t, err)
-	assert.EqualValues(t, expected, got)
+
+	assert.Equal(t, expected.ResourceSpans().Len(), got.ResourceSpans().Len())
+	assert.Equal(t, expected.SpanCount(), got.SpanCount())
+
+	lenbatches := expected.ResourceSpans().Len()
+	found := 0
+
+	for i := 0; i < lenbatches; i++ {
+		rsExpected := expected.ResourceSpans().At(i)
+		for j := 0; j < lenbatches; j++ {
+			got.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
+				nameExpected := rsExpected.ScopeSpans().At(0).Spans().At(0).Name()
+				nameGot := got.ResourceSpans().At(j).ScopeSpans().At(0).Scope().Name()
+				if nameExpected == nameGot {
+					assert.Equal(t, nameGot, found)
+					assert.Equal(t, got.SpanCount(), found)
+				}
+				return nameExpected == nameGot
+			})
+		}
+	}
 }
 
 func TestJSpanKindToInternal(t *testing.T) {
@@ -570,7 +590,7 @@ func TestChecksum(t *testing.T) {
 func generateTracesResourceOnly() ptrace.Traces {
 	td := testdata.GenerateTracesOneEmptyResourceSpans()
 	rs := td.ResourceSpans().At(0).Resource()
-	rs.Attributes().PutString(conventions.AttributeServiceName, "service-1")
+	rs.Attributes().PutStr(conventions.AttributeServiceName, "service-1")
 	rs.Attributes().PutInt("int-attr-1", 123)
 	return td
 }

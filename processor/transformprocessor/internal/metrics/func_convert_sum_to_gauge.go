@@ -21,16 +21,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 )
 
-func convertSumToGauge() (ottl.ExprFunc, error) {
-	return func(ctx ottl.TransformContext) interface{} {
-		mtc, ok := ctx.(ottldatapoints.TransformContext)
-		if !ok {
-			return nil
-		}
-
-		metric := mtc.GetMetric()
+func convertSumToGauge() (ottl.ExprFunc[ottldatapoints.TransformContext], error) {
+	return func(ctx ottldatapoints.TransformContext) (interface{}, error) {
+		metric := ctx.GetMetric()
 		if metric.Type() != pmetric.MetricTypeSum {
-			return nil
+			return nil, nil
 		}
 
 		dps := metric.Sum().DataPoints()
@@ -38,6 +33,6 @@ func convertSumToGauge() (ottl.ExprFunc, error) {
 		// Setting the data type removed all the data points, so we must copy them back to the metric.
 		dps.CopyTo(metric.SetEmptyGauge().DataPoints())
 
-		return nil
+		return nil, nil
 	}, nil
 }

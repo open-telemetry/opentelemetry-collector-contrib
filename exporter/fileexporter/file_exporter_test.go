@@ -60,7 +60,7 @@ func TestFileTracesExporter(t *testing.T) {
 					Path:       tempFileName(t),
 					FormatType: "json",
 				},
-				unmarshaler: ptrace.NewJSONUnmarshaler(),
+				unmarshaler: &ptrace.JSONUnmarshaler{},
 			},
 		},
 		{
@@ -71,7 +71,7 @@ func TestFileTracesExporter(t *testing.T) {
 					FormatType:  "json",
 					Compression: compressionZSTD,
 				},
-				unmarshaler: ptrace.NewJSONUnmarshaler(),
+				unmarshaler: &ptrace.JSONUnmarshaler{},
 			},
 		},
 		{
@@ -81,7 +81,7 @@ func TestFileTracesExporter(t *testing.T) {
 					Path:       tempFileName(t),
 					FormatType: "proto",
 				},
-				unmarshaler: ptrace.NewProtoUnmarshaler(),
+				unmarshaler: &ptrace.ProtoUnmarshaler{},
 			},
 		},
 		{
@@ -92,23 +92,36 @@ func TestFileTracesExporter(t *testing.T) {
 					FormatType:  "proto",
 					Compression: compressionZSTD,
 				},
-				unmarshaler: ptrace.NewProtoUnmarshaler(),
+				unmarshaler: &ptrace.ProtoUnmarshaler{},
+			},
+		},
+		{
+			name: "Proto: compression configuration--rotation",
+			args: args{
+				conf: &Config{
+					Path:        tempFileName(t),
+					FormatType:  "proto",
+					Compression: compressionZSTD,
+					Rotation: &Rotation{
+						MaxMegabytes: 3,
+						MaxDays:      0,
+						MaxBackups:   defaultMaxBackups,
+						LocalTime:    false,
+					},
+				},
+				unmarshaler: &ptrace.ProtoUnmarshaler{},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			conf := tt.args.conf
+			writer, err := buildFileWriter(conf)
+			assert.NoError(t, err)
 			fe := &fileExporter{
-				path:       conf.Path,
-				formatType: conf.FormatType,
-				file: &lumberjack.Logger{
-					Filename:   conf.Path,
-					MaxSize:    conf.Rotation.MaxMegabytes,
-					MaxAge:     conf.Rotation.MaxDays,
-					MaxBackups: conf.Rotation.MaxBackups,
-					LocalTime:  conf.Rotation.LocalTime,
-				},
+				path:            conf.Path,
+				formatType:      conf.FormatType,
+				file:            writer,
 				tracesMarshaler: tracesMarshalers[conf.FormatType],
 				exporter:        buildExportFunc(conf),
 				compression:     conf.Compression,
@@ -181,7 +194,7 @@ func TestFileMetricsExporter(t *testing.T) {
 					Path:       tempFileName(t),
 					FormatType: "json",
 				},
-				unmarshaler: pmetric.NewJSONUnmarshaler(),
+				unmarshaler: &pmetric.JSONUnmarshaler{},
 			},
 		},
 		{
@@ -192,7 +205,7 @@ func TestFileMetricsExporter(t *testing.T) {
 					FormatType:  "json",
 					Compression: compressionZSTD,
 				},
-				unmarshaler: pmetric.NewJSONUnmarshaler(),
+				unmarshaler: &pmetric.JSONUnmarshaler{},
 			},
 		},
 		{
@@ -202,7 +215,7 @@ func TestFileMetricsExporter(t *testing.T) {
 					Path:       tempFileName(t),
 					FormatType: "proto",
 				},
-				unmarshaler: pmetric.NewProtoUnmarshaler(),
+				unmarshaler: &pmetric.ProtoUnmarshaler{},
 			},
 		},
 		{
@@ -213,23 +226,36 @@ func TestFileMetricsExporter(t *testing.T) {
 					FormatType:  "proto",
 					Compression: compressionZSTD,
 				},
-				unmarshaler: pmetric.NewProtoUnmarshaler(),
+				unmarshaler: &pmetric.ProtoUnmarshaler{},
+			},
+		},
+		{
+			name: "Proto: compression configuration--rotation",
+			args: args{
+				conf: &Config{
+					Path:        tempFileName(t),
+					FormatType:  "proto",
+					Compression: compressionZSTD,
+					Rotation: &Rotation{
+						MaxMegabytes: 3,
+						MaxDays:      0,
+						MaxBackups:   defaultMaxBackups,
+						LocalTime:    false,
+					},
+				},
+				unmarshaler: &pmetric.ProtoUnmarshaler{},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			conf := tt.args.conf
+			writer, err := buildFileWriter(conf)
+			assert.NoError(t, err)
 			fe := &fileExporter{
-				path:       conf.Path,
-				formatType: conf.FormatType,
-				file: &lumberjack.Logger{
-					Filename:   conf.Path,
-					MaxSize:    conf.Rotation.MaxMegabytes,
-					MaxAge:     conf.Rotation.MaxDays,
-					MaxBackups: conf.Rotation.MaxBackups,
-					LocalTime:  conf.Rotation.LocalTime,
-				},
+				path:             conf.Path,
+				formatType:       conf.FormatType,
+				file:             writer,
 				metricsMarshaler: metricsMarshalers[conf.FormatType],
 				exporter:         buildExportFunc(conf),
 				compression:      conf.Compression,
@@ -304,7 +330,7 @@ func TestFileLogsExporter(t *testing.T) {
 					Path:       tempFileName(t),
 					FormatType: "json",
 				},
-				unmarshaler: plog.NewJSONUnmarshaler(),
+				unmarshaler: &plog.JSONUnmarshaler{},
 			},
 		},
 		{
@@ -315,7 +341,7 @@ func TestFileLogsExporter(t *testing.T) {
 					FormatType:  "json",
 					Compression: compressionZSTD,
 				},
-				unmarshaler: plog.NewJSONUnmarshaler(),
+				unmarshaler: &plog.JSONUnmarshaler{},
 			},
 		},
 		{
@@ -325,7 +351,7 @@ func TestFileLogsExporter(t *testing.T) {
 					Path:       tempFileName(t),
 					FormatType: "proto",
 				},
-				unmarshaler: plog.NewProtoUnmarshaler(),
+				unmarshaler: &plog.ProtoUnmarshaler{},
 			},
 		},
 		{
@@ -336,23 +362,36 @@ func TestFileLogsExporter(t *testing.T) {
 					FormatType:  "proto",
 					Compression: compressionZSTD,
 				},
-				unmarshaler: plog.NewProtoUnmarshaler(),
+				unmarshaler: &plog.ProtoUnmarshaler{},
+			},
+		},
+		{
+			name: "Proto: compression configuration--rotation",
+			args: args{
+				conf: &Config{
+					Path:        tempFileName(t),
+					FormatType:  "proto",
+					Compression: compressionZSTD,
+					Rotation: &Rotation{
+						MaxMegabytes: 3,
+						MaxDays:      0,
+						MaxBackups:   defaultMaxBackups,
+						LocalTime:    false,
+					},
+				},
+				unmarshaler: &plog.ProtoUnmarshaler{},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			conf := tt.args.conf
+			writer, err := buildFileWriter(conf)
+			assert.NoError(t, err)
 			fe := &fileExporter{
-				path:       conf.Path,
-				formatType: conf.FormatType,
-				file: &lumberjack.Logger{
-					Filename:   conf.Path,
-					MaxSize:    conf.Rotation.MaxMegabytes,
-					MaxAge:     conf.Rotation.MaxDays,
-					MaxBackups: conf.Rotation.MaxBackups,
-					LocalTime:  conf.Rotation.LocalTime,
-				},
+				path:          conf.Path,
+				formatType:    conf.FormatType,
+				file:          writer,
 				logsMarshaler: logsMarshalers[conf.FormatType],
 				exporter:      buildExportFunc(conf),
 				compression:   conf.Compression,
@@ -439,7 +478,7 @@ func TestExportMessageAsBuffer(t *testing.T) {
 	require.NotNil(t, fe)
 	//
 	ld := testdata.GenerateLogsManyLogRecordsSameResource(15000)
-	marshaler := plog.NewProtoMarshaler()
+	marshaler := &plog.ProtoMarshaler{}
 	buf, err := marshaler.MarshalLogs(ld)
 	assert.NoError(t, err)
 	assert.Error(t, exportMessageAsBuffer(fe, buf))
@@ -545,21 +584,21 @@ func TestConcurrentlyCompress(t *testing.T) {
 	wg.Wait()
 	buf, err := decompress(ctd)
 	assert.NoError(t, err)
-	traceUnmarshaler := ptrace.NewJSONUnmarshaler()
+	traceUnmarshaler := &ptrace.JSONUnmarshaler{}
 	got, err := traceUnmarshaler.UnmarshalTraces(buf)
 	assert.NoError(t, err)
 	assert.EqualValues(t, td, got)
 
 	buf, err = decompress(cmd)
 	assert.NoError(t, err)
-	metricsUnmarshaler := pmetric.NewJSONUnmarshaler()
+	metricsUnmarshaler := &pmetric.JSONUnmarshaler{}
 	gotMd, err := metricsUnmarshaler.UnmarshalMetrics(buf)
 	assert.NoError(t, err)
 	assert.EqualValues(t, md, gotMd)
 
 	buf, err = decompress(cld)
 	assert.NoError(t, err)
-	logsUnmarshaler := plog.NewJSONUnmarshaler()
+	logsUnmarshaler := &plog.JSONUnmarshaler{}
 	gotLd, err := logsUnmarshaler.UnmarshalLogs(buf)
 	assert.NoError(t, err)
 	assert.EqualValues(t, ld, gotLd)

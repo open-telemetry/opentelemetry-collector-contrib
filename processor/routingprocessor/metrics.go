@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
 
 var _ component.MetricsProcessor = (*metricsProcessor)(nil)
@@ -35,7 +36,7 @@ type metricsProcessor struct {
 	config *Config
 
 	extractor extractor
-	router    router[component.MetricsExporter]
+	router    router[component.MetricsExporter, ottldatapoints.TransformContext]
 }
 
 func newMetricProcessor(settings component.TelemetrySettings, config config.Processor) *metricsProcessor {
@@ -48,6 +49,7 @@ func newMetricProcessor(settings component.TelemetrySettings, config config.Proc
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
+			ottldatapoints.NewParser(common.Functions[ottldatapoints.TransformContext](), settings),
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
@@ -101,11 +103,14 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 
 		matchCount := len(p.router.routes)
 		for key, route := range p.router.routes {
-			if !route.expression.Condition(mtx) {
+			_, isMatch, err := route.statement.Execute(mtx)
+			if err != nil {
+				return err
+			}
+			if !isMatch {
 				matchCount--
 				continue
 			}
-			route.expression.Function(mtx)
 			p.group(key, groups, route.exporters, rmetrics)
 		}
 

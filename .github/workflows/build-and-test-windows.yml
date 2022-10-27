@@ -9,7 +9,7 @@ env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
   # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
   # Cache downloads for this workflow consistently run in under 10 minutes
-  SEGMENT_DOWNLOAD_TIMEOUT_MIN: 15
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 15
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}

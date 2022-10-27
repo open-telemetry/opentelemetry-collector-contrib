@@ -21,28 +21,27 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_limit(t *testing.T) {
 	input := pcommon.NewMap()
-	input.PutString("test", "hello world")
+	input.PutStr("test", "hello world")
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem()
+	target := &ottl.StandardGetSetter[pcommon.Map]{
+		Getter: func(ctx pcommon.Map) (interface{}, error) {
+			return ctx, nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
-			ctx.GetItem().(pcommon.Map).Clear()
-			val.(pcommon.Map).CopyTo(ctx.GetItem().(pcommon.Map))
+		Setter: func(ctx pcommon.Map, val interface{}) error {
+			val.(pcommon.Map).CopyTo(ctx)
+			return nil
 		},
 	}
 
 	tests := []struct {
 		name   string
-		target ottl.GetSetter
+		target ottl.GetSetter[pcommon.Map]
 		limit  int64
 		keep   []string
 		want   func(pcommon.Map)
@@ -52,8 +51,7 @@ func Test_limit(t *testing.T) {
 			target: target,
 			limit:  int64(1),
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 			},
 		},
 		{
@@ -69,8 +67,7 @@ func Test_limit(t *testing.T) {
 			target: target,
 			limit:  int64(100),
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)
 			},
@@ -80,8 +77,7 @@ func Test_limit(t *testing.T) {
 			target: target,
 			limit:  int64(3),
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)
 			},
@@ -92,8 +88,7 @@ func Test_limit(t *testing.T) {
 			limit:  int64(2),
 			keep:   []string{"test3"},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutBool("test3", true)
 			},
 		},
@@ -103,8 +98,7 @@ func Test_limit(t *testing.T) {
 			limit:  int64(2),
 			keep:   []string{"test", "test3"},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutBool("test3", true)
 			},
 		},
@@ -114,8 +108,7 @@ func Test_limit(t *testing.T) {
 			limit:  int64(1),
 			keep:   []string{"te"},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 			},
 		},
 		{
@@ -124,8 +117,7 @@ func Test_limit(t *testing.T) {
 			limit:  int64(2),
 			keep:   []string{"te", "test3"},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutBool("test3", true)
 			},
 		},
@@ -135,18 +127,17 @@ func Test_limit(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			ctx := ottltest.TestTransformContext{
-				Item: scenarioMap,
-			}
+			exprFunc, err := Limit(tt.target, tt.limit, tt.keep)
+			assert.NoError(t, err)
 
-			exprFunc, _ := Limit(tt.target, tt.limit, tt.keep)
-			exprFunc(ctx)
-			actual := ctx.GetItem()
+			result, err := exprFunc(scenarioMap)
+			assert.NoError(t, err)
+			assert.Nil(t, result)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
 
-			assert.Equal(t, expected, actual)
+			assert.Equal(t, expected, scenarioMap)
 		})
 	}
 }
@@ -154,18 +145,18 @@ func Test_limit(t *testing.T) {
 func Test_limit_validation(t *testing.T) {
 	tests := []struct {
 		name   string
-		target ottl.GetSetter
+		target ottl.GetSetter[interface{}]
 		keep   []string
 		limit  int64
 	}{
 		{
 			name:   "limit less than zero",
-			target: &ottl.StandardGetSetter{},
+			target: &ottl.StandardGetSetter[interface{}]{},
 			limit:  int64(-1),
 		},
 		{
 			name:   "limit less than # of keep attrs",
-			target: &ottl.StandardGetSetter{},
+			target: &ottl.StandardGetSetter[interface{}]{},
 			keep:   []string{"test", "test"},
 			limit:  int64(1),
 		},
@@ -173,46 +164,46 @@ func Test_limit_validation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := Limit(tt.target, tt.limit, tt.keep)
-			assert.NotNil(t, err)
+			assert.Error(t, err)
 		})
 	}
 }
 
 func Test_limit_bad_input(t *testing.T) {
-	input := pcommon.NewValueString("not a map")
-	ctx := ottltest.TestTransformContext{
-		Item: input,
-	}
-
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem()
+	input := pcommon.NewValueStr("not a map")
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx interface{}) (interface{}, error) {
+			return ctx, nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
-	exprFunc, _ := Limit(target, 1, []string{})
-	exprFunc(ctx)
-
-	assert.Equal(t, pcommon.NewValueString("not a map"), input)
+	exprFunc, err := Limit[interface{}](target, 1, []string{})
+	assert.NoError(t, err)
+	result, err := exprFunc(input)
+	assert.NoError(t, err)
+	assert.Nil(t, result)
+	assert.Equal(t, pcommon.NewValueStr("not a map"), input)
 }
 
 func Test_limit_get_nil(t *testing.T) {
-	ctx := ottltest.TestTransformContext{
-		Item: nil,
-	}
-
-	target := &ottl.StandardGetSetter{
-		Getter: func(ctx ottl.TransformContext) interface{} {
-			return ctx.GetItem()
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx interface{}) (interface{}, error) {
+			return ctx, nil
 		},
-		Setter: func(ctx ottl.TransformContext, val interface{}) {
+		Setter: func(ctx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
-	exprFunc, _ := Limit(target, 1, []string{})
-	exprFunc(ctx)
+	exprFunc, err := Limit[interface{}](target, 1, []string{})
+	assert.NoError(t, err)
+	result, err := exprFunc(nil)
+	assert.NoError(t, err)
+	assert.Nil(t, result)
+	assert.Nil(t, result)
 }

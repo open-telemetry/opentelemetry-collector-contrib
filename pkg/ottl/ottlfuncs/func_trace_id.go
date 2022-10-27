@@ -22,14 +22,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func TraceID(bytes []byte) (ottl.ExprFunc, error) {
+func TraceID[K any](bytes []byte) (ottl.ExprFunc[K], error) {
 	if len(bytes) != 16 {
 		return nil, errors.New("traces ids must be 16 bytes")
 	}
 	var idArr [16]byte
 	copy(idArr[:16], bytes)
 	id := pcommon.TraceID(idArr)
-	return func(ctx ottl.TransformContext) interface{} {
-		return id
+	return func(K) (interface{}, error) {
+		return id, nil
 	}, nil
 }
