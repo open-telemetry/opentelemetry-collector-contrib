@@ -1429,10 +1429,60 @@ var (
 			},
 		},
 		{
+			name: "metric_experimental_scale_value_histogram",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: ScaleValue,
+								Scale:  100,
+							},
+						},
+					},
+				},
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric2"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: ScaleValue,
+								Scale:  .1,
+							},
+						},
+					},
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeHistogram, "metric1").addHistogramDatapoint(1, 1, 1, 1, []float64{1}, []uint64{1, 1}).build(),
+				metricBuilder(pmetric.MetricTypeHistogram, "metric2").addHistogramDatapoint(1, 1, 2, 400, []float64{200}, []uint64{1, 2}).build(),
+			},
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeHistogram, "metric1").addHistogramDatapoint(1, 1, 1, 100, []float64{100}, []uint64{1, 1}).build(),
+				metricBuilder(pmetric.MetricTypeHistogram, "metric2").addHistogramDatapoint(1, 1, 2, 40, []float64{20}, []uint64{1, 2}).build(),
+			},
+		},
+		{
 			name: "metric_experimental_scale_with_attr_filtering",
 			transforms: []internalTransform{
 				{
 					MetricIncludeFilter: internalFilterStrict{include: "metric1",
+						attrMatchers: map[string]StringMatcher{"label1": strictMatcher("value1")}},
+					Action: Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: ScaleValue,
+								Scale:  100,
+							},
+						},
+					},
+				},
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric2",
 						attrMatchers: map[string]StringMatcher{"label1": strictMatcher("value1")}},
 					Action: Update,
 					Operations: []internalOperation{
@@ -1449,11 +1499,17 @@ var (
 				metricBuilder(pmetric.MetricTypeSum, "metric1", "label1").
 					addIntDatapoint(1, 1, 1, "value1").
 					addIntDatapoint(1, 1, 3, "value2").build(),
+				metricBuilder(pmetric.MetricTypeHistogram, "metric1", "label1").
+					addHistogramDatapoint(1, 1, 1, 1, []float64{1}, []uint64{1, 1}, "value1").
+					addHistogramDatapoint(1, 1, 2, 4, []float64{2}, []uint64{1, 2}, "value2").build(),
 			},
 			out: []pmetric.Metric{
 				metricBuilder(pmetric.MetricTypeSum, "metric1", "label1").
 					addIntDatapoint(1, 1, 100, "value1").
 					addIntDatapoint(1, 1, 3, "value2").build(),
+				metricBuilder(pmetric.MetricTypeHistogram, "metric1", "label1").
+					addHistogramDatapoint(1, 1, 1, 100, []float64{100}, []uint64{1, 1}, "value1").
+					addHistogramDatapoint(1, 1, 2, 4, []float64{2}, []uint64{1, 2}, "value2").build(),
 			},
 		},
 		// Add Label to a metric
