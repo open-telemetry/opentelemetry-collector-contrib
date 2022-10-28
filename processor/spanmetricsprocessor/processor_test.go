@@ -379,13 +379,9 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 		metricsExporter: mexp,
 		nextConsumer:    tcon,
 
-		startTime:            time.Now(),
-		callSum:              make(map[metricKey]int64),
-		latencySum:           make(map[metricKey]float64),
-		latencyCount:         make(map[metricKey]uint64),
-		latencyBucketCounts:  make(map[metricKey][]uint64),
-		latencyBounds:        defaultLatencyHistogramBucketsMs,
-		latencyExemplarsData: make(map[metricKey][]exemplarData),
+		startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
+		histograms:     make(map[metricKey]*histogramData),
+		latencyBounds:  defaultLatencyHistogramBucketsMs,
 		dimensions: []Dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
 			{stringAttrName, nil},
@@ -839,7 +835,7 @@ func TestSanitize(t *testing.T) {
 	require.Equal(t, "test__", sanitize("test_/", cfg.skipSanitizeLabel))
 }
 
-func TestSetLatencyExemplars(t *testing.T) {
+func TestSetExemplars(t *testing.T) {
 	// ----- conditions -------------------------------------------------------
 	traces := buildSampleTrace()
 	traceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
@@ -851,7 +847,7 @@ func TestSetLatencyExemplars(t *testing.T) {
 	ed := []exemplarData{{traceID: traceID, spanID: spanID, value: value}}
 
 	// ----- call -------------------------------------------------------------
-	setLatencyExemplars(ed, timestamp, exemplarSlice)
+	setExemplars(ed, timestamp, exemplarSlice)
 
 	// ----- verify -----------------------------------------------------------
 	traceIDValue := exemplarSlice.At(0).TraceID()
@@ -864,7 +860,7 @@ func TestSetLatencyExemplars(t *testing.T) {
 	assert.Equal(t, exemplarSlice.At(0).DoubleValue(), value)
 }
 
-func TestProcessorUpdateLatencyExemplars(t *testing.T) {
+func TestProcessorUpdateExemplars(t *testing.T) {
 	// ----- conditions -------------------------------------------------------
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
@@ -877,27 +873,17 @@ func TestProcessorUpdateLatencyExemplars(t *testing.T) {
 	value := float64(42)
 
 	// ----- call -------------------------------------------------------------
-	p.updateLatencyExemplars(key, value, traceID, spanID)
+	p.updateHistogram(key, value, traceID, spanID)
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
-	assert.NotEmpty(t, p.latencyExemplarsData[key])
-	assert.Equal(t, p.latencyExemplarsData[key][0], exemplarData{traceID: traceID, spanID: spanID, value: value})
-}
-
-func TestProcessorResetExemplarData(t *testing.T) {
-	// ----- conditions -------------------------------------------------------
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-
-	key := metricKey("metricKey")
-	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
+	assert.NotEmpty(t, p.histograms[key].exemplarsData)
+	assert.Equal(t, p.histograms[key].exemplarsData[0], exemplarData{traceID: traceID, spanID: spanID, value: value})
 
 	// ----- call -------------------------------------------------------------
 	p.resetExemplarData()
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
-	assert.Empty(t, p.latencyExemplarsData[key])
+	assert.Empty(t, p.histograms[key].exemplarsData)
 }
