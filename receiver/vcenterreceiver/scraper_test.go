@@ -63,7 +63,7 @@ func TestScrape_Tls(t *testing.T) {
 	testScrape(t, ctx, cfg)
 }
 
-func testScrape(t *testing.T, ctx context.Context, cfg *Config) {
+func testScrape(ctx context.Context, t *testing.T, cfg *Config) {
 	scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, componenttest.NewNopReceiverCreateSettings())
 
 	metrics, err := scraper.scrape(ctx)
