@@ -15,6 +15,7 @@
 package ottlcommon
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -265,11 +266,11 @@ func TestScopePathGetSetter(t *testing.T) {
 
 			is := createInstrumentationScope()
 
-			got, err := accessor.Get(nil, newInstrumentationScopeContext(is))
+			got, err := accessor.Get(context.TODO(), newInstrumentationScopeContext(is))
 			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(nil, newInstrumentationScopeContext(is), tt.newVal)
+			err = accessor.Set(context.TODO(), newInstrumentationScopeContext(is), tt.newVal)
 			assert.Nil(t, err)
 
 			expectedIS := createInstrumentationScope()

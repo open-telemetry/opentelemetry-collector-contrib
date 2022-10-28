@@ -15,6 +15,7 @@
 package ottlcommon
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -235,11 +236,11 @@ func TestResourcePathGetSetter(t *testing.T) {
 
 			resource := createResource()
 
-			got, err := accessor.Get(nil, newResourceContext(resource))
+			got, err := accessor.Get(context.TODO(), newResourceContext(resource))
 			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(nil, newResourceContext(resource), tt.newVal)
+			err = accessor.Set(context.TODO(), newResourceContext(resource), tt.newVal)
 			assert.Nil(t, err)
 
 			expectedResource := createResource()

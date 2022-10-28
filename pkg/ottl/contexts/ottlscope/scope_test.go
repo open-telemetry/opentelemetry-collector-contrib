@@ -15,6 +15,7 @@
 package ottlscope
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -265,11 +266,11 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			il, resource := createTelemetry()
 
-			got, err := accessor.Get(nil, NewTransformContext(il, resource))
+			got, err := accessor.Get(context.TODO(), NewTransformContext(il, resource))
 			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(nil, NewTransformContext(il, resource), tt.newVal)
+			err = accessor.Set(context.TODO(), NewTransformContext(il, resource), tt.newVal)
 			assert.Nil(t, err)
 
 			exIl, exRes := createTelemetry()

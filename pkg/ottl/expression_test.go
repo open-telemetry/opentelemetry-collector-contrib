@@ -122,7 +122,7 @@ func Test_newGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			reader, err := p.newGetter(tt.val)
 			assert.NoError(t, err)
-			val, _ := reader.Get(nil, tt.want)
+			val, _ := reader.Get(context.TODO(), tt.want)
 			assert.Equal(t, tt.want, val)
 		})
 	}
