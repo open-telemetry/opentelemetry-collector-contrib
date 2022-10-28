@@ -23,6 +23,8 @@ These are the metrics available for this scraper.
 | **elasticsearch.cluster.state_update.count** | The number of cluster state update attempts that changed the cluster state since the node started. | 1 | Sum(Int) | <ul> <li>cluster_state_update_state</li> </ul> |
 | **elasticsearch.cluster.state_update.time** | The cumulative amount of time updating the cluster state since the node started. | ms | Sum(Int) | <ul> <li>cluster_state_update_state</li> <li>cluster_state_update_type</li> </ul> |
 | **elasticsearch.index.operations.completed** | The number of operations completed for an index. | {operations} | Sum(Int) | <ul> <li>operation</li> <li>index_aggregation_type</li> </ul> |
+| elasticsearch.index.operations.merge.docs_count | The total number of documents in merge operations for an index. | {documents} | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
+| elasticsearch.index.operations.merge.size | The total size of merged segments for an index. | By | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
 | **elasticsearch.index.operations.time** | Time spent on operations for an index. | ms | Sum(Int) | <ul> <li>operation</li> <li>index_aggregation_type</li> </ul> |
 | **elasticsearch.index.shards.size** | The size of the shards assigned to this index. | By | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
 | **elasticsearch.indexing_pressure.memory.limit** | Configured memory limit, in bytes, for the indexing requests. | By | Gauge(Int) | <ul> </ul> |
