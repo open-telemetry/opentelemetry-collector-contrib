@@ -16,6 +16,7 @@ package vcenterreceiver // import github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/config/configtls"
 	"path/filepath"
 	"testing"
 
@@ -32,13 +33,41 @@ import (
 
 func TestScrape(t *testing.T) {
 	ctx := context.Background()
-	mockServer := mock.MockServer(t)
+	mockServer := mock.MockServer(t, false)
 
 	cfg := &Config{
 		Metrics:  metadata.DefaultMetricsSettings(),
 		Endpoint: mockServer.URL,
 		Username: mock.MockUsername,
 		Password: mock.MockPassword,
+	}
+	scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, componenttest.NewNopReceiverCreateSettings())
+
+	metrics, err := scraper.scrape(ctx)
+	require.NoError(t, err)
+	require.NotEqual(t, metrics.MetricCount(), 0)
+
+	goldenPath := filepath.Join("testdata", "metrics", "expected.json")
+	expectedMetrics, err := golden.ReadMetrics(goldenPath)
+	require.NoError(t, err)
+
+	err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+	require.NoError(t, err)
+	require.NoError(t, scraper.Shutdown(ctx))
+}
+
+func TestScrape_TLS(t *testing.T) {
+	ctx := context.Background()
+	mockServer := mock.MockServer(t, true)
+
+	cfg := &Config{
+		Metrics:  metadata.DefaultMetricsSettings(),
+		Endpoint: mockServer.URL,
+		Username: mock.MockUsername,
+		Password: mock.MockPassword,
+		TLSClientSetting: configtls.TLSClientSetting{
+			Insecure: true,
+		},
 	}
 	scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, componenttest.NewNopReceiverCreateSettings())
 
