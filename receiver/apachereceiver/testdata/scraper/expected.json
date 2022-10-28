@@ -28,7 +28,7 @@
                     "asInt": "410"
                   }
                 ],
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "isMonotonic": true
               }
             },
@@ -51,7 +51,7 @@
                     "asInt": "110"
                   }
                 ],
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "isMonotonic": false
               }
             },
@@ -98,7 +98,7 @@
                     "asInt": "227"
                   }
                 ],
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "isMonotonic": false
               }
             },
@@ -121,7 +121,7 @@
                     "asInt": "14169"
                   }
                 ],
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "isMonotonic": true
               }
             },
@@ -144,7 +144,7 @@
                     "asInt": "21411840"
                   }
                 ],
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "isMonotonic": true
               }
             },
@@ -251,7 +251,7 @@
                     "asDouble": "0.04"
                   }
                 ],
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "isMonotonic": true
               }
             },
@@ -358,7 +358,7 @@
                     "asInt": "1501"
                   }
                 ],
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "isMonotonic": true
               }
             },
@@ -567,7 +567,7 @@
                     "asInt": "4"
                   }
                 ],
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "aggregationTemporality": 2,
                 "isMonotonic": false
               }
             }

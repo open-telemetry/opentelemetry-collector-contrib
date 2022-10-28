@@ -168,6 +168,8 @@ func TestRemoveAttributes(t *testing.T) {
 			attrs: map[string]interface{}{
 				hintAttributes: "some.field",
 				hintResources:  "some.other.field",
+				hintFormat:     "logfmt",
+				hintTenant:     "some_tenant",
 				"host.name":    "guarana",
 			},
 			labels: model.LabelSet{},

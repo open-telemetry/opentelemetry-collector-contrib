@@ -12,7 +12,7 @@
                      "description": "Commands executed.",
                      "name": "memcached.commands",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1114",
@@ -71,7 +71,7 @@
                      "description": "Accumulated user and system time.",
                      "name": "memcached.cpu.usage",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asDouble": 11.1123452,
@@ -106,7 +106,7 @@
                      "description": "Bytes sent over the network.",
                      "name": "memcached.network.sent",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "16",
@@ -121,7 +121,7 @@
                      "description": "Bytes received over the network.",
                      "name": "memcached.network.received",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "7",
@@ -136,7 +136,7 @@
                      "description": "Operation counts.",
                      "name": "memcached.operations",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1134",
@@ -313,7 +313,7 @@
                      "description": "The current number of open connections.",
                      "name": "memcached.connections.current",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "2",
@@ -327,7 +327,7 @@
                      "description": "Total number of connections opened since the server started running.",
                      "name": "memcached.connections.total",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "4",
@@ -342,7 +342,7 @@
                      "description": "Number of items currently stored in the cache.",
                      "name": "memcached.current_items",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1118",
@@ -356,7 +356,7 @@
                      "description": "Number of threads used by the memcached instance.",
                      "name": "memcached.threads",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "4",
@@ -370,7 +370,7 @@
                      "description": "Cache item evictions.",
                      "name": "memcached.evictions",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1126",

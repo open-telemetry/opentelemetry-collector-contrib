@@ -375,7 +375,8 @@ multimod-verify: install-tools
 
 .PHONY: multimod-prerelease
 multimod-prerelease: install-tools
-	multimod prerelease -v ./versions.yaml -m contrib-base
+	multimod prerelease -s=true -b=false -v ./versions.yaml -m contrib-base
+	$(MAKE) gotidy
 
 .PHONY: crosslink
 crosslink: install-tools

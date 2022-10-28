@@ -95,6 +95,24 @@ exporters:
       "X-Scope-OrgID": acme
 ```
 
+It is also possible to provide the `loki.tenant` attribute hint that specifies
+which resource or log attributes value should be used as a tenant. For example:
+
+```yaml
+processors:
+  resource:
+    attributes:
+    - action: insert
+      key: loki.tenant
+      value: host.name
+```
+
+In this case the value of the `host.name` resource attribute is used to group logs
+by tenant and send requests with the `X-Scope-OrgID` header set to relevant tenants.
+
+If the `loki.tenant` hint attribute is present in both resource or log attributes,
+then the look-up for a tenant value from resource attributes takes precedence.
+
 ## Advanced Configuration
 
 Several helper files are leveraged to provide additional capabilities automatically:

@@ -81,6 +81,8 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 					groups[tenant] = group
 				}
 
+				format := getFormatFromFormatHint(log.Attributes(), resource.Attributes())
+
 				mergedLabels := convertAttributesAndMerge(log.Attributes(), resource.Attributes())
 				// remove the attributes that were promoted to labels
 				removeAttributes(log.Attributes(), mergedLabels)
@@ -88,8 +90,7 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 
 				// create the stream name based on the labels
 				labels := mergedLabels.String()
-
-				entry, err := convertLogToJSONEntry(log, resource)
+				entry, err := convertLogToLokiEntry(log, resource, format)
 				if err != nil {
 					// Couldn't convert so dropping log.
 					group.report.Errors = append(group.report.Errors, fmt.Errorf("failed to convert, dropping log: %w", err))
@@ -129,6 +130,19 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 		}
 	}
 	return requests
+}
+
+func getFormatFromFormatHint(logAttr pcommon.Map, resourceAttr pcommon.Map) string {
+	format := formatJSON
+	formatVal, found := resourceAttr.Get(hintFormat)
+	if !found {
+		formatVal, found = logAttr.Get(hintFormat)
+	}
+
+	if found {
+		format = formatVal.AsString()
+	}
+	return format
 }
 
 // getTenantFromTenantHint extract an attribute based on the tenant hint.
@@ -193,6 +207,8 @@ func LogsToLoki(ld plog.Logs) (*logproto.PushRequest, *PushReport) {
 				resource := pcommon.NewResource()
 				rls.At(i).Resource().CopyTo(resource)
 
+				format := getFormatFromFormatHint(log.Attributes(), resource.Attributes())
+
 				mergedLabels := convertAttributesAndMerge(log.Attributes(), resource.Attributes())
 				// remove the attributes that were promoted to labels
 				removeAttributes(log.Attributes(), mergedLabels)
@@ -201,7 +217,7 @@ func LogsToLoki(ld plog.Logs) (*logproto.PushRequest, *PushReport) {
 				// create the stream name based on the labels
 				labels := mergedLabels.String()
 
-				entry, err := convertLogToJSONEntry(log, resource)
+				entry, err := convertLogToLokiEntry(log, resource, format)
 				if err != nil {
 					// Couldn't convert so dropping log.
 					report.Errors = append(report.Errors, fmt.Errorf("failed to convert, dropping log: %w", err))

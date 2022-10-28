@@ -59,9 +59,9 @@ func ensureExporter(params component.ExporterCreateSettings, pCfg *Config) *pubs
 		userAgent:        strings.ReplaceAll(pCfg.UserAgent, "{{version}}", params.BuildInfo.Version),
 		ceSource:         fmt.Sprintf("/opentelemetry/collector/%s/%s", name, params.BuildInfo.Version),
 		config:           pCfg,
-		tracesMarshaler:  ptrace.NewProtoMarshaler(),
-		metricsMarshaler: pmetric.NewProtoMarshaler(),
-		logsMarshaler:    plog.NewProtoMarshaler(),
+		tracesMarshaler:  &ptrace.ProtoMarshaler{},
+		metricsMarshaler: &pmetric.ProtoMarshaler{},
+		logsMarshaler:    &plog.ProtoMarshaler{},
 	}
 	// we ignore the error here as the config is already validated with the same method
 	receiver.ceCompression, _ = pCfg.parseCompression()

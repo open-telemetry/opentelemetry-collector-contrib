@@ -37,13 +37,19 @@ type Statement[K any] struct {
 // Returns true if the function was run, returns false otherwise.
 // If the statement contains no condition, the function will run and true will be returned.
 // In addition, the functions return value is always returned.
-func (s *Statement[K]) Execute(ctx K) (any, bool) {
-	condition := s.condition(ctx)
+func (s *Statement[K]) Execute(ctx K) (any, bool, error) {
+	condition, err := s.condition(ctx)
+	if err != nil {
+		return nil, false, err
+	}
 	var result any
 	if condition {
-		result = s.function(ctx)
+		result, err = s.function(ctx)
+		if err != nil {
+			return nil, true, err
+		}
 	}
-	return result, condition
+	return result, condition, nil
 }
 
 func NewParser[K any](functions map[string]interface{}, pathParser PathExpressionParser[K], enumParser EnumParser, telemetrySettings component.TelemetrySettings) Parser[K] {

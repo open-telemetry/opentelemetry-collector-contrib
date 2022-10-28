@@ -19,39 +19,47 @@ import (
 )
 
 // boolExpressionEvaluator is a function that returns the result.
-type boolExpressionEvaluator[K any] func(ctx K) bool
+type boolExpressionEvaluator[K any] func(ctx K) (bool, error)
 
-func alwaysTrue[K any](K) bool {
-	return true
+func alwaysTrue[K any](K) (bool, error) {
+	return true, nil
 }
 
-func alwaysFalse[K any](K) bool {
-	return false
+func alwaysFalse[K any](K) (bool, error) {
+	return false, nil
 }
 
 // builds a function that returns a short-circuited result of ANDing
 // boolExpressionEvaluator funcs
 func andFuncs[K any](funcs []boolExpressionEvaluator[K]) boolExpressionEvaluator[K] {
-	return func(ctx K) bool {
+	return func(ctx K) (bool, error) {
 		for _, f := range funcs {
-			if !f(ctx) {
-				return false
+			result, err := f(ctx)
+			if err != nil {
+				return false, err
+			}
+			if !result {
+				return false, nil
 			}
 		}
-		return true
+		return true, nil
 	}
 }
 
 // builds a function that returns a short-circuited result of ORing
 // boolExpressionEvaluator funcs
 func orFuncs[K any](funcs []boolExpressionEvaluator[K]) boolExpressionEvaluator[K] {
-	return func(ctx K) bool {
+	return func(ctx K) (bool, error) {
 		for _, f := range funcs {
-			if f(ctx) {
-				return true
+			result, err := f(ctx)
+			if err != nil {
+				return false, err
+			}
+			if result {
+				return true, nil
 			}
 		}
-		return false
+		return false, nil
 	}
 }
 
@@ -69,10 +77,16 @@ func (p *Parser[K]) newComparisonEvaluator(comparison *comparison) (boolExpressi
 	}
 
 	// The parser ensures that we'll never get an invalid comparison.Op, so we don't have to check that case.
-	return func(ctx K) bool {
-		a := left.Get(ctx)
-		b := right.Get(ctx)
-		return p.compare(a, b, comparison.Op)
+	return func(ctx K) (bool, error) {
+		a, leftErr := left.Get(ctx)
+		if leftErr != nil {
+			return false, leftErr
+		}
+		b, rightErr := right.Get(ctx)
+		if rightErr != nil {
+			return false, rightErr
+		}
+		return p.compare(a, b, comparison.Op), nil
 	}, nil
 
 }
