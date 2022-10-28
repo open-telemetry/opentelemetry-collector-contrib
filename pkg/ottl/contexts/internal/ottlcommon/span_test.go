@@ -502,7 +502,8 @@ func TestSpanPathGetSetter(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(newSpanContext(span), tt.newVal)
+			err = accessor.Set(newSpanContext(span), tt.newVal)
+			assert.NoError(t, err)
 
 			expectedSpan := createSpan()
 			tt.modified(expectedSpan)

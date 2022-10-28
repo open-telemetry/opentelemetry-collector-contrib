@@ -313,7 +313,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(NewTransformContext(spanEvent, span, il, resource), tt.newVal)
+			err = accessor.Set(NewTransformContext(spanEvent, span, il, resource), tt.newVal)
+			assert.NoError(t, err)
 
 			exSpanEvent, exSpan, exIl, exRes := createTelemetry()
 			tt.modified(exSpanEvent, exSpan, exIl, exRes)
