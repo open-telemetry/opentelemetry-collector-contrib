@@ -71,7 +71,7 @@ func MockServer(t *testing.T, useTLS bool) *httptest.Server {
 		_, _ = w.Write(body)
 	})
 
-	if useTls {
+	if useTLS {
 		return httptest.NewTLSServer(handlerFunc)
 	}
 
