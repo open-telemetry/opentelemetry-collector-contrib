@@ -5,7 +5,7 @@ change_type: 'enhancement'
 component: hostmetricsreceiver/filesystem
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add configuration option to track virutal partitions"
+note: "Add configuration option to track virtual partitions"
 
 # One or more tracking issues related to the change
 issues: [15680]
