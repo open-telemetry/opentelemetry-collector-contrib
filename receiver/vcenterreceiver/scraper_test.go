@@ -60,7 +60,7 @@ func TestScrape_Tls(t *testing.T) {
 		},
 	}
 
-	testScrape(t, ctx, cfg)
+	testScrape(ctx, t, cfg)
 }
 
 func testScrape(ctx context.Context, t *testing.T, cfg *Config) {
