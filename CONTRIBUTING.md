@@ -114,6 +114,11 @@ and the rest of contributors.
   the folder. If a component can not be properly tested within the existing framework, it must increase the non testable
   components number with a comment within the PR explaining as to why it can not be tested.
 
+### Releasing New Components
+After a component has been approved and merged, and has been enabled in `internal/components/`, it must be added to the
+[OpenTelemetry Collector Contrib's release manifest.yaml](https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/distributions/otelcol-contrib/manifest.yaml)
+to be included in the distributed otelcol-contrib binaries and docker images.
+
 ### Rotating sponsors
 
 The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
