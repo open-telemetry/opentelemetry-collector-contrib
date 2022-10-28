@@ -252,7 +252,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 		u.logger.Warn(fmt.Sprintf("Received span with unknown delivery mode %s", spanData.DeliveryMode))
 		u.metrics.recordRecoverableUnmarshallingError()
 	}
-	attrMap.PutString(deliveryModeAttrKey, deliveryMode)
+	attrMap.PutStr(deliveryModeAttrKey, deliveryMode)
 
 	rgmid := u.rgmidToString(spanData.ReplicationGroupMessageId)
 	if len(rgmid) > 0 {

@@ -47,6 +47,10 @@ attributes:
     description: Breakdown of CPU usage by type.
     enum: [system, user, wait]
 
+  type:
+    description: Type of memory paging fault.
+    enum: [major, minor]
+
 metrics:
   process.cpu.time:
     enabled: true
@@ -85,6 +89,16 @@ metrics:
       aggregation: cumulative
       monotonic: true
     attributes: [direction]
+
+  process.paging.faults:
+    enabled: false
+    description: Number of page faults the process has made. This metric is only available on Linux.
+    unit: "{faults}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [type]
 
   process.threads:
     enabled: false

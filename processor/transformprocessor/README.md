@@ -31,19 +31,19 @@ transform:
   traces:
     statements:
       - set(status.code, 1) where attributes["http.path"] == "/health"
-      - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region", "process.command_line")
+      - keep_keys(resource.attributes, ["service.name", "service.namespace", "cloud.region", "process.command_line"])
       - set(name, attributes["http.route"])
       - replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")
       - replace_pattern(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")
-      - limit(attributes, 100)
-      - limit(resource.attributes, 100)
+      - limit(attributes, 100, [])
+      - limit(resource.attributes, 100, [])
       - truncate_all(attributes, 4096)
       - truncate_all(resource.attributes, 4096)
   metrics:
     statements:
       - set(metric.description, "Sum") where metric.type == "Sum"
-      - keep_keys(resource.attributes, "host.name")
-      - limit(attributes, 100, "host.name")
+      - keep_keys(resource.attributes, ["host.name"])
+      - limit(attributes, 100, ["host.name"])
       - truncate_all(attributes, 4096)
       - truncate_all(resource.attributes, 4096)
       - convert_sum_to_gauge() where metric.name == "system.processes.count"
@@ -54,7 +54,7 @@ transform:
       - replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
       - replace_all_patterns(attributes, "/account/\\d{4}", "/account/{accountId}")
       - set(body, attributes["http.route"])
-      - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
+      - keep_keys(resource.attributes, ["service.name", "service.namespace", "cloud.region"])
 ```
 ## Grammar
 
@@ -162,7 +162,7 @@ The transform processor's implementation of the [OpenTelemetry Transformation La
   - Although the OTTL allows the `set` function to be used with `metric.data_type`, its implementation in the transform processor is NOOP.  To modify a data type you must use a function specific to that purpose.
 - [Identity Conflict](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#identity-conflict): Transformation of metrics have the potential to affect the identity of a metric leading to an Identity Crisis. Be especially cautious when transforming metric name and when reducing/changing existing attributes.  Adding new attributes is safe.
 - [Orphaned Telemetry](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#orphaned-telemetry): The processor allows you to modify `span_id`, `trace_id`, and `parent_span_id` for traces and `span_id`, and `trace_id` logs.  Modifying these fields could lead to orphaned spans or logs. 
-- The `limit` function drops attributes at random. If there are attributes that should never be dropped please provide them as function arguments, e.g. `limit(attibutes, 10, "http.host", "http.method")`
+- The `limit` function drops attributes at random. If there are attributes that should never be dropped please provide them as function arguments, e.g. `limit(attibutes, 10, ["http.host", "http.method"])`
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
