@@ -16,6 +16,7 @@ package vcenterreceiver // import github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/config/configtls"
 	"path/filepath"
 	"testing"
 
@@ -32,7 +33,7 @@ import (
 
 func TestScrape(t *testing.T) {
 	ctx := context.Background()
-	mockServer := mock.MockServer(t)
+	mockServer := mock.MockServer(t, false)
 
 	cfg := &Config{
 		Metrics:  metadata.DefaultMetricsSettings(),
@@ -40,6 +41,29 @@ func TestScrape(t *testing.T) {
 		Username: mock.MockUsername,
 		Password: mock.MockPassword,
 	}
+
+	testScrape(t, ctx, cfg)
+}
+
+func TestScrape_Tls(t *testing.T) {
+	ctx := context.Background()
+	mockServer := mock.MockServer(t, true)
+
+	cfg := &Config{
+		Metrics:  metadata.DefaultMetricsSettings(),
+		Endpoint: mockServer.URL,
+		Username: mock.MockUsername,
+		Password: mock.MockPassword,
+		TLSClientSetting: configtls.TLSClientSetting{
+			Insecure:           true,
+			InsecureSkipVerify: true,
+		},
+	}
+
+	testScrape(t, ctx, cfg)
+}
+
+func testScrape(t *testing.T, ctx context.Context, cfg *Config) {
 	scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, componenttest.NewNopReceiverCreateSettings())
 
 	metrics, err := scraper.scrape(ctx)
