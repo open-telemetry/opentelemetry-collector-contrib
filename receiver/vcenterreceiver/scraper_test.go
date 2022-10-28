@@ -42,7 +42,7 @@ func TestScrape(t *testing.T) {
 		Password: mock.MockPassword,
 	}
 
-	testScrape(t, ctx, cfg)
+	testScrape(ctx, t, cfg)
 }
 
 func TestScrape_Tls(t *testing.T) {
