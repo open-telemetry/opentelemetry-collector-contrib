@@ -45,7 +45,7 @@ type soapEnvelope struct {
 }
 
 // MockServer has access to recorded SOAP responses and will serve them over http based off the scraper's API calls
-func MockServer(t *testing.T, useTls bool) *httptest.Server {
+func MockServer(t *testing.T, useTLS bool) *httptest.Server {
 	handlerFunc := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// converting to JSON in order to iterate over map keys
 		jsonified, err := xj.Convert(r.Body)
