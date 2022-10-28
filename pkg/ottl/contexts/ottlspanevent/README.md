@@ -1,9 +1,9 @@
-# Span Events Context
+# Span Event Context
 
-The Span Events Context is a Context implementation for [pdata SpanEvents](https://github.com/open-telemetry/opentelemetry-collector/blob/main/pdata/ptrace/generated_traces.go), the Collector's internal representation for OTLP Span Event data.  This Context should be used when interacting with individual OTLP Span Events.
+The Span Event Context is a Context implementation for [pdata SpanEvents](https://github.com/open-telemetry/opentelemetry-collector/blob/main/pdata/ptrace/generated_traces.go), the Collector's internal representation for OTLP Span Event data.  This Context should be used when interacting with individual OTLP Span Events.
 
 ## Paths
-In general, the Traces Span Events supports accessing pdata using the field names from the [traces proto](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto).  All integers are returned and set via `int64`.  All doubles are returned and set via `float64`.
+In general, the Span Event Context supports accessing pdata using the field names from the [traces proto](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto).  All integers are returned and set via `int64`.  All doubles are returned and set via `float64`.
 
 The following fields are the exception.
 
@@ -24,4 +24,4 @@ The following fields are the exception.
 
 ## Enums
 
-The Traces Context supports the enum names from the traces proto.
+The Span Event Context supports the enum names from the traces proto.
