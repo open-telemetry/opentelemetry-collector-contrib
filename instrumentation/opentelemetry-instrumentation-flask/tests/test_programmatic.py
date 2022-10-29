@@ -36,7 +36,12 @@ from opentelemetry.sdk.metrics.export import (
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.wsgitestutil import WsgiTestBase
-from opentelemetry.util.http import get_excluded_urls
+from opentelemetry.util.http import (
+    OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SANITIZE_FIELDS,
+    OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST,
+    OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE,
+    get_excluded_urls,
+)
 
 # pylint: disable=import-error
 from .base_test import InstrumentationTest
@@ -558,18 +563,18 @@ class TestProgrammaticWrappedWithOtherFramework(
         )
 
 
+@patch.dict(
+    "os.environ",
+    {
+        OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SANITIZE_FIELDS: ".*my-secret.*",
+        OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST: "Custom-Test-Header-1,Custom-Test-Header-2,Custom-Test-Header-3,Regex-Test-Header-.*,Regex-Invalid-Test-Header-.*,.*my-secret.*",
+        OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE: "content-type,content-length,my-custom-header,invalid-header,my-custom-regex-header-.*,invalid-regex-header-.*,.*my-secret.*",
+    },
+)
 class TestCustomRequestResponseHeaders(InstrumentationTest, WsgiTestBase):
     def setUp(self):
         super().setUp()
 
-        self.env_patch = patch.dict(
-            "os.environ",
-            {
-                "OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST": "Custom-Test-Header-1,Custom-Test-Header-2,Custom-Test-Header-3",
-                "OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE": "content-type,content-length,my-custom-header,invalid-header",
-            },
-        )
-        self.env_patch.start()
         self.app = Flask(__name__)
         FlaskInstrumentor().instrument_app(self.app)
 
@@ -577,7 +582,6 @@ class TestCustomRequestResponseHeaders(InstrumentationTest, WsgiTestBase):
 
     def tearDown(self):
         super().tearDown()
-        self.env_patch.stop()
         with self.disable_logging():
             FlaskInstrumentor().uninstrument_app(self.app)
 
@@ -585,6 +589,9 @@ class TestCustomRequestResponseHeaders(InstrumentationTest, WsgiTestBase):
         headers = {
             "Custom-Test-Header-1": "Test Value 1",
             "Custom-Test-Header-2": "TestValue2,TestValue3",
+            "Regex-Test-Header-1": "Regex Test Value 1",
+            "regex-test-header-2": "RegexTestValue2,RegexTestValue3",
+            "My-Secret-Header": "My Secret Value",
         }
         resp = self.client.get("/hello/123", headers=headers)
         self.assertEqual(200, resp.status_code)
@@ -594,6 +601,11 @@ class TestCustomRequestResponseHeaders(InstrumentationTest, WsgiTestBase):
             "http.request.header.custom_test_header_2": (
                 "TestValue2,TestValue3",
             ),
+            "http.request.header.regex_test_header_1": ("Regex Test Value 1",),
+            "http.request.header.regex_test_header_2": (
+                "RegexTestValue2,RegexTestValue3",
+            ),
+            "http.request.header.my_secret_header": ("[REDACTED]",),
         }
         self.assertEqual(span.kind, trace.SpanKind.SERVER)
         self.assertSpanHasAttributes(span, expected)
@@ -604,6 +616,9 @@ class TestCustomRequestResponseHeaders(InstrumentationTest, WsgiTestBase):
             headers = {
                 "Custom-Test-Header-1": "Test Value 1",
                 "Custom-Test-Header-2": "TestValue2,TestValue3",
+                "Regex-Test-Header-1": "Regex Test Value 1",
+                "regex-test-header-2": "RegexTestValue2,RegexTestValue3",
+                "My-Secret-Header": "My Secret Value",
             }
             resp = self.client.get("/hello/123", headers=headers)
             self.assertEqual(200, resp.status_code)
@@ -613,6 +628,13 @@ class TestCustomRequestResponseHeaders(InstrumentationTest, WsgiTestBase):
                 "http.request.header.custom_test_header_2": (
                     "TestValue2,TestValue3",
                 ),
+                "http.request.header.regex_test_header_1": (
+                    "Regex Test Value 1",
+                ),
+                "http.request.header.regex_test_header_2": (
+                    "RegexTestValue2,RegexTestValue3",
+                ),
+                "http.request.header.my_secret_header": ("[REDACTED]",),
             }
             self.assertEqual(span.kind, trace.SpanKind.INTERNAL)
             for key, _ in not_expected.items():
@@ -630,6 +652,13 @@ class TestCustomRequestResponseHeaders(InstrumentationTest, WsgiTestBase):
             "http.response.header.my_custom_header": (
                 "my-custom-value-1,my-custom-header-2",
             ),
+            "http.response.header.my_custom_regex_header_1": (
+                "my-custom-regex-value-1,my-custom-regex-value-2",
+            ),
+            "http.response.header.my_custom_regex_header_2": (
+                "my-custom-regex-value-3,my-custom-regex-value-4",
+            ),
+            "http.response.header.my_secret_header": ("[REDACTED]",),
         }
         self.assertEqual(span.kind, trace.SpanKind.SERVER)
         self.assertSpanHasAttributes(span, expected)
@@ -648,6 +677,13 @@ class TestCustomRequestResponseHeaders(InstrumentationTest, WsgiTestBase):
                 "http.response.header.my_custom_header": (
                     "my-custom-value-1,my-custom-header-2",
                 ),
+                "http.response.header.my_custom_regex_header_1": (
+                    "my-custom-regex-value-1,my-custom-regex-value-2",
+                ),
+                "http.response.header.my_custom_regex_header_2": (
+                    "my-custom-regex-value-3,my-custom-regex-value-4",
+                ),
+                "http.response.header.my_secret_header": ("[REDACTED]",),
             }
             self.assertEqual(span.kind, trace.SpanKind.INTERNAL)
             for key, _ in not_expected.items():

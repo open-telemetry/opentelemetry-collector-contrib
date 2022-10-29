@@ -42,6 +42,13 @@ class InstrumentationTest:
         resp.headers[
             "my-custom-header"
         ] = "my-custom-value-1,my-custom-header-2"
+        resp.headers[
+            "my-custom-regex-header-1"
+        ] = "my-custom-regex-value-1,my-custom-regex-value-2"
+        resp.headers[
+            "My-Custom-Regex-Header-2"
+        ] = "my-custom-regex-value-3,my-custom-regex-value-4"
+        resp.headers["my-secret-header"] = "my-secret-value"
         return resp
 
     def _common_initialization(self):

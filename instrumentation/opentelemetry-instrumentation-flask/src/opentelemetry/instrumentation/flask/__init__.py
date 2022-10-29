@@ -95,8 +95,9 @@ Configuration
 
 Exclude lists
 *************
-To exclude certain URLs from being tracked, set the environment variable ``OTEL_PYTHON_FLASK_EXCLUDED_URLS``
-(or ``OTEL_PYTHON_EXCLUDED_URLS`` as fallback) with comma delimited regexes representing which URLs to exclude.
+To exclude certain URLs from tracking, set the environment variable ``OTEL_PYTHON_FLASK_EXCLUDED_URLS``
+(or ``OTEL_PYTHON_EXCLUDED_URLS`` to cover all instrumentations) to a string of comma delimited regexes that match the
+URLs.
 
 For example,
 
@@ -106,7 +107,7 @@ For example,
 
 will exclude requests such as ``https://site/client/123/info`` and ``https://site/xyz/healthcheck``.
 
-You can also pass the comma delimited regexes to the ``instrument_app`` method directly:
+You can also pass comma delimited regexes directly to the ``instrument_app`` method:
 
 .. code-block:: python
 
@@ -115,8 +116,15 @@ You can also pass the comma delimited regexes to the ``instrument_app`` method d
 Request/Response hooks
 **********************
 
-Utilize request/response hooks to execute custom logic to be performed before/after performing a request. Environ is an instance of WSGIEnvironment (flask.request.environ).
-Response_headers is a list of key-value (tuples) representing the response headers returned from the response.
+This instrumentation supports request and response hooks. These are functions that get called
+right after a span is created for a request and right before the span is finished for the response.
+
+- The client request hook is called with the internal span and an instance of WSGIEnvironment (flask.request.environ)
+  when the method ``receive`` is called.
+- The client response hook is called with the internal span, the status of the response and a list of key-value (tuples)
+  representing the response headers returned from the response when the method ``send`` is called.
+
+For example,
 
 .. code-block:: python
 
@@ -130,58 +138,97 @@ Response_headers is a list of key-value (tuples) representing the response heade
 
     FlaskInstrumentation().instrument(request_hook=request_hook, response_hook=response_hook)
 
-Flask Request object reference: https://flask.palletsprojects.com/en/2.0.x/api/#flask.Request
+Flask Request object reference: https://flask.palletsprojects.com/en/2.1.x/api/#flask.Request
 
 Capture HTTP request and response headers
 *****************************************
-You can configure the agent to capture predefined HTTP headers as span attributes, according to the `semantic convention <https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#http-request-and-response-headers>`_.
+You can configure the agent to capture specified HTTP headers as span attributes, according to the
+`semantic convention <https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#http-request-and-response-headers>`_.
 
 Request headers
 ***************
-To capture predefined HTTP request headers as span attributes, set the environment variable ``OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST``
-to a comma-separated list of HTTP header names.
+To capture HTTP request headers as span attributes, set the environment variable
+``OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST`` to a comma delimited list of HTTP header names.
 
 For example,
-
 ::
 
     export OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST="content-type,custom_request_header"
 
-will extract ``content-type`` and ``custom_request_header`` from request headers and add them as span attributes.
+will extract ``content-type`` and ``custom_request_header`` from the request headers and add them as span attributes.
 
-It is recommended that you should give the correct names of the headers to be captured in the environment variable.
-Request header names in flask are case insensitive and - characters are replaced by _. So, giving header name as ``CUStom_Header`` in environment variable will be able capture header with name ``custom-header``.
+Request header names in Flask are case-insensitive and ``-`` characters are replaced by ``_``. So, giving the header
+name as ``CUStom_Header`` in the environment variable will capture the header named ``custom-header``.
 
-The name of the added span attribute will follow the format ``http.request.header.<header_name>`` where ``<header_name>`` being the normalized HTTP header name (lowercase, with - characters replaced by _ ).
-The value of the attribute will be single item list containing all the header values.
+Regular expressions may also be used to match multiple headers that correspond to the given pattern.  For example:
+::
 
-Example of the added span attribute,
+    export OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST="Accept.*,X-.*"
+
+Would match all request headers that start with ``Accept`` and ``X-``.
+
+To capture all request headers, set ``OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST`` to ``".*"``.
+::
+
+    export OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST=".*"
+
+The name of the added span attribute will follow the format ``http.request.header.<header_name>`` where ``<header_name>``
+is the normalized HTTP header name (lowercase, with ``-`` replaced by ``_``). The value of the attribute will be a
+single item list containing all the header values.
+
+For example:
 ``http.request.header.custom_request_header = ["<value1>,<value2>"]``
 
 Response headers
 ****************
-To capture predefined HTTP response headers as span attributes, set the environment variable ``OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE``
-to a comma-separated list of HTTP header names.
+To capture HTTP response headers as span attributes, set the environment variable
+``OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE`` to a comma delimited list of HTTP header names.
 
 For example,
-
 ::
 
     export OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE="content-type,custom_response_header"
 
-will extract ``content-type`` and ``custom_response_header`` from response headers and add them as span attributes.
+will extract ``content-type`` and ``custom_response_header`` from the response headers and add them as span attributes.
 
-It is recommended that you should give the correct names of the headers to be captured in the environment variable.
-Response header names captured in flask are case insensitive. So, giving header name as ``CUStomHeader`` in environment variable will be able capture header with name ``customheader``.
+Response header names in Flask are case-insensitive. So, giving the header name as ``CUStom-Header`` in the environment
+variable will capture the header named ``custom-header``.
 
-The name of the added span attribute will follow the format ``http.response.header.<header_name>`` where ``<header_name>`` being the normalized HTTP header name (lowercase, with - characters replaced by _ ).
-The value of the attribute will be single item list containing all the header values.
+Regular expressions may also be used to match multiple headers that correspond to the given pattern.  For example:
+::
 
-Example of the added span attribute,
+    export OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE="Content.*,X-.*"
+
+Would match all response headers that start with ``Content`` and ``X-``.
+
+To capture all response headers, set ``OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE`` to ``".*"``.
+::
+
+    export OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE=".*"
+
+The name of the added span attribute will follow the format ``http.response.header.<header_name>`` where ``<header_name>``
+is the normalized HTTP header name (lowercase, with ``-`` replaced by ``_``). The value of the attribute will be a
+single item list containing all the header values.
+
+For example:
 ``http.response.header.custom_response_header = ["<value1>,<value2>"]``
 
+Sanitizing headers
+******************
+In order to prevent storing sensitive data such as personally identifiable information (PII), session keys, passwords,
+etc, set the environment variable ``OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SANITIZE_FIELDS``
+to a comma delimited list of HTTP header names to be sanitized.  Regexes may be used, and all header names will be
+matched in a case-insensitive manner.
+
+For example,
+::
+
+    export OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SANITIZE_FIELDS=".*session.*,set-cookie"
+
+will replace the value of headers such as ``session-id`` and ``set-cookie`` with ``[REDACTED]`` in the span.
+
 Note:
-    Environment variable names to capture http headers are still experimental, and thus are subject to change.
+    The environment variable names used to capture HTTP headers are still experimental, and thus are subject to change.
 
 API
 ---
