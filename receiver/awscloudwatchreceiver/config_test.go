@@ -115,6 +115,27 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: errors.New("unable to parse URI for imds_endpoint"),
 		},
+		{
+			name: "Both Logs Autodiscover and Named Set",
+			config: Config{
+				Region: "us-east-1",
+				Logs: &LogsConfig{
+					MaxEventsPerRequest: defaultEventLimit,
+					PollInterval:        defaultPollInterval,
+					Groups: GroupConfig{
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit: defaultEventLimit,
+						},
+						NamedConfigs: map[string]StreamConfig{
+							"some-log-group": {
+								Names: []*string{aws.String("some-lg-name")},
+							},
+						},
+					},
+				},
+			},
+			expectedErr: errAutodiscoverAndNamedConfigured,
+		},
 	}
 
 	for _, tc := range cases {
@@ -218,10 +239,6 @@ func TestLoadConfig(t *testing.T) {
 					PollInterval:        5 * time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
 					Groups: GroupConfig{
-						// this is ignored since named configs are present
-						AutodiscoverConfig: &AutodiscoverConfig{
-							Limit: defaultLogGroupLimit,
-						},
 						NamedConfigs: map[string]StreamConfig{
 							"/aws/eks/dev-0/cluster": {},
 						},
@@ -239,10 +256,6 @@ func TestLoadConfig(t *testing.T) {
 					PollInterval:        5 * time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
 					Groups: GroupConfig{
-						// this is ignored since named configs are present
-						AutodiscoverConfig: &AutodiscoverConfig{
-							Limit: defaultLogGroupLimit,
-						},
 						NamedConfigs: map[string]StreamConfig{
 							"/aws/eks/dev-0/cluster": {
 								Names: []*string{aws.String("kube-apiserver-ea9c831555adca1815ae04b87661klasdj")},
@@ -263,6 +276,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, config.UnmarshalReceiver(loaded, cfg))
 			require.Equal(t, cfg, tc.expectedConfig)
+			require.NoError(t, cfg.Validate())
 		})
 	}
 }

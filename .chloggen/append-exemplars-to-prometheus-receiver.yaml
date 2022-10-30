@@ -1,9 +1,0 @@
-change_type: enhancement
-
-component: receiver/prometheusreceiver
-
-note: Append exemplars to the metrics received by prometheus receiver
-
-issues: [8353]
-
-subtext: Acknowledge exemplars coming from prometheus receiver and append it to otel format

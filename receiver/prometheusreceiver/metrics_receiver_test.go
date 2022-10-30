@@ -1076,6 +1076,15 @@ rpc_duration_seconds_sum{foo="no_quantile"} 101
 rpc_duration_seconds_count{foo="no_quantile"} 55
 `
 
+var target4Page1 = `
+# A simple counter
+# TYPE foo counter
+foo 0
+# Another counter with the same name but also _total suffix
+# TYPE foo_total counter
+foo_total 1
+`
+
 func verifyTarget3(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
@@ -1185,6 +1194,42 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 	doCompare(t, "scrape2", wantAttributes, m2, e2)
 }
 
+func verifyTarget4(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
+	verifyNumValidScrapeResults(t, td, resourceMetrics)
+	m1 := resourceMetrics[0]
+
+	// m1 has 2 metrics + 5 internal scraper metrics
+	assert.Equal(t, 7, metricsCount(m1))
+
+	wantAttributes := td.attributes
+
+	metrics1 := m1.ScopeMetrics().At(0).Metrics()
+	ts1 := getTS(metrics1)
+	e1 := []testExpectation{
+		assertMetricPresent("foo",
+			compareMetricIsMonotonic(true),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(0),
+					},
+				},
+			}),
+		assertMetricPresent("foo_info",
+			compareMetricIsMonotonic(true),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(1.0),
+					},
+				},
+			}),
+	}
+	doCompare(t, "scrape-infostatesetmetrics-1", wantAttributes, m1, e1)
+}
+
 // TestCoreMetricsEndToEnd end to end test executor
 func TestCoreMetricsEndToEnd(t *testing.T) {
 	// 1. setup input data
@@ -1220,6 +1265,14 @@ func TestCoreMetricsEndToEnd(t *testing.T) {
 				{code: 200, data: target3Page2},
 			},
 			validateFunc: verifyTarget3,
+		},
+		{
+			name: "target4",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: target4Page1, useOpenMetrics: false},
+			},
+			validateFunc:    verifyTarget4,
+			validateScrapes: true,
 		},
 	}
 	testComponent(t, targets, false, "")

@@ -264,17 +264,20 @@ func NewFileDataProvider(filePath string, dataType config.DataType) (*FileDataPr
 	// Load the message from the file and count the data points.
 	switch dataType {
 	case config.TracesDataType:
-		if dp.traces, err = ptrace.NewJSONUnmarshaler().UnmarshalTraces(buf); err != nil {
+		unmarshaler := &ptrace.JSONUnmarshaler{}
+		if dp.traces, err = unmarshaler.UnmarshalTraces(buf); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.traces.SpanCount()
 	case config.MetricsDataType:
-		if dp.metrics, err = pmetric.NewJSONUnmarshaler().UnmarshalMetrics(buf); err != nil {
+		unmarshaler := &pmetric.JSONUnmarshaler{}
+		if dp.metrics, err = unmarshaler.UnmarshalMetrics(buf); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.metrics.DataPointCount()
 	case config.LogsDataType:
-		if dp.logs, err = plog.NewJSONUnmarshaler().UnmarshalLogs(buf); err != nil {
+		unmarshaler := &plog.JSONUnmarshaler{}
+		if dp.logs, err = unmarshaler.UnmarshalLogs(buf); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.logs.LogRecordCount()

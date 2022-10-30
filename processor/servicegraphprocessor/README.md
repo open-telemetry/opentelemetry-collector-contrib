@@ -1,10 +1,10 @@
 # Service graph processor
 
-| Status                   |                     |
-| ------------------------ |---------------------|
-| Stability                | [in development]    |
-| Supported pipeline types | traces              |
-| Distributions            | [contrib]           |
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [alpha]   |
+| Supported pipeline types | traces    |
+| Distributions            | [contrib] |
 
 The service graphs processor is a traces processor that builds a map representing the interrelationships between various services in a system.
 The processor will analyse trace data and generate metrics describing the relationship between the services.

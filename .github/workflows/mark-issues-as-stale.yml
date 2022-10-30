@@ -1,0 +1,20 @@
+name: 'Mark issues as stale'
+on:
+  schedule:
+    - cron: "27 3 * * 1" # Run once a week to ease into marking issues as stale.
+
+jobs:
+  mark-issues-as-stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run mark-issues-as-stale.sh
+        run: ./.github/workflows/scripts/mark-issues-as-stale.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DAYS_BEFORE_STALE: 60
+          DAYS_BEFORE_CLOSE: 120 # Only used for the stale message.
+          STALE_LABEL: 'Stale'
+          EXEMPT_LABEL: 'never stale'
+

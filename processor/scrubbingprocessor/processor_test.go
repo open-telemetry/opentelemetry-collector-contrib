@@ -229,12 +229,12 @@ func generateLogs(body string, resourceAttributes map[string]string, recordAttri
 	ld := plog.NewLogs()
 	resourceLogs := ld.ResourceLogs().AppendEmpty()
 	for k, v := range resourceAttributes {
-		resourceLogs.Resource().Attributes().PutString(k, v)
+		resourceLogs.Resource().Attributes().PutStr(k, v)
 	}
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	logRecordEntry1 := scopeLogs.LogRecords().AppendEmpty()
 	for k, v := range recordAttributes {
-		logRecordEntry1.Attributes().PutString(k, v)
+		logRecordEntry1.Attributes().PutStr(k, v)
 	}
 	logRecordEntry1.Body().SetStr(body)
 	return ld

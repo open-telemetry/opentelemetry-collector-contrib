@@ -27,13 +27,14 @@ func ReadMetrics(filePath string) (pmetric.Metrics, error) {
 	if err != nil {
 		return pmetric.Metrics{}, err
 	}
-	unmarshaller := pmetric.NewJSONUnmarshaler()
+	unmarshaller := &pmetric.JSONUnmarshaler{}
 	return unmarshaller.UnmarshalMetrics(expectedFileBytes)
 }
 
 // WriteMetrics writes a pmetric.Metrics to the specified file
 func WriteMetrics(filePath string, metrics pmetric.Metrics) error {
-	fileBytes, err := pmetric.NewJSONMarshaler().MarshalMetrics(metrics)
+	unmarshaler := &pmetric.JSONMarshaler{}
+	fileBytes, err := unmarshaler.MarshalMetrics(metrics)
 	if err != nil {
 		return err
 	}

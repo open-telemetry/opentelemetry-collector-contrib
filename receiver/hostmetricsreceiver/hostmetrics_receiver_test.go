@@ -176,8 +176,10 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 		return
 	}
 
-	assert.Equal(t, len(resourceMetrics), len(returnedResourceMetrics))
-	for _, expected := range resourceMetrics {
+	var expectedResourceMetrics []string
+	expectedResourceMetrics = append(expectedResourceMetrics, resourceMetrics...)
+	assert.Equal(t, len(expectedResourceMetrics), len(returnedResourceMetrics))
+	for _, expected := range expectedResourceMetrics {
 		assert.Contains(t, returnedResourceMetrics, expected)
 	}
 }
