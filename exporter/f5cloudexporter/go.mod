@@ -5,8 +5,8 @@ go 1.18
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.63.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.63.0
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.63.0
+	go.opentelemetry.io/collector v0.63.1
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.63.1
 	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783
 	google.golang.org/api v0.100.0
 )
@@ -38,7 +38,7 @@ require (
 	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.63.0 // indirect
+	go.opentelemetry.io/collector/pdata v0.63.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect
