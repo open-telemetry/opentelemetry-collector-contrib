@@ -60,8 +60,10 @@ func TestSnmpReceiverIntegration(t *testing.T) {
 	require.NoError(t, err)
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
+
 	for _, testCase := range testCases {
 		t.Run(testCase.desc, func(t *testing.T) {
+
 			factory := NewFactory()
 			factories.Receivers[typeStr] = factory
 			configFile := filepath.Join("testdata", "integration", testCase.configFilename)
@@ -82,7 +84,8 @@ func TestSnmpReceiverIntegration(t *testing.T) {
 			expectedFile := filepath.Join("testdata", "integration", testCase.expectedResultsFilename)
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
-			scrapertest.CompareMetrics(expectedMetrics, actualMetrics)
+			err = scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues("snmp.test.metric.sysuptime"))
+			require.NoError(t, err)
 		})
 	}
 }
