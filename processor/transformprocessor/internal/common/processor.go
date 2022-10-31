@@ -15,7 +15,6 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 import (
 	"fmt"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -32,8 +31,8 @@ import (
 )
 
 type Context interface {
-	// IsContext dummy method for type safety
-	IsContext()
+	// isContext dummy method for type safety
+	isContext()
 }
 
 type TracesContext interface {
@@ -48,18 +47,18 @@ type LogsContext interface {
 	ProcessLogs(td plog.Logs) error
 }
 
-var _ Context = &ResourceStatements{}
-var _ TracesContext = &ResourceStatements{}
-var _ MetricsContext = &ResourceStatements{}
-var _ LogsContext = &ResourceStatements{}
+var _ Context = &resourceStatements{}
+var _ TracesContext = &resourceStatements{}
+var _ MetricsContext = &resourceStatements{}
+var _ LogsContext = &resourceStatements{}
 
-type ResourceStatements struct {
+type resourceStatements struct {
 	Statements []*ottl.Statement[ottlresource.TransformContext]
 }
 
-func (r *ResourceStatements) IsContext() {}
+func (r *resourceStatements) isContext() {}
 
-func (r *ResourceStatements) ProcessTraces(td ptrace.Traces) error {
+func (r *resourceStatements) ProcessTraces(td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		ctx := ottlresource.NewTransformContext(rspans.Resource())
@@ -73,7 +72,7 @@ func (r *ResourceStatements) ProcessTraces(td ptrace.Traces) error {
 	return nil
 }
 
-func (r *ResourceStatements) ProcessMetrics(td pmetric.Metrics) error {
+func (r *resourceStatements) ProcessMetrics(td pmetric.Metrics) error {
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
 		rmetrics := td.ResourceMetrics().At(i)
 		ctx := ottlresource.NewTransformContext(rmetrics.Resource())
@@ -87,7 +86,7 @@ func (r *ResourceStatements) ProcessMetrics(td pmetric.Metrics) error {
 	return nil
 }
 
-func (r *ResourceStatements) ProcessLogs(td plog.Logs) error {
+func (r *resourceStatements) ProcessLogs(td plog.Logs) error {
 	for i := 0; i < td.ResourceLogs().Len(); i++ {
 		rlogs := td.ResourceLogs().At(i)
 		ctx := ottlresource.NewTransformContext(rlogs.Resource())
@@ -101,18 +100,18 @@ func (r *ResourceStatements) ProcessLogs(td plog.Logs) error {
 	return nil
 }
 
-var _ Context = &ScopeStatements{}
-var _ TracesContext = &ScopeStatements{}
-var _ MetricsContext = &ScopeStatements{}
-var _ LogsContext = &ScopeStatements{}
+var _ Context = &scopeStatements{}
+var _ TracesContext = &scopeStatements{}
+var _ MetricsContext = &scopeStatements{}
+var _ LogsContext = &scopeStatements{}
 
-type ScopeStatements struct {
+type scopeStatements struct {
 	Statements []*ottl.Statement[ottlscope.TransformContext]
 }
 
-func (s *ScopeStatements) IsContext() {}
+func (s *scopeStatements) isContext() {}
 
-func (s *ScopeStatements) ProcessTraces(td ptrace.Traces) error {
+func (s *scopeStatements) ProcessTraces(td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
@@ -129,7 +128,7 @@ func (s *ScopeStatements) ProcessTraces(td ptrace.Traces) error {
 	return nil
 }
 
-func (s *ScopeStatements) ProcessMetrics(td pmetric.Metrics) error {
+func (s *scopeStatements) ProcessMetrics(td pmetric.Metrics) error {
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
 		rmetrics := td.ResourceMetrics().At(i)
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
@@ -146,7 +145,7 @@ func (s *ScopeStatements) ProcessMetrics(td pmetric.Metrics) error {
 	return nil
 }
 
-func (s *ScopeStatements) ProcessLogs(td plog.Logs) error {
+func (s *scopeStatements) ProcessLogs(td plog.Logs) error {
 	for i := 0; i < td.ResourceLogs().Len(); i++ {
 		rlogs := td.ResourceLogs().At(i)
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
@@ -163,16 +162,16 @@ func (s *ScopeStatements) ProcessLogs(td plog.Logs) error {
 	return nil
 }
 
-var _ Context = &TraceStatements{}
-var _ TracesContext = &TraceStatements{}
+var _ Context = &traceStatements{}
+var _ TracesContext = &traceStatements{}
 
-type TraceStatements struct {
+type traceStatements struct {
 	statements []*ottl.Statement[ottltraces.TransformContext]
 }
 
-func (t *TraceStatements) IsContext() {}
+func (t *traceStatements) isContext() {}
 
-func (t *TraceStatements) ProcessTraces(td ptrace.Traces) error {
+func (t *traceStatements) ProcessTraces(td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
@@ -192,16 +191,16 @@ func (t *TraceStatements) ProcessTraces(td ptrace.Traces) error {
 	return nil
 }
 
-var _ Context = &LogStatements{}
-var _ LogsContext = &LogStatements{}
+var _ Context = &logStatements{}
+var _ LogsContext = &logStatements{}
 
-type LogStatements struct {
+type logStatements struct {
 	statements []*ottl.Statement[ottllogs.TransformContext]
 }
 
-func (l *LogStatements) IsContext() {}
+func (l *logStatements) isContext() {}
 
-func (l *LogStatements) ProcessLogs(td plog.Logs) error {
+func (l *logStatements) ProcessLogs(td plog.Logs) error {
 	for i := 0; i < td.ResourceLogs().Len(); i++ {
 		rlogs := td.ResourceLogs().At(i)
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
@@ -221,16 +220,16 @@ func (l *LogStatements) ProcessLogs(td plog.Logs) error {
 	return nil
 }
 
-var _ Context = &DataPointStatements{}
-var _ MetricsContext = &DataPointStatements{}
+var _ Context = &dataPointStatements{}
+var _ MetricsContext = &dataPointStatements{}
 
-type DataPointStatements struct {
+type dataPointStatements struct {
 	statements []*ottl.Statement[ottldatapoints.TransformContext]
 }
 
-func (d *DataPointStatements) IsContext() {}
+func (d *dataPointStatements) isContext() {}
 
-func (d *DataPointStatements) ProcessMetrics(td pmetric.Metrics) error {
+func (d *dataPointStatements) ProcessMetrics(td pmetric.Metrics) error {
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
 		rmetrics := td.ResourceMetrics().At(i)
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
@@ -260,7 +259,7 @@ func (d *DataPointStatements) ProcessMetrics(td pmetric.Metrics) error {
 	return nil
 }
 
-func (d *DataPointStatements) handleNumberDataPoints(dps pmetric.NumberDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
+func (d *dataPointStatements) handleNumberDataPoints(dps pmetric.NumberDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
 		ctx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		err := d.callFunctions(ctx)
@@ -271,7 +270,7 @@ func (d *DataPointStatements) handleNumberDataPoints(dps pmetric.NumberDataPoint
 	return nil
 }
 
-func (d *DataPointStatements) handleHistogramDataPoints(dps pmetric.HistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
+func (d *dataPointStatements) handleHistogramDataPoints(dps pmetric.HistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
 		ctx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		err := d.callFunctions(ctx)
@@ -282,7 +281,7 @@ func (d *DataPointStatements) handleHistogramDataPoints(dps pmetric.HistogramDat
 	return nil
 }
 
-func (d *DataPointStatements) handleExponetialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
+func (d *dataPointStatements) handleExponetialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
 		ctx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		err := d.callFunctions(ctx)
@@ -293,7 +292,7 @@ func (d *DataPointStatements) handleExponetialHistogramDataPoints(dps pmetric.Ex
 	return nil
 }
 
-func (d *DataPointStatements) handleSummaryDataPoints(dps pmetric.SummaryDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
+func (d *dataPointStatements) handleSummaryDataPoints(dps pmetric.SummaryDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
 		ctx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		err := d.callFunctions(ctx)
@@ -304,7 +303,7 @@ func (d *DataPointStatements) handleSummaryDataPoints(dps pmetric.SummaryDataPoi
 	return nil
 }
 
-func (d *DataPointStatements) callFunctions(ctx ottldatapoints.TransformContext) error {
+func (d *dataPointStatements) callFunctions(ctx ottldatapoints.TransformContext) error {
 	for _, statement := range d.statements {
 		_, _, err := statement.Execute(ctx)
 		if err != nil {
@@ -315,6 +314,7 @@ func (d *DataPointStatements) callFunctions(ctx ottldatapoints.TransformContext)
 }
 
 type ParserCollection struct {
+	settings         component.TelemetrySettings
 	resourceParser   ottl.Parser[ottlresource.TransformContext]
 	scopeParser      ottl.Parser[ottlscope.TransformContext]
 	traceParser      ottl.Parser[ottltraces.TransformContext]
@@ -322,37 +322,41 @@ type ParserCollection struct {
 	logParser        ottl.Parser[ottllogs.TransformContext]
 }
 
-func NewTracesParserCollection(functions map[string]interface{}, settings component.TelemetrySettings) ParserCollection {
-	return ParserCollection{
-		resourceParser:   ottlresource.NewParser(ResourceFunctions(), settings),
-		scopeParser:      ottlscope.NewParser(ScopeFunctions(), settings),
-		traceParser:      ottltraces.NewParser(functions, settings),
-		dataPointsParser: ottl.Parser[ottldatapoints.TransformContext]{},
-		logParser:        ottl.Parser[ottllogs.TransformContext]{},
+// Option to construct new consumers.
+type Option func(*ParserCollection)
+
+func WithTraceParser(functions map[string]interface{}) Option {
+	return func(o *ParserCollection) {
+		o.traceParser = ottltraces.NewParser(functions, o.settings)
 	}
 }
 
-func NewMetricsParserCollection(functions map[string]interface{}, settings component.TelemetrySettings) ParserCollection {
-	return ParserCollection{
-		resourceParser:   ottlresource.NewParser(ResourceFunctions(), settings),
-		scopeParser:      ottlscope.NewParser(ScopeFunctions(), settings),
-		traceParser:      ottl.Parser[ottltraces.TransformContext]{},
-		dataPointsParser: ottldatapoints.NewParser(functions, settings),
-		logParser:        ottl.Parser[ottllogs.TransformContext]{},
+func WithLogParser(functions map[string]interface{}) Option {
+	return func(o *ParserCollection) {
+		o.logParser = ottllogs.NewParser(functions, o.settings)
 	}
 }
 
-func NewLogsParserCollection(functions map[string]interface{}, settings component.TelemetrySettings) ParserCollection {
-	return ParserCollection{
-		resourceParser:   ottlresource.NewParser(ResourceFunctions(), settings),
-		scopeParser:      ottlscope.NewParser(ScopeFunctions(), settings),
-		traceParser:      ottl.Parser[ottltraces.TransformContext]{},
-		dataPointsParser: ottl.Parser[ottldatapoints.TransformContext]{},
-		logParser:        ottllogs.NewParser(functions, settings),
+func WithDataPointParser(functions map[string]interface{}) Option {
+	return func(o *ParserCollection) {
+		o.dataPointsParser = ottldatapoints.NewParser(functions, o.settings)
 	}
 }
 
-func (pc ParserCollection) ParseContextStatements(contextStatements []ContextStatements) ([]Context, error) {
+func NewParserCollection(settings component.TelemetrySettings, options ...Option) *ParserCollection {
+	pc := &ParserCollection{
+		resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
+		scopeParser:    ottlscope.NewParser(ScopeFunctions(), settings),
+	}
+
+	for _, op := range options {
+		op(pc)
+	}
+
+	return pc
+}
+
+func (pc *ParserCollection) ParseContextStatements(contextStatements []ContextStatements) ([]Context, error) {
 	contexts := make([]Context, len(contextStatements))
 	var errors error
 
@@ -364,7 +368,7 @@ func (pc ParserCollection) ParseContextStatements(contextStatements []ContextSta
 				errors = multierr.Append(errors, err)
 				continue
 			}
-			contexts[i] = &ResourceStatements{
+			contexts[i] = &resourceStatements{
 				Statements: statements,
 			}
 		case Scope:
@@ -373,7 +377,7 @@ func (pc ParserCollection) ParseContextStatements(contextStatements []ContextSta
 				errors = multierr.Append(errors, err)
 				continue
 			}
-			contexts[i] = &ScopeStatements{
+			contexts[i] = &scopeStatements{
 				Statements: statements,
 			}
 		case Trace:
@@ -382,7 +386,7 @@ func (pc ParserCollection) ParseContextStatements(contextStatements []ContextSta
 				errors = multierr.Append(errors, err)
 				continue
 			}
-			contexts[i] = &TraceStatements{
+			contexts[i] = &traceStatements{
 				statements: statements,
 			}
 		case DataPoint:
@@ -391,7 +395,7 @@ func (pc ParserCollection) ParseContextStatements(contextStatements []ContextSta
 				errors = multierr.Append(errors, err)
 				continue
 			}
-			contexts[i] = &DataPointStatements{
+			contexts[i] = &dataPointStatements{
 				statements: statements,
 			}
 		case Log:
@@ -400,7 +404,7 @@ func (pc ParserCollection) ParseContextStatements(contextStatements []ContextSta
 				errors = multierr.Append(errors, err)
 				continue
 			}
-			contexts[i] = &LogStatements{
+			contexts[i] = &logStatements{
 				statements: statements,
 			}
 		default:
