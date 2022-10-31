@@ -115,7 +115,7 @@
           "file_sizes" : { }
         },
         "translog" : {
-          "operations" : 0,
+          "operations" : 5,
           "size_in_bytes" : 55,
           "uncommitted_operations" : 0,
           "uncommitted_size_in_bytes" : 55,
@@ -243,7 +243,7 @@
           "file_sizes" : { }
         },
         "translog" : {
-          "operations" : 0,
+          "operations" : 5,
           "size_in_bytes" : 55,
           "uncommitted_operations" : 0,
           "uncommitted_size_in_bytes" : 55,
@@ -375,7 +375,7 @@
             "file_sizes" : { }
           },
           "translog" : {
-            "operations" : 0,
+            "operations" : 5,
             "size_in_bytes" : 55,
             "uncommitted_operations" : 0,
             "uncommitted_size_in_bytes" : 55,
@@ -503,7 +503,7 @@
             "file_sizes" : { }
           },
           "translog" : {
-            "operations" : 0,
+            "operations" : 5,
             "size_in_bytes" : 55,
             "uncommitted_operations" : 0,
             "uncommitted_size_in_bytes" : 55,
