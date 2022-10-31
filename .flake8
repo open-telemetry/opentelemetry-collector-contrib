@@ -16,6 +16,7 @@ exclude =
   target
   __pycache__
   exporter/opentelemetry-exporter-jaeger/src/opentelemetry/exporter/jaeger/gen/
+  exporter/opentelemetry-exporter-prometheus-remote-write/src/opentelemetry/exporter/prometheus_remote_write/gen/
   exporter/opentelemetry-exporter-jaeger/build/*
   docs/examples/opentelemetry-example-app/src/opentelemetry_example_app/grpc/gen/
   docs/examples/opentelemetry-example-app/build/*

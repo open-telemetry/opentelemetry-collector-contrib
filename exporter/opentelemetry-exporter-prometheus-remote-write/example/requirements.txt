@@ -1,0 +1,7 @@
+psutil
+protobuf>=3.13.0
+requests>=2.25.0
+python-snappy>=0.5.4
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-proto
