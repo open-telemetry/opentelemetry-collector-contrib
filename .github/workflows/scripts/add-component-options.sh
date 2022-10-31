@@ -30,7 +30,7 @@ fi
 COMPONENT_REGEX='(cmd|pkg|extension|processor|receiver|exporter)'
 
 # Get the line number for text within a file
-function get_line_number() {
+get_line_number() {
   text=$1
   file=$2
   
@@ -42,12 +42,11 @@ END_LINE=$(get_line_number '# End Collector components list' "${FILE}")
 TOTAL_LINES=$(wc -l "${FILE}" | awk '{ print $1 }')
 
 head -n "${START_LINE}" "${FILE}"
-cat .github/CODEOWNERS | \
-  grep -E "^${COMPONENT_REGEX}" | \
+grep -E "^${COMPONENT_REGEX}" < ".github/CODEOWNERS" | \
   awk '{ print $1 }' | \
   sed -E 's%(.+)/$%\1%' | \
   sed -E "s%${COMPONENT_REGEX}/(.+)${COMPONENT_REGEX}%\1/\2%" | \
   sort | \
   awk '{ printf "      - %s\n",$1 }'
-tail -n $((${TOTAL_LINES}-${END_LINE}+1)) "${FILE}"
+tail -n $((TOTAL_LINES-END_LINE+1)) "${FILE}"
 
