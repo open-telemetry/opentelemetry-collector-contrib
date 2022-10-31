@@ -333,7 +333,7 @@ func (r *elasticsearchScraper) scrapeIndicesMetrics(ctx context.Context, now pco
 	indexStats, err := r.client.IndexStats(ctx, r.cfg.Indices)
 
 	if err != nil {
-		errs.AddPartial(14, err)
+		errs.AddPartial(16, err)
 		return
 	}
 
@@ -405,6 +405,13 @@ func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name
 		stats.Total.SegmentsStats.TermsMemoryInBy,
 		metadata.AttributeIndexAggregationTypeTotal,
 		metadata.AttributeSegmentsMemoryObjectTypeTerm,
+	)
+
+	r.mb.RecordElasticsearchIndexTranslogOperationsDataPoint(
+		now, stats.Total.TranslogStats.Operations, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexTranslogSizeDataPoint(
+		now, stats.Total.TranslogStats.SizeInBy, metadata.AttributeIndexAggregationTypeTotal,
 	)
 
 	r.mb.EmitForResource(metadata.WithElasticsearchIndexName(name), metadata.WithElasticsearchClusterName(r.clusterName))
