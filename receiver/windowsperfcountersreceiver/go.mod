@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.63.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.63.2-0.20221028212826-3e91f3da33b9
+	go.opentelemetry.io/collector v0.63.2-0.20221031183340-2ed8c0c6ff9c
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 )
@@ -41,7 +41,7 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.63.0
 	github.com/pelletier/go-toml v1.9.4 // indirect
-	go.opentelemetry.io/collector/pdata v0.63.2-0.20221028212826-3e91f3da33b9
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221031183340-2ed8c0c6ff9c
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => ../../internal/scrapertest
