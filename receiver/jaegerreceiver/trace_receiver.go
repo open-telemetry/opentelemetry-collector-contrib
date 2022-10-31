@@ -392,12 +392,12 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 	}
 
 	if jr.config.CollectorGRPCServerSettings.NetAddr.Endpoint != "" {
-		opts, err := jr.config.CollectorGRPCServerSettings.ToServerOption(host, jr.settings.TelemetrySettings)
+		var err error
+		jr.grpc, err = jr.config.CollectorGRPCServerSettings.ToServer(host, jr.settings.TelemetrySettings)
 		if err != nil {
 			return fmt.Errorf("failed to build the options for the Jaeger gRPC Collector: %w", err)
 		}
 
-		jr.grpc = grpc.NewServer(opts...)
 		ln, err := jr.config.CollectorGRPCServerSettings.ToListener()
 		if err != nil {
 			return fmt.Errorf("failed to bind to gRPC address %q: %w", jr.config.CollectorGRPCServerSettings.NetAddr, err)

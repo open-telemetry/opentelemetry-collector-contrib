@@ -7,9 +7,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.63.0
 	github.com/shirou/gopsutil/v3 v3.22.9
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.63.2-0.20221028212826-3e91f3da33b9
-	go.opentelemetry.io/collector/pdata v0.63.2-0.20221028212826-3e91f3da33b9
-	go.opentelemetry.io/collector/semconv v0.63.2-0.20221028212826-3e91f3da33b9
+	go.opentelemetry.io/collector v0.63.2-0.20221031183340-2ed8c0c6ff9c
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221031183340-2ed8c0c6ff9c
+	go.opentelemetry.io/collector/semconv v0.63.2-0.20221031183340-2ed8c0c6ff9c
 	go.uber.org/zap v1.23.0
 	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8
 
