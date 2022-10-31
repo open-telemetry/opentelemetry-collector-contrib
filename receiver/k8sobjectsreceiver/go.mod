@@ -4,22 +4,20 @@ go 1.18
 
 require (
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.63.0
-	go.opentelemetry.io/collector/pdata v0.63.0
-	go.opentelemetry.io/collector/semconv v0.63.0
+	go.opentelemetry.io/collector v0.63.2-0.20221028212826-3e91f3da33b9
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221028212826-3e91f3da33b9
+	go.opentelemetry.io/collector/semconv v0.63.2-0.20221028212826-3e91f3da33b9
 	go.uber.org/zap v1.23.0
 	k8s.io/apimachinery v0.25.3
 	k8s.io/client-go v0.25.3
 )
 
 require (
-	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/openshift/api v0.0.0-20210521075222-e273a339932a // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.11.1 // indirect
 )
 
 require (
