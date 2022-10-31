@@ -16,45 +16,34 @@ package logs // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
 )
 
 type Processor struct {
-	statements []*ottl.Statement[ottllogs.TransformContext]
+	contexts []common.Context
 }
 
-func NewProcessor(statements []string, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
-	ottlp := ottllogs.NewParser(functions, settings)
-	parsedStatements, err := ottlp.ParseStatements(statements)
+func NewProcessor(statements []common.ContextStatements, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
+	pc := common.NewParserCollection(settings, common.WithLogParser(Functions()))
+	contexts, err := pc.ParseContextStatements(statements)
 	if err != nil {
 		return nil, err
 	}
 	return &Processor{
-		statements: parsedStatements,
+		contexts: contexts,
 	}, nil
 }
 
 func (p *Processor) ProcessLogs(_ context.Context, td plog.Logs) (plog.Logs, error) {
-	for i := 0; i < td.ResourceLogs().Len(); i++ {
-		rlogs := td.ResourceLogs().At(i)
-		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
-			slogs := rlogs.ScopeLogs().At(j)
-			logs := slogs.LogRecords()
-			for k := 0; k < logs.Len(); k++ {
-				ctx := ottllogs.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
-				for _, statement := range p.statements {
-					_, _, err := statement.Execute(ctx)
-					if err != nil {
-						return td, err
-					}
-				}
-			}
+	for _, contexts := range p.contexts {
+		lc, ok := contexts.(common.LogsContext)
+		if !ok {
+			// handle error
 		}
+		lc.ProcessLogs(td)
 	}
 	return td, nil
 }
