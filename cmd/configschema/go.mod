@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.63.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.63.0
+	go.opentelemetry.io/collector v0.63.2-0.20221028212826-3e91f3da33b9
 	golang.org/x/mod v0.6.0
 	golang.org/x/text v0.4.0
 )
@@ -587,11 +587,11 @@ require (
 	go.mongodb.org/atlas v0.18.0 // indirect
 	go.mongodb.org/mongo-driver v1.10.3 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.63.0 // indirect
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.63.0 // indirect
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.63.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.63.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.63.0 // indirect
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.63.2-0.20221028212826-3e91f3da33b9 // indirect
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.63.2-0.20221028212826-3e91f3da33b9 // indirect
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.63.2-0.20221028212826-3e91f3da33b9 // indirect
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221028212826-3e91f3da33b9 // indirect
+	go.opentelemetry.io/collector/semconv v0.63.2-0.20221028212826-3e91f3da33b9 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.4 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4 // indirect
 	go.opentelemetry.io/contrib/zpages v0.36.4 // indirect

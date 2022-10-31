@@ -5,17 +5,12 @@ go 1.18
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.63.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.63.0
-	go.opentelemetry.io/collector/pdata v0.63.0
+	go.opentelemetry.io/collector v0.63.2-0.20221028212826-3e91f3da33b9
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221028212826-3e91f3da33b9
 	go.uber.org/zap v1.23.0
 )
 
-require (
-	github.com/go-logr/logr v1.2.3 // indirect
-	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/kr/text v0.2.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.11.1 // indirect
-)
+require github.com/kr/text v0.2.0 // indirect
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

@@ -9,8 +9,8 @@ require (
 	github.com/prometheus/common v0.37.0
 	github.com/prometheus/prometheus v0.38.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.63.0
-	go.opentelemetry.io/collector/pdata v0.63.0
+	go.opentelemetry.io/collector v0.63.2-0.20221028212826-3e91f3da33b9
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221028212826-3e91f3da33b9
 	go.uber.org/zap v1.23.0
 )
 
@@ -49,7 +49,6 @@ require (
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
-	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.19.6 // indirect
 	github.com/go-openapi/swag v0.21.1 // indirect
@@ -116,10 +115,9 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/vultr/govultr/v2 v2.17.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.63.0 // indirect
+	go.opentelemetry.io/collector/semconv v0.63.2-0.20221028212826-3e91f3da33b9 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.11.1 // indirect
 	go.opentelemetry.io/otel/trace v1.11.1 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/goleak v1.2.0 // indirect
