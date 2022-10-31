@@ -50,8 +50,8 @@ github.com/uber/jaeger-lib v2.4.1+incompatible h1:td4jdvLcExb4cBISKIpHuGoVXh+dVK
 github.com/uber/jaeger-lib v2.4.1+incompatible/go.mod h1:ComeNDZlWwrWnDv8aPp0Ba6+uUTzImX/AauajbLI56U=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
-go.opentelemetry.io/collector/pdata v0.63.0 h1:YPeMzF4OYFeMW6E+A/eQEv5s32wpc5wEa24H2PP5LeE=
-go.opentelemetry.io/collector/pdata v0.63.0/go.mod h1:IzvXUGQml2mrnvdb8zIlEW3qQs9oFLdD2hLwJdZ+pek=
+go.opentelemetry.io/collector/pdata v0.63.1 h1:g+xdmIjGwZAQFq1+bFF2khcsyRmnECILI0ZjwqMQ04Q=
+go.opentelemetry.io/collector/pdata v0.63.1/go.mod h1:IzvXUGQml2mrnvdb8zIlEW3qQs9oFLdD2hLwJdZ+pek=
 go.opentelemetry.io/collector/semconv v0.63.0 h1:zvpL8Q6xJLOtg8jBK4jNH4Mbhu25HJ43IBeVZNIHH78=
 go.opentelemetry.io/collector/semconv v0.63.0/go.mod h1:5o9yhOa+ABt7g2E5JABDxGZ1PQPbtfxrKNbYn+LOTXU=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
