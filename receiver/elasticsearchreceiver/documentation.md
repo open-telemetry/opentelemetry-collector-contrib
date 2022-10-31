@@ -30,6 +30,8 @@ These are the metrics available for this scraper.
 | elasticsearch.index.segments.memory | Size of memory for segment object of an index. | By | Sum(Int) | <ul> <li>index_aggregation_type</li> <li>segments_memory_object_type</li> </ul> |
 | elasticsearch.index.segments.size | Size of segments of an index. | By | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
 | **elasticsearch.index.shards.size** | The size of the shards assigned to this index. | By | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
+| elasticsearch.index.translog.operations | Number of transaction log operations for an index. | {operations} | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
+| elasticsearch.index.translog.size | Size of the transaction log for an index. | By | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
 | **elasticsearch.indexing_pressure.memory.limit** | Configured memory limit, in bytes, for the indexing requests. | By | Gauge(Int) | <ul> </ul> |
 | **elasticsearch.indexing_pressure.memory.total.primary_rejections** | Cumulative number of indexing requests rejected in the primary stage. | 1 | Sum(Int) | <ul> </ul> |
 | **elasticsearch.indexing_pressure.memory.total.replica_rejections** | Number of indexing requests rejected in the replica stage. | 1 | Sum(Int) | <ul> </ul> |
