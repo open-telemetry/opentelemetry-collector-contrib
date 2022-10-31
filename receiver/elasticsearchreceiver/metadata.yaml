@@ -146,6 +146,14 @@ attributes:
     enum:
       - primary_shards
       - total
+  segments_memory_object_type:
+    value: object
+    description: Type of object in segment
+    enum:
+      - term
+      - doc_value
+      - index_writer
+      - fixed_bit_set
 
 metrics:
   # these metrics are from /_nodes/stats, and are node level metrics
@@ -784,4 +792,31 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [index_aggregation_type]
+    enabled: false
+  elasticsearch.index.segments.count:
+    description: Number of segments of an index.
+    unit: "{segments}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [index_aggregation_type]
+    enabled: false
+  elasticsearch.index.segments.size:
+    description: Size of segments of an index.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [index_aggregation_type]
+    enabled: false
+  elasticsearch.index.segments.memory:
+    description: Size of memory for segment object of an index.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [index_aggregation_type, segments_memory_object_type]
     enabled: false
