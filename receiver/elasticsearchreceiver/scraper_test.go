@@ -41,7 +41,11 @@ const noNodesExpectedMetricsPath = "./testdata/expected_metrics/noNodes.json"
 func TestScraper(t *testing.T) {
 	t.Parallel()
 
-	sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
+	config := createDefaultConfig().(*Config)
+	config.Metrics.ElasticsearchIndexOperationsMergeSize.Enabled = true
+	config.Metrics.ElasticsearchIndexOperationsMergeDocsCount.Enabled = true
+
+	sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), config)
 
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
