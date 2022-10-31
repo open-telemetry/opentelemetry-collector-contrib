@@ -48,7 +48,7 @@ func testUDP(t *testing.T, cfg *UDPLogConfig) {
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
 	var conn net.Conn
-	conn, err = net.Dial("udp", "0.0.0.0:29018")
+	conn, err = net.Dial("udp", "127.0.0.1:29018")
 	require.NoError(t, err)
 
 	for i := 0; i < numLogs; i++ {
@@ -99,7 +99,7 @@ func testdataConfigYaml() *UDPLogConfig {
 		},
 		InputConfig: func() udp.Config {
 			c := udp.NewConfig()
-			c.ListenAddress = "0.0.0.0:29018"
+			c.ListenAddress = "127.0.0.1:29018"
 			return *c
 		}(),
 	}

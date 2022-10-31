@@ -425,6 +425,176 @@ func Test_parse(t *testing.T) {
 				WhereClause: nil,
 			},
 		},
+		{
+			name:      "Invocation with empty list",
+			statement: `set(attributes["test"], [])`,
+			expected: &parsedStatement{
+				Invocation: invocation{
+					Function: "set",
+					Arguments: []value{
+						{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name:   "attributes",
+										MapKey: ottltest.Strp("test"),
+									},
+								},
+							},
+						},
+						{
+							List: &list{
+								Values: nil,
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "Invocation with single-value list",
+			statement: `set(attributes["test"], ["value0"])`,
+			expected: &parsedStatement{
+				Invocation: invocation{
+					Function: "set",
+					Arguments: []value{
+						{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name:   "attributes",
+										MapKey: ottltest.Strp("test"),
+									},
+								},
+							},
+						},
+						{
+							List: &list{
+								Values: []value{
+									{
+										String: ottltest.Strp("value0"),
+									},
+								},
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "Invocation with multi-value list",
+			statement: `set(attributes["test"], ["value1", "value2"])`,
+			expected: &parsedStatement{
+				Invocation: invocation{
+					Function: "set",
+					Arguments: []value{
+						{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name:   "attributes",
+										MapKey: ottltest.Strp("test"),
+									},
+								},
+							},
+						},
+						{
+							List: &list{
+								Values: []value{
+									{
+										String: ottltest.Strp("value1"),
+									},
+									{
+										String: ottltest.Strp("value2"),
+									},
+								},
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "Invocation with nested heterogeneous types",
+			statement: `set(attributes["test"], [Concat(["a", "b"], "+"), ["1", 2, 3.0], nil, attributes["test"]])`,
+			expected: &parsedStatement{
+				Invocation: invocation{
+					Function: "set",
+					Arguments: []value{
+						{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name:   "attributes",
+										MapKey: ottltest.Strp("test"),
+									},
+								},
+							},
+						},
+						{
+							List: &list{
+								Values: []value{
+									{
+										Invocation: &invocation{
+											Function: "Concat",
+											Arguments: []value{
+												{
+													List: &list{
+														Values: []value{
+															{
+																String: ottltest.Strp("a"),
+															},
+															{
+																String: ottltest.Strp("b"),
+															},
+														},
+													},
+												},
+												{
+													String: ottltest.Strp("+"),
+												},
+											},
+										},
+									},
+									{
+										List: &list{
+											Values: []value{
+												{
+													String: ottltest.Strp("1"),
+												},
+												{
+													Int: ottltest.Intp(2),
+												},
+												{
+													Float: ottltest.Floatp(3.0),
+												},
+											},
+										},
+									},
+									{
+										IsNil: (*isNil)(ottltest.Boolp(true)),
+									},
+									{
+										Path: &Path{
+											Fields: []Field{
+												{
+													Name:   "attributes",
+													MapKey: ottltest.Strp("test"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -470,11 +640,12 @@ func Test_parse_failure(t *testing.T) {
 func testParsePath(val *Path) (GetSetter[interface{}], error) {
 	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "name" {
 		return &StandardGetSetter[interface{}]{
-			Getter: func(ctx interface{}) interface{} {
-				return ctx
+			Getter: func(ctx interface{}) (interface{}, error) {
+				return ctx, nil
 			},
-			Setter: func(ctx interface{}, val interface{}) {
+			Setter: func(ctx interface{}, val interface{}) error {
 				reflect.DeepEqual(ctx, val)
+				return nil
 			},
 		}, nil
 	}
@@ -853,8 +1024,8 @@ func Test_Execute(t *testing.T) {
 		{
 			name:      "Condition matched",
 			condition: alwaysTrue[interface{}],
-			function: func(ctx interface{}) interface{} {
-				return 1
+			function: func(ctx interface{}) (interface{}, error) {
+				return 1, nil
 			},
 			expectedCondition: true,
 			expectedResult:    1,
@@ -862,8 +1033,8 @@ func Test_Execute(t *testing.T) {
 		{
 			name:      "Condition not matched",
 			condition: alwaysFalse[interface{}],
-			function: func(ctx interface{}) interface{} {
-				return 1
+			function: func(ctx interface{}) (interface{}, error) {
+				return 1, nil
 			},
 			expectedCondition: false,
 			expectedResult:    nil,
@@ -871,8 +1042,8 @@ func Test_Execute(t *testing.T) {
 		{
 			name:      "No result",
 			condition: alwaysTrue[interface{}],
-			function: func(ctx interface{}) interface{} {
-				return nil
+			function: func(ctx interface{}) (interface{}, error) {
+				return nil, nil
 			},
 			expectedCondition: true,
 			expectedResult:    nil,
@@ -885,8 +1056,8 @@ func Test_Execute(t *testing.T) {
 				function:  tt.function,
 			}
 
-			result, condition := statement.Execute(nil)
-
+			result, condition, err := statement.Execute(nil)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedCondition, condition)
 			assert.Equal(t, tt.expectedResult, result)
 		})

@@ -36,7 +36,7 @@
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/performance.md">Performance</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md">Security</a>
+    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security-best-practices.md">Security</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/roadmap.md">Roadmap</a>
   </strong>
@@ -76,6 +76,7 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
+- [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 - Actively seeking contributors to triage issues
 
 Emeritus Triagers:

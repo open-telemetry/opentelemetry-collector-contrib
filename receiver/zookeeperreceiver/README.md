@@ -27,17 +27,5 @@ receivers:
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
 
-### Feature gate configurations
-
-#### Transition from metrics with "direction" attribute
-
-The proposal to change metrics from being reported with a `direction` attribute has been reverted in the specification. As a result, the
-following feature gates will be removed in v0.62.0:
-
-- **receiver.zookeeperreceiver.emitMetricsWithoutDirectionAttribute**
-- **receiver.zookeeperreceiver.emitMetricsWithDirectionAttribute**
-
-For additional information, see https://github.com/open-telemetry/opentelemetry-specification/issues/2726.
-
 [in development]: https://github.com/open-telemetry/opentelemetry-collector#in-development
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

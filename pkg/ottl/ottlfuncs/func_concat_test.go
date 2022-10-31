@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -26,202 +25,202 @@ import (
 func Test_concat(t *testing.T) {
 	tests := []struct {
 		name      string
-		delimiter string
 		vals      []ottl.StandardGetSetter[interface{}]
+		delimiter string
 		expected  string
 	}{
 		{
-			name:      "concat strings",
+			name: "concat strings",
+			vals: []ottl.StandardGetSetter[interface{}]{
+				{
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "hello", nil
+					},
+				},
+				{
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "world", nil
+					},
+				},
+			},
 			delimiter: " ",
+			expected:  "hello world",
+		},
+		{
+			name: "nil",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return "hello"
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "hello", nil
 					},
 				},
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return "world"
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return nil, nil
+					},
+				},
+				{
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "world", nil
 					},
 				},
 			},
-			expected: "hello world",
-		},
-		{
-			name:      "nil",
 			delimiter: "",
+			expected:  "hello<nil>world",
+		},
+		{
+			name: "integers",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return "hello"
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "hello", nil
 					},
 				},
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return nil
-					},
-				},
-				{
-					Getter: func(ctx interface{}) interface{} {
-						return "world"
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return int64(1), nil
 					},
 				},
 			},
-			expected: "hello<nil>world",
-		},
-		{
-			name:      "integers",
 			delimiter: "",
+			expected:  "hello1",
+		},
+		{
+			name: "floats",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return "hello"
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "hello", nil
 					},
 				},
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return int64(1)
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return 3.14159, nil
 					},
 				},
 			},
-			expected: "hello1",
-		},
-		{
-			name:      "floats",
 			delimiter: "",
+			expected:  "hello3.14159",
+		},
+		{
+			name: "booleans",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return "hello"
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "hello", nil
 					},
 				},
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return 3.14159
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return true, nil
 					},
 				},
 			},
-			expected: "hello3.14159",
-		},
-		{
-			name:      "booleans",
 			delimiter: " ",
+			expected:  "hello true",
+		},
+		{
+			name: "byte slices",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return "hello"
-					},
-				},
-				{
-					Getter: func(ctx interface{}) interface{} {
-						return true
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0xd2, 0xe6, 0x3c, 0xbe, 0x71, 0xf5, 0xa8}, nil
 					},
 				},
 			},
-			expected: "hello true",
-		},
-		{
-			name:      "byte slices",
 			delimiter: "",
+			expected:  "00000000000000000ed2e63cbe71f5a8",
+		},
+		{
+			name: "non-byte slices",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0xd2, 0xe6, 0x3c, 0xbe, 0x71, 0xf5, 0xa8}
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return []int64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0}, nil
 					},
 				},
 			},
-			expected: "00000000000000000ed2e63cbe71f5a8",
-		},
-		{
-			name:      "non-byte slices",
 			delimiter: "",
+			expected:  "",
+		},
+		{
+			name: "maps",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return []int64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0}
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return map[string]string{"key": "value"}, nil
 					},
 				},
 			},
-			expected: "",
-		},
-		{
-			name:      "maps",
 			delimiter: "",
+			expected:  "",
+		},
+		{
+			name: "unprintable value in the middle",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return map[string]string{"key": "value"}
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "hello", nil
+					},
+				},
+				{
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return map[string]string{"key": "value"}, nil
+					},
+				},
+				{
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "world", nil
 					},
 				},
 			},
-			expected: "",
-		},
-		{
-			name:      "unprintable value in the middle",
 			delimiter: "-",
+			expected:  "hello--world",
+		},
+		{
+			name: "empty string values",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return "hello"
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "", nil
 					},
 				},
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return map[string]string{"key": "value"}
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "", nil
 					},
 				},
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return "world"
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "", nil
 					},
 				},
 			},
-			expected: "hello--world",
-		},
-		{
-			name:      "empty string values",
 			delimiter: "__",
-			vals: []ottl.StandardGetSetter[interface{}]{
-				{
-					Getter: func(ctx interface{}) interface{} {
-						return ""
-					},
-				},
-				{
-					Getter: func(ctx interface{}) interface{} {
-						return ""
-					},
-				},
-				{
-					Getter: func(ctx interface{}) interface{} {
-						return ""
-					},
-				},
-			},
-			expected: "____",
+			expected:  "____",
 		},
 		{
-			name:      "single argument",
-			delimiter: "-",
+			name: "single argument",
 			vals: []ottl.StandardGetSetter[interface{}]{
 				{
-					Getter: func(ctx interface{}) interface{} {
-						return "hello"
+					Getter: func(ctx interface{}) (interface{}, error) {
+						return "hello", nil
 					},
 				},
 			},
-			expected: "hello",
+			delimiter: "-",
+			expected:  "hello",
 		},
 		{
 			name:      "no arguments",
-			delimiter: "-",
 			vals:      []ottl.StandardGetSetter[interface{}]{},
+			delimiter: "-",
 			expected:  "",
 		},
 		{
 			name:      "no arguments with an empty delimiter",
-			delimiter: "",
 			vals:      []ottl.StandardGetSetter[interface{}]{},
+			delimiter: "",
 			expected:  "",
 		},
 	}
@@ -233,9 +232,11 @@ func Test_concat(t *testing.T) {
 				getters[i] = val
 			}
 
-			exprFunc, err := Concat(tt.delimiter, getters)
-			require.NoError(t, err)
-			assert.Equal(t, tt.expected, exprFunc(nil))
+			exprFunc, err := Concat(getters, tt.delimiter)
+			assert.NoError(t, err)
+			result, err := exprFunc(nil)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

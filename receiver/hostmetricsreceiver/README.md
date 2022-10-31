@@ -141,22 +141,13 @@ service:
       receivers: [hostmetrics, hostmetrics/disk]
 ```
 
-### Feature gate configurations
+## Resource attributes
 
-#### Transition from metrics with "direction" attribute
+Currently, the hostmetrics receiver does not set any Resource attributes on the exported metrics. However, if you want to set Resource attributes, you can provide them via environment variables via the [resourcedetection](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor#environment-variable) processor. For example, you can add the following resource attributes to adhere to [Resource Semantic Conventions](https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/):
 
-The proposal to change metrics from being reported with a `direction` attribute has been reverted in the specification. As a result, the
-following feature gates will be removed in v0.62.0:
-
-- **receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute**
-- **receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute**
-
-For additional information, see https://github.com/open-telemetry/opentelemetry-specification/issues/2726.
-
-##### More information:
-
-- https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11815
-- https://github.com/open-telemetry/opentelemetry-specification/pull/2617
+```
+export OTEL_RESOURCE_ATTRIBUTES="service.name=<the name of your service>,service.namespace=<the namespace of your service>,service.instance.id=<uuid of the instance>"
+```
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

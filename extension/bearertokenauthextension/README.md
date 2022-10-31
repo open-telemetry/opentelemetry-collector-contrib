@@ -15,13 +15,15 @@ The authenticator type has to be set to `bearertokenauth`.
 
 One of the following two options is required. If a token **and** a tokenfile are specified, the token is **ignored**:
 
-- `token`: static authorization token that needs to be sent on every gRPC client call as metadata.
-  This token is prepended by "Bearer " before being sent as a value of "authorization" key in
+- `scheme`: Specifies the auth scheme name. Defaults to "Bearer".
+
+- `token`: Static authorization token that needs to be sent on every gRPC client call as metadata.
+  This token is prepended by `${scheme}` before being sent as a value of "authorization" key in
   RPC metadata.
 
-- `filename`: filename of file that contains a authorization token that needs to be sent on every
+- `filename`: Name of file that contains a authorization token that needs to be sent on every
   gRPC client call as metadata.
-  This token is prepended by "Bearer " before being sent as a value of "authorization" key in
+  This token is prepended by `${scheme}` before being sent as a value of "authorization" key in
   RPC metadata.
 
 
@@ -33,6 +35,9 @@ extensions:
   bearertokenauth:
     token: "somerandomtoken"
     filename: "file-containing.token"
+  bearertokenauth/withscheme:
+    scheme: "Bearer"
+    token: "randomtoken"
 
 receivers:
   hostmetrics:
@@ -55,7 +60,7 @@ exporters:
       authenticator: bearertokenauth
 
 service:
-  extensions: [bearertokenauth]
+  extensions: [bearertokenauth, bearertokenauth/withscheme]
   pipelines:
     metrics:
       receivers: [hostmetrics]

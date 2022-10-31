@@ -10,10 +10,9 @@ These are the metrics available for this scraper.
 | ---- | ----------- | ---- | ---- | ---------- |
 | **process.cpu.time** | Total CPU seconds broken down by different states. | s | Sum(Double) | <ul> <li>state</li> </ul> |
 | **process.disk.io** | Disk bytes transferred. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
-| **process.disk.io.read** | Disk bytes read. | By | Sum(Int) | <ul> </ul> |
-| **process.disk.io.write** | Disk bytes written. | By | Sum(Int) | <ul> </ul> |
 | **process.memory.physical_usage** | The amount of physical memory in use. | By | Sum(Int) | <ul> </ul> |
 | **process.memory.virtual_usage** | Virtual memory size. | By | Sum(Int) | <ul> </ul> |
+| process.paging.faults | Number of page faults the process has made. This metric is only available on Linux. | {faults} | Sum(Int) | <ul> <li>type</li> </ul> |
 | process.threads | Process threads count. | {threads} | Sum(Int) | <ul> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
@@ -43,3 +42,4 @@ metrics:
 | ---- | ----------- | ------ |
 | direction | Direction of flow of bytes (read or write). | read, write |
 | state | Breakdown of CPU usage by type. | system, user, wait |
+| type | Type of memory paging fault. | major, minor |

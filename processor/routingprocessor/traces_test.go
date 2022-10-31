@@ -356,12 +356,12 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		DefaultExporters: []string{"otlp"},
 		Table: []RoutingTableItem{
 			{
-				Expression: `route() where resource.attributes["value"] > 0 and resource.attributes["value"] < 4`,
-				Exporters:  []string{"otlp/1"},
+				Statement: `route() where resource.attributes["value"] > 0 and resource.attributes["value"] < 4`,
+				Exporters: []string{"otlp/1"},
 			},
 			{
-				Expression: `route() where resource.attributes["value"] > 1 and resource.attributes["value"] < 4`,
-				Exporters:  []string{"otlp/2"},
+				Statement: `route() where resource.attributes["value"] > 1 and resource.attributes["value"] < 4`,
+				Exporters: []string{"otlp/2"},
 			},
 		},
 	})

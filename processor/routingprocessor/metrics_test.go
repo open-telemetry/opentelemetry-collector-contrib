@@ -354,12 +354,12 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithOTTL(t *testing.
 		DefaultExporters: []string{"otlp"},
 		Table: []RoutingTableItem{
 			{
-				Expression: `route() where resource.attributes["value"] > 2.5`,
-				Exporters:  []string{"otlp/1"},
+				Statement: `route() where resource.attributes["value"] > 2.5`,
+				Exporters: []string{"otlp/1"},
 			},
 			{
-				Expression: `route() where resource.attributes["value"] > 3.0`,
-				Exporters:  []string{"otlp/2"},
+				Statement: `route() where resource.attributes["value"] > 3.0`,
+				Exporters: []string{"otlp/2"},
 			},
 		},
 	})

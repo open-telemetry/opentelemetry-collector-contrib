@@ -18,7 +18,7 @@ More information on exporting traces to Dynatrace can be found in the
 
 > The requests sent to Dynatrace are authenticated using an API token mechanism documented [here](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/).  
 > Please review the Collector's [security
-> documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
+> documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security-best-practices.md),
 > which contains recommendations on securing sensitive information such as the
 > API key required by this exporter.
 

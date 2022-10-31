@@ -7,7 +7,7 @@
                   {
                      "name": "delta.one",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA"
+                        "aggregationTemporality": 1
                      }
                   }
                ]

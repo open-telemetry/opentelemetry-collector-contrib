@@ -25,7 +25,7 @@ import (
 )
 
 type Processor struct {
-	statements []ottl.Statement[ottltraces.TransformContext]
+	statements []*ottl.Statement[ottltraces.TransformContext]
 }
 
 func NewProcessor(statements []string, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
@@ -48,7 +48,10 @@ func (p *Processor) ProcessTraces(_ context.Context, td ptrace.Traces) (ptrace.T
 			for k := 0; k < spans.Len(); k++ {
 				ctx := ottltraces.NewTransformContext(spans.At(k), sspan.Scope(), rspans.Resource())
 				for _, statement := range p.statements {
-					statement.Execute(ctx)
+					_, _, err := statement.Execute(ctx)
+					if err != nil {
+						return td, err
+					}
 				}
 			}
 		}

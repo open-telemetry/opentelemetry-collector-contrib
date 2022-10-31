@@ -335,6 +335,20 @@ func TestCompareMetrics(t *testing.T) {
 			},
 		},
 		{
+			name: "ignore-single-metric",
+			compareOptions: []CompareOption{
+				IgnoreMetricValues("sum.two"),
+			},
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `sum.two`, do not match expected"),
+					errors.New("datapoint with attributes: map[], does not match expected"),
+					errors.New("metric datapoint IntVal doesn't match expected: 123, actual: 654"),
+				),
+				reason: "An unpredictable data point value will cause failures if not ignored.",
+			},
+		},
+		{
 			name: "ignore-global-attribute-value",
 			compareOptions: []CompareOption{
 				IgnoreMetricAttributeValue("hostname"),

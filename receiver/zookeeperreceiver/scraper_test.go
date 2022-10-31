@@ -28,7 +28,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -50,40 +49,19 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 		t.Skip("skipping flaky test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10171")
 	}
 
-	// additional temporary log messages expected while transitioning to metrics without a direction attribute
-	expectedLogsWithDirectionAttribute := []logMsg{
-		{
-			msg: "WARNING: The " + emitMetricsWithDirectionAttributeFeatureGate.ID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
-				"the direction attribute has been reverted in the specification. See https://github.com/open-telemetry/opentelemetry-specification/issues/2726 " +
-				"for additional details.",
-			level: zapcore.WarnLevel,
-		},
-	}
-
-	expectedLogsWithoutDirectionAttribute := []logMsg{
-		{
-			msg: "WARNING: The " + emitMetricsWithoutDirectionAttributeFeatureGate.ID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
-				"the direction attribute has been reverted in the specification. See https://github.com/open-telemetry/opentelemetry-specification/issues/2726 " +
-				"for additional details.",
-			level: zapcore.WarnLevel,
-		},
-	}
-
 	tests := []struct {
-		name                                 string
-		expectedMetricsFilename              string
-		expectedResourceAttributes           map[string]string
-		metricsSettings                      func() metadata.MetricsSettings
-		mockedZKOutputSourceFilename         string
-		mockZKConnectionErr                  bool
-		expectedLogs                         []logMsg
-		expectedNumResourceMetrics           int
-		setConnectionDeadline                func(net.Conn, time.Time) error
-		closeConnection                      func(net.Conn) error
-		sendCmd                              func(net.Conn, string) (*bufio.Scanner, error)
-		wantErr                              bool
-		emitMetricsWithDirectionAttribute    bool
-		emitMetricsWithoutDirectionAttribute bool
+		name                         string
+		expectedMetricsFilename      string
+		expectedResourceAttributes   map[string]string
+		metricsSettings              func() metadata.MetricsSettings
+		mockedZKOutputSourceFilename string
+		mockZKConnectionErr          bool
+		expectedLogs                 []logMsg
+		expectedNumResourceMetrics   int
+		setConnectionDeadline        func(net.Conn, time.Time) error
+		closeConnection              func(net.Conn) error
+		sendCmd                      func(net.Conn, string) (*bufio.Scanner, error)
+		wantErr                      bool
 	}{
 		{
 			name:                         "Test correctness with v3.4.14",
@@ -99,27 +77,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 					level: zapcore.DebugLevel,
 				},
 			},
-			expectedNumResourceMetrics:           1,
-			emitMetricsWithDirectionAttribute:    true,
-			emitMetricsWithoutDirectionAttribute: false,
-		},
-		{
-			name:                         "Test correctness with v3.4.14 without direction attribute",
-			mockedZKOutputSourceFilename: "mntr-3.4.14",
-			expectedMetricsFilename:      "correctness-v3.4.14-without-direction",
-			expectedResourceAttributes: map[string]string{
-				"server.state": "standalone",
-				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
-			},
-			expectedLogs: []logMsg{
-				{
-					msg:   "metric computation failed",
-					level: zapcore.DebugLevel,
-				},
-			},
-			expectedNumResourceMetrics:           1,
-			emitMetricsWithDirectionAttribute:    false,
-			emitMetricsWithoutDirectionAttribute: true,
+			expectedNumResourceMetrics: 1,
 		},
 		{
 			name:                         "Test correctness with v3.5.5",
@@ -129,21 +87,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				"server.state": "leader",
 				"zk.version":   "3.5.5-390fe37ea45dee01bf87dc1c042b5e3dcce88653",
 			},
-			expectedNumResourceMetrics:           1,
-			emitMetricsWithDirectionAttribute:    true,
-			emitMetricsWithoutDirectionAttribute: false,
-		},
-		{
-			name:                         "Test correctness with v3.5.5 without direction attribute",
-			mockedZKOutputSourceFilename: "mntr-3.5.5",
-			expectedMetricsFilename:      "correctness-v3.5.5-without-direction",
-			expectedResourceAttributes: map[string]string{
-				"server.state": "leader",
-				"zk.version":   "3.5.5-390fe37ea45dee01bf87dc1c042b5e3dcce88653",
-			},
-			expectedNumResourceMetrics:           1,
-			emitMetricsWithDirectionAttribute:    false,
-			emitMetricsWithoutDirectionAttribute: true,
+			expectedNumResourceMetrics: 1,
 		},
 		{
 			name:                "Arbitrary connection error",
@@ -208,8 +152,6 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			setConnectionDeadline: func(conn net.Conn, t time.Time) error {
 				return errors.New("")
 			},
-			emitMetricsWithDirectionAttribute:    true,
-			emitMetricsWithoutDirectionAttribute: false,
 		},
 		{
 			name:                         "Error closing connection",
@@ -233,8 +175,6 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			closeConnection: func(conn net.Conn) error {
 				return errors.New("")
 			},
-			emitMetricsWithDirectionAttribute:    true,
-			emitMetricsWithoutDirectionAttribute: false,
 		},
 		{
 			name:                         "Failed to send command",
@@ -268,9 +208,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 					level: zapcore.DebugLevel,
 				},
 			},
-			expectedNumResourceMetrics:           1,
-			emitMetricsWithDirectionAttribute:    true,
-			emitMetricsWithoutDirectionAttribute: false,
+			expectedNumResourceMetrics: 1,
 		},
 	}
 	for _, tt := range tests {
@@ -288,8 +226,6 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				cfg.Metrics = tt.metricsSettings()
 			}
 
-			require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{emitMetricsWithDirectionAttributeFeatureGate.ID: tt.emitMetricsWithDirectionAttribute}))
-			require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{emitMetricsWithoutDirectionAttributeFeatureGate.ID: tt.emitMetricsWithoutDirectionAttribute}))
 			core, observedLogs := observer.New(zap.DebugLevel)
 			settings := componenttest.NewNopReceiverCreateSettings()
 			settings.Logger = zap.New(core)
@@ -314,20 +250,8 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			actualMetrics, err := z.scrape(ctx)
 			require.NoError(t, z.shutdown(ctx))
 
-			var expectedLogs []logMsg
-
-			if !tt.emitMetricsWithDirectionAttribute {
-				expectedLogs = append(expectedLogs, expectedLogsWithDirectionAttribute...)
-			}
-
-			if tt.emitMetricsWithoutDirectionAttribute {
-				expectedLogs = append(expectedLogs, expectedLogsWithoutDirectionAttribute...)
-			}
-
-			expectedLogs = append(expectedLogs, tt.expectedLogs...)
-
-			require.Equal(t, len(expectedLogs), observedLogs.Len())
-			for i, log := range expectedLogs {
+			require.Equal(t, len(tt.expectedLogs), observedLogs.Len())
+			for i, log := range tt.expectedLogs {
 				require.Equal(t, log.msg, observedLogs.All()[i].Message)
 				require.Equal(t, log.level, observedLogs.All()[i].Level)
 			}

@@ -97,6 +97,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
@@ -126,6 +127,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
@@ -133,6 +135,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
@@ -231,6 +234,7 @@ func Components() (component.Factories, error) {
 		googlecloudspannerreceiver.NewFactory(),
 		googlecloudpubsubreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
+		httpcheckreceiver.NewFactory(),
 		influxdbreceiver.NewFactory(),
 		iisreceiver.NewFactory(),
 		jaegerreceiver.NewFactory(),
@@ -240,6 +244,7 @@ func Components() (component.Factories, error) {
 		kafkametricsreceiver.NewFactory(),
 		k8sclusterreceiver.NewFactory(),
 		k8seventsreceiver.NewFactory(),
+		k8sobjectsreceiver.NewFactory(),
 		kubeletstatsreceiver.NewFactory(),
 		memcachedreceiver.NewFactory(),
 		mongodbatlasreceiver.NewFactory(),
@@ -354,6 +359,7 @@ func Components() (component.Factories, error) {
 		resourceprocessor.NewFactory(),
 		routingprocessor.NewFactory(),
 		tailsamplingprocessor.NewFactory(),
+		servicegraphprocessor.NewFactory(),
 		spanmetricsprocessor.NewFactory(),
 		spanprocessor.NewFactory(),
 		cumulativetodeltaprocessor.NewFactory(),

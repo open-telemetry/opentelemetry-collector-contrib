@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -14,6 +15,25 @@ import (
 // MetricSettings provides common settings for a particular metric.
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledProvidedByUser bool
+}
+
+// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
+func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
+	return ms.enabledProvidedByUser
+}
+
+func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ms.enabledProvidedByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // MetricsSettings provides settings for dockerstatsreceiver metrics.
@@ -128,7 +148,7 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: false,
 		},
 		ContainerCPUUsageSystem: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerCPUUsageTotal: MetricSettings{
 			Enabled: true,
@@ -1032,7 +1052,7 @@ type metricContainerCPUUsageSystem struct {
 // init fills container.cpu.usage.system metric with initial data.
 func (m *metricContainerCPUUsageSystem) init() {
 	m.data.SetName("container.cpu.usage.system")
-	m.data.SetDescription("System CPU usage.")
+	m.data.SetDescription("System CPU usage, as reported by docker.")
 	m.data.SetUnit("ns")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)

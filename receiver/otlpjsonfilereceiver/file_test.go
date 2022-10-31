@@ -57,7 +57,7 @@ func TestFileTracesReceiver(t *testing.T) {
 	require.NoError(t, err)
 
 	td := testdata.GenerateTracesTwoSpansSameResource()
-	marshaler := ptrace.NewJSONMarshaler()
+	marshaler := &ptrace.JSONMarshaler{}
 	b, err := marshaler.MarshalTraces(td)
 	assert.NoError(t, err)
 	err = os.WriteFile(filepath.Join(tempFolder, "traces.json"), b, 0600)
@@ -83,7 +83,7 @@ func TestFileMetricsReceiver(t *testing.T) {
 	assert.NoError(t, err)
 
 	md := testdata.GenerateMetricsManyMetricsSameResource(5)
-	marshaler := pmetric.NewJSONMarshaler()
+	marshaler := &pmetric.JSONMarshaler{}
 	b, err := marshaler.MarshalMetrics(md)
 	assert.NoError(t, err)
 	err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), b, 0600)
@@ -109,7 +109,7 @@ func TestFileLogsReceiver(t *testing.T) {
 	assert.NoError(t, err)
 
 	ld := testdata.GenerateLogsManyLogRecordsSameResource(5)
-	marshaler := plog.NewJSONMarshaler()
+	marshaler := &plog.JSONMarshaler{}
 	b, err := marshaler.MarshalLogs(ld)
 	assert.NoError(t, err)
 	err = os.WriteFile(filepath.Join(tempFolder, "logs.json"), b, 0600)

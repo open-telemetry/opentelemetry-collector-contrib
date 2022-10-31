@@ -36,7 +36,7 @@
                                         "asInt": "67"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -65,7 +65,7 @@
                                         "asInt": "1404"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -122,7 +122,7 @@
                                         "asInt": "67"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -151,7 +151,7 @@
                                         "asInt": "1404"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -208,7 +208,7 @@
                                         "asInt": "67"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -237,7 +237,7 @@
                                         "asInt": "1404"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -315,7 +315,7 @@
                                         "asInt": "10995116277760"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -405,7 +405,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -420,7 +420,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -435,7 +435,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         }
                     ]
@@ -511,7 +511,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -526,7 +526,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -541,7 +541,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         }
                     ]
@@ -617,7 +617,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -632,7 +632,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -647,7 +647,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         }
                     ]
@@ -723,7 +723,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -738,7 +738,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -753,7 +753,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         }
                     ]
@@ -790,7 +790,7 @@
                                         "asInt": "6882"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -805,7 +805,7 @@
                                         "asInt": "6882"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -841,7 +841,7 @@
                                         "asInt": "3"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -856,7 +856,7 @@
                                         "asInt": "12883292160"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -871,7 +871,7 @@
                                         "asInt": "12883292160"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -907,7 +907,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         }
                     ]
@@ -944,7 +944,7 @@
                                         "asInt": "9000"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -959,7 +959,7 @@
                                         "asInt": "9000"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         }
                     ]
@@ -996,7 +996,7 @@
                                         "asInt": "9000"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -1011,7 +1011,7 @@
                                         "asInt": "9000"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         }
                     ]

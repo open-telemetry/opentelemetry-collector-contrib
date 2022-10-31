@@ -99,6 +99,19 @@ func TestScopePathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "dropped_attributes_count",
+			path: []ottl.Field{
+				{
+					Name: "dropped_attributes_count",
+				},
+			},
+			orig:   int64(10),
+			newVal: int64(20),
+			modified: func(is pcommon.InstrumentationScope) {
+				is.SetDroppedAttributesCount(20)
+			},
+		},
+		{
 			name: "attributes bool",
 			path: []ottl.Field{
 				{
@@ -252,10 +265,12 @@ func TestScopePathGetSetter(t *testing.T) {
 
 			is := createInstrumentationScope()
 
-			got := accessor.Get(newInstrumentationScopeContext(is))
+			got, err := accessor.Get(newInstrumentationScopeContext(is))
+			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(newInstrumentationScopeContext(is), tt.newVal)
+			err = accessor.Set(newInstrumentationScopeContext(is), tt.newVal)
+			assert.Nil(t, err)
 
 			expectedIS := createInstrumentationScope()
 			tt.modified(expectedIS)
@@ -269,6 +284,7 @@ func createInstrumentationScope() pcommon.InstrumentationScope {
 	is := pcommon.NewInstrumentationScope()
 	is.SetName("library")
 	is.SetVersion("version")
+	is.SetDroppedAttributesCount(10)
 
 	is.Attributes().PutStr("str", "val")
 	is.Attributes().PutBool("bool", true)

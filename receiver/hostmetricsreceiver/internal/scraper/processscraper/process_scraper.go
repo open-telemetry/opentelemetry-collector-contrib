@@ -21,13 +21,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
@@ -35,9 +33,10 @@ const (
 	cpuMetricsLen    = 1
 	memoryMetricsLen = 2
 	diskMetricsLen   = 1
+	pagingMetricsLen = 1
 	threadMetricsLen = 1
 
-	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + threadMetricsLen
+	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + pagingMetricsLen + threadMetricsLen
 )
 
 // scraper for Process Metrics
@@ -49,22 +48,18 @@ type scraper struct {
 	excludeFS          filterset.FilterSet
 	scrapeProcessDelay time.Duration
 	// for mocking
-	getProcessCreateTime                 func(p processHandle) (int64, error)
-	getProcessHandles                    func() (processHandles, error)
-	emitMetricsWithDirectionAttribute    bool
-	emitMetricsWithoutDirectionAttribute bool
+	getProcessCreateTime func(p processHandle) (int64, error)
+	getProcessHandles    func() (processHandles, error)
 }
 
 // newProcessScraper creates a Process Scraper
 func newProcessScraper(settings component.ReceiverCreateSettings, cfg *Config) (*scraper, error) {
 	scraper := &scraper{
-		settings:                             settings,
-		config:                               cfg,
-		getProcessCreateTime:                 processHandle.CreateTime,
-		getProcessHandles:                    getProcessHandlesInternal,
-		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithDirectionAttributeFeatureGateID),
-		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithoutDirectionAttributeFeatureGateID),
-		scrapeProcessDelay:                   cfg.ScrapeProcessDelay,
+		settings:             settings,
+		config:               cfg,
+		getProcessCreateTime: processHandle.CreateTime,
+		getProcessHandles:    getProcessHandlesInternal,
+		scrapeProcessDelay:   cfg.ScrapeProcessDelay,
 	}
 
 	var err error
@@ -117,6 +112,10 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 		if err = s.scrapeAndAppendDiskIOMetric(now, md.handle); err != nil {
 			errs.AddPartial(diskMetricsLen, fmt.Errorf("error reading disk usage for process %q (pid %v): %w", md.executable.name, md.pid, err))
+		}
+
+		if err = s.scrapeAndAppendPagingMetric(now, md.handle); err != nil {
+			errs.AddPartial(pagingMetricsLen, fmt.Errorf("error reading memory paging info for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
 		if err = s.scrapeAndAppendThreadsMetrics(now, md.handle); err != nil {
@@ -229,15 +228,24 @@ func (s *scraper) scrapeAndAppendDiskIOMetric(now pcommon.Timestamp, handle proc
 		return err
 	}
 
-	if s.emitMetricsWithoutDirectionAttribute {
-		s.mb.RecordProcessDiskIoReadDataPoint(now, int64(io.ReadBytes))
-		s.mb.RecordProcessDiskIoWriteDataPoint(now, int64(io.WriteBytes))
-	}
-	if s.emitMetricsWithDirectionAttribute {
-		s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirectionRead)
-		s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirectionWrite)
+	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirectionRead)
+	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirectionWrite)
+
+	return nil
+}
+
+func (s *scraper) scrapeAndAppendPagingMetric(now pcommon.Timestamp, handle processHandle) error {
+	if !s.config.Metrics.ProcessPagingFaults.Enabled {
+		return nil
 	}
 
+	pageFaultsStat, err := handle.PageFaults()
+	if err != nil {
+		return err
+	}
+
+	s.mb.RecordProcessPagingFaultsDataPoint(now, int64(pageFaultsStat.MajorFaults), metadata.AttributeTypeMajor)
+	s.mb.RecordProcessPagingFaultsDataPoint(now, int64(pageFaultsStat.MinorFaults), metadata.AttributeTypeMinor)
 	return nil
 }
 
