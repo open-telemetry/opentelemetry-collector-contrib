@@ -8,7 +8,7 @@ require (
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/collector v0.63.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.63.0
-	go.opentelemetry.io/collector/pdata v0.63.0
+	go.opentelemetry.io/collector/pdata v0.63.1
 	go.opentelemetry.io/collector/semconv v0.63.0
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.8.0
