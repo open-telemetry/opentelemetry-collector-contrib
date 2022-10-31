@@ -171,13 +171,13 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		ElasticsearchIndexSegmentsCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ElasticsearchIndexSegmentsMemory: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ElasticsearchIndexSegmentsSize: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ElasticsearchIndexShardsSize: MetricSettings{
 			Enabled: true,

@@ -801,7 +801,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [index_aggregation_type]
-    enabled: true
+    enabled: false
   elasticsearch.index.segments.size:
     description: Size of segments of an index.
     unit: By
@@ -810,7 +810,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [index_aggregation_type]
-    enabled: true
+    enabled: false
   elasticsearch.index.segments.memory:
     description: Size of memory for segment object of an index.
     unit: By
@@ -819,4 +819,4 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [index_aggregation_type, segments_memory_object_type]
-    enabled: true
+    enabled: false
