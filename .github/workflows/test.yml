@@ -16,13 +16,14 @@ jobs:
       py38: 3.8
       py39: 3.9
       py310: "3.10"
+      py311: "3.11"
       pypy3: "pypy3.7"
       RUN_MATRIX_COMBINATION: ${{ matrix.python-version }}-${{ matrix.package }}-${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false  # ensures the entire test matrix is run, even if one permutation fails
       matrix:
-        python-version: [ py37, py38, py39, py310, pypy3 ]
+        python-version: [ py37, py38, py39, py310, py311, pypy3 ]
         package: ["instrumentation", "distro", "exporter", "sdkextension", "propagator"]
         os: [ ubuntu-20.04 ]
     steps:

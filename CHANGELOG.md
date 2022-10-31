@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#1323](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1323))
 - `opentelemetry-instrumentation-wsgi` Add support for regular expression matching and sanitization of HTTP headers.
   ([#1402](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1402))
+- Add support for py3.11
+  ([#1415](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1415))
 - `opentelemetry-instrumentation-falcon` Add support for regular expression matching and sanitization of HTTP headers.
   ([#1412](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1412))
 - `opentelemetry-instrumentation-flask` Add support for regular expression matching and sanitization of HTTP headers.
