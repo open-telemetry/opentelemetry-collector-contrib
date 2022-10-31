@@ -6,13 +6,13 @@ require (
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/stretchr/testify v1.8.1
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.520
-	go.opentelemetry.io/collector v0.63.0
+	go.opentelemetry.io/collector v0.63.1
 	go.uber.org/zap v1.23.0
 )
 
 require (
-	go.opentelemetry.io/collector/pdata v0.63.0
-	go.opentelemetry.io/collector/semconv v0.63.0
+	go.opentelemetry.io/collector/pdata v0.63.1
+	go.opentelemetry.io/collector/semconv v0.63.1
 	google.golang.org/protobuf v1.28.1
 )
 
