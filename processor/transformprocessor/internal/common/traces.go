@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package processor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/processor"
+package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
 	"fmt"
@@ -20,23 +20,26 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 )
 
-var _ TracesContext = &TraceStatements{}
+var _ TracesContext = &baseTraces{}
 
 type TracesContext interface {
+	baseContext
 	ProcessTraces(td ptrace.Traces) error
 }
 
-type TraceStatements struct {
-	statements []*ottl.Statement[ottltraces.TransformContext]
+type baseTraces struct {
+	*baseImpl
+	traceStatements
 }
 
-func (t *TraceStatements) ProcessTraces(td ptrace.Traces) error {
+type traceStatements []*ottl.Statement[ottltraces.TransformContext]
+
+func (t *baseTraces) ProcessTraces(td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
@@ -44,7 +47,7 @@ func (t *TraceStatements) ProcessTraces(td ptrace.Traces) error {
 			spans := sspans.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				ctx := ottltraces.NewTransformContext(spans.At(k), sspans.Scope(), rspans.Resource())
-				for _, statement := range t.statements {
+				for _, statement := range t.traceStatements {
 					_, _, err := statement.Execute(ctx)
 					if err != nil {
 						return err
@@ -64,8 +67,8 @@ type TraceParserCollection struct {
 func NewTraceParserCollection(functions map[string]interface{}, settings component.TelemetrySettings) TraceParserCollection {
 	return TraceParserCollection{
 		parserCollection: parserCollection{
-			resourceParser: ottlresource.NewParser(common.ResourceFunctions(), settings),
-			scopeParser:    ottlscope.NewParser(common.ScopeFunctions(), settings),
+			resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
+			scopeParser:    ottlscope.NewParser(ScopeFunctions(), settings),
 		},
 		traceParser: ottltraces.NewParser(functions, settings),
 	}
@@ -101,8 +104,8 @@ func (pc TraceParserCollection) ParseContextStatements(contextStatements []Conte
 				errors = multierr.Append(errors, err)
 				continue
 			}
-			contexts[i] = &TraceStatements{
-				statements: statements,
+			contexts[i] = &baseTraces{
+				traceStatements: statements,
 			}
 		default:
 			errors = multierr.Append(errors, fmt.Errorf("context, %v, is not a valid context", s.Context))

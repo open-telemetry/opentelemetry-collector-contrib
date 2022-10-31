@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package processor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/processor"
+package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
 	"fmt"
@@ -20,23 +20,26 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 )
 
-var _ LogsContext = &LogStatements{}
+var _ LogsContext = &baseLogs{}
 
 type LogsContext interface {
+	baseContext
 	ProcessLogs(td plog.Logs) error
 }
 
-type LogStatements struct {
-	statements []*ottl.Statement[ottllogs.TransformContext]
+type baseLogs struct {
+	*baseImpl
+	logStatements
 }
 
-func (l *LogStatements) ProcessLogs(td plog.Logs) error {
+type logStatements []*ottl.Statement[ottllogs.TransformContext]
+
+func (l *baseLogs) ProcessLogs(td plog.Logs) error {
 	for i := 0; i < td.ResourceLogs().Len(); i++ {
 		rlogs := td.ResourceLogs().At(i)
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
@@ -44,7 +47,7 @@ func (l *LogStatements) ProcessLogs(td plog.Logs) error {
 			logs := slogs.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				ctx := ottllogs.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
-				for _, statement := range l.statements {
+				for _, statement := range l.logStatements {
 					_, _, err := statement.Execute(ctx)
 					if err != nil {
 						return err
@@ -64,8 +67,8 @@ type LogParserCollection struct {
 func NewLogParserCollection(functions map[string]interface{}, settings component.TelemetrySettings) LogParserCollection {
 	return LogParserCollection{
 		parserCollection: parserCollection{
-			resourceParser: ottlresource.NewParser(common.ResourceFunctions(), settings),
-			scopeParser:    ottlscope.NewParser(common.ScopeFunctions(), settings),
+			resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
+			scopeParser:    ottlscope.NewParser(ScopeFunctions(), settings),
 		},
 		logParser: ottllogs.NewParser(functions, settings),
 	}
@@ -101,8 +104,8 @@ func (pc LogParserCollection) ParseContextStatements(contextStatements []Context
 				errors = multierr.Append(errors, err)
 				continue
 			}
-			contexts[i] = &LogStatements{
-				statements: statements,
+			contexts[i] = &baseLogs{
+				logStatements: statements,
 			}
 		default:
 			errors = multierr.Append(errors, fmt.Errorf("context, %v, is not a valid context", s.Context))

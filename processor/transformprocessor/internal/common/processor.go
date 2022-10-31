@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package processor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/processor"
+package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
@@ -33,6 +34,10 @@ type ContextStatements struct {
 	Context    string   `mapstructure:"context"`
 	Statements []string `mapstructure:"statements"`
 }
+
+type baseContext interface{}
+
+type baseImpl struct{}
 
 var _ TracesContext = &ResourceStatements{}
 var _ LogsContext = &ResourceStatements{}
