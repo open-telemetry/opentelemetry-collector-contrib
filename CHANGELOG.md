@@ -35,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#1413](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1413))
 - `opentelemetry-instrumentation-pyramid` Add support for regular expression matching and sanitization of HTTP headers.
   ([#1414](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1414))
+- `opentelemetry-instrumentation-grpc` Add support for grpc.aio Clients and Servers
+  ([#1245](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1245))
 - Add metric exporter for Prometheus Remote Write
   ([#1359](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1359))
 

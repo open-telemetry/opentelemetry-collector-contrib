@@ -60,6 +60,39 @@ class _StreamClientInfo(
             ),
         ),
         (
+            True,
+            "SimpleMethod",
+            grpc.aio.ClientCallDetails(
+                method="SimpleMethod",
+                timeout=3000,
+                metadata=None,
+                credentials=None,
+                wait_for_ready=None,
+            ),
+        ),
+        (
+            True,
+            "SimpleMethod",
+            grpc.aio.ClientCallDetails(
+                method=b"SimpleMethod",
+                timeout=3000,
+                metadata=None,
+                credentials=None,
+                wait_for_ready=None,
+            ),
+        ),
+        (
+            False,
+            "SimpleMethod",
+            grpc.aio.ClientCallDetails(
+                method="NotSimpleMethod",
+                timeout=3000,
+                metadata=None,
+                credentials=None,
+                wait_for_ready=None,
+            ),
+        ),
+        (
             False,
             "SimpleMethod",
             _HandlerCallDetails(

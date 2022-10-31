@@ -18,7 +18,10 @@ from typing import Callable, TypeVar
 import grpc
 
 TCallDetails = TypeVar(
-    "TCallDetails", grpc.HandlerCallDetails, grpc.ClientCallDetails
+    "TCallDetails",
+    grpc.HandlerCallDetails,
+    grpc.ClientCallDetails,
+    grpc.aio.ClientCallDetails,
 )
 Condition = Callable[[TCallDetails], bool]
 
@@ -27,10 +30,25 @@ def _full_method(metadata):
     name = ""
     if isinstance(metadata, grpc.HandlerCallDetails):
         name = metadata.method
+    elif isinstance(metadata, grpc.aio.ClientCallDetails):
+        name = metadata.method
+        # name _should_ be a string here but due to a bug in grpc, it is
+        # populated with a bytes object. Handle both cases such that we
+        # are forward-compatible with a fixed version of grpc
+        # More info: https://github.com/grpc/grpc/issues/31092
+        if isinstance(name, bytes):
+            name = name.decode()
     # NOTE: replace here if there's better way to match cases to handle
     # grpcext._interceptor._UnaryClientInfo/_StreamClientInfo
     elif hasattr(metadata, "full_method"):
         name = metadata.full_method
+    # NOTE: this is to handle the grpc.aio Server case. The type interface
+    # indicates that metadata should be a grpc.HandlerCallDetails and be
+    # matched prior to this but it is in fact an internal C-extension level
+    # object.
+    elif hasattr(metadata, "method"):
+        name = metadata.method
+
     return name
 
 
