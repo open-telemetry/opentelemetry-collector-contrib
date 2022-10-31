@@ -12,7 +12,7 @@ require (
 
 require (
 	go.opentelemetry.io/collector/pdata v0.63.0
-	go.opentelemetry.io/collector/semconv v0.63.0
+	go.opentelemetry.io/collector/semconv v0.63.1
 	google.golang.org/protobuf v1.28.1
 )
 
