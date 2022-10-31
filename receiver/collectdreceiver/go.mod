@@ -8,15 +8,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.63.0
 	github.com/stretchr/testify v1.8.1
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.63.0
+	go.opentelemetry.io/collector v0.63.2-0.20221028212826-3e91f3da33b9
 	go.uber.org/zap v1.23.0
 	google.golang.org/protobuf v1.28.1
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/go-logr/logr v1.2.3 // indirect
-	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
@@ -30,11 +28,10 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.63.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.63.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.63.0 // indirect
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221028212826-3e91f3da33b9 // indirect
+	go.opentelemetry.io/collector/semconv v0.63.2-0.20221028212826-3e91f3da33b9 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.11.1 // indirect
 	go.opentelemetry.io/otel/trace v1.11.1 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
