@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.63.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.63.0
-	go.opentelemetry.io/collector/pdata v0.63.0
+	go.opentelemetry.io/collector/pdata v0.63.1
 	go.opentelemetry.io/collector/semconv v0.63.0
 	go.uber.org/zap v1.23.0
 	google.golang.org/genproto v0.0.0-20220822174746-9e6da59bd2fc
