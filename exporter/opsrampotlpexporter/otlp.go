@@ -205,7 +205,8 @@ func (e *exporter) updateExpiredToken() error {
 	if err != nil {
 		return err
 	}
-	e.metadata.Set("bearer", accessToken)
+	e.accessToken = accessToken
+	e.metadata.Set("Authorization", fmt.Sprintf("Bearer %s", e.accessToken))
 	return nil
 }
 
