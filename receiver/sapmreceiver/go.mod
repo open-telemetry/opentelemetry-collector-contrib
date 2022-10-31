@@ -10,9 +10,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.63.0
 	github.com/signalfx/sapm-proto v0.12.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.63.0
-	go.opentelemetry.io/collector/pdata v0.63.0
-	go.opentelemetry.io/collector/semconv v0.63.0
+	go.opentelemetry.io/collector v0.63.1
+	go.opentelemetry.io/collector/pdata v0.63.1
+	go.opentelemetry.io/collector/semconv v0.63.1
 )
 
 require (
