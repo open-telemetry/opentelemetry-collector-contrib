@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#1323](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1323))
 - `opentelemetry-instrumentation-wsgi` Add support for regular expression matching and sanitization of HTTP headers.
   ([#1402](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1402))
+- `opentelemetry-instrumentation-falcon` Add support for regular expression matching and sanitization of HTTP headers.
+  ([#1412](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1412))
 - `opentelemetry-instrumentation-flask` Add support for regular expression matching and sanitization of HTTP headers.
   ([#1413](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1413))
 - `opentelemetry-instrumentation-pyramid` Add support for regular expression matching and sanitization of HTTP headers.
@@ -42,6 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#1333](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1333))
 - `opentelemetry-instrumentation-asgi` Make ASGIGetter.get() compare all keys in a case insensitive manner.
   ([#1333](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1333))
+- Use resp.text instead of resp.body for Falcon 3 to avoid a deprecation warning.
+  ([#1412](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1412))
 
 ## [1.13.0-0.34b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.13.0-0.34b0) - 2022-09-26
 

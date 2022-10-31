@@ -41,6 +41,7 @@ from opentelemetry.test.test_base import TestBase
 from opentelemetry.test.wsgitestutil import WsgiTestBase
 from opentelemetry.trace import StatusCode
 from opentelemetry.util.http import (
+    OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SANITIZE_FIELDS,
     OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST,
     OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE,
 )
@@ -421,8 +422,9 @@ class TestFalconInstrumentationWrappedWithOtherFramework(TestFalconBase):
 @patch.dict(
     "os.environ",
     {
-        OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST: "Custom-Test-Header-1,Custom-Test-Header-2,invalid-header",
-        OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE: "content-type,content-length,my-custom-header,invalid-header",
+        OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SANITIZE_FIELDS: ".*my-secret.*",
+        OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST: "Custom-Test-Header-1,Custom-Test-Header-2,invalid-header,Regex-Test-Header-.*,Regex-Invalid-Test-Header-.*,.*my-secret.*",
+        OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE: "content-type,content-length,my-custom-header,invalid-header,my-custom-regex-header-.*,invalid-regex-header-.*,.*my-secret.*",
     },
 )
 class TestCustomRequestResponseHeaders(TestFalconBase):
@@ -431,6 +433,9 @@ class TestCustomRequestResponseHeaders(TestFalconBase):
             "Custom-Test-Header-1": "Test Value 1",
             "Custom-Test-Header-2": "TestValue2,TestValue3",
             "Custom-Test-Header-3": "TestValue4",
+            "Regex-Test-Header-1": "Regex Test Value 1",
+            "regex-test-header-2": "RegexTestValue2,RegexTestValue3",
+            "My-Secret-Header": "My Secret Value",
         }
         self.client().simulate_request(
             method="GET", path="/hello", headers=headers
@@ -443,6 +448,11 @@ class TestCustomRequestResponseHeaders(TestFalconBase):
             "http.request.header.custom_test_header_2": (
                 "TestValue2,TestValue3",
             ),
+            "http.request.header.regex_test_header_1": ("Regex Test Value 1",),
+            "http.request.header.regex_test_header_2": (
+                "RegexTestValue2,RegexTestValue3",
+            ),
+            "http.request.header.my_secret_header": ("[REDACTED]",),
         }
         not_expected = {
             "http.request.header.custom_test_header_3": ("TestValue4",),
@@ -459,6 +469,9 @@ class TestCustomRequestResponseHeaders(TestFalconBase):
             headers = {
                 "Custom-Test-Header-1": "Test Value 1",
                 "Custom-Test-Header-2": "TestValue2,TestValue3",
+                "Regex-Test-Header-1": "Regex Test Value 1",
+                "regex-test-header-2": "RegexTestValue2,RegexTestValue3",
+                "My-Secret-Header": "My Secret Value",
             }
             self.client().simulate_request(
                 method="GET", path="/hello", headers=headers
@@ -470,6 +483,13 @@ class TestCustomRequestResponseHeaders(TestFalconBase):
                 "http.request.header.custom_test_header_2": (
                     "TestValue2,TestValue3",
                 ),
+                "http.request.header.regex_test_header_1": (
+                    "Regex Test Value 1",
+                ),
+                "http.request.header.regex_test_header_2": (
+                    "RegexTestValue2,RegexTestValue3",
+                ),
+                "http.request.header.my_secret_header": ("[REDACTED]",),
             }
             self.assertEqual(span.kind, trace.SpanKind.INTERNAL)
             for key, _ in not_expected.items():
@@ -494,6 +514,13 @@ class TestCustomRequestResponseHeaders(TestFalconBase):
             "http.response.header.my_custom_header": (
                 "my-custom-value-1,my-custom-header-2",
             ),
+            "http.response.header.my_custom_regex_header_1": (
+                "my-custom-regex-value-1,my-custom-regex-value-2",
+            ),
+            "http.response.header.my_custom_regex_header_2": (
+                "my-custom-regex-value-3,my-custom-regex-value-4",
+            ),
+            "http.response.header.my_secret_header": ("[REDACTED]",),
         }
         not_expected = {
             "http.response.header.dont_capture_me": ("test-value",)
@@ -524,6 +551,13 @@ class TestCustomRequestResponseHeaders(TestFalconBase):
                 "http.response.header.my_custom_header": (
                     "my-custom-value-1,my-custom-header-2",
                 ),
+                "http.response.header.my_custom_regex_header_1": (
+                    "my-custom-regex-value-1,my-custom-regex-value-2",
+                ),
+                "http.response.header.my_custom_regex_header_2": (
+                    "my-custom-regex-value-3,my-custom-regex-value-4",
+                ),
+                "http.response.header.my_secret_header": ("[REDACTED]",),
             }
             self.assertEqual(span.kind, trace.SpanKind.INTERNAL)
             for key, _ in not_expected.items():

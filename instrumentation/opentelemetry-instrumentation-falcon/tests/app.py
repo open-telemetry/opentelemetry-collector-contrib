@@ -8,7 +8,13 @@ class HelloWorldResource:
     def _handle_request(self, _, resp):
         # pylint: disable=no-member
         resp.status = falcon.HTTP_201
-        resp.body = "Hello World"
+
+        _parsed_falcon_version = package_version.parse(falcon.__version__)
+        if _parsed_falcon_version < package_version.parse("3.0.0"):
+            # Falcon 1 and Falcon 2
+            resp.body = "Hello World"
+        else:
+            resp.text = "Hello World"
 
     def on_get(self, req, resp):
         self._handle_request(req, resp)
@@ -44,6 +50,15 @@ class CustomResponseHeaderResource:
             "my-custom-header", "my-custom-value-1,my-custom-header-2"
         )
         resp.set_header("dont-capture-me", "test-value")
+        resp.set_header(
+            "my-custom-regex-header-1",
+            "my-custom-regex-value-1,my-custom-regex-value-2",
+        )
+        resp.set_header(
+            "My-Custom-Regex-Header-2",
+            "my-custom-regex-value-3,my-custom-regex-value-4",
+        )
+        resp.set_header("my-secret-header", "my-secret-value")
 
 
 def make_app():
