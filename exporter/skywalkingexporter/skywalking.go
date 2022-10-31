@@ -66,12 +66,8 @@ func newSwExporter(_ context.Context, cfg *Config, settings component.TelemetryS
 
 // start creates the gRPC client Connection
 func (oce *swExporter) start(ctx context.Context, host component.Host) error {
-	dialOpts, err := oce.cfg.GRPCClientSettings.ToDialOptions(host, oce.settings)
+	clientConn, err := oce.cfg.GRPCClientSettings.ToClientConn(ctx, host, oce.settings)
 	if err != nil {
-		return err
-	}
-	var clientConn *grpc.ClientConn
-	if clientConn, err = grpc.DialContext(ctx, oce.cfg.GRPCClientSettings.Endpoint, dialOpts...); err != nil {
 		return err
 	}
 
