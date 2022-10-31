@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/build-tools/checkdoc v0.1.0
 	go.opentelemetry.io/build-tools/chloggen v0.1.0
 	go.opentelemetry.io/build-tools/crosslink v0.1.0
-	go.opentelemetry.io/build-tools/issuegenerator v0.1.0
+	go.opentelemetry.io/build-tools/issuegenerator v0.2.0
 	go.opentelemetry.io/build-tools/multimod v0.1.0
 	golang.org/x/tools v0.2.0
 )
