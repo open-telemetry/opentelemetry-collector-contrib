@@ -135,3 +135,5 @@ service:
       exporters: [prometheus/servicegraph]
 ```
 
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
