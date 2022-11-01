@@ -371,6 +371,19 @@ func TestScrape(t *testing.T) {
 	}
 }
 
+func TestTranslations(t *testing.T) {
+	partitions := []disk.PartitionStat{
+		{
+			Device:     "device_a",
+			Mountpoint: "mount_point_a",
+			Fstype:     "fs_type_a",
+		},
+	}
+	translatedPartitions := translateMountsRootPath(partitions, "/hostfs")
+	assert.Equal(t, "/hostfs/mount_point_a", translatedPartitions[0].Mountpoint)
+	assert.Equal(t, partitions[0].Mountpoint, "mount_point_a") // doesn't modify original
+}
+
 func findMetricByName(metrics pmetric.MetricSlice, name string) (pmetric.Metric, error) {
 	for i := 0; i < metrics.Len(); i++ {
 		if metrics.At(i).Name() == name {

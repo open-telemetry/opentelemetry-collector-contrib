@@ -17,6 +17,7 @@ package filesystemscraper // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/disk"
@@ -153,4 +154,17 @@ func (f *fsFilter) includeFSType(fsType string) bool {
 func (f *fsFilter) includeMountPoint(mountPoint string) bool {
 	return (f.includeMountPointFilter == nil || f.includeMountPointFilter.Matches(mountPoint)) &&
 		(f.excludeMountPointFilter == nil || !f.excludeMountPointFilter.Matches(mountPoint))
+}
+
+// translateMountsRootPath translates mountpoints from the host perspective to the container perspective.
+// It does not modify the existing slice.
+func translateMountsRootPath(stats []disk.PartitionStat, rootPath string) []disk.PartitionStat {
+	translatedStats := make([]disk.PartitionStat, 0, len(stats))
+
+	for _, stat := range stats { // range copies stat
+		stat.Mountpoint = filepath.Join(rootPath, stat.Mountpoint)
+		translatedStats = append(translatedStats, stat)
+	}
+
+	return translatedStats
 }
