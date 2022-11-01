@@ -13,10 +13,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.63.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.63.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter v0.63.0
@@ -78,7 +78,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor v0.63.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.63.0
@@ -110,8 +110,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver v0.63.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.63.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.63.0
