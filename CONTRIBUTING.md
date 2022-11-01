@@ -115,7 +115,7 @@ and the rest of contributors.
   components number with a comment within the PR explaining as to why it can not be tested.
 - Add the sponsor for your component and yourself to a new line for your component in the
   [`.github/CODEOWNERS`](./.github/CODEOWNERS) file.
-- Run `make generate-all-component-dropdowns` to add your component to the dropdown list in the issue templates.
+- Run `make generate-gh-issue-templates` to add your component to the dropdown list in the issue templates.
 
 ### Releasing New Components
 After a component has been approved and merged, and has been enabled in `internal/components/`, it must be added to the

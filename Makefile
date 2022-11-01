@@ -418,22 +418,12 @@ generate-labels:
 	done; \
 	exit 0
 
-.PHONY: generate-all-component-dropdowns
-generate-all-component-dropdowns:
-	$(MAKE) generate-component-dropdown FILE="bug_report"
-	$(MAKE) generate-component-dropdown FILE="feature_request"
-	$(MAKE) generate-component-dropdown FILE="other"
-
-.PHONY: generate-component-dropdown
-generate-component-dropdown:
-	if [ -z $${FILE+x} ]; then \
-		echo "Must provide a FILE"; \
-		exit 1; \
-	fi; \
-	echo "Generating component dropdown for $${FILE}.yaml"; \
-	YAML_FILE=".github/ISSUE_TEMPLATE/$${FILE}.yaml"; \
-	TMP_FILE=".github/ISSUE_TEMPLATE/$${FILE}.yaml.tmp"; \
-	cat "$${YAML_FILE}" > "$${TMP_FILE}"; \
- 	FILE="$${TMP_FILE}" ./.github/workflows/scripts/add-component-options.sh > "$${YAML_FILE}"; \
-	rm "$${TMP_FILE}"; \
-	exit 0
+.PHONY: generate-gh-issue-templates
+generate-gh-issue-templates:
+	for FILE in bug_report feature_request other; do \
+		YAML_FILE=".github/ISSUE_TEMPLATE/$${FILE}.yaml"; \
+		TMP_FILE=".github/ISSUE_TEMPLATE/$${FILE}.yaml.tmp"; \
+		cat "$${YAML_FILE}" > "$${TMP_FILE}"; \
+	 	FILE="$${TMP_FILE}" ./.github/workflows/scripts/add-component-options.sh > "$${YAML_FILE}"; \
+		rm "$${TMP_FILE}"; \
+	done
