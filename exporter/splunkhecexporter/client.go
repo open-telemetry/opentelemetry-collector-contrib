@@ -89,7 +89,11 @@ func (b *bufferState) Close() error {
 func (b *bufferState) accept(data []byte) bool {
 	_, err := b.writer.Write(data)
 	overCapacity := errors.Is(err, errOverCapacity)
-	if b.compressionAvailable && !b.compressionEnabled && b.buf.Len() > minCompressionLen {
+	bufLen := b.buf.Len()
+	if overCapacity {
+		bufLen += len(data)
+	}
+	if b.compressionAvailable && !b.compressionEnabled && bufLen > minCompressionLen {
 		// switch over to a zip buffer.
 		tmpBuf := bytes.NewBuffer(make([]byte, 0, b.bufferMaxLen+bufCapPadding))
 		writer := b.gzipWriterPool.Get().(*gzip.Writer)
@@ -110,6 +114,13 @@ func (b *bufferState) accept(data []byte) bool {
 		b.writer = zipWriter
 		b.buf = tmpBuf
 		b.compressionEnabled = true
+		// if the byte writer was over capacity, try to write the new entry in the zip writer:
+		if overCapacity {
+			if _, err2 := zipWriter.Write(data); err2 != nil {
+				return false
+			}
+
+		}
 		return true
 	}
 	return !overCapacity
@@ -153,7 +164,7 @@ func (c *cancellableGzipWriter) Write(b []byte) (int, error) {
 	// we find that the new content uncompressed, added to our buffer, would overflow our max capacity.
 	if c.innerBuffer.Len()+len(b) > int(c.maxCapacity) {
 		// so we create a copy of our content and add this new data, compressed, to check that it fits.
-		copyBuf := bytes.NewBuffer(make([]byte, 0, c.maxCapacity+4096))
+		copyBuf := bytes.NewBuffer(make([]byte, 0, c.maxCapacity+bufCapPadding))
 		copyBuf.Write(c.innerBuffer.Bytes())
 		writerCopy := c.gzipWriterPool.Get().(*gzip.Writer)
 		defer c.gzipWriterPool.Put(writerCopy)

@@ -27,6 +27,7 @@ import (
 	"net/url"
 	"regexp"
 	"sort"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -529,6 +530,26 @@ func TestReceiveLogs(t *testing.T) {
 					{`"otel.log.name":"0_0_3"`},
 				},
 				numBatches: 4,
+			},
+		},
+		{
+			name: "1 log event long enough to trigger compression",
+			logs: func() plog.Logs {
+				l := createLogData(1, 1, 1)
+				l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(strings.Repeat("a", 1800))
+				return l
+			}(),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MaxContentLengthLogs = 1750
+				return cfg
+			}(),
+			want: wantType{
+				batches: [][]string{
+					{`"otel.log.name":"0_0_0"`},
+				},
+				numBatches: 1,
+				compressed: true,
 			},
 		},
 		{
