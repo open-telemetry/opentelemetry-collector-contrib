@@ -6,7 +6,7 @@ require (
 	github.com/apache/pulsar-client-go v0.8.1
 	github.com/apache/thrift v0.17.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger v1.38.1
+	github.com/jaegertracing/jaeger v1.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.63.0
 	github.com/openzipkin/zipkin-go v0.4.1
