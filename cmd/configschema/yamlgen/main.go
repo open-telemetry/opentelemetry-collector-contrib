@@ -18,6 +18,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/yamlgen/yamlgen"
@@ -25,9 +26,9 @@ import (
 )
 
 func main() {
-	isZip, zipFile, sourceRootDir := getFlags()
-	dr := configschema.NewDirResolver(sourceRootDir, configschema.DefaultModule)
-	writer, err := yamlgen.NewYAMLWriter(dr, isZip, zipFile)
+	sourceDir, outputDir := getFlags()
+	dr := configschema.NewDirResolver(sourceDir, configschema.DefaultModule)
+	writer, err := yamlgen.NewYAMLWriter(dr, outputDir)
 	if err != nil {
 		fmt.Printf("error setting up yaml writer %v", err)
 		os.Exit(1)
@@ -43,10 +44,9 @@ func main() {
 	}
 }
 
-func getFlags() (bool, string, string) {
-	isZip := flag.Bool("z", false, "whether to create a zip file instead of writing yamls to each component directory")
-	zipFile := flag.String("f", "yaml.zip", "the name of the output zip file (only valid with -z)")
-	sourceRootDir := flag.String("d", "../..", "")
+func getFlags() (string, string) {
+	outputDir := flag.String("o", "", "output dir")
+	sourceDir := flag.String("s", filepath.Join("..", ".."), "")
 	flag.Parse()
-	return *isZip, *zipFile, *sourceRootDir
+	return *sourceDir, *outputDir
 }

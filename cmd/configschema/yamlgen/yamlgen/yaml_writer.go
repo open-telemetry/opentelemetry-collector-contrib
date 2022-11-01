@@ -15,10 +15,6 @@
 package yamlgen
 
 import (
-	"archive/zip"
-	"fmt"
-	"os"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 )
 
@@ -30,22 +26,20 @@ type YAMLWriter interface {
 }
 
 // NewYAMLWriter creates a YAMLWriter implementation based on the value of isZip.
-func NewYAMLWriter(dr configschema.DirResolver, isZip bool, zipFile string) (YAMLWriter, error) {
-	if isZip {
-		return newZipYAMLWriter(zipFile)
+func NewYAMLWriter(dr configschema.DirResolver, outputDir string) (YAMLWriter, error) {
+	if outputDir != "" {
+		return newCreateDirsYAMLWriter(outputDir)
 	}
-	return newFileYAMLWriter(dr)
+	return newSourceTreeYAMLWriter(dr)
 }
 
-func newZipYAMLWriter(zipFile string) (YAMLWriter, error) {
-	file, err := os.Create(zipFile)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create zip file: %w", err)
-	}
-	zw := zip.NewWriter(file)
-	return &zipWriter{zw: zw}, nil
+func newCreateDirsYAMLWriter(dir string) (YAMLWriter, error) {
+	return &createDirsYAMLWriter{
+		dirsCreated: map[string]struct{}{},
+		baseDir:     dir,
+	}, nil
 }
 
-func newFileYAMLWriter(dr configschema.DirResolver) (YAMLWriter, error) {
-	return fileYAMLWriter{dr: dr}, nil
+func newSourceTreeYAMLWriter(dr configschema.DirResolver) (YAMLWriter, error) {
+	return sourceTreeYAMLWriter{dr: dr}, nil
 }

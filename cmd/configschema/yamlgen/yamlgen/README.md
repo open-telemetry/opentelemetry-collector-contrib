@@ -1,47 +1,44 @@
-# Config Schema YAML Generator (alpha)
+# Config Metadata YAML Generator (alpha)
 
-This CLI application creates configschema YAML files for collector components
+This CLI application creates config metadata YAML files for Collector components
 where each YAML file describes the configuration fields of its corresponding
 component.
 
 ## Operation
 
 There are two major modes of operation: one that create YAML files in each
-collector component directory and another that creates a zip archive comprising
-all the collector YAML files.
+Collector component directory in a Collector source tree, and another that
+creates YAML files and directories in a new directory.
 
+### Create YAML files in a Collector source tree
 
-### Create YAML files
-
-This mode of operation creates a `cfgschema.yaml` file per component,
+This mode of operation creates a `cfg-metadata.yaml` file per component,
 writing each one to its corresponding component directory in the locally
 checked-out source tree.
-
 
 ```yaml
 cd cmd/configschema
 go run ./yamlgen
 ```
 
-### Create a Zip archive
+### Create YAML files and directories in a new directory
 
-This mode of operation, specified by the `-z` flag, creates a zip
-archive comprising all the component YAML files.
+This mode of operation, specified by `-o <dirname>`, creates YAML metadata
+files and directories in a new directory created at `dirname`.
 
 ```yaml
 cd cmd/configschema/yamlgen
-go run . -d ../../.. -z -f myfile.zip
+go run . -s ../../.. -o cfg-metadata
 ```
 
 ### Command line arguments
 
-* `-z` create a zip archive
-* `-f <filename>` write the zip archive to filename (for use with `-z`, defaults to `yamlgen.zip`)
-* `-d <directory>` the path to the collector source root directory (defaults to `../..`)
+* `-o <directory>` create YAML files and directories in a new directory. If not specified, creates YAML files in a Collector source tree.
+* `-s <directory>` the path to the collector source root directory (defaults to `../..`)
 
 ## Example Output
 
-The following is an example `cfgschema.yaml` produced for the File Exporter. 
+The following is an example `cfg-metadata.yaml` produced for the File Exporter. 
 
 ```yaml
 type: '*fileexporter.Config'

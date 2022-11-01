@@ -23,26 +23,26 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 )
 
-// fileYAMLWriter is a YAMLWriter implementation that creates yaml files in a collector repo
+// sourceTreeYAMLWriter is a YAMLWriter implementation that creates yaml files in a collector repo
 // source root, one for each component.
-type fileYAMLWriter struct {
+type sourceTreeYAMLWriter struct {
 	dr configschema.DirResolverIntf
 }
 
-func (f fileYAMLWriter) write(cfg configschema.CfgInfo, yamlBytes []byte) error {
+func (f sourceTreeYAMLWriter) write(cfg configschema.CfgInfo, yamlBytes []byte) error {
 	path := f.dr.ReflectValueToProjectPath(reflect.ValueOf(cfg.CfgInstance))
 	if path == "" {
 		return fmt.Errorf("project path not found for component: %s %s", cfg.Group, cfg.Type)
 	}
 	fp := filepath.Join(path, "cfg-metadata.yaml")
+	fmt.Printf("writing file: %v\n", fp)
 	err := os.WriteFile(fp, yamlBytes, 0600)
 	if err != nil {
 		return fmt.Errorf("error writing yaml file: %v", fp)
 	}
-	fmt.Printf("wrote file: %v\n", fp)
 	return nil
 }
 
-func (f fileYAMLWriter) close() error {
+func (f sourceTreeYAMLWriter) close() error {
 	return nil
 }
