@@ -369,7 +369,7 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *string, temporality string, logger *zap.Logger) *processorImp {
 	defaultNotInSpanAttrVal := "defaultNotInSpanAttrVal"
 	// use size 2 for LRU cache for testing purpose
-	metricKeyToDimensions, err := cache.NewCache(DimensionsCacheSize)
+	metricKeyToDimensions, err := cache.NewCache[metricKey, pcommon.Map](DimensionsCacheSize)
 	if err != nil {
 		panic(err)
 	}
