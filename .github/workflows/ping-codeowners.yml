@@ -7,7 +7,6 @@ on:
   discussion:
     types: [labeled]
 
-
 jobs:
   ping-owner:
     if: ${{ contains(github.event.label.name, 'cmd/') || contains(github.event.label.name, 'exporter/') || contains(github.event.label.name, 'extension/') || contains(github.event.label.name, 'pkg/') || contains(github.event.label.name, 'processor/') || contains(github.event.label.name, 'receiver/') }}
