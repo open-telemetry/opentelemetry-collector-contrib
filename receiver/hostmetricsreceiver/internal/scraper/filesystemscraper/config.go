@@ -18,6 +18,7 @@ import (
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
 )
 
@@ -25,6 +26,7 @@ import (
 type Config struct {
 	// Metrics allows to customize scraped metrics representation.
 	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
+	internal.ParentConfigSetter
 
 	// IncludeVirtualFS will also capture filesystems such as tmpfs, ramfs
 	// and other filesystem types that do no have an associated physical device.

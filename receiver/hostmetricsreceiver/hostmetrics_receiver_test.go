@@ -208,6 +208,8 @@ const mockTypeStr = "mock"
 
 type mockConfig struct{}
 
+func (m *mockConfig) SetRootPath(_ string) {}
+
 type mockFactory struct{ mock.Mock }
 type mockScraper struct{ mock.Mock }
 

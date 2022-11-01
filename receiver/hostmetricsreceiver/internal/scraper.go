@@ -33,4 +33,13 @@ type ScraperFactory interface {
 
 // Config is the configuration of a scraper.
 type Config interface {
+	SetRootPath(rootPath string)
+}
+
+type ParentConfigSetter struct {
+	RootPath string `mapstructure:"-"`
+}
+
+func (p *ParentConfigSetter) SetRootPath(rootPath string) {
+	p.RootPath = rootPath
 }
