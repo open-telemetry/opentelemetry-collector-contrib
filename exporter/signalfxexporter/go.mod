@@ -15,9 +15,9 @@ require (
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20220920175102-539ae8d8ba8e
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.63.2-0.20221031183340-2ed8c0c6ff9c
-	go.opentelemetry.io/collector/pdata v0.63.2-0.20221031183340-2ed8c0c6ff9c
-	go.opentelemetry.io/collector/semconv v0.63.2-0.20221031183340-2ed8c0c6ff9c
+	go.opentelemetry.io/collector v0.63.2-0.20221101161158-df8deb48186b
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221101161158-df8deb48186b
+	go.opentelemetry.io/collector/semconv v0.63.2-0.20221101161158-df8deb48186b
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
@@ -39,7 +39,7 @@ require (
 	github.com/jaegertracing/jaeger v1.38.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.15.11 // indirect
+	github.com/klauspost/compress v1.15.12 // indirect
 	github.com/knadh/koanf v1.4.4 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect

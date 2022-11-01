@@ -3,12 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileex
 go 1.18
 
 require (
-	github.com/klauspost/compress v1.15.11
+	github.com/klauspost/compress v1.15.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.63.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.63.2-0.20221031183340-2ed8c0c6ff9c
-	go.opentelemetry.io/collector/pdata v0.63.2-0.20221031183340-2ed8c0c6ff9c
+	go.opentelemetry.io/collector v0.63.2-0.20221101161158-df8deb48186b
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221101161158-df8deb48186b
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
 
