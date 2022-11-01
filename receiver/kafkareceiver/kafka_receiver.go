@@ -123,7 +123,7 @@ func newTracesReceiver(config Config, set component.ReceiverCreateSettings, unma
 	}, nil
 }
 
-func (c *kafkaTracesConsumer) Start(context.Context, component.Host) error {
+func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	consumerGroup := &tracesConsumerGroupHandler{
@@ -140,7 +140,11 @@ func (c *kafkaTracesConsumer) Start(context.Context, component.Host) error {
 		autocommitEnabled: c.autocommitEnabled,
 		messageMarking:    c.messageMarking,
 	}
-	go c.consumeLoop(ctx, consumerGroup) // nolint:errcheck
+	go func() {
+		if err := c.consumeLoop(ctx, consumerGroup); err != nil {
+			host.ReportFatalError(err)
+		}
+	}()
 	<-consumerGroup.ready
 	return nil
 }
@@ -206,7 +210,7 @@ func newMetricsReceiver(config Config, set component.ReceiverCreateSettings, unm
 	}, nil
 }
 
-func (c *kafkaMetricsConsumer) Start(context.Context, component.Host) error {
+func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	metricsConsumerGroup := &metricsConsumerGroupHandler{
@@ -223,7 +227,11 @@ func (c *kafkaMetricsConsumer) Start(context.Context, component.Host) error {
 		autocommitEnabled: c.autocommitEnabled,
 		messageMarking:    c.messageMarking,
 	}
-	go c.consumeLoop(ctx, metricsConsumerGroup) // nolint:errcheck
+	go func() {
+		if err := c.consumeLoop(ctx, metricsConsumerGroup); err != nil {
+			host.ReportFatalError(err)
+		}
+	}()
 	<-metricsConsumerGroup.ready
 	return nil
 }
@@ -286,7 +294,7 @@ func newLogsReceiver(config Config, set component.ReceiverCreateSettings, unmars
 	}, nil
 }
 
-func (c *kafkaLogsConsumer) Start(context.Context, component.Host) error {
+func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	logsConsumerGroup := &logsConsumerGroupHandler{
@@ -303,7 +311,11 @@ func (c *kafkaLogsConsumer) Start(context.Context, component.Host) error {
 		autocommitEnabled: c.autocommitEnabled,
 		messageMarking:    c.messageMarking,
 	}
-	go c.consumeLoop(ctx, logsConsumerGroup) // nolint:errcheck
+	go func() {
+		if err := c.consumeLoop(ctx, logsConsumerGroup); err != nil {
+			host.ReportFatalError(err)
+		}
+	}()
 	<-logsConsumerGroup.ready
 	return nil
 }

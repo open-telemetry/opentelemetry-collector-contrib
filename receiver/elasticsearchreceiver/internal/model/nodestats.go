@@ -169,13 +169,23 @@ type NodeStatsNodesInfoIndices struct {
 	IndexingOperations IndexingOperations  `json:"indexing"`
 	GetOperation       GetOperation        `json:"get"`
 	SearchOperations   SearchOperations    `json:"search"`
-	MergeOperations    BasicIndexOperation `json:"merges"`
+	MergeOperations    MergeOperations     `json:"merges"`
 	RefreshOperations  BasicIndexOperation `json:"refresh"`
 	FlushOperations    BasicIndexOperation `json:"flush"`
 	WarmerOperations   BasicIndexOperation `json:"warmer"`
 	QueryCache         BasicCacheInfo      `json:"query_cache"`
 	FieldDataCache     BasicCacheInfo      `json:"fielddata"`
 	TranslogStats      TranslogStats       `json:"translog"`
+	SegmentsStats      SegmentsStats       `json:"segments"`
+}
+
+type SegmentsStats struct {
+	Count                    int64 `json:"count"`
+	DocumentValuesMemoryInBy int64 `json:"doc_values_memory_in_bytes"`
+	IndexWriterMemoryInBy    int64 `json:"index_writer_memory_in_bytes"`
+	MemoryInBy               int64 `json:"memory_in_bytes"`
+	TermsMemoryInBy          int64 `json:"terms_memory_in_bytes"`
+	FixedBitSetMemoryInBy    int64 `json:"fixed_bit_set_memory_in_bytes"`
 }
 
 type TranslogStats struct {
@@ -193,6 +203,12 @@ type StoreInfo struct {
 type BasicIndexOperation struct {
 	Total         int64 `json:"total"`
 	TotalTimeInMs int64 `json:"total_time_in_millis"`
+}
+
+type MergeOperations struct {
+	BasicIndexOperation
+	TotalSizeInBytes int64 `json:"total_size_in_bytes"`
+	TotalDocs        int64 `json:"total_docs"`
 }
 
 type IndexingOperations struct {

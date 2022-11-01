@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperres
 go 1.18
 
 require (
-	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.62.2-0.20221017171445-6313054b642c
-	go.opentelemetry.io/collector/pdata v0.62.2-0.20221017171445-6313054b642c
+	github.com/stretchr/testify v1.8.1
+	go.opentelemetry.io/collector v0.63.2-0.20221031183340-2ed8c0c6ff9c
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221031183340-2ed8c0c6ff9c
 	go.uber.org/multierr v1.8.0
 )
 
@@ -21,7 +21,7 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/text v0.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
 	google.golang.org/grpc v1.50.1 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect

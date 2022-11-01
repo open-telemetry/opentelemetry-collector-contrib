@@ -49,6 +49,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 }
 
 func TestFactory_CreateLogsExporter(t *testing.T) {
+	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/15365")
 	tests := []struct {
 		name         string
 		config       Config
@@ -116,4 +117,9 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 			assert.NotNil(t, exp)
 		})
 	}
+}
+
+// This abstraction prevents skipped function from causing "unused" lint errors
+var skip = func(t *testing.T, why string) {
+	t.Skip(why)
 }

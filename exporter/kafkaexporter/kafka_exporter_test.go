@@ -142,7 +142,7 @@ func TestTracesPusher(t *testing.T) {
 
 	p := kafkaTracesProducer{
 		producer:  producer,
-		marshaler: newPdataTracesMarshaler(ptrace.NewProtoMarshaler(), defaultEncoding),
+		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -159,7 +159,7 @@ func TestTracesPusher_err(t *testing.T) {
 
 	p := kafkaTracesProducer{
 		producer:  producer,
-		marshaler: newPdataTracesMarshaler(ptrace.NewProtoMarshaler(), defaultEncoding),
+		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding),
 		logger:    zap.NewNop(),
 	}
 	t.Cleanup(func() {
@@ -189,7 +189,7 @@ func TestMetricsDataPusher(t *testing.T) {
 
 	p := kafkaMetricsProducer{
 		producer:  producer,
-		marshaler: newPdataMetricsMarshaler(pmetric.NewProtoMarshaler(), defaultEncoding),
+		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -206,7 +206,7 @@ func TestMetricsDataPusher_err(t *testing.T) {
 
 	p := kafkaMetricsProducer{
 		producer:  producer,
-		marshaler: newPdataMetricsMarshaler(pmetric.NewProtoMarshaler(), defaultEncoding),
+		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding),
 		logger:    zap.NewNop(),
 	}
 	t.Cleanup(func() {
@@ -236,7 +236,7 @@ func TestLogsDataPusher(t *testing.T) {
 
 	p := kafkaLogsProducer{
 		producer:  producer,
-		marshaler: newPdataLogsMarshaler(plog.NewProtoMarshaler(), defaultEncoding),
+		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -253,7 +253,7 @@ func TestLogsDataPusher_err(t *testing.T) {
 
 	p := kafkaLogsProducer{
 		producer:  producer,
-		marshaler: newPdataLogsMarshaler(plog.NewProtoMarshaler(), defaultEncoding),
+		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding),
 		logger:    zap.NewNop(),
 	}
 	t.Cleanup(func() {
