@@ -113,7 +113,7 @@ processors:
     latency_histogram_buckets: [100us, 1ms, 2ms, 6ms, 10ms, 100ms, 250ms] # Buckets for latency histogram
     dimensions: [cluster, namespace] # Additional dimensions (labels) to be added to the metrics extracted from the resource and span attributes
     store: # Configuration for the in-memory store
-      wait: 2s # Value to wait for an edge to be completed
+      ttl: 2s # Value to wait for an edge to be completed
       max_items: 200 # Amount of edges that will be stored in the storeMap      
 
 exporters:
