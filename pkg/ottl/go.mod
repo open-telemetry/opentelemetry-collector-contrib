@@ -6,8 +6,8 @@ require (
 	github.com/alecthomas/participle/v2 v2.0.0-beta.5
 	github.com/gobwas/glob v0.2.3
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.63.2-0.20221031183340-2ed8c0c6ff9c
-	go.opentelemetry.io/collector/pdata v0.63.2-0.20221031183340-2ed8c0c6ff9c
+	go.opentelemetry.io/collector v0.63.2-0.20221101161158-df8deb48186b
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221101161158-df8deb48186b
 	go.opentelemetry.io/otel/trace v1.11.1
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0

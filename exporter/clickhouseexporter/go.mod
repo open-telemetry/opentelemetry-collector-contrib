@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickh
 go 1.18
 
 require (
-	go.opentelemetry.io/collector v0.63.2-0.20221031183340-2ed8c0c6ff9c
+	go.opentelemetry.io/collector v0.63.2-0.20221101161158-df8deb48186b
 	go.uber.org/zap v1.23.0
 
 )
@@ -13,8 +13,8 @@ require go.uber.org/multierr v1.8.0
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.3.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector/pdata v0.63.2-0.20221031183340-2ed8c0c6ff9c
-	go.opentelemetry.io/collector/semconv v0.63.2-0.20221031183340-2ed8c0c6ff9c
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221101161158-df8deb48186b
+	go.opentelemetry.io/collector/semconv v0.63.2-0.20221101161158-df8deb48186b
 )
 
 require (
@@ -30,7 +30,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.15.11 // indirect
+	github.com/klauspost/compress v1.15.12 // indirect
 	github.com/knadh/koanf v1.4.4 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
