@@ -33,7 +33,7 @@ func TestFileYAMLWriter(t *testing.T) {
 	w := fileYAMLWriter{fakeDirResolver{dir}}
 	err := w.write(getTestCfgInfo(t), []byte("hello"))
 	require.NoError(t, err)
-	file, err := os.Open(filepath.Join(dir, "cfgschema.yaml"))
+	file, err := os.Open(filepath.Join(dir, "cfg-metadata.yaml"))
 	require.NoError(t, err)
 	bytes, err := io.ReadAll(file)
 	require.NoError(t, err)

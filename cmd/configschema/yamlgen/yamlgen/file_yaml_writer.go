@@ -34,7 +34,7 @@ func (f fileYAMLWriter) write(cfg configschema.CfgInfo, yamlBytes []byte) error 
 	if path == "" {
 		return fmt.Errorf("project path not found for component: %s %s", cfg.Group, cfg.Type)
 	}
-	fp := filepath.Join(path, "cfgschema.yaml")
+	fp := filepath.Join(path, "cfg-metadata.yaml")
 	err := os.WriteFile(fp, yamlBytes, 0600)
 	if err != nil {
 		return fmt.Errorf("error writing yaml file: %v", fp)
