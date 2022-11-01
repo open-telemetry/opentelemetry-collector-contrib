@@ -53,10 +53,12 @@ for LABEL_REQ in ${LABELS}; do
         continue
     fi
 
-    OWNERS=$(COMPONENT="${LABEL}" bash "${CUR_DIRECTORY}/get-codeowners.sh")
+    # Grep exits with status code 1 if there are no matches,
+    # so we manually set RESULT to 0 if nothing is found.
+    RESULT=$(grep -c "${LABEL}" .github/CODEOWNERS || true)
 
-    if [[ -z "${OWNERS}" ]]; then
-        echo "\"${LABEL}\" is a component with no code owners or doesn't correspond to a component, skipping."
+    if [[ ${RESULT} = 0 ]]; then
+        echo "\"${LABEL}\" doesn't correspond to a component, skipping."
         continue
     fi
 
