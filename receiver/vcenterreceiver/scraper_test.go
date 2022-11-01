@@ -16,7 +16,6 @@ package vcenterreceiver // import github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/config/configtls"
 	"path/filepath"
 	"testing"
 
@@ -45,7 +44,7 @@ func TestScrape(t *testing.T) {
 	testScrape(ctx, t, cfg)
 }
 
-func TestScrape_Tls(t *testing.T) {
+func TestScrape_TLS(t *testing.T) {
 	ctx := context.Background()
 	mockServer := mock.MockServer(t, true)
 
@@ -54,11 +53,10 @@ func TestScrape_Tls(t *testing.T) {
 		Endpoint: mockServer.URL,
 		Username: mock.MockUsername,
 		Password: mock.MockPassword,
-		TLSClientSetting: configtls.TLSClientSetting{
-			Insecure:           true,
-			InsecureSkipVerify: true,
-		},
 	}
+
+	cfg.Insecure = true
+	cfg.InsecureSkipVerify = true
 
 	testScrape(ctx, t, cfg)
 }
