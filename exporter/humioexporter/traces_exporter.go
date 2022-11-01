@@ -49,6 +49,38 @@ type HumioSpan struct {
 	Attributes        map[string]interface{} `json:"attributes,omitempty"`
 }
 
+// spanKindStr returns the string representation of the SpanKind used in Humio events.
+func spanKindStr(sk ptrace.SpanKind) string {
+	switch sk {
+	case ptrace.SpanKindUnspecified:
+		return "SPAN_KIND_UNSPECIFIED"
+	case ptrace.SpanKindInternal:
+		return "SPAN_KIND_INTERNAL"
+	case ptrace.SpanKindServer:
+		return "SPAN_KIND_SERVER"
+	case ptrace.SpanKindClient:
+		return "SPAN_KIND_CLIENT"
+	case ptrace.SpanKindProducer:
+		return "SPAN_KIND_PRODUCER"
+	case ptrace.SpanKindConsumer:
+		return "SPAN_KIND_CONSUMER"
+	}
+	return ""
+}
+
+// statusCodeStr returns the string representation of the StatusCode used in Humio events.
+func statusCodeStr(sk ptrace.StatusCode) string {
+	switch sk {
+	case ptrace.StatusCodeUnset:
+		return "STATUS_CODE_UNSET"
+	case ptrace.StatusCodeOk:
+		return "STATUS_CODE_OK"
+	case ptrace.StatusCodeError:
+		return "STATUS_CODE_ERROR"
+	}
+	return ""
+}
+
 type humioTracesExporter struct {
 	cfg      *Config
 	settings component.TelemetrySettings
@@ -185,10 +217,10 @@ func (e *humioTracesExporter) spanToHumioEvent(span ptrace.Span, inst pcommon.In
 			SpanID:            span.SpanID().HexString(),
 			ParentSpanID:      span.ParentSpanID().HexString(),
 			Name:              span.Name(),
-			Kind:              span.Kind().String(),
+			Kind:              spanKindStr(span.Kind()),
 			Start:             span.StartTimestamp().AsTime().UnixNano(),
 			End:               span.EndTimestamp().AsTime().UnixNano(),
-			StatusCode:        span.Status().Code().String(),
+			StatusCode:        statusCodeStr(span.Status().Code()),
 			StatusDescription: span.Status().Message(),
 			ServiceName:       serviceName,
 			Links:             toHumioLinks(span.Links()),
