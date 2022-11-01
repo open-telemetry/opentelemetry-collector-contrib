@@ -93,19 +93,13 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, attributes pcommon.
 		return true
 	})
 
-	// Map service.name + service.namespace to job
-	if serviceName, ok := resourceAttrs.Get(conventions.AttributeServiceName); ok {
-		val := serviceName.AsString()
-		if serviceNamespace, ok := resourceAttrs.Get(conventions.AttributeServiceNamespace); ok {
-			val = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), val)
-		}
+	if job, ok := extractJob(resourceAttrs); ok {
 		keys = append(keys, model.JobLabel)
-		values = append(values, val)
+		values = append(values, job)
 	}
-	// Map service.instance.id to instance
-	if instance, ok := resourceAttrs.Get(conventions.AttributeServiceInstanceID); ok {
+	if instance, ok := extractInstance(resourceAttrs); ok {
 		keys = append(keys, model.InstanceLabel)
-		values = append(values, instance.AsString())
+		values = append(values, instance)
 	}
 
 	return prometheus.NewDesc(
@@ -269,8 +263,8 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 		if sig == "" {
 			continue
 		}
-		if _, ok := seenResource[resourceSignature(attrs)]; !ok {
-			seenResource[resourceSignature(attrs)] = struct{}{}
+		if _, ok := seenResource[sig]; !ok {
+			seenResource[sig] = struct{}{}
 			deduplicatedResourceAttrs = append(deduplicatedResourceAttrs, attrs)
 		}
 	}
@@ -305,16 +299,12 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 		})
 
 		// Map service.name + service.namespace to job
-		if serviceName, ok := rAttributes.Get(conventions.AttributeServiceName); ok {
-			val := serviceName.AsString()
-			if serviceNamespace, ok := rAttributes.Get(conventions.AttributeServiceNamespace); ok {
-				val = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), val)
-			}
-			labels[model.JobLabel] = val
+		if job, ok := extractJob(rAttributes); ok {
+			labels[model.JobLabel] = job
 		}
 		// Map service.instance.id to instance
-		if instance, ok := rAttributes.Get(conventions.AttributeServiceInstanceID); ok {
-			labels[model.InstanceLabel] = instance.AsString()
+		if instance, ok := extractInstance(rAttributes); ok {
+			labels[model.InstanceLabel] = instance
 		}
 
 		name := targetMetricName
@@ -375,27 +365,4 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 		ch <- m
 		c.logger.Debug(fmt.Sprintf("metric served: %s", m.Desc().String()))
 	}
-}
-
-func resourceSignature(attributes pcommon.Map) string {
-	job := ""
-	instance := ""
-
-	// Map service.name + service.namespace to job
-	if serviceName, ok := attributes.Get(conventions.AttributeServiceName); ok {
-		job = serviceName.AsString()
-		if serviceNamespace, ok := attributes.Get(conventions.AttributeServiceNamespace); ok {
-			job = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), job)
-		}
-	}
-	// Map service.instance.id to instance
-	if inst, ok := attributes.Get(conventions.AttributeServiceInstanceID); ok {
-		instance = inst.AsString()
-	}
-
-	if job == "" && instance == "" {
-		return ""
-	}
-
-	return job + separatorString + instance
 }
