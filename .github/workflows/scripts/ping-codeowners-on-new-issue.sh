@@ -70,12 +70,24 @@ for COMPONENT in ${BODY_COMPONENTS}; do
 done
 
 if [[ -n "${LABELS}" ]]; then
-  # The GitHub CLI may fail if a tag doesn't exist, so stop this from failing the job.
+  # Notes on this call:
+  # 1. The GitHub CLI may fail if a tag doesn't exist, so
+  #    we want to prevent it from failing. Code owners will
+  #    still be pinged.
+  # 2. The call to edit the issue will fail if any of the
+  #    labels doesn't exist. We can be reasonably sure that
+  #    all labels will exist since they come from a known set.
   gh issue edit "${ISSUE}" --add-label "${LABELS}" || true
 
-  # The GitHub CLI only offers multiline strings through file input.
-  # The PING_LINES variable must be directly put into the printf string
-  # to get the newlines to render correctly.
+  # Notes on this call:
+  # 1. Adding labels above will not trigger the ping-codeowners flow,
+  #    since GitHub Actions disallows triggering a workflow from a 
+  #    workflow, so we have to ping code owners here.
+  # 2. The GitHub CLI only offers multiline strings through file input,
+  #    so we provide the comment through stdin.
+  # 3. The PING_LINES variable must be directly put into the printf string
+  #    to get the newlines to render correctly, using string formatting
+  #    causes the newlines to be interpreted literally.
   printf "Pinging code owners:\n${PING_LINES}\n%s" "${LABELS_COMMENT}"  \
   | gh issue comment "${ISSUE}" -F -
 fi
