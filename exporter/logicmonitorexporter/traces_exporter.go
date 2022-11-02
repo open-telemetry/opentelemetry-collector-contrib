@@ -77,7 +77,7 @@ func newTracesExporter(cfg *Config, set component.ExporterCreateSettings) (*trac
 }
 
 func (e *tracesExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
-	tr := ptraceotlp.NewRequestFromTraces(td)
+	tr := ptraceotlp.NewExportRequestFromTraces(td)
 	request, err := tr.MarshalProto()
 	if err != nil {
 		return consumererror.NewPermanent(err)

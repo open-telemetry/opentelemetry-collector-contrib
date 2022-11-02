@@ -163,7 +163,7 @@ func createLogData(numberOfLogs int) plog.Logs {
 	logs := plog.NewLogs()
 	logs.ResourceLogs().AppendEmpty() // Add an empty ResourceLogs
 	rl := logs.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutString("service.name", "myapp")
+	rl.Resource().Attributes().PutStr("service.name", "myapp")
 	rl.Resource().Attributes().PutInt("http.statusCode", 200)
 	rl.Resource().Attributes().PutBool("isTest", true)
 	rl.Resource().Attributes().PutDouble("value", 20.00)
@@ -176,8 +176,8 @@ func createLogData(numberOfLogs int) plog.Logs {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := ill.LogRecords().AppendEmpty()
 		logRecord.Body().SetStr("mylog")
-		logRecord.Attributes().PutString("my-label", "myapp-type")
-		logRecord.Attributes().PutString("custom", "custom")
+		logRecord.Attributes().PutStr("my-label", "myapp-type")
+		logRecord.Attributes().PutStr("custom", "custom")
 		logRecord.SetTimestamp(ts)
 	}
 	ill.LogRecords().AppendEmpty()

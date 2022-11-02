@@ -539,8 +539,8 @@ func GenerateTracesOneEmptyResourceSpans() ptrace.Traces {
 func GenerateTracesNoLibraries() ptrace.Traces {
 	td := GenerateTracesOneEmptyResourceSpans()
 	rs0 := td.ResourceSpans().At(0)
-	rs0.Resource().Attributes().PutString("service.name", "uop.stage-eu-1")
-	rs0.Resource().Attributes().PutString("outsystems.module.version", "903386")
+	rs0.Resource().Attributes().PutStr("service.name", "uop.stage-eu-1")
+	rs0.Resource().Attributes().PutStr("outsystems.module.version", "903386")
 	return td
 }
 
@@ -554,7 +554,7 @@ func fillSpanOne(span ptrace.Span) {
 	ev0.SetTimestamp(TestSpanEventTimestamp)
 	ev0.SetName("event-with-attr")
 	span.Attributes().PutInt("span_index", 3)
-	span.Attributes().PutString("code.function", "myFunction")
+	span.Attributes().PutStr("code.function", "myFunction")
 	ev0.SetDroppedAttributesCount(2)
 	ev1 := evs.AppendEmpty()
 	ev1.SetTimestamp(TestSpanEventTimestamp)

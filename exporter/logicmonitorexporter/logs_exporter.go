@@ -115,7 +115,7 @@ func (e *logExporter) mergeAttributes(k string, value pcommon.Value, logAttr pco
 	case pcommon.ValueTypeDouble:
 		logAttr.PutDouble(k, value.Double())
 	case pcommon.ValueTypeStr:
-		logAttr.PutString(k, value.Str())
+		logAttr.PutStr(k, value.Str())
 	case pcommon.ValueTypeMap:
 		values := map[string]interface{}{}
 		value.Map().Range(func(k string, v pcommon.Value) bool {
