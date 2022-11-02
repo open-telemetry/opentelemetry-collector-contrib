@@ -38,6 +38,7 @@ func TestScrape(t *testing.T) {
 	type testCase struct {
 		name                     string
 		config                   Config
+		rootPath                 string
 		bootTimeFunc             func() (uint64, error)
 		partitionsFunc           func(bool) ([]disk.PartitionStat, error)
 		usageFunc                func(string) (*disk.UsageStat, error)
@@ -170,6 +171,40 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
+			name: "RootPath at /hostfs",
+			config: Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+			},
+			rootPath: "/hostfs",
+			usageFunc: func(s string) (*disk.UsageStat, error) {
+				if s != "/hostfs/mount_point_a" {
+					return nil, errors.New("mountpoint not translated according to RootPath")
+				}
+				return &disk.UsageStat{
+					Fstype: "fs_type_a",
+				}, nil
+			},
+			partitionsFunc: func(b bool) ([]disk.PartitionStat, error) {
+				return []disk.PartitionStat{
+					{
+						Device:     "device_a",
+						Mountpoint: "mount_point_a",
+						Fstype:     "fs_type_a",
+					},
+				}, nil
+			},
+			expectMetrics:            true,
+			expectedDeviceDataPoints: 1,
+			expectedDeviceAttributes: []map[string]pcommon.Value{
+				{
+					"device":     pcommon.NewValueStr("device_a"),
+					"mountpoint": pcommon.NewValueStr("mount_point_a"),
+					"type":       pcommon.NewValueStr("fs_type_a"),
+					"mode":       pcommon.NewValueStr("unknown"),
+				},
+			},
+		},
+		{
 			name: "Invalid Include Device Filter",
 			config: Config{
 				Metrics:        metadata.DefaultMetricsSettings(),
@@ -289,7 +324,7 @@ func TestScrape(t *testing.T) {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-
+			test.config.SetRootPath(test.rootPath)
 			scraper, err := newFileSystemScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &test.config)
 			if test.newErrRegex != "" {
 				require.Error(t, err)
