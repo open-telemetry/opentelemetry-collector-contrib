@@ -5,7 +5,7 @@ change_type: bug_fix
 component: spanmetricsprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add metricKeys that relate to the current batch of spans received.
+note: Fix get key out of cache.
 
 # One or more tracking issues related to the change
 issues: [15688,15687]
