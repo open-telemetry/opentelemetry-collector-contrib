@@ -64,11 +64,11 @@ for example:
         event_context_extractor=custom_event_context_extractor
     )
 """
-
 import logging
 import os
 from importlib import import_module
 from typing import Any, Callable, Collection
+from urllib.parse import urlencode
 
 from wrapt import wrap_function_wrapper
 
@@ -85,6 +85,7 @@ from opentelemetry.propagators.aws.aws_xray_propagator import (
 from opentelemetry.semconv.resource import ResourceAttributes
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import (
+    Span,
     SpanKind,
     TracerProvider,
     get_tracer,
@@ -171,6 +172,86 @@ def _determine_parent_context(
     return parent_context
 
 
+def _set_api_gateway_v1_proxy_attributes(
+    lambda_event: Any, span: Span
+) -> Span:
+    """Sets HTTP attributes for REST APIs and v1 HTTP APIs
+
+    More info:
+    https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
+    """
+    span.set_attribute(
+        SpanAttributes.HTTP_METHOD, lambda_event.get("httpMethod")
+    )
+    span.set_attribute(SpanAttributes.HTTP_ROUTE, lambda_event.get("resource"))
+
+    if lambda_event.get("headers"):
+        span.set_attribute(
+            SpanAttributes.HTTP_USER_AGENT,
+            lambda_event["headers"].get("User-Agent"),
+        )
+        span.set_attribute(
+            SpanAttributes.HTTP_SCHEME,
+            lambda_event["headers"].get("X-Forwarded-Proto"),
+        )
+        span.set_attribute(
+            SpanAttributes.NET_HOST_NAME, lambda_event["headers"].get("Host")
+        )
+
+    if lambda_event.get("queryStringParameters"):
+        span.set_attribute(
+            SpanAttributes.HTTP_TARGET,
+            f"{lambda_event.get('resource')}?{urlencode(lambda_event.get('queryStringParameters'))}",
+        )
+    else:
+        span.set_attribute(
+            SpanAttributes.HTTP_TARGET, lambda_event.get("resource")
+        )
+
+    return span
+
+
+def _set_api_gateway_v2_proxy_attributes(
+    lambda_event: Any, span: Span
+) -> Span:
+    """Sets HTTP attributes for v2 HTTP APIs
+
+    More info:
+    https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html
+    """
+    span.set_attribute(
+        SpanAttributes.NET_HOST_NAME,
+        lambda_event["requestContext"].get("domainName"),
+    )
+
+    if lambda_event["requestContext"].get("http"):
+        span.set_attribute(
+            SpanAttributes.HTTP_METHOD,
+            lambda_event["requestContext"]["http"].get("method"),
+        )
+        span.set_attribute(
+            SpanAttributes.HTTP_USER_AGENT,
+            lambda_event["requestContext"]["http"].get("userAgent"),
+        )
+        span.set_attribute(
+            SpanAttributes.HTTP_ROUTE,
+            lambda_event["requestContext"]["http"].get("path"),
+        )
+
+        if lambda_event.get("rawQueryString"):
+            span.set_attribute(
+                SpanAttributes.HTTP_TARGET,
+                f"{lambda_event['requestContext']['http'].get('path')}?{lambda_event.get('rawQueryString')}",
+            )
+        else:
+            span.set_attribute(
+                SpanAttributes.HTTP_TARGET,
+                lambda_event["requestContext"]["http"].get("path"),
+            )
+
+    return span
+
+
 def _instrument(
     wrapped_module_name,
     wrapped_function_name,
@@ -232,6 +313,23 @@ def _instrument(
                 )
 
             result = call_wrapped(*args, **kwargs)
+
+            # If the request came from an API Gateway, extract http attributes from the event
+            # https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/instrumentation/aws-lambda.md#api-gateway
+            # https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#http-server-semantic-conventions
+            if lambda_event and lambda_event.get("requestContext"):
+                span.set_attribute(SpanAttributes.FAAS_TRIGGER, "http")
+
+                if lambda_event.get("version") == "2.0":
+                    _set_api_gateway_v2_proxy_attributes(lambda_event, span)
+                else:
+                    _set_api_gateway_v1_proxy_attributes(lambda_event, span)
+
+                if isinstance(result, dict) and result.get("statusCode"):
+                    span.set_attribute(
+                        SpanAttributes.HTTP_STATUS_CODE,
+                        result.get("statusCode"),
+                    )
 
         _tracer_provider = tracer_provider or get_tracer_provider()
         try:

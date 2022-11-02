@@ -15,3 +15,7 @@
 
 def handler(event, context):
     return "200 ok"
+
+
+def rest_api_handler(event, context):
+    return {"statusCode": 200, "body": "200 ok"}

@@ -15,6 +15,11 @@ import os
 from importlib import import_module
 from unittest import mock
 
+from mocks.api_gateway_http_api_event import (
+    MOCK_LAMBDA_API_GATEWAY_HTTP_API_EVENT,
+)
+from mocks.api_gateway_proxy_event import MOCK_LAMBDA_API_GATEWAY_PROXY_EVENT
+
 from opentelemetry.environment_variables import OTEL_PROPAGATORS
 from opentelemetry.instrumentation.aws_lambda import (
     _HANDLER,
@@ -300,3 +305,49 @@ class TestAwsLambdaInstrumentor(TestBase):
         assert spans
 
         test_env_patch.stop()
+
+    def test_api_gateway_proxy_event_sets_attributes(self):
+        handler_patch = mock.patch.dict(
+            "os.environ",
+            {_HANDLER: "mocks.lambda_function.rest_api_handler"},
+        )
+        handler_patch.start()
+
+        AwsLambdaInstrumentor().instrument()
+
+        mock_execute_lambda(MOCK_LAMBDA_API_GATEWAY_PROXY_EVENT)
+
+        span = self.memory_exporter.get_finished_spans()[0]
+
+        self.assertSpanHasAttributes(
+            span,
+            {
+                SpanAttributes.FAAS_TRIGGER: "http",
+                SpanAttributes.HTTP_METHOD: "POST",
+                SpanAttributes.HTTP_ROUTE: "/{proxy+}",
+                SpanAttributes.HTTP_TARGET: "/{proxy+}?foo=bar",
+                SpanAttributes.NET_HOST_NAME: "1234567890.execute-api.us-east-1.amazonaws.com",
+                SpanAttributes.HTTP_USER_AGENT: "Custom User Agent String",
+                SpanAttributes.HTTP_SCHEME: "https",
+                SpanAttributes.HTTP_STATUS_CODE: 200,
+            },
+        )
+
+    def test_api_gateway_http_api_proxy_event_sets_attributes(self):
+        AwsLambdaInstrumentor().instrument()
+
+        mock_execute_lambda(MOCK_LAMBDA_API_GATEWAY_HTTP_API_EVENT)
+
+        span = self.memory_exporter.get_finished_spans()[0]
+
+        self.assertSpanHasAttributes(
+            span,
+            {
+                SpanAttributes.FAAS_TRIGGER: "http",
+                SpanAttributes.HTTP_METHOD: "POST",
+                SpanAttributes.HTTP_ROUTE: "/path/to/resource",
+                SpanAttributes.HTTP_TARGET: "/path/to/resource?parameter1=value1&parameter1=value2&parameter2=value",
+                SpanAttributes.NET_HOST_NAME: "id.execute-api.us-east-1.amazonaws.com",
+                SpanAttributes.HTTP_USER_AGENT: "agent",
+            },
+        )
