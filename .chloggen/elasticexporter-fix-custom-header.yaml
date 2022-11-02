@@ -8,7 +8,7 @@ component: elasticsearchexporter
 note: Fixed nil panic error when setting custom headers in elasticsearch exporter
 
 # One or more tracking issues related to the change
-issues: []
+issues: [16017]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
