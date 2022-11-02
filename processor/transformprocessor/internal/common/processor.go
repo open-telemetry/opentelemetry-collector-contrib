@@ -194,6 +194,7 @@ func WithDataPointParser(functions map[string]interface{}) Option {
 
 func NewParserCollection(settings component.TelemetrySettings, options ...Option) *ParserCollection {
 	pc := &ParserCollection{
+		settings:       settings,
 		resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
 		scopeParser:    ottlscope.NewParser(ScopeFunctions(), settings),
 	}
