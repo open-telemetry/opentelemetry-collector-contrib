@@ -417,3 +417,13 @@ generate-labels:
 		gh label create "$${TYPE}/$${NAME}" -c "$${COLOR}"; \
 	done; \
 	exit 0
+
+.PHONY: generate-gh-issue-templates
+generate-gh-issue-templates:
+	for FILE in bug_report feature_request other; do \
+		YAML_FILE=".github/ISSUE_TEMPLATE/$${FILE}.yaml"; \
+		TMP_FILE=".github/ISSUE_TEMPLATE/$${FILE}.yaml.tmp"; \
+		cat "$${YAML_FILE}" > "$${TMP_FILE}"; \
+	 	FILE="$${TMP_FILE}" ./.github/workflows/scripts/add-component-options.sh > "$${YAML_FILE}"; \
+		rm "$${TMP_FILE}"; \
+	done
