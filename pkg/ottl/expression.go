@@ -59,7 +59,7 @@ type literal[K any] struct {
 	value interface{}
 }
 
-func (l literal[K]) Get(_ context.Context, _ K) (interface{}, error) {
+func (l literal[K]) Get(context.Context, K) (interface{}, error) {
 	return l.value, nil
 }
 

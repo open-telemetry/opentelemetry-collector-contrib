@@ -122,7 +122,7 @@ func Test_newComparisonEvaluator(t *testing.T) {
 			comp := comparisonHelper(tt.l, tt.r, tt.op)
 			evaluator, err := p.newComparisonEvaluator(comp)
 			assert.NoError(t, err)
-			result, err := evaluator.Eval(context.TODO(), tt.item)
+			result, err := evaluator.Eval(context.Background(), tt.item)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, result)
 		})
@@ -354,7 +354,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator, err := p.newBoolExpr(tt.expr)
 			assert.NoError(t, err)
-			result, err := evaluator.Eval(context.TODO(), nil)
+			result, err := evaluator.Eval(context.Background(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, result)
 		})

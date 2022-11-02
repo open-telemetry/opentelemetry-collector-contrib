@@ -30,11 +30,11 @@ func (e BoolExpr[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	return e.boolExpressionEvaluator(ctx, tCtx)
 }
 
-func alwaysTrue[K any](_ context.Context, _ K) (bool, error) {
+func alwaysTrue[K any](context.Context, K) (bool, error) {
 	return true, nil
 }
 
-func alwaysFalse[K any](_ context.Context, _ K) (bool, error) {
+func alwaysFalse[K any](context.Context, K) (bool, error) {
 	return false, nil
 }
 

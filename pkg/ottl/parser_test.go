@@ -1057,7 +1057,7 @@ func Test_Execute(t *testing.T) {
 				function:  Expr[any]{exprFunc: tt.function},
 			}
 
-			result, condition, err := statement.Execute(context.TODO(), nil)
+			result, condition, err := statement.Execute(context.Background(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedCondition, condition)
 			assert.Equal(t, tt.expectedResult, result)

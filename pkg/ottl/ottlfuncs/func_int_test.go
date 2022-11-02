@@ -83,7 +83,7 @@ func Test_Int(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := Int[interface{}](&ottl.StandardGetSetter[interface{}]{
-				Getter: func(_ context.Context, _ interface{}) (interface{}, error) {
+				Getter: func(context.Context, interface{}) (interface{}, error) {
 					return tt.value, nil
 				},
 			})

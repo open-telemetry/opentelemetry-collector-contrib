@@ -621,7 +621,7 @@ func Test_NewFunctionCall(t *testing.T) {
 			assert.NoError(t, err)
 
 			if tt.want != nil {
-				result, _ := fn.Eval(context.TODO(), nil)
+				result, _ := fn.Eval(context.Background(), nil)
 				assert.Equal(t, tt.want, result)
 			}
 		})
