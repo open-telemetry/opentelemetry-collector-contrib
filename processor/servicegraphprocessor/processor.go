@@ -38,8 +38,6 @@ import (
 
 const (
 	metricKeySeparator = string(byte(0))
-	clientKind         = "client"
-	serverKind         = "server"
 )
 
 var (
@@ -206,7 +204,7 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 						e.ClientService = serviceName
 						e.ClientLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
-						p.upsertDimensions(clientKind, e.Dimensions, rAttributes, span.Attributes())
+						p.upsertDimensions(strings.ToLower(ptrace.SpanKindClient.String()), e.Dimensions, rAttributes, span.Attributes())
 
 						// A database request will only have one span, we don't wait for the server
 						// span but just copy details from the client span
@@ -229,7 +227,7 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 						e.ServerService = serviceName
 						e.ServerLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
-						p.upsertDimensions(serverKind, e.Dimensions, rAttributes, span.Attributes())
+						p.upsertDimensions(strings.ToLower(ptrace.SpanKindServer.String()), e.Dimensions, rAttributes, span.Attributes())
 					})
 				default:
 					// this span is not part of an edge
