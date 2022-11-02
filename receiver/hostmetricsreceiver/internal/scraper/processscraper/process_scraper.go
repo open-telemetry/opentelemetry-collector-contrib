@@ -274,7 +274,9 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 
 		parentPid, err := parentPid(ctx, handle, pid)
 		if err != nil {
-			errs.AddPartial(0, fmt.Errorf("error reading parent pid for process %q (pid %v): %w", executable.name, pid, err))
+            if !s.config.AvoidSelectedErrors {
+                errs.AddPartial(0, fmt.Errorf("error reading parent pid for process %q (pid %v): %w", executable.name, pid, err))
+		    }
 		}
 
 		md := &processMetadata{
