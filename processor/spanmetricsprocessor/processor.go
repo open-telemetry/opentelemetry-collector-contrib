@@ -69,7 +69,7 @@ type processorImp struct {
 	nextConsumer    consumer.Traces
 
 	// Additional dimensions to add to metrics.
-	dimensions []Dimension
+	dimensions []dimension
 
 	// The starting time of the data points.
 	startTimestamp pcommon.Timestamp
@@ -81,6 +81,26 @@ type processorImp struct {
 	// An LRU cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "operation": "/bar", "status_code": "OK" }}
 	metricKeyToDimensions *cache.Cache[metricKey, pcommon.Map]
+}
+
+type dimension struct {
+	name  string
+	value *pcommon.Value
+}
+
+func newDimensions(cfgDims []Dimension) []dimension {
+	if len(cfgDims) == 0 {
+		return nil
+	}
+	dims := make([]dimension, len(cfgDims))
+	for i := range cfgDims {
+		dims[i].name = cfgDims[i].Name
+		if cfgDims[i].Default != nil {
+			val := pcommon.NewValueStr(*cfgDims[i].Default)
+			dims[i].value = &val
+		}
+	}
+	return dims
 }
 
 type histogramData struct {
@@ -121,7 +141,7 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		latencyBounds:         bounds,
 		histograms:            make(map[metricKey]*histogramData),
 		nextConsumer:          nextConsumer,
-		dimensions:            pConfig.Dimensions,
+		dimensions:            newDimensions(pConfig.Dimensions),
 		metricKeyToDimensions: metricKeyToDimensionsCache,
 	}, nil
 }
@@ -411,15 +431,16 @@ func (p *processorImp) resetExemplarData() {
 	}
 }
 
-func (p *processorImp) buildDimensionKVs(serviceName string, span ptrace.Span, optionalDims []Dimension, resourceAttrs pcommon.Map) pcommon.Map {
+func (p *processorImp) buildDimensionKVs(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map) pcommon.Map {
 	dims := pcommon.NewMap()
+	dims.EnsureCapacity(4 + len(p.dimensions))
 	dims.PutStr(serviceNameKey, serviceName)
 	dims.PutStr(operationKey, span.Name())
 	dims.PutStr(spanKindKey, span.Kind().String())
 	dims.PutStr(statusCodeKey, span.Status().Code().String())
-	for _, d := range optionalDims {
+	for _, d := range p.dimensions {
 		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
-			v.CopyTo(dims.PutEmpty(d.Name))
+			v.CopyTo(dims.PutEmpty(d.name))
 		}
 	}
 	return dims
@@ -439,7 +460,7 @@ func concatDimensionValue(metricKeyBuilder *strings.Builder, value string, prefi
 // or resource attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
-func buildKey(serviceName string, span ptrace.Span, optionalDims []Dimension, resourceAttrs pcommon.Map) metricKey {
+func buildKey(serviceName string, span ptrace.Span, optionalDims []dimension, resourceAttrs pcommon.Map) metricKey {
 	var metricKeyBuilder strings.Builder
 	concatDimensionValue(&metricKeyBuilder, serviceName, false)
 	concatDimensionValue(&metricKeyBuilder, span.Name(), true)
@@ -463,17 +484,17 @@ func buildKey(serviceName string, span ptrace.Span, optionalDims []Dimension, re
 //
 // The ok flag indicates if a dimension value was fetched in order to differentiate
 // an empty string value from a state where no value was found.
-func getDimensionValue(d Dimension, spanAttr pcommon.Map, resourceAttr pcommon.Map) (v pcommon.Value, ok bool) {
+func getDimensionValue(d dimension, spanAttr pcommon.Map, resourceAttr pcommon.Map) (v pcommon.Value, ok bool) {
 	// The more specific span attribute should take precedence.
-	if attr, exists := spanAttr.Get(d.Name); exists {
+	if attr, exists := spanAttr.Get(d.name); exists {
 		return attr, true
 	}
-	if attr, exists := resourceAttr.Get(d.Name); exists {
+	if attr, exists := resourceAttr.Get(d.name); exists {
 		return attr, true
 	}
 	// Set the default if configured, otherwise this metric will have no value set for the dimension.
-	if d.Default != nil {
-		return pcommon.NewValueStr(*d.Default), true
+	if d.value != nil {
+		return *d.value, true
 	}
 	return v, ok
 }
@@ -485,7 +506,7 @@ func getDimensionValue(d Dimension, spanAttr pcommon.Map, resourceAttr pcommon.M
 func (p *processorImp) cache(serviceName string, span ptrace.Span, k metricKey, resourceAttrs pcommon.Map) {
 	// Use Get to ensure any existing key has its recent-ness updated.
 	if _, has := p.metricKeyToDimensions.Get(k); !has {
-		p.metricKeyToDimensions.Add(k, p.buildDimensionKVs(serviceName, span, p.dimensions, resourceAttrs))
+		p.metricKeyToDimensions.Add(k, p.buildDimensionKVs(serviceName, span, resourceAttrs))
 	}
 }
 
