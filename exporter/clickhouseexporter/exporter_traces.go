@@ -250,8 +250,8 @@ const (
 	createTraceIDTsTableSQL = `
 create table IF NOT EXISTS %s_trace_id_ts (
      TraceId String CODEC(ZSTD(1)),
-     Start DateTime CODEC(ZSTD(1)),
-     End DateTime CODEC(ZSTD(1)),
+     Start DateTime64(9) CODEC(Delta, ZSTD(1)),
+     End DateTime64(9) CODEC(Delta, ZSTD(1)),
      INDEX idx_trace_id TraceId TYPE bloom_filter(0.01) GRANULARITY 1
 ) ENGINE MergeTree()
 %s
@@ -263,8 +263,8 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS %s_trace_id_ts_mv
 TO %s.%s_trace_id_ts
 AS SELECT
 TraceId,
-min(toDateTime(Timestamp)) as Start,
-max(toDateTime(Timestamp)) as End
+min(Timestamp) as Start,
+max(Timestamp) as End
 FROM
 %s.%s
 WHERE TraceId!=''
