@@ -33,10 +33,10 @@ func convertSummaryCountValToSum(stringAggTemp string, monotonic bool) (ottl.Exp
 	default:
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
 	}
-	return func(ctx ottldatapoints.TransformContext) interface{} {
+	return func(ctx ottldatapoints.TransformContext) (interface{}, error) {
 		metric := ctx.GetMetric()
 		if metric.Type() != pmetric.MetricTypeSummary {
-			return nil
+			return nil, nil
 		}
 
 		sumMetric := ctx.GetMetrics().AppendEmpty()
@@ -56,6 +56,6 @@ func convertSummaryCountValToSum(stringAggTemp string, monotonic bool) (ottl.Exp
 			sumDp.SetStartTimestamp(dp.StartTimestamp())
 			sumDp.SetTimestamp(dp.Timestamp())
 		}
-		return nil
+		return nil, nil
 	}, nil
 }

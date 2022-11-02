@@ -72,7 +72,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.TraceStatements) > 0 {
-		pc := common.NewTracesParserCollection(traces.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+		pc := common.NewParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithTraceParser(traces.Functions()), common.WithSpanEventParser(traces.Functions()))
 		_, err := pc.ParseContextStatements(c.TraceStatements)
 		if err != nil {
 			errors = multierr.Append(errors, err)
@@ -88,7 +88,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.MetricStatements) > 0 {
-		pc := common.NewMetricsParserCollection(metrics.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+		pc := common.NewParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(metrics.Functions()), common.WithDataPointParser(metrics.Functions()))
 		_, err := pc.ParseContextStatements(c.MetricStatements)
 		if err != nil {
 			errors = multierr.Append(errors, err)
@@ -104,7 +104,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.LogStatements) > 0 {
-		pc := common.NewLogsParserCollection(logs.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+		pc := common.NewParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(logs.Functions()))
 		_, err := pc.ParseContextStatements(c.LogStatements)
 		if err != nil {
 			errors = multierr.Append(errors, err)

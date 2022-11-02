@@ -11,9 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-FROM golang:1.18
+FROM golang:1.18 as build
 COPY . /usr/src/server/
 WORKDIR /usr/src/server/
 RUN go env -w GOPROXY=direct
 RUN go install ./main.go
+FROM alpine:3.15
+COPY --from=build /go/bin/main  /go/bin/main
 CMD ["/go/bin/main"]

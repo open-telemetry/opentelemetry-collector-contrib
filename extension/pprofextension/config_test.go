@@ -40,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 			id: config.NewComponentIDWithName(typeStr, "1"),
 			expected: &Config{
 				ExtensionSettings:    config.NewExtensionSettings(config.NewComponentID(typeStr)),
-				TCPAddr:              confignet.TCPAddr{Endpoint: "0.0.0.0:1777"},
+				TCPAddr:              confignet.TCPAddr{Endpoint: "127.0.0.1:1777"},
 				BlockProfileFraction: 3,
 				MutexProfileFraction: 5,
 			},

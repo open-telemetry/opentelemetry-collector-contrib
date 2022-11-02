@@ -26,7 +26,8 @@ import (
 )
 
 type Processor struct {
-	contexts   []common.Context
+	contexts []common.Context
+	// Deprecated.  Use contexts instead
 	statements []*ottl.Statement[ottllogs.TransformContext]
 }
 
@@ -41,7 +42,7 @@ func NewProcessor(statements []string, contextStatements []common.ContextStateme
 			statements: parsedStatements,
 		}, nil
 	}
-	pc := common.NewLogsParserCollection(Functions(), settings)
+	pc := common.NewParserCollection(settings, common.WithLogParser(Functions()))
 	contexts, err := pc.ParseContextStatements(contextStatements)
 	if err != nil {
 		return nil, err

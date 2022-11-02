@@ -52,7 +52,15 @@ type MetricsSettings struct {
 	ElasticsearchClusterStateUpdateCount                      MetricSettings `mapstructure:"elasticsearch.cluster.state_update.count"`
 	ElasticsearchClusterStateUpdateTime                       MetricSettings `mapstructure:"elasticsearch.cluster.state_update.time"`
 	ElasticsearchIndexOperationsCompleted                     MetricSettings `mapstructure:"elasticsearch.index.operations.completed"`
+	ElasticsearchIndexOperationsMergeDocsCount                MetricSettings `mapstructure:"elasticsearch.index.operations.merge.docs_count"`
+	ElasticsearchIndexOperationsMergeSize                     MetricSettings `mapstructure:"elasticsearch.index.operations.merge.size"`
 	ElasticsearchIndexOperationsTime                          MetricSettings `mapstructure:"elasticsearch.index.operations.time"`
+	ElasticsearchIndexSegmentsCount                           MetricSettings `mapstructure:"elasticsearch.index.segments.count"`
+	ElasticsearchIndexSegmentsMemory                          MetricSettings `mapstructure:"elasticsearch.index.segments.memory"`
+	ElasticsearchIndexSegmentsSize                            MetricSettings `mapstructure:"elasticsearch.index.segments.size"`
+	ElasticsearchIndexShardsSize                              MetricSettings `mapstructure:"elasticsearch.index.shards.size"`
+	ElasticsearchIndexTranslogOperations                      MetricSettings `mapstructure:"elasticsearch.index.translog.operations"`
+	ElasticsearchIndexTranslogSize                            MetricSettings `mapstructure:"elasticsearch.index.translog.size"`
 	ElasticsearchIndexingPressureMemoryLimit                  MetricSettings `mapstructure:"elasticsearch.indexing_pressure.memory.limit"`
 	ElasticsearchIndexingPressureMemoryTotalPrimaryRejections MetricSettings `mapstructure:"elasticsearch.indexing_pressure.memory.total.primary_rejections"`
 	ElasticsearchIndexingPressureMemoryTotalReplicaRejections MetricSettings `mapstructure:"elasticsearch.indexing_pressure.memory.total.replica_rejections"`
@@ -155,8 +163,32 @@ func DefaultMetricsSettings() MetricsSettings {
 		ElasticsearchIndexOperationsCompleted: MetricSettings{
 			Enabled: true,
 		},
+		ElasticsearchIndexOperationsMergeDocsCount: MetricSettings{
+			Enabled: false,
+		},
+		ElasticsearchIndexOperationsMergeSize: MetricSettings{
+			Enabled: false,
+		},
 		ElasticsearchIndexOperationsTime: MetricSettings{
 			Enabled: true,
+		},
+		ElasticsearchIndexSegmentsCount: MetricSettings{
+			Enabled: false,
+		},
+		ElasticsearchIndexSegmentsMemory: MetricSettings{
+			Enabled: false,
+		},
+		ElasticsearchIndexSegmentsSize: MetricSettings{
+			Enabled: false,
+		},
+		ElasticsearchIndexShardsSize: MetricSettings{
+			Enabled: true,
+		},
+		ElasticsearchIndexTranslogOperations: MetricSettings{
+			Enabled: false,
+		},
+		ElasticsearchIndexTranslogSize: MetricSettings{
+			Enabled: false,
 		},
 		ElasticsearchIndexingPressureMemoryLimit: MetricSettings{
 			Enabled: true,
@@ -742,6 +774,40 @@ func (av AttributeQueryCacheCountType) String() string {
 var MapAttributeQueryCacheCountType = map[string]AttributeQueryCacheCountType{
 	"hit":  AttributeQueryCacheCountTypeHit,
 	"miss": AttributeQueryCacheCountTypeMiss,
+}
+
+// AttributeSegmentsMemoryObjectType specifies the a value segments_memory_object_type attribute.
+type AttributeSegmentsMemoryObjectType int
+
+const (
+	_ AttributeSegmentsMemoryObjectType = iota
+	AttributeSegmentsMemoryObjectTypeTerm
+	AttributeSegmentsMemoryObjectTypeDocValue
+	AttributeSegmentsMemoryObjectTypeIndexWriter
+	AttributeSegmentsMemoryObjectTypeFixedBitSet
+)
+
+// String returns the string representation of the AttributeSegmentsMemoryObjectType.
+func (av AttributeSegmentsMemoryObjectType) String() string {
+	switch av {
+	case AttributeSegmentsMemoryObjectTypeTerm:
+		return "term"
+	case AttributeSegmentsMemoryObjectTypeDocValue:
+		return "doc_value"
+	case AttributeSegmentsMemoryObjectTypeIndexWriter:
+		return "index_writer"
+	case AttributeSegmentsMemoryObjectTypeFixedBitSet:
+		return "fixed_bit_set"
+	}
+	return ""
+}
+
+// MapAttributeSegmentsMemoryObjectType is a helper map of string to AttributeSegmentsMemoryObjectType attribute value.
+var MapAttributeSegmentsMemoryObjectType = map[string]AttributeSegmentsMemoryObjectType{
+	"term":          AttributeSegmentsMemoryObjectTypeTerm,
+	"doc_value":     AttributeSegmentsMemoryObjectTypeDocValue,
+	"index_writer":  AttributeSegmentsMemoryObjectTypeIndexWriter,
+	"fixed_bit_set": AttributeSegmentsMemoryObjectTypeFixedBitSet,
 }
 
 // AttributeShardState specifies the a value shard_state attribute.
@@ -1615,6 +1681,112 @@ func newMetricElasticsearchIndexOperationsCompleted(settings MetricSettings) met
 	return m
 }
 
+type metricElasticsearchIndexOperationsMergeDocsCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.index.operations.merge.docs_count metric with initial data.
+func (m *metricElasticsearchIndexOperationsMergeDocsCount) init() {
+	m.data.SetName("elasticsearch.index.operations.merge.docs_count")
+	m.data.SetDescription("The total number of documents in merge operations for an index.")
+	m.data.SetUnit("{documents}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchIndexOperationsMergeDocsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchIndexOperationsMergeDocsCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchIndexOperationsMergeDocsCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchIndexOperationsMergeDocsCount(settings MetricSettings) metricElasticsearchIndexOperationsMergeDocsCount {
+	m := metricElasticsearchIndexOperationsMergeDocsCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchIndexOperationsMergeSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.index.operations.merge.size metric with initial data.
+func (m *metricElasticsearchIndexOperationsMergeSize) init() {
+	m.data.SetName("elasticsearch.index.operations.merge.size")
+	m.data.SetDescription("The total size of merged segments for an index.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchIndexOperationsMergeSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchIndexOperationsMergeSize) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchIndexOperationsMergeSize) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchIndexOperationsMergeSize(settings MetricSettings) metricElasticsearchIndexOperationsMergeSize {
+	m := metricElasticsearchIndexOperationsMergeSize{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricElasticsearchIndexOperationsTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -1662,6 +1834,325 @@ func (m *metricElasticsearchIndexOperationsTime) emit(metrics pmetric.MetricSlic
 
 func newMetricElasticsearchIndexOperationsTime(settings MetricSettings) metricElasticsearchIndexOperationsTime {
 	m := metricElasticsearchIndexOperationsTime{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchIndexSegmentsCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.index.segments.count metric with initial data.
+func (m *metricElasticsearchIndexSegmentsCount) init() {
+	m.data.SetName("elasticsearch.index.segments.count")
+	m.data.SetDescription("Number of segments of an index.")
+	m.data.SetUnit("{segments}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchIndexSegmentsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchIndexSegmentsCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchIndexSegmentsCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchIndexSegmentsCount(settings MetricSettings) metricElasticsearchIndexSegmentsCount {
+	m := metricElasticsearchIndexSegmentsCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchIndexSegmentsMemory struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.index.segments.memory metric with initial data.
+func (m *metricElasticsearchIndexSegmentsMemory) init() {
+	m.data.SetName("elasticsearch.index.segments.memory")
+	m.data.SetDescription("Size of memory for segment object of an index.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchIndexSegmentsMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue string, segmentsMemoryObjectTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	dp.Attributes().PutStr("object", segmentsMemoryObjectTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchIndexSegmentsMemory) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchIndexSegmentsMemory) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchIndexSegmentsMemory(settings MetricSettings) metricElasticsearchIndexSegmentsMemory {
+	m := metricElasticsearchIndexSegmentsMemory{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchIndexSegmentsSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.index.segments.size metric with initial data.
+func (m *metricElasticsearchIndexSegmentsSize) init() {
+	m.data.SetName("elasticsearch.index.segments.size")
+	m.data.SetDescription("Size of segments of an index.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchIndexSegmentsSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchIndexSegmentsSize) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchIndexSegmentsSize) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchIndexSegmentsSize(settings MetricSettings) metricElasticsearchIndexSegmentsSize {
+	m := metricElasticsearchIndexSegmentsSize{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchIndexShardsSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.index.shards.size metric with initial data.
+func (m *metricElasticsearchIndexShardsSize) init() {
+	m.data.SetName("elasticsearch.index.shards.size")
+	m.data.SetDescription("The size of the shards assigned to this index.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchIndexShardsSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchIndexShardsSize) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchIndexShardsSize) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchIndexShardsSize(settings MetricSettings) metricElasticsearchIndexShardsSize {
+	m := metricElasticsearchIndexShardsSize{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchIndexTranslogOperations struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.index.translog.operations metric with initial data.
+func (m *metricElasticsearchIndexTranslogOperations) init() {
+	m.data.SetName("elasticsearch.index.translog.operations")
+	m.data.SetDescription("Number of transaction log operations for an index.")
+	m.data.SetUnit("{operations}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchIndexTranslogOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchIndexTranslogOperations) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchIndexTranslogOperations) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchIndexTranslogOperations(settings MetricSettings) metricElasticsearchIndexTranslogOperations {
+	m := metricElasticsearchIndexTranslogOperations{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchIndexTranslogSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.index.translog.size metric with initial data.
+func (m *metricElasticsearchIndexTranslogSize) init() {
+	m.data.SetName("elasticsearch.index.translog.size")
+	m.data.SetDescription("Size of the transaction log for an index.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchIndexTranslogSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchIndexTranslogSize) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchIndexTranslogSize) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchIndexTranslogSize(settings MetricSettings) metricElasticsearchIndexTranslogSize {
+	m := metricElasticsearchIndexTranslogSize{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4405,7 +4896,15 @@ type MetricsBuilder struct {
 	metricElasticsearchClusterStateUpdateCount                      metricElasticsearchClusterStateUpdateCount
 	metricElasticsearchClusterStateUpdateTime                       metricElasticsearchClusterStateUpdateTime
 	metricElasticsearchIndexOperationsCompleted                     metricElasticsearchIndexOperationsCompleted
+	metricElasticsearchIndexOperationsMergeDocsCount                metricElasticsearchIndexOperationsMergeDocsCount
+	metricElasticsearchIndexOperationsMergeSize                     metricElasticsearchIndexOperationsMergeSize
 	metricElasticsearchIndexOperationsTime                          metricElasticsearchIndexOperationsTime
+	metricElasticsearchIndexSegmentsCount                           metricElasticsearchIndexSegmentsCount
+	metricElasticsearchIndexSegmentsMemory                          metricElasticsearchIndexSegmentsMemory
+	metricElasticsearchIndexSegmentsSize                            metricElasticsearchIndexSegmentsSize
+	metricElasticsearchIndexShardsSize                              metricElasticsearchIndexShardsSize
+	metricElasticsearchIndexTranslogOperations                      metricElasticsearchIndexTranslogOperations
+	metricElasticsearchIndexTranslogSize                            metricElasticsearchIndexTranslogSize
 	metricElasticsearchIndexingPressureMemoryLimit                  metricElasticsearchIndexingPressureMemoryLimit
 	metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections
 	metricElasticsearchIndexingPressureMemoryTotalReplicaRejections metricElasticsearchIndexingPressureMemoryTotalReplicaRejections
@@ -4491,7 +4990,15 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricElasticsearchClusterStateUpdateCount:                      newMetricElasticsearchClusterStateUpdateCount(settings.ElasticsearchClusterStateUpdateCount),
 		metricElasticsearchClusterStateUpdateTime:                       newMetricElasticsearchClusterStateUpdateTime(settings.ElasticsearchClusterStateUpdateTime),
 		metricElasticsearchIndexOperationsCompleted:                     newMetricElasticsearchIndexOperationsCompleted(settings.ElasticsearchIndexOperationsCompleted),
+		metricElasticsearchIndexOperationsMergeDocsCount:                newMetricElasticsearchIndexOperationsMergeDocsCount(settings.ElasticsearchIndexOperationsMergeDocsCount),
+		metricElasticsearchIndexOperationsMergeSize:                     newMetricElasticsearchIndexOperationsMergeSize(settings.ElasticsearchIndexOperationsMergeSize),
 		metricElasticsearchIndexOperationsTime:                          newMetricElasticsearchIndexOperationsTime(settings.ElasticsearchIndexOperationsTime),
+		metricElasticsearchIndexSegmentsCount:                           newMetricElasticsearchIndexSegmentsCount(settings.ElasticsearchIndexSegmentsCount),
+		metricElasticsearchIndexSegmentsMemory:                          newMetricElasticsearchIndexSegmentsMemory(settings.ElasticsearchIndexSegmentsMemory),
+		metricElasticsearchIndexSegmentsSize:                            newMetricElasticsearchIndexSegmentsSize(settings.ElasticsearchIndexSegmentsSize),
+		metricElasticsearchIndexShardsSize:                              newMetricElasticsearchIndexShardsSize(settings.ElasticsearchIndexShardsSize),
+		metricElasticsearchIndexTranslogOperations:                      newMetricElasticsearchIndexTranslogOperations(settings.ElasticsearchIndexTranslogOperations),
+		metricElasticsearchIndexTranslogSize:                            newMetricElasticsearchIndexTranslogSize(settings.ElasticsearchIndexTranslogSize),
 		metricElasticsearchIndexingPressureMemoryLimit:                  newMetricElasticsearchIndexingPressureMemoryLimit(settings.ElasticsearchIndexingPressureMemoryLimit),
 		metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections: newMetricElasticsearchIndexingPressureMemoryTotalPrimaryRejections(settings.ElasticsearchIndexingPressureMemoryTotalPrimaryRejections),
 		metricElasticsearchIndexingPressureMemoryTotalReplicaRejections: newMetricElasticsearchIndexingPressureMemoryTotalReplicaRejections(settings.ElasticsearchIndexingPressureMemoryTotalReplicaRejections),
@@ -4633,7 +5140,15 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricElasticsearchClusterStateUpdateCount.emit(ils.Metrics())
 	mb.metricElasticsearchClusterStateUpdateTime.emit(ils.Metrics())
 	mb.metricElasticsearchIndexOperationsCompleted.emit(ils.Metrics())
+	mb.metricElasticsearchIndexOperationsMergeDocsCount.emit(ils.Metrics())
+	mb.metricElasticsearchIndexOperationsMergeSize.emit(ils.Metrics())
 	mb.metricElasticsearchIndexOperationsTime.emit(ils.Metrics())
+	mb.metricElasticsearchIndexSegmentsCount.emit(ils.Metrics())
+	mb.metricElasticsearchIndexSegmentsMemory.emit(ils.Metrics())
+	mb.metricElasticsearchIndexSegmentsSize.emit(ils.Metrics())
+	mb.metricElasticsearchIndexShardsSize.emit(ils.Metrics())
+	mb.metricElasticsearchIndexTranslogOperations.emit(ils.Metrics())
+	mb.metricElasticsearchIndexTranslogSize.emit(ils.Metrics())
 	mb.metricElasticsearchIndexingPressureMemoryLimit.emit(ils.Metrics())
 	mb.metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections.emit(ils.Metrics())
 	mb.metricElasticsearchIndexingPressureMemoryTotalReplicaRejections.emit(ils.Metrics())
@@ -4781,9 +5296,49 @@ func (mb *MetricsBuilder) RecordElasticsearchIndexOperationsCompletedDataPoint(t
 	mb.metricElasticsearchIndexOperationsCompleted.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String(), indexAggregationTypeAttributeValue.String())
 }
 
+// RecordElasticsearchIndexOperationsMergeDocsCountDataPoint adds a data point to elasticsearch.index.operations.merge.docs_count metric.
+func (mb *MetricsBuilder) RecordElasticsearchIndexOperationsMergeDocsCountDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	mb.metricElasticsearchIndexOperationsMergeDocsCount.recordDataPoint(mb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
+}
+
+// RecordElasticsearchIndexOperationsMergeSizeDataPoint adds a data point to elasticsearch.index.operations.merge.size metric.
+func (mb *MetricsBuilder) RecordElasticsearchIndexOperationsMergeSizeDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	mb.metricElasticsearchIndexOperationsMergeSize.recordDataPoint(mb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
+}
+
 // RecordElasticsearchIndexOperationsTimeDataPoint adds a data point to elasticsearch.index.operations.time metric.
 func (mb *MetricsBuilder) RecordElasticsearchIndexOperationsTimeDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
 	mb.metricElasticsearchIndexOperationsTime.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String(), indexAggregationTypeAttributeValue.String())
+}
+
+// RecordElasticsearchIndexSegmentsCountDataPoint adds a data point to elasticsearch.index.segments.count metric.
+func (mb *MetricsBuilder) RecordElasticsearchIndexSegmentsCountDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	mb.metricElasticsearchIndexSegmentsCount.recordDataPoint(mb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
+}
+
+// RecordElasticsearchIndexSegmentsMemoryDataPoint adds a data point to elasticsearch.index.segments.memory metric.
+func (mb *MetricsBuilder) RecordElasticsearchIndexSegmentsMemoryDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType, segmentsMemoryObjectTypeAttributeValue AttributeSegmentsMemoryObjectType) {
+	mb.metricElasticsearchIndexSegmentsMemory.recordDataPoint(mb.startTime, ts, val, indexAggregationTypeAttributeValue.String(), segmentsMemoryObjectTypeAttributeValue.String())
+}
+
+// RecordElasticsearchIndexSegmentsSizeDataPoint adds a data point to elasticsearch.index.segments.size metric.
+func (mb *MetricsBuilder) RecordElasticsearchIndexSegmentsSizeDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	mb.metricElasticsearchIndexSegmentsSize.recordDataPoint(mb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
+}
+
+// RecordElasticsearchIndexShardsSizeDataPoint adds a data point to elasticsearch.index.shards.size metric.
+func (mb *MetricsBuilder) RecordElasticsearchIndexShardsSizeDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	mb.metricElasticsearchIndexShardsSize.recordDataPoint(mb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
+}
+
+// RecordElasticsearchIndexTranslogOperationsDataPoint adds a data point to elasticsearch.index.translog.operations metric.
+func (mb *MetricsBuilder) RecordElasticsearchIndexTranslogOperationsDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	mb.metricElasticsearchIndexTranslogOperations.recordDataPoint(mb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
+}
+
+// RecordElasticsearchIndexTranslogSizeDataPoint adds a data point to elasticsearch.index.translog.size metric.
+func (mb *MetricsBuilder) RecordElasticsearchIndexTranslogSizeDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	mb.metricElasticsearchIndexTranslogSize.recordDataPoint(mb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
 }
 
 // RecordElasticsearchIndexingPressureMemoryLimitDataPoint adds a data point to elasticsearch.indexing_pressure.memory.limit metric.

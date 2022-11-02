@@ -29,7 +29,7 @@ func SpanID[K any](bytes []byte) (ottl.ExprFunc[K], error) {
 	var idArr [8]byte
 	copy(idArr[:8], bytes)
 	id := pcommon.SpanID(idArr)
-	return func(K) interface{} {
-		return id
+	return func(K) (interface{}, error) {
+		return id, nil
 	}, nil
 }

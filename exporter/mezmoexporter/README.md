@@ -1,5 +1,11 @@
 # Mezmo Exporter
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [stable]  |
+| Supported pipeline types | logs      |
+| Distributions            | [contrib] |
+
 This exporter supports sending OpenTelemetry log data to
 [Mezmo](https://mezmo.com).
 
