@@ -507,7 +507,7 @@ func durationToMillis(d time.Duration) float64 {
 }
 
 func mapDurationsToMillis(vs []time.Duration) []float64 {
-	vsm := make([]float64, len(vs)+1)
+	vsm := make([]float64, len(vs))
 	for i, v := range vs {
 		vsm[i] = durationToMillis(v)
 	}
