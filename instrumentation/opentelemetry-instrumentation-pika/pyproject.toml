@@ -36,7 +36,7 @@ instruments = [
 ]
 test = [
   "opentelemetry-instrumentation-pika[instruments]",
-  "opentelemetry-test-utils == 0.34b0",
+  "opentelemetry-test-utils == 0.35b0.dev",
   "pytest",
   "wrapt >= 1.0.0, < 2.0.0",
 ]

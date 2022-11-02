@@ -26,8 +26,8 @@ classifiers = [
 ]
 dependencies = [
   "opentelemetry-api ~= 1.12",
-  "opentelemetry-instrumentation == 0.34b0",
-  "opentelemetry-semantic-conventions == 0.34b0",
+  "opentelemetry-instrumentation == 0.35b0.dev",
+  "opentelemetry-semantic-conventions == 0.35b0.dev",
 ]
 
 [project.optional-dependencies]
@@ -36,7 +36,7 @@ instruments = [
 ]
 test = [
   "opentelemetry-instrumentation-asyncpg[instruments]",
-  "opentelemetry-test-utils == 0.34b0",
+  "opentelemetry-test-utils == 0.35b0.dev",
 ]
 
 [project.entry-points.opentelemetry_instrumentor]
