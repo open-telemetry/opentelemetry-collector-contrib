@@ -16,6 +16,8 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -151,6 +153,8 @@ type ParserCollection struct {
 	resourceParser   ottl.Parser[ottlresource.TransformContext]
 	scopeParser      ottl.Parser[ottlscope.TransformContext]
 	traceParser      ottl.Parser[ottltraces.TransformContext]
+	spanEventParser  ottl.Parser[ottlspanevent.TransformContext]
+	metricParser     ottl.Parser[ottlmetric.TransformContext]
 	dataPointsParser ottl.Parser[ottldatapoints.TransformContext]
 	logParser        ottl.Parser[ottllogs.TransformContext]
 }
@@ -164,9 +168,21 @@ func WithTraceParser(functions map[string]interface{}) Option {
 	}
 }
 
+func WithSpanEventParser(functions map[string]interface{}) Option {
+	return func(o *ParserCollection) {
+		o.spanEventParser = ottlspanevent.NewParser(functions, o.settings)
+	}
+}
+
 func WithLogParser(functions map[string]interface{}) Option {
 	return func(o *ParserCollection) {
 		o.logParser = ottllogs.NewParser(functions, o.settings)
+	}
+}
+
+func WithMetricParser(functions map[string]interface{}) Option {
+	return func(o *ParserCollection) {
+		o.metricParser = ottlmetric.NewParser(functions, o.settings)
 	}
 }
 
@@ -209,7 +225,6 @@ func (pc *ParserCollection) ParseContextStatements(contextStatements []ContextSt
 				continue
 			}
 			contexts[i] = scopeStatements(statements)
-
 		case Trace:
 			statements, err := pc.traceParser.ParseStatements(s.Statements)
 			if err != nil {
@@ -217,7 +232,20 @@ func (pc *ParserCollection) ParseContextStatements(contextStatements []ContextSt
 				continue
 			}
 			contexts[i] = traceStatements(statements)
-
+		case SpanEvent:
+			statements, err := pc.spanEventParser.ParseStatements(s.Statements)
+			if err != nil {
+				errors = multierr.Append(errors, err)
+				continue
+			}
+			contexts[i] = spanEventStatements(statements)
+		case Metric:
+			statements, err := pc.metricParser.ParseStatements(s.Statements)
+			if err != nil {
+				errors = multierr.Append(errors, err)
+				continue
+			}
+			contexts[i] = metricStatements(statements)
 		case DataPoint:
 			statements, err := pc.dataPointsParser.ParseStatements(s.Statements)
 			if err != nil {
@@ -225,7 +253,6 @@ func (pc *ParserCollection) ParseContextStatements(contextStatements []ContextSt
 				continue
 			}
 			contexts[i] = dataPointStatements(statements)
-
 		case Log:
 			statements, err := pc.logParser.ParseStatements(s.Statements)
 			if err != nil {

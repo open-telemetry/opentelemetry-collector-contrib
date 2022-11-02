@@ -18,6 +18,8 @@ const (
 	Resource  string = "resource"
 	Scope     string = "scope"
 	Trace     string = "trace"
+	SpanEvent string = "spanevent"
+	Metric    string = "metric"
 	DataPoint string = "datapoint"
 	Log       string = "log"
 )

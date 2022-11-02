@@ -17,12 +17,40 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 type MetricsContext interface {
 	ProcessMetrics(td pmetric.Metrics) error
+}
+
+var _ Context = &metricStatements{}
+var _ MetricsContext = &metricStatements{}
+
+type metricStatements []*ottl.Statement[ottlmetric.TransformContext]
+
+func (m metricStatements) isContext() {}
+
+func (m metricStatements) ProcessMetrics(td pmetric.Metrics) error {
+	for i := 0; i < td.ResourceMetrics().Len(); i++ {
+		rmetrics := td.ResourceMetrics().At(i)
+		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
+			smetrics := rmetrics.ScopeMetrics().At(j)
+			metrics := smetrics.Metrics()
+			for k := 0; k < metrics.Len(); k++ {
+				ctx := ottlmetric.NewTransformContext(metrics.At(k), smetrics.Scope(), rmetrics.Resource())
+				for _, statement := range m {
+					_, _, err := statement.Execute(ctx)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+	return nil
 }
 
 var _ Context = &dataPointStatements{}

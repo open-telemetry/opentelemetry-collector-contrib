@@ -16,6 +16,7 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -43,6 +44,37 @@ func (t traceStatements) ProcessTraces(td ptrace.Traces) error {
 					_, _, err := statement.Execute(ctx)
 					if err != nil {
 						return err
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+var _ Context = &spanEventStatements{}
+var _ TracesContext = &spanEventStatements{}
+
+type spanEventStatements []*ottl.Statement[ottlspanevent.TransformContext]
+
+func (s spanEventStatements) isContext() {}
+
+func (s spanEventStatements) ProcessTraces(td ptrace.Traces) error {
+	for i := 0; i < td.ResourceSpans().Len(); i++ {
+		rspans := td.ResourceSpans().At(i)
+		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
+			sspans := rspans.ScopeSpans().At(j)
+			spans := sspans.Spans()
+			for k := 0; k < spans.Len(); k++ {
+				span := spans.At(k)
+				spanEvents := span.Events()
+				for n := 0; n < spanEvents.Len(); n++ {
+					ctx := ottlspanevent.NewTransformContext(spanEvents.At(k), span, sspans.Scope(), rspans.Resource())
+					for _, statement := range s {
+						_, _, err := statement.Execute(ctx)
+						if err != nil {
+							return err
+						}
 					}
 				}
 			}
