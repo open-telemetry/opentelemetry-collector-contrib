@@ -19,11 +19,10 @@ import (
 	"fmt"
 	"strings"
 
-	"golang.org/x/text/transform"
-
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/ianaindex"
 	"golang.org/x/text/encoding/unicode"
+	"golang.org/x/text/transform"
 )
 
 // NewBasicConfig creates a new Encoding config
