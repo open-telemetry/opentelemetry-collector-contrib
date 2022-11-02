@@ -17,9 +17,17 @@
 package hostmetricsreceiver
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/service/servicetest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 )
 
 func TestConsistentRootPaths(t *testing.T) {
@@ -41,4 +49,30 @@ func TestInconsistentRootPaths(t *testing.T) {
 	t.Setenv("HOST_SYS", "doesnt-start-with-testdata")
 	err = validateRootPath("testdata")
 	assert.EqualError(t, err, "config `root_path=testdata` is inconsistent with envvar `HOST_SYS=doesnt-start-with-testdata` config, root_path must be the prefix of the environment variable")
+}
+
+func TestLoadConfigRootPath(t *testing.T) {
+	t.Setenv("HOST_PROC", "testdata")
+	factories, _ := componenttest.NopFactories()
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-root-path.yaml"), factories)
+	require.NoError(t, err)
+
+	r := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
+	expectedConfig := factory.CreateDefaultConfig().(*Config)
+	expectedConfig.RootPath = "testdata"
+	cpuScraperCfg := (&cpuscraper.Factory{}).CreateDefaultConfig()
+	cpuScraperCfg.SetRootPath("testdata")
+	expectedConfig.Scrapers = map[string]internal.Config{cpuscraper.TypeStr: cpuScraperCfg}
+
+	assert.Equal(t, expectedConfig, r)
+}
+
+func TestLoadInvalidConfig_RootPathNotExist(t *testing.T) {
+	factories, _ := componenttest.NopFactories()
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	_, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-bad-root-path.yaml"), factories)
+	assert.ErrorContains(t, err, "invalid root_path:")
 }
