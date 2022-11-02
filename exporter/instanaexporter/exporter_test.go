@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -92,11 +93,17 @@ func TestSelfSignedBackend(t *testing.T) {
 	// Starts the exporter to test the HTTP client request
 
 	cfg := Config{
-		AgentKey:           "key11",
-		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: server.URL},
-		Endpoint:           server.URL,
-		CAFile:             caFile,
-		ExporterSettings:   config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid")),
+		AgentKey: "key11",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: server.URL,
+			TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile: caFile,
+				},
+			},
+		},
+		Endpoint:         server.URL,
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid")),
 	}
 
 	ctx := context.Background()
@@ -112,24 +119,23 @@ func TestSelfSignedBackend(t *testing.T) {
 }
 
 func TestSelfSignedBackendCAFileNotFound(t *testing.T) {
-	var err error
-
 	cfg := Config{
-		AgentKey:           "key11",
-		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
-		Endpoint:           "",
-		CAFile:             "ca_file_not_found.pem",
-		ExporterSettings:   config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid")),
+		AgentKey: "key11",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "",
+			TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile: "ca_file_not_found.pem",
+				},
+			},
+		},
+		Endpoint:         "",
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid")),
 	}
 
 	ctx := context.Background()
 
 	instanaExporter := newInstanaExporter(&cfg, componenttest.NewNopExporterCreateSettings())
-	err = instanaExporter.start(ctx, componenttest.NewNopHost())
 
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assert.Error(t, instanaExporter.export(ctx, "", make(map[string]string), []byte{}), "expect not to find the ca file")
+	assert.Error(t, instanaExporter.start(ctx, componenttest.NewNopHost()), "expect not to find the ca file")
 }

@@ -18,6 +18,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 func TestConfigValidate(t *testing.T) {
@@ -33,16 +35,22 @@ func TestConfigValidate(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.Equal(t, "http://example.com/", c.Endpoint, "no Instana endpoint set")
-		assert.Equal(t, "", c.CAFile, "optional ca_file property not set")
+		assert.Equal(t, "", c.TLSSetting.CAFile, "optional ca_file property not set")
 	})
 
 	t.Run("Valid configuration with ca_file", func(t *testing.T) {
-		c := &Config{Endpoint: "http://example.com/", AgentKey: "key1", CAFile: "ca.crt"}
+		c := &Config{Endpoint: "http://example.com/", AgentKey: "key1", HTTPClientSettings: confighttp.HTTPClientSettings{
+			TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile: "ca.crt",
+				},
+			},
+		}}
 		err := c.Validate()
 		assert.NoError(t, err)
 
 		assert.Equal(t, "http://example.com/", c.Endpoint, "no Instana endpoint set")
-		assert.Equal(t, "ca.crt", c.CAFile, "optional ca_file property set")
+		assert.Equal(t, "ca.crt", c.TLSSetting.CAFile, "optional ca_file property set")
 	})
 
 	t.Run("Invalid Endpoint Invalid URL", func(t *testing.T) {

@@ -31,8 +31,6 @@ type Config struct {
 
 	AgentKey string `mapstructure:"agent_key"`
 
-	CAFile string `mapstructure:"ca_file" json:"omitempty"`
-
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 }
 

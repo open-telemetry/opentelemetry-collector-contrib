@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -89,10 +90,14 @@ func TestLoadConfig(t *testing.T) {
 				Timeout:         30 * time.Second,
 				Headers:         map[string]string{},
 				WriteBufferSize: 512 * 1024,
+				TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile: "ca.crt",
+					},
+				},
 			},
 			Endpoint: "http://example.com/api/",
 			AgentKey: "key1",
-			CAFile:   "ca.crt",
 		}, cfg)
 	})
 

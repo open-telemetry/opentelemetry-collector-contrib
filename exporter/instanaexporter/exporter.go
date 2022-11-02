@@ -18,11 +18,8 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"crypto/x509"
-	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"runtime"
 	"strings"
 
@@ -116,22 +113,16 @@ func (e *instanaExporter) export(ctx context.Context, url string, header map[str
 		return consumererror.NewPermanent(err)
 	}
 
-	if e.config.CAFile != "" {
-		certData, readErr := os.ReadFile(e.config.CAFile)
+	tlsConf, err := e.config.TLSSetting.LoadTLSConfig()
 
-		if readErr != nil {
-			return consumererror.NewPermanent(readErr)
-		}
+	if err != nil {
+		return consumererror.NewPermanent(err)
+	}
 
-		caCertPool := x509.NewCertPool()
-
-		if ok := caCertPool.AppendCertsFromPEM(certData); !ok {
-			return consumererror.NewPermanent(errors.New("failed to parse certificate"))
-		}
-
+	if tlsConf.RootCAs != nil {
 		e.client.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
-				RootCAs: caCertPool,
+				RootCAs: tlsConf.RootCAs,
 			},
 		}
 	}

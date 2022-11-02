@@ -1,17 +1,20 @@
 instana/bad_endpoint:
   endpoint: never a url
   agent_key: key1
-  ca_file: ca.crt
+  tls:
+    ca_file: ca.crt
 instana/missing_agent_key:
   endpoint: http://example.com/api/
-  ca_file: ca.crt
+  tls:
+    ca_file: ca.crt
 instana/valid:
   endpoint: http://example.com/api/
   agent_key: key1
 instana/valid_with_ca_file:
   endpoint: http://example.com/api/
   agent_key: key1
-  ca_file: ca.crt
+  tls:
+    ca_file: ca.crt
 instana/valid_no_ca_file:
   endpoint: http://example.com/api/
   agent_key: key1
