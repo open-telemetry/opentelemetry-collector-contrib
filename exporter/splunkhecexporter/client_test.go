@@ -729,7 +729,7 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 			want: wantType{
 				batches: [][]string{
 					{`"time":1.001`, `"time":2.002`, `"time":3.003`, `"time":4.004`, `"time":5.005`, `"time":6.006`},
-					{`"time":82.082`, `"time":99.099`},
+					{`"time":85.085`, `"time":99.099`},
 				},
 				numBatches: 2,
 				compressed: true,
