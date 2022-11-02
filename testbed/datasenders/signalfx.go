@@ -53,7 +53,7 @@ func (sf *SFxMetricsDataSender) Start() error {
 	cfg := &signalfxexporter.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(factory.Type())),
 		IngestURL:        fmt.Sprintf("http://%s", sf.GetEndpoint()),
-		APIURL:           "http://localhost",
+		APIURL:           "http://127.0.0.1",
 		AccessToken:      "access_token",
 	}
 	params := componenttest.NewNopExporterCreateSettings()
