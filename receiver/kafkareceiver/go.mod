@@ -6,7 +6,7 @@ require (
 	github.com/Shopify/sarama v1.37.2
 	github.com/apache/thrift v0.17.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger v1.38.1
+	github.com/jaegertracing/jaeger v1.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.63.0
