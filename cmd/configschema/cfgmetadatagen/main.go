@@ -21,14 +21,14 @@ import (
 	"path/filepath"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/yamlgen/yamlgen"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/cfgmetadatagen/cfgmetadatagen"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
 )
 
 func main() {
 	sourceDir, outputDir := getFlags()
 	dr := configschema.NewDirResolver(sourceDir, configschema.DefaultModule)
-	writer, err := yamlgen.NewYAMLWriter(dr, outputDir)
+	writer, err := cfgmetadatagen.NewYAMLWriter(dr, outputDir)
 	if err != nil {
 		fmt.Printf("error setting up yaml writer %v", err)
 		os.Exit(1)
@@ -38,7 +38,7 @@ func main() {
 		fmt.Printf("error setting up yaml writer %v", err)
 		os.Exit(1)
 	}
-	err = yamlgen.CLI(writer, c, dr)
+	err = cfgmetadatagen.CLI(writer, c, dr)
 	if err != nil {
 		fmt.Print(err.Error())
 	}

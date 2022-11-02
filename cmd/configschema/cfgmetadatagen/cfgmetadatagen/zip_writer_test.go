@@ -15,7 +15,7 @@
 // skipping windows to avoid this golang bug: https://github.com/golang/go/issues/51442
 //go:build !windows
 
-package yamlgen
+package cfgmetadatagen
 
 import (
 	"archive/zip"

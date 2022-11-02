@@ -15,41 +15,31 @@
 // skipping windows to avoid this golang bug: https://github.com/golang/go/issues/51442
 //go:build !windows
 
-package yamlgen
+package cfgmetadatagen
 
 import (
-	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 )
 
-type createDirsYAMLWriter struct {
-	baseDir     string
-	dirsCreated map[string]struct{}
-}
-
-func (d *createDirsYAMLWriter) write(cfg configschema.CfgInfo, yamlBytes []byte) error {
-	groupDir := filepath.Join(d.baseDir, cfg.Group)
-	if err := d.prepDir(groupDir); err != nil {
-		return err
+func TestTreeYAMLWriter(t *testing.T) {
+	tempDir := t.TempDir()
+	w := &createDirsYAMLWriter{
+		dirsCreated: map[string]struct{}{},
+		baseDir:     tempDir,
 	}
-	filename := filepath.Join(groupDir, fmt.Sprintf("%s.yaml", cfg.Type))
-	fmt.Printf("writing file: %s\n", filename)
-	return os.WriteFile(filename, yamlBytes, 0644)
-}
-
-func (d *createDirsYAMLWriter) prepDir(dir string) error {
-	if _, ok := d.dirsCreated[dir]; !ok {
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("failed to make dir %q: %v", dir, err)
-		}
-		d.dirsCreated[dir] = struct{}{}
-	}
-	return nil
-}
-
-func (d *createDirsYAMLWriter) close() error {
-	return nil
+	err := w.write(configschema.CfgInfo{Group: "mygroup", Type: "mytype"}, []byte("hello"))
+	require.NoError(t, err)
+	file, err := os.Open(filepath.Join(tempDir, "mygroup", "mytype.yaml"))
+	require.NoError(t, err)
+	bytes, err := io.ReadAll(file)
+	require.NoError(t, err)
+	assert.EqualValues(t, "hello", bytes)
 }

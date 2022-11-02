@@ -6,19 +6,19 @@ component.
 
 ## Operation
 
-There are two major modes of operation: one that create YAML files in each
+There are two major modes of operation: one that creates YAML files in each
 Collector component directory in a Collector source tree, and another that
 creates YAML files and directories in a new directory.
 
 ### Create YAML files in a Collector source tree
 
 This mode of operation creates a `cfg-metadata.yaml` file per component,
-writing each one to its corresponding component directory in the locally
+writing each one to its corresponding component directory in a locally
 checked-out source tree.
 
 ```yaml
 cd cmd/configschema
-go run ./yamlgen
+go run ./cfgmetadatagen
 ```
 
 ### Create YAML files and directories in a new directory
@@ -27,7 +27,7 @@ This mode of operation, specified by `-o <dirname>`, creates YAML metadata
 files and directories in a new directory created at `dirname`.
 
 ```yaml
-cd cmd/configschema/yamlgen
+cd cmd/configschema/cfgmetadatagen
 go run . -s ../../.. -o cfg-metadata
 ```
 

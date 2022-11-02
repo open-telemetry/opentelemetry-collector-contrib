@@ -12,31 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package yamlgen
+// skipping windows to avoid this golang bug: https://github.com/golang/go/issues/51442
+//go:build !windows
+
+package cfgmetadatagen
 
 import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 )
 
-func TestTreeYAMLWriter(t *testing.T) {
-	tempDir := t.TempDir()
-	w := &createDirsYAMLWriter{
-		dirsCreated: map[string]struct{}{},
-		baseDir:     tempDir,
-	}
-	err := w.write(configschema.CfgInfo{Group: "mygroup", Type: "mytype"}, []byte("hello"))
+func TestFileYAMLWriter(t *testing.T) {
+	dir := t.TempDir()
+	w := sourceTreeYAMLWriter{fakeDirResolver{dir}}
+	err := w.write(getTestCfgInfo(t), []byte("hello"))
 	require.NoError(t, err)
-	file, err := os.Open(filepath.Join(tempDir, "mygroup", "mytype.yaml"))
+	file, err := os.Open(filepath.Join(dir, "cfg-metadata.yaml"))
 	require.NoError(t, err)
 	bytes, err := io.ReadAll(file)
 	require.NoError(t, err)
 	assert.EqualValues(t, "hello", bytes)
+}
+
+type fakeDirResolver struct {
+	path string
+}
+
+func (dr fakeDirResolver) TypeToPackagePath(t reflect.Type) (string, error) {
+	return dr.path, nil
+}
+
+func (dr fakeDirResolver) ReflectValueToProjectPath(v reflect.Value) string {
+	return dr.path
 }
