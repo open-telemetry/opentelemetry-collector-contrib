@@ -47,9 +47,15 @@ attributes:
     description: Breakdown of CPU usage by type.
     enum: [system, user, wait]
 
-  type:
+  paging_fault_type:
+    value: type
     description: Type of memory paging fault.
     enum: [major, minor]
+
+  context_switch_type:
+    value: type
+    description: Type of context switched.
+    enum: [involuntary, voluntary]
 
 metrics:
   process.cpu.time:
@@ -64,7 +70,7 @@ metrics:
 
   process.memory.physical_usage:
     enabled: true
-    description: The amount of physical memory in use.
+    description: The amount of physical memory in use
     unit: By
     sum:
       value_type: int
@@ -98,7 +104,7 @@ metrics:
       value_type: int
       aggregation: cumulative
       monotonic: true
-    attributes: [type]
+    attributes: [paging_fault_type]
 
   process.threads:
     enabled: false
@@ -108,3 +114,22 @@ metrics:
       value_type: int
       aggregation: cumulative
       monotonic: false
+
+  process.open_file_descriptors:
+    enabled: false
+    description: Number of file descriptors in use by the process.
+    unit: '{count}'
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+  
+  process.context_switches:
+    enabled: false
+    description: Number of times the process has been context switched.
+    unit: '{count}'
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [context_switch_type]
