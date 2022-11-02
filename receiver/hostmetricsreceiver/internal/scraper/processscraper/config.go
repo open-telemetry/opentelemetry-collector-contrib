@@ -26,6 +26,7 @@ type Config struct {
 	// collector does not have permission for.
 	// See https://github.com/open-telemetry/opentelemetry-collector/issues/3004 for more information.
 	MuteProcessNameError bool `mapstructure:"mute_process_name_error,omitempty"`
+	AvoidSelectedErrors  bool `mapstructure:"avoid_selected_errors,omitempty"`
 
 	// MuteProcessIOError is a flag that will mute the error encountered when trying to read IO metrics of a process
 	// the collector does not have permission for.

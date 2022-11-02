@@ -225,7 +225,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		}
 
 		username, err := handle.Username()
-		if err != nil {
+		if err != nil && !s.config.AvoidSelectedErrors {
 			errs.AddPartial(0, fmt.Errorf("error reading username for process %q (pid %v): %w", executable.name, pid, err))
 		}
 
@@ -240,7 +240,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		}
 
 		parentPid, err := parentPid(handle, pid)
-		if err != nil {
+		if err != nil && !s.config.AvoidSelectedErrors {
 			errs.AddPartial(0, fmt.Errorf("error reading parent pid for process %q (pid %v): %w", executable.name, pid, err))
 		}
 
