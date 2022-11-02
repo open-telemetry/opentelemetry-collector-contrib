@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 type tracesExporter struct {
@@ -99,12 +101,12 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 						r.ParentSpanID().HexString(),
 						r.TraceState().AsRaw(),
 						r.Name(),
-						r.Kind().String(),
+						traceutil.SpanKindStr(r.Kind()),
 						serviceName,
 						resAttr,
 						spanAttr,
 						r.EndTimestamp().AsTime().Sub(r.StartTimestamp().AsTime()).Nanoseconds(),
-						status.Code().String(),
+						traceutil.StatusCodeStr(status.Code()),
 						status.Message(),
 						eventTimes,
 						eventNames,

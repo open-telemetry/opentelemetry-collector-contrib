@@ -24,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 // Matcher is an interface that allows matching a span against a configuration
@@ -137,7 +138,7 @@ func (mp *propertiesMatcher) MatchSpan(span ptrace.Span, resource pcommon.Resour
 		return false
 	}
 
-	if mp.kindFilters != nil && !mp.kindFilters.Matches(span.Kind().String()) {
+	if mp.kindFilters != nil && !mp.kindFilters.Matches(traceutil.SpanKindStr(span.Kind())) {
 		return false
 	}
 
