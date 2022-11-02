@@ -33,6 +33,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/internal/cache"
 )
 
@@ -436,8 +437,8 @@ func (p *processorImp) buildDimensionKVs(serviceName string, span ptrace.Span, r
 	dims.EnsureCapacity(4 + len(p.dimensions))
 	dims.PutStr(serviceNameKey, serviceName)
 	dims.PutStr(operationKey, span.Name())
-	dims.PutStr(spanKindKey, span.Kind().String())
-	dims.PutStr(statusCodeKey, span.Status().Code().String())
+	dims.PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
+	dims.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
 	for _, d := range p.dimensions {
 		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
 			v.CopyTo(dims.PutEmpty(d.name))
@@ -464,8 +465,8 @@ func buildKey(serviceName string, span ptrace.Span, optionalDims []dimension, re
 	var metricKeyBuilder strings.Builder
 	concatDimensionValue(&metricKeyBuilder, serviceName, false)
 	concatDimensionValue(&metricKeyBuilder, span.Name(), true)
-	concatDimensionValue(&metricKeyBuilder, span.Kind().String(), true)
-	concatDimensionValue(&metricKeyBuilder, span.Status().Code().String(), true)
+	concatDimensionValue(&metricKeyBuilder, traceutil.SpanKindStr(span.Kind()), true)
+	concatDimensionValue(&metricKeyBuilder, traceutil.StatusCodeStr(span.Status().Code()), true)
 
 	for _, d := range optionalDims {
 		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
