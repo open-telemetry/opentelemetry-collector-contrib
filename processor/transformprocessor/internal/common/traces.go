@@ -15,10 +15,11 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
+	"go.opentelemetry.io/collector/pdata/ptrace"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type TracesContext interface {
