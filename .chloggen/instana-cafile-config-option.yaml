@@ -5,7 +5,7 @@ change_type: enhancement
 component: instanaexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Added a new configuration option ca_file which takes the certificate authority file for an Instana backend with a self signed certificate
+note: The exporter imports the root certificate into its HTTP client if provided via tls/ca_file configuration
 
 # One or more tracking issues related to the change
 issues: [14602]
