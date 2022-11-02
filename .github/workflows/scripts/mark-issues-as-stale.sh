@@ -40,7 +40,7 @@ STALE_MESSAGE="This issue has been inactive for ${DAYS_BEFORE_STALE} days. It wi
 ISSUES=(`gh issue list --limit 100 --search "is:issue is:open -label:${STALE_LABEL} -label:\"${EXEMPT_LABEL}\" sort:updated-asc" --json number --jq '.[].number'`)
 
 for ISSUE in "${ISSUES[@]}"; do
-    OWNERS=''
+    OWNER_PINGS=''
 
     UPDATED_AT=`gh issue view ${ISSUE} --json updatedAt --jq '.updatedAt'`
     UPDATED_UNIX=`date +%s --date="${UPDATED_AT}"`
@@ -60,7 +60,7 @@ for ISSUE in "${ISSUES[@]}"; do
         fi
 
         COMPONENT=${LABEL}
-        result=`grep -c ${LABEL} .github/CODEOWNERS`
+        result=`grep -c ${LABEL} .github/CODEOWNERS || true`
 
         # there may be more than 1 component matching a label
         # if so, try to narrow things down by appending the component
@@ -70,10 +70,16 @@ for ISSUE in "${ISSUES[@]}"; do
             COMPONENT="${COMPONENT}${COMPONENT_TYPE}"
         fi
 
-        OWNERS+="- ${COMPONENT}: `grep -m 1 ${COMPONENT} .github/CODEOWNERS | sed 's/   */ /g' | cut -f3- -d ' '`\n"
+        OWNERS=$( (grep -m 1 ${COMPONENT} .github/CODEOWNERS || true) | sed 's/   */ /g' | cut -f3- -d ' ')
+
+        if [[ -z "${OWNERS}" ]]; then
+            continue
+        fi
+
+        OWNER_PINGS+="- ${COMPONENT}: ${OWNERS}\n"
     done
 
-    if [[ -z "${OWNERS}" ]]; then
+    if [[ -z "${OWNER_PINGS}" ]]; then
         echo "No code owners found. Marking issue as stale without pinging code owners."
 
         gh issue comment ${ISSUE} -b "${STALE_MESSAGE}"
@@ -81,7 +87,7 @@ for ISSUE in "${ISSUES[@]}"; do
         echo "Pinging code owners for issue #${ISSUE}."
 
         # The GitHub CLI only offers multiline strings through file input.
-        printf "${STALE_MESSAGE}\nPinging code owners:\n${OWNERS}\nSee [Adding Labels via Comments](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-labels-via-comments) if you do not have permissions to add labels yourself." \
+        printf "${STALE_MESSAGE}\nPinging code owners:\n${OWNER_PINGS}\nSee [Adding Labels via Comments](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-labels-via-comments) if you do not have permissions to add labels yourself." \
           | gh issue comment ${ISSUE} -F -
     fi
 
