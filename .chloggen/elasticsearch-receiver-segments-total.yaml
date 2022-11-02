@@ -1,0 +1,5 @@
+change_type: enhancement
+component: elastisearchreceiver
+note: Add new metrics related to segments, aggregated by all shards
+issues: [14635]
+

@@ -352,6 +352,95 @@
                      "unit": "1"
                   },
                   {
+                     "description": "Errors that occur during the client connection process.",
+                     "name": "mysql.connection.errors",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "182",
+                              "attributes": [
+                                 {
+                                    "key": "error",
+                                    "value": {
+                                       "stringValue": "accept"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "183",
+                              "attributes": [
+                                 {
+                                    "key": "error",
+                                    "value": {
+                                       "stringValue": "internal"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "184",
+                              "attributes": [
+                                 {
+                                    "key": "error",
+                                    "value": {
+                                       "stringValue": "max_connections"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "185",
+                              "attributes": [
+                                 {
+                                    "key": "error",
+                                    "value": {
+                                       "stringValue": "peer_address"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "186",
+                              "attributes": [
+                                 {
+                                    "key": "error",
+                                    "value": {
+                                       "stringValue": "select"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "187",
+                              "attributes": [
+                                 {
+                                    "key": "error",
+                                    "value": {
+                                       "stringValue": "tcpwrap"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
                      "description": "The number of writes to the InnoDB doublewrite buffer.",
                      "name": "mysql.double_writes",
                      "sum": {
@@ -1538,6 +1627,43 @@
                      "unit": "ns"
                   },
                   {
+                     "description": "The number of transmitted bytes between server and clients.",
+                     "name": "mysql.client.network.io",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "8",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "received"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "9",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "sent"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "By"
+                  },
+                  {
                      "description": "Summary of current and recent statement events.",
                      "name": "mysql.statement_event.count",
                      "sum": {
@@ -1980,6 +2106,546 @@
                      "unit": "1"
                   },
                   {
+                     "description": "The total table lock wait read events.",
+                     "name": "mysql.table.lock_wait.read.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "normal"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "with_shared_locks"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "high_priority"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "no_insert"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "4",
+                              "attributes": [
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "external"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ]
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The total table lock wait read events times.",
+                     "name": "mysql.table.lock_wait.read.time",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "10",
+                              "attributes": [
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "normal"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "11",
+                              "attributes": [
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "with_shared_locks"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "12",
+                              "attributes": [
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "high_priority"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "13",
+                              "attributes": [
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "no_insert"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "14",
+                              "attributes": [
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "external"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ]
+                     },
+                     "unit": "ns"
+                  },
+                  {
+                     "description": "The total table lock wait write events.",
+                     "name": "mysql.table.lock_wait.write.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "5",
+                              "attributes": [
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "allow_write"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "6",
+                              "attributes": [
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "concurrent_insert"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "7",
+                              "attributes": [
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "low_priority"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "8",
+                              "attributes": [
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "normal"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "9",
+                              "attributes": [
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "external"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ]
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The total table lock wait write events times.",
+                     "name": "mysql.table.lock_wait.write.time",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "15",
+                              "attributes": [
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "allow_write"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "16",
+                              "attributes": [
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "concurrent_insert"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "17",
+                              "attributes": [
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "low_priority"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "18",
+                              "attributes": [
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "normal"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "19",
+                              "attributes": [
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "external"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ]
+                     },
+                     "unit": "ns"
+                  },
+                  {
                      "description": "The number of attempts to connect to locked user accounts.",
                      "name": "mysql.locked_connects",
                      "sum": {
@@ -1992,6 +2658,127 @@
                            }
                         ],
                         "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of mysqlx connections.",
+                     "name": "mysql.mysqlx_connections",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": true,
+                        "dataPoints": [
+                           {
+                              "asInt": "307",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "accepted"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "308",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "closed"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "309",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "rejected"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ]
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of joins that perform table scans.",
+                     "name": "mysql.joins",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": true,
+                        "dataPoints": [
+                           {
+                              "asInt": "408",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "full"
+                                    }
+                                 }                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "409",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "full_range"
+                                    }
+                                 }                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "410",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "range"
+                                    }
+                                 }                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "411",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "range_check"
+                                    }
+                                 }                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "412",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "scan"
+                                    }
+                                 }                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ]
                      },
                      "unit": "1"
                   },
@@ -2042,6 +2829,104 @@
                               "timeUnixNano": "1644862687825772000"
                            }
                         ]
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of hits, misses or overflows for open tables cache lookups.",
+                     "name": "mysql.table_open_cache",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "442",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "hit"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "443",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "miss"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "444",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "overflow"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of statements executed by the server. This includes only statements sent to the server by clients.",
+                     "name": "mysql.query.client.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "407",
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of statements executed by the server.",
+                     "name": "mysql.query.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "406",
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of slow queries.",
+                     "name": "mysql.query.slow.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "415",
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
                      },
                      "unit": "1"
                   }

@@ -26,6 +26,10 @@ type Config struct {
 	// Metrics allows to customize scraped metrics representation.
 	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
 
+	// IncludeVirtualFS will also capture filesystems such as tmpfs, ramfs
+	// and other filesystem types that do no have an associated physical device.
+	IncludeVirtualFS bool `mapstructure:"include_virtual_filesystems"`
+
 	// IncludeDevices specifies a filter on the devices that should be included in the generated metrics.
 	IncludeDevices DeviceMatchConfig `mapstructure:"include_devices"`
 	// ExcludeDevices specifies a filter on the devices that should be excluded from the generated metrics.

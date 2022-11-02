@@ -176,6 +176,16 @@ type NodeStatsNodesInfoIndices struct {
 	QueryCache         BasicCacheInfo      `json:"query_cache"`
 	FieldDataCache     BasicCacheInfo      `json:"fielddata"`
 	TranslogStats      TranslogStats       `json:"translog"`
+	SegmentsStats      SegmentsStats       `json:"segments"`
+}
+
+type SegmentsStats struct {
+	Count                    int64 `json:"count"`
+	DocumentValuesMemoryInBy int64 `json:"doc_values_memory_in_bytes"`
+	IndexWriterMemoryInBy    int64 `json:"index_writer_memory_in_bytes"`
+	MemoryInBy               int64 `json:"memory_in_bytes"`
+	TermsMemoryInBy          int64 `json:"terms_memory_in_bytes"`
+	FixedBitSetMemoryInBy    int64 `json:"fixed_bit_set_memory_in_bytes"`
 }
 
 type TranslogStats struct {
