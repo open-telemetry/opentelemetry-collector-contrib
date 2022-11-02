@@ -234,6 +234,12 @@ func TestProcess(t *testing.T) {
 			statement: `set(attributes["test"], Split(attributes["not_exist"], "|"))`,
 			want:      func(td ptrace.Traces) {},
 		},
+		{
+			statement: `set(attributes["entrypoint"], name) where parent_span_id == SpanID(0x0000000000000000)`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("entrypoint", "operationB")
+			},
+		},
 	}
 
 	for _, tt := range tests {

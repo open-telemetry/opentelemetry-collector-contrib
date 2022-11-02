@@ -70,7 +70,12 @@ func SpanPathGetSetter[K SpanContext](path []ottl.Field) (ottl.GetSetter[K], err
 		}
 		return accessTraceStateKey[K](mapKey), nil
 	case "parent_span_id":
-		return accessParentSpanID[K](), nil
+		if len(path) == 1 {
+			return accessParentSpanID[K](), nil
+		}
+		if path[1].Name == "string" {
+			return accessStringParentSpanID[K](), nil
+		}
 	case "name":
 		return accessSpanName[K](), nil
 	case "kind":
@@ -227,6 +232,22 @@ func accessParentSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
 		Setter: func(ctx K, val interface{}) error {
 			if newParentSpanID, ok := val.(pcommon.SpanID); ok {
 				ctx.GetSpan().SetParentSpanID(newParentSpanID)
+			}
+			return nil
+		},
+	}
+}
+
+func accessStringParentSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx K) (interface{}, error) {
+			return ctx.GetSpan().ParentSpanID().HexString(), nil
+		},
+		Setter: func(ctx K, val interface{}) error {
+			if str, ok := val.(string); ok {
+				if spanID, err := parseSpanID(str); err == nil {
+					ctx.GetSpan().SetParentSpanID(spanID)
+				}
 			}
 			return nil
 		},
