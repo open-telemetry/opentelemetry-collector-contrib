@@ -80,7 +80,7 @@ type processorImp struct {
 
 	// An LRU cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "operation": "/bar", "status_code": "OK" }}
-	metricKeyToDimensions *cache.Cache
+	metricKeyToDimensions *cache.Cache[metricKey, pcommon.Map]
 }
 
 type histogramData struct {
@@ -109,7 +109,7 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 			pConfig.DimensionsCacheSize,
 		)
 	}
-	metricKeyToDimensionsCache, err := cache.NewCache(pConfig.DimensionsCacheSize)
+	metricKeyToDimensionsCache, err := cache.NewCache[metricKey, pcommon.Map](pConfig.DimensionsCacheSize)
 	if err != nil {
 		return nil, err
 	}
@@ -329,13 +329,9 @@ func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) error {
 
 // getDimensionsByMetricKey gets dimensions from `metricKeyToDimensions` cache.
 func (p *processorImp) getDimensionsByMetricKey(k metricKey) (pcommon.Map, error) {
-	if item, ok := p.metricKeyToDimensions.Get(k); ok {
-		if attributeMap, ok := item.(pcommon.Map); ok {
-			return attributeMap, nil
-		}
-		return pcommon.Map{}, fmt.Errorf("type assertion of metricKeyToDimensions attributes failed, the key is %q", k)
+	if attributeMap, ok := p.metricKeyToDimensions.Get(k); ok {
+		return attributeMap, nil
 	}
-
 	return pcommon.Map{}, fmt.Errorf("value not found in metricKeyToDimensions cache by key %q", k)
 }
 
