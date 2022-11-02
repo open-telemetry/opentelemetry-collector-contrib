@@ -31,6 +31,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/confmap/provider/s3provider"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/examples/demo/client"
     schedule:
       interval: "weekly"
@@ -56,6 +60,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/exporter/awsxrayexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/azuredataexplorerexporter"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -379,6 +387,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/pkg/ottl"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/pkg/resourcetotelemetry"
     schedule:
       interval: "weekly"
@@ -387,11 +399,11 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/pkg/ottl"
+    directory: "/pkg/translator/jaeger"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/pkg/translator/jaeger"
+    directory: "/pkg/translator/loki"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -515,6 +527,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/awscloudwatchreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/awscontainerinsightreceiver"
     schedule:
       interval: "weekly"
@@ -603,6 +619,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/httpcheckreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/iisreceiver"
     schedule:
       interval: "weekly"
@@ -628,6 +648,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/k8seventsreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/k8sobjectsreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -668,6 +692,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/opencensusreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/oracledbreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -732,6 +760,14 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/skywalkingreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/snmpreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/snowflakereceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

@@ -174,11 +174,11 @@ func (ocr *ocReceiver) grpcServer(host component.Host) (*grpc.Server, error) {
 	defer ocr.mu.Unlock()
 
 	if ocr.serverGRPC == nil {
-		opts, err := ocr.grpcServerSettings.ToServerOption(host, ocr.settings.TelemetrySettings)
+		var err error
+		ocr.serverGRPC, err = ocr.grpcServerSettings.ToServer(host, ocr.settings.TelemetrySettings)
 		if err != nil {
 			return nil, err
 		}
-		ocr.serverGRPC = grpc.NewServer(opts...)
 	}
 
 	return ocr.serverGRPC, nil

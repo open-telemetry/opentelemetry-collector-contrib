@@ -26,7 +26,7 @@ type Processor struct {
 	contexts []common.Context
 }
 
-func NewProcessor(statements []common.ContextStatements, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
+func NewProcessor(statements []common.ContextStatements, settings component.TelemetrySettings) (*Processor, error) {
 	pc := common.NewParserCollection(settings, common.WithLogParser(Functions()))
 	contexts, err := pc.ParseContextStatements(statements)
 	if err != nil {
