@@ -155,6 +155,22 @@ func TestSpanPathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "parent_span_id string",
+			path: []ottl.Field{
+				{
+					Name: "parent_span_id",
+				},
+				{
+					Name: "string",
+				},
+			},
+			orig:   hex.EncodeToString(spanID2[:]),
+			newVal: hex.EncodeToString(spanID[:]),
+			modified: func(span ptrace.Span) {
+				span.SetParentSpanID(spanID)
+			},
+		},
+		{
 			name: "name",
 			path: []ottl.Field{
 				{
