@@ -113,6 +113,9 @@ and the rest of contributors.
   harnesses. To align with the test goal of the project, components must be testable within the framework defined within
   the folder. If a component can not be properly tested within the existing framework, it must increase the non testable
   components number with a comment within the PR explaining as to why it can not be tested.
+- Add the sponsor for your component and yourself to a new line for your component in the
+  [`.github/CODEOWNERS`](./.github/CODEOWNERS) file.
+- Run `make generate-gh-issue-templates` to add your component to the dropdown list in the issue templates.
 
 ### Releasing New Components
 After a component has been approved and merged, and has been enabled in `internal/components/`, it must be added to the
