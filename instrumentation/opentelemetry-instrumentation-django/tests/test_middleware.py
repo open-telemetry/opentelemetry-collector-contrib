@@ -48,6 +48,7 @@ from opentelemetry.trace import (
     format_trace_id,
 )
 from opentelemetry.util.http import (
+    OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SANITIZE_FIELDS,
     OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST,
     OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE,
     _active_requests_count_attrs,
@@ -530,6 +531,14 @@ class TestMiddlewareWithTracerProvider(WsgiTestBase):
             )
 
 
+@patch.dict(
+    "os.environ",
+    {
+        OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SANITIZE_FIELDS: ".*my-secret.*",
+        OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST: "Custom-Test-Header-1,Custom-Test-Header-2,Custom-Test-Header-3,Regex-Test-Header-.*,Regex-Invalid-Test-Header-.*,.*my-secret.*",
+        OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE: "Custom-Test-Header-1,Custom-Test-Header-2,Custom-Test-Header-3,my-custom-regex-header-.*,invalid-regex-header-.*,.*my-secret.*",
+    },
+)
 class TestMiddlewareWsgiWithCustomHeaders(WsgiTestBase):
     @classmethod
     def setUpClass(cls):
@@ -542,18 +551,9 @@ class TestMiddlewareWsgiWithCustomHeaders(WsgiTestBase):
         tracer_provider, exporter = self.create_tracer_provider()
         self.exporter = exporter
         _django_instrumentor.instrument(tracer_provider=tracer_provider)
-        self.env_patch = patch.dict(
-            "os.environ",
-            {
-                OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST: "Custom-Test-Header-1,Custom-Test-Header-2,Custom-Test-Header-3",
-                OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE: "Custom-Test-Header-1,Custom-Test-Header-2,Custom-Test-Header-3",
-            },
-        )
-        self.env_patch.start()
 
     def tearDown(self):
         super().tearDown()
-        self.env_patch.stop()
         teardown_test_environment()
         _django_instrumentor.uninstrument()
 
@@ -570,10 +570,18 @@ class TestMiddlewareWsgiWithCustomHeaders(WsgiTestBase):
             "http.request.header.custom_test_header_2": (
                 "test-header-value-2",
             ),
+            "http.request.header.regex_test_header_1": ("Regex Test Value 1",),
+            "http.request.header.regex_test_header_2": (
+                "RegexTestValue2,RegexTestValue3",
+            ),
+            "http.request.header.my_secret_header": ("[REDACTED]",),
         }
         Client(
             HTTP_CUSTOM_TEST_HEADER_1="test-header-value-1",
             HTTP_CUSTOM_TEST_HEADER_2="test-header-value-2",
+            HTTP_REGEX_TEST_HEADER_1="Regex Test Value 1",
+            HTTP_REGEX_TEST_HEADER_2="RegexTestValue2,RegexTestValue3",
+            HTTP_MY_SECRET_HEADER="My Secret Value",
         ).get("/traced/")
         spans = self.exporter.get_finished_spans()
         self.assertEqual(len(spans), 1)
@@ -607,6 +615,13 @@ class TestMiddlewareWsgiWithCustomHeaders(WsgiTestBase):
             "http.response.header.custom_test_header_2": (
                 "test-header-value-2",
             ),
+            "http.response.header.my_custom_regex_header_1": (
+                "my-custom-regex-value-1,my-custom-regex-value-2",
+            ),
+            "http.response.header.my_custom_regex_header_2": (
+                "my-custom-regex-value-3,my-custom-regex-value-4",
+            ),
+            "http.response.header.my_secret_header": ("[REDACTED]",),
         }
         Client().get("/traced_custom_header/")
         spans = self.exporter.get_finished_spans()

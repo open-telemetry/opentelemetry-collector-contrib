@@ -35,6 +35,13 @@ def response_with_custom_header(request):
     response = HttpResponse()
     response["custom-test-header-1"] = "test-header-value-1"
     response["custom-test-header-2"] = "test-header-value-2"
+    response[
+        "my-custom-regex-header-1"
+    ] = "my-custom-regex-value-1,my-custom-regex-value-2"
+    response[
+        "my-custom-regex-header-2"
+    ] = "my-custom-regex-value-3,my-custom-regex-value-4"
+    response["my-secret-header"] = "my-secret-value"
     return response
 
 
