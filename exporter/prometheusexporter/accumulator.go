@@ -23,6 +23,7 @@ import (
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
@@ -307,12 +308,18 @@ func timeseriesSignature(ilmName string, metric pmetric.Metric, attributes pcomm
 		return true
 	})
 
-	if job, ok := extractJob(resourceAttrs); ok {
-		b.WriteString("*" + model.JobLabel + "*" + job)
+	// We only include the job and instance labels in the final output. So we should only construct the signature based on those.
+	if serviceName, ok := resourceAttrs.Get(conventions.AttributeServiceName); ok {
+		val := serviceName.AsString()
+		if serviceNamespace, ok := resourceAttrs.Get(conventions.AttributeServiceNamespace); ok {
+			val = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), val)
+		}
+		b.WriteString("*" + model.JobLabel + "*" + val)
 	}
-	if instance, ok := extractInstance(resourceAttrs); ok {
-		b.WriteString("*" + model.InstanceLabel + "*" + instance)
+	if instance, ok := resourceAttrs.Get(conventions.AttributeServiceInstanceID); ok {
+		b.WriteString("*" + model.InstanceLabel + "*" + instance.AsString())
 	}
+
 	return b.String()
 }
 

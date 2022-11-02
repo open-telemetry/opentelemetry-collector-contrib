@@ -71,6 +71,9 @@ type processorImp struct {
 	// Additional dimensions to add to metrics.
 	dimensions []Dimension
 
+	// stored metricKeys that relate to the current batch of spans received.
+	metricKeys []metricKey
+
 	// The starting time of the data points.
 	startTimestamp pcommon.Timestamp
 
@@ -122,6 +125,7 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		histograms:            make(map[metricKey]*histogramData),
 		nextConsumer:          nextConsumer,
 		dimensions:            pConfig.Dimensions,
+		metricKeys:            []metricKey{},
 		metricKeyToDimensions: metricKeyToDimensionsCache,
 	}, nil
 }
@@ -225,8 +229,16 @@ func (p *processorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) 
 func (p *processorImp) tracesToMetrics(ctx context.Context, traces ptrace.Traces) error {
 	p.lock.Lock()
 
+	// Make sure metricKeys are empty in current batch
+	if len(p.metricKeys) != 0 {
+		p.metricKeys = []metricKey{}
+	}
+
 	p.aggregateMetrics(traces)
 	m, err := p.buildMetrics()
+
+	// Clean current batch metricKeys
+	p.metricKeys = []metricKey{}
 
 	// Exemplars are only relevant to this batch of traces, so must be cleared within the lock,
 	// regardless of error while building metrics, before the next batch of spans is received.
@@ -275,7 +287,15 @@ func (p *processorImp) buildMetrics() (pmetric.Metrics, error) {
 // collectLatencyMetrics collects the raw latency metrics, writing the data
 // into the given instrumentation library metrics.
 func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
-	for key, hist := range p.histograms {
+	for _, key := range p.metricKeys {
+		hist, ok := p.histograms[key]
+		if !ok {
+			return fmt.Errorf("histogramData not found in histograms by key %q", key)
+		}
+		dimensions, err := p.getDimensionsByMetricKey(key)
+		if err != nil {
+			return nil
+		}
 		mLatency := ilm.Metrics().AppendEmpty()
 		mLatency.SetName("latency")
 		mLatency.SetUnit("ms")
@@ -291,13 +311,6 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 		dpLatency.SetCount(hist.count)
 		dpLatency.SetSum(hist.sum)
 		setExemplars(hist.exemplarsData, timestamp, dpLatency.Exemplars())
-
-		dimensions, err := p.getDimensionsByMetricKey(key)
-		if err != nil {
-			p.logger.Error(err.Error())
-			return err
-		}
-
 		dimensions.CopyTo(dpLatency.Attributes())
 	}
 	return nil
@@ -306,7 +319,15 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 // collectCallMetrics collects the raw call count metrics, writing the data
 // into the given instrumentation library metrics.
 func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) error {
-	for key, hist := range p.histograms {
+	for _, key := range p.metricKeys {
+		hist, ok := p.histograms[key]
+		if !ok {
+			return fmt.Errorf("histogramData not found in histograms by key %q", key)
+		}
+		dimensions, err := p.getDimensionsByMetricKey(key)
+		if err != nil {
+			return nil
+		}
 		mCalls := ilm.Metrics().AppendEmpty()
 		mCalls.SetName("calls_total")
 		mCalls.SetEmptySum().SetIsMonotonic(true)
@@ -316,12 +337,6 @@ func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) error {
 		dpCalls.SetStartTimestamp(p.startTimestamp)
 		dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		dpCalls.SetIntValue(int64(hist.count))
-
-		dimensions, err := p.getDimensionsByMetricKey(key)
-		if err != nil {
-			return err
-		}
-
 		dimensions.CopyTo(dpCalls.Attributes())
 	}
 	return nil
@@ -377,6 +392,7 @@ func (p *processorImp) aggregateMetricsForSpan(serviceName string, span ptrace.S
 
 	key := buildKey(serviceName, span, p.dimensions, resourceAttr)
 
+	p.metricKeys = append(p.metricKeys, key)
 	p.cache(serviceName, span, key, resourceAttr)
 	p.updateHistogram(key, latencyInMilliseconds, span.TraceID(), span.SpanID())
 }
