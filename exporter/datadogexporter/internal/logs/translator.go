@@ -83,6 +83,23 @@ func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
 			l.Message = v.AsString()
 		case "status", "severity", "level", "syslog.severity":
 			status = v.AsString()
+		case "traceid", "contextmap.traceid", "oteltraceid":
+			fmt.Printf("---------------------- v: %v --------------------------\n", v)
+			fmt.Printf("---------------------- v.Bytes: %v --------------------------\n", v.Bytes())
+			fmt.Printf("---------------------- v.AsString: %v --------------------------\n", v.AsString())
+
+			var ret [16]byte
+			copy(ret[:], v.AsString())
+			fmt.Printf("---------------------- ret: %v --------------------------\n", ret)
+
+			l.AdditionalProperties[ddTraceID] = strconv.FormatUint(traceIDToUint64(ret), 10)
+			l.AdditionalProperties[otelTraceID] = v.AsString()
+		case "spanid", "contextmap.spanid", "otelspanid":
+			var ret [8]byte
+			copy(ret[:], v.AsString())
+
+			l.AdditionalProperties[ddSpanID] = strconv.FormatUint(spanIDToUint64(ret), 10)
+			l.AdditionalProperties[otelSpanID] = v.AsString()
 		default:
 			l.AdditionalProperties[k] = v.AsString()
 		}
@@ -123,9 +140,10 @@ func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
 		l.Message = lr.Body().AsString()
 	}
 
-	var tags = attributes.TagsFromAttributes(res.Attributes())
+	var tags = append(attributes.TagsFromAttributes(res.Attributes()), "otel:true")
 	if len(tags) > 0 {
-		tagStr := strings.Join(tags, ",")
+		fmt.Printf("--------------------- tags: %v ----------------------\n", tags)
+		tagStr := strings.Join(tags, ",") + l.GetDdtags()
 		l.Ddtags = datadog.PtrString(tagStr)
 	}
 	return l
