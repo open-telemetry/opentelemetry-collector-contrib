@@ -19,7 +19,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.63.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.63.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver v0.63.0
@@ -30,9 +30,9 @@ require (
 	go.opentelemetry.io/collector v0.63.2-0.20221101161158-df8deb48186b
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.63.2-0.20221101161158-df8deb48186b
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.63.2-0.20221101161158-df8deb48186b
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.63.2-0.20221101161158-df8deb48186b
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.63.1
 	go.opentelemetry.io/collector/pdata v0.63.2-0.20221101161158-df8deb48186b
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.63.1
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.0.0-20221102004420-2257952ec5ec
 	go.opentelemetry.io/collector/semconv v0.63.2-0.20221101161158-df8deb48186b
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.8.0
@@ -124,7 +124,7 @@ require (
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.1.2 // indirect
-	github.com/jaegertracing/jaeger v1.38.1 // indirect
+	github.com/jaegertracing/jaeger v1.39.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
