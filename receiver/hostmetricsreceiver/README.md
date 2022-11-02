@@ -12,12 +12,13 @@ deployed as an agent.
 
 ## Getting Started
 
-The collection interval and the categories of metrics to be scraped can be
+The collection interval, root path, and the categories of metrics to be scraped can be
 configured:
 
 ```yaml
 hostmetrics:
   collection_interval: <duration> # default = 1m
+  root_path: <string>
   scrapers:
     <scraper1>:
     <scraper2>:
@@ -139,6 +140,46 @@ service:
   pipelines:
     metrics:
       receivers: [hostmetrics, hostmetrics/disk]
+```
+
+### Collecting host metrics from inside a container (Linux only)
+
+On Linux, the host metrics are collected from the `/proc` filesystem. 
+You likely want to collect metrics about the host system and not the container.
+This is achievable by following these steps: 
+
+#### 1. Bind mount the host filesystem
+
+The simplest configuration is to mount the entire host filesystem when running 
+the container. e.g. `docker run -v /:/hostfs ...`.
+
+You can also choose which parts of the host filesystem to mount, if you know 
+exactly what you'll need. e.g. `docker run -v /proc:/hostfs/proc`.
+
+#### 2. Set environment variables
+
+Under the hood, the hostmetrics receiver uses a library called `gopsutil`. 
+`gopsutil` uses certain environment variables to allow the user to specify 
+where the host filesystem is. These are: 
+
+* `HOST_PROC`
+* `HOST_SYS`
+* `HOST_ETC`
+* `HOST_VAR`
+* `HOST_RUN`
+* `HOST_DEV`
+
+To align with the example from the previous step, you would set `HOST_PROC=/hostfs/proc`.
+
+#### 3. Configure `root_path`
+
+In addition to the environment variables you should also set the `root_path` config.
+
+Example:
+```yaml
+receivers:
+  hostmetrics:
+    root_path: /hostfs
 ```
 
 ## Resource attributes
