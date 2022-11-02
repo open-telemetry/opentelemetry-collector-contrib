@@ -17,8 +17,9 @@ package helper // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"errors"
 	"fmt"
-	"golang.org/x/text/transform"
 	"strings"
+
+	"golang.org/x/text/transform"
 
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/ianaindex"
