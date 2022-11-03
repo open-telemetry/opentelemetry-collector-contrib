@@ -15,8 +15,6 @@
 package testutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 
 import (
-	"bytes"
-	"os"
 	"strings"
 	"testing"
 
@@ -24,18 +22,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
-
-func TestReadLoggingExporter(t *testing.T) {
-	slurp, err := os.ReadFile("./testdata/1.log")
-	if err != nil {
-		t.Fatal(err)
-	}
-	out, err := ReadLoggingExporter(bytes.NewReader(slurp))
-	if err != nil {
-		t.Fatal(err)
-	}
-	_ = out
-}
 
 func TestReadAttributes(t *testing.T) {
 	in := `     -> COMPANY: STRING(appsflyer)

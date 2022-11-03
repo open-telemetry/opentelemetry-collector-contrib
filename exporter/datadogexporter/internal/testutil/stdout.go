@@ -32,11 +32,47 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
+// PData specifies the telemetry found in a log file.
 type PData struct {
 	Metrics []pmetric.Metrics
 	Traces  []ptrace.Traces
 }
 
+// ReadLoggingExporters reads a Collector log file from r, returning all the metrics, traces and logs found in it
+// as "loggingexporter" output.
+//
+// Supports only Metrics (Sums & Gauges) for now.
+func ReadLoggingExporter(r io.Reader) (PData, error) {
+	var pd PData
+	scn := newScanner(r)
+	for scn.Scan() {
+		txt := scn.Text()
+		switch {
+		case strings.Contains(txt, `MetricsExporter	{"#metrics":`):
+			metrics := pmetric.NewMetrics()
+			rmetrics := metrics.ResourceMetrics().AppendEmpty()
+			if err := readResourceMetrics(scn, rmetrics); err != nil {
+				return pd, fmt.Errorf("error parsing resource: %w", err)
+			}
+			pd.Metrics = append(pd.Metrics, metrics)
+		case strings.Contains(txt, `TracesExporter	{"#spans":`):
+			// TODO
+		case strings.Contains(txt, `LogsExporter	{"#logs":`):
+			// TODO
+		default:
+			continue
+		}
+	}
+	if err := scn.Err(); err != nil {
+		return pd, fmt.Errorf("error scanning file: %w", err)
+	}
+	return pd, nil
+}
+
+// scanner is a wrapper on top of bufio.Scanner which has all the same
+// methods, but is enhanced with some additional features such as being
+// able to "unscan", remember line numbers, better error reporting and
+// advancing lines while checking prefixes.
 type scanner struct {
 	line      int
 	last      string
@@ -49,6 +85,7 @@ func newScanner(r io.Reader) *scanner {
 	return &scanner{scn: bufio.NewScanner(r)}
 }
 
+// Scan advances the scanner and reports whether there are more lines left.
 func (s *scanner) Scan() bool {
 	if s.unscanned {
 		s.unscanned = false
@@ -65,17 +102,22 @@ func (s *scanner) Scan() bool {
 	return ok
 }
 
+// Debug exits to the OS and reports the last 1500 characters that were scanned.
 func (s *scanner) Debug() {
 	fmt.Println(s.Tail(1500))
 	os.Exit(0)
 }
 
+// Tail returns the last n characters that were scanned, including their starting
+// line numbers.
 func (s *scanner) Tail(n int) string {
 	return string([]byte(s.str.String())[s.str.Len()-n:])
 }
 
+// Line reports the current line number.
 func (s *scanner) Line() int { return s.line }
 
+// Text returns the last scanned line.
 func (s *scanner) Text() string {
 	if s.unscanned {
 		return s.last
@@ -83,15 +125,19 @@ func (s *scanner) Text() string {
 	return s.scn.Text()
 }
 
+// Unscan reverts the last scan.
 func (s *scanner) Unscan() { s.unscanned = true }
 
+// Err reports scanning errors.
 func (s *scanner) Err() error {
 	if err := s.scn.Err(); err != nil {
-		fmt.Errorf("#%d: %w", s.line, s.scn.Err())
+		return fmt.Errorf("#%d: %w", s.line, s.scn.Err())
 	}
 	return nil
 }
 
+// Advance moves to the next line. If the current line does not have the given
+// prefix, it returns an error. If the end is reached, it returns io.EOF.
 func (s *scanner) Advance(prefix string) error {
 	if !strings.HasPrefix(s.Text(), prefix) {
 		return fmt.Errorf("line %d: expected %q [...], got %s", s.Line(), prefix, s.Text())
@@ -330,7 +376,7 @@ func readNumberDataPoints(scn *scanner, dps pmetric.NumberDataPointSlice) error 
 			return fmt.Errorf("error parsing start timestamp: %w", err)
 		}
 		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(sts))
-		if err := scn.Advance("StartTimestamp: "); err != nil {
+		if err = scn.Advance("StartTimestamp: "); err != nil {
 			return err
 		}
 		ts, err := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", strings.TrimPrefix(scn.Text(), "Timestamp: "))
@@ -360,35 +406,4 @@ func readNumberDataPoints(scn *scanner, dps pmetric.NumberDataPointSlice) error 
 	}
 	scn.Unscan()
 	return nil
-}
-
-// ReadLoggingExporters reads a Collector log file from r, returning all the metrics, traces and logs found in it
-// as "loggingexporter" output.
-//
-// Supports only Metrics (Sums & Gauges) for now.
-func ReadLoggingExporter(r io.Reader) (PData, error) {
-	var pd PData
-	scn := newScanner(r)
-	for scn.Scan() {
-		txt := scn.Text()
-		switch {
-		case strings.Contains(txt, `MetricsExporter	{"#metrics":`):
-			metrics := pmetric.NewMetrics()
-			rmetrics := metrics.ResourceMetrics().AppendEmpty()
-			if err := readResourceMetrics(scn, rmetrics); err != nil {
-				return pd, fmt.Errorf("error parsing resource: %w", err)
-			}
-			pd.Metrics = append(pd.Metrics, metrics)
-		case strings.Contains(txt, `TracesExporter	{"#spans":`):
-			// TODO
-		case strings.Contains(txt, `LogsExporter	{"#logs":`):
-			// TODO
-		default:
-			continue
-		}
-	}
-	if err := scn.Err(); err != nil {
-		return pd, fmt.Errorf("error scanning file: %w", err)
-	}
-	return pd, nil
 }
