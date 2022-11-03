@@ -63,6 +63,7 @@ func newPrometheusExporter(config *Config, set component.ExporterCreateSettings)
 				EnableOpenMetrics: config.EnableOpenMetrics,
 			},
 		),
+		settings: set.TelemetrySettings,
 	}, nil
 }
 
