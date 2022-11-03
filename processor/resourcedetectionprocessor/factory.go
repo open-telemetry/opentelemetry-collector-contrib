@@ -38,6 +38,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
 
@@ -74,6 +75,7 @@ func NewFactory() processor.Factory {
 		gcp.TypeStr:              gcp.NewDetector,
 		heroku.TypeStr:           heroku.NewDetector,
 		system.TypeStr:           system.NewDetector,
+		openshift.TypeStr:        openshift.NewDetector,
 	})
 
 	f := &factory{
@@ -101,7 +103,7 @@ func createDefaultConfig() component.Config {
 		Override:           true,
 		Attributes:         nil,
 		// TODO: Once issue(https://github.com/open-telemetry/opentelemetry-collector/issues/4001) gets resolved,
-		// 		 Set the default value of 'hostname_source' here instead of 'system' detector
+		//		 Set the default value of 'hostname_source' here instead of 'system' detector
 	}
 }
 

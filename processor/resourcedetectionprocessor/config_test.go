@@ -28,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
 
@@ -42,6 +43,20 @@ func TestLoadConfig(t *testing.T) {
 		expected     component.Config
 		errorMessage string
 	}{
+		{
+			id: component.NewIDWithName(typeStr, "openshift"),
+			expected: &Config{
+				Detectors: []string{"openshift"},
+				DetectorConfig: DetectorConfig{
+					OpenShiftConfig: openshift.Config{
+						Address: "127.0.0.1:4444",
+						Token:   "some_token",
+					},
+				},
+				HTTPClientSettings: cfg,
+				Override:           false,
+			},
+		},
 		{
 			id: component.NewIDWithName(typeStr, "gcp"),
 			expected: &Config{
