@@ -17,22 +17,30 @@
 
 set -euo pipefail
 
-generate-labels() {
-	TYPE=$1
-	COLOR=$2
+declare -A COLORS
 
-	echo "Generating labels for ${TYPE}"
-	COMPONENTS=$(find "./${TYPE}" -maxdepth 1 -mindepth 1 -type d -exec basename \{\} \;)
-	for COMPONENT in ${COMPONENTS}; do
-		NAME=${COMPONENT//"${TYPE}"}
-		gh label create "${TYPE}/${NAME}" -c "${COLOR}" --force
-	done
-}
+COLORS["cmd"]="#483C32"
+COLORS["confmap"]="#6666FF"
+COLORS["examples"]="#1A8CFF"
+COLORS["exporter"]="#50C878"
+COLORS["extension"]="#FF794D"
+COLORS["internal"]="#B30059"
+COLORS["pkg"]="#F9DE22"
+COLORS["processor"]="#800080"
+COLORS["receiver"]="#E91B7B"
+COLORS["testbed"]="#336600"
 
-generate-labels "cmd" "#483C32"
-generate-labels "pkg" "#F9DE22"
-generate-labels "extension" "#FF794D"
-generate-labels "receiver" "#E91B7B"
-generate-labels "processor" "#800080"
-generate-labels "exporter" "#50C878"
+FALLBACK_COLOR="#999966"
+
+# Match only components with a type and name, i.e. no top-level
+# directories.
+COMPONENTS=$(grep -oE '^[a-z]+/[a-z/]+ ' < .github/CODEOWNERS)
+
+for COMPONENT in ${COMPONENTS}; do
+		COMPONENT=$(echo "${COMPONENT}" | sed -E 's%/$%%')
+		TYPE=$(echo "${COMPONENT}" | cut -f1 -d '/' )
+		NAME=$(echo "${COMPONENT}" | cut -f2- -d '/' | sed -E "s%${TYPE}\$%%")
+
+		gh label create "${TYPE}/${NAME}" -c "${COLORS["${TYPE}"]:-${FALLBACK_COLOR}}" --force
+done
 
