@@ -48,6 +48,7 @@ transform:
       - truncate_all(resource.attributes, 4096)
       - convert_sum_to_gauge() where metric.name == "system.processes.count"
       - convert_gauge_to_sum("cumulative", false) where metric.name == "prometheus_metric"
+      - convert_camel_case_to_snake_case()
   logs:
     statements:
       - set(severity_text, "FAIL") where body == "request failed"
@@ -81,6 +82,7 @@ In addition to OTTL functions, the processor defines its own functions to help w
 - [convert_gauge_to_sum](#convert_gauge_to_sum)
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
+- [convert_camel_case_to_snake_case](#convert_camel_case_to_snake_case)
 
 ## convert_sum_to_gauge
 
@@ -148,6 +150,16 @@ Examples:
 
 
 - `convert_summary_sum_val_to_sum("cumulative", false)`
+
+## convert_camel_case_to_snake_case
+
+`convert_camel_case_to_snake_case()`
+
+The `convert_camel_case_to_snake_case` function converts metric names from camel case to snake case, for example `CPUUtilizationSum` changes to `cpu_utilization_sum`. Works with all metric types and can be filtered with `where` conditionals (`isMatch` etc.).
+
+Examples:
+
+- `convert_camel_case_to_snake_case()`
 
 ## Contributing
 
