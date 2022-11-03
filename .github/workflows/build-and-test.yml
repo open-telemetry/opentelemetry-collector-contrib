@@ -161,6 +161,10 @@ jobs:
           make -j2 goimpi
       - name: MultimodVerify
         run: make multimod-verify
+      - name: Components dropdown in issue templates
+        run: |
+          make generate-gh-issue-templates
+          git diff --exit-code '.github/ISSUE_TEMPLATE' || (echo 'Dropdowns in issue templates are out of date, please run "make generate-all-component-dropdowns" and commit the changes in this PR.' && exit 1)
   unittest-matrix:
     strategy:
       matrix:

@@ -55,13 +55,7 @@ type logsExporter struct {
 }
 
 func (e *logsExporter) start(ctx context.Context, host component.Host) (err error) {
-	dialOpts, err := e.config.Logs.ToDialOptions(host, e.settings)
-	if err != nil {
-		return err
-	}
-	dialOpts = append(dialOpts, grpc.WithUserAgent(e.userAgent))
-
-	if e.clientConn, err = grpc.DialContext(ctx, e.config.Logs.SanitizedEndpoint(), dialOpts...); err != nil {
+	if e.clientConn, err = e.config.Logs.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
 		return err
 	}
 

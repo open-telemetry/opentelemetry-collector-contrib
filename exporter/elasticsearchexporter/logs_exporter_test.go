@@ -110,6 +110,15 @@ func TestExporter_New(t *testing.T) {
 			}),
 			want: failWithMessage("Addresses and CloudID are set"),
 		},
+		"create with custom request header": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"test:9200"}
+				cfg.Headers = map[string]string{
+					"foo": "bah",
+				}
+			}),
+			want: success,
+		},
 	}
 
 	for name, test := range tests {

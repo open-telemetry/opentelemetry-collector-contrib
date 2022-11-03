@@ -160,6 +160,12 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchNodeOperationsTimeDataPoint(now, info.Indices.FlushOperations.TotalTimeInMs, metadata.AttributeOperationFlush)
 		r.mb.RecordElasticsearchNodeOperationsTimeDataPoint(now, info.Indices.WarmerOperations.TotalTimeInMs, metadata.AttributeOperationWarmer)
 
+		r.mb.RecordElasticsearchNodeOperationsGetCompletedDataPoint(now, info.Indices.GetOperation.Exists, metadata.AttributeGetResultHit)
+		r.mb.RecordElasticsearchNodeOperationsGetCompletedDataPoint(now, info.Indices.GetOperation.Missing, metadata.AttributeGetResultMiss)
+
+		r.mb.RecordElasticsearchNodeOperationsGetTimeDataPoint(now, info.Indices.GetOperation.ExistsTimeInMs, metadata.AttributeGetResultHit)
+		r.mb.RecordElasticsearchNodeOperationsGetTimeDataPoint(now, info.Indices.GetOperation.MissingTimeInMs, metadata.AttributeGetResultMiss)
+
 		r.mb.RecordElasticsearchNodeShardsSizeDataPoint(now, info.Indices.StoreInfo.SizeInBy)
 
 		// Elasticsearch version 7.13+ is required to collect `elasticsearch.node.shards.data_set.size`.
@@ -333,7 +339,7 @@ func (r *elasticsearchScraper) scrapeIndicesMetrics(ctx context.Context, now pco
 	indexStats, err := r.client.IndexStats(ctx, r.cfg.Indices)
 
 	if err != nil {
-		errs.AddPartial(4, err)
+		errs.AddPartial(16, err)
 		return
 	}
 
@@ -359,9 +365,59 @@ func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name
 	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
 		now, stats.Total.SearchOperations.QueryTimeInMs, metadata.AttributeOperationQuery, metadata.AttributeIndexAggregationTypeTotal,
 	)
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Total.MergeOperations.TotalTimeInMs, metadata.AttributeOperationMerge, metadata.AttributeIndexAggregationTypeTotal,
+	)
+
+	r.mb.RecordElasticsearchIndexOperationsMergeSizeDataPoint(
+		now, stats.Total.MergeOperations.TotalSizeInBytes, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsMergeDocsCountDataPoint(
+		now, stats.Total.MergeOperations.TotalDocs, metadata.AttributeIndexAggregationTypeTotal,
+	)
 
 	r.mb.RecordElasticsearchIndexShardsSizeDataPoint(
 		now, stats.Total.StoreInfo.SizeInBy, metadata.AttributeIndexAggregationTypeTotal,
+	)
+
+	r.mb.RecordElasticsearchIndexSegmentsCountDataPoint(
+		now, stats.Total.SegmentsStats.Count, metadata.AttributeIndexAggregationTypeTotal,
+	)
+
+	r.mb.RecordElasticsearchIndexSegmentsSizeDataPoint(
+		now, stats.Total.SegmentsStats.MemoryInBy, metadata.AttributeIndexAggregationTypeTotal,
+	)
+
+	r.mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(
+		now,
+		stats.Total.SegmentsStats.DocumentValuesMemoryInBy,
+		metadata.AttributeIndexAggregationTypeTotal,
+		metadata.AttributeSegmentsMemoryObjectTypeDocValue,
+	)
+	r.mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(
+		now,
+		stats.Total.SegmentsStats.FixedBitSetMemoryInBy,
+		metadata.AttributeIndexAggregationTypeTotal,
+		metadata.AttributeSegmentsMemoryObjectTypeFixedBitSet,
+	)
+	r.mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(
+		now,
+		stats.Total.SegmentsStats.IndexWriterMemoryInBy,
+		metadata.AttributeIndexAggregationTypeTotal,
+		metadata.AttributeSegmentsMemoryObjectTypeIndexWriter,
+	)
+	r.mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(
+		now,
+		stats.Total.SegmentsStats.TermsMemoryInBy,
+		metadata.AttributeIndexAggregationTypeTotal,
+		metadata.AttributeSegmentsMemoryObjectTypeTerm,
+	)
+
+	r.mb.RecordElasticsearchIndexTranslogOperationsDataPoint(
+		now, stats.Total.TranslogStats.Operations, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexTranslogSizeDataPoint(
+		now, stats.Total.TranslogStats.SizeInBy, metadata.AttributeIndexAggregationTypeTotal,
 	)
 
 	r.mb.EmitForResource(metadata.WithElasticsearchIndexName(name), metadata.WithElasticsearchClusterName(r.clusterName))

@@ -26,7 +26,7 @@ import (
 	"github.com/jaegertracing/jaeger/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
@@ -423,6 +423,7 @@ func jReferencesToSpanLinks(refs []model.SpanRef, excludeParentID model.SpanID, 
 		link := dest.AppendEmpty()
 		link.SetTraceID(idutils.UInt64ToTraceID(ref.TraceID.High, ref.TraceID.Low))
 		link.SetSpanID(idutils.UInt64ToSpanID(uint64(ref.SpanID)))
+		link.Attributes().PutStr(conventions.AttributeOpentracingRefType, jRefTypeToAttribute(ref.RefType))
 	}
 }
 
@@ -456,4 +457,11 @@ func getAndDeleteTag(span *model.Span, key string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func jRefTypeToAttribute(ref model.SpanRefType) string {
+	if ref == model.ChildOf {
+		return conventions.AttributeOpentracingRefTypeChildOf
+	}
+	return conventions.AttributeOpentracingRefTypeFollowsFrom
 }

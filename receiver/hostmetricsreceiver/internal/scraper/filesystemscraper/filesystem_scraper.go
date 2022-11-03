@@ -76,9 +76,8 @@ func (s *scraper) start(context.Context, component.Host) error {
 func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	// omit logical (virtual) filesystems (not relevant for windows)
-	partitions, err := s.partitions( /*all=*/ false)
 	var errors scrapererror.ScrapeErrors
+	partitions, err := s.partitions(s.config.IncludeVirtualFS)
 	if err != nil {
 		if len(partitions) == 0 {
 			return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)

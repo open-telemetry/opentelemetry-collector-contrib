@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -138,7 +139,7 @@ func toHecSpan(logger *zap.Logger, span ptrace.Span) hecSpan {
 	}
 	status := hecSpanStatus{
 		Message: span.Status().Message(),
-		Code:    span.Status().Code().String(),
+		Code:    traceutil.StatusCodeStr(span.Status().Code()),
 	}
 	return hecSpan{
 		TraceID:    span.TraceID().HexString(),
@@ -148,7 +149,7 @@ func toHecSpan(logger *zap.Logger, span ptrace.Span) hecSpan {
 		Attributes: attributes,
 		StartTime:  span.StartTimestamp(),
 		EndTime:    span.EndTimestamp(),
-		Kind:       span.Kind().String(),
+		Kind:       traceutil.SpanKindStr(span.Kind()),
 		Status:     status,
 		Links:      links,
 		Events:     events,

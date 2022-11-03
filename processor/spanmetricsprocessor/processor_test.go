@@ -296,7 +296,7 @@ func TestProcessorConsumeTraces(t *testing.T) {
 			})).Return(nil)
 			tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
-			defaultNullValue := "defaultNullValue"
+			defaultNullValue := pcommon.NewValueStr("defaultNullValue")
 			p := newProcessorImp(mexp, tcon, &defaultNullValue, tc.aggregationTemporality, zaptest.NewLogger(t))
 
 			for _, traces := range tc.traces {
@@ -318,7 +318,7 @@ func TestMetricKeyCache(t *testing.T) {
 	mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
-	defaultNullValue := "defaultNullValue"
+	defaultNullValue := pcommon.NewValueStr("defaultNullValue")
 	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(t))
 	traces := buildSampleTrace()
 
@@ -354,7 +354,7 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
-	defaultNullValue := "defaultNullValue"
+	defaultNullValue := pcommon.NewValueStr("defaultNullValue")
 	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(b))
 
 	traces := buildSampleTrace()
@@ -366,10 +366,10 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	}
 }
 
-func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *string, temporality string, logger *zap.Logger) *processorImp {
-	defaultNotInSpanAttrVal := "defaultNotInSpanAttrVal"
+func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *pcommon.Value, temporality string, logger *zap.Logger) *processorImp {
+	defaultNotInSpanAttrVal := pcommon.NewValueStr("defaultNotInSpanAttrVal")
 	// use size 2 for LRU cache for testing purpose
-	metricKeyToDimensions, err := cache.NewCache(DimensionsCacheSize)
+	metricKeyToDimensions, err := cache.NewCache[metricKey, pcommon.Map](DimensionsCacheSize)
 	if err != nil {
 		panic(err)
 	}
@@ -379,14 +379,10 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 		metricsExporter: mexp,
 		nextConsumer:    tcon,
 
-		startTime:            time.Now(),
-		callSum:              make(map[metricKey]int64),
-		latencySum:           make(map[metricKey]float64),
-		latencyCount:         make(map[metricKey]uint64),
-		latencyBucketCounts:  make(map[metricKey][]uint64),
-		latencyBounds:        defaultLatencyHistogramBucketsMs,
-		latencyExemplarsData: make(map[metricKey][]exemplarData),
-		dimensions: []Dimension{
+		startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
+		histograms:     make(map[metricKey]*histogramData),
+		latencyBounds:  defaultLatencyHistogramBucketsMs,
+		dimensions: []dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
 			{stringAttrName, nil},
 			{intAttrName, nil},
@@ -665,10 +661,10 @@ func TestBuildKeySameServiceOperationCharSequence(t *testing.T) {
 }
 
 func TestBuildKeyWithDimensions(t *testing.T) {
-	defaultFoo := "bar"
+	defaultFoo := pcommon.NewValueStr("bar")
 	for _, tc := range []struct {
 		name            string
-		optionalDims    []Dimension
+		optionalDims    []dimension
 		resourceAttrMap map[string]interface{}
 		spanAttrMap     map[string]interface{}
 		wantKey         string
@@ -679,22 +675,22 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 		{
 			name: "neither span nor resource contains key, dim provides default",
-			optionalDims: []Dimension{
-				{Name: "foo", Default: &defaultFoo},
+			optionalDims: []dimension{
+				{name: "foo", value: &defaultFoo},
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000bar",
 		},
 		{
 			name: "neither span nor resource contains key, dim provides no default",
-			optionalDims: []Dimension{
-				{Name: "foo"},
+			optionalDims: []dimension{
+				{name: "foo"},
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET",
 		},
 		{
 			name: "span attribute contains dimension",
-			optionalDims: []Dimension{
-				{Name: "foo"},
+			optionalDims: []dimension{
+				{name: "foo"},
 			},
 			spanAttrMap: map[string]interface{}{
 				"foo": 99,
@@ -703,8 +699,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 		{
 			name: "resource attribute contains dimension",
-			optionalDims: []Dimension{
-				{Name: "foo"},
+			optionalDims: []dimension{
+				{name: "foo"},
 			},
 			resourceAttrMap: map[string]interface{}{
 				"foo": 99,
@@ -713,8 +709,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 		{
 			name: "both span and resource attribute contains dimension, should prefer span attribute",
-			optionalDims: []Dimension{
-				{Name: "foo"},
+			optionalDims: []dimension{
+				{name: "foo"},
 			},
 			spanAttrMap: map[string]interface{}{
 				"foo": 100,
@@ -839,7 +835,7 @@ func TestSanitize(t *testing.T) {
 	require.Equal(t, "test__", sanitize("test_/", cfg.skipSanitizeLabel))
 }
 
-func TestSetLatencyExemplars(t *testing.T) {
+func TestSetExemplars(t *testing.T) {
 	// ----- conditions -------------------------------------------------------
 	traces := buildSampleTrace()
 	traceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
@@ -851,7 +847,7 @@ func TestSetLatencyExemplars(t *testing.T) {
 	ed := []exemplarData{{traceID: traceID, spanID: spanID, value: value}}
 
 	// ----- call -------------------------------------------------------------
-	setLatencyExemplars(ed, timestamp, exemplarSlice)
+	setExemplars(ed, timestamp, exemplarSlice)
 
 	// ----- verify -----------------------------------------------------------
 	traceIDValue := exemplarSlice.At(0).TraceID()
@@ -864,7 +860,7 @@ func TestSetLatencyExemplars(t *testing.T) {
 	assert.Equal(t, exemplarSlice.At(0).DoubleValue(), value)
 }
 
-func TestProcessorUpdateLatencyExemplars(t *testing.T) {
+func TestProcessorUpdateExemplars(t *testing.T) {
 	// ----- conditions -------------------------------------------------------
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
@@ -877,27 +873,17 @@ func TestProcessorUpdateLatencyExemplars(t *testing.T) {
 	value := float64(42)
 
 	// ----- call -------------------------------------------------------------
-	p.updateLatencyExemplars(key, value, traceID, spanID)
+	p.updateHistogram(key, value, traceID, spanID)
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
-	assert.NotEmpty(t, p.latencyExemplarsData[key])
-	assert.Equal(t, p.latencyExemplarsData[key][0], exemplarData{traceID: traceID, spanID: spanID, value: value})
-}
-
-func TestProcessorResetExemplarData(t *testing.T) {
-	// ----- conditions -------------------------------------------------------
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-
-	key := metricKey("metricKey")
-	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
+	assert.NotEmpty(t, p.histograms[key].exemplarsData)
+	assert.Equal(t, p.histograms[key].exemplarsData[0], exemplarData{traceID: traceID, spanID: spanID, value: value})
 
 	// ----- call -------------------------------------------------------------
 	p.resetExemplarData()
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
-	assert.Empty(t, p.latencyExemplarsData[key])
+	assert.Empty(t, p.histograms[key].exemplarsData)
 }

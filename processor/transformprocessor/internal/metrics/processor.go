@@ -29,8 +29,8 @@ type Processor struct {
 	statements []*ottl.Statement[ottldatapoints.TransformContext]
 }
 
-func NewProcessor(statements []string, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
-	ottlp := ottldatapoints.NewParser(functions, settings)
+func NewProcessor(statements []string, settings component.TelemetrySettings) (*Processor, error) {
+	ottlp := ottldatapoints.NewParser(Functions(), settings)
 	parsedStatements, err := ottlp.ParseStatements(statements)
 	if err != nil {
 		return nil, err

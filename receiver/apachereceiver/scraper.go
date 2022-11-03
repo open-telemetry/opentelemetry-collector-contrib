@@ -17,6 +17,7 @@ package apachereceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -24,6 +25,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -32,22 +34,52 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
 )
 
+const (
+	readmeURL                         = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/apachereceiver/README.md"
+	EmitServerNameAsResourceAttribute = "receiver.apache.emitServerNameAsResourceAttribute"
+)
+
+var (
+	emitServerNameAsResourceAttribute = featuregate.Gate{
+		ID:      EmitServerNameAsResourceAttribute,
+		Enabled: false,
+		Description: "When enabled, the name of the server will be sent as an apache.server.name resource attribute " +
+			"instead of a metric-level server_name attribute.",
+	}
+)
+
+func init() {
+	featuregate.GetRegistry().MustRegister(emitServerNameAsResourceAttribute)
+}
+
 type apacheScraper struct {
 	settings   component.TelemetrySettings
 	cfg        *Config
 	httpClient *http.Client
 	mb         *metadata.MetricsBuilder
+
+	// Feature gates regarding resource attributes
+	emitMetricsWithServerNameAsResourceAttribute bool
 }
 
 func newApacheScraper(
 	settings component.ReceiverCreateSettings,
 	cfg *Config,
 ) *apacheScraper {
-	return &apacheScraper{
+	a := &apacheScraper{
 		settings: settings.TelemetrySettings,
 		cfg:      cfg,
 		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+		emitMetricsWithServerNameAsResourceAttribute: featuregate.GetRegistry().IsEnabled(EmitServerNameAsResourceAttribute),
 	}
+
+	if !a.emitMetricsWithServerNameAsResourceAttribute {
+		settings.Logger.Warn(
+			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", EmitServerNameAsResourceAttribute, readmeURL),
+		)
+	}
+
+	return a
 }
 
 func (r *apacheScraper) start(_ context.Context, host component.Host) error {
@@ -70,68 +102,144 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		return pmetric.Metrics{}, err
 	}
 
+	emitWith := []metadata.ResourceMetricsOption{}
+
+	if r.emitMetricsWithServerNameAsResourceAttribute {
+		err = r.scrapeWithoutServerNameAttr(stats)
+		emitWith = append(emitWith, metadata.WithApacheServerName(r.cfg.serverName))
+	} else {
+		err = r.scrapeWithServerNameAttr(stats)
+	}
+
+	return r.mb.Emit(emitWith...), err
+}
+
+func (r *apacheScraper) scrapeWithServerNameAttr(stats string) error {
 	errs := &scrapererror.ScrapeErrors{}
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for metricKey, metricValue := range parseStats(stats) {
 		switch metricKey {
 		case "ServerUptimeSeconds":
-			addPartialIfError(errs, r.mb.RecordApacheUptimeDataPoint(now, metricValue, r.cfg.serverName))
+			addPartialIfError(errs, r.mb.RecordApacheUptimeDataPointWithServerName(now, metricValue, r.cfg.serverName))
 		case "ConnsTotal":
-			addPartialIfError(errs, r.mb.RecordApacheCurrentConnectionsDataPoint(now, metricValue, r.cfg.serverName))
+			addPartialIfError(errs, r.mb.RecordApacheCurrentConnectionsDataPointWithServerName(now, metricValue, r.cfg.serverName))
 		case "BusyWorkers":
-			addPartialIfError(errs, r.mb.RecordApacheWorkersDataPoint(now, metricValue, r.cfg.serverName,
+			addPartialIfError(errs, r.mb.RecordApacheWorkersDataPointWithServerName(now, metricValue, r.cfg.serverName,
 				metadata.AttributeWorkersStateBusy))
 		case "IdleWorkers":
-			addPartialIfError(errs, r.mb.RecordApacheWorkersDataPoint(now, metricValue, r.cfg.serverName,
+			addPartialIfError(errs, r.mb.RecordApacheWorkersDataPointWithServerName(now, metricValue, r.cfg.serverName,
 				metadata.AttributeWorkersStateIdle))
 		case "Total Accesses":
-			addPartialIfError(errs, r.mb.RecordApacheRequestsDataPoint(now, metricValue, r.cfg.serverName))
+			addPartialIfError(errs, r.mb.RecordApacheRequestsDataPointWithServerName(now, metricValue, r.cfg.serverName))
 		case "Total kBytes":
 			i, err := strconv.ParseInt(metricValue, 10, 64)
 			if err != nil {
 				errs.AddPartial(1, err)
 			} else {
-				r.mb.RecordApacheTrafficDataPoint(now, kbytesToBytes(i), r.cfg.serverName)
+				r.mb.RecordApacheTrafficDataPointWithServerName(now, kbytesToBytes(i), r.cfg.serverName)
 			}
 		case "CPUChildrenSystem":
 			addPartialIfError(
 				errs,
-				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, r.cfg.serverName, metadata.AttributeCPULevelChildren, metadata.AttributeCPUModeSystem),
+				r.mb.RecordApacheCPUTimeDataPointWithServerName(now, metricValue, r.cfg.serverName, metadata.AttributeCPULevelChildren, metadata.AttributeCPUModeSystem),
 			)
 		case "CPUChildrenUser":
 			addPartialIfError(
 				errs,
-				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, r.cfg.serverName, metadata.AttributeCPULevelChildren, metadata.AttributeCPUModeUser),
+				r.mb.RecordApacheCPUTimeDataPointWithServerName(now, metricValue, r.cfg.serverName, metadata.AttributeCPULevelChildren, metadata.AttributeCPUModeUser),
 			)
 		case "CPUSystem":
 			addPartialIfError(
 				errs,
-				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, r.cfg.serverName, metadata.AttributeCPULevelSelf, metadata.AttributeCPUModeSystem),
+				r.mb.RecordApacheCPUTimeDataPointWithServerName(now, metricValue, r.cfg.serverName, metadata.AttributeCPULevelSelf, metadata.AttributeCPUModeSystem),
 			)
 		case "CPUUser":
 			addPartialIfError(
 				errs,
-				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, r.cfg.serverName, metadata.AttributeCPULevelSelf, metadata.AttributeCPUModeUser),
+				r.mb.RecordApacheCPUTimeDataPointWithServerName(now, metricValue, r.cfg.serverName, metadata.AttributeCPULevelSelf, metadata.AttributeCPUModeUser),
 			)
 		case "CPULoad":
-			addPartialIfError(errs, r.mb.RecordApacheCPULoadDataPoint(now, metricValue, r.cfg.serverName))
+			addPartialIfError(errs, r.mb.RecordApacheCPULoadDataPointWithServerName(now, metricValue, r.cfg.serverName))
 		case "Load1":
-			addPartialIfError(errs, r.mb.RecordApacheLoad1DataPoint(now, metricValue, r.cfg.serverName))
+			addPartialIfError(errs, r.mb.RecordApacheLoad1DataPointWithServerName(now, metricValue, r.cfg.serverName))
 		case "Load5":
-			addPartialIfError(errs, r.mb.RecordApacheLoad5DataPoint(now, metricValue, r.cfg.serverName))
+			addPartialIfError(errs, r.mb.RecordApacheLoad5DataPointWithServerName(now, metricValue, r.cfg.serverName))
 		case "Load15":
-			addPartialIfError(errs, r.mb.RecordApacheLoad15DataPoint(now, metricValue, r.cfg.serverName))
+			addPartialIfError(errs, r.mb.RecordApacheLoad15DataPointWithServerName(now, metricValue, r.cfg.serverName))
 		case "Total Duration":
-			addPartialIfError(errs, r.mb.RecordApacheRequestTimeDataPoint(now, metricValue, r.cfg.serverName))
+			addPartialIfError(errs, r.mb.RecordApacheRequestTimeDataPointWithServerName(now, metricValue, r.cfg.serverName))
 		case "Scoreboard":
 			scoreboardMap := parseScoreboard(metricValue)
 			for state, score := range scoreboardMap {
-				r.mb.RecordApacheScoreboardDataPoint(now, score, r.cfg.serverName, state)
+				r.mb.RecordApacheScoreboardDataPointWithServerName(now, score, r.cfg.serverName, state)
 			}
 		}
 	}
 
-	return r.mb.Emit(), errs.Combine()
+	return errs.Combine()
+}
+
+func (r *apacheScraper) scrapeWithoutServerNameAttr(stats string) error {
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for metricKey, metricValue := range parseStats(stats) {
+		switch metricKey {
+		case "ServerUptimeSeconds":
+			addPartialIfError(errs, r.mb.RecordApacheUptimeDataPoint(now, metricValue))
+		case "ConnsTotal":
+			addPartialIfError(errs, r.mb.RecordApacheCurrentConnectionsDataPoint(now, metricValue))
+		case "BusyWorkers":
+			addPartialIfError(errs, r.mb.RecordApacheWorkersDataPoint(now, metricValue, metadata.AttributeWorkersStateBusy))
+		case "IdleWorkers":
+			addPartialIfError(errs, r.mb.RecordApacheWorkersDataPoint(now, metricValue, metadata.AttributeWorkersStateIdle))
+		case "Total Accesses":
+			addPartialIfError(errs, r.mb.RecordApacheRequestsDataPoint(now, metricValue))
+		case "Total kBytes":
+			i, err := strconv.ParseInt(metricValue, 10, 64)
+			if err != nil {
+				errs.AddPartial(1, err)
+			} else {
+				r.mb.RecordApacheTrafficDataPoint(now, kbytesToBytes(i))
+			}
+		case "CPUChildrenSystem":
+			addPartialIfError(
+				errs,
+				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, metadata.AttributeCPULevelChildren, metadata.AttributeCPUModeSystem),
+			)
+		case "CPUChildrenUser":
+			addPartialIfError(
+				errs,
+				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, metadata.AttributeCPULevelChildren, metadata.AttributeCPUModeUser),
+			)
+		case "CPUSystem":
+			addPartialIfError(
+				errs,
+				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, metadata.AttributeCPULevelSelf, metadata.AttributeCPUModeSystem),
+			)
+		case "CPUUser":
+			addPartialIfError(
+				errs,
+				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, metadata.AttributeCPULevelSelf, metadata.AttributeCPUModeUser),
+			)
+		case "CPULoad":
+			addPartialIfError(errs, r.mb.RecordApacheCPULoadDataPoint(now, metricValue))
+		case "Load1":
+			addPartialIfError(errs, r.mb.RecordApacheLoad1DataPoint(now, metricValue))
+		case "Load5":
+			addPartialIfError(errs, r.mb.RecordApacheLoad5DataPoint(now, metricValue))
+		case "Load15":
+			addPartialIfError(errs, r.mb.RecordApacheLoad15DataPoint(now, metricValue))
+		case "Total Duration":
+			addPartialIfError(errs, r.mb.RecordApacheRequestTimeDataPoint(now, metricValue))
+		case "Scoreboard":
+			scoreboardMap := parseScoreboard(metricValue)
+			for state, score := range scoreboardMap {
+				r.mb.RecordApacheScoreboardDataPoint(now, score, state)
+			}
+		}
+	}
+
+	return errs.Combine()
 }
 
 func addPartialIfError(errs *scrapererror.ScrapeErrors, err error) {

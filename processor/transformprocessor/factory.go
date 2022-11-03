@@ -70,7 +70,7 @@ func createLogsProcessor(
 ) (component.LogsProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	proc, err := logs.NewProcessor(oCfg.Logs.Statements, logs.Functions(), set.TelemetrySettings)
+	proc, err := logs.NewProcessor(oCfg.Logs.Statements, set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
@@ -91,7 +91,7 @@ func createTracesProcessor(
 ) (component.TracesProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	proc, err := traces.NewProcessor(oCfg.Traces.Statements, traces.Functions(), set.TelemetrySettings)
+	proc, err := traces.NewProcessor(oCfg.Traces.Statements, set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
@@ -112,7 +112,7 @@ func createMetricsProcessor(
 ) (component.MetricsProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	proc, err := metrics.NewProcessor(oCfg.Metrics.Statements, metrics.Functions(), set.TelemetrySettings)
+	proc, err := metrics.NewProcessor(oCfg.Metrics.Statements, set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
