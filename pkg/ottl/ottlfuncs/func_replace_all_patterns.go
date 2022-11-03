@@ -37,14 +37,17 @@ func ReplaceAllPatterns[K any](target ottl.GetSetter[K], mode string, regexPatte
 		return nil, fmt.Errorf("invalid mode %v, must be either 'key' or 'value'", mode)
 	}
 
-	return func(ctx K) interface{} {
-		val := target.Get(ctx)
+	return func(ctx K) (interface{}, error) {
+		val, err := target.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
 		if val == nil {
-			return nil
+			return nil, nil
 		}
 		attrs, ok := val.(pcommon.Map)
 		if !ok {
-			return nil
+			return nil, nil
 		}
 		updated := pcommon.NewMap()
 		updated.EnsureCapacity(attrs.Len())
@@ -67,8 +70,11 @@ func ReplaceAllPatterns[K any](target ottl.GetSetter[K], mode string, regexPatte
 			}
 			return true
 		})
-		target.Set(ctx, updated)
+		err = target.Set(ctx, updated)
+		if err != nil {
+			return nil, err
+		}
 
-		return nil
+		return nil, nil
 	}, nil
 }

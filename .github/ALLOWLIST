@@ -29,5 +29,4 @@ extension/httpforwarder
 receiver/dotnetdiagnosticsreceiver
 
 # OTHER; Looking for an owner
-pkg/batchperresourceattr
 pkg/experimentalmetricmetadata

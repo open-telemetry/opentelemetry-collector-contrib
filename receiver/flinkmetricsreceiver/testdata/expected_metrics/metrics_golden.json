@@ -24,7 +24,7 @@
                      "description": "The total number of classes loaded since the start of the JVM.",
                      "name": "flink.jvm.class_loader.classes_loaded",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "21",
@@ -54,7 +54,7 @@
                      "description": "The CPU time used by the JVM for a jobmanager or taskmanager.",
                      "name": "flink.jvm.cpu.time",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "5",
@@ -70,7 +70,7 @@
                      "description": "The total number of collections that have occurred.",
                      "name": "flink.jvm.gc.collections.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "10",
@@ -107,7 +107,7 @@
                      "description": "The total time spent performing garbage collection.",
                      "name": "flink.jvm.gc.collections.time",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -144,7 +144,7 @@
                      "description": "The total capacity of all buffers in the direct buffer pool.",
                      "name": "flink.jvm.memory.direct.total_capacity",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "19",
@@ -159,7 +159,7 @@
                      "description": "The amount of memory used by the JVM for the direct buffer pool.",
                      "name": "flink.jvm.memory.direct.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "18",
@@ -174,7 +174,7 @@
                      "description": "The amount of heap memory guaranteed to be available to the JVM.",
                      "name": "flink.jvm.memory.heap.committed",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "7",
@@ -189,7 +189,7 @@
                      "description": "The maximum amount of heap memory that can be used for memory management.",
                      "name": "flink.jvm.memory.heap.max",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "25",
@@ -204,7 +204,7 @@
                      "description": "The amount of heap memory currently used.",
                      "name": "flink.jvm.memory.heap.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "26",
@@ -219,7 +219,7 @@
                      "description": "The number of buffers in the mapped buffer pool.",
                      "name": "flink.jvm.memory.mapped.total_capacity",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -234,7 +234,7 @@
                      "description": "The amount of memory used by the JVM for the mapped buffer pool.",
                      "name": "flink.jvm.memory.mapped.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "4",
@@ -249,7 +249,7 @@
                      "description": "The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.",
                      "name": "flink.jvm.memory.metaspace.committed",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "8",
@@ -264,7 +264,7 @@
                      "description": "The maximum amount of memory that can be used in the Metaspace memory pool.",
                      "name": "flink.jvm.memory.metaspace.max",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "17",
@@ -279,7 +279,7 @@
                      "description": "The amount of memory currently used in the Metaspace memory pool.",
                      "name": "flink.jvm.memory.metaspace.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "23",
@@ -294,7 +294,7 @@
                      "description": "The amount of non-heap memory guaranteed to be available to the JVM.",
                      "name": "flink.jvm.memory.nonheap.committed",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "15",
@@ -309,7 +309,7 @@
                      "description": "The maximum amount of non-heap memory that can be used for memory management.",
                      "name": "flink.jvm.memory.nonheap.max",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "13",
@@ -324,7 +324,7 @@
                      "description": "The amount of non-heap memory currently used.",
                      "name": "flink.jvm.memory.nonheap.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "16",
@@ -339,7 +339,7 @@
                      "description": "The total number of live threads.",
                      "name": "flink.jvm.threads.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "6",
@@ -354,7 +354,7 @@
                      "description": "The total amount of managed memory.",
                      "name": "flink.memory.managed.total",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "28",
@@ -369,7 +369,7 @@
                      "description": "The amount of managed memory currently used.",
                      "name": "flink.memory.managed.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "29",
@@ -418,7 +418,7 @@
                      "description": "The total number of classes loaded since the start of the JVM.",
                      "name": "flink.jvm.class_loader.classes_loaded",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "24",
@@ -448,7 +448,7 @@
                      "description": "The CPU time used by the JVM for a jobmanager or taskmanager.",
                      "name": "flink.jvm.cpu.time",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "4",
@@ -464,7 +464,7 @@
                      "description": "The total number of collections that have occurred.",
                      "name": "flink.jvm.gc.collections.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "6",
@@ -501,7 +501,7 @@
                      "description": "The total time spent performing garbage collection.",
                      "name": "flink.jvm.gc.collections.time",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "21",
@@ -538,7 +538,7 @@
                      "description": "The total capacity of all buffers in the direct buffer pool.",
                      "name": "flink.jvm.memory.direct.total_capacity",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "22",
@@ -553,7 +553,7 @@
                      "description": "The amount of memory used by the JVM for the direct buffer pool.",
                      "name": "flink.jvm.memory.direct.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "20",
@@ -568,7 +568,7 @@
                      "description": "The amount of heap memory guaranteed to be available to the JVM.",
                      "name": "flink.jvm.memory.heap.committed",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "9",
@@ -583,7 +583,7 @@
                      "description": "The maximum amount of heap memory that can be used for memory management.",
                      "name": "flink.jvm.memory.heap.max",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "29",
@@ -598,7 +598,7 @@
                      "description": "The amount of heap memory currently used.",
                      "name": "flink.jvm.memory.heap.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "30",
@@ -613,7 +613,7 @@
                      "description": "The number of buffers in the mapped buffer pool.",
                      "name": "flink.jvm.memory.mapped.total_capacity",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -628,7 +628,7 @@
                      "description": "The amount of memory used by the JVM for the mapped buffer pool.",
                      "name": "flink.jvm.memory.mapped.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "3",
@@ -643,7 +643,7 @@
                      "description": "The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.",
                      "name": "flink.jvm.memory.metaspace.committed",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "11",
@@ -658,7 +658,7 @@
                      "description": "The maximum amount of memory that can be used in the Metaspace memory pool.",
                      "name": "flink.jvm.memory.metaspace.max",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "18",
@@ -673,7 +673,7 @@
                      "description": "The amount of memory currently used in the Metaspace memory pool.",
                      "name": "flink.jvm.memory.metaspace.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "27",
@@ -688,7 +688,7 @@
                      "description": "The amount of non-heap memory guaranteed to be available to the JVM.",
                      "name": "flink.jvm.memory.nonheap.committed",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "16",
@@ -703,7 +703,7 @@
                      "description": "The maximum amount of non-heap memory that can be used for memory management.",
                      "name": "flink.jvm.memory.nonheap.max",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "14",
@@ -718,7 +718,7 @@
                      "description": "The amount of non-heap memory currently used.",
                      "name": "flink.jvm.memory.nonheap.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "17",
@@ -733,7 +733,7 @@
                      "description": "The total number of live threads.",
                      "name": "flink.jvm.threads.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "7",
@@ -748,7 +748,7 @@
                      "description": "The total amount of managed memory.",
                      "name": "flink.memory.managed.total",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "5",
@@ -763,7 +763,7 @@
                      "description": "The amount of managed memory currently used.",
                      "name": "flink.memory.managed.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "26",
@@ -812,7 +812,7 @@
                      "description": "The total number of classes loaded since the start of the JVM.",
                      "name": "flink.jvm.class_loader.classes_loaded",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "24",
@@ -842,7 +842,7 @@
                      "description": "The CPU time used by the JVM for a jobmanager or taskmanager.",
                      "name": "flink.jvm.cpu.time",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "4",
@@ -858,7 +858,7 @@
                      "description": "The total number of collections that have occurred.",
                      "name": "flink.jvm.gc.collections.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "6",
@@ -895,7 +895,7 @@
                      "description": "The total time spent performing garbage collection.",
                      "name": "flink.jvm.gc.collections.time",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "21",
@@ -932,7 +932,7 @@
                      "description": "The total capacity of all buffers in the direct buffer pool.",
                      "name": "flink.jvm.memory.direct.total_capacity",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "22",
@@ -947,7 +947,7 @@
                      "description": "The amount of memory used by the JVM for the direct buffer pool.",
                      "name": "flink.jvm.memory.direct.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "20",
@@ -962,7 +962,7 @@
                      "description": "The amount of heap memory guaranteed to be available to the JVM.",
                      "name": "flink.jvm.memory.heap.committed",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "9",
@@ -977,7 +977,7 @@
                      "description": "The maximum amount of heap memory that can be used for memory management.",
                      "name": "flink.jvm.memory.heap.max",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "29",
@@ -992,7 +992,7 @@
                      "description": "The amount of heap memory currently used.",
                      "name": "flink.jvm.memory.heap.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "30",
@@ -1007,7 +1007,7 @@
                      "description": "The number of buffers in the mapped buffer pool.",
                      "name": "flink.jvm.memory.mapped.total_capacity",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1022,7 +1022,7 @@
                      "description": "The amount of memory used by the JVM for the mapped buffer pool.",
                      "name": "flink.jvm.memory.mapped.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "3",
@@ -1037,7 +1037,7 @@
                      "description": "The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.",
                      "name": "flink.jvm.memory.metaspace.committed",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "11",
@@ -1052,7 +1052,7 @@
                      "description": "The maximum amount of memory that can be used in the Metaspace memory pool.",
                      "name": "flink.jvm.memory.metaspace.max",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "18",
@@ -1067,7 +1067,7 @@
                      "description": "The amount of memory currently used in the Metaspace memory pool.",
                      "name": "flink.jvm.memory.metaspace.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "27",
@@ -1082,7 +1082,7 @@
                      "description": "The amount of non-heap memory guaranteed to be available to the JVM.",
                      "name": "flink.jvm.memory.nonheap.committed",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "16",
@@ -1097,7 +1097,7 @@
                      "description": "The maximum amount of non-heap memory that can be used for memory management.",
                      "name": "flink.jvm.memory.nonheap.max",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "14",
@@ -1112,7 +1112,7 @@
                      "description": "The amount of non-heap memory currently used.",
                      "name": "flink.jvm.memory.nonheap.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "17",
@@ -1127,7 +1127,7 @@
                      "description": "The total number of live threads.",
                      "name": "flink.jvm.threads.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "7",
@@ -1142,7 +1142,7 @@
                      "description": "The total amount of managed memory.",
                      "name": "flink.memory.managed.total",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "5",
@@ -1157,7 +1157,7 @@
                      "description": "The amount of managed memory currently used.",
                      "name": "flink.memory.managed.used",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "26",
@@ -1200,7 +1200,7 @@
                      "description": "The number of checkpoints completed or failed.",
                      "name": "flink.job.checkpoint.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1237,7 +1237,7 @@
                      "description": "The number of checkpoints in progress.",
                      "name": "flink.job.checkpoint.in_progress",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "2",
@@ -1252,7 +1252,7 @@
                      "description": "The total size of the last checkpoint.",
                      "name": "flink.job.last_checkpoint.size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -1281,7 +1281,7 @@
                      "description": "The total number of restarts since this job was submitted, including full restarts and fine-grained restarts.",
                      "name": "flink.job.restart.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "5",
@@ -1325,7 +1325,7 @@
                      "description": "The number of checkpoints completed or failed.",
                      "name": "flink.job.checkpoint.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1362,7 +1362,7 @@
                      "description": "The number of checkpoints in progress.",
                      "name": "flink.job.checkpoint.in_progress",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "2",
@@ -1377,7 +1377,7 @@
                      "description": "The total size of the last checkpoint.",
                      "name": "flink.job.last_checkpoint.size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -1406,7 +1406,7 @@
                      "description": "The total number of restarts since this job was submitted, including full restarts and fine-grained restarts.",
                      "name": "flink.job.restart.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "5",
@@ -1468,7 +1468,7 @@
                      "description": "The number of records an operator has.",
                      "name": "flink.operator.record.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1536,7 +1536,7 @@
                      "description": "The last watermark this operator has emitted.",
                      "name": "flink.operator.watermark.output",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "3",
@@ -1559,7 +1559,7 @@
                      "description": "The number of records a task has.",
                      "name": "flink.task.record.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",

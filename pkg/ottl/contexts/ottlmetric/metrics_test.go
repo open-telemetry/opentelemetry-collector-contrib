@@ -143,10 +143,12 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			ctx := NewTransformContext(metric, pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
-			got := accessor.Get(ctx)
+			got, err := accessor.Get(ctx)
+			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(ctx, tt.newVal)
+			err = accessor.Set(ctx, tt.newVal)
+			assert.Nil(t, err)
 
 			exMetric := createMetricTelemetry()
 			tt.modified(exMetric)

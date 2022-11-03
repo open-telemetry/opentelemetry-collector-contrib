@@ -55,17 +55,11 @@ type logsExporter struct {
 }
 
 func (e *logsExporter) start(ctx context.Context, host component.Host) (err error) {
-	dialOpts, err := e.config.Logs.ToDialOptions(host, e.settings)
-	if err != nil {
-		return err
-	}
-	dialOpts = append(dialOpts, grpc.WithUserAgent(e.userAgent))
-
-	if e.clientConn, err = grpc.DialContext(ctx, e.config.Logs.SanitizedEndpoint(), dialOpts...); err != nil {
+	if e.clientConn, err = e.config.Logs.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
 		return err
 	}
 
-	e.logExporter = plogotlp.NewClient(e.clientConn)
+	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
 	if e.config.Logs.Headers == nil {
 		e.config.Logs.Headers = make(map[string]string)
 	}
@@ -93,7 +87,7 @@ func (e *logsExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 		newRss := ld.ResourceLogs().AppendEmpty()
 		resourceLog.CopyTo(newRss)
 
-		req := plogotlp.NewRequestFromLogs(ld)
+		req := plogotlp.NewExportRequestFromLogs(ld)
 		_, err := e.logExporter.Export(e.enhanceContext(ctx, appName, subsystem), req, e.callOptions...)
 		if err != nil {
 			return processError(err)

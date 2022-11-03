@@ -23,7 +23,15 @@ These are the metrics available for this scraper.
 | **elasticsearch.cluster.state_update.count** | The number of cluster state update attempts that changed the cluster state since the node started. | 1 | Sum(Int) | <ul> <li>cluster_state_update_state</li> </ul> |
 | **elasticsearch.cluster.state_update.time** | The cumulative amount of time updating the cluster state since the node started. | ms | Sum(Int) | <ul> <li>cluster_state_update_state</li> <li>cluster_state_update_type</li> </ul> |
 | **elasticsearch.index.operations.completed** | The number of operations completed for an index. | {operations} | Sum(Int) | <ul> <li>operation</li> <li>index_aggregation_type</li> </ul> |
+| elasticsearch.index.operations.merge.docs_count | The total number of documents in merge operations for an index. | {documents} | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
+| elasticsearch.index.operations.merge.size | The total size of merged segments for an index. | By | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
 | **elasticsearch.index.operations.time** | Time spent on operations for an index. | ms | Sum(Int) | <ul> <li>operation</li> <li>index_aggregation_type</li> </ul> |
+| elasticsearch.index.segments.count | Number of segments of an index. | {segments} | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
+| elasticsearch.index.segments.memory | Size of memory for segment object of an index. | By | Sum(Int) | <ul> <li>index_aggregation_type</li> <li>segments_memory_object_type</li> </ul> |
+| elasticsearch.index.segments.size | Size of segments of an index. | By | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
+| **elasticsearch.index.shards.size** | The size of the shards assigned to this index. | By | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
+| elasticsearch.index.translog.operations | Number of transaction log operations for an index. | {operations} | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
+| elasticsearch.index.translog.size | Size of the transaction log for an index. | By | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
 | **elasticsearch.indexing_pressure.memory.limit** | Configured memory limit, in bytes, for the indexing requests. | By | Gauge(Int) | <ul> </ul> |
 | **elasticsearch.indexing_pressure.memory.total.primary_rejections** | Cumulative number of indexing requests rejected in the primary stage. | 1 | Sum(Int) | <ul> </ul> |
 | **elasticsearch.indexing_pressure.memory.total.replica_rejections** | Number of indexing requests rejected in the replica stage. | 1 | Sum(Int) | <ul> </ul> |
@@ -118,6 +126,7 @@ metrics:
 | memory_state (state) | State of the memory | free, used |
 | operation (operation) | The type of operation. | index, delete, get, query, fetch, scroll, suggest, merge, refresh, flush, warmer |
 | query_cache_count_type (type) | Type of query cache count | hit, miss |
+| segments_memory_object_type (object) | Type of object in segment | term, doc_value, index_writer, fixed_bit_set |
 | shard_state (state) | The state of the shard. | active, relocating, initializing, unassigned |
 | task_state (state) | The state of the task. | rejected, completed |
 | thread_pool_name | The name of the thread pool. |  |

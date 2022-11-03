@@ -39,7 +39,7 @@ const (
 
 // SNMPData used for processFunc and is a simpler version of gosnmp.SnmpPDU
 type SNMPData struct {
-	parentOID string // optional
+	columnOID string // optional
 	oid       string
 	value     interface{}
 	valueType oidDataType
@@ -296,7 +296,7 @@ func (c *snmpClient) GetIndexedData(oids []string, scraperErrors *scrapererror.S
 			// Convert data into the more simplified data type
 			clientSNMPData := c.convertSnmpPDUToSnmpData(snmpPDU)
 			// Keep track of which column OID this data came from as well
-			clientSNMPData.parentOID = oid
+			clientSNMPData.columnOID = oid
 			// If the value type is not supported, then ignore
 			if clientSNMPData.valueType == notSupportedVal {
 				scraperErrors.AddPartial(1, fmt.Errorf("problem with getting indexed data: data for OID '%s' not a supported type", snmpPDU.Name))

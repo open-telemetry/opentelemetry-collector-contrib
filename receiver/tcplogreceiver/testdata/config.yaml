@@ -1,4 +1,4 @@
 tcplog:
-  listen_address: "0.0.0.0:29018"
+  listen_address: "127.0.0.1:29018"
   converter:
     worker_count: 1

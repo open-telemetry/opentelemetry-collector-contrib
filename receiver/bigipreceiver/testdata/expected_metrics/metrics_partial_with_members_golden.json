@@ -78,7 +78,7 @@
                      "description": "Current number of connections to the virtual server.",
                      "name": "bigip.virtual_server.connection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -93,7 +93,7 @@
                      "description": "Amount of data transmitted to and from the virtual server.",
                      "name": "bigip.virtual_server.data.transmitted",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -165,7 +165,7 @@
                      "description": "Number of packets transmitted to and from the virtual server.",
                      "name": "bigip.virtual_server.packet.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -202,7 +202,7 @@
                      "description": "Number of requests to the virtual server.",
                      "name": "bigip.virtual_server.request.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -300,7 +300,7 @@
                      "description": "Current number of connections to the virtual server.",
                      "name": "bigip.virtual_server.connection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -315,7 +315,7 @@
                      "description": "Amount of data transmitted to and from the virtual server.",
                      "name": "bigip.virtual_server.data.transmitted",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -387,7 +387,7 @@
                      "description": "Number of packets transmitted to and from the virtual server.",
                      "name": "bigip.virtual_server.packet.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -424,7 +424,7 @@
                      "description": "Number of requests to the virtual server.",
                      "name": "bigip.virtual_server.request.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -522,7 +522,7 @@
                      "description": "Current number of connections to the virtual server.",
                      "name": "bigip.virtual_server.connection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -537,7 +537,7 @@
                      "description": "Amount of data transmitted to and from the virtual server.",
                      "name": "bigip.virtual_server.data.transmitted",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -609,7 +609,7 @@
                      "description": "Number of packets transmitted to and from the virtual server.",
                      "name": "bigip.virtual_server.packet.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -646,7 +646,7 @@
                      "description": "Number of requests to the virtual server.",
                      "name": "bigip.virtual_server.request.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -744,7 +744,7 @@
                      "description": "Current number of connections to the virtual server.",
                      "name": "bigip.virtual_server.connection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -759,7 +759,7 @@
                      "description": "Amount of data transmitted to and from the virtual server.",
                      "name": "bigip.virtual_server.data.transmitted",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -831,7 +831,7 @@
                      "description": "Number of packets transmitted to and from the virtual server.",
                      "name": "bigip.virtual_server.packet.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -868,7 +868,7 @@
                      "description": "Number of requests to the virtual server.",
                      "name": "bigip.virtual_server.request.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -966,7 +966,7 @@
                      "description": "Current number of connections to the pool member.",
                      "name": "bigip.pool_member.connection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -981,7 +981,7 @@
                      "description": "Amount of data transmitted to and from the pool member.",
                      "name": "bigip.pool_member.data.transmitted",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1053,7 +1053,7 @@
                      "description": "Number of packets transmitted to and from the pool member.",
                      "name": "bigip.pool_member.packet.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1090,7 +1090,7 @@
                      "description": "Number of requests to the pool member.",
                      "name": "bigip.pool_member.request.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1106,7 +1106,7 @@
                      "description": "Current number of sessions for the pool member.",
                      "name": "bigip.pool_member.session.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1203,7 +1203,7 @@
                      "description": "Current number of connections to the pool member.",
                      "name": "bigip.pool_member.connection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1218,7 +1218,7 @@
                      "description": "Amount of data transmitted to and from the pool member.",
                      "name": "bigip.pool_member.data.transmitted",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1290,7 +1290,7 @@
                      "description": "Number of packets transmitted to and from the pool member.",
                      "name": "bigip.pool_member.packet.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1327,7 +1327,7 @@
                      "description": "Number of requests to the pool member.",
                      "name": "bigip.pool_member.request.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1343,7 +1343,7 @@
                      "description": "Current number of sessions for the pool member.",
                      "name": "bigip.pool_member.session.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1440,7 +1440,7 @@
                      "description": "Current number of connections to the pool member.",
                      "name": "bigip.pool_member.connection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1455,7 +1455,7 @@
                      "description": "Amount of data transmitted to and from the pool member.",
                      "name": "bigip.pool_member.data.transmitted",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1527,7 +1527,7 @@
                      "description": "Number of packets transmitted to and from the pool member.",
                      "name": "bigip.pool_member.packet.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1564,7 +1564,7 @@
                      "description": "Number of requests to the pool member.",
                      "name": "bigip.pool_member.request.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1580,7 +1580,7 @@
                      "description": "Current number of sessions for the pool member.",
                      "name": "bigip.pool_member.session.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1677,7 +1677,7 @@
                      "description": "Current number of connections to the pool member.",
                      "name": "bigip.pool_member.connection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1692,7 +1692,7 @@
                      "description": "Amount of data transmitted to and from the pool member.",
                      "name": "bigip.pool_member.data.transmitted",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1764,7 +1764,7 @@
                      "description": "Number of packets transmitted to and from the pool member.",
                      "name": "bigip.pool_member.packet.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1801,7 +1801,7 @@
                      "description": "Number of requests to the pool member.",
                      "name": "bigip.pool_member.request.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1817,7 +1817,7 @@
                      "description": "Current number of sessions for the pool member.",
                      "name": "bigip.pool_member.session.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1914,7 +1914,7 @@
                      "description": "Current number of connections to the pool member.",
                      "name": "bigip.pool_member.connection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1929,7 +1929,7 @@
                      "description": "Amount of data transmitted to and from the pool member.",
                      "name": "bigip.pool_member.data.transmitted",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -2001,7 +2001,7 @@
                      "description": "Number of packets transmitted to and from the pool member.",
                      "name": "bigip.pool_member.packet.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -2038,7 +2038,7 @@
                      "description": "Number of requests to the pool member.",
                      "name": "bigip.pool_member.request.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -2054,7 +2054,7 @@
                      "description": "Current number of sessions for the pool member.",
                      "name": "bigip.pool_member.session.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",

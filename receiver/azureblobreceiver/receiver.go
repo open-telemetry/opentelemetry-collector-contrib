@@ -108,8 +108,8 @@ func newReceiver(config Config, set component.ReceiverCreateSettings, blobEventH
 	blobReceiver := &blobReceiver{
 		blobEventHandler:  blobEventHandler,
 		logger:            set.Logger,
-		logsUnmarshaler:   plog.NewJSONUnmarshaler(),
-		tracesUnmarshaler: ptrace.NewJSONUnmarshaler(),
+		logsUnmarshaler:   &plog.JSONUnmarshaler{},
+		tracesUnmarshaler: &ptrace.JSONUnmarshaler{},
 		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             config.ID(),
 			Transport:              "event",

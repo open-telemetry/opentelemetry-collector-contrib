@@ -28,8 +28,8 @@ type Processor struct {
 	statements []*ottl.Statement[ottllogs.TransformContext]
 }
 
-func NewProcessor(statements []string, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
-	ottlp := ottllogs.NewParser(functions, settings)
+func NewProcessor(statements []string, settings component.TelemetrySettings) (*Processor, error) {
+	ottlp := ottllogs.NewParser(Functions(), settings)
 	parsedStatements, err := ottlp.ParseStatements(statements)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,10 @@ func (p *Processor) ProcessLogs(_ context.Context, td plog.Logs) (plog.Logs, err
 			for k := 0; k < logs.Len(); k++ {
 				ctx := ottllogs.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
 				for _, statement := range p.statements {
-					statement.Execute(ctx)
+					_, _, err := statement.Execute(ctx)
+					if err != nil {
+						return td, err
+					}
 				}
 			}
 		}
