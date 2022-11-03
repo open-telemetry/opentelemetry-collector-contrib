@@ -26,8 +26,8 @@ classifiers = [
 ]
 dependencies = [
   "opentelemetry-api ~= 1.5",
-  "opentelemetry-instrumentation == 0.35b0",
-  "opentelemetry-semantic-conventions == 0.35b0",
+  "opentelemetry-instrumentation == 0.36b0.dev",
+  "opentelemetry-semantic-conventions == 0.36b0.dev",
 ]
 
 [project.optional-dependencies]
@@ -36,7 +36,7 @@ instruments = [
 ]
 test = [
   "opentelemetry-instrumentation-kafka-python[instruments]",
-  "opentelemetry-test-utils == 0.35b0",
+  "opentelemetry-test-utils == 0.36b0.dev",
   "wrapt >= 1.0.0, < 2.0.0",
 ]
 

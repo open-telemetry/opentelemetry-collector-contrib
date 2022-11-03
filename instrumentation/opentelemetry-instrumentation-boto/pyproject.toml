@@ -26,8 +26,8 @@ classifiers = [
 ]
 dependencies = [
   "opentelemetry-api ~= 1.12",
-  "opentelemetry-instrumentation == 0.35b0",
-  "opentelemetry-semantic-conventions == 0.35b0",
+  "opentelemetry-instrumentation == 0.36b0.dev",
+  "opentelemetry-semantic-conventions == 0.36b0.dev",
 ]
 
 [project.optional-dependencies]
@@ -38,7 +38,7 @@ test = [
   "opentelemetry-instrumentation-boto[instruments]",
   "markupsafe==2.0.1",
   "moto~=2.0",
-  "opentelemetry-test-utils == 0.35b0",
+  "opentelemetry-test-utils == 0.36b0.dev",
 ]
 
 [project.entry-points.opentelemetry_instrumentor]

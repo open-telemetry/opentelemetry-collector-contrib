@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## Version 1.14.0/0.35b0 (2022-11-03)
+
 ### Deprecated
 
 - `opentelemetry-distro` Deprecate `otlp_proto_grpc` and `otlp_proto_http` in favor of using
