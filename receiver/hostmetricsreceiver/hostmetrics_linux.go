@@ -23,7 +23,7 @@ import (
 )
 
 func validateRootPath(rootPath string) error {
-	if rootPath == "" {
+	if rootPath == "" || rootPath == "/" {
 		return nil
 	}
 

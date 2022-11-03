@@ -35,6 +35,7 @@ func TestConsistentRootPaths(t *testing.T) {
 	t.Setenv("HOST_PROC", "testdata/proc")
 	assert.Nil(t, validateRootPath("testdata"))
 	assert.Nil(t, validateRootPath(""))
+	assert.Nil(t, validateRootPath("/"))
 }
 
 func TestInconsistentRootPaths(t *testing.T) {
