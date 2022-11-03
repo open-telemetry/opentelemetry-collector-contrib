@@ -377,9 +377,15 @@ func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name
 	r.mb.RecordElasticsearchIndexSegmentsCountDataPoint(
 		now, stats.Total.SegmentsStats.Count, metadata.AttributeIndexAggregationTypeTotal,
 	)
+	r.mb.RecordElasticsearchIndexSegmentsCountDataPoint(
+		now, stats.Primaries.SegmentsStats.Count, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
 
 	r.mb.RecordElasticsearchIndexSegmentsSizeDataPoint(
 		now, stats.Total.SegmentsStats.MemoryInBy, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexSegmentsSizeDataPoint(
+		now, stats.Primaries.SegmentsStats.MemoryInBy, metadata.AttributeIndexAggregationTypePrimaryShards,
 	)
 
 	r.mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(
@@ -404,6 +410,30 @@ func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name
 		now,
 		stats.Total.SegmentsStats.TermsMemoryInBy,
 		metadata.AttributeIndexAggregationTypeTotal,
+		metadata.AttributeSegmentsMemoryObjectTypeTerm,
+	)
+	r.mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(
+		now,
+		stats.Primaries.SegmentsStats.DocumentValuesMemoryInBy,
+		metadata.AttributeIndexAggregationTypePrimaryShards,
+		metadata.AttributeSegmentsMemoryObjectTypeDocValue,
+	)
+	r.mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(
+		now,
+		stats.Primaries.SegmentsStats.FixedBitSetMemoryInBy,
+		metadata.AttributeIndexAggregationTypePrimaryShards,
+		metadata.AttributeSegmentsMemoryObjectTypeFixedBitSet,
+	)
+	r.mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(
+		now,
+		stats.Primaries.SegmentsStats.IndexWriterMemoryInBy,
+		metadata.AttributeIndexAggregationTypePrimaryShards,
+		metadata.AttributeSegmentsMemoryObjectTypeIndexWriter,
+	)
+	r.mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(
+		now,
+		stats.Primaries.SegmentsStats.TermsMemoryInBy,
+		metadata.AttributeIndexAggregationTypePrimaryShards,
 		metadata.AttributeSegmentsMemoryObjectTypeTerm,
 	)
 
