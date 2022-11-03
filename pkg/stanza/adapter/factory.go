@@ -84,7 +84,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsRec
 			opts = append(opts, WithWorkerCount(baseCfg.Converter.WorkerCount))
 		}
 		converter := NewConverter(opts...)
-		obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv := obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             cfg.ID(),
 			ReceiverCreateSettings: params,
 		})

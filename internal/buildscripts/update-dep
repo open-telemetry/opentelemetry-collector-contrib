@@ -12,12 +12,14 @@ modules=(
   "go.opentelemetry.io/collector/exporter/loggingexporter"
   "go.opentelemetry.io/collector/exporter/otlpexporter"
   "go.opentelemetry.io/collector/exporter/otlphttpexporter"
+  "go.opentelemetry.io/collector/extension/ballastextension"
+  "go.opentelemetry.io/collector/extension/zpagesextension"
+  "go.opentelemetry.io/collector/processor/batchprocessor"
   "go.opentelemetry.io/collector/semconv"
   "go.opentelemetry.io/collector/pdata"
 )
 
-# If MODULE is "go.opentelemetry.io/collector" need to update "go.opentelemetry.io/collector/semconv"
-# and "go.opentelemetry.io/collector/pdata" as well.
+# If MODULE is "go.opentelemetry.io/collector" need to update additional $modules as well
 if [ "$MODULE" == "go.opentelemetry.io/collector" ]; then
   for mod in ${modules[@]}; do
     if grep -q "$mod " go.mod; then
