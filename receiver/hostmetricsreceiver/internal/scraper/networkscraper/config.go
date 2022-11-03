@@ -23,7 +23,7 @@ import (
 // Config relating to Network Metric Scraper.
 type Config struct {
 	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
-	internal.ParentConfigSetter
+	internal.ScraperConfig
 	// Include specifies a filter on the network interfaces that should be included from the generated metrics.
 	Include MatchConfig `mapstructure:"include"`
 	// Exclude specifies a filter on the network interfaces that should be excluded from the generated metrics.

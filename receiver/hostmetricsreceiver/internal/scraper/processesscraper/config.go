@@ -23,5 +23,5 @@ import (
 type Config struct {
 	// Metrics allows customizing scraped metrics representation.
 	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
-	internal.ParentConfigSetter
+	internal.ScraperConfig
 }

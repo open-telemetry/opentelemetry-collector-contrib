@@ -22,5 +22,5 @@ import (
 // Config relating to Memory Metric Scraper.
 type Config struct {
 	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
-	internal.ParentConfigSetter
+	internal.ScraperConfig
 }

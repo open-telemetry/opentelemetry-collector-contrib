@@ -36,10 +36,10 @@ type Config interface {
 	SetRootPath(rootPath string)
 }
 
-type ParentConfigSetter struct {
+type ScraperConfig struct {
 	RootPath string `mapstructure:"-"`
 }
 
-func (p *ParentConfigSetter) SetRootPath(rootPath string) {
+func (p *ScraperConfig) SetRootPath(rootPath string) {
 	p.RootPath = rootPath
 }

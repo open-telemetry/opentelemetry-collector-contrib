@@ -24,7 +24,7 @@ import (
 type Config struct {
 	// Metrics allows to customize scraped metrics representation.
 	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
-	internal.ParentConfigSetter
+	internal.ScraperConfig
 
 	// Include specifies a filter on the devices that should be included from the generated metrics.
 	// Exclude specifies a filter on the devices that should be excluded from the generated metrics.

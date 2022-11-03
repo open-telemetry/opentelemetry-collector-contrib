@@ -25,5 +25,5 @@ type Config struct {
 	CPUAverage bool `mapstructure:"cpu_average"`
 	// Metrics allows to customize scraped metrics representation.
 	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
-	internal.ParentConfigSetter
+	internal.ScraperConfig
 }
