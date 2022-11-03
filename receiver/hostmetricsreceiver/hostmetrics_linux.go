@@ -40,10 +40,8 @@ func validateRootPath(rootPath string) error {
 		"HOST_RUN",
 		"HOST_DEV",
 	} {
-		// If root_path is set, HOST_PROC must also be set.
-		// Other env vars needn't be set, but we check for consistency if they are set.
 		envVarVal := os.Getenv(envVarKey)
-		if envVarVal == "" && envVarKey != "HOST_PROC" {
+		if envVarVal == "" {
 			continue
 		}
 		if !strings.HasPrefix(envVarVal, rootPath) {
