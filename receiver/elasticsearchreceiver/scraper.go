@@ -22,6 +22,7 @@ import (
 
 	"github.com/hashicorp/go-version"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -41,6 +42,23 @@ var (
 	}()
 )
 
+const (
+	readmeURL                             = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/elasticsearchreceiver/README.md"
+	EmitClusterHealthDetailedShardMetrics = "receiver.elasticsearch.emitClusterHealthDetailedShardMetrics"
+)
+
+var (
+	emitClusterHealthDetailedShardMetrics = featuregate.Gate{
+		ID:          EmitClusterHealthDetailedShardMetrics,
+		Enabled:     false,
+		Description: "When enabled, the elasticsearch.cluster.shards metric will be emitted with two more datapoints.",
+	}
+)
+
+func init() {
+	featuregate.GetRegistry().MustRegister(emitClusterHealthDetailedShardMetrics)
+}
+
 var errUnknownClusterStatus = errors.New("unknown cluster status")
 
 type elasticsearchScraper struct {
@@ -50,17 +68,29 @@ type elasticsearchScraper struct {
 	mb          *metadata.MetricsBuilder
 	version     *version.Version
 	clusterName string
+
+	// Feature gates
+	emitClusterHealthDetailedShardMetrics bool
 }
 
 func newElasticSearchScraper(
 	settings component.ReceiverCreateSettings,
 	cfg *Config,
 ) *elasticsearchScraper {
-	return &elasticsearchScraper{
-		settings: settings.TelemetrySettings,
-		cfg:      cfg,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+	e := &elasticsearchScraper{
+		settings:                              settings.TelemetrySettings,
+		cfg:                                   cfg,
+		mb:                                    metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+		emitClusterHealthDetailedShardMetrics: featuregate.GetRegistry().IsEnabled(EmitClusterHealthDetailedShardMetrics),
 	}
+
+	if !e.emitClusterHealthDetailedShardMetrics {
+		settings.Logger.Warn(
+			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", EmitClusterHealthDetailedShardMetrics, readmeURL),
+		)
+	}
+
+	return e
 }
 
 func (r *elasticsearchScraper) start(_ context.Context, host component.Host) (err error) {
@@ -306,11 +336,14 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pco
 	r.mb.RecordElasticsearchClusterDataNodesDataPoint(now, clusterHealth.DataNodeCount)
 
 	r.mb.RecordElasticsearchClusterShardsDataPoint(now, clusterHealth.ActiveShards, metadata.AttributeShardStateActive)
-	r.mb.RecordElasticsearchClusterShardsDataPoint(now, clusterHealth.ActivePrimaryShards, metadata.AttributeShardStateActivePrimary)
 	r.mb.RecordElasticsearchClusterShardsDataPoint(now, clusterHealth.InitializingShards, metadata.AttributeShardStateInitializing)
 	r.mb.RecordElasticsearchClusterShardsDataPoint(now, clusterHealth.RelocatingShards, metadata.AttributeShardStateRelocating)
 	r.mb.RecordElasticsearchClusterShardsDataPoint(now, clusterHealth.UnassignedShards, metadata.AttributeShardStateUnassigned)
-	r.mb.RecordElasticsearchClusterShardsDataPoint(now, clusterHealth.DelayedUnassignedShards, metadata.AttributeShardStateUnassignedDelayed)
+
+	if r.emitClusterHealthDetailedShardMetrics {
+		r.mb.RecordElasticsearchClusterShardsDataPoint(now, clusterHealth.ActivePrimaryShards, metadata.AttributeShardStateActivePrimary)
+		r.mb.RecordElasticsearchClusterShardsDataPoint(now, clusterHealth.DelayedUnassignedShards, metadata.AttributeShardStateUnassignedDelayed)
+	}
 
 	r.mb.RecordElasticsearchClusterPendingTasksDataPoint(now, clusterHealth.PendingTasksCount)
 	r.mb.RecordElasticsearchClusterInFlightFetchDataPoint(now, clusterHealth.InFlightFetchCount)
