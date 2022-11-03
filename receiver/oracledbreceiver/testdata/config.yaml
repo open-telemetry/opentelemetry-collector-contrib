@@ -1,0 +1,29 @@
+receivers:
+  oracledb:
+    # driver name: oracle
+    # username: otel
+    # password: password
+    # host: localhost
+    # container exposed port: 51521
+    # Oracle DB service name: XE
+    # Refer to Oracle Go Driver go_ora documentation for full connection string options
+    datasource: "oracle://otel:password@localhost:51521/XE"
+processors:
+exporters:
+  file:
+    path: /tmp/out/file.txt
+  signalfx:
+    realm: us0
+    access_token: <token>
+service:
+  telemetry:
+    logs:
+      level: "debug"
+  pipelines:
+    metrics:
+      receivers:
+        - oracledb
+      processors:
+      exporters:
+        #- file
+        - signalfx
