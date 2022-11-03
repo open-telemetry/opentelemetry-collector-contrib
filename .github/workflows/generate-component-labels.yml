@@ -1,7 +1,7 @@
 name: 'Generate component labels'
 on:
-  schedule:
-    - cron: "55 2 * * 1-5" # Run at a random time on weekdays
+  push:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Generate component labels
-        run: ./.github/workflows/scripts/generate-component-labels.sh
+        run: git diff --quiet HEAD~ HEAD -- .github/CODEOWNERS || ./.github/workflows/scripts/generate-component-labels.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
