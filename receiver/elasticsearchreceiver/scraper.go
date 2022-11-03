@@ -160,6 +160,12 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchNodeOperationsTimeDataPoint(now, info.Indices.FlushOperations.TotalTimeInMs, metadata.AttributeOperationFlush)
 		r.mb.RecordElasticsearchNodeOperationsTimeDataPoint(now, info.Indices.WarmerOperations.TotalTimeInMs, metadata.AttributeOperationWarmer)
 
+		r.mb.RecordElasticsearchNodeOperationsGetCompletedDataPoint(now, info.Indices.GetOperation.Exists, metadata.AttributeGetResultHit)
+		r.mb.RecordElasticsearchNodeOperationsGetCompletedDataPoint(now, info.Indices.GetOperation.Missing, metadata.AttributeGetResultMiss)
+
+		r.mb.RecordElasticsearchNodeOperationsGetTimeDataPoint(now, info.Indices.GetOperation.ExistsTimeInMs, metadata.AttributeGetResultHit)
+		r.mb.RecordElasticsearchNodeOperationsGetTimeDataPoint(now, info.Indices.GetOperation.MissingTimeInMs, metadata.AttributeGetResultMiss)
+
 		r.mb.RecordElasticsearchNodeShardsSizeDataPoint(now, info.Indices.StoreInfo.SizeInBy)
 
 		// Elasticsearch version 7.13+ is required to collect `elasticsearch.node.shards.data_set.size`.

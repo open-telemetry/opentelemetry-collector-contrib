@@ -82,6 +82,8 @@ type MetricsSettings struct {
 	ElasticsearchNodeIngestOperationsFailed                   MetricSettings `mapstructure:"elasticsearch.node.ingest.operations.failed"`
 	ElasticsearchNodeOpenFiles                                MetricSettings `mapstructure:"elasticsearch.node.open_files"`
 	ElasticsearchNodeOperationsCompleted                      MetricSettings `mapstructure:"elasticsearch.node.operations.completed"`
+	ElasticsearchNodeOperationsGetCompleted                   MetricSettings `mapstructure:"elasticsearch.node.operations.get.completed"`
+	ElasticsearchNodeOperationsGetTime                        MetricSettings `mapstructure:"elasticsearch.node.operations.get.time"`
 	ElasticsearchNodeOperationsTime                           MetricSettings `mapstructure:"elasticsearch.node.operations.time"`
 	ElasticsearchNodePipelineIngestDocumentsCurrent           MetricSettings `mapstructure:"elasticsearch.node.pipeline.ingest.documents.current"`
 	ElasticsearchNodePipelineIngestDocumentsPreprocessed      MetricSettings `mapstructure:"elasticsearch.node.pipeline.ingest.documents.preprocessed"`
@@ -252,6 +254,12 @@ func DefaultMetricsSettings() MetricsSettings {
 		},
 		ElasticsearchNodeOperationsCompleted: MetricSettings{
 			Enabled: true,
+		},
+		ElasticsearchNodeOperationsGetCompleted: MetricSettings{
+			Enabled: false,
+		},
+		ElasticsearchNodeOperationsGetTime: MetricSettings{
+			Enabled: false,
 		},
 		ElasticsearchNodeOperationsTime: MetricSettings{
 			Enabled: true,
@@ -548,6 +556,32 @@ func (av AttributeFsDirection) String() string {
 var MapAttributeFsDirection = map[string]AttributeFsDirection{
 	"read":  AttributeFsDirectionRead,
 	"write": AttributeFsDirectionWrite,
+}
+
+// AttributeGetResult specifies the a value get_result attribute.
+type AttributeGetResult int
+
+const (
+	_ AttributeGetResult = iota
+	AttributeGetResultHit
+	AttributeGetResultMiss
+)
+
+// String returns the string representation of the AttributeGetResult.
+func (av AttributeGetResult) String() string {
+	switch av {
+	case AttributeGetResultHit:
+		return "hit"
+	case AttributeGetResultMiss:
+		return "miss"
+	}
+	return ""
+}
+
+// MapAttributeGetResult is a helper map of string to AttributeGetResult attribute value.
+var MapAttributeGetResult = map[string]AttributeGetResult{
+	"hit":  AttributeGetResultHit,
+	"miss": AttributeGetResultMiss,
 }
 
 // AttributeHealthStatus specifies the a value health_status attribute.
@@ -3243,6 +3277,112 @@ func newMetricElasticsearchNodeOperationsCompleted(settings MetricSettings) metr
 	return m
 }
 
+type metricElasticsearchNodeOperationsGetCompleted struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.operations.get.completed metric with initial data.
+func (m *metricElasticsearchNodeOperationsGetCompleted) init() {
+	m.data.SetName("elasticsearch.node.operations.get.completed")
+	m.data.SetDescription("The number of hits and misses resulting from GET operations.")
+	m.data.SetUnit("{operations}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchNodeOperationsGetCompleted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, getResultAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("result", getResultAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeOperationsGetCompleted) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeOperationsGetCompleted) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeOperationsGetCompleted(settings MetricSettings) metricElasticsearchNodeOperationsGetCompleted {
+	m := metricElasticsearchNodeOperationsGetCompleted{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchNodeOperationsGetTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.operations.get.time metric with initial data.
+func (m *metricElasticsearchNodeOperationsGetTime) init() {
+	m.data.SetName("elasticsearch.node.operations.get.time")
+	m.data.SetDescription("The time spent on hits and misses resulting from GET operations.")
+	m.data.SetUnit("ms")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchNodeOperationsGetTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, getResultAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("result", getResultAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeOperationsGetTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeOperationsGetTime) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeOperationsGetTime(settings MetricSettings) metricElasticsearchNodeOperationsGetTime {
+	m := metricElasticsearchNodeOperationsGetTime{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricElasticsearchNodeOperationsTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -4926,6 +5066,8 @@ type MetricsBuilder struct {
 	metricElasticsearchNodeIngestOperationsFailed                   metricElasticsearchNodeIngestOperationsFailed
 	metricElasticsearchNodeOpenFiles                                metricElasticsearchNodeOpenFiles
 	metricElasticsearchNodeOperationsCompleted                      metricElasticsearchNodeOperationsCompleted
+	metricElasticsearchNodeOperationsGetCompleted                   metricElasticsearchNodeOperationsGetCompleted
+	metricElasticsearchNodeOperationsGetTime                        metricElasticsearchNodeOperationsGetTime
 	metricElasticsearchNodeOperationsTime                           metricElasticsearchNodeOperationsTime
 	metricElasticsearchNodePipelineIngestDocumentsCurrent           metricElasticsearchNodePipelineIngestDocumentsCurrent
 	metricElasticsearchNodePipelineIngestDocumentsPreprocessed      metricElasticsearchNodePipelineIngestDocumentsPreprocessed
@@ -5020,6 +5162,8 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricElasticsearchNodeIngestOperationsFailed:                   newMetricElasticsearchNodeIngestOperationsFailed(settings.ElasticsearchNodeIngestOperationsFailed),
 		metricElasticsearchNodeOpenFiles:                                newMetricElasticsearchNodeOpenFiles(settings.ElasticsearchNodeOpenFiles),
 		metricElasticsearchNodeOperationsCompleted:                      newMetricElasticsearchNodeOperationsCompleted(settings.ElasticsearchNodeOperationsCompleted),
+		metricElasticsearchNodeOperationsGetCompleted:                   newMetricElasticsearchNodeOperationsGetCompleted(settings.ElasticsearchNodeOperationsGetCompleted),
+		metricElasticsearchNodeOperationsGetTime:                        newMetricElasticsearchNodeOperationsGetTime(settings.ElasticsearchNodeOperationsGetTime),
 		metricElasticsearchNodeOperationsTime:                           newMetricElasticsearchNodeOperationsTime(settings.ElasticsearchNodeOperationsTime),
 		metricElasticsearchNodePipelineIngestDocumentsCurrent:           newMetricElasticsearchNodePipelineIngestDocumentsCurrent(settings.ElasticsearchNodePipelineIngestDocumentsCurrent),
 		metricElasticsearchNodePipelineIngestDocumentsPreprocessed:      newMetricElasticsearchNodePipelineIngestDocumentsPreprocessed(settings.ElasticsearchNodePipelineIngestDocumentsPreprocessed),
@@ -5170,6 +5314,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricElasticsearchNodeIngestOperationsFailed.emit(ils.Metrics())
 	mb.metricElasticsearchNodeOpenFiles.emit(ils.Metrics())
 	mb.metricElasticsearchNodeOperationsCompleted.emit(ils.Metrics())
+	mb.metricElasticsearchNodeOperationsGetCompleted.emit(ils.Metrics())
+	mb.metricElasticsearchNodeOperationsGetTime.emit(ils.Metrics())
 	mb.metricElasticsearchNodeOperationsTime.emit(ils.Metrics())
 	mb.metricElasticsearchNodePipelineIngestDocumentsCurrent.emit(ils.Metrics())
 	mb.metricElasticsearchNodePipelineIngestDocumentsPreprocessed.emit(ils.Metrics())
@@ -5444,6 +5590,16 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeOpenFilesDataPoint(ts pcommon.T
 // RecordElasticsearchNodeOperationsCompletedDataPoint adds a data point to elasticsearch.node.operations.completed metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsCompletedDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
 	mb.metricElasticsearchNodeOperationsCompleted.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
+}
+
+// RecordElasticsearchNodeOperationsGetCompletedDataPoint adds a data point to elasticsearch.node.operations.get.completed metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsGetCompletedDataPoint(ts pcommon.Timestamp, val int64, getResultAttributeValue AttributeGetResult) {
+	mb.metricElasticsearchNodeOperationsGetCompleted.recordDataPoint(mb.startTime, ts, val, getResultAttributeValue.String())
+}
+
+// RecordElasticsearchNodeOperationsGetTimeDataPoint adds a data point to elasticsearch.node.operations.get.time metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsGetTimeDataPoint(ts pcommon.Timestamp, val int64, getResultAttributeValue AttributeGetResult) {
+	mb.metricElasticsearchNodeOperationsGetTime.recordDataPoint(mb.startTime, ts, val, getResultAttributeValue.String())
 }
 
 // RecordElasticsearchNodeOperationsTimeDataPoint adds a data point to elasticsearch.node.operations.time metric.
