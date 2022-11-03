@@ -170,3 +170,44 @@ func maskResourceAttributeValue(metrics pmetric.Metrics, opt ignoreResourceAttri
 		}
 	}
 }
+
+// IgnoreSubsequentDataPoints is a CompareOption that ignores data points after the first
+func IgnoreSubsequentDataPoints(metricNames ...string) CompareOption {
+	return ignoreSubsequentDataPoints{
+		metricNames: metricNames,
+	}
+}
+
+type ignoreSubsequentDataPoints struct {
+	metricNames []string
+}
+
+func (opt ignoreSubsequentDataPoints) apply(expected, actual pmetric.Metrics) {
+	maskSubsequentDataPoints(expected, opt.metricNames...)
+	maskSubsequentDataPoints(actual, opt.metricNames...)
+}
+
+func maskSubsequentDataPoints(metrics pmetric.Metrics, metricNames ...string) {
+	metricNameSet := make(map[string]bool, len(metricNames))
+	for _, metricName := range metricNames {
+		metricNameSet[metricName] = true
+	}
+
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		sms := rms.At(i).ScopeMetrics()
+		for j := 0; j < sms.Len(); j++ {
+			ms := sms.At(j).Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				if len(metricNames) == 0 || metricNameSet[ms.At(k).Name()] {
+					dps := getDataPointSlice(ms.At(k))
+					n := 0
+					dps.RemoveIf(func(pmetric.NumberDataPoint) bool {
+						n++
+						return n > 1
+					})
+				}
+			}
+		}
+	}
+}
