@@ -34,12 +34,13 @@ import (
 
 	"github.com/kr/pretty"
 	"github.com/mitchellh/mapstructure"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 	"gopkg.in/zorkian/go-datadog-api.v2"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 const pathSeries = "/api/v1/series"
