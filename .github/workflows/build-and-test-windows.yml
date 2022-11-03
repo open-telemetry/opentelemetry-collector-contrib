@@ -42,6 +42,9 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.19
+      - name: Disable windows defender
+        run: |
+        Add-MpPreference -ExclusionPath "D:"
       - name: Cache Go
         id: go-mod-cache
         uses: actions/cache@v3
