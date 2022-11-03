@@ -15,6 +15,7 @@
 package spanmetricsprocessor
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"testing"
@@ -398,6 +399,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 			// Add a resource attribute to test "process" attributes like IP, host, region, cluster, etc.
 			{regionResourceAttrName, nil},
 		},
+		keyBuf:                new(bytes.Buffer),
 		metricKeyToDimensions: metricKeyToDimensions,
 	}
 }
@@ -649,12 +651,14 @@ func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExpo
 func TestBuildKeySameServiceOperationCharSequence(t *testing.T) {
 	span0 := ptrace.NewSpan()
 	span0.SetName("c")
-	k0 := buildKey("ab", span0, nil, pcommon.NewMap())
-
+	buf := &bytes.Buffer{}
+	buildKey(buf, "ab", span0, nil, pcommon.NewMap())
+	k0 := metricKey(buf.String())
+	buf.Reset()
 	span1 := ptrace.NewSpan()
 	span1.SetName("bc")
-	k1 := buildKey("a", span1, nil, pcommon.NewMap())
-
+	buildKey(buf, "a", span1, nil, pcommon.NewMap())
+	k1 := metricKey(buf.String())
 	assert.NotEqual(t, k0, k1)
 	assert.Equal(t, metricKey("ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k0)
 	assert.Equal(t, metricKey("a\u0000bc\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k1)
@@ -727,9 +731,9 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			span0 := ptrace.NewSpan()
 			span0.Attributes().FromRaw(tc.spanAttrMap)
 			span0.SetName("c")
-			k := buildKey("ab", span0, tc.optionalDims, resAttr)
-
-			assert.Equal(t, metricKey(tc.wantKey), k)
+			buf := &bytes.Buffer{}
+			buildKey(buf, "ab", span0, tc.optionalDims, resAttr)
+			assert.Equal(t, tc.wantKey, buf.String())
 		})
 	}
 }
