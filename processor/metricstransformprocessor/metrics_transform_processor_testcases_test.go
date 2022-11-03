@@ -1470,6 +1470,47 @@ var (
 			},
 		},
 		{
+			name: "metric_experimental_scale_value_histogram_with_exemplars",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: ScaleValue,
+								Scale:  100,
+							},
+						},
+					},
+				},
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric2"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: ScaleValue,
+								Scale:  .1,
+							},
+						},
+					},
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeHistogram, "metric1").
+					addHistogramDatapointWithMinMaxAndExemplars(1, 1, 1, 1, 1, 1, []float64{1}, []uint64{1, 1}, []float64{1}).build(),
+				metricBuilder(pmetric.MetricTypeHistogram, "metric2").
+					addHistogramDatapointWithMinMaxAndExemplars(2, 2, 2, 400, 100, 300, []float64{200}, []uint64{1, 2}, []float64{100, 300}).build(),
+			},
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeHistogram, "metric1").
+					addHistogramDatapointWithMinMaxAndExemplars(1, 1, 1, 100, 100, 100, []float64{100}, []uint64{1, 1}, []float64{100}).build(),
+				metricBuilder(pmetric.MetricTypeHistogram, "metric2").
+					addHistogramDatapointWithMinMaxAndExemplars(2, 2, 2, 40, 10, 30, []float64{20}, []uint64{1, 2}, []float64{10, 30}).build(),
+			},
+		},
+		{
 			name: "metric_experimental_scale_with_attr_filtering",
 			transforms: []internalTransform{
 				{
@@ -1498,6 +1539,19 @@ var (
 						},
 					},
 				},
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric3",
+						attrMatchers: map[string]StringMatcher{"label1": strictMatcher("value1")}},
+					Action: Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: ScaleValue,
+								Scale:  0.1,
+							},
+						},
+					},
+				},
 			},
 			in: []pmetric.Metric{
 				metricBuilder(pmetric.MetricTypeSum, "metric1", "label1").
@@ -1506,6 +1560,9 @@ var (
 				metricBuilder(pmetric.MetricTypeHistogram, "metric2", "label1").
 					addHistogramDatapoint(1, 1, 1, 1, []float64{1}, []uint64{1, 1}, "value1").
 					addHistogramDatapoint(1, 1, 2, 4, []float64{2}, []uint64{1, 2}, "value2").build(),
+				metricBuilder(pmetric.MetricTypeHistogram, "metric3", "label1").
+					addHistogramDatapointWithMinMaxAndExemplars(1, 1, 1, 1, 1, 1, []float64{1}, []uint64{1, 1}, []float64{1}, "value1").
+					addHistogramDatapointWithMinMaxAndExemplars(2, 2, 1, 1, 1, 1, []float64{1}, []uint64{1, 1}, []float64{1}, "value2").build(),
 			},
 			out: []pmetric.Metric{
 				metricBuilder(pmetric.MetricTypeSum, "metric1", "label1").
@@ -1514,6 +1571,9 @@ var (
 				metricBuilder(pmetric.MetricTypeHistogram, "metric2", "label1").
 					addHistogramDatapoint(1, 1, 1, 10, []float64{10}, []uint64{1, 1}, "value1").
 					addHistogramDatapoint(1, 1, 2, 4, []float64{2}, []uint64{1, 2}, "value2").build(),
+				metricBuilder(pmetric.MetricTypeHistogram, "metric3", "label1").
+					addHistogramDatapointWithMinMaxAndExemplars(1, 1, 1, 0.1, 0.1, 0.1, []float64{0.1}, []uint64{1, 1}, []float64{0.1}, "value1").
+					addHistogramDatapointWithMinMaxAndExemplars(2, 2, 1, 1, 1, 1, []float64{1}, []uint64{1, 1}, []float64{1}, "value2").build(),
 			},
 		},
 		// Add Label to a metric

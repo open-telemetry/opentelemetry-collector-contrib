@@ -56,9 +56,29 @@ func scaleHistogramOp(metric pmetric.Metric, op internalOperation, f internalFil
 		if !f.matchAttrs(dp.Attributes()) {
 			continue
 		}
-		dp.SetSum(dp.Sum() * op.configOperation.Scale)
+
+		if dp.HasSum() {
+			dp.SetSum(dp.Sum() * op.configOperation.Scale)
+		}
+		if dp.HasMin() {
+			dp.SetMin(dp.Min() * op.configOperation.Scale)
+		}
+		if dp.HasMax() {
+			dp.SetMax(dp.Max() * op.configOperation.Scale)
+		}
+
 		for bounds, bi := dp.ExplicitBounds(), 0; bi < bounds.Len(); bi++ {
 			bounds.SetAt(bi, bounds.At(bi)*op.configOperation.Scale)
+		}
+
+		for exemplars, ei := dp.Exemplars(), 0; ei < exemplars.Len(); ei++ {
+			exemplar := exemplars.At(ei)
+			switch exemplar.ValueType() {
+			case pmetric.ExemplarValueTypeInt:
+				exemplar.SetIntValue(int64(float64(exemplar.IntValue()) * op.configOperation.Scale))
+			case pmetric.ExemplarValueTypeDouble:
+				exemplar.SetDoubleValue(exemplar.DoubleValue() * op.configOperation.Scale)
+			}
 		}
 	}
 }
