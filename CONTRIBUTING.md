@@ -167,10 +167,13 @@ In order to facilitate proper label usage and to empower Code Owners, you are ab
 
 The following general labels are supported:
 
-| Label              | Label in Comment   |
-|--------------------|--------------------|
-| `good first issue` | `good-first-issue` |
-| `help wanted`      | `help-wanted`      |
+| Label                | Label in Comment     |
+|----------------------|----------------------|
+| `good first issue`   | `good-first-issue`   |
+| `help wanted`        | `help-wanted`        |
+| `needs discussion`   | `needs-discussion`   |
+| `needs triage`       | `needs-triage`       |
+| `waiting for author` | `waiting-for-author` |
 
 To delete a label, prepend the label with `-`. Note that you must make a new comment to modify labels; you cannot edit an existing comment.
 
