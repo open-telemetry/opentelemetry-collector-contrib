@@ -88,12 +88,12 @@ func newSkywalkingReceiver(
 		nextConsumer: nextConsumer,
 		id:           id,
 		settings:     set,
-		grpcObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		grpcObsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             id,
 			Transport:              grpcTransport,
 			ReceiverCreateSettings: set,
 		}),
-		httpObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		httpObsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             id,
 			Transport:              collectorHTTPTransport,
 			ReceiverCreateSettings: set,

@@ -49,7 +49,7 @@ func newReceiver(params component.ReceiverCreateSettings, config *Config, consum
 		setting:  params,
 		consumer: consumer,
 		objects:  config.Objects,
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             config.ID(),
 			Transport:              transport,
 			ReceiverCreateSettings: params,

@@ -51,7 +51,7 @@ func NormalizeLabel(label string) string {
 	// If label starts with a number, prepend with "key_"
 	if unicode.IsDigit(rune(label[0])) {
 		label = "key_" + label
-	} else if strings.HasPrefix(label, "_") && !strings.HasPrefix(label, "__") && !featuregate.GetRegistry().IsEnabled(dropSanitizationGate.ID) {
+	} else if strings.HasPrefix(label, "_") && !strings.HasPrefix(label, "__") && !featuregate.GetRegistry().IsEnabled(dropSanitizationGate.GetID()) {
 		label = "key" + label
 	}
 
