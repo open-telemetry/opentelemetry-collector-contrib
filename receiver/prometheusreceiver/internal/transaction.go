@@ -29,10 +29,13 @@ import (
 	"github.com/prometheus/prometheus/storage"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 const (
@@ -51,7 +54,8 @@ type transaction struct {
 	metricAdjuster MetricsAdjuster
 	obsrecv        *obsreport.Receiver
 	// Used as buffer to calculate series ref hash.
-	bufBytes []byte
+	bufBytes   []byte
+	normalizer *prometheustranslator.Normalizer
 }
 
 func newTransaction(
@@ -60,7 +64,8 @@ func newTransaction(
 	sink consumer.Metrics,
 	externalLabels labels.Labels,
 	settings component.ReceiverCreateSettings,
-	obsrecv *obsreport.Receiver) *transaction {
+	obsrecv *obsreport.Receiver,
+	registry *featuregate.Registry) *transaction {
 	return &transaction{
 		ctx:            ctx,
 		families:       make(map[string]*metricFamily),
@@ -71,6 +76,7 @@ func newTransaction(
 		logger:         settings.Logger,
 		obsrecv:        obsrecv,
 		bufBytes:       make([]byte, 0, 1024),
+		normalizer:     prometheustranslator.NewNormalizer(registry),
 	}
 }
 
@@ -198,7 +204,7 @@ func (t *transaction) getMetrics(resource pcommon.Resource) (pmetric.Metrics, er
 	metrics := rms.ScopeMetrics().AppendEmpty().Metrics()
 
 	for _, mf := range t.families {
-		mf.appendMetric(metrics)
+		mf.appendMetric(metrics, t.normalizer)
 	}
 
 	return md, nil

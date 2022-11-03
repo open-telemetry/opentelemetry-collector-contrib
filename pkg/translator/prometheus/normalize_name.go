@@ -192,6 +192,136 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 	return normalizedName
 }
 
+func normalizeSingleUnit(unit string, unitMapper func(unit string) string) string {
+	unit = strings.TrimSpace(unit)
+	if unit == "" || strings.ContainsAny(unit, "{}") {
+		return ""
+	}
+
+	return CleanUpString(unitMapper(unit))
+}
+
+func otlpUnitToProm(otlpUnit string) []string {
+	// Split unit at the '/' if any
+	unitTokens := strings.SplitN(otlpUnit, "/", 2)
+	if len(unitTokens) < 1 {
+		return nil
+	}
+
+	// Main unit
+	mainUnit := normalizeSingleUnit(unitTokens[0], unitMapGetOrDefault)
+	if len(unitTokens) == 1 {
+		if mainUnit == "" {
+			return nil
+		}
+
+		return []string{mainUnit}
+	}
+
+	secondaryUnit := normalizeSingleUnit(unitTokens[1], perUnitMapGetOrDefault)
+	if secondaryUnit != "" && mainUnit != "" {
+		return []string{mainUnit, "per", secondaryUnit}
+	}
+
+	// At this point, either mainUnit or secondaryUnit is empty, or both.
+	// Whichever is not empty gets returned, if none, return empty.
+	if mainUnit != "" {
+		return []string{mainUnit}
+	}
+
+	if secondaryUnit != "" {
+		return []string{"per", secondaryUnit}
+	}
+
+	return nil
+}
+
+type Normalizer struct {
+	registry *featuregate.Registry
+}
+
+func NewNormalizer(registry *featuregate.Registry) *Normalizer {
+	return &Normalizer{
+		registry: registry,
+	}
+}
+
+// TrimPromSuffixes trims type and unit prometheus suffixes from a metric name.
+// Following the [OpenTelemetry specs] for converting Prometheus Metric points to OTLP.
+//
+// [OpenTelemetry specs]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#metric-metadata
+func (n *Normalizer) TrimPromSuffixes(promName string, metricType pmetric.MetricType, unit string) string {
+	if !n.registry.IsEnabled(normalizeNameGateID) {
+		return promName
+	}
+
+	nameTokens := strings.Split(promName, "_")
+	if len(nameTokens) == 1 {
+		return promName
+	}
+
+	nameTokens = removeTypeSuffixes(nameTokens, metricType)
+	nameTokens = removeUnitSuffixes(nameTokens, unit)
+
+	return strings.Join(nameTokens, "_")
+}
+
+func removeTypeSuffixes(tokens []string, metricType pmetric.MetricType) []string {
+	switch metricType {
+	case pmetric.MetricTypeSum:
+		return removeSuffix(tokens, "total")
+	default:
+		return tokens
+	}
+}
+
+func removeUnitSuffixes(nameTokens []string, unit string) []string {
+	l := len(nameTokens)
+
+	if nameTokens[l-1] == unit {
+		// base case, unit is suffixed as is.
+		return nameTokens[:l-1]
+	}
+
+	if unit == "1" {
+		// This is a special case that is not mapped by unitMapGetOrDefault
+		// But we should trim that as well, see comment on `normalizeName()`
+		return removeSuffix(nameTokens, "ratio")
+	}
+
+	unitTokens := otlpUnitToProm(unit)
+
+	// if name is suffixed with unit, trim the unit tokens.
+	if lu := len(unitTokens); l > lu {
+		if lu == 0 {
+			return nameTokens
+		}
+
+		isUnitSuffixed := true
+		for i := range unitTokens {
+			if nameTokens[l-i-1] != unitTokens[lu-i-1] {
+				isUnitSuffixed = false
+				break
+			}
+		}
+
+		if isUnitSuffixed {
+			return nameTokens[:l-lu]
+		}
+	}
+
+	return nameTokens
+}
+
+func removeSuffix(tokens []string, suffix string) []string {
+	l := len(tokens)
+	if tokens[l-1] == suffix {
+		return tokens[:l-1]
+	}
+
+	return tokens
+}
+
 // Clean up specified string so it's Prometheus compliant
 func CleanUpString(s string) string {
 	return strings.Join(strings.FieldsFunc(s, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) }), "_")
