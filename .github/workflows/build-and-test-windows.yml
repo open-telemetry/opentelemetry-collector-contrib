@@ -42,9 +42,11 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.19
-      - name: Disable windows defender
+      - name: Use GNU tar
+        shell: cmd
         run: |
-          Add-MpPreference -ExclusionPath "D:\"
+          echo "Adding GNU tar to PATH"
+          echo C:\Program Files\Git\usr\bin>>"%GITHUB_PATH%"
       - name: Cache Go
         id: go-mod-cache
         uses: actions/cache@v3
