@@ -116,7 +116,7 @@ func New(cfg *Config, set component.ReceiverCreateSettings) (Poller, error) {
 		maxPollerCount: cfg.NumOfPollerToStart,
 		shutDown:       make(chan struct{}),
 		segChan:        make(chan RawSegment, segChanSize),
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             cfg.ReceiverID,
 			Transport:              cfg.Transport,
 			LongLivedCtx:           true,

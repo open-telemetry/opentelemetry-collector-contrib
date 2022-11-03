@@ -61,7 +61,7 @@ func newCloudFoundryReceiver(
 		settings:     settings.TelemetrySettings,
 		config:       config,
 		nextConsumer: nextConsumer,
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             config.ID(),
 			Transport:              transport,
 			ReceiverCreateSettings: settings,

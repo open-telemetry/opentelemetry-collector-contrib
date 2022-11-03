@@ -132,7 +132,7 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 		unmarshaler:  c.unmarshaler,
 		nextConsumer: c.nextConsumer,
 		ready:        make(chan bool),
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             c.id,
 			Transport:              transport,
 			ReceiverCreateSettings: c.settings,
@@ -219,7 +219,7 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 		unmarshaler:  c.unmarshaler,
 		nextConsumer: c.nextConsumer,
 		ready:        make(chan bool),
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             c.id,
 			Transport:              transport,
 			ReceiverCreateSettings: c.settings,
@@ -303,7 +303,7 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 		unmarshaler:  c.unmarshaler,
 		nextConsumer: c.nextConsumer,
 		ready:        make(chan bool),
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             c.id,
 			Transport:              transport,
 			ReceiverCreateSettings: c.settings,
