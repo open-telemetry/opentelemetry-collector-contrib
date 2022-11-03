@@ -6,7 +6,6 @@ Factory Functions
 - [Concat](#concat)
 - [Int](#int)
 - [IsMatch](#ismatch)
-- [Join](#join)
 - [SpanID](#spanid)
 - [Split](#split)
 - [TraceID](#traceid)
