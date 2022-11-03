@@ -16,9 +16,10 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"testing"
 )
 
 func mathParsePath(val *Path) (GetSetter[interface{}], error) {
