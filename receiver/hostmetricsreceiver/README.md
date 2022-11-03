@@ -156,24 +156,11 @@ the container. e.g. `docker run -v /:/hostfs ...`.
 You can also choose which parts of the host filesystem to mount, if you know 
 exactly what you'll need. e.g. `docker run -v /proc:/hostfs/proc`.
 
-#### 2. Set environment variables
+#### 2. Configure `root_path`
 
-Under the hood, the hostmetrics receiver uses a library called `gopsutil`. 
-`gopsutil` uses certain environment variables to allow the user to specify 
-where the host filesystem is. These are: 
-
-* `HOST_PROC`
-* `HOST_SYS`
-* `HOST_ETC`
-* `HOST_VAR`
-* `HOST_RUN`
-* `HOST_DEV`
-
-To align with the example from the previous step, you would set `HOST_PROC=/hostfs/proc`.
-
-#### 3. Configure `root_path`
-
-In addition to the environment variables you should also set the `root_path` config.
+Configure `root_path` so the hostmetrics receiver knows where the root filesystem is.
+Note: if running multiple instances of the host metrics receiver, they must all have
+the same `root_path`.
 
 Example:
 ```yaml
