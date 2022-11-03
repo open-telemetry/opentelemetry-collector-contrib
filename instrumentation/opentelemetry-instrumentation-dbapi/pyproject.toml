@@ -26,15 +26,15 @@ classifiers = [
 ]
 dependencies = [
   "opentelemetry-api ~= 1.12",
-  "opentelemetry-instrumentation == 0.35b0.dev",
-  "opentelemetry-semantic-conventions == 0.35b0.dev",
+  "opentelemetry-instrumentation == 0.35b0",
+  "opentelemetry-semantic-conventions == 0.35b0",
   "wrapt >= 1.0.0, < 2.0.0",
 ]
 
 [project.optional-dependencies]
 instruments = []
 test = [
-  "opentelemetry-test-utils == 0.35b0.dev",
+  "opentelemetry-test-utils == 0.35b0",
 ]
 
 [project.urls]

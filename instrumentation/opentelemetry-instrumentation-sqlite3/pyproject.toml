@@ -26,14 +26,14 @@ classifiers = [
 ]
 dependencies = [
   "opentelemetry-api ~= 1.12",
-  "opentelemetry-instrumentation == 0.35b0.dev",
-  "opentelemetry-instrumentation-dbapi == 0.35b0.dev",
+  "opentelemetry-instrumentation == 0.35b0",
+  "opentelemetry-instrumentation-dbapi == 0.35b0",
 ]
 
 [project.optional-dependencies]
 instruments = []
 test = [
-  "opentelemetry-test-utils == 0.35b0.dev",
+  "opentelemetry-test-utils == 0.35b0",
 ]
 
 [project.entry-points.opentelemetry_instrumentor]

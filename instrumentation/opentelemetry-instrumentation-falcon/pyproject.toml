@@ -26,10 +26,10 @@ classifiers = [
 ]
 dependencies = [
   "opentelemetry-api ~= 1.12",
-  "opentelemetry-instrumentation == 0.35b0.dev",
-  "opentelemetry-instrumentation-wsgi == 0.35b0.dev",
-  "opentelemetry-semantic-conventions == 0.35b0.dev",
-  "opentelemetry-util-http == 0.35b0.dev",
+  "opentelemetry-instrumentation == 0.35b0",
+  "opentelemetry-instrumentation-wsgi == 0.35b0",
+  "opentelemetry-semantic-conventions == 0.35b0",
+  "opentelemetry-util-http == 0.35b0",
   "packaging >= 20.0",
 ]
 
@@ -39,7 +39,7 @@ instruments = [
 ]
 test = [
   "opentelemetry-instrumentation-falcon[instruments]",
-  "opentelemetry-test-utils == 0.35b0.dev",
+  "opentelemetry-test-utils == 0.35b0",
   "parameterized == 0.7.4",
 ]
 

@@ -26,10 +26,10 @@ classifiers = [
 ]
 dependencies = [
   "opentelemetry-api ~= 1.12",
-  "opentelemetry-instrumentation == 0.35b0.dev",
-  "opentelemetry-instrumentation-asgi == 0.35b0.dev",
-  "opentelemetry-semantic-conventions == 0.35b0.dev",
-  "opentelemetry-util-http == 0.35b0.dev",
+  "opentelemetry-instrumentation == 0.35b0",
+  "opentelemetry-instrumentation-asgi == 0.35b0",
+  "opentelemetry-semantic-conventions == 0.35b0",
+  "opentelemetry-util-http == 0.35b0",
 ]
 
 [project.optional-dependencies]
@@ -38,7 +38,7 @@ instruments = [
 ]
 test = [
   "opentelemetry-instrumentation-fastapi[instruments]",
-  "opentelemetry-test-utils == 0.35b0.dev",
+  "opentelemetry-test-utils == 0.35b0",
   "requests ~= 2.23.0", # needed for testclient
 ]
 
