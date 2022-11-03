@@ -86,7 +86,7 @@ func TestClient_handle(t *testing.T) {
 		logger:   zap.NewNop(),
 		consumer: sink,
 		config:   config.(*Config),
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             config.ID(),
 			Transport:              "",
 			LongLivedCtx:           false,

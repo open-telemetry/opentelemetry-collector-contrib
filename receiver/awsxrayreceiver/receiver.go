@@ -82,7 +82,7 @@ func newReceiver(config *Config,
 		server:     srv,
 		settings:   set,
 		consumer:   consumer,
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             config.ID(),
 			Transport:              udppoller.Transport,
 			ReceiverCreateSettings: set,

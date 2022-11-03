@@ -67,7 +67,7 @@ func createNoopReceiver(workerCount int, nextConsumer consumer.Logs) (*receiver,
 		consumer:  nextConsumer,
 		logger:    zap.NewNop(),
 		converter: converter,
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             receiverID,
 			ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings(),
 		}),
