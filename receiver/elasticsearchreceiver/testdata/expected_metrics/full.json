@@ -1451,6 +1451,80 @@
                      "unit": "ms"
                   },
                   {
+                     "description": "The number of hits and misses resulting from GET operations.",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "512",
+                              "attributes": [
+                                 {
+                                    "key": "result",
+                                    "value": {
+                                       "stringValue": "hit"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811026803971000",
+                              "timeUnixNano": "1661811026805343000"
+                           },
+                           {
+                              "asInt": "512",
+                              "attributes": [
+                                 {
+                                    "key": "result",
+                                    "value": {
+                                       "stringValue": "miss"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811026803971000",
+                              "timeUnixNano": "1661811026805343000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "name": "elasticsearch.node.operations.get.completed",
+                     "unit": "{operations}"
+                  },
+                  {
+                     "description": "The time spent on hits and misses resulting from GET operations.",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "209",
+                              "attributes": [
+                                 {
+                                    "key": "result",
+                                    "value": {
+                                       "stringValue": "hit"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811026803971000",
+                              "timeUnixNano": "1661811026805343000"
+                           },
+                           {
+                              "asInt": "124",
+                              "attributes": [
+                                 {
+                                    "key": "result",
+                                    "value": {
+                                       "stringValue": "miss"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811026803971000",
+                              "timeUnixNano": "1661811026805343000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "name": "elasticsearch.node.operations.get.time",
+                     "unit": "ms"
+                  },
+                  {
                      "description": "Total number of documents currently being ingested by a pipeline.",
                      "name": "elasticsearch.node.pipeline.ingest.documents.current",
                      "sum": {
