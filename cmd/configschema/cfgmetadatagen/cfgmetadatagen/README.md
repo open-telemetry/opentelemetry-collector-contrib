@@ -1,44 +1,24 @@
 # Config Metadata YAML Generator (alpha)
 
-This CLI application creates config metadata YAML files for Collector components
-where each YAML file describes the configuration fields of its corresponding
-component.
+This CLI application creates a configuration metadata YAML file for each
+Collector component where each file describes the field names, types, default
+values, and inline documentation for the component's configuration.
 
 ## Operation
 
-There are two major modes of operation: one that creates YAML files in each
-Collector component directory in a Collector source tree, and another that
-creates YAML files and directories in a new directory.
+By default, this application creates a new `cfg-metadata` output directory
+(overridable via the `-o` flag), subdirectories for each component group
+(e.g. `receiver`, `exporter`, etc.), and config metadata YAML files within
+those directories for each component.
 
-### Create YAML files in a Collector source tree
+### Command line flags
 
-This mode of operation creates a `cfg-metadata.yaml` file per component,
-writing each one to its corresponding component directory in a locally
-checked-out source tree.
-
-```yaml
-cd cmd/configschema
-go run ./cfgmetadatagen
-```
-
-### Create YAML files and directories in a new directory
-
-This mode of operation, specified by `-o <dirname>`, creates YAML metadata
-files and directories in a new directory created at `dirname`.
-
-```yaml
-cd cmd/configschema/cfgmetadatagen
-go run . -s ../../.. -o cfg-metadata
-```
-
-### Command line arguments
-
-* `-o <directory>` create YAML files and directories in a new directory. If not specified, creates YAML files in a Collector source tree.
+* `-o <directory>` the name of the default parent directory to be created (defaults to `cfg-metadata`)
 * `-s <directory>` the path to the collector source root directory (defaults to `../..`)
 
 ## Example Output
 
-The following is an example `cfg-metadata.yaml` produced for the File Exporter. 
+The following is an example config metadata YAML file (for the File Exporter):
 
 ```yaml
 type: '*fileexporter.Config'

@@ -24,25 +24,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 )
 
-// CLI is the entry point for the yamlgen CLI, but without a dependencies on cli
-// flags, factories for the current distro, or a YAMLWriter concrete
-// implementation.
-func CLI(yw YAMLWriter, factories component.Factories, dr configschema.DirResolver) error {
+// CLI is the entry point for the cfgmetadatagen CLI. Component factories are
+// passed in so it can be used by other distros.
+func CLI(factories component.Factories, sourceDir string, outputDir string) error {
+	dr := configschema.NewDirResolver(sourceDir, configschema.DefaultModule)
+	writer := newMetadataFileWriter(outputDir)
 	configs := configschema.GetAllCfgInfos(factories)
 	for _, cfg := range configs {
-		err := writeComponentYAML(yw, cfg, dr)
+		err := writeComponentYAML(writer, cfg, dr)
 		if err != nil {
 			fmt.Printf("skipped writing config meta yaml: %v\n", err)
 		}
 	}
-	err := yw.close()
-	if err != nil {
-		return fmt.Errorf("error closing yaml writer: %w", err)
-	}
 	return nil
 }
 
-func writeComponentYAML(yw YAMLWriter, cfg configschema.CfgInfo, dr configschema.DirResolver) error {
+func writeComponentYAML(yw metadataWriter, cfg configschema.CfgInfo, dr configschema.DirResolver) error {
 	fields, err := configschema.ReadFields(reflect.ValueOf(cfg.CfgInstance), dr)
 	if err != nil {
 		return fmt.Errorf("error reading fields for component: %w", err)
