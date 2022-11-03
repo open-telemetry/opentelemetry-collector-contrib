@@ -144,7 +144,7 @@ service:
 
 ### Collecting host metrics from inside a container (Linux only)
 
-On Linux, the host metrics are collected from the `/proc` filesystem. 
+Host metrics are collected from the Linux system directories on the filesystem.
 You likely want to collect metrics about the host system and not the container.
 This is achievable by following these steps: 
 
