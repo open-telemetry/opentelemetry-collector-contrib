@@ -70,7 +70,16 @@ metrics:
 
   process.memory.physical_usage:
     enabled: true
-    description: The amount of physical memory in use
+    description: "Deprecated: use `process.memory.usage` metric instead. The amount of physical memory in use."
+    unit: By
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+
+  process.memory.usage:
+    enabled: false
+    description: The amount of physical memory in use.
     unit: By
     sum:
       value_type: int
@@ -79,6 +88,15 @@ metrics:
 
   process.memory.virtual_usage:
     enabled: true
+    description: "Deprecated: Use `process.memory.virtual` metric instead. Virtual memory size."
+    unit: By
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+
+  process.memory.virtual:
+    enabled: false
     description: Virtual memory size.
     unit: By
     sum:
