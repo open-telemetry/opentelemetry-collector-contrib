@@ -18,9 +18,13 @@ package hostmetricsreceiver
 
 import "fmt"
 
-func validateRootPath(rootPath string) error {
+func validateRootPath(rootPath string, _ environment) error {
 	if rootPath == "" {
 		return nil
 	}
 	return fmt.Errorf("root_path is supported on linux only")
+}
+
+func setGoPsutilEnvVars(_ string, _ environment) error {
+	return nil
 }

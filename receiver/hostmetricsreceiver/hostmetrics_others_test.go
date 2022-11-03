@@ -23,11 +23,9 @@ import (
 )
 
 func TestRootPathNotAllowedOnOS(t *testing.T) {
-	t.Parallel()
-	assert.NotNil(t, validateRootPath("testdata"))
+	assert.NotNil(t, validateRootPath("testdata", &testEnv{}))
 }
 
 func TestRootPathUnset(t *testing.T) {
-	t.Parallel()
-	assert.Nil(t, validateRootPath(""))
+	assert.Nil(t, validateRootPath("", &testEnv{}))
 }

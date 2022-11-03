@@ -17,6 +17,7 @@ package hostmetricsreceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -93,6 +94,10 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
+	if err = setGoPsutilEnvVars(oCfg.RootPath, &osEnv{}); err != nil {
+		return nil, err
+	}
+
 	return scraperhelper.NewScraperControllerReceiver(
 		&oCfg.ScraperControllerSettings,
 		set,
@@ -136,4 +141,21 @@ func createHostMetricsScraper(ctx context.Context, set component.ReceiverCreateS
 	ok = true
 	scraper, err = factory.CreateMetricsScraper(ctx, set, cfg)
 	return
+}
+
+type environment interface {
+	Lookup(k string) (string, bool)
+	Set(k, v string) error
+}
+
+type osEnv struct{}
+
+var _ environment = (*osEnv)(nil)
+
+func (e *osEnv) Set(k, v string) error {
+	return os.Setenv(k, v)
+}
+
+func (e *osEnv) Lookup(k string) (string, bool) {
+	return os.LookupEnv(k)
 }

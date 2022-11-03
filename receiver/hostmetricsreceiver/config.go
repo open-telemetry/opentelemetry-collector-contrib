@@ -47,7 +47,7 @@ func (cfg *Config) Validate() error {
 	if len(cfg.Scrapers) == 0 {
 		err = multierr.Append(err, errors.New("must specify at least one scraper when using hostmetrics receiver"))
 	}
-	err = multierr.Append(err, validateRootPath(cfg.RootPath))
+	err = multierr.Append(err, validateRootPath(cfg.RootPath, &osEnv{}))
 	return err
 }
 
