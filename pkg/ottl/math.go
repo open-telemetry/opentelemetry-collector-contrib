@@ -72,17 +72,17 @@ func attemptMathOperation[K any](lhs Getter[K], op mathOp, rhs Getter[K]) Getter
 			}
 			switch newX := x.(type) {
 			case int64:
-				intY, ok := y.(int64)
+				newY, ok := y.(int64)
 				if !ok {
 					return nil, fmt.Errorf("cannot convert %v to int64", y)
 				}
-				return performOp[int64](newX, intY, op), nil
+				return performOp[int64](newX, newY, op), nil
 			case float64:
-				floatY, ok := y.(float64)
+				newY, ok := y.(float64)
 				if !ok {
 					return nil, fmt.Errorf("cannot convert %v to float64", y)
 				}
-				return performOp[float64](newX, floatY, op), nil
+				return performOp[float64](newX, newY, op), nil
 			default:
 				return nil, fmt.Errorf("%v must be int64 or float64", x)
 			}
