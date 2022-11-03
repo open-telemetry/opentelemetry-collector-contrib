@@ -22,7 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 )
 
-func convertCamelCaseToSnakeCase(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottldatapoints.TransformContext], error) {
+func convertCamelCaseToSnakeCase() (ottl.ExprFunc[ottldatapoints.TransformContext], error) {
 	return func(ctx ottldatapoints.TransformContext) (interface{}, error) {
 		metric := ctx.GetMetric()
 
