@@ -2,7 +2,9 @@ name: 'Generate component labels'
 on:
   push:
     branches: [main]
-  workflow_dispatch:
+    paths:
+      - .github/CODEOWNERS
+      - ./.github/workflows/scripts/generate-component-labels.sh
 
 jobs:
   generate-component-labels:
@@ -11,7 +13,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Generate component labels
-        run: git diff --quiet HEAD~ HEAD -- .github/CODEOWNERS || ./.github/workflows/scripts/generate-component-labels.sh
+        run: ./.github/workflows/scripts/generate-component-labels.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
