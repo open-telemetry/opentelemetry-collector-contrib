@@ -111,7 +111,7 @@ func newParser[G any]() *participle.Parser[G] {
 		participle.Lexer(lex),
 		participle.Unquote("String"),
 		participle.Elide("whitespace"),
-		participle.UseLookahead(-1),
+		participle.UseLookahead(participle.MaxLookahead),
 	)
 	if err != nil {
 		panic("Unable to initialize parser; this is a programming error in the transformprocessor:" + err.Error())
