@@ -335,6 +335,32 @@ func TestCompareMetrics(t *testing.T) {
 			},
 		},
 		{
+			name: "ignore-subsequent-data-points-all",
+			compareOptions: []CompareOption{
+				IgnoreSubsequentDataPoints(),
+			},
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `sum.one`, do not match expected"),
+					errors.New("number of datapoints does not match expected: 1, actual: 2"),
+				),
+				reason: "An unpredictable data point value will cause failures if not ignored.",
+			},
+		},
+		{
+			name: "ignore-subsequent-data-points-one",
+			compareOptions: []CompareOption{
+				IgnoreSubsequentDataPoints("sum.one"),
+			},
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `sum.one`, do not match expected"),
+					errors.New("number of datapoints does not match expected: 1, actual: 2"),
+				),
+				reason: "An unpredictable data point value will cause failures if not ignored.",
+			},
+		},
+		{
 			name: "ignore-single-metric",
 			compareOptions: []CompareOption{
 				IgnoreMetricValues("sum.two"),
