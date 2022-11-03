@@ -1,6 +1,7 @@
 receivers:
   snmp:
     collection_interval: 10s
+    community: "1.3.6.1.6.1.1.0"
     endpoint: udp://localhost:1024
     version: v3
     security_level: auth_priv
@@ -13,7 +14,7 @@ receivers:
       ra1:
         indexed_value_prefix: p
       url:
-        oid: "1.3.6.1.4.1.2021.10.1.2"
+        oid: "1.3.6.1.4.1.2021.10.1.4"
     metrics:
       snmp.test.metric.sysuptime:
         description: System uptime
@@ -44,7 +45,7 @@ receivers:
           monotonic: true
           value_type: int
         column_oids:
-          - oid: "1.3.6.1.4.1.2021.10.1.3"
+          - oid: "1.3.6.1.4.1.2021.10.1.5"
             resource_attributes:
               - ra1
               - url

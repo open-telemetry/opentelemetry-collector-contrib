@@ -19,7 +19,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1667232990630860000"
+                              "timeUnixNano": "1667455279299978000"
                            }
                         ]
                      },
@@ -40,11 +40,11 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1667232990630860000"
+                              "timeUnixNano": "1667455279299978000"
                            },
                            {
                               "asInt": "398079840",
-                              "timeUnixNano": "1667232990630860000"
+                              "timeUnixNano": "1667455279299978000"
                            }
                         ]
                      },
@@ -78,6 +78,31 @@
          },
          "scopeMetrics": [
             {
+               "metrics": [
+                  {
+                     "description": "SNMP get responses",
+                     "name": "snmp.test.column.out.get.reponses",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "mood",
+                                    "value": {
+                                       "stringValue": "happy"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1667455279299978000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "By"
+                  }
+               ],
                "scope": {
                   "name": "otelcol/snmpreceiver",
                   "version": "latest"
@@ -97,13 +122,38 @@
                {
                   "key": "url",
                   "value": {
-                     "stringValue": "Load-5"
+                     "stringValue": "Load-2"
                   }
                }
             ]
          },
          "scopeMetrics": [
             {
+               "metrics": [
+                  {
+                     "description": "SNMP get responses",
+                     "name": "snmp.test.column.out.get.reponses",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "mood",
+                                    "value": {
+                                       "stringValue": "happy"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1667455279299978000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "By"
+                  }
+               ],
                "scope": {
                   "name": "otelcol/snmpreceiver",
                   "version": "latest"
@@ -123,13 +173,38 @@
                {
                   "key": "url",
                   "value": {
-                     "stringValue": "Load-15"
+                     "stringValue": "Load-3"
                   }
                }
             ]
          },
          "scopeMetrics": [
             {
+               "metrics": [
+                  {
+                     "description": "SNMP get responses",
+                     "name": "snmp.test.column.out.get.reponses",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "mood",
+                                    "value": {
+                                       "stringValue": "happy"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1667455279299978000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "By"
+                  }
+               ],
                "scope": {
                   "name": "otelcol/snmpreceiver",
                   "version": "latest"
