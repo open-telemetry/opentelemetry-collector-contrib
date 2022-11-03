@@ -30,6 +30,7 @@ func Test_DefaultFunctions(t *testing.T) {
 	expected["convert_gauge_to_sum"] = convertGaugeToSum
 	expected["convert_summary_sum_val_to_sum"] = convertSummarySumValToSum
 	expected["convert_summary_count_val_to_sum"] = convertSummaryCountValToSum
+	expected["convert_camel_case_to_snake_case"] = convertCamelCaseToSnakeCase
 
 	actual := Functions()
 
