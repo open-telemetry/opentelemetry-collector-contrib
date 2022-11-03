@@ -237,6 +237,8 @@ func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pcommon.Timestamp, handl
 
 	s.mb.RecordProcessMemoryPhysicalUsageDataPoint(now, int64(mem.RSS))
 	s.mb.RecordProcessMemoryVirtualUsageDataPoint(now, int64(mem.VMS))
+	s.mb.RecordProcessMemoryUsageDataPoint(now, int64(mem.RSS))
+	s.mb.RecordProcessMemoryVirtualDataPoint(now, int64(mem.VMS))
 	return nil
 }
 
