@@ -162,7 +162,7 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource) (ma
 		return filtered, nil // not AWS so return nil
 	}
 
-	// Favour Semantic Conventions for specific SQS and DynamoDB attributes.
+	// Favor Semantic Conventions for specific SQS and DynamoDB attributes.
 	if value, ok := attributes[conventions.AttributeMessagingURL]; ok {
 		queueURL = value.Str()
 	}
