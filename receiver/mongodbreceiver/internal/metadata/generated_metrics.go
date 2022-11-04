@@ -107,16 +107,16 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		MongodbLockAcquireCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbLockAcquireTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbLockAcquireWaitCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbLockDeadlockCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbMemoryUsage: MetricSettings{
 			Enabled: true,

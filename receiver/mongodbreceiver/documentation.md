@@ -21,10 +21,10 @@ These are the metrics available for this scraper.
 | **mongodb.index.access.count** | The number of times an index has been accessed. | {accesses} | Sum(Int) | <ul> <li>database</li> <li>collection</li> </ul> |
 | **mongodb.index.count** | The number of indexes. | {indexes} | Sum(Int) | <ul> <li>database</li> </ul> |
 | **mongodb.index.size** | Sum of the space allocated to all indexes in the database, including free index space. | By | Sum(Int) | <ul> <li>database</li> </ul> |
-| **mongodb.lock.acquire.count** | Number of times the lock was acquired in the specified mode. | {count} | Sum(Int) | <ul> <li>database</li> <li>lock_type</li> <li>lock_mode</li> </ul> |
-| **mongodb.lock.acquire.time** | Cumulative wait time for the lock acquisitions. | microseconds | Sum(Int) | <ul> <li>database</li> <li>lock_type</li> <li>lock_mode</li> </ul> |
-| **mongodb.lock.acquire.wait_count** | Number of times the lock acquisitions encountered waits because the locks were held in a conflicting mode. | {count} | Sum(Int) | <ul> <li>database</li> <li>lock_type</li> <li>lock_mode</li> </ul> |
-| **mongodb.lock.deadlock.count** | Number of times the lock acquisitions encountered deadlocks. | {count} | Sum(Int) | <ul> <li>database</li> <li>lock_type</li> <li>lock_mode</li> </ul> |
+| mongodb.lock.acquire.count | Number of times the lock was acquired in the specified mode. | {count} | Sum(Int) | <ul> <li>database</li> <li>lock_type</li> <li>lock_mode</li> </ul> |
+| mongodb.lock.acquire.time | Cumulative wait time for the lock acquisitions. | microseconds | Sum(Int) | <ul> <li>database</li> <li>lock_type</li> <li>lock_mode</li> </ul> |
+| mongodb.lock.acquire.wait_count | Number of times the lock acquisitions encountered waits because the locks were held in a conflicting mode. | {count} | Sum(Int) | <ul> <li>database</li> <li>lock_type</li> <li>lock_mode</li> </ul> |
+| mongodb.lock.deadlock.count | Number of times the lock acquisitions encountered deadlocks. | {count} | Sum(Int) | <ul> <li>database</li> <li>lock_type</li> <li>lock_mode</li> </ul> |
 | **mongodb.memory.usage** | The amount of memory used. | By | Sum(Int) | <ul> <li>database</li> <li>memory_type</li> </ul> |
 | **mongodb.network.io.receive** | The number of bytes received. | By | Sum(Int) | <ul> </ul> |
 | **mongodb.network.io.transmit** | The number of by transmitted. | By | Sum(Int) | <ul> </ul> |
@@ -48,7 +48,7 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| database | The name of a database. | String |
+| database | The name of a database. | Str |
 
 ## Metric attributes
 

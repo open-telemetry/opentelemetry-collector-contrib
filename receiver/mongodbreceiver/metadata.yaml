@@ -259,7 +259,7 @@ metrics:
   mongodb.lock.acquire.count:
     description: Number of times the lock was acquired in the specified mode.
     unit: "{count}"
-    enabled: true
+    enabled: false
     sum:
       value_type: int
       aggregation: cumulative
@@ -268,7 +268,7 @@ metrics:
   mongodb.lock.acquire.wait_count:
     description: Number of times the lock acquisitions encountered waits because the locks were held in a conflicting mode.
     unit: "{count}"
-    enabled: true
+    enabled: false
     sum:
       value_type: int
       aggregation: cumulative
@@ -277,7 +277,7 @@ metrics:
   mongodb.lock.acquire.time:
     description: Cumulative wait time for the lock acquisitions.
     unit: "microseconds"
-    enabled: true
+    enabled: false
     sum:
       value_type: int
       aggregation: cumulative
@@ -286,7 +286,7 @@ metrics:
   mongodb.lock.deadlock.count:
     description: Number of times the lock acquisitions encountered deadlocks.
     unit: "{count}"
-    enabled: true
+    enabled: false
     sum:
       value_type: int
       aggregation: cumulative
