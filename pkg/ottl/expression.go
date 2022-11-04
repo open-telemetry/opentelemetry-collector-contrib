@@ -15,17 +15,26 @@
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
 import (
+	"context"
 	"fmt"
 )
 
-type ExprFunc[K any] func(ctx K) (interface{}, error)
+type ExprFunc[K any] func(ctx context.Context, tCtx K) (interface{}, error)
+
+type Expr[K any] struct {
+	exprFunc ExprFunc[K]
+}
+
+func (e Expr[K]) Eval(ctx context.Context, tCtx K) (interface{}, error) {
+	return e.exprFunc(ctx, tCtx)
+}
 
 type Getter[K any] interface {
-	Get(ctx K) (interface{}, error)
+	Get(ctx context.Context, tCtx K) (interface{}, error)
 }
 
 type Setter[K any] interface {
-	Set(ctx K, val interface{}) error
+	Set(ctx context.Context, tCtx K, val interface{}) error
 }
 
 type GetSetter[K any] interface {
@@ -34,32 +43,32 @@ type GetSetter[K any] interface {
 }
 
 type StandardGetSetter[K any] struct {
-	Getter func(ctx K) (interface{}, error)
-	Setter func(ctx K, val interface{}) error
+	Getter func(ctx context.Context, tCx K) (interface{}, error)
+	Setter func(ctx context.Context, tCx K, val interface{}) error
 }
 
-func (path StandardGetSetter[K]) Get(ctx K) (interface{}, error) {
-	return path.Getter(ctx)
+func (path StandardGetSetter[K]) Get(ctx context.Context, tCx K) (interface{}, error) {
+	return path.Getter(ctx, tCx)
 }
 
-func (path StandardGetSetter[K]) Set(ctx K, val interface{}) error {
-	return path.Setter(ctx, val)
+func (path StandardGetSetter[K]) Set(ctx context.Context, tCx K, val interface{}) error {
+	return path.Setter(ctx, tCx, val)
 }
 
 type literal[K any] struct {
 	value interface{}
 }
 
-func (l literal[K]) Get(K) (interface{}, error) {
+func (l literal[K]) Get(context.Context, K) (interface{}, error) {
 	return l.value, nil
 }
 
 type exprGetter[K any] struct {
-	expr ExprFunc[K]
+	expr Expr[K]
 }
 
-func (g exprGetter[K]) Get(ctx K) (interface{}, error) {
-	return g.expr(ctx)
+func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
+	return g.expr.Eval(ctx, tCtx)
 }
 
 func (p *Parser[K]) newGetter(val value) (Getter[K], error) {

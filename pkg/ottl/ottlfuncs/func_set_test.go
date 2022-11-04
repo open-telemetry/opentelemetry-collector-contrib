@@ -15,6 +15,7 @@
 package ottlfuncs
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,8 +28,8 @@ func Test_set(t *testing.T) {
 	input := pcommon.NewValueStr("original name")
 
 	target := &ottl.StandardGetSetter[pcommon.Value]{
-		Setter: func(ctx pcommon.Value, val interface{}) error {
-			ctx.SetStr(val.(string))
+		Setter: func(ctx context.Context, tCtx pcommon.Value, val interface{}) error {
+			tCtx.SetStr(val.(string))
 			return nil
 		},
 	}
@@ -43,7 +44,7 @@ func Test_set(t *testing.T) {
 			name:   "set name",
 			setter: target,
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx pcommon.Value) (interface{}, error) {
+				Getter: func(ctx context.Context, tCtx pcommon.Value) (interface{}, error) {
 					return "new name", nil
 				},
 			},
@@ -55,7 +56,7 @@ func Test_set(t *testing.T) {
 			name:   "set nil value",
 			setter: target,
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx pcommon.Value) (interface{}, error) {
+				Getter: func(ctx context.Context, tCtx pcommon.Value) (interface{}, error) {
 					return nil, nil
 				},
 			},
@@ -71,7 +72,7 @@ func Test_set(t *testing.T) {
 			exprFunc, err := Set(tt.setter, tt.getter)
 			assert.NoError(t, err)
 
-			result, err := exprFunc(scenarioValue)
+			result, err := exprFunc(nil, scenarioValue)
 			assert.NoError(t, err)
 			assert.Nil(t, result)
 
@@ -85,22 +86,22 @@ func Test_set(t *testing.T) {
 
 func Test_set_get_nil(t *testing.T) {
 	setter := &ottl.StandardGetSetter[interface{}]{
-		Setter: func(ctx interface{}, val interface{}) error {
+		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
 	}
 
 	getter := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) (interface{}, error) {
-			return ctx, nil
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return tCtx, nil
 		},
 	}
 
 	exprFunc, err := Set[interface{}](setter, getter)
 	assert.NoError(t, err)
 
-	result, err := exprFunc(nil)
+	result, err := exprFunc(nil, nil)
 	assert.NoError(t, err)
 	assert.Nil(t, result)
 }

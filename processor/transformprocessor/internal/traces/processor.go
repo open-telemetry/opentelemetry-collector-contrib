@@ -39,16 +39,16 @@ func NewProcessor(statements []string, settings component.TelemetrySettings) (*P
 	}, nil
 }
 
-func (p *Processor) ProcessTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+func (p *Processor) ProcessTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
 			sspan := rspans.ScopeSpans().At(j)
 			spans := sspan.Spans()
 			for k := 0; k < spans.Len(); k++ {
-				ctx := ottltraces.NewTransformContext(spans.At(k), sspan.Scope(), rspans.Resource())
+				tCtx := ottltraces.NewTransformContext(spans.At(k), sspan.Scope(), rspans.Resource())
 				for _, statement := range p.statements {
-					_, _, err := statement.Execute(ctx)
+					_, _, err := statement.Execute(ctx, tCtx)
 					if err != nil {
 						return td, err
 					}

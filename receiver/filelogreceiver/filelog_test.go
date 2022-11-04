@@ -20,6 +20,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -141,20 +142,25 @@ func TestReadRotatingFiles(t *testing.T) {
 			sequential:   false,
 		},
 		{
-			name:         "MoveCreateTimestamped",
-			copyTruncate: false,
-			sequential:   false,
-		},
-		{
 			name:         "CopyTruncateSequential",
 			copyTruncate: true,
 			sequential:   true,
 		},
-		{
-			name:         "MoveCreateSequential",
-			copyTruncate: false,
-			sequential:   true,
-		},
+	}
+	if runtime.GOOS != "windows" {
+		// Windows has very poor support for moving active files, so rotation is less commonly used
+		tests = append(tests, []rotationTest{
+			{
+				name:         "MoveCreateTimestamped",
+				copyTruncate: false,
+				sequential:   false,
+			},
+			{
+				name:         "MoveCreateSequential",
+				copyTruncate: false,
+				sequential:   true,
+			},
+		}...)
 	}
 
 	for _, tc := range tests {

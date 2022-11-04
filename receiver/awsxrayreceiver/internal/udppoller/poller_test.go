@@ -142,7 +142,7 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 	assert.Eventuallyf(t, func() bool {
 		select {
 		case seg, open := <-p.(*poller).segChan:
-			obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{
+			obsrecv := obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 				ReceiverID:             receiverID,
 				Transport:              Transport,
 				ReceiverCreateSettings: tt.ToReceiverCreateSettings(),

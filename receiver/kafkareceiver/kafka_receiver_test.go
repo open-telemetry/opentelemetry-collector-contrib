@@ -138,7 +138,7 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
+		obsrecv:      obsreport.MustNewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	testSession := testConsumerGroupSession{}
@@ -180,7 +180,7 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
+		obsrecv:      obsreport.MustNewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	wg := sync.WaitGroup{}
@@ -205,7 +205,7 @@ func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewErr(consumerError),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
+		obsrecv:      obsreport.MustNewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	wg := sync.WaitGroup{}
@@ -327,7 +327,7 @@ func TestMetricsConsumerGroupHandler(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
+		obsrecv:      obsreport.MustNewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	testSession := testConsumerGroupSession{}
@@ -369,7 +369,7 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
+		obsrecv:      obsreport.MustNewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	wg := sync.WaitGroup{}
@@ -394,7 +394,7 @@ func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewErr(consumerError),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
+		obsrecv:      obsreport.MustNewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	wg := sync.WaitGroup{}
@@ -515,7 +515,7 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
+		obsrecv:      obsreport.MustNewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	testSession := testConsumerGroupSession{}
@@ -557,7 +557,7 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
+		obsrecv:      obsreport.MustNewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	wg := sync.WaitGroup{}
@@ -582,7 +582,7 @@ func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewErr(consumerError),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
+		obsrecv:      obsreport.MustNewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	wg := sync.WaitGroup{}
