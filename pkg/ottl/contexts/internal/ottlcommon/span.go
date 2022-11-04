@@ -241,13 +241,13 @@ func accessParentSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
 
 func accessStringParentSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx K) (interface{}, error) {
-			return ctx.GetSpan().ParentSpanID().HexString(), nil
+		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+			return tCtx.GetSpan().ParentSpanID().HexString(), nil
 		},
-		Setter: func(ctx K, val interface{}) error {
+		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
 			if str, ok := val.(string); ok {
 				if spanID, err := parseSpanID(str); err == nil {
-					ctx.GetSpan().SetParentSpanID(spanID)
+					tCtx.GetSpan().SetParentSpanID(spanID)
 				}
 			}
 			return nil
