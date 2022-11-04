@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"runtime"
 	"testing"
 
@@ -415,7 +416,7 @@ func TestTranslations(t *testing.T) {
 		},
 	}
 	translatedPartitions := translateMountsRootPath(partitions, "/hostfs")
-	assert.Equal(t, "/hostfs/mount_point_a", translatedPartitions[0].Mountpoint)
+	assert.Equal(t, filepath.Join("/hostfs", "mount_point_a"), translatedPartitions[0].Mountpoint)
 	assert.Equal(t, partitions[0].Mountpoint, "mount_point_a") // doesn't modify original
 }
 
