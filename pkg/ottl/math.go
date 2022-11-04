@@ -59,7 +59,7 @@ func (p *Parser[K]) evaluateMathValue(val *mathValue) (Getter[K], error) {
 		return p.evaluateMathExpression(val.SubExpression)
 	}
 
-	return nil, fmt.Errorf("unhandled mathmatic operation %v", val)
+	return nil, fmt.Errorf("unsupported mathematical value %v", val)
 }
 
 func attemptMathOperation[K any](lhs Getter[K], op mathOp, rhs Getter[K]) Getter[K] {
@@ -80,13 +80,13 @@ func attemptMathOperation[K any](lhs Getter[K], op mathOp, rhs Getter[K]) Getter
 					if !ok {
 						return nil, fmt.Errorf("cannot convert %v to int64", y)
 					}
-					return performOp[int64](newX, newY, op), nil
+					return performOp[int64](newX, newY, op)
 				case float64:
 					newY, ok := y.(float64)
 					if !ok {
 						return nil, fmt.Errorf("cannot convert %v to float64", y)
 					}
-					return performOp[float64](newX, newY, op), nil
+					return performOp[float64](newX, newY, op)
 				default:
 					return nil, fmt.Errorf("%v must be int64 or float64", x)
 				}
@@ -95,16 +95,16 @@ func attemptMathOperation[K any](lhs Getter[K], op mathOp, rhs Getter[K]) Getter
 	}
 }
 
-func performOp[N int64 | float64](x N, y N, op mathOp) N {
+func performOp[N int64 | float64](x N, y N, op mathOp) (N, error) {
 	switch op {
 	case ADD:
-		return x + y
+		return x + y, nil
 	case SUB:
-		return x - y
+		return x - y, nil
 	case MULT:
-		return x * y
+		return x * y, nil
 	case DIV:
-		return x / y
+		return x / y, nil
 	}
-	return 0
+	return 0, fmt.Errorf("invalid operation %v", op)
 }

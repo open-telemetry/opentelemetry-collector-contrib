@@ -109,13 +109,17 @@ When defining a function that will be used as an Invocation by the OTTL, if the 
 
 #### Expressions
 
-Expressions represent an arithmetic equation.  The support `+`, `-`, `*`, and `/`, along with `()` for grouping.
+Expressions represent an arithmetic calculations.  The support `+`, `-`, `*`, and `/`, along with `()` for grouping.
 
 Expressions currently only support `int64` and `float64`.
 Expressions support `Paths` and `Invocations` that return supported types.
 Note that `*` and `/` take precedence over `+` and `-`.
 Operations that share the same level of precedence will be executed in the order that they appear in the Expression.
 Expressions can be grouped with parentheses to override evaluation precedence.
+Expressions that mix `int64` and `float64` will result in an error.
+It is up to the function using the Expression to determine what to do with that error and the default return value of `0`.
+Normal arithmetic operations that would result in a panic, such as division by zero, will still result in a panic.
+Division of integers results in an integer and follows Go's rules for division of integers.
 
 Since Expressions support `Path` and `Invocation`, they are evaluated during data processing.
 __As a result, in order for a function to be able to accept an Expressions as a parameter it must use a `Getter`.__

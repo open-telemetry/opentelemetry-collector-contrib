@@ -123,11 +123,6 @@ func Test_evaluateMathExpression(t *testing.T) {
 			expected: 23.9,
 		},
 		{
-			name:     "complex floats",
-			input:    "(.5 * 4.0) / .1 + 3.9",
-			expected: 23.9,
-		},
-		{
 			name:     "int paths",
 			input:    "one + two",
 			expected: 3,
@@ -151,6 +146,11 @@ func Test_evaluateMathExpression(t *testing.T) {
 			name:     "functions",
 			input:    "sum([1, 2, 3, 4]) / (1 * 10)",
 			expected: 1,
+		},
+		{
+			name:     "int division",
+			input:    "10 / 3",
+			expected: 3,
 		},
 	}
 
