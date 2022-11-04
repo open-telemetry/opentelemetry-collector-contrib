@@ -15,6 +15,7 @@
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
+	"context"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -37,8 +38,8 @@ func Limit[K any](target ottl.GetSetter[K], limit int64, priorityKeys []string) 
 		keep[key] = struct{}{}
 	}
 
-	return func(ctx K) (interface{}, error) {
-		val, err := target.Get(ctx)
+	return func(ctx context.Context, tCtx K) (interface{}, error) {
+		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
