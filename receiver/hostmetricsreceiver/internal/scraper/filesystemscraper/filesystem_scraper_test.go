@@ -176,9 +176,9 @@ func TestScrape(t *testing.T) {
 			config: Config{
 				Metrics: metadata.DefaultMetricsSettings(),
 			},
-			rootPath: filepath.Join("/hostfs"),
+			rootPath: filepath.Join("/", "hostfs"),
 			usageFunc: func(s string) (*disk.UsageStat, error) {
-				if s != filepath.Join("/hostfs/mount_point_a") {
+				if s != filepath.Join("/hostfs", "mount_point_a") {
 					return nil, errors.New("mountpoint not translated according to RootPath")
 				}
 				return &disk.UsageStat{
