@@ -152,6 +152,28 @@ func Test_convertCase(t *testing.T) {
 			toCase:   "lower",
 			expected: "",
 		},
+		// no case
+		{
+			name: "no case defined",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx interface{}) (interface{}, error) {
+					return "simpleName", nil
+				},
+			},
+			toCase:   "",
+			expected: "simpleName",
+		},
+		// unconfigured case
+		{
+			name: "unconfigured case",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx interface{}) (interface{}, error) {
+					return "simpleName", nil
+				},
+			},
+			toCase:   "unconfigured",
+			expected: "simpleName",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
