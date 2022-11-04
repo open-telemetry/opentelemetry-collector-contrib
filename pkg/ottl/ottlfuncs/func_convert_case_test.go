@@ -185,6 +185,17 @@ func Test_convertCase(t *testing.T) {
 			toCase:   "upper",
 			expected: nil,
 		},
+		// non-string test
+		{
+			name: "non-string",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx interface{}) (interface{}, error) {
+					return 10, nil
+				},
+			},
+			toCase:   "upper",
+			expected: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
