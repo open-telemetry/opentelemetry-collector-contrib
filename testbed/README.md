@@ -107,29 +107,27 @@ Generally, when designing a test for new exporter and receiver components, devel
     }
     ```
 
-## Run Tests and Get Results
+## Running the tests
 
-Here providing some examples of how to run and get the results of testing.
+To run the tests, use the `e2e-test` Makefile target, which will compile the Collector and run the end-to-end test suites against it.
 
-1. Under the [collector-contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib) repo, the following runs all the tests:
+### Run all tests
 
-```
-  cd ./testbed
-  ./runtests.sh
-```
-
-​	Then get the result:
-
-![collector-contrib tests result](CCRepo_result.png)
-
-2. Under the [collector-contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib) repo, the following runs the correctness tests only:
+Run the following at the root of the repo:
 
 ```
-  cd ./testbed
-  TESTS_DIR=correctnesstests/metrics ./runtests.sh
+  make e2e-test
 ```
 
-Then get the result:
+### Run a particular test suite
 
-![collector correctness tests result](correctness_result.png)
+Run the following at the root of the repo:
+
+```
+  TESTS_DIR=correctnesstests/metrics make e2e-test
+```
+
+### Advanced usage
+
+A Makefile is also located at [`testbed/Makefile`](./Makefile) that offers targets to directly run certain test suites. Note that these targets will not compile the Collector before running.
 
