@@ -35,7 +35,6 @@ const windowsOS = "windows"
 func TestMultiFileRotate(t *testing.T) {
 	if runtime.GOOS == windowsOS {
 		// Windows has very poor support for moving active files, so rotation is less commonly used
-		// This may possibly be handled better in Go 1.16: https://github.com/golang/go/issues/35358
 		t.Skip()
 	}
 	t.Parallel()
@@ -94,7 +93,6 @@ func TestMultiFileRotate(t *testing.T) {
 func TestMultiFileRotateSlow(t *testing.T) {
 	if runtime.GOOS == windowsOS {
 		// Windows has very poor support for moving active files, so rotation is less commonly used
-		// This may possibly be handled better in Go 1.16: https://github.com/golang/go/issues/35358
 		t.Skip()
 	}
 
@@ -347,7 +345,6 @@ func TestRotation(t *testing.T) {
 	for _, tc := range cases {
 		if runtime.GOOS != windowsOS {
 			// Windows has very poor support for moving active files, so rotation is less commonly used
-			// This may possibly be handled better in Go 1.16: https://github.com/golang/go/issues/35358
 			t.Run(fmt.Sprintf("%s/MoveCreateTimestamped", tc.name), tc.run(tc, false, false))
 			t.Run(fmt.Sprintf("%s/MoveCreateSequential", tc.name), tc.run(tc, false, true))
 		}
