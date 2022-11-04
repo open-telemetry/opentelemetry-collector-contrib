@@ -15,6 +15,7 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 
 import (
+	"context"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -33,13 +34,13 @@ func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (ottl.ExprF
 	default:
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
 	}
-	return func(ctx ottldatapoints.TransformContext) (interface{}, error) {
-		metric := ctx.GetMetric()
+	return func(_ context.Context, tCtx ottldatapoints.TransformContext) (interface{}, error) {
+		metric := tCtx.GetMetric()
 		if metric.Type() != pmetric.MetricTypeSummary {
 			return nil, nil
 		}
 
-		sumMetric := ctx.GetMetrics().AppendEmpty()
+		sumMetric := tCtx.GetMetrics().AppendEmpty()
 		sumMetric.SetDescription(metric.Description())
 		sumMetric.SetName(metric.Name() + "_sum")
 		sumMetric.SetUnit(metric.Unit())

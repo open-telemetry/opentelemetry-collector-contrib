@@ -15,6 +15,7 @@
 package ottl
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -620,7 +621,7 @@ func Test_NewFunctionCall(t *testing.T) {
 			assert.NoError(t, err)
 
 			if tt.want != nil {
-				result, _ := fn(nil)
+				result, _ := fn.Eval(context.Background(), nil)
 				assert.Equal(t, tt.want, result)
 			}
 		})
@@ -628,110 +629,110 @@ func Test_NewFunctionCall(t *testing.T) {
 }
 
 func functionWithStringSlice(strs []string) (ExprFunc[interface{}], error) {
-	return func(interface{}) (interface{}, error) {
+	return func(context.Context, interface{}) (interface{}, error) {
 		return len(strs), nil
 	}, nil
 }
 
 func functionWithFloatSlice(floats []float64) (ExprFunc[interface{}], error) {
-	return func(interface{}) (interface{}, error) {
+	return func(context.Context, interface{}) (interface{}, error) {
 		return len(floats), nil
 	}, nil
 }
 
 func functionWithIntSlice(ints []int64) (ExprFunc[interface{}], error) {
-	return func(interface{}) (interface{}, error) {
+	return func(context.Context, interface{}) (interface{}, error) {
 		return len(ints), nil
 	}, nil
 }
 
 func functionWithByteSlice(bytes []byte) (ExprFunc[interface{}], error) {
-	return func(interface{}) (interface{}, error) {
+	return func(context.Context, interface{}) (interface{}, error) {
 		return len(bytes), nil
 	}, nil
 }
 
 func functionWithGetterSlice(getters []Getter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(interface{}) (interface{}, error) {
+	return func(context.Context, interface{}) (interface{}, error) {
 		return len(getters), nil
 	}, nil
 }
 
 func functionWithSetter(Setter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(interface{}) (interface{}, error) {
+	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
 }
 
 func functionWithGetSetter(GetSetter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(interface{}) (interface{}, error) {
+	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
 }
 
 func functionWithGetter(Getter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(interface{}) (interface{}, error) {
+	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
 }
 
 func functionWithString(string) (ExprFunc[interface{}], error) {
-	return func(interface{}) (interface{}, error) {
+	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
 }
 
 func functionWithFloat(float64) (ExprFunc[interface{}], error) {
-	return func(interface{}) (interface{}, error) {
+	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
 }
 
 func functionWithInt(int64) (ExprFunc[interface{}], error) {
-	return func(interface{}) (interface{}, error) {
+	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
 }
 
 func functionWithBool(bool) (ExprFunc[interface{}], error) {
-	return func(interface{}) (interface{}, error) {
+	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
 }
 
 func functionWithMultipleArgs(GetSetter[interface{}], string, float64, int64) (ExprFunc[interface{}], error) {
-	return func(interface{}) (interface{}, error) {
+	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
 }
 
 func functionThatHasAnError() (ExprFunc[interface{}], error) {
 	err := errors.New("testing")
-	return func(interface{}) (interface{}, error) {
+	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, err
 }
 
 func functionWithEnum(Enum) (ExprFunc[interface{}], error) {
-	return func(interface{}) (interface{}, error) {
+	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
 }
 
 func functionWithTelemetrySettingsFirst(component.TelemetrySettings, string, string, int64) (ExprFunc[interface{}], error) {
-	return func(interface{}) (interface{}, error) {
+	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
 }
 
 func functionWithTelemetrySettingsMiddle(string, string, component.TelemetrySettings, int64) (ExprFunc[interface{}], error) {
-	return func(interface{}) (interface{}, error) {
+	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
 }
 
 func functionWithTelemetrySettingsLast(string, string, int64, component.TelemetrySettings) (ExprFunc[interface{}], error) {
-	return func(interface{}) (interface{}, error) {
+	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
 }

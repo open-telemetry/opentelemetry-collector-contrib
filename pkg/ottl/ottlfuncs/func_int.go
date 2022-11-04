@@ -15,14 +15,15 @@
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func Int[K any](target ottl.Getter[K]) (ottl.ExprFunc[K], error) {
-	return func(ctx K) (interface{}, error) {
-		value, err := target.Get(ctx)
+	return func(ctx context.Context, tCtx K) (interface{}, error) {
+		value, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}

@@ -15,6 +15,7 @@
 package ottl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,7 +25,7 @@ import (
 )
 
 func hello[K any]() (ExprFunc[K], error) {
-	return func(ctx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		return "world", nil
 	}, nil
 }
@@ -121,7 +122,7 @@ func Test_newGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			reader, err := p.newGetter(tt.val)
 			assert.NoError(t, err)
-			val, _ := reader.Get(tt.want)
+			val, _ := reader.Get(context.Background(), tt.want)
 			assert.Equal(t, tt.want, val)
 		})
 	}
