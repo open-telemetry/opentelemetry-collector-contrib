@@ -84,47 +84,47 @@ func Test_evaluateMathExpression(t *testing.T) {
 	}{
 		{
 			name:     "simple subtraction",
-			input:    "(1000 - 600)",
+			input:    "1000 - 600",
 			expected: 400,
 		},
 		{
 			name:     "simple division",
-			input:    "(1 / 1)",
+			input:    "1 / 1",
 			expected: 1,
 		},
 		{
 			name:     "subtraction and addition",
-			input:    "(1000 - 600 + 1)",
+			input:    "1000 - 600 + 1",
 			expected: 401,
 		},
 		{
 			name:     "order of operations",
-			input:    "(10 - 6 * 2 + 2)",
+			input:    "10 - 6 * 2 + 2",
 			expected: 0,
 		},
 		{
 			name:     "parentheses",
-			input:    "(30 - 6 * (2 + 2))",
+			input:    "30 - 6 * (2 + 2)",
 			expected: 6,
 		},
 		{
 			name:     "complex",
-			input:    "((4 * 2) + 1 + 1 - 3 / 3 + ( 2 + 1 - (6 / 3)))",
+			input:    "(4 * 2) + 1 + 1 - 3 / 3 + ( 2 + 1 - (6 / 3))",
 			expected: 10,
 		},
 		{
 			name:     "floats",
-			input:    "(.5 + 2.6)",
+			input:    ".5 + 2.6",
 			expected: 3.1,
 		},
 		{
 			name:     "complex floats",
-			input:    "((.5 * 4.0) / .1 + 3.9)",
+			input:    "(.5 * 4.0) / .1 + 3.9",
 			expected: 23.9,
 		},
 		{
 			name:     "complex floats",
-			input:    "((.5 * 4.0) / .1 + 3.9)",
+			input:    "(.5 * 4.0) / .1 + 3.9",
 			expected: 23.9,
 		},
 		{
