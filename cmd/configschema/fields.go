@@ -21,26 +21,7 @@ import (
 	"time"
 
 	"github.com/fatih/structtag"
-	"go.uber.org/multierr"
 )
-
-func ConfigsToFields(dr DirResolver, configs []CfgInfo) (map[string]map[string]*Field, error) {
-	m := map[string]map[string]*Field{}
-	var errs error
-	for _, cfg := range configs {
-		fields, err := ReadFields(reflect.ValueOf(cfg.CfgInstance), dr)
-		if err != nil {
-			errs = multierr.Append(errs, err)
-		}
-		groupMap, found := m[cfg.Group]
-		if !found {
-			groupMap = map[string]*Field{}
-			m[cfg.Group] = groupMap
-		}
-		groupMap[string(cfg.Type)] = fields
-	}
-	return m, errs
-}
 
 // Field holds attributes and subfields of a config struct.
 type Field struct {
