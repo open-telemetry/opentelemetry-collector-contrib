@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Exporters), 2)
+	assert.Equal(t, len(cfg.Exporters), 3)
 
 	r0 := cfg.Exporters[config.NewComponentID(typeStr)].(*Config)
 	assert.Equal(t, r0, factory.CreateDefaultConfig().(*Config))
@@ -66,4 +66,10 @@ func TestLoadConfig(t *testing.T) {
 				QueueSize:    10,
 			},
 		})
+
+	r2 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "customprefix")].(*Config)
+	r2Expected := factory.CreateDefaultConfig().(*Config)
+	r2Expected.ExporterSettings = config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "customprefix"))
+	r2Expected.GMPConfig.MetricConfig.Prefix = "my-metric-domain.com"
+	assert.Equal(t, r2, r2Expected)
 }

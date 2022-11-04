@@ -110,7 +110,7 @@ func newReceiver(config Config, set component.ReceiverCreateSettings, blobEventH
 		logger:            set.Logger,
 		logsUnmarshaler:   &plog.JSONUnmarshaler{},
 		tracesUnmarshaler: &ptrace.JSONUnmarshaler{},
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             config.ID(),
 			Transport:              "event",
 			ReceiverCreateSettings: set,

@@ -78,7 +78,7 @@ func (f *receiver) Shutdown(ctx context.Context) error {
 
 func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSettings, configuration config.Receiver, logs consumer.Logs) (component.LogsReceiver, error) {
 	logsUnmarshaler := &plog.JSONUnmarshaler{}
-	obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv := obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             configuration.ID(),
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
@@ -103,7 +103,7 @@ func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSett
 
 func createMetricsReceiver(_ context.Context, settings component.ReceiverCreateSettings, configuration config.Receiver, metrics consumer.Metrics) (component.MetricsReceiver, error) {
 	metricsUnmarshaler := &pmetric.JSONUnmarshaler{}
-	obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv := obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             configuration.ID(),
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
@@ -128,7 +128,7 @@ func createMetricsReceiver(_ context.Context, settings component.ReceiverCreateS
 
 func createTracesReceiver(ctx context.Context, settings component.ReceiverCreateSettings, configuration config.Receiver, traces consumer.Traces) (component.TracesReceiver, error) {
 	tracesUnmarshaler := &ptrace.JSONUnmarshaler{}
-	obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv := obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             configuration.ID(),
 		Transport:              transport,
 		ReceiverCreateSettings: settings,

@@ -3,14 +3,14 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkin
 go 1.18
 
 require (
-	github.com/jaegertracing/jaeger v1.38.1
+	github.com/jaegertracing/jaeger v1.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.63.0
 	github.com/openzipkin/zipkin-go v0.4.1
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.63.2-0.20221031183340-2ed8c0c6ff9c
-	go.opentelemetry.io/collector/pdata v0.63.2-0.20221031183340-2ed8c0c6ff9c
-	go.opentelemetry.io/collector/semconv v0.63.2-0.20221031183340-2ed8c0c6ff9c
+	go.opentelemetry.io/collector v0.63.2-0.20221103164255-2ed41215f324
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221103164255-2ed41215f324
+	go.opentelemetry.io/collector/semconv v0.63.2-0.20221103164255-2ed41215f324
 	google.golang.org/protobuf v1.28.1
 )
 
@@ -24,7 +24,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.15.11 // indirect
+	github.com/klauspost/compress v1.15.12 // indirect
 	github.com/knadh/koanf v1.4.4 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect

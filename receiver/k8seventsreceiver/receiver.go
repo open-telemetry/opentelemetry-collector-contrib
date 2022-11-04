@@ -54,7 +54,7 @@ func newReceiver(
 		client:       client,
 		logsConsumer: consumer,
 		startTime:    time.Now(),
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             config.ID(),
 			Transport:              transport,
 			ReceiverCreateSettings: set,

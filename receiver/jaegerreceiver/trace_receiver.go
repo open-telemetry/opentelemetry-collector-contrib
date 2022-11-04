@@ -115,12 +115,12 @@ func newJaegerReceiver(
 		nextConsumer: nextConsumer,
 		id:           id,
 		settings:     set,
-		grpcObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		grpcObsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             id,
 			Transport:              grpcTransport,
 			ReceiverCreateSettings: set,
 		}),
-		httpObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		httpObsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             id,
 			Transport:              collectorHTTPTransport,
 			ReceiverCreateSettings: set,
@@ -234,7 +234,7 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 	if jr.config.AgentBinaryThrift.Endpoint != "" {
 		h := &agentHandler{
 			nextConsumer: jr.nextConsumer,
-			obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 				ReceiverID:             jr.id,
 				Transport:              agentTransportBinary,
 				ReceiverCreateSettings: jr.settings,
@@ -250,7 +250,7 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 	if jr.config.AgentCompactThrift.Endpoint != "" {
 		h := &agentHandler{
 			nextConsumer: jr.nextConsumer,
-			obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 				ReceiverID:             jr.id,
 				Transport:              agentTransportCompact,
 				ReceiverCreateSettings: jr.settings,

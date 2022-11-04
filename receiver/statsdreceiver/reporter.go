@@ -42,7 +42,7 @@ func newReporter(receiverID config.ComponentID, set component.ReceiverCreateSett
 		id:            receiverID,
 		logger:        set.Logger,
 		sugaredLogger: set.Logger.Sugar(),
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             receiverID,
 			Transport:              "tcp",
 			ReceiverCreateSettings: set,

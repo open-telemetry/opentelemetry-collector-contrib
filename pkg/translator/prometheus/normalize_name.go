@@ -105,7 +105,7 @@ func BuildPromCompliantName(metric pmetric.Metric, namespace string) string {
 	var metricName string
 
 	// Full normalization following standard Prometheus naming conventions
-	if featuregate.GetRegistry().IsEnabled(normalizeNameGate.ID) {
+	if featuregate.GetRegistry().IsEnabled(normalizeNameGate.GetID()) {
 		return normalizeName(metric, namespace)
 	}
 

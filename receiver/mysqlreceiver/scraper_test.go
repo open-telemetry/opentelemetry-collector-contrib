@@ -41,14 +41,29 @@ func TestScrape(t *testing.T) {
 		cfg.NetAddr = confignet.NetAddr{Endpoint: "localhost:3306"}
 		cfg.Metrics.MysqlStatementEventCount.Enabled = true
 		cfg.Metrics.MysqlStatementEventWaitTime.Enabled = true
+		cfg.Metrics.MysqlConnectionErrors.Enabled = true
+		cfg.Metrics.MysqlMysqlxWorkerThreads.Enabled = true
+		cfg.Metrics.MysqlJoins.Enabled = true
+		cfg.Metrics.MysqlTableOpenCache.Enabled = true
+		cfg.Metrics.MysqlQueryClientCount.Enabled = true
+		cfg.Metrics.MysqlQueryCount.Enabled = true
+		cfg.Metrics.MysqlQuerySlowCount.Enabled = true
+
+		cfg.Metrics.MysqlTableLockWaitReadCount.Enabled = true
+		cfg.Metrics.MysqlTableLockWaitReadTime.Enabled = true
+		cfg.Metrics.MysqlTableLockWaitWriteCount.Enabled = true
+		cfg.Metrics.MysqlTableLockWaitWriteTime.Enabled = true
+
+		cfg.Metrics.MysqlClientNetworkIo.Enabled = true
 
 		scraper := newMySQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 		scraper.sqlclient = &mockClient{
-			globalStatsFile:     "global_stats",
-			innodbStatsFile:     "innodb_stats",
-			tableIoWaitsFile:    "table_io_waits_stats",
-			indexIoWaitsFile:    "index_io_waits_stats",
-			statementEventsFile: "statement_events",
+			globalStatsFile:             "global_stats",
+			innodbStatsFile:             "innodb_stats",
+			tableIoWaitsFile:            "table_io_waits_stats",
+			indexIoWaitsFile:            "index_io_waits_stats",
+			statementEventsFile:         "statement_events",
+			tableLockWaitEventStatsFile: "table_lock_wait_event_stats",
 		}
 
 		actualMetrics, err := scraper.scrape(context.Background())
@@ -67,13 +82,19 @@ func TestScrape(t *testing.T) {
 		cfg.Password = "otel"
 		cfg.NetAddr = confignet.NetAddr{Endpoint: "localhost:3306"}
 
+		cfg.Metrics.MysqlTableLockWaitReadCount.Enabled = true
+		cfg.Metrics.MysqlTableLockWaitReadTime.Enabled = true
+		cfg.Metrics.MysqlTableLockWaitWriteCount.Enabled = true
+		cfg.Metrics.MysqlTableLockWaitWriteTime.Enabled = true
+
 		scraper := newMySQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 		scraper.sqlclient = &mockClient{
-			globalStatsFile:     "global_stats_partial",
-			innodbStatsFile:     "innodb_stats_empty",
-			tableIoWaitsFile:    "table_io_waits_stats_empty",
-			indexIoWaitsFile:    "index_io_waits_stats_empty",
-			statementEventsFile: "statement_events_empty",
+			globalStatsFile:             "global_stats_partial",
+			innodbStatsFile:             "innodb_stats_empty",
+			tableIoWaitsFile:            "table_io_waits_stats_empty",
+			indexIoWaitsFile:            "index_io_waits_stats_empty",
+			statementEventsFile:         "statement_events_empty",
+			tableLockWaitEventStatsFile: "table_lock_wait_event_stats_empty",
 		}
 
 		actualMetrics, scrapeErr := scraper.scrape(context.Background())
@@ -96,11 +117,12 @@ func TestScrape(t *testing.T) {
 var _ client = (*mockClient)(nil)
 
 type mockClient struct {
-	globalStatsFile     string
-	innodbStatsFile     string
-	tableIoWaitsFile    string
-	indexIoWaitsFile    string
-	statementEventsFile string
+	globalStatsFile             string
+	innodbStatsFile             string
+	tableIoWaitsFile            string
+	indexIoWaitsFile            string
+	statementEventsFile         string
+	tableLockWaitEventStatsFile string
 }
 
 func readFile(fname string) (map[string]string, error) {
@@ -217,6 +239,47 @@ func (c *mockClient) getStatementEventsStats() ([]StatementEventStats, error) {
 		s.countSortMergePasses, _ = parseInt(text[11])
 		s.countSortRows, _ = parseInt(text[12])
 		s.countNoIndexUsed, _ = parseInt(text[13])
+
+		stats = append(stats, s)
+	}
+	return stats, nil
+}
+
+func (c *mockClient) getTableLockWaitEventStats() ([]tableLockWaitEventStats, error) {
+	var stats []tableLockWaitEventStats
+	file, err := os.Open(filepath.Join("testdata", "scraper", c.tableLockWaitEventStatsFile+".txt"))
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		var s tableLockWaitEventStats
+		text := strings.Split(scanner.Text(), "\t")
+
+		s.schema = text[0]
+		s.name = text[1]
+		s.countReadNormal, _ = parseInt(text[2])
+		s.countReadWithSharedLocks, _ = parseInt(text[3])
+		s.countReadHighPriority, _ = parseInt(text[4])
+		s.countReadNoInsert, _ = parseInt(text[5])
+		s.countReadExternal, _ = parseInt(text[6])
+		s.countWriteAllowWrite, _ = parseInt(text[7])
+		s.countWriteConcurrentInsert, _ = parseInt(text[8])
+		s.countWriteLowPriority, _ = parseInt(text[9])
+		s.countWriteNormal, _ = parseInt(text[10])
+		s.countWriteExternal, _ = parseInt(text[11])
+		s.sumTimerReadNormal, _ = parseInt(text[12])
+		s.sumTimerReadWithSharedLocks, _ = parseInt(text[13])
+		s.sumTimerReadHighPriority, _ = parseInt(text[14])
+		s.sumTimerReadNoInsert, _ = parseInt(text[15])
+		s.sumTimerReadExternal, _ = parseInt(text[16])
+		s.sumTimerWriteAllowWrite, _ = parseInt(text[17])
+		s.sumTimerWriteConcurrentInsert, _ = parseInt(text[18])
+		s.sumTimerWriteLowPriority, _ = parseInt(text[19])
+		s.sumTimerWriteNormal, _ = parseInt(text[20])
+		s.sumTimerWriteExternal, _ = parseInt(text[21])
 
 		stats = append(stats, s)
 	}

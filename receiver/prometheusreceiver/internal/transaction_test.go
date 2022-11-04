@@ -263,7 +263,7 @@ func TestAppendExemplarWithEmptyLabelArray(t *testing.T) {
 }
 
 func nopObsRecv() *obsreport.Receiver {
-	return obsreport.NewReceiver(obsreport.ReceiverSettings{
+	return obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             config.NewComponentID("prometheus"),
 		Transport:              transport,
 		ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings(),

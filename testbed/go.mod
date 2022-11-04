@@ -15,7 +15,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.63.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.63.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.63.0
@@ -25,14 +25,19 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver v0.63.0
 	github.com/prometheus/common v0.37.0
 	github.com/prometheus/prometheus v0.38.0
-	github.com/shirou/gopsutil/v3 v3.22.9
+	github.com/shirou/gopsutil/v3 v3.22.10
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.63.2-0.20221031183340-2ed8c0c6ff9c
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.63.2-0.20221031183340-2ed8c0c6ff9c
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.63.2-0.20221031183340-2ed8c0c6ff9c
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.63.2-0.20221031183340-2ed8c0c6ff9c
-	go.opentelemetry.io/collector/pdata v0.63.2-0.20221031183340-2ed8c0c6ff9c
-	go.opentelemetry.io/collector/semconv v0.63.2-0.20221031183340-2ed8c0c6ff9c
+	go.opentelemetry.io/collector v0.63.2-0.20221103164255-2ed41215f324
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.63.2-0.20221103164255-2ed41215f324
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.63.2-0.20221103164255-2ed41215f324
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.63.2-0.20221103164255-2ed41215f324
+	go.opentelemetry.io/collector/extension/ballastextension v0.0.0-20221103164255-2ed41215f324
+	go.opentelemetry.io/collector/extension/zpagesextension v0.0.0-20221102221454-bfc45c16c979
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221103164255-2ed41215f324
+	go.opentelemetry.io/collector/processor/batchprocessor v0.0.0-20221103161931-a167b006e8c0
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.0.0-20221103164255-2ed41215f324
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.63.1
+	go.opentelemetry.io/collector/semconv v0.63.2-0.20221103164255-2ed41215f324
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
@@ -123,12 +128,12 @@ require (
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.1.2 // indirect
-	github.com/jaegertracing/jaeger v1.38.1 // indirect
+	github.com/jaegertracing/jaeger v1.39.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.15.11 // indirect
+	github.com/klauspost/compress v1.15.12 // indirect
 	github.com/knadh/koanf v1.4.4 // indirect
 	github.com/kolo/xmlrpc v0.0.0-20201022064351-38db28db192b // indirect
 	github.com/linode/linodego v1.8.0 // indirect
@@ -218,7 +223,7 @@ require (
 	golang.org/x/tools v0.2.0 // indirect
 	google.golang.org/api v0.101.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20221018160656-63c7b68cfc55 // indirect
+	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c // indirect
 	google.golang.org/grpc v1.50.1 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
@@ -297,3 +302,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../internal/coreinternal
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../pkg/resourcetotelemetry
+
+replace go.opentelemetry.io/collector/receiver/otlpreceiver => go.opentelemetry.io/collector/receiver/otlpreceiver v0.0.0-20221101161158-df8deb48186b

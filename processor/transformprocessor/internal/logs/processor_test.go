@@ -198,7 +198,7 @@ func TestProcess(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]string{tt.statement}, Functions(), componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]string{tt.statement}, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessLogs(context.Background(), td)

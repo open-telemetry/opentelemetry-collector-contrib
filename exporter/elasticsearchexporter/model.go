@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 type mappingModel interface {
@@ -78,7 +79,7 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span) ([
 	document.AddID("SpanId", span.SpanID())
 	document.AddID("ParentSpanId", span.ParentSpanID())
 	document.AddString("Name", span.Name())
-	document.AddString("Kind", span.Kind().String())
+	document.AddString("Kind", traceutil.SpanKindStr(span.Kind()))
 	document.AddInt("TraceStatus", int64(span.Status().Code()))
 	document.AddString("Link", spanLinksToString(span.Links()))
 	document.AddAttributes("Attributes", span.Attributes())

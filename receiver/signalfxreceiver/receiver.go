@@ -103,7 +103,7 @@ func newReceiver(
 	r := &sfxReceiver{
 		settings: settings,
 		config:   &config,
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             config.ID(),
 			Transport:              transport,
 			ReceiverCreateSettings: settings,
