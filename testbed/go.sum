@@ -42,8 +42,10 @@ cloud.google.com/go/compute v1.3.0/go.mod h1:cCZiE1NHEtai4wiufUhW8I8S1JKkAnhnQJW
 cloud.google.com/go/compute v1.5.0/go.mod h1:9SMHyhJlzhlkJqrPAc839t2BZFTSk6Jdj6mkzQJeu0M=
 cloud.google.com/go/compute v1.6.0/go.mod h1:T29tfhtVbq1wvAPo0E3+7vhgmkOYeXjhFvz/FMzPu0s=
 cloud.google.com/go/compute v1.6.1/go.mod h1:g85FgpzFvNULZ+S8AYq87axRKuf2Kh7deLqV/jJ3thU=
-cloud.google.com/go/compute v1.10.0 h1:aoLIYaA1fX3ywihqpBk2APQKOo20nXsp1GEZQbx5Jk4=
-cloud.google.com/go/compute v1.10.0/go.mod h1:ER5CLbMxl90o2jtNbGSbtfOpQKR0t15FOtRsugnLrlU=
+cloud.google.com/go/compute v1.12.1 h1:gKVJMEyqV5c/UnpzjjQbo3Rjvvqpr9B1DFSbJC4OXr0=
+cloud.google.com/go/compute v1.12.1/go.mod h1:e8yNOBcBONZU1vJKCvCoDw/4JQsA0dpM4x/6PIIOocU=
+cloud.google.com/go/compute/metadata v0.2.1 h1:efOwf5ymceDhK6PKMnnrTHP4pppY5L22mle96M1yP48=
+cloud.google.com/go/compute/metadata v0.2.1/go.mod h1:jgHgmJd2RKBGzXqF5LR2EZMGxBkeanZ9wwa75XHJgOM=
 cloud.google.com/go/datastore v1.0.0/go.mod h1:LXYbyblFSglQ5pkeyhO+Qmw7ukd3C+pD7TKLgZqpHYE=
 cloud.google.com/go/datastore v1.1.0/go.mod h1:umbIZjpQpHh4hmRpGhH4tLFup+FVzqBi1b3c64qFpCk=
 cloud.google.com/go/firestore v1.1.0/go.mod h1:ulACoGHTpvq5r8rxGJ4ddJZBZqakUQqClKRT5SZwBmk=
@@ -1424,8 +1426,8 @@ go.opentelemetry.io/collector/exporter/loggingexporter v0.63.2-0.20221103164255-
 go.opentelemetry.io/collector/exporter/loggingexporter v0.63.2-0.20221103164255-2ed41215f324/go.mod h1:/gESyMRxKKNCrPZCRw/3eBhtByYxPCiPfoR/aniFaMA=
 go.opentelemetry.io/collector/exporter/otlpexporter v0.63.2-0.20221103164255-2ed41215f324 h1:EARKPMKZckpPQ3QILtdYOeOb9RYKDIKA+3PtaBt2+GE=
 go.opentelemetry.io/collector/exporter/otlpexporter v0.63.2-0.20221103164255-2ed41215f324/go.mod h1:t1QwWfBfdEsI80R28T9PeVFGm8f32ZGLdY+CAEfr2LI=
-go.opentelemetry.io/collector/exporter/otlphttpexporter v0.63.2-0.20221103164255-2ed41215f324 h1:QBCKSZlfdwtKTw4yjY9FU1vZc83/zaWBIQq4pWOtzn0=
-go.opentelemetry.io/collector/exporter/otlphttpexporter v0.63.2-0.20221103164255-2ed41215f324/go.mod h1:ejN1zRqJtIoKnOYdx31LXVDpQ7TsSvVbUx50eQVCVcA=
+go.opentelemetry.io/collector/exporter/otlphttpexporter v0.63.1 h1:hAWwZOHg/pwHqxZzDf/cfsUIp1oA85Pp4b2anMk5a4w=
+go.opentelemetry.io/collector/exporter/otlphttpexporter v0.63.1/go.mod h1:GbE0IhSPvKRe3868XUG7sYdyvqAgfj6ESKFz9kaAnrM=
 go.opentelemetry.io/collector/extension/ballastextension v0.0.0-20221103164255-2ed41215f324 h1:pXYdlcrEGWCDtQBWv+XIjNrDqvBIUOcw7ekhN4vUTQo=
 go.opentelemetry.io/collector/extension/ballastextension v0.0.0-20221103164255-2ed41215f324/go.mod h1:x79DldeotQtNkVz3MCxWUXpaXwZJqksyvaW0l0Uttic=
 go.opentelemetry.io/collector/extension/zpagesextension v0.0.0-20221102221454-bfc45c16c979 h1:YW7BL8ftoJ7k+EtnMICw1KWASLuSDIhbF7SjjgWMCl4=
@@ -2011,8 +2013,8 @@ google.golang.org/api v0.74.0/go.mod h1:ZpfMZOVRMywNyvJFeqL9HRWBgAuRfSjJFpe9QtRR
 google.golang.org/api v0.75.0/go.mod h1:pU9QmyHLnzlpar1Mjt4IbapUCy8J+6HD6GeELN69ljA=
 google.golang.org/api v0.78.0/go.mod h1:1Sg78yoMLOhlQTeF+ARBoytAcH1NNyyl390YMy6rKmw=
 google.golang.org/api v0.81.0/go.mod h1:FA6Mb/bZxj706H2j+j2d6mHEEaHBmbbWnkfvmorOCko=
-google.golang.org/api v0.101.0 h1:lJPPeEBIRxGpGLwnBTam1NPEM8Z2BmmXEd3z812pjwM=
-google.golang.org/api v0.101.0/go.mod h1:CjxAAWWt3A3VrUE2IGDY2bgK5qhoG/OkyWVlYcP05MY=
+google.golang.org/api v0.102.0 h1:JxJl2qQ85fRMPNvlZY/enexbxpCjLwGhZUtgfGeQ51I=
+google.golang.org/api v0.102.0/go.mod h1:3VFl6/fzoA+qNuS1N1/VfXY4LjoXN/wzeIp7TweWwGo=
 google.golang.org/appengine v1.1.0/go.mod h1:EbEs0AVv82hx2wNQdGPgUI5lhzA/G0D9YwlJXL52JkM=
 google.golang.org/appengine v1.2.0/go.mod h1:xpcJRLb0r/rnEns0DIKYYv+WjYCduHsrkT7/EB5XEv4=
 google.golang.org/appengine v1.4.0/go.mod h1:xpcJRLb0r/rnEns0DIKYYv+WjYCduHsrkT7/EB5XEv4=
