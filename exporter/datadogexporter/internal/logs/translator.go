@@ -99,6 +99,10 @@ func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
 			}
 			l.AdditionalProperties[ddSpanID] = strconv.FormatUint(spanIDToUint64(ret), 10)
 			l.AdditionalProperties[otelSpanID] = v.AsString()
+		case "ddtags":
+			var tags = append(attributes.TagsFromAttributes(res.Attributes()), v.AsString(), "otel:true")
+			tagStr := strings.Join(tags, ",")
+			l.AdditionalProperties[k] = tagStr
 		default:
 			l.AdditionalProperties[k] = v.AsString()
 		}
@@ -140,10 +144,8 @@ func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
 	}
 
 	var tags = append(attributes.TagsFromAttributes(res.Attributes()), "otel:true")
-	if len(tags) > 0 {
-		tagStr := strings.Join(tags, ",") + l.GetDdtags()
-		l.Ddtags = datadog.PtrString(tagStr)
-	}
+	tagStr := strings.Join(tags, ",")
+	l.Ddtags = datadog.PtrString(tagStr)
 	return l
 }
 

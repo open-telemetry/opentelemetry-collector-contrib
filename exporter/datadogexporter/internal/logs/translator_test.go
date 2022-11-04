@@ -92,6 +92,34 @@ func TestTransform(t *testing.T) {
 			},
 		},
 		{
+			// appends tags in attributes instead of replacing them
+			name: "append tags",
+			args: args{
+				lr: func() plog.LogRecord {
+					l := plog.NewLogRecord()
+					l.Attributes().PutStr("app", "test")
+					l.Attributes().PutStr("ddtags", "foo:bar")
+					l.SetSeverityNumber(5)
+					return l
+				}(),
+				res: func() pcommon.Resource {
+					r := pcommon.NewResource()
+					r.Attributes().PutStr(conventions.AttributeServiceName, "otlp_col")
+					return r
+				}(),
+			},
+			want: datadogV2.HTTPLogItem{
+				Ddtags:  datadog.PtrString("service:otlp_col,foo:bar,otel:true"),
+				Message: *datadog.PtrString(""),
+				Service: datadog.PtrString("otlp_col"),
+				AdditionalProperties: map[string]string{
+					"app":              "test",
+					"status":           "debug",
+					otelSeverityNumber: "5",
+				},
+			},
+		},
+		{
 			// service name from log
 			name: "service",
 			args: args{
