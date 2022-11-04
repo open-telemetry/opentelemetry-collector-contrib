@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 var gopsutilEnvVars = map[string]string{
@@ -51,20 +50,6 @@ func validateRootPath(rootPath string, env environment) error {
 		return fmt.Errorf("invalid root_path: %w", err)
 	}
 
-	// Validate the rootPath is consistent with the gopsutil envvars.
-	for envVarKey := range gopsutilEnvVars {
-		envVarVal, ok := env.Lookup(envVarKey)
-		if !ok {
-			continue
-		}
-		if !strings.HasPrefix(envVarVal, rootPath) {
-			return fmt.Errorf(
-				"config `root_path=%s` is inconsistent with envvar `%s=%s` config, root_path must be the prefix of the osEnv variable",
-				rootPath,
-				envVarKey,
-				envVarVal)
-		}
-	}
 	return nil
 }
 

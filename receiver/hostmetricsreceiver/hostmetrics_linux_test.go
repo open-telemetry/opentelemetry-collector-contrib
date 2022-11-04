@@ -39,18 +39,8 @@ func TestConsistentRootPaths(t *testing.T) {
 }
 
 func TestInconsistentRootPaths(t *testing.T) {
-	err := testValidate("testdata", &testEnv{env: map[string]string{"HOST_PROC": "doesnt-start-with-testdata"}})
-	assert.EqualError(t, err, "config `root_path=testdata` is inconsistent with envvar `HOST_PROC=doesnt-start-with-testdata` config, root_path must be the prefix of the osEnv variable")
-
-	err = testValidate("testdata",
-		&testEnv{env: map[string]string{
-			"HOST_PROC": "testdata",
-			"HOST_SYS":  "doesnt-start-with-testdata",
-		}})
-	assert.EqualError(t, err, "config `root_path=testdata` is inconsistent with envvar `HOST_SYS=doesnt-start-with-testdata` config, root_path must be the prefix of the osEnv variable")
-
 	globalRootPath = "foo"
-	err = testValidate("testdata", &testEnv{})
+	err := testValidate("testdata", &testEnv{})
 	assert.EqualError(t, err, "inconsistent root_path configuration detected between hostmetricsreceivers: `foo` != `testdata`")
 }
 
