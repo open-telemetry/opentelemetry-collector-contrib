@@ -55,6 +55,7 @@ func TestTransform(t *testing.T) {
 				res: pcommon.NewResource(),
 			},
 			want: datadogV2.HTTPLogItem{
+				Ddtags:  datadog.PtrString("otel:true"),
 				Message: *datadog.PtrString(""),
 				AdditionalProperties: map[string]string{
 					"app":              "test",
@@ -80,7 +81,7 @@ func TestTransform(t *testing.T) {
 				}(),
 			},
 			want: datadogV2.HTTPLogItem{
-				Ddtags:  datadog.PtrString("service:otlp_col"),
+				Ddtags:  datadog.PtrString("service:otlp_col,otel:true"),
 				Message: *datadog.PtrString(""),
 				Service: datadog.PtrString("otlp_col"),
 				AdditionalProperties: map[string]string{
@@ -107,6 +108,7 @@ func TestTransform(t *testing.T) {
 				}(),
 			},
 			want: datadogV2.HTTPLogItem{
+				Ddtags:  datadog.PtrString("otel:true"),
 				Message: *datadog.PtrString(""),
 				Service: datadog.PtrString("otlp_col"),
 				AdditionalProperties: map[string]string{
@@ -135,6 +137,7 @@ func TestTransform(t *testing.T) {
 				}(),
 			},
 			want: datadogV2.HTTPLogItem{
+				Ddtags:  datadog.PtrString("otel:true"),
 				Message: *datadog.PtrString(""),
 				Service: datadog.PtrString("otlp_col"),
 				AdditionalProperties: map[string]string{
@@ -145,6 +148,39 @@ func TestTransform(t *testing.T) {
 					otelTraceID:        fmt.Sprintf("%x", string(traceID[:])),
 					ddSpanID:           fmt.Sprintf("%d", ddSp),
 					ddTraceID:          fmt.Sprintf("%d", ddTr),
+					"service.name":     "otlp_col",
+				},
+			},
+		},
+		{
+			name: "trace from attributes",
+			args: args{
+				lr: func() plog.LogRecord {
+					l := plog.NewLogRecord()
+					l.Attributes().PutStr("app", "test")
+					l.Attributes().PutStr("spanid", "2e26da881214cd7c")
+					l.Attributes().PutStr("traceid", "437ab4d83468c540bb0f3398a39faa59")
+					l.Attributes().PutStr(conventions.AttributeServiceName, "otlp_col")
+					l.SetSeverityNumber(5)
+					return l
+				}(),
+				res: func() pcommon.Resource {
+					r := pcommon.NewResource()
+					return r
+				}(),
+			},
+			want: datadogV2.HTTPLogItem{
+				Ddtags:  datadog.PtrString("otel:true"),
+				Message: *datadog.PtrString(""),
+				Service: datadog.PtrString("otlp_col"),
+				AdditionalProperties: map[string]string{
+					"app":              "test",
+					"status":           "debug",
+					otelSeverityNumber: "5",
+					otelSpanID:         "2e26da881214cd7c",
+					otelTraceID:        "437ab4d83468c540bb0f3398a39faa59",
+					ddSpanID:           "3325585652813450620",
+					ddTraceID:          "13479048940416379481",
 					"service.name":     "otlp_col",
 				},
 			},
@@ -169,6 +205,7 @@ func TestTransform(t *testing.T) {
 				}(),
 			},
 			want: datadogV2.HTTPLogItem{
+				Ddtags:  datadog.PtrString("otel:true"),
 				Message: *datadog.PtrString(""),
 				Service: datadog.PtrString("otlp_col"),
 				AdditionalProperties: map[string]string{
@@ -203,6 +240,7 @@ func TestTransform(t *testing.T) {
 				}(),
 			},
 			want: datadogV2.HTTPLogItem{
+				Ddtags:  datadog.PtrString("otel:true"),
 				Message: *datadog.PtrString(""),
 				Service: datadog.PtrString("otlp_col"),
 				AdditionalProperties: map[string]string{
@@ -237,6 +275,7 @@ func TestTransform(t *testing.T) {
 				}(),
 			},
 			want: datadogV2.HTTPLogItem{
+				Ddtags:  datadog.PtrString("otel:true"),
 				Message: *datadog.PtrString(""),
 				Service: datadog.PtrString("otlp_col"),
 				AdditionalProperties: map[string]string{

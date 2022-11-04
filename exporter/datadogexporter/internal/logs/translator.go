@@ -16,6 +16,8 @@ package logs // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"encoding/binary"
+	"encoding/hex"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -84,20 +86,17 @@ func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
 		case "status", "severity", "level", "syslog.severity":
 			status = v.AsString()
 		case "traceid", "contextmap.traceid", "oteltraceid":
-			fmt.Printf("---------------------- v: %v --------------------------\n", v)
-			fmt.Printf("---------------------- v.Bytes: %v --------------------------\n", v.Bytes())
-			fmt.Printf("---------------------- v.AsString: %v --------------------------\n", v.AsString())
-
-			var ret [16]byte
-			copy(ret[:], v.AsString())
-			fmt.Printf("---------------------- ret: %v --------------------------\n", ret)
-
+			ret, err := decodeTraceID(v.AsString())
+			if err != nil {
+				fmt.Errorf("failed to decode trace id %v: %v", v.AsString(), err)
+			}
 			l.AdditionalProperties[ddTraceID] = strconv.FormatUint(traceIDToUint64(ret), 10)
 			l.AdditionalProperties[otelTraceID] = v.AsString()
 		case "spanid", "contextmap.spanid", "otelspanid":
-			var ret [8]byte
-			copy(ret[:], v.AsString())
-
+			ret, err := decodeSpanID(v.AsString())
+			if err != nil {
+				fmt.Errorf("failed to decode span id %v: %v", v.AsString(), err)
+			}
 			l.AdditionalProperties[ddSpanID] = strconv.FormatUint(spanIDToUint64(ret), 10)
 			l.AdditionalProperties[otelSpanID] = v.AsString()
 		default:
@@ -142,7 +141,6 @@ func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
 
 	var tags = append(attributes.TagsFromAttributes(res.Attributes()), "otel:true")
 	if len(tags) > 0 {
-		fmt.Printf("--------------------- tags: %v ----------------------\n", tags)
 		tagStr := strings.Join(tags, ",") + l.GetDdtags()
 		l.Ddtags = datadog.PtrString(tagStr)
 	}
@@ -171,6 +169,18 @@ func extractHostNameAndServiceName(resourceAttrs pcommon.Map, logAttrs pcommon.M
 		}
 	}
 	return host, service
+}
+
+func decodeTraceID(traceID string) ([16]byte, error) {
+	var ret [16]byte
+	_, err := hex.Decode(ret[:], []byte(traceID))
+	return ret, err
+}
+
+func decodeSpanID(spanID string) ([8]byte, error) {
+	var ret [8]byte
+	_, err := hex.Decode(ret[:], []byte(spanID))
+	return ret, err
 }
 
 // traceIDToUint64 converts 128bit traceId to 64 bit uint64
