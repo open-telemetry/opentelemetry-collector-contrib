@@ -4,6 +4,9 @@ resource_attributes:
     apache.server.name:
       description: The name of the Apache HTTP server.
       type: string
+    apache.server.port:
+      description: The port of the Apache HTTP server.
+      type: string
 
 attributes:
   workers_state:

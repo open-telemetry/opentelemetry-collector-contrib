@@ -35,6 +35,7 @@ metrics:
 | Name | Description | Type |
 | ---- | ----------- | ---- |
 | apache.server.name | The name of the Apache HTTP server. | Str |
+| apache.server.port | The port of the Apache HTTP server. | Str |
 
 ## Metric attributes
 
