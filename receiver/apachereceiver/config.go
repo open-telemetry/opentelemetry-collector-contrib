@@ -27,8 +27,6 @@ import (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
-	serverName                              string
-	port                                    string
 	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
 }
 
@@ -38,13 +36,9 @@ var (
 	defaultPort     = "8080"
 	defaultPath     = "server-status"
 	defaultEndpoint = fmt.Sprintf("%s%s:%s/%s?auto", defaultProtocol, defaultHost, defaultPort, defaultPath)
-
-	httpDefaultPort  = "80"
-	httpsDefaultPort = "443"
 )
 
 func (cfg *Config) Validate() error {
-
 	u, err := url.Parse(cfg.Endpoint)
 	if err != nil {
 		return fmt.Errorf("invalid endpoint: '%s': %w", cfg.Endpoint, err)
@@ -56,18 +50,6 @@ func (cfg *Config) Validate() error {
 
 	if u.RawQuery != "auto" {
 		return fmt.Errorf("query must be 'auto': '%s'", cfg.Endpoint)
-	}
-
-	cfg.serverName = u.Hostname()
-	cfg.port = u.Port()
-
-	if cfg.port == "" {
-		if u.Scheme == "https" {
-			cfg.port = httpsDefaultPort
-		} else if u.Scheme == "http" {
-			cfg.port = httpDefaultPort
-		}
-		// else: unknown scheme, leave port as empty string
 	}
 
 	return nil

@@ -45,7 +45,9 @@ func TestScraper(t *testing.T) {
 	err := featuregate.GetRegistry().Apply(map[string]bool{EmitServerNameAsResourceAttribute: true, EmitPortAsResourceAttribute: true})
 	require.NoError(t, err)
 
-	scraper := newApacheScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+	serverName, port, err := parseResourseAttributes(cfg.Endpoint)
+	require.NoError(t, err)
+	scraper := newApacheScraper(componenttest.NewNopReceiverCreateSettings(), cfg, serverName, port)
 
 	err = scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -58,7 +60,7 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, err)
 	url, err := url.Parse(apacheMock.URL)
 	require.NoError(t, err)
-	expectedMetrics.ResourceMetrics().At(0).Resource().Attributes().Remove("apache.server.port")
+
 	expectedMetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr("apache.server.port", url.Port())
 
 	// The port is random, so we shouldn't check if this value matches.
@@ -75,7 +77,9 @@ func TestScraperFailedStart(t *testing.T) {
 				},
 			},
 		},
-	})
+	},
+		"localhost",
+		"8080")
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
 }
@@ -166,7 +170,7 @@ BytesPerSec: 73.12
 
 func TestScraperError(t *testing.T) {
 	t.Run("no client", func(t *testing.T) {
-		sc := newApacheScraper(componenttest.NewNopReceiverCreateSettings(), &Config{})
+		sc := newApacheScraper(componenttest.NewNopReceiverCreateSettings(), &Config{}, "", "")
 		sc.httpClient = nil
 
 		_, err := sc.scrape(context.Background())
