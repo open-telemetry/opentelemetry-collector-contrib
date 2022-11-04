@@ -27,14 +27,14 @@ type EnumParser func(*EnumSymbol) (*Enum, error)
 
 type Enum int64
 
-func (p *Parser[K]) newFunctionCall(inv invocation) (ExprFunc[K], error) {
+func (p *Parser[K]) newFunctionCall(inv invocation) (Expr[K], error) {
 	f, ok := p.functions[inv.Function]
 	if !ok {
-		return nil, fmt.Errorf("undefined function %v", inv.Function)
+		return Expr[K]{}, fmt.Errorf("undefined function %v", inv.Function)
 	}
 	args, err := p.buildArgs(inv, reflect.TypeOf(f))
 	if err != nil {
-		return nil, err
+		return Expr[K]{}, err
 	}
 
 	returnVals := reflect.ValueOf(f).Call(args)
@@ -45,7 +45,7 @@ func (p *Parser[K]) newFunctionCall(inv invocation) (ExprFunc[K], error) {
 		err = returnVals[1].Interface().(error)
 	}
 
-	return returnVals[0].Interface().(ExprFunc[K]), err
+	return Expr[K]{exprFunc: returnVals[0].Interface().(ExprFunc[K])}, err
 }
 
 func (p *Parser[K]) buildArgs(inv invocation, fType reflect.Type) ([]reflect.Value, error) {

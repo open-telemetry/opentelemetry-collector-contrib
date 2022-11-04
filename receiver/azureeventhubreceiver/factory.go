@@ -48,7 +48,7 @@ func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSett
 		logger:   settings.Logger,
 		consumer: logs,
 		config:   receiver.(*Config),
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             receiver.ID(),
 			Transport:              "azureeventhub",
 			ReceiverCreateSettings: settings,

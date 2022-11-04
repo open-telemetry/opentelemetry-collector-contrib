@@ -15,6 +15,7 @@
 package ottlfuncs
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,7 +34,7 @@ func Test_isMatch(t *testing.T) {
 		{
 			name: "replace match true",
 			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx interface{}) (interface{}, error) {
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return "hello world", nil
 				},
 			},
@@ -43,7 +44,7 @@ func Test_isMatch(t *testing.T) {
 		{
 			name: "replace match false",
 			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx interface{}) (interface{}, error) {
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return "goodbye world", nil
 				},
 			},
@@ -53,7 +54,7 @@ func Test_isMatch(t *testing.T) {
 		{
 			name: "replace match complex",
 			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx interface{}) (interface{}, error) {
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return "-12.001", nil
 				},
 			},
@@ -63,7 +64,7 @@ func Test_isMatch(t *testing.T) {
 		{
 			name: "target not a string",
 			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx interface{}) (interface{}, error) {
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return 1, nil
 				},
 			},
@@ -73,7 +74,7 @@ func Test_isMatch(t *testing.T) {
 		{
 			name: "target nil",
 			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx interface{}) (interface{}, error) {
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return nil, nil
 				},
 			},
@@ -85,7 +86,7 @@ func Test_isMatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := IsMatch(tt.target, tt.pattern)
 			assert.NoError(t, err)
-			result, err := exprFunc(nil)
+			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -94,7 +95,7 @@ func Test_isMatch(t *testing.T) {
 
 func Test_isMatch_validation(t *testing.T) {
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) (interface{}, error) {
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 			return "anything", nil
 		},
 	}

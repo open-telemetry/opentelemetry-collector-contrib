@@ -925,6 +925,13 @@ func WithApacheServerName(val string) ResourceMetricsOption {
 	}
 }
 
+// WithApacheServerPort sets provided value as "apache.server.port" attribute for current resource.
+func WithApacheServerPort(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().PutStr("apache.server.port", val)
+	}
+}
+
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {

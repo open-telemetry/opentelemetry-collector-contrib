@@ -15,6 +15,7 @@
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -25,21 +26,21 @@ import (
 func mathParsePath(val *Path) (GetSetter[interface{}], error) {
 	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "one" {
 		return &StandardGetSetter[interface{}]{
-			Getter: func(interface{}) (interface{}, error) {
+			Getter: func(context.Context, interface{}) (interface{}, error) {
 				return int64(1), nil
 			},
 		}, nil
 	}
 	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "two" {
 		return &StandardGetSetter[interface{}]{
-			Getter: func(interface{}) (interface{}, error) {
+			Getter: func(context.Context, interface{}) (interface{}, error) {
 				return int64(2), nil
 			},
 		}, nil
 	}
 	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "three" && val.Fields[1].Name == "one" {
 		return &StandardGetSetter[interface{}]{
-			Getter: func(interface{}) (interface{}, error) {
+			Getter: func(context.Context, interface{}) (interface{}, error) {
 				return 3.1, nil
 			},
 		}, nil
@@ -48,25 +49,25 @@ func mathParsePath(val *Path) (GetSetter[interface{}], error) {
 }
 
 func one[K any]() (ExprFunc[K], error) {
-	return func(K) (interface{}, error) {
+	return func(context.Context, K) (interface{}, error) {
 		return int64(1), nil
 	}, nil
 }
 
 func two[K any]() (ExprFunc[K], error) {
-	return func(K) (interface{}, error) {
+	return func(context.Context, K) (interface{}, error) {
 		return int64(2), nil
 	}, nil
 }
 
 func threePointOne[K any]() (ExprFunc[K], error) {
-	return func(K) (interface{}, error) {
+	return func(context.Context, K) (interface{}, error) {
 		return 3.1, nil
 	}, nil
 }
 
 func sum[K any](ints []int64) (ExprFunc[K], error) {
-	return func(K) (interface{}, error) {
+	return func(context.Context, K) (interface{}, error) {
 		result := int64(0)
 		for _, x := range ints {
 			result += x
@@ -177,7 +178,7 @@ func Test_evaluateMathExpression(t *testing.T) {
 			getter, err := p.evaluateMathExpression(parsed.MathExpression)
 			assert.NoError(t, err)
 
-			result, err := getter.Get(nil)
+			result, err := getter.Get(context.Background(), nil)
 			assert.NoError(t, err)
 
 			assert.EqualValues(t, tt.expected, result)
@@ -220,7 +221,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 			getter, err := p.evaluateMathExpression(parsed.MathExpression)
 			assert.NoError(t, err)
 
-			result, err := getter.Get(nil)
+			result, err := getter.Get(context.Background(), nil)
 			assert.Nil(t, result)
 			assert.Error(t, err)
 		})

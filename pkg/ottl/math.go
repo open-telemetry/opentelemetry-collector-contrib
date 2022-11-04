@@ -14,7 +14,10 @@
 
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 func (p *Parser[K]) evaluateMathExpression(expr *expression) (Getter[K], error) {
 	mainGetter, err := p.evaluateAddSubTerm(expr.Left)
@@ -61,31 +64,33 @@ func (p *Parser[K]) evaluateMathValue(val *mathValue) (Getter[K], error) {
 
 func attemptMathOperation[K any](lhs Getter[K], op mathOp, rhs Getter[K]) Getter[K] {
 	return exprGetter[K]{
-		expr: func(ctx K) (interface{}, error) {
-			x, err := lhs.Get(ctx)
-			if err != nil {
-				return nil, err
-			}
-			y, err := rhs.Get(ctx)
-			if err != nil {
-				return nil, err
-			}
-			switch newX := x.(type) {
-			case int64:
-				newY, ok := y.(int64)
-				if !ok {
-					return nil, fmt.Errorf("cannot convert %v to int64", y)
+		expr: Expr[K]{
+			exprFunc: func(ctx context.Context, tCtx K) (interface{}, error) {
+				x, err := lhs.Get(ctx, tCtx)
+				if err != nil {
+					return nil, err
 				}
-				return performOp[int64](newX, newY, op), nil
-			case float64:
-				newY, ok := y.(float64)
-				if !ok {
-					return nil, fmt.Errorf("cannot convert %v to float64", y)
+				y, err := rhs.Get(ctx, tCtx)
+				if err != nil {
+					return nil, err
 				}
-				return performOp[float64](newX, newY, op), nil
-			default:
-				return nil, fmt.Errorf("%v must be int64 or float64", x)
-			}
+				switch newX := x.(type) {
+				case int64:
+					newY, ok := y.(int64)
+					if !ok {
+						return nil, fmt.Errorf("cannot convert %v to int64", y)
+					}
+					return performOp[int64](newX, newY, op), nil
+				case float64:
+					newY, ok := y.(float64)
+					if !ok {
+						return nil, fmt.Errorf("cannot convert %v to float64", y)
+					}
+					return performOp[float64](newX, newY, op), nil
+				default:
+					return nil, fmt.Errorf("%v must be int64 or float64", x)
+				}
+			},
 		},
 	}
 }
