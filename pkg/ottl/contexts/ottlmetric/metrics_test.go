@@ -15,6 +15,7 @@
 package ottlmetric
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -143,11 +144,11 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			ctx := NewTransformContext(metric, pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
-			got, err := accessor.Get(ctx)
+			got, err := accessor.Get(context.Background(), ctx)
 			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(ctx, tt.newVal)
+			err = accessor.Set(context.Background(), ctx, tt.newVal)
 			assert.Nil(t, err)
 
 			exMetric := createMetricTelemetry()

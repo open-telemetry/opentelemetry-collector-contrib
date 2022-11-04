@@ -15,6 +15,7 @@
 package ottlspanevent
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -309,11 +310,11 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			spanEvent, span, il, resource := createTelemetry()
 
-			got, err := accessor.Get(NewTransformContext(spanEvent, span, il, resource))
+			got, err := accessor.Get(context.Background(), NewTransformContext(spanEvent, span, il, resource))
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(NewTransformContext(spanEvent, span, il, resource), tt.newVal)
+			err = accessor.Set(context.Background(), NewTransformContext(spanEvent, span, il, resource), tt.newVal)
 			assert.NoError(t, err)
 
 			exSpanEvent, exSpan, exIl, exRes := createTelemetry()
