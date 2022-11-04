@@ -21,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func ConvertCase[K any](target ottl.Getter[K]) (ottl.ExprFunc[K], error) {
+func ConvertCase[K any](target ottl.Getter[K], toCase string) (ottl.ExprFunc[K], error) {
 	return func(ctx K) (interface{}, error) {
 		val, err := target.Get(ctx)
 
@@ -30,67 +30,82 @@ func ConvertCase[K any](target ottl.Getter[K]) (ottl.ExprFunc[K], error) {
 		}
 
 		if val != nil {
+
 			if valStr, ok := val.(string); ok {
 
 				if valStr == "" {
 					return valStr, nil
 				}
-				if len(valStr) == 1 {
-					return strings.ToLower(valStr), nil
-				}
-				source := []rune(valStr)
-				dist := strings.Builder{}
-				dist.Grow(len(valStr) + len(valStr)/3)
-				skipNext := false
 
-				for i := 0; i < len(source); i++ {
-					cur := source[i]
+				switch toCase {
+				// Convert string to snake case (someName -> some_name)
+				case "snake":
 
-					switch cur {
-					case '-', '_', '.':
-						dist.WriteRune('.')
-						skipNext = true
-						continue
+					if len(valStr) == 1 {
+						return strings.ToLower(valStr), nil
 					}
-					if unicode.IsLower(cur) || unicode.IsDigit(cur) {
-						dist.WriteRune(cur)
-						continue
-					}
+					source := []rune(valStr)
+					dist := strings.Builder{}
+					dist.Grow(len(valStr) + len(valStr)/3)
+					skipNext := false
 
-					if i == 0 {
-						dist.WriteRune(unicode.ToLower(cur))
-						continue
-					}
+					for i := 0; i < len(source); i++ {
+						cur := source[i]
 
-					last := source[i-1]
-
-					if (!unicode.IsLetter(last)) || unicode.IsLower(last) {
-						if skipNext {
-							skipNext = false
-						} else {
-							dist.WriteRune('.')
+						switch cur {
+						case '-', '_':
+							dist.WriteRune('_')
+							skipNext = true
+							continue
 						}
-						dist.WriteRune(unicode.ToLower(cur))
-						continue
-					}
+						if unicode.IsLower(cur) || unicode.IsDigit(cur) {
+							dist.WriteRune(cur)
+							continue
+						}
 
-					if i < len(source)-1 {
-						next := source[i+1]
-						if unicode.IsLower(next) {
+						if i == 0 {
+							dist.WriteRune(unicode.ToLower(cur))
+							continue
+						}
+
+						last := source[i-1]
+
+						if (!unicode.IsLetter(last)) || unicode.IsLower(last) {
 							if skipNext {
 								skipNext = false
 							} else {
-								dist.WriteRune('.')
+								dist.WriteRune('_')
 							}
 							dist.WriteRune(unicode.ToLower(cur))
 							continue
 						}
+
+						if i < len(source)-1 {
+							next := source[i+1]
+							if unicode.IsLower(next) {
+								if skipNext {
+									skipNext = false
+								} else {
+									dist.WriteRune('_')
+								}
+								dist.WriteRune(unicode.ToLower(cur))
+								continue
+							}
+						}
+
+						dist.WriteRune(unicode.ToLower(cur))
 					}
 
-					dist.WriteRune(unicode.ToLower(cur))
-				}
+					return dist.String(), nil
 
-				return dist.String(), nil
+				// Convert string to uppercase (some_name -> SOME_NAME)
+				case "upper":
+					return strings.ToUpper(valStr), nil
+
+				// Convert string to lowercase (SOME_NAME -> some_name)
+				case "lower":
+					return strings.ToLower(valStr), nil
+				}
 			}
 		}
 		return nil, nil
