@@ -105,6 +105,10 @@ func ConvertCase[K any](target ottl.Getter[K], toCase string) (ottl.ExprFunc[K],
 				// Convert string to lowercase (SOME_NAME -> some_name)
 				case "lower":
 					return strings.ToLower(valStr), nil
+
+				// If snake,upper,lower not set
+				default:
+					return valStr, nil
 				}
 			}
 		}
