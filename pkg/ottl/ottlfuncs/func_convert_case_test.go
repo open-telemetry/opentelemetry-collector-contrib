@@ -29,6 +29,7 @@ func Test_convertCase(t *testing.T) {
 		toCase   string
 		expected interface{}
 	}{
+		// snake case
 		{
 			name: "snake simple convert",
 			target: &ottl.StandardGetSetter[interface{}]{
@@ -87,6 +88,68 @@ func Test_convertCase(t *testing.T) {
 				},
 			},
 			toCase:   "snake",
+			expected: "",
+		},
+		// upper case
+		{
+			name: "upper simple",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx interface{}) (interface{}, error) {
+					return "simple", nil
+				},
+			},
+			toCase:   "upper",
+			expected: "SIMPLE",
+		},
+		{
+			name: "upper complex",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx interface{}) (interface{}, error) {
+					return "complex_SET-of.WORDS1234", nil
+				},
+			},
+			toCase:   "upper",
+			expected: "COMPLEX_SET-OF.WORDS1234",
+		},
+		{
+			name: "upper empty string",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx interface{}) (interface{}, error) {
+					return "", nil
+				},
+			},
+			toCase:   "upper",
+			expected: "",
+		},
+		// lower case
+		{
+			name: "lower simple",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx interface{}) (interface{}, error) {
+					return "SIMPLE", nil
+				},
+			},
+			toCase:   "lower",
+			expected: "simple",
+		},
+		{
+			name: "lower complex",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx interface{}) (interface{}, error) {
+					return "complex_SET-of.WORDS1234", nil
+				},
+			},
+			toCase:   "lower",
+			expected: "complex_set-of.words1234",
+		},
+		{
+			name: "lower empty string",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx interface{}) (interface{}, error) {
+					return "", nil
+				},
+			},
+			toCase:   "lower",
 			expected: "",
 		},
 	}
