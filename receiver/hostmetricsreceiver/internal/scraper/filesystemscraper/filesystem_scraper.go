@@ -85,16 +85,16 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		}
 		errors.AddPartial(0, fmt.Errorf("failed collecting partitions information: %w", err))
 	}
-	translatedPartitions := translateMountsRootPath(partitions, s.config.RootPath)
 
-	usages := make([]*deviceUsage, 0, len(translatedPartitions))
-	for i, partition := range partitions {
+	usages := make([]*deviceUsage, 0, len(partitions))
+	for _, partition := range partitions {
 		if !s.fsFilter.includePartition(partition) {
 			continue
 		}
-		usage, usageErr := s.usage(translatedPartitions[i].Mountpoint)
+		translatedMountpoint := translateMountpoint(s.config.RootPath, partition.Mountpoint)
+		usage, usageErr := s.usage(translatedMountpoint)
 		if usageErr != nil {
-			errors.AddPartial(0, fmt.Errorf("failed to read usage at %s: %w", translatedPartitions[i].Mountpoint, usageErr))
+			errors.AddPartial(0, fmt.Errorf("failed to read usage at %s: %w", translatedMountpoint, usageErr))
 			continue
 		}
 
@@ -157,16 +157,7 @@ func (f *fsFilter) includeMountPoint(mountPoint string) bool {
 		(f.excludeMountPointFilter == nil || !f.excludeMountPointFilter.Matches(mountPoint))
 }
 
-// translateMountsRootPath translates mountpoints from the host perspective to the chrooted perspective.
-// If the rootPath is empty, the returned slice will be equal to the input slice.
-// The stats input slice is not modified.
-func translateMountsRootPath(stats []disk.PartitionStat, rootPath string) []disk.PartitionStat {
-	translatedStats := make([]disk.PartitionStat, 0, len(stats))
-
-	for _, stat := range stats { // range copies stat
-		stat.Mountpoint = filepath.Join(rootPath, stat.Mountpoint)
-		translatedStats = append(translatedStats, stat)
-	}
-
-	return translatedStats
+// translateMountsRootPath translates a mountpoint from the host perspective to the chrooted perspective.
+func translateMountpoint(rootPath, mountpoint string) string {
+	return filepath.Join(rootPath, mountpoint)
 }
