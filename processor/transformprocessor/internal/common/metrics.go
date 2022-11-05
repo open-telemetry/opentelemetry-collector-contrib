@@ -170,19 +170,19 @@ func (pc MetricParserCollection) ParseContextStatements(contextStatements []Cont
 	for i, s := range contextStatements {
 		switch s.Context {
 		case Metric:
-			tStatements, err := pc.metricParser.ParseStatements(s.Statements)
+			mStatements, err := pc.metricParser.ParseStatements(s.Statements)
 			if err != nil {
 				errors = multierr.Append(errors, err)
 				continue
 			}
-			contexts[i] = metricStatements(tStatements)
+			contexts[i] = metricStatements(mStatements)
 		case DataPoint:
-			seStatements, err := pc.dataPointParser.ParseStatements(s.Statements)
+			dpStatements, err := pc.dataPointParser.ParseStatements(s.Statements)
 			if err != nil {
 				errors = multierr.Append(errors, err)
 				continue
 			}
-			contexts[i] = dataPointStatements(seStatements)
+			contexts[i] = dataPointStatements(dpStatements)
 		default:
 			statements, err := pc.parseCommonContextStatements(s)
 			if err != nil {
