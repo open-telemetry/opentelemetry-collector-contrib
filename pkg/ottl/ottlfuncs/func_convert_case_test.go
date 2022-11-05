@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -153,28 +154,6 @@ func Test_convertCase(t *testing.T) {
 			toCase:   "lower",
 			expected: "",
 		},
-		// no case
-		{
-			name: "no case defined",
-			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-					return "simpleName", nil
-				},
-			},
-			toCase:   "",
-			expected: "simpleName",
-		},
-		// unconfigured case
-		{
-			name: "unconfigured case",
-			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-					return "simpleName", nil
-				},
-			},
-			toCase:   "unconfigured",
-			expected: "simpleName",
-		},
 		// nil test
 		{
 			name: "nil",
@@ -205,6 +184,31 @@ func Test_convertCase(t *testing.T) {
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func Test_convertCaseError(t *testing.T) {
+	tests := []struct {
+		name   string
+		target ottl.Getter[interface{}]
+		toCase string
+	}{
+		{
+			name: "error bad case",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "simpleString", nil
+				},
+			},
+			toCase: "unset",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := ConvertCase(tt.target, tt.toCase)
+			require.Error(t, err)
+			assert.ErrorContains(t, err, `invalid case "unset", allowed cases are "lower", "upper", or "snake"`)
 		})
 	}
 }
