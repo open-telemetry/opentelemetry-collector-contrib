@@ -14,7 +14,9 @@ modules=(
   "go.opentelemetry.io/collector/exporter/otlphttpexporter"
   "go.opentelemetry.io/collector/extension/ballastextension"
   "go.opentelemetry.io/collector/extension/zpagesextension"
+  "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
   "go.opentelemetry.io/collector/processor/batchprocessor"
+  "go.opentelemetry.io/collector/receiver/otlpreceiver"
   "go.opentelemetry.io/collector/semconv"
   "go.opentelemetry.io/collector/pdata"
 )
