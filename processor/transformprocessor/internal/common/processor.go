@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -34,10 +35,6 @@ type ContextStatements struct {
 	Context    string   `mapstructure:"context"`
 	Statements []string `mapstructure:"statements"`
 }
-
-type baseContext interface{}
-
-type baseImpl struct{}
 
 var _ TracesContext = &ResourceStatements{}
 var _ LogsContext = &ResourceStatements{}
@@ -116,6 +113,35 @@ func (s *ScopeStatements) ProcessLogs(td plog.Logs) error {
 }
 
 type parserCollection struct {
+	settings       component.TelemetrySettings
 	resourceParser ottl.Parser[ottlresource.TransformContext]
 	scopeParser    ottl.Parser[ottlscope.TransformContext]
+}
+
+type baseContext interface {
+	ProcessTraces(td ptrace.Traces) error
+	ProcessLogs(td plog.Logs) error
+}
+
+func (pc parserCollection) parseCommonContextStatements(contextStatement ContextStatements) (baseContext, error) {
+	switch contextStatement.Context {
+	case Resource:
+		statements, err := pc.resourceParser.ParseStatements(contextStatement.Statements)
+		if err != nil {
+			return nil, err
+		}
+		return &ResourceStatements{
+			Statements: statements,
+		}, nil
+	case Scope:
+		statements, err := pc.scopeParser.ParseStatements(contextStatement.Statements)
+		if err != nil {
+			return nil, err
+		}
+		return &ScopeStatements{
+			Statements: statements,
+		}, nil
+	default:
+		return nil, nil
+	}
 }

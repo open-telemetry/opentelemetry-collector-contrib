@@ -15,7 +15,6 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
-	"fmt"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
@@ -25,21 +24,15 @@ import (
 	"go.uber.org/multierr"
 )
 
-var _ TracesContext = &baseTraces{}
+var _ TracesContext = &traceStatements{}
 
 type TracesContext interface {
-	baseContext
 	ProcessTraces(td ptrace.Traces) error
-}
-
-type baseTraces struct {
-	*baseImpl
-	traceStatements
 }
 
 type traceStatements []*ottl.Statement[ottltraces.TransformContext]
 
-func (t *baseTraces) ProcessTraces(td ptrace.Traces) error {
+func (t traceStatements) ProcessTraces(td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
@@ -47,7 +40,7 @@ func (t *baseTraces) ProcessTraces(td ptrace.Traces) error {
 			spans := sspans.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				ctx := ottltraces.NewTransformContext(spans.At(k), sspans.Scope(), rspans.Resource())
-				for _, statement := range t.traceStatements {
+				for _, statement := range t {
 					_, _, err := statement.Execute(ctx)
 					if err != nil {
 						return err
@@ -67,6 +60,7 @@ type TraceParserCollection struct {
 func NewTraceParserCollection(functions map[string]interface{}, settings component.TelemetrySettings) TraceParserCollection {
 	return TraceParserCollection{
 		parserCollection: parserCollection{
+			settings:       settings,
 			resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
 			scopeParser:    ottlscope.NewParser(ScopeFunctions(), settings),
 		},
@@ -79,37 +73,21 @@ func (pc TraceParserCollection) ParseContextStatements(contextStatements []Conte
 	var errors error
 
 	for i, s := range contextStatements {
-		switch s.Context {
-		case Resource:
-			statements, err := pc.resourceParser.ParseStatements(s.Statements)
-			if err != nil {
-				errors = multierr.Append(errors, err)
-				continue
-			}
-			contexts[i] = &ResourceStatements{
-				Statements: statements,
-			}
-		case Scope:
-			statements, err := pc.scopeParser.ParseStatements(s.Statements)
-			if err != nil {
-				errors = multierr.Append(errors, err)
-				continue
-			}
-			contexts[i] = &ScopeStatements{
-				Statements: statements,
-			}
-		case Trace:
-			statements, err := pc.traceParser.ParseStatements(s.Statements)
-			if err != nil {
-				errors = multierr.Append(errors, err)
-				continue
-			}
-			contexts[i] = &baseTraces{
-				traceStatements: statements,
-			}
-		default:
-			errors = multierr.Append(errors, fmt.Errorf("context, %v, is not a valid context", s.Context))
+		statements, err := pc.parseCommonContextStatements(s)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
 		}
+		if statements != nil {
+			contexts[i] = statements
+			continue
+		}
+		tStatements, err := pc.traceParser.ParseStatements(s.Statements)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
+		}
+		contexts[i] = traceStatements(tStatements)
 	}
 
 	if errors != nil {
