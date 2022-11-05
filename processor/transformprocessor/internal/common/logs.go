@@ -15,7 +15,11 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
@@ -25,12 +29,9 @@ type LogsContext interface {
 	ProcessLogs(td plog.Logs) error
 }
 
-var _ Context = &logStatements{}
 var _ LogsContext = &logStatements{}
 
 type logStatements []*ottl.Statement[ottllogs.TransformContext]
-
-func (l logStatements) isContext() {}
 
 func (l logStatements) ProcessLogs(td plog.Logs) error {
 	for i := 0; i < td.ResourceLogs().Len(); i++ {
@@ -50,4 +51,48 @@ func (l logStatements) ProcessLogs(td plog.Logs) error {
 		}
 	}
 	return nil
+}
+
+type LogParserCollection struct {
+	parserCollection
+	logParser ottl.Parser[ottllogs.TransformContext]
+}
+
+func NewLogParserCollection(functions map[string]interface{}, settings component.TelemetrySettings) LogParserCollection {
+	return LogParserCollection{
+		parserCollection: parserCollection{
+			settings:       settings,
+			resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
+			scopeParser:    ottlscope.NewParser(ScopeFunctions(), settings),
+		},
+		logParser: ottllogs.NewParser(functions, settings),
+	}
+}
+
+func (pc LogParserCollection) ParseContextStatements(contextStatements []ContextStatements) ([]LogsContext, error) {
+	contexts := make([]LogsContext, len(contextStatements))
+	var errors error
+
+	for i, s := range contextStatements {
+		switch s.Context {
+		case Trace:
+			lStatements, err := pc.logParser.ParseStatements(s.Statements)
+			if err != nil {
+				errors = multierr.Append(errors, err)
+				continue
+			}
+			contexts[i] = logStatements(lStatements)
+		default:
+			statements, err := pc.parseCommonContextStatements(s)
+			if err != nil {
+				errors = multierr.Append(errors, err)
+				continue
+			}
+			contexts[i] = statements
+		}
+	}
+	if errors != nil {
+		return nil, errors
+	}
+	return contexts, nil
 }

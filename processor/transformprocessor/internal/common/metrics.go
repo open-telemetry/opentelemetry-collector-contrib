@@ -15,8 +15,12 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
@@ -27,12 +31,9 @@ type MetricsContext interface {
 	ProcessMetrics(td pmetric.Metrics) error
 }
 
-var _ Context = &metricStatements{}
 var _ MetricsContext = &metricStatements{}
 
 type metricStatements []*ottl.Statement[ottlmetric.TransformContext]
-
-func (m metricStatements) isContext() {}
 
 func (m metricStatements) ProcessMetrics(td pmetric.Metrics) error {
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
@@ -54,12 +55,9 @@ func (m metricStatements) ProcessMetrics(td pmetric.Metrics) error {
 	return nil
 }
 
-var _ Context = &dataPointStatements{}
 var _ MetricsContext = &dataPointStatements{}
 
 type dataPointStatements []*ottl.Statement[ottldatapoints.TransformContext]
-
-func (d dataPointStatements) isContext() {}
 
 func (d dataPointStatements) ProcessMetrics(td pmetric.Metrics) error {
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
@@ -143,4 +141,57 @@ func (d dataPointStatements) callFunctions(ctx ottldatapoints.TransformContext) 
 		}
 	}
 	return nil
+}
+
+type MetricParserCollection struct {
+	parserCollection
+	metricParser    ottl.Parser[ottlmetric.TransformContext]
+	dataPointParser ottl.Parser[ottldatapoints.TransformContext]
+}
+
+func NewMetricParserCollection(functions map[string]interface{}, settings component.TelemetrySettings) MetricParserCollection {
+	return MetricParserCollection{
+		parserCollection: parserCollection{
+			settings:       settings,
+			resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
+			scopeParser:    ottlscope.NewParser(ScopeFunctions(), settings),
+		},
+		metricParser:    ottlmetric.NewParser(functions, settings),
+		dataPointParser: ottldatapoints.NewParser(functions, settings),
+	}
+}
+
+func (pc MetricParserCollection) ParseContextStatements(contextStatements []ContextStatements) ([]MetricsContext, error) {
+	contexts := make([]MetricsContext, len(contextStatements))
+	var errors error
+
+	for i, s := range contextStatements {
+		switch s.Context {
+		case Metric:
+			tStatements, err := pc.metricParser.ParseStatements(s.Statements)
+			if err != nil {
+				errors = multierr.Append(errors, err)
+				continue
+			}
+			contexts[i] = metricStatements(tStatements)
+		case DataPoint:
+			seStatements, err := pc.dataPointParser.ParseStatements(s.Statements)
+			if err != nil {
+				errors = multierr.Append(errors, err)
+				continue
+			}
+			contexts[i] = dataPointStatements(seStatements)
+		default:
+			statements, err := pc.parseCommonContextStatements(s)
+			if err != nil {
+				errors = multierr.Append(errors, err)
+				continue
+			}
+			contexts[i] = statements
+		}
+	}
+	if errors != nil {
+		return nil, errors
+	}
+	return contexts, nil
 }
