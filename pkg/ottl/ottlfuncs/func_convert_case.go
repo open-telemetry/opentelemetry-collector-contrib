@@ -16,6 +16,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"unicode"
 
@@ -23,6 +24,17 @@ import (
 )
 
 func ConvertCase[K any](target ottl.Getter[K], toCase string) (ottl.ExprFunc[K], error) {
+	var caseInvalid bool = true
+	for _, validCase := range []string{"lower", "upper", "snake"} {
+		if toCase == validCase {
+			caseInvalid = false
+			break
+		}
+	}
+	if caseInvalid {
+		return nil, fmt.Errorf(`invalid case "%s", allowed cases are "lower", "upper", or "snake"`, toCase)
+	}
+
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		val, err := target.Get(ctx, tCtx)
 
