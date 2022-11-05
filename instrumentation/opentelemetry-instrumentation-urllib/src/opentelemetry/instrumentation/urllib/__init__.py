@@ -206,7 +206,7 @@ def _instrument(
                 code_ = result.getcode()
                 labels[SpanAttributes.HTTP_STATUS_CODE] = str(code_)
 
-                if span.is_recording():
+                if span.is_recording() and code_ is not None:
                     span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, code_)
                     span.set_status(Status(http_status_to_status_code(code_)))
 

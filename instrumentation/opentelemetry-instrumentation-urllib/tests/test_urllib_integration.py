@@ -16,6 +16,7 @@ import abc
 import socket
 import urllib
 from unittest import mock
+from unittest.mock import patch
 from urllib import request
 from urllib.error import HTTPError
 from urllib.request import OpenerDirector
@@ -148,6 +149,35 @@ class RequestsIntegrationTestBase(abc.ABC):
         self.assertIs(
             span.status.status_code,
             trace.StatusCode.ERROR,
+        )
+
+    @staticmethod
+    def mock_get_code(*args, **kwargs):
+        return None
+
+    @patch("http.client.HTTPResponse.getcode", new=mock_get_code)
+    def test_response_code_none(self):
+
+        result = self.perform_request(self.URL)
+
+        self.assertEqual(result.read(), b"Hello!")
+        span = self.assert_span()
+
+        self.assertIs(span.kind, trace.SpanKind.CLIENT)
+        self.assertEqual(span.name, "HTTP GET")
+
+        self.assertEqual(
+            span.attributes,
+            {
+                SpanAttributes.HTTP_METHOD: "GET",
+                SpanAttributes.HTTP_URL: self.URL,
+            },
+        )
+
+        self.assertIs(span.status.status_code, trace.StatusCode.UNSET)
+
+        self.assertEqualSpanInstrumentationInfo(
+            span, opentelemetry.instrumentation.urllib
         )
 
     def test_uninstrument(self):
