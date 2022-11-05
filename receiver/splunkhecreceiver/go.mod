@@ -9,9 +9,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.63.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.63.2-0.20221101161158-df8deb48186b
-	go.opentelemetry.io/collector/pdata v0.63.2-0.20221101161158-df8deb48186b
-	go.opentelemetry.io/collector/semconv v0.63.2-0.20221101161158-df8deb48186b
+	go.opentelemetry.io/collector v0.63.2-0.20221103164255-2ed41215f324
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221103164255-2ed41215f324
+	go.opentelemetry.io/collector/semconv v0.63.2-0.20221103164255-2ed41215f324
 	go.uber.org/zap v1.23.0
 )
 
@@ -31,6 +31,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.0.0-00010101000000-000000000000 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.63.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.8.2 // indirect

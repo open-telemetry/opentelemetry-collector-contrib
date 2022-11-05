@@ -154,6 +154,12 @@ attributes:
       - doc_value
       - index_writer
       - fixed_bit_set
+  get_result:
+    value: result
+    description: Result of get operation
+    enum:
+      - hit
+      - miss
 
 metrics:
   # these metrics are from /_nodes/stats, and are node level metrics
@@ -309,6 +315,24 @@ metrics:
       value_type: int
     attributes: [operation]
     enabled: true
+  elasticsearch.node.operations.get.completed:
+    description: The number of hits and misses resulting from GET operations.
+    unit: "{operations}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [get_result]
+    enabled: false
+  elasticsearch.node.operations.get.time:
+    description: The time spent on hits and misses resulting from GET operations.
+    unit: ms
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [get_result]
+    enabled: false
   elasticsearch.node.shards.size:
     description: The size of the shards assigned to this node.
     unit: By

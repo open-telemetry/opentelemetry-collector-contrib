@@ -4,9 +4,9 @@ go 1.18
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.39
-	github.com/DataDog/datadog-agent/pkg/otlp/model v0.41.0-rc.1
-	github.com/DataDog/datadog-agent/pkg/quantile v0.41.0-rc.1
-	github.com/DataDog/datadog-agent/pkg/trace v0.41.0-rc.1
+	github.com/DataDog/datadog-agent/pkg/otlp/model v0.41.0-rc.1.0.20221103113926-3b037494a38c
+	github.com/DataDog/datadog-agent/pkg/quantile v0.41.0-rc.1.0.20221103113926-3b037494a38c
+	github.com/DataDog/datadog-agent/pkg/trace v0.41.0-rc.1.0.20221103113926-3b037494a38c
 	github.com/DataDog/datadog-api-client-go/v2 v2.4.0
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.34.1
@@ -23,10 +23,11 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.63.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.63.2-0.20221101161158-df8deb48186b
-	go.opentelemetry.io/collector/pdata v0.63.2-0.20221101161158-df8deb48186b
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.0.0-20221101161158-df8deb48186b
-	go.opentelemetry.io/collector/semconv v0.63.2-0.20221101161158-df8deb48186b
+	go.opentelemetry.io/collector v0.63.2-0.20221103164255-2ed41215f324
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221103164255-2ed41215f324
+	go.opentelemetry.io/collector/processor/batchprocessor v0.0.0-20221103161931-a167b006e8c0
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.0.0-20221103164255-2ed41215f324
+	go.opentelemetry.io/collector/semconv v0.63.2-0.20221103164255-2ed41215f324
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -137,7 +138,7 @@ require (
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.4.0 // indirect
-	github.com/shirou/gopsutil/v3 v3.22.9 // indirect
+	github.com/shirou/gopsutil/v3 v3.22.10 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/cobra v1.6.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect

@@ -53,7 +53,7 @@ func New(id config.ComponentID, nextConsumer consumer.Traces, set component.Rece
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		id:           id,
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             id,
 			Transport:              receiverTransport,
 			LongLivedCtx:           true,

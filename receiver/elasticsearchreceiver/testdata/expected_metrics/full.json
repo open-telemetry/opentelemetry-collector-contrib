@@ -1451,6 +1451,80 @@
                      "unit": "ms"
                   },
                   {
+                     "description": "The number of hits and misses resulting from GET operations.",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "512",
+                              "attributes": [
+                                 {
+                                    "key": "result",
+                                    "value": {
+                                       "stringValue": "hit"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811026803971000",
+                              "timeUnixNano": "1661811026805343000"
+                           },
+                           {
+                              "asInt": "512",
+                              "attributes": [
+                                 {
+                                    "key": "result",
+                                    "value": {
+                                       "stringValue": "miss"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811026803971000",
+                              "timeUnixNano": "1661811026805343000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "name": "elasticsearch.node.operations.get.completed",
+                     "unit": "{operations}"
+                  },
+                  {
+                     "description": "The time spent on hits and misses resulting from GET operations.",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "209",
+                              "attributes": [
+                                 {
+                                    "key": "result",
+                                    "value": {
+                                       "stringValue": "hit"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811026803971000",
+                              "timeUnixNano": "1661811026805343000"
+                           },
+                           {
+                              "asInt": "124",
+                              "attributes": [
+                                 {
+                                    "key": "result",
+                                    "value": {
+                                       "stringValue": "miss"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811026803971000",
+                              "timeUnixNano": "1661811026805343000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "name": "elasticsearch.node.operations.get.time",
+                     "unit": "ms"
+                  },
+                  {
                      "description": "Total number of documents currently being ingested by a pipeline.",
                      "name": "elasticsearch.node.pipeline.ingest.documents.current",
                      "sum": {
@@ -2605,6 +2679,19 @@
                               ],
                               "startTimeUnixNano": "1661811689941624000",
                               "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "5",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
                            }
                         ]
                      },
@@ -2624,6 +2711,19 @@
                                     "key": "aggregation",
                                     "value": {
                                        "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "5460",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
                                     }
                                  }
                               ],
@@ -2705,6 +2805,82 @@
                                     "key": "aggregation",
                                     "value": {
                                        "stringValue": "total"
+                                    }
+                                 },
+                                 {
+                                    "key": "object",
+                                    "value": {
+                                       "stringValue": "fixed_bit_set"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "2560",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 },
+                                 {
+                                    "key": "object",
+                                    "value": {
+                                       "stringValue": "term"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "380",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 },
+                                 {
+                                    "key": "object",
+                                    "value": {
+                                       "stringValue": "doc_value"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "37",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 },
+                                 {
+                                    "key": "object",
+                                    "value": {
+                                       "stringValue": "index_writer"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "21",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
                                     }
                                  },
                                  {
@@ -3005,6 +3181,19 @@
                               ],
                               "startTimeUnixNano": "1661811689941624000",
                               "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "5",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
                            }
                         ]
                      },
@@ -3024,6 +3213,19 @@
                                     "key": "aggregation",
                                     "value": {
                                        "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "5460",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
                                     }
                                  }
                               ],
@@ -3105,6 +3307,82 @@
                                     "key": "aggregation",
                                     "value": {
                                        "stringValue": "total"
+                                    }
+                                 },
+                                 {
+                                    "key": "object",
+                                    "value": {
+                                       "stringValue": "fixed_bit_set"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "2560",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 },
+                                 {
+                                    "key": "object",
+                                    "value": {
+                                       "stringValue": "term"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "380",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 },
+                                 {
+                                    "key": "object",
+                                    "value": {
+                                       "stringValue": "doc_value"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "37",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 },
+                                 {
+                                    "key": "object",
+                                    "value": {
+                                       "stringValue": "index_writer"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "21",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
                                     }
                                  },
                                  {

@@ -7,7 +7,7 @@ require (
 	github.com/grafana/loki v1.6.2-0.20220718071907-6bd05c9a4399
 	github.com/prometheus/common v0.37.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector/pdata v0.63.2-0.20221101161158-df8deb48186b
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221103164255-2ed41215f324
 )
 
 require (
