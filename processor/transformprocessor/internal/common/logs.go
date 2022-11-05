@@ -77,7 +77,7 @@ func (pc LogParserCollection) ParseContextStatements(contextStatements []Context
 
 	for i, s := range contextStatements {
 		switch s.Context {
-		case Trace:
+		case Log:
 			lStatements, err := pc.logParser.ParseStatements(s.Statements)
 			if err != nil {
 				errors = multierr.Append(errors, err)
