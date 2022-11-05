@@ -46,13 +46,12 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 			},
 		},
 		{
-			desc: "selected resource attribute should be included",
-			logAttrs: map[string]interface{}{
-				hintResources: "host.name",
-			},
+			desc:     "selected resource attribute should be included",
+			logAttrs: map[string]interface{}{},
 			resAttrs: map[string]interface{}{
-				"host.name": "guarana",
-				"pod.name":  "should-be-ignored",
+				hintResources: "host.name",
+				"host.name":   "guarana",
+				"pod.name":    "should-be-ignored",
 			},
 			expected: model.LabelSet{
 				"exporter":  "OTLP",
