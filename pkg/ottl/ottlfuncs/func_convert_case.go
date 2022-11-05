@@ -24,7 +24,7 @@ import (
 )
 
 func ConvertCase[K any](target ottl.Getter[K], toCase string) (ottl.ExprFunc[K], error) {
-	var caseInvalid bool = true
+	var caseInvalid = true
 	for _, validCase := range []string{"lower", "upper", "snake"} {
 		if toCase == validCase {
 			caseInvalid = false
@@ -53,78 +53,88 @@ func ConvertCase[K any](target ottl.Getter[K], toCase string) (ottl.ExprFunc[K],
 				switch toCase {
 				// Convert string to snake case (someName -> some_name)
 				case "snake":
-
-					if len(valStr) == 1 {
-						return strings.ToLower(valStr), nil
-					}
-					source := []rune(valStr)
-					dist := strings.Builder{}
-					dist.Grow(len(valStr) + len(valStr)/3)
-					skipNext := false
-
-					for i := 0; i < len(source); i++ {
-						cur := source[i]
-
-						switch cur {
-						case '-', '_':
-							dist.WriteRune('_')
-							skipNext = true
-							continue
-						}
-						if unicode.IsLower(cur) || unicode.IsDigit(cur) {
-							dist.WriteRune(cur)
-							continue
-						}
-
-						if i == 0 {
-							dist.WriteRune(unicode.ToLower(cur))
-							continue
-						}
-
-						last := source[i-1]
-
-						if (!unicode.IsLetter(last)) || unicode.IsLower(last) {
-							if skipNext {
-								skipNext = false
-							} else {
-								dist.WriteRune('_')
-							}
-							dist.WriteRune(unicode.ToLower(cur))
-							continue
-						}
-
-						if i < len(source)-1 {
-							next := source[i+1]
-							if unicode.IsLower(next) {
-								if skipNext {
-									skipNext = false
-								} else {
-									dist.WriteRune('_')
-								}
-								dist.WriteRune(unicode.ToLower(cur))
-								continue
-							}
-						}
-
-						dist.WriteRune(unicode.ToLower(cur))
-					}
-
-					return dist.String(), nil
-
-				// Convert string to uppercase (some_name -> SOME_NAME)
-				case "upper":
-					return strings.ToUpper(valStr), nil
+					return convertCaseSnake(valStr), nil
 
 				// Convert string to lowercase (SOME_NAME -> some_name)
 				case "lower":
-					return strings.ToLower(valStr), nil
+					return convertCaseLower(valStr), nil
 
-				// If snake,upper,lower not set
+				// Convert string to uppercase (some_name -> SOME_NAME)
+				case "upper":
+					return convertCaseUpper(valStr), nil
+
 				default:
-					return valStr, nil
+					return nil, fmt.Errorf(`error handling unexpected case "%s"`, toCase)
 				}
 			}
 		}
 		return nil, nil
 	}, nil
+}
+
+func convertCaseLower(input string) string {
+	return strings.ToLower(input)
+}
+
+func convertCaseUpper(input string) string {
+	return strings.ToUpper(input)
+}
+
+func convertCaseSnake(input string) string {
+	if len(input) == 1 {
+		return strings.ToLower(input)
+	}
+	source := []rune(input)
+	dist := strings.Builder{}
+	dist.Grow(len(input) + len(input)/3)
+	skipNext := false
+
+	for i := 0; i < len(source); i++ {
+		cur := source[i]
+
+		switch cur {
+		case '-', '_':
+			dist.WriteRune('_')
+			skipNext = true
+			continue
+		}
+		if unicode.IsLower(cur) || unicode.IsDigit(cur) {
+			dist.WriteRune(cur)
+			continue
+		}
+
+		if i == 0 {
+			dist.WriteRune(unicode.ToLower(cur))
+			continue
+		}
+
+		last := source[i-1]
+
+		if (!unicode.IsLetter(last)) || unicode.IsLower(last) {
+			if skipNext {
+				skipNext = false
+			} else {
+				dist.WriteRune('_')
+			}
+			dist.WriteRune(unicode.ToLower(cur))
+			continue
+		}
+
+		if i < len(source)-1 {
+			next := source[i+1]
+			if unicode.IsLower(next) {
+				if skipNext {
+					skipNext = false
+				} else {
+					dist.WriteRune('_')
+				}
+				dist.WriteRune(unicode.ToLower(cur))
+				continue
+			}
+		}
+
+		dist.WriteRune(unicode.ToLower(cur))
+	}
+
+	return dist.String()
 }
