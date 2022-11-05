@@ -208,7 +208,7 @@ func Test_convertCaseError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := ConvertCase(tt.target, tt.toCase)
 			require.Error(t, err)
-			assert.ErrorContains(t, err, `invalid case "unset", allowed cases are "lower", "upper", or "snake"`)
+			assert.ErrorContains(t, err, "invalid case: unset, allowed cases are: lower, upper, or snake")
 		})
 	}
 }

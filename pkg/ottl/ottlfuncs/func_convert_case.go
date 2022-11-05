@@ -32,7 +32,7 @@ func ConvertCase[K any](target ottl.Getter[K], toCase string) (ottl.ExprFunc[K],
 		}
 	}
 	if caseInvalid {
-		return nil, fmt.Errorf(`invalid case "%s", allowed cases are "lower", "upper", or "snake"`, toCase)
+		return nil, fmt.Errorf("invalid case: %s, allowed cases are: lower, upper, or snake", toCase)
 	}
 
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
@@ -64,7 +64,7 @@ func ConvertCase[K any](target ottl.Getter[K], toCase string) (ottl.ExprFunc[K],
 					return convertCaseUpper(valStr), nil
 
 				default:
-					return nil, fmt.Errorf(`error handling unexpected case "%s"`, toCase)
+					return nil, fmt.Errorf("error handling unexpected case: %s", toCase)
 				}
 			}
 		}
