@@ -15,14 +15,17 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
+	"context"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 )
 
 var _ TracesContext = &resourceStatements{}
@@ -31,12 +34,12 @@ var _ LogsContext = &resourceStatements{}
 
 type resourceStatements []*ottl.Statement[ottlresource.TransformContext]
 
-func (r resourceStatements) ProcessTraces(td ptrace.Traces) error {
+func (r resourceStatements) ProcessTraces(ctx context.Context, td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
-		ctx := ottlresource.NewTransformContext(rspans.Resource())
+		tCtx := ottlresource.NewTransformContext(rspans.Resource())
 		for _, statement := range r {
-			_, _, err := statement.Execute(ctx)
+			_, _, err := statement.Execute(ctx, tCtx)
 			if err != nil {
 				return err
 			}
@@ -45,12 +48,12 @@ func (r resourceStatements) ProcessTraces(td ptrace.Traces) error {
 	return nil
 }
 
-func (r resourceStatements) ProcessMetrics(td pmetric.Metrics) error {
+func (r resourceStatements) ProcessMetrics(ctx context.Context, td pmetric.Metrics) error {
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
 		rmetrics := td.ResourceMetrics().At(i)
-		ctx := ottlresource.NewTransformContext(rmetrics.Resource())
+		tCtx := ottlresource.NewTransformContext(rmetrics.Resource())
 		for _, statement := range r {
-			_, _, err := statement.Execute(ctx)
+			_, _, err := statement.Execute(ctx, tCtx)
 			if err != nil {
 				return err
 			}
@@ -59,12 +62,12 @@ func (r resourceStatements) ProcessMetrics(td pmetric.Metrics) error {
 	return nil
 }
 
-func (r resourceStatements) ProcessLogs(td plog.Logs) error {
+func (r resourceStatements) ProcessLogs(ctx context.Context, td plog.Logs) error {
 	for i := 0; i < td.ResourceLogs().Len(); i++ {
 		rlogs := td.ResourceLogs().At(i)
-		ctx := ottlresource.NewTransformContext(rlogs.Resource())
+		tCtx := ottlresource.NewTransformContext(rlogs.Resource())
 		for _, statement := range r {
-			_, _, err := statement.Execute(ctx)
+			_, _, err := statement.Execute(ctx, tCtx)
 			if err != nil {
 				return err
 			}
@@ -79,14 +82,14 @@ var _ LogsContext = &scopeStatements{}
 
 type scopeStatements []*ottl.Statement[ottlscope.TransformContext]
 
-func (s scopeStatements) ProcessTraces(td ptrace.Traces) error {
+func (s scopeStatements) ProcessTraces(ctx context.Context, td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
 			sspans := rspans.ScopeSpans().At(j)
-			ctx := ottlscope.NewTransformContext(sspans.Scope(), rspans.Resource())
+			tCtx := ottlscope.NewTransformContext(sspans.Scope(), rspans.Resource())
 			for _, statement := range s {
-				_, _, err := statement.Execute(ctx)
+				_, _, err := statement.Execute(ctx, tCtx)
 				if err != nil {
 					return err
 				}
@@ -96,14 +99,14 @@ func (s scopeStatements) ProcessTraces(td ptrace.Traces) error {
 	return nil
 }
 
-func (s scopeStatements) ProcessMetrics(td pmetric.Metrics) error {
+func (s scopeStatements) ProcessMetrics(ctx context.Context, td pmetric.Metrics) error {
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
 		rmetrics := td.ResourceMetrics().At(i)
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
 			smetrics := rmetrics.ScopeMetrics().At(j)
-			ctx := ottlscope.NewTransformContext(smetrics.Scope(), rmetrics.Resource())
+			tCtx := ottlscope.NewTransformContext(smetrics.Scope(), rmetrics.Resource())
 			for _, statement := range s {
-				_, _, err := statement.Execute(ctx)
+				_, _, err := statement.Execute(ctx, tCtx)
 				if err != nil {
 					return err
 				}
@@ -113,14 +116,14 @@ func (s scopeStatements) ProcessMetrics(td pmetric.Metrics) error {
 	return nil
 }
 
-func (s scopeStatements) ProcessLogs(td plog.Logs) error {
+func (s scopeStatements) ProcessLogs(ctx context.Context, td plog.Logs) error {
 	for i := 0; i < td.ResourceLogs().Len(); i++ {
 		rlogs := td.ResourceLogs().At(i)
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
 			slogs := rlogs.ScopeLogs().At(j)
-			ctx := ottlscope.NewTransformContext(slogs.Scope(), rlogs.Resource())
+			tCtx := ottlscope.NewTransformContext(slogs.Scope(), rlogs.Resource())
 			for _, statement := range s {
-				_, _, err := statement.Execute(ctx)
+				_, _, err := statement.Execute(ctx, tCtx)
 				if err != nil {
 					return err
 				}
@@ -137,9 +140,9 @@ type parserCollection struct {
 }
 
 type baseContext interface {
-	ProcessTraces(td ptrace.Traces) error
-	ProcessMetrics(td pmetric.Metrics) error
-	ProcessLogs(td plog.Logs) error
+	ProcessTraces(ctx context.Context, td ptrace.Traces) error
+	ProcessMetrics(ctx context.Context, td pmetric.Metrics) error
+	ProcessLogs(ctx context.Context, td plog.Logs) error
 }
 
 func (pc parserCollection) parseCommonContextStatements(contextStatement ContextStatements) (baseContext, error) {

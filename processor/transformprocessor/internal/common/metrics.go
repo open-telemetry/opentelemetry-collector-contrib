@@ -15,8 +15,8 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
+	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -25,26 +25,28 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 )
 
 type MetricsContext interface {
-	ProcessMetrics(td pmetric.Metrics) error
+	ProcessMetrics(ctx context.Context, td pmetric.Metrics) error
 }
 
 var _ MetricsContext = &metricStatements{}
 
 type metricStatements []*ottl.Statement[ottlmetric.TransformContext]
 
-func (m metricStatements) ProcessMetrics(td pmetric.Metrics) error {
+func (m metricStatements) ProcessMetrics(ctx context.Context, td pmetric.Metrics) error {
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
 		rmetrics := td.ResourceMetrics().At(i)
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
 			smetrics := rmetrics.ScopeMetrics().At(j)
 			metrics := smetrics.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
-				ctx := ottlmetric.NewTransformContext(metrics.At(k), smetrics.Scope(), rmetrics.Resource())
+				tCtx := ottlmetric.NewTransformContext(metrics.At(k), smetrics.Scope(), rmetrics.Resource())
 				for _, statement := range m {
-					_, _, err := statement.Execute(ctx)
+					_, _, err := statement.Execute(ctx, tCtx)
 					if err != nil {
 						return err
 					}
@@ -59,7 +61,7 @@ var _ MetricsContext = &dataPointStatements{}
 
 type dataPointStatements []*ottl.Statement[ottldatapoints.TransformContext]
 
-func (d dataPointStatements) ProcessMetrics(td pmetric.Metrics) error {
+func (d dataPointStatements) ProcessMetrics(ctx context.Context, td pmetric.Metrics) error {
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
 		rmetrics := td.ResourceMetrics().At(i)
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
@@ -70,15 +72,15 @@ func (d dataPointStatements) ProcessMetrics(td pmetric.Metrics) error {
 				var err error
 				switch metric.Type() {
 				case pmetric.MetricTypeSum:
-					err = d.handleNumberDataPoints(metric.Sum().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
+					err = d.handleNumberDataPoints(ctx, metric.Sum().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
 				case pmetric.MetricTypeGauge:
-					err = d.handleNumberDataPoints(metric.Gauge().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
+					err = d.handleNumberDataPoints(ctx, metric.Gauge().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
 				case pmetric.MetricTypeHistogram:
-					err = d.handleHistogramDataPoints(metric.Histogram().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
+					err = d.handleHistogramDataPoints(ctx, metric.Histogram().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
 				case pmetric.MetricTypeExponentialHistogram:
-					err = d.handleExponetialHistogramDataPoints(metric.ExponentialHistogram().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
+					err = d.handleExponetialHistogramDataPoints(ctx, metric.ExponentialHistogram().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
 				case pmetric.MetricTypeSummary:
-					err = d.handleSummaryDataPoints(metric.Summary().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
+					err = d.handleSummaryDataPoints(ctx, metric.Summary().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
 				}
 				if err != nil {
 					return err
@@ -89,10 +91,10 @@ func (d dataPointStatements) ProcessMetrics(td pmetric.Metrics) error {
 	return nil
 }
 
-func (d dataPointStatements) handleNumberDataPoints(dps pmetric.NumberDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
+func (d dataPointStatements) handleNumberDataPoints(ctx context.Context, dps pmetric.NumberDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
-		ctx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
-		err := d.callFunctions(ctx)
+		tCtx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
+		err := d.callFunctions(ctx, tCtx)
 		if err != nil {
 			return err
 		}
@@ -100,10 +102,10 @@ func (d dataPointStatements) handleNumberDataPoints(dps pmetric.NumberDataPointS
 	return nil
 }
 
-func (d dataPointStatements) handleHistogramDataPoints(dps pmetric.HistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
+func (d dataPointStatements) handleHistogramDataPoints(ctx context.Context, dps pmetric.HistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
-		ctx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
-		err := d.callFunctions(ctx)
+		tCtx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
+		err := d.callFunctions(ctx, tCtx)
 		if err != nil {
 			return err
 		}
@@ -111,10 +113,10 @@ func (d dataPointStatements) handleHistogramDataPoints(dps pmetric.HistogramData
 	return nil
 }
 
-func (d dataPointStatements) handleExponetialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
+func (d dataPointStatements) handleExponetialHistogramDataPoints(ctx context.Context, dps pmetric.ExponentialHistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
-		ctx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
-		err := d.callFunctions(ctx)
+		tCtx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
+		err := d.callFunctions(ctx, tCtx)
 		if err != nil {
 			return err
 		}
@@ -122,10 +124,10 @@ func (d dataPointStatements) handleExponetialHistogramDataPoints(dps pmetric.Exp
 	return nil
 }
 
-func (d dataPointStatements) handleSummaryDataPoints(dps pmetric.SummaryDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
+func (d dataPointStatements) handleSummaryDataPoints(ctx context.Context, dps pmetric.SummaryDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
-		ctx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
-		err := d.callFunctions(ctx)
+		tCtx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
+		err := d.callFunctions(ctx, tCtx)
 		if err != nil {
 			return err
 		}
@@ -133,9 +135,9 @@ func (d dataPointStatements) handleSummaryDataPoints(dps pmetric.SummaryDataPoin
 	return nil
 }
 
-func (d dataPointStatements) callFunctions(ctx ottldatapoints.TransformContext) error {
+func (d dataPointStatements) callFunctions(ctx context.Context, tCtx ottldatapoints.TransformContext) error {
 	for _, statement := range d {
-		_, _, err := statement.Execute(ctx)
+		_, _, err := statement.Execute(ctx, tCtx)
 		if err != nil {
 			return err
 		}

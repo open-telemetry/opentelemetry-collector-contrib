@@ -15,35 +15,37 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
+	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
 )
 
 type TracesContext interface {
-	ProcessTraces(td ptrace.Traces) error
+	ProcessTraces(ctx context.Context, td ptrace.Traces) error
 }
 
 var _ TracesContext = &traceStatements{}
 
 type traceStatements []*ottl.Statement[ottltraces.TransformContext]
 
-func (t traceStatements) ProcessTraces(td ptrace.Traces) error {
+func (t traceStatements) ProcessTraces(ctx context.Context, td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
 			sspans := rspans.ScopeSpans().At(j)
 			spans := sspans.Spans()
 			for k := 0; k < spans.Len(); k++ {
-				ctx := ottltraces.NewTransformContext(spans.At(k), sspans.Scope(), rspans.Resource())
+				tCtx := ottltraces.NewTransformContext(spans.At(k), sspans.Scope(), rspans.Resource())
 				for _, statement := range t {
-					_, _, err := statement.Execute(ctx)
+					_, _, err := statement.Execute(ctx, tCtx)
 					if err != nil {
 						return err
 					}
@@ -58,7 +60,7 @@ var _ TracesContext = &spanEventStatements{}
 
 type spanEventStatements []*ottl.Statement[ottlspanevent.TransformContext]
 
-func (s spanEventStatements) ProcessTraces(td ptrace.Traces) error {
+func (s spanEventStatements) ProcessTraces(ctx context.Context, td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
@@ -68,9 +70,9 @@ func (s spanEventStatements) ProcessTraces(td ptrace.Traces) error {
 				span := spans.At(k)
 				spanEvents := span.Events()
 				for n := 0; n < spanEvents.Len(); n++ {
-					ctx := ottlspanevent.NewTransformContext(spanEvents.At(k), span, sspans.Scope(), rspans.Resource())
+					tCtx := ottlspanevent.NewTransformContext(spanEvents.At(k), span, sspans.Scope(), rspans.Resource())
 					for _, statement := range s {
-						_, _, err := statement.Execute(ctx)
+						_, _, err := statement.Execute(ctx, tCtx)
 						if err != nil {
 							return err
 						}
