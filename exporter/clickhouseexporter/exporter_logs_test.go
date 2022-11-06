@@ -93,7 +93,7 @@ func TestExporter_pushLogsData(t *testing.T) {
 			return nil
 		})
 
-		exporter := newTestLogsExporter(t, defaultDSN)
+		exporter := newTestLogsExporter(t, defaultEndpoint)
 		mustPushLogsData(t, exporter, simpleLogs(1))
 		mustPushLogsData(t, exporter, simpleLogs(2))
 
@@ -113,7 +113,7 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 	return func(dsn string) *Config {
 		var configMods []func(*Config)
 		configMods = append(configMods, func(cfg *Config) {
-			cfg.DSN = dsn
+			cfg.Endpoint = dsn
 		})
 		configMods = append(configMods, fns...)
 		return withDefaultConfig(configMods...)
