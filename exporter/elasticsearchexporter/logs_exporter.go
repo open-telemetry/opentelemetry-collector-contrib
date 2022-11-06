@@ -26,11 +26,17 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	logsPrefixKey = "elasticsearchexporter.logs_index_prefix"
+	logsSuffixKey = "elasticsearchexporter.logs_index_suffix"
+)
+
 type elasticsearchLogsExporter struct {
 	logger *zap.Logger
 
-	index       string
-	maxAttempts int
+	index        string
+	dynamicIndex bool
+	maxAttempts  int
 
 	client      *esClientCurrent
 	bulkIndexer esBulkIndexerCurrent
@@ -72,9 +78,11 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporte
 		logger:      logger,
 		client:      client,
 		bulkIndexer: bulkIndexer,
-		index:       indexStr,
-		maxAttempts: maxAttempts,
-		model:       model,
+
+		index:        indexStr,
+		dynamicIndex: !cfg.LogsDynamicIndex.Disabled,
+		maxAttempts:  maxAttempts,
+		model:        model,
 	}
 	return esLogsExp, nil
 }
@@ -109,9 +117,17 @@ func (e *elasticsearchLogsExporter) pushLogsData(ctx context.Context, ld plog.Lo
 }
 
 func (e *elasticsearchLogsExporter) pushLogRecord(ctx context.Context, resource pcommon.Resource, record plog.LogRecord) error {
+	fIndex := e.index
+	if e.dynamicIndex {
+		prefix := getFromBothResourceAndAttribute(logsPrefixKey, resource, record)
+		suffix := getFromBothResourceAndAttribute(logsSuffixKey, resource, record)
+
+		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
+	}
+
 	document, err := e.model.encodeLog(resource, record)
 	if err != nil {
 		return fmt.Errorf("Failed to encode log event: %w", err)
 	}
-	return pushDocuments(ctx, e.logger, e.index, document, e.bulkIndexer, e.maxAttempts)
+	return pushDocuments(ctx, e.logger, fIndex, document, e.bulkIndexer, e.maxAttempts)
 }

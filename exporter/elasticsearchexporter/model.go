@@ -109,3 +109,17 @@ func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
 	linkArrayBytes, _ := json.Marshal(&linkArray)
 	return string(linkArrayBytes)
 }
+
+// resource is higher priotized than record attribute
+type attrGetter interface {
+	Attributes() pcommon.Map
+}
+
+// retrieve attribute out of resource and record (span or log, if not found in resource)
+func getFromBothResourceAndAttribute(name string, resource attrGetter, record attrGetter) string {
+	val, exist := resource.Attributes().Get(name)
+	if !exist {
+		val, _ = record.Attributes().Get(name)
+	}
+	return val.AsString()
+}
