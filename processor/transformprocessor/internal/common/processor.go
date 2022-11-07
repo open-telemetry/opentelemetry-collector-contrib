@@ -17,6 +17,7 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/collector/consumer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -28,13 +29,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 )
 
-var _ TracesContext = &resourceStatements{}
-var _ MetricsContext = &resourceStatements{}
-var _ LogsContext = &resourceStatements{}
+var _ consumer.Traces = &resourceStatements{}
+var _ consumer.Metrics = &resourceStatements{}
+var _ consumer.Logs = &resourceStatements{}
 
 type resourceStatements []*ottl.Statement[ottlresource.TransformContext]
 
-func (r resourceStatements) ProcessTraces(ctx context.Context, td ptrace.Traces) error {
+func (r resourceStatements) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{
+		MutatesData: true,
+	}
+}
+
+func (r resourceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		tCtx := ottlresource.NewTransformContext(rspans.Resource())
@@ -48,7 +55,7 @@ func (r resourceStatements) ProcessTraces(ctx context.Context, td ptrace.Traces)
 	return nil
 }
 
-func (r resourceStatements) ProcessMetrics(ctx context.Context, td pmetric.Metrics) error {
+func (r resourceStatements) ConsumeMetrics(ctx context.Context, td pmetric.Metrics) error {
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
 		rmetrics := td.ResourceMetrics().At(i)
 		tCtx := ottlresource.NewTransformContext(rmetrics.Resource())
@@ -62,7 +69,7 @@ func (r resourceStatements) ProcessMetrics(ctx context.Context, td pmetric.Metri
 	return nil
 }
 
-func (r resourceStatements) ProcessLogs(ctx context.Context, td plog.Logs) error {
+func (r resourceStatements) ConsumeLogs(ctx context.Context, td plog.Logs) error {
 	for i := 0; i < td.ResourceLogs().Len(); i++ {
 		rlogs := td.ResourceLogs().At(i)
 		tCtx := ottlresource.NewTransformContext(rlogs.Resource())
@@ -76,13 +83,19 @@ func (r resourceStatements) ProcessLogs(ctx context.Context, td plog.Logs) error
 	return nil
 }
 
-var _ TracesContext = &scopeStatements{}
-var _ MetricsContext = &scopeStatements{}
-var _ LogsContext = &scopeStatements{}
+var _ consumer.Traces = &scopeStatements{}
+var _ consumer.Metrics = &scopeStatements{}
+var _ consumer.Logs = &scopeStatements{}
 
 type scopeStatements []*ottl.Statement[ottlscope.TransformContext]
 
-func (s scopeStatements) ProcessTraces(ctx context.Context, td ptrace.Traces) error {
+func (s scopeStatements) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{
+		MutatesData: true,
+	}
+}
+
+func (s scopeStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
@@ -99,7 +112,7 @@ func (s scopeStatements) ProcessTraces(ctx context.Context, td ptrace.Traces) er
 	return nil
 }
 
-func (s scopeStatements) ProcessMetrics(ctx context.Context, td pmetric.Metrics) error {
+func (s scopeStatements) ConsumeMetrics(ctx context.Context, td pmetric.Metrics) error {
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
 		rmetrics := td.ResourceMetrics().At(i)
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
@@ -116,7 +129,7 @@ func (s scopeStatements) ProcessMetrics(ctx context.Context, td pmetric.Metrics)
 	return nil
 }
 
-func (s scopeStatements) ProcessLogs(ctx context.Context, td plog.Logs) error {
+func (s scopeStatements) ConsumeLogs(ctx context.Context, td plog.Logs) error {
 	for i := 0; i < td.ResourceLogs().Len(); i++ {
 		rlogs := td.ResourceLogs().At(i)
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
@@ -140,9 +153,9 @@ type parserCollection struct {
 }
 
 type baseContext interface {
-	ProcessTraces(ctx context.Context, td ptrace.Traces) error
-	ProcessMetrics(ctx context.Context, td pmetric.Metrics) error
-	ProcessLogs(ctx context.Context, td plog.Logs) error
+	consumer.Traces
+	consumer.Metrics
+	consumer.Logs
 }
 
 func (pc parserCollection) parseCommonContextStatements(contextStatement ContextStatements) (baseContext, error) {

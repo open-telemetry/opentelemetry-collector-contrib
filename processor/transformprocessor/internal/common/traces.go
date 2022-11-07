@@ -16,27 +16,28 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
-
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/multierr"
+	"go.opentelemetry.io/collector/consumer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-type TracesContext interface {
-	ProcessTraces(ctx context.Context, td ptrace.Traces) error
-}
-
-var _ TracesContext = &traceStatements{}
+var _ consumer.Traces = &traceStatements{}
 
 type traceStatements []*ottl.Statement[ottltraces.TransformContext]
 
-func (t traceStatements) ProcessTraces(ctx context.Context, td ptrace.Traces) error {
+func (t traceStatements) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{
+		MutatesData: true,
+	}
+}
+
+func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
@@ -56,11 +57,17 @@ func (t traceStatements) ProcessTraces(ctx context.Context, td ptrace.Traces) er
 	return nil
 }
 
-var _ TracesContext = &spanEventStatements{}
+var _ consumer.Traces = &spanEventStatements{}
 
 type spanEventStatements []*ottl.Statement[ottlspanevent.TransformContext]
 
-func (s spanEventStatements) ProcessTraces(ctx context.Context, td ptrace.Traces) error {
+func (s spanEventStatements) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{
+		MutatesData: true,
+	}
+}
+
+func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
@@ -101,37 +108,21 @@ func NewTraceParserCollection(functions map[string]interface{}, settings compone
 	}
 }
 
-func (pc TraceParserCollection) ParseContextStatements(contextStatements []ContextStatements) ([]TracesContext, error) {
-	contexts := make([]TracesContext, len(contextStatements))
-	var errors error
-
-	for i, s := range contextStatements {
-		switch s.Context {
-		case Trace:
-			tStatements, err := pc.traceParser.ParseStatements(s.Statements)
-			if err != nil {
-				errors = multierr.Append(errors, err)
-				continue
-			}
-			contexts[i] = traceStatements(tStatements)
-		case SpanEvent:
-			seStatements, err := pc.spanEventParser.ParseStatements(s.Statements)
-			if err != nil {
-				errors = multierr.Append(errors, err)
-				continue
-			}
-			contexts[i] = spanEventStatements(seStatements)
-		default:
-			statements, err := pc.parseCommonContextStatements(s)
-			if err != nil {
-				errors = multierr.Append(errors, err)
-				continue
-			}
-			contexts[i] = statements
+func (pc TraceParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Traces, error) {
+	switch contextStatements.Context {
+	case Trace:
+		tStatements, err := pc.traceParser.ParseStatements(contextStatements.Statements)
+		if err != nil {
+			return nil, err
 		}
+		return traceStatements(tStatements), nil
+	case SpanEvent:
+		seStatements, err := pc.spanEventParser.ParseStatements(contextStatements.Statements)
+		if err != nil {
+			return nil, err
+		}
+		return spanEventStatements(seStatements), nil
+	default:
+		return pc.parseCommonContextStatements(contextStatements)
 	}
-	if errors != nil {
-		return nil, errors
-	}
-	return contexts, nil
 }

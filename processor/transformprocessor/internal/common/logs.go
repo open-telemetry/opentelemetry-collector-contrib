@@ -16,26 +16,27 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
-
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/multierr"
+	"go.opentelemetry.io/collector/consumer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-type LogsContext interface {
-	ProcessLogs(ctx context.Context, td plog.Logs) error
-}
-
-var _ LogsContext = &logStatements{}
+var _ consumer.Logs = &logStatements{}
 
 type logStatements []*ottl.Statement[ottllogs.TransformContext]
 
-func (l logStatements) ProcessLogs(ctx context.Context, td plog.Logs) error {
+func (l logStatements) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{
+		MutatesData: true,
+	}
+}
+
+func (l logStatements) ConsumeLogs(ctx context.Context, td plog.Logs) error {
 	for i := 0; i < td.ResourceLogs().Len(); i++ {
 		rlogs := td.ResourceLogs().At(i)
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
@@ -71,30 +72,19 @@ func NewLogParserCollection(functions map[string]interface{}, settings component
 	}
 }
 
-func (pc LogParserCollection) ParseContextStatements(contextStatements []ContextStatements) ([]LogsContext, error) {
-	contexts := make([]LogsContext, len(contextStatements))
-	var errors error
-
-	for i, s := range contextStatements {
-		switch s.Context {
-		case Log:
-			lStatements, err := pc.logParser.ParseStatements(s.Statements)
-			if err != nil {
-				errors = multierr.Append(errors, err)
-				continue
-			}
-			contexts[i] = logStatements(lStatements)
-		default:
-			statements, err := pc.parseCommonContextStatements(s)
-			if err != nil {
-				errors = multierr.Append(errors, err)
-				continue
-			}
-			contexts[i] = statements
+func (pc LogParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Logs, error) {
+	switch contextStatements.Context {
+	case Log:
+		lStatements, err := pc.logParser.ParseStatements(contextStatements.Statements)
+		if err != nil {
+			return nil, err
 		}
+		return logStatements(lStatements), nil
+	default:
+		statements, err := pc.parseCommonContextStatements(contextStatements)
+		if err != nil {
+			return nil, err
+		}
+		return statements, nil
 	}
-	if errors != nil {
-		return nil, errors
-	}
-	return contexts, nil
 }

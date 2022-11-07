@@ -16,28 +16,29 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
-
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/multierr"
+	"go.opentelemetry.io/collector/consumer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-type MetricsContext interface {
-	ProcessMetrics(ctx context.Context, td pmetric.Metrics) error
-}
-
-var _ MetricsContext = &metricStatements{}
+var _ consumer.Metrics = &metricStatements{}
 
 type metricStatements []*ottl.Statement[ottlmetric.TransformContext]
 
-func (m metricStatements) ProcessMetrics(ctx context.Context, td pmetric.Metrics) error {
+func (m metricStatements) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{
+		MutatesData: true,
+	}
+}
+
+func (m metricStatements) ConsumeMetrics(ctx context.Context, td pmetric.Metrics) error {
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
 		rmetrics := td.ResourceMetrics().At(i)
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
@@ -57,11 +58,17 @@ func (m metricStatements) ProcessMetrics(ctx context.Context, td pmetric.Metrics
 	return nil
 }
 
-var _ MetricsContext = &dataPointStatements{}
+var _ consumer.Metrics = &dataPointStatements{}
 
 type dataPointStatements []*ottl.Statement[ottldatapoints.TransformContext]
 
-func (d dataPointStatements) ProcessMetrics(ctx context.Context, td pmetric.Metrics) error {
+func (d dataPointStatements) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{
+		MutatesData: true,
+	}
+}
+
+func (d dataPointStatements) ConsumeMetrics(ctx context.Context, td pmetric.Metrics) error {
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
 		rmetrics := td.ResourceMetrics().At(i)
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
@@ -163,37 +170,25 @@ func NewMetricParserCollection(functions map[string]interface{}, settings compon
 	}
 }
 
-func (pc MetricParserCollection) ParseContextStatements(contextStatements []ContextStatements) ([]MetricsContext, error) {
-	contexts := make([]MetricsContext, len(contextStatements))
-	var errors error
-
-	for i, s := range contextStatements {
-		switch s.Context {
-		case Metric:
-			mStatements, err := pc.metricParser.ParseStatements(s.Statements)
-			if err != nil {
-				errors = multierr.Append(errors, err)
-				continue
-			}
-			contexts[i] = metricStatements(mStatements)
-		case DataPoint:
-			dpStatements, err := pc.dataPointParser.ParseStatements(s.Statements)
-			if err != nil {
-				errors = multierr.Append(errors, err)
-				continue
-			}
-			contexts[i] = dataPointStatements(dpStatements)
-		default:
-			statements, err := pc.parseCommonContextStatements(s)
-			if err != nil {
-				errors = multierr.Append(errors, err)
-				continue
-			}
-			contexts[i] = statements
+func (pc MetricParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Metrics, error) {
+	switch contextStatements.Context {
+	case Metric:
+		mStatements, err := pc.metricParser.ParseStatements(contextStatements.Statements)
+		if err != nil {
+			return nil, err
 		}
+		return metricStatements(mStatements), nil
+	case DataPoint:
+		dpStatements, err := pc.dataPointParser.ParseStatements(contextStatements.Statements)
+		if err != nil {
+			return nil, err
+		}
+		return dataPointStatements(dpStatements), nil
+	default:
+		statements, err := pc.parseCommonContextStatements(contextStatements)
+		if err != nil {
+			return nil, err
+		}
+		return statements, nil
 	}
-	if errors != nil {
-		return nil, errors
-	}
-	return contexts, nil
 }
