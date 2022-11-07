@@ -385,7 +385,7 @@ func (r *elasticsearchScraper) scrapeIndicesMetrics(ctx context.Context, now pco
 	indexStats, err := r.client.IndexStats(ctx, r.cfg.Indices)
 
 	if err != nil {
-		errs.AddPartial(24, err)
+		errs.AddPartial(33, err)
 		return
 	}
 
@@ -403,6 +403,33 @@ func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name
 	)
 	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
 		now, stats.Total.SearchOperations.QueryTotal, metadata.AttributeOperationQuery, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Total.IndexingOperations.IndexTotal, metadata.AttributeOperationIndex, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Total.IndexingOperations.DeleteTotal, metadata.AttributeOperationDelete, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Total.GetOperation.Total, metadata.AttributeOperationGet, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Total.SearchOperations.ScrollTotal, metadata.AttributeOperationScroll, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Total.SearchOperations.SuggestTotal, metadata.AttributeOperationSuggest, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Total.MergeOperations.Total, metadata.AttributeOperationMerge, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Total.RefreshOperations.Total, metadata.AttributeOperationRefresh, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Total.FlushOperations.Total, metadata.AttributeOperationFlush, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Total.WarmerOperations.Total, metadata.AttributeOperationWarmer, metadata.AttributeIndexAggregationTypeTotal,
 	)
 
 	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(

@@ -23,7 +23,7 @@
           "index_time_in_millis" : 938,
           "index_current" : 0,
           "index_failed" : 0,
-          "delete_total" : 0,
+          "delete_total" : 12,
           "delete_time_in_millis" : 0,
           "delete_current" : 0,
           "noop_update_total" : 0,
@@ -31,7 +31,7 @@
           "throttle_time_in_millis" : 0
         },
         "get" : {
-          "total" : 0,
+          "total" : 13,
           "time_in_millis" : 0,
           "exists_total" : 0,
           "exists_time_in_millis" : 0,
@@ -50,7 +50,7 @@
           "scroll_total" : 3,
           "scroll_time_in_millis" : 30,
           "scroll_current" : 0,
-          "suggest_total" : 0,
+          "suggest_total" : 5,
           "suggest_time_in_millis" : 0,
           "suggest_current" : 0
         },
@@ -58,7 +58,7 @@
           "current" : 0,
           "current_docs" : 0,
           "current_size_in_bytes" : 0,
-          "total" : 0,
+          "total" : 8,
           "total_time_in_millis" : 12,
           "total_docs" : 5,
           "total_size_in_bytes" : 64,
@@ -151,7 +151,7 @@
           "index_time_in_millis" : 938,
           "index_current" : 0,
           "index_failed" : 0,
-          "delete_total" : 0,
+          "delete_total" : 12,
           "delete_time_in_millis" : 0,
           "delete_current" : 0,
           "noop_update_total" : 0,
@@ -159,7 +159,7 @@
           "throttle_time_in_millis" : 0
         },
         "get" : {
-          "total" : 0,
+          "total" : 13,
           "time_in_millis" : 0,
           "exists_total" : 0,
           "exists_time_in_millis" : 0,
@@ -178,7 +178,7 @@
           "scroll_total" : 3,
           "scroll_time_in_millis" : 30,
           "scroll_current" : 0,
-          "suggest_total" : 0,
+          "suggest_total" : 5,
           "suggest_time_in_millis" : 0,
           "suggest_current" : 0
         },
@@ -186,7 +186,7 @@
           "current" : 0,
           "current_docs" : 0,
           "current_size_in_bytes" : 0,
-          "total" : 0,
+          "total" : 8,
           "total_time_in_millis" : 12,
           "total_docs" : 5,
           "total_size_in_bytes" : 64,
@@ -283,7 +283,7 @@
             "index_time_in_millis" : 938,
             "index_current" : 0,
             "index_failed" : 0,
-            "delete_total" : 0,
+            "delete_total" : 12,
             "delete_time_in_millis" : 0,
             "delete_current" : 0,
             "noop_update_total" : 0,
@@ -291,7 +291,7 @@
             "throttle_time_in_millis" : 0
           },
           "get" : {
-            "total" : 0,
+            "total" : 13,
             "time_in_millis" : 0,
             "exists_total" : 0,
             "exists_time_in_millis" : 0,
@@ -310,7 +310,7 @@
             "scroll_total" : 3,
             "scroll_time_in_millis" : 30,
             "scroll_current" : 0,
-            "suggest_total" : 0,
+            "suggest_total" : 5,
             "suggest_time_in_millis" : 0,
             "suggest_current" : 0
           },
@@ -318,7 +318,7 @@
             "current" : 0,
             "current_docs" : 0,
             "current_size_in_bytes" : 0,
-            "total" : 0,
+            "total" : 8,
             "total_time_in_millis" : 12,
             "total_docs" : 5,
             "total_size_in_bytes" : 64,
@@ -411,7 +411,7 @@
             "index_time_in_millis" : 938,
             "index_current" : 0,
             "index_failed" : 0,
-            "delete_total" : 0,
+            "delete_total" : 12,
             "delete_time_in_millis" : 0,
             "delete_current" : 0,
             "noop_update_total" : 0,
@@ -419,7 +419,7 @@
             "throttle_time_in_millis" : 0
           },
           "get" : {
-            "total" : 0,
+            "total" : 13,
             "time_in_millis" : 0,
             "exists_total" : 0,
             "exists_time_in_millis" : 0,
@@ -438,7 +438,7 @@
             "scroll_total" : 3,
             "scroll_time_in_millis" : 30,
             "scroll_current" : 0,
-            "suggest_total" : 0,
+            "suggest_total" : 5,
             "suggest_time_in_millis" : 0,
             "suggest_current" : 0
           },
@@ -446,7 +446,7 @@
             "current" : 0,
             "current_docs" : 0,
             "current_size_in_bytes" : 0,
-            "total" : 0,
+            "total" : 8,
             "total_time_in_millis" : 12,
             "total_docs" : 5,
             "total_size_in_bytes" : 64,
