@@ -44,6 +44,10 @@ type Config struct {
 	// Optional.
 	Endpoint string `mapstructure:"endpoint"`
 
+	// LogRetention is the option to set the log retention policy for the CloudWatch Log Group. Defaults to Never Expire if not specified or set to 0
+	// Possible values are 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653
+	LogRetention int64 `mapstructure:"log_retention"`
+
 	// QueueSettings is a subset of exporterhelper.QueueSettings,
 	// because only QueueSize is user-settable due to how AWS CloudWatch API works
 	QueueSettings QueueSettings `mapstructure:"sending_queue"`
@@ -71,7 +75,41 @@ func (config *Config) Validate() error {
 	if config.QueueSettings.QueueSize < 1 {
 		return errors.New("'sending_queue.queue_size' must be 1 or greater")
 	}
+	if !isValidRetentionValue(config.LogRetention) {
+		return errors.New("invalid value for retention policy.  Please make sure to use the following values: 0 (Never Expire), 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653")
+	}
 	return nil
+}
+
+// Added function to check if value is an accepted number of log retention days
+func isValidRetentionValue(input int64) bool {
+	switch input {
+	case
+		0,
+		1,
+		3,
+		5,
+		7,
+		14,
+		30,
+		60,
+		90,
+		120,
+		150,
+		180,
+		365,
+		400,
+		545,
+		731,
+		1827,
+		2192,
+		2557,
+		2922,
+		3288,
+		3653:
+		return true
+	}
+	return false
 }
 
 func (config *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
