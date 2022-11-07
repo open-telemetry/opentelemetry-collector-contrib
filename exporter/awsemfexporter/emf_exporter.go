@@ -78,7 +78,7 @@ func newEmfPusher(
 	}
 
 	// create CWLogs client with aws session config
-	svcStructuredLog := cwlogs.NewClient(logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, session)
+	svcStructuredLog := cwlogs.NewClient(logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, expConfig.LogRetention, session)
 	collectorIdentifier, _ := uuid.NewRandom()
 
 	emfExporter := &emfExporter{

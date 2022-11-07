@@ -55,3 +55,13 @@ This is considered a breaking change for existing users of this receiver, and it
 This feature gate will eventually be enabled by default, and eventually the old implementation will be removed. It aims
 to give users time to migrate to the new implementation. The target release for this featuregate to be enabled by default
 is 0.66.0.
+
+**ALPHA**: `receiver.apache.emitPortAsResourceAttribute`
+
+The feature gate `receiver.apache.emitPortAsResourceAttribute` once enabled starts emitting the metrics with a resource attribute `apache.server.port`.
+
+This is considered a breaking change for existing users of this receiver, and it is recommended to migrate to the new implementation when possible. Any new users planning to adopt this receiver should enable this feature gate to avoid having to migrate any visualisations or alerts.
+
+This feature gate will eventually be enabled by default, and eventually the old implementation will be removed. It aims
+to give users time to migrate to the new implementation. The target release for this featuregate to be enabled by default
+is 0.66.0.

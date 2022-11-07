@@ -15,6 +15,7 @@
 package ottllogs
 
 import (
+	"context"
 	"encoding/hex"
 	"testing"
 	"time"
@@ -398,11 +399,11 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			log, il, resource := createTelemetry()
 
-			got, err := accessor.Get(NewTransformContext(log, il, resource))
+			got, err := accessor.Get(context.Background(), NewTransformContext(log, il, resource))
 			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(NewTransformContext(log, il, resource), tt.newVal)
+			err = accessor.Set(context.Background(), NewTransformContext(log, il, resource), tt.newVal)
 			assert.Nil(t, err)
 
 			exSpan, exIl, exRes := createTelemetry()

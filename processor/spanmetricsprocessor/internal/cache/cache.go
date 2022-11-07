@@ -15,7 +15,7 @@
 package cache // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/internal/cache"
 
 import (
-	lru "github.com/hashicorp/golang-lru"
+	"github.com/hashicorp/golang-lru/simplelru"
 )
 
 // Cache consists of an LRU cache and the evicted items from the LRU cache.
@@ -23,15 +23,17 @@ import (
 // map. In spanmetricsprocessor's use case, we need to hold all the items during the current processing step for
 // building the metrics. The evicted items can/should be safely removed once the metrics are built from the current
 // batch of spans.
+//
+// Important: This implementation is non-thread safe.
 type Cache[K comparable, V any] struct {
-	*lru.Cache
+	lru          simplelru.LRUCache
 	evictedItems map[K]V
 }
 
 // NewCache creates a Cache.
 func NewCache[K comparable, V any](size int) (*Cache[K, V], error) {
 	evictedItems := make(map[K]V)
-	lruCache, err := lru.NewWithEvict(size, func(key any, value any) {
+	lruCache, err := simplelru.NewLRU(size, func(key any, value any) {
 		evictedItems[key.(K)] = value.(V)
 	})
 	if err != nil {
@@ -39,7 +41,7 @@ func NewCache[K comparable, V any](size int) (*Cache[K, V], error) {
 	}
 
 	return &Cache[K, V]{
-		Cache:        lruCache,
+		lru:          lruCache,
 		evictedItems: evictedItems,
 	}, nil
 }
@@ -52,17 +54,27 @@ func (c *Cache[K, V]) RemoveEvictedItems() {
 	}
 }
 
-// Get retrieves an item from the LRU cache or evicted items.
+// Add a value to the cache, returns true if an eviction occurred and updates the "recently used"-ness of the key.
+func (c *Cache[K, V]) Add(key K, value V) bool {
+	return c.lru.Add(key, value)
+}
+
+// Get an item from the LRU cache or evicted items.
 func (c *Cache[K, V]) Get(key K) (V, bool) {
-	if val, ok := c.Cache.Get(key); ok {
+	if val, ok := c.lru.Get(key); ok {
 		return val.(V), ok
 	}
 	val, ok := c.evictedItems[key]
 	return val, ok
 }
 
+// Len returns the number of items in the cache.
+func (c *Cache[K, V]) Len() int {
+	return c.lru.Len()
+}
+
 // Purge removes all the items from the LRU cache and evicted items.
 func (c *Cache[K, V]) Purge() {
-	c.Cache.Purge()
+	c.lru.Purge()
 	c.RemoveEvictedItems()
 }

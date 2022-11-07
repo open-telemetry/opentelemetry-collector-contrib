@@ -39,16 +39,16 @@ func NewProcessor(statements []string, settings component.TelemetrySettings) (*P
 	}, nil
 }
 
-func (p *Processor) ProcessLogs(_ context.Context, td plog.Logs) (plog.Logs, error) {
+func (p *Processor) ProcessLogs(ctx context.Context, td plog.Logs) (plog.Logs, error) {
 	for i := 0; i < td.ResourceLogs().Len(); i++ {
 		rlogs := td.ResourceLogs().At(i)
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
 			slogs := rlogs.ScopeLogs().At(j)
 			logs := slogs.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				ctx := ottllogs.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
+				tCtx := ottllogs.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
 				for _, statement := range p.statements {
-					_, _, err := statement.Execute(ctx)
+					_, _, err := statement.Execute(ctx, tCtx)
 					if err != nil {
 						return td, err
 					}

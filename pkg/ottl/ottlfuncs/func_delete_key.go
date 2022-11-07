@@ -15,14 +15,16 @@
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func DeleteKey[K any](target ottl.Getter[K], key string) (ottl.ExprFunc[K], error) {
-	return func(ctx K) (interface{}, error) {
-		val, err := target.Get(ctx)
+	return func(ctx context.Context, tCtx K) (interface{}, error) {
+		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}

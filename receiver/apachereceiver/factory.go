@@ -16,6 +16,7 @@ package apachereceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"net/url"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -30,6 +31,9 @@ import (
 const (
 	typeStr   = "apache"
 	stability = component.StabilityLevelBeta
+
+	httpDefaultPort  = "80"
+	httpsDefaultPort = "443"
 )
 
 // NewFactory creates a factory for apache receiver.
@@ -54,6 +58,23 @@ func createDefaultConfig() config.Receiver {
 	}
 }
 
+func parseResourseAttributes(endpoint string) (string, string, error) {
+	u, err := url.Parse(endpoint)
+	serverName := u.Hostname()
+	port := u.Port()
+
+	if port == "" {
+		if u.Scheme == "https" {
+			port = httpsDefaultPort
+		} else if u.Scheme == "http" {
+			port = httpDefaultPort
+		}
+		// else: unknown scheme, leave port as empty string
+	}
+
+	return serverName, port, err
+}
+
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
@@ -61,8 +82,12 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
+	serverName, port, err := parseResourseAttributes(cfg.Endpoint)
+	if err != nil {
+		return nil, err
+	}
 
-	ns := newApacheScraper(params, cfg)
+	ns := newApacheScraper(params, cfg, serverName, port)
 	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape, scraperhelper.WithStart(ns.start))
 	if err != nil {
 		return nil, err

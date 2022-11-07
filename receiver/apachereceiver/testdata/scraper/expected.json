@@ -8,7 +8,13 @@
              "value": {
                 "stringValue": "127.0.0.1"
              }
-          }
+          },
+          {
+            "key": "apache.server.port",
+            "value": {
+               "stringValue": "8080"
+            }
+         }
         ]
       },
       "scopeMetrics": [
