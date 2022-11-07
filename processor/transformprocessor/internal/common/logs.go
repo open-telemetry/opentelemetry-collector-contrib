@@ -37,7 +37,7 @@ func (l logStatements) Capabilities() consumer.Capabilities {
 	}
 }
 
-func (l logStatements) ConsumeLogs(ctx context.Context, td plog.Logs) error {
+func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	for i := 0; i < td.ResourceLogs().Len(); i++ {
 		rlogs := td.ResourceLogs().At(i)
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
