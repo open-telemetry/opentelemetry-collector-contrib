@@ -15,11 +15,53 @@
 package tanzuobservabilityexporter
 
 import (
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(config.NewComponentIDWithName(exporterType, "").String())
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalExporter(sub, cfg))
+
+	expected := &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID("tanzuobservability")),
+		Traces: TracesConfig{
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:40001"},
+		},
+		Metrics: MetricsConfig{
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:2916"},
+			ResourceAttributes: resourcetotelemetry.Settings{Enabled: true},
+		},
+		QueueSettings: exporterhelper.QueueSettings{
+			Enabled:      true,
+			NumConsumers: 2,
+			QueueSize:    10,
+		},
+		RetrySettings: exporterhelper.RetrySettings{
+			Enabled:         true,
+			InitialInterval: 10 * time.Second,
+			MaxInterval:     60 * time.Second,
+			MaxElapsedTime:  10 * time.Minute,
+		},
+	}
+	assert.Equal(t, expected, cfg)
+}
 
 func TestConfigRequiresValidEndpointUrl(t *testing.T) {
 	c := &Config{

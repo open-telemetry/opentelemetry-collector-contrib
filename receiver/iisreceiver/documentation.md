@@ -34,8 +34,8 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| iis.application_pool | The application pool, which is associated with worker processes of one or more applications. | String |
-| iis.site | The site of the web server. | String |
+| iis.application_pool | The application pool, which is associated with worker processes of one or more applications. | Str |
+| iis.site | The site of the web server. | Str |
 
 ## Metric attributes
 

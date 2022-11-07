@@ -17,7 +17,6 @@ package logstransformprocessor
 import (
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -58,10 +57,6 @@ func TestLoadConfig(t *testing.T) {
 						return cfg
 					}(),
 				},
-			},
-			Converter: adapter.ConverterConfig{
-				MaxFlushCount: 100,
-				FlushInterval: 100 * time.Millisecond,
 			},
 		},
 	}, cfg)

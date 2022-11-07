@@ -15,6 +15,7 @@
 package ottlcommon
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,7 +29,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 	refResource := createResource()
 
 	newAttrs := pcommon.NewMap()
-	newAttrs.PutString("hello", "world")
+	newAttrs.PutStr("hello", "world")
 
 	tests := []struct {
 		name     string
@@ -70,7 +71,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(resource pcommon.Resource) {
-				resource.Attributes().PutString("str", "newVal")
+				resource.Attributes().PutStr("str", "newVal")
 			},
 		},
 		{
@@ -235,10 +236,12 @@ func TestResourcePathGetSetter(t *testing.T) {
 
 			resource := createResource()
 
-			got := accessor.Get(newResourceContext(resource))
+			got, err := accessor.Get(context.Background(), newResourceContext(resource))
+			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(newResourceContext(resource), tt.newVal)
+			err = accessor.Set(context.Background(), newResourceContext(resource), tt.newVal)
+			assert.Nil(t, err)
 
 			expectedResource := createResource()
 			tt.modified(expectedResource)
@@ -250,7 +253,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 
 func createResource() pcommon.Resource {
 	resource := pcommon.NewResource()
-	resource.Attributes().PutString("str", "val")
+	resource.Attributes().PutStr("str", "val")
 	resource.Attributes().PutBool("bool", true)
 	resource.Attributes().PutInt("int", 10)
 	resource.Attributes().PutDouble("double", 1.2)

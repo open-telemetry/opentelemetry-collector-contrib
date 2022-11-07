@@ -61,19 +61,19 @@ func groupDataPoints(metric pmetric.Metric, ag aggGroups) aggGroups {
 		if ag.sum == nil {
 			ag.sum = map[string]pmetric.NumberDataPointSlice{}
 		}
-		groupByStartTime := metric.Sum().AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta
+		groupByStartTime := metric.Sum().AggregationTemporality() == pmetric.AggregationTemporalityDelta
 		groupNumberDataPoints(metric.Sum().DataPoints(), groupByStartTime, ag.sum)
 	case pmetric.MetricTypeHistogram:
 		if ag.histogram == nil {
 			ag.histogram = map[string]pmetric.HistogramDataPointSlice{}
 		}
-		groupByStartTime := metric.Histogram().AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta
+		groupByStartTime := metric.Histogram().AggregationTemporality() == pmetric.AggregationTemporalityDelta
 		groupHistogramDataPoints(metric.Histogram().DataPoints(), groupByStartTime, ag.histogram)
 	case pmetric.MetricTypeExponentialHistogram:
 		if ag.expHistogram == nil {
 			ag.expHistogram = map[string]pmetric.ExponentialHistogramDataPointSlice{}
 		}
-		groupByStartTime := metric.ExponentialHistogram().AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta
+		groupByStartTime := metric.ExponentialHistogram().AggregationTemporality() == pmetric.AggregationTemporalityDelta
 		groupExponentialHistogramDataPoints(metric.ExponentialHistogram().DataPoints(), groupByStartTime, ag.expHistogram)
 	}
 	return ag

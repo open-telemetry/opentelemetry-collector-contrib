@@ -15,10 +15,10 @@
 package ottlfuncs
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -28,11 +28,12 @@ func Test_replaceMatch(t *testing.T) {
 	input := pcommon.NewValueStr("hello world")
 
 	target := &ottl.StandardGetSetter[pcommon.Value]{
-		Getter: func(ctx pcommon.Value) interface{} {
-			return ctx.Str()
+		Getter: func(ctx context.Context, tCtx pcommon.Value) (interface{}, error) {
+			return tCtx.Str(), nil
 		},
-		Setter: func(ctx pcommon.Value, val interface{}) {
-			ctx.SetStr(val.(string))
+		Setter: func(ctx context.Context, tCtx pcommon.Value, val interface{}) error {
+			tCtx.SetStr(val.(string))
+			return nil
 		},
 	}
 
@@ -67,8 +68,10 @@ func Test_replaceMatch(t *testing.T) {
 			scenarioValue := pcommon.NewValueStr(input.Str())
 
 			exprFunc, err := ReplaceMatch(tt.target, tt.pattern, tt.replacement)
-			require.NoError(t, err)
-			assert.Nil(t, exprFunc(scenarioValue))
+			assert.NoError(t, err)
+			result, err := exprFunc(nil, scenarioValue)
+			assert.NoError(t, err)
+			assert.Nil(t, result)
 
 			expected := pcommon.NewValueStr("")
 			tt.want(expected)
@@ -81,32 +84,40 @@ func Test_replaceMatch(t *testing.T) {
 func Test_replaceMatch_bad_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
-			return ctx
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return tCtx, nil
 		},
-		Setter: func(ctx interface{}, val interface{}) {
+		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
 	exprFunc, err := ReplaceMatch[interface{}](target, "*", "{replacement}")
-	require.NoError(t, err)
-	assert.Nil(t, exprFunc(input))
+	assert.NoError(t, err)
+
+	result, err := exprFunc(nil, input)
+	assert.NoError(t, err)
+	assert.Nil(t, result)
 
 	assert.Equal(t, pcommon.NewValueInt(1), input)
 }
 
 func Test_replaceMatch_get_nil(t *testing.T) {
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
-			return ctx
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return tCtx, nil
 		},
-		Setter: func(ctx interface{}, val interface{}) {
+		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
 	exprFunc, err := ReplaceMatch[interface{}](target, "*", "{anything}")
-	require.NoError(t, err)
-	assert.Nil(t, exprFunc(nil))
+	assert.NoError(t, err)
+
+	result, err := exprFunc(nil, nil)
+	assert.NoError(t, err)
+	assert.Nil(t, result)
 }

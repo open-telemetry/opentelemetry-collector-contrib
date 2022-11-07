@@ -24,6 +24,9 @@ import (
 type Config struct {
 	config.ExtensionSettings `mapstructure:",squash"`
 
+	// Scheme specifies the auth-scheme for the token. Defaults to "Bearer"
+	Scheme string `mapstructure:"scheme,omitempty"`
+
 	// BearerToken specifies the bearer token to use for every RPC.
 	BearerToken string `mapstructure:"token,omitempty"`
 

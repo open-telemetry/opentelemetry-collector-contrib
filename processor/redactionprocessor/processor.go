@@ -164,7 +164,7 @@ func (s *redaction) addMetaAttrs(redactedAttrs []string, attributes pcommon.Map,
 			redactedAttrs = append(redactedAttrs, strings.Split(existingVal.Str(), attrValuesSeparator)...)
 		}
 		sort.Strings(redactedAttrs)
-		attributes.PutString(valuesAttr, strings.Join(redactedAttrs, attrValuesSeparator))
+		attributes.PutStr(valuesAttr, strings.Join(redactedAttrs, attrValuesSeparator))
 	}
 	if s.config.Summary == info || s.config.Summary == debug {
 		if existingVal, found := attributes.Get(countAttr); found {

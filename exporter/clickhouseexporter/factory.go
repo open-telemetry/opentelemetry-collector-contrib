@@ -36,6 +36,7 @@ func NewFactory() component.ExporterFactory {
 		typeStr,
 		createDefaultConfig,
 		component.WithLogsExporter(createLogsExporter, stability),
+		component.WithTracesExporter(createTracesExporter, stability),
 	)
 }
 
@@ -46,6 +47,8 @@ func createDefaultConfig() config.Exporter {
 		QueueSettings:    QueueSettings{QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize},
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		LogsTableName:    "otel_logs",
+		TracesTableName:  "otel_traces",
+		TTLDays:          7,
 	}
 }
 
@@ -57,7 +60,7 @@ func createLogsExporter(
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	c := cfg.(*Config)
-	exporter, err := newExporter(set.Logger, c)
+	exporter, err := newLogsExporter(set.Logger, c)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure clickhouse logs exporter: %w", err)
 	}
@@ -67,6 +70,31 @@ func createLogsExporter(
 		set,
 		cfg,
 		exporter.pushLogsData,
+		exporterhelper.WithShutdown(exporter.Shutdown),
+		exporterhelper.WithTimeout(c.TimeoutSettings),
+		exporterhelper.WithQueue(c.enforcedQueueSettings()),
+		exporterhelper.WithRetry(c.RetrySettings),
+	)
+}
+
+// createTracesExporter creates a new exporter for traces.
+// Traces are directly insert into clickhouse.
+func createTracesExporter(
+	ctx context.Context,
+	set component.ExporterCreateSettings,
+	cfg config.Exporter,
+) (component.TracesExporter, error) {
+	c := cfg.(*Config)
+	exporter, err := newTracesExporter(set.Logger, c)
+	if err != nil {
+		return nil, fmt.Errorf("cannot configure clickhouse traces exporter: %w", err)
+	}
+
+	return exporterhelper.NewTracesExporter(
+		ctx,
+		set,
+		cfg,
+		exporter.pushTraceData,
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithQueue(c.enforcedQueueSettings()),

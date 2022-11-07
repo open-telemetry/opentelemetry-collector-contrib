@@ -48,6 +48,25 @@ receivers:
   #       static_configs:
   #       - targets: ['0.0.0.0:8888']
 
+  # Read more about the filelog receiver here https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver.
+  filelog:
+    include_file_path: true
+    poll_interval: 500ms
+    include:
+      # Logs will be collected from the below file path. Please ensure it is correct or edit as needed.
+      - /var/log/**/*example*/*.log
+     # # It is essential to extract the trace_id and span_id from the logs in order to ensure that logs / traces correlation works.
+     # # For JSON logs, json_parser will parse the body into attributes, while trace_parser will extract the trace_id and span_id.
+     # operators:
+     #  - id : parse_body
+     #    type: json_parser
+     #  - id: trace
+     #    type: trace_parser
+     #    trace_id:
+     #      parse_from: attributes.trace_id
+     #    span_id:
+     #      parse_from: attributes.span_id
+
 # Read more about processors here: https://opentelemetry.io/docs/collector/configuration/#processors
 #
 # Some processors are recommended in all pipelines:
@@ -266,6 +285,13 @@ service:
     traces:
       # This pipeline has an OTLP receiver, a batch processor and a Datadog exporter.
       receivers: [otlp]
+      processors: [batch]
+      exporters: [datadog]
+
+    # Pipelines starting with `logs` or `logs/` define a logs pipeline.
+    logs:
+      # This pipeline has an OTLP receiver, filelog receiver, a batch processor and a Datadog exporter.
+      receivers: [otlp, filelog]
       processors: [batch]
       exporters: [datadog]
 

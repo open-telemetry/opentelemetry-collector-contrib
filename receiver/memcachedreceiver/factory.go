@@ -22,9 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
 )
@@ -59,12 +57,6 @@ func createDefaultConfig() config.Receiver {
 	}
 }
 
-func logDeprecatedFeatureGateForDirection(log *zap.Logger, gate featuregate.Gate) {
-	log.Warn("WARNING: The " + gate.ID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
-		"the direction attribute has been reverted in the specification. See https://github.com/open-telemetry/opentelemetry-specification/issues/2726 " +
-		"for additional details.")
-}
-
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
@@ -74,14 +66,6 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 
 	ms := newMemcachedScraper(params, cfg)
-
-	if !ms.emitMetricsWithDirectionAttribute {
-		logDeprecatedFeatureGateForDirection(ms.logger, emitMetricsWithDirectionAttributeFeatureGate)
-	}
-
-	if ms.emitMetricsWithoutDirectionAttribute {
-		logDeprecatedFeatureGateForDirection(ms.logger, emitMetricsWithoutDirectionAttributeFeatureGate)
-	}
 
 	scraper, err := scraperhelper.NewScraper(typeStr, ms.scrape)
 	if err != nil {

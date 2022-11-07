@@ -122,7 +122,7 @@ func newReceiver(_ context.Context, set component.ReceiverCreateSettings, cfg co
 		settings:        set,
 		config:          rCfg,
 		consumer:        consumer,
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             cfg.ID(),
 			Transport:              transport,
 			ReceiverCreateSettings: set,

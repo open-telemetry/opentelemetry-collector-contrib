@@ -15,6 +15,7 @@
 package ottldatapoints
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -102,7 +103,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			orig:   int64(0),
 			newVal: int64(1),
 			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+				datapoint.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 			},
 		},
 		{
@@ -142,7 +143,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.Attributes().PutString("str", "newVal")
+				datapoint.Attributes().PutStr("str", "newVal")
 			},
 		},
 		{
@@ -296,10 +297,12 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 
 			ctx := NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
-			got := accessor.Get(ctx)
+			got, err := accessor.Get(context.Background(), ctx)
+			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(ctx, tt.newVal)
+			err = accessor.Set(context.Background(), ctx, tt.newVal)
+			assert.Nil(t, err)
 
 			exNumberDataPoint := createNumberDataPointTelemetry(tt.valueType)
 			tt.modified(exNumberDataPoint)
@@ -375,7 +378,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			orig:   int64(0),
 			newVal: int64(1),
 			modified: func(datapoint pmetric.HistogramDataPoint) {
-				datapoint.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+				datapoint.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 			},
 		},
 		{
@@ -467,7 +470,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(datapoint pmetric.HistogramDataPoint) {
-				datapoint.Attributes().PutString("str", "newVal")
+				datapoint.Attributes().PutStr("str", "newVal")
 			},
 		},
 		{
@@ -621,10 +624,12 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 
 			ctx := NewTransformContext(histogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
-			got := accessor.Get(ctx)
+			got, err := accessor.Get(context.Background(), ctx)
+			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(ctx, tt.newVal)
+			err = accessor.Set(context.Background(), ctx, tt.newVal)
+			assert.Nil(t, err)
 
 			exNumberDataPoint := createHistogramDataPointTelemetry()
 			tt.modified(exNumberDataPoint)
@@ -655,11 +660,11 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 
 	newExemplars, newAttrs := createNewTelemetry()
 
-	newPositive := pmetric.NewBuckets()
+	newPositive := pmetric.NewExponentialHistogramDataPointBuckets()
 	newPositive.SetOffset(10)
 	newPositive.BucketCounts().FromRaw([]uint64{4, 5})
 
-	newNegative := pmetric.NewBuckets()
+	newNegative := pmetric.NewExponentialHistogramDataPointBuckets()
 	newNegative.SetOffset(10)
 	newNegative.BucketCounts().FromRaw([]uint64{4, 5})
 
@@ -706,7 +711,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			orig:   int64(0),
 			newVal: int64(1),
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
-				datapoint.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+				datapoint.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 			},
 		},
 		{
@@ -888,7 +893,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
-				datapoint.Attributes().PutString("str", "newVal")
+				datapoint.Attributes().PutStr("str", "newVal")
 			},
 		},
 		{
@@ -1042,10 +1047,12 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 
 			ctx := NewTransformContext(expoHistogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
-			got := accessor.Get(ctx)
+			got, err := accessor.Get(context.Background(), ctx)
+			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(ctx, tt.newVal)
+			err = accessor.Set(context.Background(), ctx, tt.newVal)
+			assert.Nil(t, err)
 
 			exNumberDataPoint := createExpoHistogramDataPointTelemetry()
 			tt.modified(exNumberDataPoint)
@@ -1082,7 +1089,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 
 	_, newAttrs := createNewTelemetry()
 
-	newQuartileValues := pmetric.NewValueAtQuantileSlice()
+	newQuartileValues := pmetric.NewSummaryDataPointValueAtQuantileSlice()
 	newQuartileValues.AppendEmpty().SetValue(100)
 
 	tests := []struct {
@@ -1128,7 +1135,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			orig:   int64(0),
 			newVal: int64(1),
 			modified: func(datapoint pmetric.SummaryDataPoint) {
-				datapoint.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+				datapoint.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 			},
 		},
 		{
@@ -1194,7 +1201,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(datapoint pmetric.SummaryDataPoint) {
-				datapoint.Attributes().PutString("str", "newVal")
+				datapoint.Attributes().PutStr("str", "newVal")
 			},
 		},
 		{
@@ -1348,10 +1355,12 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 
 			ctx := NewTransformContext(summaryDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
-			got := accessor.Get(ctx)
+			got, err := accessor.Get(context.Background(), ctx)
+			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(ctx, tt.newVal)
+			err = accessor.Set(context.Background(), ctx, tt.newVal)
+			assert.Nil(t, err)
 
 			exNumberDataPoint := createSummaryDataPointTelemetry()
 			tt.modified(exNumberDataPoint)
@@ -1375,7 +1384,7 @@ func createSummaryDataPointTelemetry() pmetric.SummaryDataPoint {
 	return summaryDataPoint
 }
 func createAttributeTelemetry(attributes pcommon.Map) {
-	attributes.PutString("str", "val")
+	attributes.PutStr("str", "val")
 	attributes.PutBool("bool", true)
 	attributes.PutInt("int", 10)
 	attributes.PutDouble("double", 1.2)
@@ -1504,7 +1513,7 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 			orig:   int64(2),
 			newVal: int64(1),
 			modified: func(metric pmetric.Metric) {
-				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 			},
 		},
 		{
@@ -1533,10 +1542,12 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 
 			ctx := NewTransformContext(pmetric.NewNumberDataPoint(), metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
-			got := accessor.Get(ctx)
+			got, err := accessor.Get(context.Background(), ctx)
+			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(ctx, tt.newVal)
+			err = accessor.Set(context.Background(), ctx, tt.newVal)
+			assert.Nil(t, err)
 
 			exMetric := createMetricTelemetry()
 			tt.modified(exMetric)
@@ -1551,7 +1562,7 @@ func createMetricTelemetry() pmetric.Metric {
 	metric.SetName("name")
 	metric.SetDescription("description")
 	metric.SetUnit("unit")
-	metric.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	metric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	metric.Sum().SetIsMonotonic(true)
 	return metric
 }
@@ -1561,7 +1572,7 @@ func createNewTelemetry() (pmetric.ExemplarSlice, pcommon.Map) {
 	newExemplars.AppendEmpty().SetIntValue(4)
 
 	newAttrs := pcommon.NewMap()
-	newAttrs.PutString("hello", "world")
+	newAttrs.PutStr("hello", "world")
 
 	return newExemplars, newAttrs
 }
@@ -1573,15 +1584,15 @@ func Test_ParseEnum(t *testing.T) {
 	}{
 		{
 			name: "AGGREGATION_TEMPORALITY_UNSPECIFIED",
-			want: ottl.Enum(pmetric.MetricAggregationTemporalityUnspecified),
+			want: ottl.Enum(pmetric.AggregationTemporalityUnspecified),
 		},
 		{
 			name: "AGGREGATION_TEMPORALITY_DELTA",
-			want: ottl.Enum(pmetric.MetricAggregationTemporalityDelta),
+			want: ottl.Enum(pmetric.AggregationTemporalityDelta),
 		},
 		{
 			name: "AGGREGATION_TEMPORALITY_CUMULATIVE",
-			want: ottl.Enum(pmetric.MetricAggregationTemporalityCumulative),
+			want: ottl.Enum(pmetric.AggregationTemporalityCumulative),
 		},
 		{
 			name: "FLAG_NONE",
@@ -1593,7 +1604,7 @@ func Test_ParseEnum(t *testing.T) {
 		},
 		{
 			name: "METRIC_DATA_TYPE_NONE",
-			want: ottl.Enum(pmetric.MetricTypeNone),
+			want: ottl.Enum(pmetric.MetricTypeEmpty),
 		},
 		{
 			name: "METRIC_DATA_TYPE_GAUGE",

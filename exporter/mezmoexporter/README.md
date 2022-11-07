@@ -1,5 +1,11 @@
 # Mezmo Exporter
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [stable]  |
+| Supported pipeline types | logs      |
+| Distributions            | [contrib] |
+
 This exporter supports sending OpenTelemetry log data to
 [Mezmo](https://mezmo.com).
 
@@ -50,3 +56,6 @@ service:
       processors: [ resourcedetection ]
       exporters: [ mezmo ]
 ```
+
+[stable]: https://github.com/open-telemetry/opentelemetry-collector#stable
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

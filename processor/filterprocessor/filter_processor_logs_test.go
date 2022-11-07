@@ -207,7 +207,7 @@ var (
 		},
 		{
 			logNames:       []string{"log4"},
-			severityNumber: plog.SeverityNumberUndefined,
+			severityNumber: plog.SeverityNumberUnspecified,
 		},
 	}
 
@@ -636,7 +636,7 @@ func testResourceLogs(lwrs []logWithResource) plog.Logs {
 			l := ls.AppendEmpty()
 			// Add record level attributes
 			l.Attributes().FromRaw(lwrs[i].recordAttributes)
-			l.Attributes().PutString("name", name)
+			l.Attributes().PutStr("name", name)
 			// Set body & severity fields
 			l.Body().SetStr(lwr.body)
 			l.SetSeverityText(lwr.severityText)

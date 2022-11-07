@@ -101,11 +101,14 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 
 		matchCount := len(p.router.routes)
 		for key, route := range p.router.routes {
-			if !route.expression.Condition(stx) {
+			_, isMatch, err := route.statement.Execute(ctx, stx)
+			if err != nil {
+				return err
+			}
+			if !isMatch {
 				matchCount--
 				continue
 			}
-			route.expression.Function(stx)
 			p.group(key, groups, route.exporters, rspans)
 		}
 

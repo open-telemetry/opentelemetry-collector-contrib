@@ -87,7 +87,7 @@ func TestReceiver(t *testing.T) {
 	logSink := new(consumertest.LogsSink)
 	receiver := &pubsubReceiver{
 		logger: zap.New(core),
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             config.NewComponentID(typeStr),
 			Transport:              reportTransport,
 			LongLivedCtx:           false,

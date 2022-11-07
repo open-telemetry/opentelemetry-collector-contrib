@@ -15,6 +15,7 @@
 package ottllogs
 
 import (
+	"context"
 	"encoding/hex"
 	"testing"
 	"time"
@@ -38,7 +39,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	refLog, refIS, refResource := createTelemetry()
 
 	newAttrs := pcommon.NewMap()
-	newAttrs.PutString("hello", "world")
+	newAttrs.PutStr("hello", "world")
 
 	tests := []struct {
 		name     string
@@ -207,7 +208,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   "val",
 			newVal: "newVal",
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().PutString("str", "newVal")
+				log.Attributes().PutStr("str", "newVal")
 			},
 		},
 		{
@@ -398,10 +399,12 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			log, il, resource := createTelemetry()
 
-			got := accessor.Get(NewTransformContext(log, il, resource))
+			got, err := accessor.Get(context.Background(), NewTransformContext(log, il, resource))
+			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(NewTransformContext(log, il, resource), tt.newVal)
+			err = accessor.Set(context.Background(), NewTransformContext(log, il, resource), tt.newVal)
+			assert.Nil(t, err)
 
 			exSpan, exIl, exRes := createTelemetry()
 			tt.modified(exSpan, exIl, exRes)
@@ -420,7 +423,7 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	log.SetSeverityNumber(plog.SeverityNumberFatal)
 	log.SetSeverityText("blue screen of death")
 	log.Body().SetStr("body")
-	log.Attributes().PutString("str", "val")
+	log.Attributes().PutStr("str", "val")
 	log.Attributes().PutBool("bool", true)
 	log.Attributes().PutInt("int", 10)
 	log.Attributes().PutDouble("double", 1.2)
@@ -470,7 +473,7 @@ func Test_ParseEnum(t *testing.T) {
 	}{
 		{
 			name: "SEVERITY_NUMBER_UNSPECIFIED",
-			want: ottl.Enum(plog.SeverityNumberUndefined),
+			want: ottl.Enum(plog.SeverityNumberUnspecified),
 		},
 		{
 			name: "SEVERITY_NUMBER_TRACE",

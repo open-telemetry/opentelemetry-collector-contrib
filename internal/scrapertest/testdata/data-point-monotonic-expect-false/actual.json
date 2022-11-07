@@ -7,7 +7,7 @@
                   {
                      "name": "nonmonotonic",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "isMonotonic": true
                      }
                   }

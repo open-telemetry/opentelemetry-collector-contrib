@@ -36,7 +36,7 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
 				sumMetric.SetEmptySum()
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(false)
 
 				sumMetric.SetName("summary_metric_count")
@@ -57,7 +57,7 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
 				sumMetric.SetEmptySum()
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(true)
 
 				sumMetric.SetName("summary_metric_count")
@@ -78,7 +78,7 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
 				sumMetric.SetEmptySum()
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				sumMetric.Sum().SetIsMonotonic(false)
 
 				sumMetric.SetName("summary_metric_count")
@@ -108,7 +108,8 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 			evaluate, err := convertSummaryCountValToSum(tt.temporality, tt.monotonicity)
 			assert.NoError(t, err)
 
-			evaluate(ottldatapoints.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			_, err = evaluate(nil, ottldatapoints.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			assert.Nil(t, err)
 
 			expected := pmetric.NewMetricSlice()
 			tt.want(expected)

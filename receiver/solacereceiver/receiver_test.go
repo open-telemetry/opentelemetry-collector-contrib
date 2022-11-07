@@ -37,9 +37,9 @@ import (
 func TestReceiveMessage(t *testing.T) {
 	someError := errors.New("some error")
 
-	validateMetrics := func(receivedMsgVal, droppedMsgVal, fatalUnmarshalling, reportedSpan interface{}) func(t *testing.T) {
-		return func(t *testing.T) {
-			validateReceiverMetrics(t, receivedMsgVal, droppedMsgVal, fatalUnmarshalling, reportedSpan)
+	validateMetrics := func(receivedMsgVal, droppedMsgVal, fatalUnmarshalling, reportedSpan interface{}) func(t *testing.T, receiver *solaceTracesReceiver) {
+		return func(t *testing.T, receiver *solaceTracesReceiver) {
+			validateReceiverMetrics(t, receiver, receivedMsgVal, droppedMsgVal, fatalUnmarshalling, reportedSpan)
 		}
 	}
 
@@ -53,7 +53,7 @@ func TestReceiveMessage(t *testing.T) {
 		// expected error from receiveMessage
 		expectedErr error
 		// validate constraints after the fact
-		validation func(t *testing.T)
+		validation func(t *testing.T, receiver *solaceTracesReceiver)
 	}{
 		{ // no errors, expect no error, validate metrics
 			name:       "Receive Message Success",
@@ -107,7 +107,7 @@ func TestReceiveMessage(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			receiver, messagingService, unmarshaller := newReceiver()
+			receiver, messagingService, unmarshaller := newReceiver(t)
 			if testCase.nextConsumer != nil {
 				receiver.nextConsumer = testCase.nextConsumer
 			}
@@ -163,7 +163,7 @@ func TestReceiveMessage(t *testing.T) {
 				assert.Equal(t, !testCase.expectNack, ackCalled)
 			}
 			if testCase.validation != nil {
-				testCase.validation(t)
+				testCase.validation(t, receiver)
 			}
 		})
 	}
@@ -171,7 +171,7 @@ func TestReceiveMessage(t *testing.T) {
 
 // receiveMessages ctx done return
 func TestReceiveMessagesTerminateWithCtxDone(t *testing.T) {
-	receiver, messagingService, unmarshaller := newReceiver()
+	receiver, messagingService, unmarshaller := newReceiver(t)
 	receiveMessagesCalled := false
 	ctx, cancel := context.WithCancel(context.Background())
 	msg := &inboundMessage{}
@@ -199,25 +199,25 @@ func TestReceiveMessagesTerminateWithCtxDone(t *testing.T) {
 	assert.True(t, receiveMessagesCalled)
 	assert.True(t, unmarshalCalled)
 	assert.True(t, ackCalled)
-	validateReceiverMetrics(t, 1, nil, nil, 1)
+	validateReceiverMetrics(t, receiver, 1, nil, nil, 1)
 }
 
 func TestReceiverLifecycle(t *testing.T) {
-	receiver, messagingService, _ := newReceiver()
+	receiver, messagingService, _ := newReceiver(t)
 	dialCalled := make(chan struct{})
 	messagingService.dialFunc = func() error {
-		validateMetric(t, viewReceiverStatus, receiverStateConnecting)
+		validateMetric(t, receiver.metrics.views.receiverStatus, receiverStateConnecting)
 		close(dialCalled)
 		return nil
 	}
 	closeCalled := make(chan struct{})
 	messagingService.closeFunc = func(ctx context.Context) {
-		validateMetric(t, viewReceiverStatus, receiverStateTerminating)
+		validateMetric(t, receiver.metrics.views.receiverStatus, receiverStateTerminating)
 		close(closeCalled)
 	}
 	receiveMessagesCalled := make(chan struct{})
 	messagingService.receiveMessageFunc = func(ctx context.Context) (*inboundMessage, error) {
-		validateMetric(t, viewReceiverStatus, receiverStateConnected)
+		validateMetric(t, receiver.metrics.views.receiverStatus, receiverStateConnected)
 		close(receiveMessagesCalled)
 		<-ctx.Done()
 		return nil, errors.New("some error")
@@ -230,13 +230,13 @@ func TestReceiverLifecycle(t *testing.T) {
 	err = receiver.Shutdown(context.Background())
 	assert.NoError(t, err)
 	assertChannelClosed(t, closeCalled)
-	validateMetric(t, viewReceiverStatus, receiverStateTerminated)
+	validateMetric(t, receiver.metrics.views.receiverStatus, receiverStateTerminated)
 	// we error on receive message, so we should not report any metrics
-	validateReceiverMetrics(t, nil, nil, nil, nil)
+	validateReceiverMetrics(t, receiver, nil, nil, nil, nil)
 }
 
 func TestReceiverDialFailureContinue(t *testing.T) {
-	receiver, msgService, _ := newReceiver()
+	receiver, msgService, _ := newReceiver(t)
 	dialErr := errors.New("Some dial error")
 	const expectedAttempts = 3 // the number of attempts to perform prior to resolving
 	dialCalled := 0
@@ -262,7 +262,7 @@ func TestReceiverDialFailureContinue(t *testing.T) {
 	msgService.closeFunc = func(ctx context.Context) {
 		closeCalled++
 		// asset we never left connecting state prior to closing closeDone
-		validateMetric(t, viewReceiverStatus, receiverStateConnecting)
+		validateMetric(t, receiver.metrics.views.receiverStatus, receiverStateConnecting)
 		if closeCalled == expectedAttempts {
 			close(closeDone)
 			<-ctx.Done() // wait for ctx.Done
@@ -279,17 +279,17 @@ func TestReceiverDialFailureContinue(t *testing.T) {
 	// expect close to be called twice
 	assertChannelClosed(t, closeDone)
 	// assert failed reconnections
-	validateMetric(t, viewFailedReconnections, expectedAttempts)
+	validateMetric(t, receiver.metrics.views.failedReconnections, expectedAttempts)
 
 	err = receiver.Shutdown(context.Background())
 	assert.NoError(t, err)
-	validateMetric(t, viewReceiverStatus, receiverStateTerminated)
+	validateMetric(t, receiver.metrics.views.receiverStatus, receiverStateTerminated)
 	// we error on dial, should never get to receive messages
-	validateReceiverMetrics(t, nil, nil, nil, nil)
+	validateReceiverMetrics(t, receiver, nil, nil, nil, nil)
 }
 
 func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
-	receiver, msgService, unmarshaller := newReceiver()
+	receiver, msgService, unmarshaller := newReceiver(t)
 	dialDone := make(chan struct{})
 	nackCalled := make(chan struct{})
 	closeDone := make(chan struct{})
@@ -331,26 +331,28 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 	// expect close to be called twice
 	assertChannelClosed(t, closeDone)
 	// we receive 1 message, encounter a fatal unmarshalling error and we nack the message so it is not actually dropped
-	validateReceiverMetrics(t, 1, nil, 1, nil)
+	validateReceiverMetrics(t, receiver, 1, nil, 1, nil)
 	// assert idle state
-	validateMetric(t, viewReceiverStatus, receiverStateIdle)
+	validateMetric(t, receiver.metrics.views.receiverStatus, receiverStateIdle)
 
 	err = receiver.Shutdown(context.Background())
 	assert.NoError(t, err)
-	validateMetric(t, viewReceiverStatus, receiverStateTerminated)
+	validateMetric(t, receiver.metrics.views.receiverStatus, receiverStateTerminated)
 }
 
-func newReceiver() (*solaceTracesReceiver, *mockMessagingService, *mockUnmarshaller) {
+func newReceiver(t *testing.T) (*solaceTracesReceiver, *mockMessagingService, *mockUnmarshaller) {
 	unmarshaller := &mockUnmarshaller{}
 	service := &mockMessagingService{}
 	messagingServiceFactory := func() messagingService {
 		return service
 	}
+	metrics := newTestMetrics(t)
 	receiver := &solaceTracesReceiver{
 		settings:          componenttest.NewNopReceiverCreateSettings(),
-		instanceID:        config.NewComponentID(componentType),
+		instanceID:        config.NewComponentID(config.Type(t.Name())),
 		config:            &Config{},
 		nextConsumer:      consumertest.NewNop(),
+		metrics:           metrics,
 		unmarshaller:      unmarshaller,
 		factory:           messagingServiceFactory,
 		shutdownWaitGroup: &sync.WaitGroup{},
@@ -360,11 +362,11 @@ func newReceiver() (*solaceTracesReceiver, *mockMessagingService, *mockUnmarshal
 	return receiver, service, unmarshaller
 }
 
-func validateReceiverMetrics(t *testing.T, receivedMsgVal, droppedMsgVal, fatalUnmarshalling, reportedSpan interface{}) {
-	validateMetric(t, viewReceivedSpanMessages, receivedMsgVal)
-	validateMetric(t, viewDroppedSpanMessages, droppedMsgVal)
-	validateMetric(t, viewFatalUnmarshallingErrors, fatalUnmarshalling)
-	validateMetric(t, viewReportedSpans, reportedSpan)
+func validateReceiverMetrics(t *testing.T, receiver *solaceTracesReceiver, receivedMsgVal, droppedMsgVal, fatalUnmarshalling, reportedSpan interface{}) {
+	validateMetric(t, receiver.metrics.views.receivedSpanMessages, receivedMsgVal)
+	validateMetric(t, receiver.metrics.views.droppedSpanMessages, droppedMsgVal)
+	validateMetric(t, receiver.metrics.views.fatalUnmarshallingErrors, fatalUnmarshalling)
+	validateMetric(t, receiver.metrics.views.reportedSpans, reportedSpan)
 }
 
 type mockMessagingService struct {
@@ -397,14 +399,14 @@ func (m *mockMessagingService) receiveMessage(ctx context.Context) (*inboundMess
 	panic("did not expect receiveMessage to be called")
 }
 
-func (m *mockMessagingService) ack(ctx context.Context, msg *inboundMessage) error {
+func (m *mockMessagingService) accept(ctx context.Context, msg *inboundMessage) error {
 	if m.ackFunc != nil {
 		return m.ackFunc(ctx, msg)
 	}
 	panic("did not expect ack to be called")
 }
 
-func (m *mockMessagingService) nack(ctx context.Context, msg *inboundMessage) error {
+func (m *mockMessagingService) failed(ctx context.Context, msg *inboundMessage) error {
 	if m.nackFunc != nil {
 		return m.nackFunc(ctx, msg)
 	}

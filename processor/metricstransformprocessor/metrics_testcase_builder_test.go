@@ -63,7 +63,7 @@ func (b builder) setAttrs(attrs pcommon.Map, attrValues []string) {
 		panic(attrValues)
 	}
 	for i, a := range b.attrs {
-		attrs.PutString(a, attrValues[i])
+		attrs.PutStr(a, attrValues[i])
 	}
 }
 
@@ -94,6 +94,29 @@ func (b builder) addHistogramDatapoint(start, ts pcommon.Timestamp, count uint64
 	dp.SetSum(sum)
 	dp.ExplicitBounds().FromRaw(bounds)
 	dp.BucketCounts().FromRaw(buckets)
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	return b
+}
+
+func (b builder) addHistogramDatapointWithMinMaxAndExemplars(start, ts pcommon.Timestamp, count uint64, sum, min, max float64,
+	bounds []float64, buckets []uint64, exemplarValues []float64, attrValues ...string) builder {
+	if b.metric.Type() != pmetric.MetricTypeHistogram {
+		panic(b.metric.Type().String())
+	}
+	dp := b.metric.Histogram().DataPoints().AppendEmpty()
+	b.setAttrs(dp.Attributes(), attrValues)
+	dp.SetCount(count)
+	dp.SetSum(sum)
+	dp.SetMin(min)
+	dp.SetMax(max)
+	dp.ExplicitBounds().FromRaw(bounds)
+	dp.BucketCounts().FromRaw(buckets)
+	for ei := 0; ei < len(exemplarValues); ei++ {
+		exemplar := dp.Exemplars().AppendEmpty()
+		exemplar.SetTimestamp(ts)
+		exemplar.SetDoubleValue(exemplarValues[ei])
+	}
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	return b

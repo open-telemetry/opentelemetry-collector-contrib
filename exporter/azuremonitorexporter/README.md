@@ -1,5 +1,11 @@
 # Azure Monitor Exporter
 
+| Status                   |              |
+|--------------------------|--------------|
+| Stability                | [beta]       |
+| Supported pipeline types | logs, traces |
+| Distributions            | [contrib]    |
+
 This exporter sends logs and trace data to [Azure Monitor](https://docs.microsoft.com/azure/azure-monitor/).
 
 ## Configuration
@@ -58,3 +64,6 @@ All attributes are also mapped to custom properties if they are booleans or stri
 ### Logs
 This exporter saves log records to Application Insights `traces` table.
 [TraceId](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-traceid) is mapped to `operation_id` column and [SpanId](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-spanid) is mapped to `operation_parentId` column.
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

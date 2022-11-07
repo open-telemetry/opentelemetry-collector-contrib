@@ -95,8 +95,8 @@ var k8sNodeEndpoint = observer.Endpoint{
 		InternalIP:          "2.3.4.5",
 		KubeletEndpointPort: 10250,
 		Labels: map[string]string{
-			"beta.kubernetes.io/arch": "amd64",
-			"beta.kubernetes.io/os":   "linux",
+			"kubernetes.io/arch": "amd64",
+			"kubernetes.io/os":   "linux",
 		},
 		Name: "a.name",
 		UID:  "b344f2a7-1ec1-40f0-8557-8a9bfd8b6f99",

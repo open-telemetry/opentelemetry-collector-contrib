@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck,gocritic
 package awscontainerinsightreceiver
 
 import (
@@ -91,14 +90,14 @@ func TestCollectData(t *testing.T) {
 	require.NotNil(t, metricsReceiver)
 
 	r := metricsReceiver.(*awsContainerInsightReceiver)
-	r.Start(context.Background(), nil)
+	_ = r.Start(context.Background(), nil)
 	ctx := context.Background()
 	r.k8sapiserver = &MockK8sAPIServer{}
 	r.cadvisor = &MockCadvisor{}
 	err = r.collectData(ctx)
 	require.Nil(t, err)
 
-	//test the case when cadvisor and k8sapiserver failed to initialize
+	// test the case when cadvisor and k8sapiserver failed to initialize
 	r.cadvisor = nil
 	r.k8sapiserver = nil
 	err = r.collectData(ctx)
@@ -117,7 +116,7 @@ func TestCollectDataWithErrConsumer(t *testing.T) {
 	require.NotNil(t, metricsReceiver)
 
 	r := metricsReceiver.(*awsContainerInsightReceiver)
-	r.Start(context.Background(), nil)
+	_ = r.Start(context.Background(), nil)
 	r.cadvisor = &MockCadvisor{}
 	r.k8sapiserver = &MockK8sAPIServer{}
 	ctx := context.Background()
@@ -139,14 +138,14 @@ func TestCollectDataWithECS(t *testing.T) {
 	require.NotNil(t, metricsReceiver)
 
 	r := metricsReceiver.(*awsContainerInsightReceiver)
-	r.Start(context.Background(), nil)
+	_ = r.Start(context.Background(), nil)
 	ctx := context.Background()
 
 	r.cadvisor = &MockCadvisor{}
 	err = r.collectData(ctx)
 	require.Nil(t, err)
 
-	//test the case when cadvisor and k8sapiserver failed to initialize
+	// test the case when cadvisor and k8sapiserver failed to initialize
 	r.cadvisor = nil
 	err = r.collectData(ctx)
 	require.NotNil(t, err)

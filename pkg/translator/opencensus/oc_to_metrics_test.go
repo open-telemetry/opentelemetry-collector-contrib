@@ -142,7 +142,7 @@ func TestOCToMetrics_ResourceInMetric(t *testing.T) {
 	want := pmetric.NewMetrics()
 	internal.CopyTo(want)
 	want.ResourceMetrics().At(0).CopyTo(want.ResourceMetrics().AppendEmpty())
-	want.ResourceMetrics().At(1).Resource().Attributes().PutString("resource-attr", "another-value")
+	want.ResourceMetrics().At(1).Resource().Attributes().PutStr("resource-attr", "another-value")
 	oc := generateOCTestDataMetricsOneMetric()
 	oc2 := generateOCTestDataMetricsOneMetric()
 	oc.Metrics = append(oc.Metrics, oc2.Metrics...)

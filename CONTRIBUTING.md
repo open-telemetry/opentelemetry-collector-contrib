@@ -113,12 +113,19 @@ and the rest of contributors.
   harnesses. To align with the test goal of the project, components must be testable within the framework defined within
   the folder. If a component can not be properly tested within the existing framework, it must increase the non testable
   components number with a comment within the PR explaining as to why it can not be tested.
+- Add the sponsor for your component and yourself to a new line for your component in the
+  [`.github/CODEOWNERS`](./.github/CODEOWNERS) file.
+- Run `make generate-gh-issue-templates` to add your component to the dropdown list in the issue templates.
+
+### Releasing New Components
+After a component has been approved and merged, and has been enabled in `internal/components/`, it must be added to the
+[OpenTelemetry Collector Contrib's release manifest.yaml](https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/distributions/otelcol-contrib/manifest.yaml)
+to be included in the distributed otelcol-contrib binaries and docker images.
 
 ### Rotating sponsors
 
 The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
 
-* [@dmitryax](https://github.com/dmitryax)
 * [@bogdandrutu](https://github.com/bogdandrutu)
 * [@dashpole](https://github.com/dashpole)
 * [@TylerHelmuth](https://github.com/TylerHelmuth)
@@ -127,6 +134,7 @@ The following GitHub users are the currently available sponsors, either by being
 * [@Aneurysm9](https://github.com/Aneurysm9)
 * [@mx-psi](https://github.com/mx-psi)
 * [@jpkrohling](https://github.com/jpkrohling)
+* [@dmitryax](https://github.com/dmitryax)
 
 Whenever a sponsor is picked from the top of this list, please move them to the bottom.
 
@@ -155,14 +163,25 @@ in general try to follow them.
 
 ## Adding Labels via Comments
 
-In order to facilitate proper label usage and to empower Code Owners, you are able to add the following labels to issues via comments.
+In order to facilitate proper label usage and to empower Code Owners, you are able to add labels to issues via comments. To add a label through a comment, post a new comment on an issue starting with `/label`, followed by a space-separated list of your desired labels. Supported labels come from the table below, or correspond to a component defined in the [CODEOWNERS file](.github/CODEOWNERS).
 
-| Label              | Generating Comment |
-|--------------------|--------------------|
-| `good first issue` | /good-first-issue  |
-| `help wanted`      | /help-wanted       |
+The following general labels are supported:
 
-Currently, labels can only be created via comment, not deleted.  You must make a new comment; you cannot edit an existing comment.
+| Label                | Label in Comment     |
+|----------------------|----------------------|
+| `good first issue`   | `good-first-issue`   |
+| `help wanted`        | `help-wanted`        |
+| `needs discussion`   | `needs-discussion`   |
+| `needs triage`       | `needs-triage`       |
+| `waiting for author` | `waiting-for-author` |
+
+To delete a label, prepend the label with `-`. Note that you must make a new comment to modify labels; you cannot edit an existing comment.
+
+Example label comment:
+
+```
+/label receiver/prometheus help-wanted -exporter/prometheus
+```
 
 ## Becoming a Code Owner
 

@@ -51,7 +51,7 @@
                                         "asInt": "39"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "aggregationTemporality": 2,
                                 "isMonotonic": true
                             }
                         }

@@ -247,9 +247,9 @@ func validateMetrics(metric pmetric.Metric) bool {
 	case pmetric.MetricTypeGauge:
 		return metric.Gauge().DataPoints().Len() != 0
 	case pmetric.MetricTypeSum:
-		return metric.Sum().DataPoints().Len() != 0 && metric.Sum().AggregationTemporality() == pmetric.MetricAggregationTemporalityCumulative
+		return metric.Sum().DataPoints().Len() != 0 && metric.Sum().AggregationTemporality() == pmetric.AggregationTemporalityCumulative
 	case pmetric.MetricTypeHistogram:
-		return metric.Histogram().DataPoints().Len() != 0 && metric.Histogram().AggregationTemporality() == pmetric.MetricAggregationTemporalityCumulative
+		return metric.Histogram().DataPoints().Len() != 0 && metric.Histogram().AggregationTemporality() == pmetric.AggregationTemporalityCumulative
 	case pmetric.MetricTypeSummary:
 		return metric.Summary().DataPoints().Len() != 0
 	}
@@ -344,10 +344,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 	if pt.Flags().NoRecordedValue() {
 		infBucket.Value = math.Float64frombits(value.StaleNaN)
 	} else {
-		if pt.BucketCounts().Len() > 0 {
-			cumulativeCount += pt.BucketCounts().At(pt.BucketCounts().Len() - 1)
-		}
-		infBucket.Value = float64(cumulativeCount)
+		infBucket.Value = float64(pt.Count())
 	}
 	infLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+bucketStr, leStr, pInfStr)
 	sig := addSample(tsMap, infBucket, infLabels, metric.Type().String())

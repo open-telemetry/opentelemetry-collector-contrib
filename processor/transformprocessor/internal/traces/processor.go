@@ -25,11 +25,11 @@ import (
 )
 
 type Processor struct {
-	statements []ottl.Statement[ottltraces.TransformContext]
+	statements []*ottl.Statement[ottltraces.TransformContext]
 }
 
-func NewProcessor(statements []string, functions map[string]interface{}, settings component.TelemetrySettings) (*Processor, error) {
-	ottlp := ottltraces.NewParser(functions, settings)
+func NewProcessor(statements []string, settings component.TelemetrySettings) (*Processor, error) {
+	ottlp := ottltraces.NewParser(Functions(), settings)
 	parsedStatements, err := ottlp.ParseStatements(statements)
 	if err != nil {
 		return nil, err
@@ -39,17 +39,18 @@ func NewProcessor(statements []string, functions map[string]interface{}, setting
 	}, nil
 }
 
-func (p *Processor) ProcessTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+func (p *Processor) ProcessTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
 			sspan := rspans.ScopeSpans().At(j)
 			spans := sspan.Spans()
 			for k := 0; k < spans.Len(); k++ {
-				ctx := ottltraces.NewTransformContext(spans.At(k), sspan.Scope(), rspans.Resource())
+				tCtx := ottltraces.NewTransformContext(spans.At(k), sspan.Scope(), rspans.Resource())
 				for _, statement := range p.statements {
-					if statement.Condition(ctx) {
-						statement.Function(ctx)
+					_, _, err := statement.Execute(ctx, tCtx)
+					if err != nil {
+						return td, err
 					}
 				}
 			}

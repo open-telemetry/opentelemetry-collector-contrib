@@ -158,8 +158,8 @@ func (cfg *Config) Validate() error {
 }
 
 func (cfg *Config) validatePromConfig(promConfig *promconfig.Config) error {
-	if len(promConfig.ScrapeConfigs) == 0 {
-		return errors.New("no Prometheus scrape_configs")
+	if len(promConfig.ScrapeConfigs) == 0 && cfg.TargetAllocator == nil {
+		return errors.New("no Prometheus scrape_configs or target_allocator set")
 	}
 
 	// Reject features that Prometheus supports but that the receiver doesn't support:
@@ -261,7 +261,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	// We need custom unmarshaling because prometheus "config" subkey defines its own
 	// YAML unmarshaling routines so we need to do it explicitly.
 
-	err := componentParser.UnmarshalExact(cfg)
+	err := componentParser.Unmarshal(cfg, confmap.WithErrorUnused())
 	if err != nil {
 		return fmt.Errorf("prometheus receiver failed to parse config: %w", err)
 	}

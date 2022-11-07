@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -179,10 +179,10 @@ func TestAttributesToJaegerProtoTags(t *testing.T) {
 	attributes := pcommon.NewMap()
 	attributes.PutBool("bool-val", true)
 	attributes.PutInt("int-val", 123)
-	attributes.PutString("string-val", "abc")
+	attributes.PutStr("string-val", "abc")
 	attributes.PutDouble("double-val", 1.23)
 	attributes.PutEmptyBytes("bytes-val").FromRaw([]byte{1, 2, 3, 4})
-	attributes.PutString(conventions.AttributeServiceName, "service-name")
+	attributes.PutStr(conventions.AttributeServiceName, "service-name")
 
 	expected := []model.KeyValue{
 		{
@@ -323,6 +323,20 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 			},
 			err: nil,
 		},
+		{
+			name: "a-spans-with-two-parent",
+			jb: &model.Batch{
+				Process: &model.Process{
+					ServiceName: tracetranslator.ResourceNoServiceName,
+				},
+				Spans: []*model.Span{
+					generateProtoSpan(),
+					generateProtoFollowerSpan(),
+					generateProtoTwoParentsSpan(),
+				},
+			},
+			td: generateTracesSpanWithTwoParents(),
+		},
 	}
 
 	for _, test := range tests {
@@ -357,7 +371,7 @@ func generateTracesOneSpanNoResourceWithEventAttribute() ptrace.Traces {
 	td := generateTracesOneSpanNoResource()
 	event := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().At(0)
 	event.SetName("must-be-ignorred")
-	event.Attributes().PutString("event", "must-be-used-instead-of-event-name")
+	event.Attributes().PutStr("event", "must-be-used-instead-of-event-name")
 	return td
 }
 

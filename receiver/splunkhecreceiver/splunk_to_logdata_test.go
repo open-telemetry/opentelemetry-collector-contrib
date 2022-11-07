@@ -189,11 +189,11 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				logRecord := sl.LogRecords().AppendEmpty()
 				logRecord.Body().SetStr("value")
 				logRecord.SetTimestamp(pcommon.Timestamp(0))
-				logRecord.Attributes().PutString("foo", "bar")
-				logRecord.Attributes().PutString("myhost", "localhost")
-				logRecord.Attributes().PutString("mysource", "mysource")
-				logRecord.Attributes().PutString("mysourcetype", "mysourcetype")
-				logRecord.Attributes().PutString("myindex", "myindex")
+				logRecord.Attributes().PutStr("foo", "bar")
+				logRecord.Attributes().PutStr("myhost", "localhost")
+				logRecord.Attributes().PutStr("mysource", "mysource")
+				logRecord.Attributes().PutStr("mysourcetype", "mysourcetype")
+				logRecord.Attributes().PutStr("myindex", "myindex")
 				return lrs
 			}(),
 			wantErr: nil,
@@ -216,11 +216,11 @@ func createLogsSlice(nanoseconds int) plog.ResourceLogsSlice {
 	logRecord := sl.LogRecords().AppendEmpty()
 	logRecord.Body().SetStr("value")
 	logRecord.SetTimestamp(pcommon.Timestamp(nanoseconds))
-	logRecord.Attributes().PutString("foo", "bar")
-	logRecord.Attributes().PutString("host.name", "localhost")
-	logRecord.Attributes().PutString("com.splunk.source", "mysource")
-	logRecord.Attributes().PutString("com.splunk.sourcetype", "mysourcetype")
-	logRecord.Attributes().PutString("com.splunk.index", "myindex")
+	logRecord.Attributes().PutStr("foo", "bar")
+	logRecord.Attributes().PutStr("host.name", "localhost")
+	logRecord.Attributes().PutStr("com.splunk.source", "mysource")
+	logRecord.Attributes().PutStr("com.splunk.sourcetype", "mysourcetype")
+	logRecord.Attributes().PutStr("com.splunk.index", "myindex")
 
 	return lrs
 }
@@ -254,7 +254,7 @@ func TestConvertToValueMap(t *testing.T) {
 	assert.NoError(t, convertToValue(zap.NewNop(), map[string]interface{}{"foo": "bar"}, value))
 	atts := pcommon.NewValueMap()
 	attMap := atts.Map()
-	attMap.PutString("foo", "bar")
+	attMap.PutStr("foo", "bar")
 	assert.Equal(t, atts, value)
 }
 

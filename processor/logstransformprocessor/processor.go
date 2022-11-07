@@ -65,16 +65,7 @@ func (ltp *logsTransformProcessor) Shutdown(ctx context.Context) error {
 func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Host) error {
 	baseCfg := ltp.config.BaseConfig
 
-	emitterOpts := []adapter.LogEmitterOption{
-		adapter.LogEmitterWithLogger(ltp.logger.Sugar()),
-	}
-	if baseCfg.Converter.MaxFlushCount > 0 {
-		emitterOpts = append(emitterOpts, adapter.LogEmitterWithMaxBatchSize(baseCfg.Converter.MaxFlushCount))
-	}
-	if baseCfg.Converter.FlushInterval > 0 {
-		emitterOpts = append(emitterOpts, adapter.LogEmitterWithFlushInterval(baseCfg.Converter.FlushInterval))
-	}
-	ltp.emitter = adapter.NewLogEmitter(emitterOpts...)
+	ltp.emitter = adapter.NewLogEmitter(ltp.logger.Sugar())
 	pipe, err := pipeline.Config{
 		Operators:     baseCfg.Operators,
 		DefaultOutput: ltp.emitter,
@@ -97,14 +88,8 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 	ltp.firstOperator = pipelineOperators[0]
 
 	wkrCount := int(math.Max(1, float64(runtime.NumCPU())))
-	if baseCfg.Converter.WorkerCount > 0 {
-		wkrCount = baseCfg.Converter.WorkerCount
-	}
 
-	ltp.converter = adapter.NewConverter(
-		adapter.WithLogger(ltp.logger),
-		adapter.WithWorkerCount(wkrCount),
-	)
+	ltp.converter = adapter.NewConverter(ltp.logger)
 	ltp.converter.Start()
 
 	ltp.fromConverter = adapter.NewFromPdataConverter(wkrCount, ltp.logger)

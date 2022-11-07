@@ -495,8 +495,8 @@ func metricBuilder(delta int64, prefix, job, instance string) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	rms := md.ResourceMetrics().AppendEmpty()
 	rms0 := md.ResourceMetrics().At(0)
-	rms0.Resource().Attributes().PutString(conventions.AttributeServiceName, job)
-	rms0.Resource().Attributes().PutString(conventions.AttributeServiceInstanceID, instance)
+	rms0.Resource().Attributes().PutStr(conventions.AttributeServiceName, job)
+	rms0.Resource().Attributes().PutStr(conventions.AttributeServiceInstanceID, instance)
 
 	ms := rms.ScopeMetrics().AppendEmpty().Metrics()
 
@@ -506,12 +506,12 @@ func metricBuilder(delta int64, prefix, job, instance string) pmetric.Metrics {
 	m1.SetUnit("1")
 	d1 := m1.SetEmptySum()
 	d1.SetIsMonotonic(true)
-	d1.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	d1.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	dp1 := d1.DataPoints().AppendEmpty()
 	dp1.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(1543160298+delta, 100000090)))
 	dp1.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1543160298+delta, 100000997)))
-	dp1.Attributes().PutString("os", "windows")
-	dp1.Attributes().PutString("arch", "x86")
+	dp1.Attributes().PutStr("os", "windows")
+	dp1.Attributes().PutStr("arch", "x86")
 	dp1.SetIntValue(99 + delta)
 
 	m2 := ms.AppendEmpty()
@@ -520,12 +520,12 @@ func metricBuilder(delta int64, prefix, job, instance string) pmetric.Metrics {
 	m2.SetUnit("1")
 	d2 := m2.SetEmptySum()
 	d2.SetIsMonotonic(true)
-	d2.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	d2.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	dp2 := d2.DataPoints().AppendEmpty()
 	dp2.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(1543160298, 100000090)))
 	dp2.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1543160298, 100000997)))
-	dp2.Attributes().PutString("os", "linux")
-	dp2.Attributes().PutString("arch", "x86")
+	dp2.Attributes().PutStr("os", "linux")
+	dp2.Attributes().PutStr("arch", "x86")
 	dp2.SetIntValue(100 + delta)
 
 	return md

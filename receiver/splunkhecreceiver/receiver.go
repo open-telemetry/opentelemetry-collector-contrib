@@ -117,7 +117,7 @@ func newMetricsReceiver(
 			ReadHeaderTimeout: defaultServerTimeout,
 			WriteTimeout:      defaultServerTimeout,
 		},
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             config.ID(),
 			Transport:              transport,
 			ReceiverCreateSettings: settings,
@@ -158,7 +158,7 @@ func newLogsReceiver(
 			WriteTimeout:      defaultServerTimeout,
 		},
 		gzipReaderPool: &sync.Pool{New: func() interface{} { return new(gzip.Reader) }},
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             config.ID(),
 			Transport:              transport,
 			ReceiverCreateSettings: settings,
@@ -393,7 +393,7 @@ func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resour
 		if strings.HasPrefix(accessToken, splunk.HECTokenHeader+" ") {
 			accessTokenValue := accessToken[len(splunk.HECTokenHeader)+1:]
 			return func(resource pcommon.Resource) {
-				resource.Attributes().PutString(splunk.HecTokenLabel, accessTokenValue)
+				resource.Attributes().PutStr(splunk.HecTokenLabel, accessTokenValue)
 			}
 		}
 	}

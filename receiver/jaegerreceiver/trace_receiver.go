@@ -115,12 +115,12 @@ func newJaegerReceiver(
 		nextConsumer: nextConsumer,
 		id:           id,
 		settings:     set,
-		grpcObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		grpcObsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             id,
 			Transport:              grpcTransport,
 			ReceiverCreateSettings: set,
 		}),
-		httpObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		httpObsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             id,
 			Transport:              collectorHTTPTransport,
 			ReceiverCreateSettings: set,
@@ -234,7 +234,7 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 	if jr.config.AgentBinaryThrift.Endpoint != "" {
 		h := &agentHandler{
 			nextConsumer: jr.nextConsumer,
-			obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 				ReceiverID:             jr.id,
 				Transport:              agentTransportBinary,
 				ReceiverCreateSettings: jr.settings,
@@ -250,7 +250,7 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 	if jr.config.AgentCompactThrift.Endpoint != "" {
 		h := &agentHandler{
 			nextConsumer: jr.nextConsumer,
-			obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 				ReceiverID:             jr.id,
 				Transport:              agentTransportCompact,
 				ReceiverCreateSettings: jr.settings,
@@ -392,12 +392,12 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 	}
 
 	if jr.config.CollectorGRPCServerSettings.NetAddr.Endpoint != "" {
-		opts, err := jr.config.CollectorGRPCServerSettings.ToServerOption(host, jr.settings.TelemetrySettings)
+		var err error
+		jr.grpc, err = jr.config.CollectorGRPCServerSettings.ToServer(host, jr.settings.TelemetrySettings)
 		if err != nil {
 			return fmt.Errorf("failed to build the options for the Jaeger gRPC Collector: %w", err)
 		}
 
-		jr.grpc = grpc.NewServer(opts...)
 		ln, err := jr.config.CollectorGRPCServerSettings.ToListener()
 		if err != nil {
 			return fmt.Errorf("failed to bind to gRPC address %q: %w", jr.config.CollectorGRPCServerSettings.NetAddr, err)

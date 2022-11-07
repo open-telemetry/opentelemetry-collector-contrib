@@ -21,32 +21,27 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	otlphttp "go.opentelemetry.io/collector/exporter/otlphttpexporter"
-	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, 2, len(cfg.Exporters))
+	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "allsettings").String())
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalExporter(sub, cfg))
 
-	exporter := cfg.Exporters[config.NewComponentIDWithName(typeStr, "allsettings")]
-	actualCfg := exporter.(*Config)
+	actualCfg := cfg.(*Config)
 	expectedCfg := &Config{
 		Config: otlphttp.Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "allsettings")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "")),
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         true,
 				InitialInterval: 10 * time.Second,
@@ -77,7 +72,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 	// testing function equality is not supported in Go hence these will be ignored for this test
 	expectedCfg.HTTPClientSettings.CustomRoundTripper = nil
-	exporter.(*Config).HTTPClientSettings.CustomRoundTripper = nil
+	actualCfg.HTTPClientSettings.CustomRoundTripper = nil
 	assert.Equal(t, expectedCfg, actualCfg)
 }
 

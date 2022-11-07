@@ -63,7 +63,7 @@ func getTestGaugeMetric() pmetric.Metric {
 
 func getTestAttributes() pcommon.Map {
 	attrs := pcommon.NewMap()
-	attrs.PutString("test", "hello world")
+	attrs.PutStr("test", "hello world")
 	attrs.PutInt("test2", 3)
 	attrs.PutBool("test3", true)
 	return attrs
@@ -89,7 +89,7 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
 				sumMetric.SetEmptySum()
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(false)
 
 				sumMetric.SetName("summary_metric_sum")
@@ -110,7 +110,7 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
 				sumMetric.SetEmptySum()
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(true)
 
 				sumMetric.SetName("summary_metric_sum")
@@ -131,7 +131,7 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
 				sumMetric.SetEmptySum()
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				sumMetric.Sum().SetIsMonotonic(false)
 
 				sumMetric.SetName("summary_metric_sum")
@@ -161,7 +161,8 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 			evaluate, err := convertSummarySumValToSum(tt.temporality, tt.monotonicity)
 			assert.NoError(t, err)
 
-			evaluate(ottldatapoints.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			_, err = evaluate(nil, ottldatapoints.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			assert.Nil(t, err)
 
 			expected := pmetric.NewMetricSlice()
 			tt.want(expected)

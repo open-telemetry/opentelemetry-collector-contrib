@@ -36,12 +36,15 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	tcpop "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver"
@@ -69,6 +72,15 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "apache",
 		},
 		{
+			receiver: "awscloudwatch",
+			getConfigFn: func() config.Receiver {
+				cfg := rcvrFactories["awscloudwatch"].CreateDefaultConfig().(*awscloudwatchreceiver.Config)
+				cfg.Region = "us-west-2"
+				cfg.Logs.Groups = awscloudwatchreceiver.GroupConfig{AutodiscoverConfig: nil}
+				return cfg
+			},
+		},
+		{
 			receiver: "awscontainerinsightreceiver",
 			// TODO: skipped since it will only function in a container environment with procfs in expected location.
 			skipLifecyle: true,
@@ -86,6 +98,12 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "azureeventhub",
+			getConfigFn: func() config.Receiver {
+				cfg := rcvrFactories["azureeventhub"].CreateDefaultConfig().(*azureeventhubreceiver.Config)
+				cfg.Connection = "Endpoint=sb://example.com/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
+				return cfg
+			},
+			skipLifecyle: true, // Requires Azure event hub to run
 		},
 		{
 			receiver: "bigip",
@@ -156,6 +174,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "hostmetrics",
 		},
 		{
+			receiver: "httpcheck",
+		},
+		{
 			receiver: "influxdb",
 		},
 		{
@@ -175,6 +196,10 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver:     "k8s_events",
+			skipLifecyle: true, // need a valid Kubernetes host and port
+		},
+		{
+			receiver:     "k8sobjects",
 			skipLifecyle: true, // need a valid Kubernetes host and port
 		},
 		{
@@ -288,6 +313,22 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "skywalking",
+		},
+		{
+			receiver: "snmp",
+			getConfigFn: func() config.Receiver {
+				cfg := rcvrFactories["snmp"].CreateDefaultConfig().(*snmpreceiver.Config)
+				cfg.Metrics = map[string]*snmpreceiver.MetricConfig{
+					"m1": {
+						Unit:  "1",
+						Gauge: &snmpreceiver.GaugeMetric{ValueType: "int"},
+						ScalarOIDs: []snmpreceiver.ScalarOID{{
+							OID: ".1",
+						}},
+					},
+				}
+				return cfg
+			},
 		},
 		{
 			receiver: "splunk_hec",

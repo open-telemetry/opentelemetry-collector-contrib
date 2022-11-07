@@ -132,8 +132,8 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				point.BucketCounts().FromRaw([]uint64{33, 22, 11})
 				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
-				attributes.PutString("a", "A")
-				attributes.PutString("b", "B")
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
 				return point
 			},
 		},
@@ -152,13 +152,13 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			want: func() pmetric.HistogramDataPoint {
 				point := pmetric.NewHistogramDataPoint()
 				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
-				point.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 				point.ExplicitBounds().FromRaw([]float64{0.75, 2.75})
 				point.BucketCounts().FromRaw([]uint64{0, 0, 0})
 				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
-				attributes.PutString("a", "A")
-				attributes.PutString("b", "B")
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
 				return point
 			},
 		},
@@ -187,7 +187,8 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				} else {
 					lbls = tt.labels.Copy()
 				}
-				err := mp.Add(tv.metric, lbls, tv.at, tv.value)
+				sRef, _ := getSeriesRef(nil, lbls, mp.mtype)
+				err := mp.addSeries(sRef, tv.metric, lbls, tv.at, tv.value)
 				if tt.wantErr {
 					if i != 0 {
 						require.Error(t, err)
@@ -202,8 +203,6 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			}
 
 			require.Len(t, mp.groups, 1)
-			groupKey := mp.getGroupKey(tt.labels.Copy())
-			require.NotNil(t, mp.groups[groupKey])
 
 			sl := pmetric.NewMetricSlice()
 			mp.appendMetric(sl)
@@ -303,8 +302,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				point.SetTimestamp(pcommon.Timestamp(14 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(pcommon.Timestamp(14 * time.Millisecond)) // the time in milliseconds -> nanoseconds
 				attributes := point.Attributes()
-				attributes.PutString("a", "A")
-				attributes.PutString("b", "B")
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
 				return point
 			},
 		},
@@ -356,7 +355,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				point := pmetric.NewSummaryDataPoint()
 				qtL := point.QuantileValues()
 				qn0 := qtL.AppendEmpty()
-				point.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 				qn0.SetQuantile(0)
 				qn0.SetValue(0)
 				qn50 := qtL.AppendEmpty()
@@ -374,8 +373,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				point.SetTimestamp(pcommon.Timestamp(14 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(pcommon.Timestamp(14 * time.Millisecond)) // the time in milliseconds -> nanoseconds
 				attributes := point.Attributes()
-				attributes.PutString("a", "A")
-				attributes.PutString("b", "B")
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
 				return point
 			},
 		},
@@ -400,7 +399,9 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 			mp := newMetricFamily(tt.name, mc, zap.NewNop())
 			for _, lbs := range tt.labelsScrapes {
 				for i, scrape := range lbs.scrapes {
-					err := mp.Add(scrape.metric, lbs.labels.Copy(), scrape.at, scrape.value)
+					lb := lbs.labels.Copy()
+					sRef, _ := getSeriesRef(nil, lb, mp.mtype)
+					err := mp.addSeries(sRef, scrape.metric, lb, scrape.at, scrape.value)
 					if tt.wantErr {
 						// The first scrape won't have an error
 						if i != 0 {
@@ -417,8 +418,6 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 			}
 
 			require.Len(t, mp.groups, 1)
-			groupKey := mp.getGroupKey(tt.labelsScrapes[0].labels.Copy())
-			require.NotNil(t, mp.groups[groupKey])
 
 			sl := pmetric.NewMetricSlice()
 			mp.appendMetric(sl)
@@ -465,8 +464,8 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 				point.SetTimestamp(pcommon.Timestamp(13 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(pcommon.Timestamp(13 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
-				attributes.PutString("a", "A")
-				attributes.PutString("b", "B")
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
 				return point
 			},
 		},
@@ -484,8 +483,8 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 				point.SetTimestamp(pcommon.Timestamp(28 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(pcommon.Timestamp(28 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
-				attributes.PutString("a", "A")
-				attributes.PutString("b", "B")
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
 				return point
 			},
 		},
@@ -496,12 +495,12 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mp := newMetricFamily(tt.metricKind, mc, zap.NewNop())
 			for _, tv := range tt.scrapes {
-				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
+				lb := tt.labels.Copy()
+				sRef, _ := getSeriesRef(nil, lb, mp.mtype)
+				require.NoError(t, mp.addSeries(sRef, tv.metric, lb, tv.at, tv.value))
 			}
 
 			require.Len(t, mp.groups, 1)
-			groupKey := mp.getGroupKey(tt.labels.Copy())
-			require.NotNil(t, mp.groups[groupKey])
 
 			sl := pmetric.NewMetricSlice()
 			mp.appendMetric(sl)

@@ -26,7 +26,7 @@ import (
 	"github.com/jaegertracing/jaeger/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
@@ -152,7 +152,7 @@ func jProcessToInternalResource(process *model.Process, dest pcommon.Resource) {
 	attrs := dest.Attributes()
 	if serviceName != "" {
 		attrs.EnsureCapacity(len(tags) + 1)
-		attrs.PutString(conventions.AttributeServiceName, serviceName)
+		attrs.PutStr(conventions.AttributeServiceName, serviceName)
 	} else {
 		attrs.EnsureCapacity(len(tags))
 	}
@@ -178,7 +178,7 @@ func translateJaegerVersionAttr(attrs pcommon.Map) {
 	jaegerVersion, jaegerVersionFound := attrs.Get("jaeger.version")
 	_, exporterVersionFound := attrs.Get(occonventions.AttributeExporterVersion)
 	if jaegerVersionFound && !exporterVersionFound {
-		attrs.PutString(occonventions.AttributeExporterVersion, "Jaeger-"+jaegerVersion.Str())
+		attrs.PutStr(occonventions.AttributeExporterVersion, "Jaeger-"+jaegerVersion.Str())
 		attrs.Remove("jaeger.version")
 	}
 }
@@ -243,7 +243,7 @@ func jTagsToInternalAttributes(tags []model.KeyValue, dest pcommon.Map) {
 	for _, tag := range tags {
 		switch tag.GetVType() {
 		case model.ValueType_STRING:
-			dest.PutString(tag.Key, tag.GetVStr())
+			dest.PutStr(tag.Key, tag.GetVStr())
 		case model.ValueType_BOOL:
 			dest.PutBool(tag.Key, tag.GetVBool())
 		case model.ValueType_INT64:
@@ -251,14 +251,14 @@ func jTagsToInternalAttributes(tags []model.KeyValue, dest pcommon.Map) {
 		case model.ValueType_FLOAT64:
 			dest.PutDouble(tag.Key, tag.GetVFloat64())
 		case model.ValueType_BINARY:
-			dest.PutString(tag.Key, base64.StdEncoding.EncodeToString(tag.GetVBinary()))
+			dest.PutStr(tag.Key, base64.StdEncoding.EncodeToString(tag.GetVBinary()))
 		default:
-			dest.PutString(tag.Key, fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
+			dest.PutStr(tag.Key, fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
 		}
 	}
 }
 
-func setInternalSpanStatus(attrs pcommon.Map, dest ptrace.SpanStatus) {
+func setInternalSpanStatus(attrs pcommon.Map, dest ptrace.Status) {
 	statusCode := ptrace.StatusCodeUnset
 	statusMessage := ""
 	statusExists := false
@@ -423,6 +423,7 @@ func jReferencesToSpanLinks(refs []model.SpanRef, excludeParentID model.SpanID, 
 		link := dest.AppendEmpty()
 		link.SetTraceID(idutils.UInt64ToTraceID(ref.TraceID.High, ref.TraceID.Low))
 		link.SetSpanID(idutils.UInt64ToSpanID(uint64(ref.SpanID)))
+		link.Attributes().PutStr(conventions.AttributeOpentracingRefType, jRefTypeToAttribute(ref.RefType))
 	}
 }
 
@@ -456,4 +457,11 @@ func getAndDeleteTag(span *model.Span, key string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func jRefTypeToAttribute(ref model.SpanRefType) string {
+	if ref == model.ChildOf {
+		return conventions.AttributeOpentracingRefTypeChildOf
+	}
+	return conventions.AttributeOpentracingRefTypeFollowsFrom
 }

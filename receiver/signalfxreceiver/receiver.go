@@ -103,7 +103,7 @@ func newReceiver(
 	r := &sfxReceiver{
 		settings: settings,
 		config:   &config,
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             config.ID(),
 			Transport:              transport,
 			ReceiverCreateSettings: settings,
@@ -254,7 +254,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 			for i := 0; i < md.ResourceMetrics().Len(); i++ {
 				rm := md.ResourceMetrics().At(i)
 				res := rm.Resource()
-				res.Attributes().PutString(splunk.SFxAccessTokenLabel, accessToken)
+				res.Attributes().PutStr(splunk.SFxAccessTokenLabel, accessToken)
 			}
 		}
 	}
@@ -297,7 +297,7 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 
 	if r.config.AccessTokenPassthrough {
 		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
-			rl.Resource().Attributes().PutString(splunk.SFxAccessTokenLabel, accessToken)
+			rl.Resource().Attributes().PutStr(splunk.SFxAccessTokenLabel, accessToken)
 		}
 	}
 

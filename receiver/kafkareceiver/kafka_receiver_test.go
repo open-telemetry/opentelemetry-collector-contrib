@@ -88,7 +88,7 @@ func TestTracesReceiverStart(t *testing.T) {
 		consumerGroup: &testConsumerGroup{},
 	}
 
-	require.NoError(t, c.Start(context.Background(), nil))
+	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, c.Shutdown(context.Background()))
 }
 
@@ -120,7 +120,7 @@ func TestTracesReceiver_error(t *testing.T) {
 		consumerGroup: &testConsumerGroup{err: expectedErr},
 	}
 
-	require.NoError(t, c.Start(context.Background(), nil))
+	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, c.Shutdown(context.Background()))
 	assert.Eventually(t, func() bool {
 		return logObserver.FilterField(zap.Error(expectedErr)).Len() > 0
@@ -134,11 +134,11 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 	defer view.Unregister(views...)
 
 	c := tracesConsumerGroupHandler{
-		unmarshaler:  newPdataTracesUnmarshaler(ptrace.NewProtoUnmarshaler(), defaultEncoding),
+		unmarshaler:  newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
+		obsrecv:      obsreport.MustNewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	testSession := testConsumerGroupSession{}
@@ -176,11 +176,11 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 
 func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	c := tracesConsumerGroupHandler{
-		unmarshaler:  newPdataTracesUnmarshaler(ptrace.NewProtoUnmarshaler(), defaultEncoding),
+		unmarshaler:  newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
+		obsrecv:      obsreport.MustNewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	wg := sync.WaitGroup{}
@@ -201,11 +201,11 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	consumerError := errors.New("failed to consume")
 	c := tracesConsumerGroupHandler{
-		unmarshaler:  newPdataTracesUnmarshaler(ptrace.NewProtoUnmarshaler(), defaultEncoding),
+		unmarshaler:  newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewErr(consumerError),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
+		obsrecv:      obsreport.MustNewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	wg := sync.WaitGroup{}
@@ -221,7 +221,8 @@ func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 
 	td := ptrace.NewTraces()
 	td.ResourceSpans().AppendEmpty()
-	bts, err := ptrace.NewProtoMarshaler().MarshalTraces(td)
+	unmarshaler := &ptrace.ProtoMarshaler{}
+	bts, err := unmarshaler.MarshalTraces(td)
 	require.NoError(t, err)
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
 	close(groupClaim.messageChan)
@@ -276,7 +277,7 @@ func TestMetricsReceiverStart(t *testing.T) {
 		consumerGroup: &testConsumerGroup{},
 	}
 
-	require.NoError(t, c.Start(context.Background(), nil))
+	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, c.Shutdown(context.Background()))
 }
 
@@ -322,11 +323,11 @@ func TestMetricsConsumerGroupHandler(t *testing.T) {
 	defer view.Unregister(views...)
 
 	c := metricsConsumerGroupHandler{
-		unmarshaler:  newPdataMetricsUnmarshaler(pmetric.NewProtoUnmarshaler(), defaultEncoding),
+		unmarshaler:  newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
+		obsrecv:      obsreport.MustNewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	testSession := testConsumerGroupSession{}
@@ -364,11 +365,11 @@ func TestMetricsConsumerGroupHandler(t *testing.T) {
 
 func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	c := metricsConsumerGroupHandler{
-		unmarshaler:  newPdataMetricsUnmarshaler(pmetric.NewProtoUnmarshaler(), defaultEncoding),
+		unmarshaler:  newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
+		obsrecv:      obsreport.MustNewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	wg := sync.WaitGroup{}
@@ -389,11 +390,11 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	consumerError := errors.New("failed to consume")
 	c := metricsConsumerGroupHandler{
-		unmarshaler:  newPdataMetricsUnmarshaler(pmetric.NewProtoUnmarshaler(), defaultEncoding),
+		unmarshaler:  newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewErr(consumerError),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
+		obsrecv:      obsreport.MustNewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	wg := sync.WaitGroup{}
@@ -408,7 +409,8 @@ func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	}()
 
 	ld := testdata.GenerateMetricsOneMetric()
-	bts, err := pmetric.NewProtoMarshaler().MarshalMetrics(ld)
+	unmarshaler := &pmetric.ProtoMarshaler{}
+	bts, err := unmarshaler.MarshalMetrics(ld)
 	require.NoError(t, err)
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
 	close(groupClaim.messageChan)
@@ -463,7 +465,7 @@ func TestLogsReceiverStart(t *testing.T) {
 		consumerGroup: &testConsumerGroup{},
 	}
 
-	require.NoError(t, c.Start(context.Background(), nil))
+	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, c.Shutdown(context.Background()))
 }
 
@@ -509,11 +511,11 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 	defer view.Unregister(views...)
 
 	c := logsConsumerGroupHandler{
-		unmarshaler:  newPdataLogsUnmarshaler(plog.NewProtoUnmarshaler(), defaultEncoding),
+		unmarshaler:  newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
+		obsrecv:      obsreport.MustNewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	testSession := testConsumerGroupSession{}
@@ -551,11 +553,11 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 
 func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	c := logsConsumerGroupHandler{
-		unmarshaler:  newPdataLogsUnmarshaler(plog.NewProtoUnmarshaler(), defaultEncoding),
+		unmarshaler:  newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
+		obsrecv:      obsreport.MustNewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	wg := sync.WaitGroup{}
@@ -576,11 +578,11 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	consumerError := errors.New("failed to consume")
 	c := logsConsumerGroupHandler{
-		unmarshaler:  newPdataLogsUnmarshaler(plog.NewProtoUnmarshaler(), defaultEncoding),
+		unmarshaler:  newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewErr(consumerError),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
+		obsrecv:      obsreport.MustNewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	wg := sync.WaitGroup{}
@@ -595,7 +597,8 @@ func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	}()
 
 	ld := testdata.GenerateLogsOneLogRecord()
-	bts, err := plog.NewProtoMarshaler().MarshalLogs(ld)
+	unmarshaler := &plog.ProtoMarshaler{}
+	bts, err := unmarshaler.MarshalLogs(ld)
 	require.NoError(t, err)
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
 	close(groupClaim.messageChan)

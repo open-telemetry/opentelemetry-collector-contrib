@@ -72,6 +72,11 @@ func createMetricsReceiver(
 	scrapeFunc := dsr.scrape
 	if featuregate.GetRegistry().IsEnabled(useScraperV2ID) {
 		scrapeFunc = dsr.scrapeV2
+	} else {
+		params.Logger.Warn(
+			"You are using the deprecated ScraperV1, which will " +
+				"be disabled by default in an upcoming release." +
+				"See the dockerstatsreceiver/README.md for more info.")
 	}
 
 	scrp, err := scraperhelper.NewScraper(typeStr, scrapeFunc, scraperhelper.WithStart(dsr.start))

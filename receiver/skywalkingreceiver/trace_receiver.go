@@ -88,12 +88,12 @@ func newSkywalkingReceiver(
 		nextConsumer: nextConsumer,
 		id:           id,
 		settings:     set,
-		grpcObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		grpcObsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             id,
 			Transport:              grpcTransport,
 			ReceiverCreateSettings: set,
 		}),
-		httpObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		httpObsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             id,
 			Transport:              collectorHTTPTransport,
 			ReceiverCreateSettings: set,
@@ -166,12 +166,12 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 	}
 
 	if sr.collectorGRPCEnabled() {
-		opts, err := sr.config.CollectorGRPCServerSettings.ToServerOption(host, sr.settings.TelemetrySettings)
+		var err error
+		sr.grpc, err = sr.config.CollectorGRPCServerSettings.ToServer(host, sr.settings.TelemetrySettings)
 		if err != nil {
 			return fmt.Errorf("failed to build the options for the Skywalking gRPC Collector: %w", err)
 		}
 
-		sr.grpc = grpc.NewServer(opts...)
 		gaddr := sr.collectorGRPCAddr()
 		gln, gerr := net.Listen("tcp", gaddr)
 		if gerr != nil {

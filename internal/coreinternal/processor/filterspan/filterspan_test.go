@@ -26,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 func createConfig(matchType filterset.MatchType) *filterset.Config {
@@ -160,7 +161,7 @@ func TestSpan_Matching_False(t *testing.T) {
 			properties: &filterconfig.MatchProperties{
 				Config:     *createConfig(filterset.Regexp),
 				Attributes: []filterconfig.Attribute{},
-				SpanKinds:  []string{ptrace.SpanKindProducer.String()},
+				SpanKinds:  []string{traceutil.SpanKindStr(ptrace.SpanKindProducer)},
 			},
 		},
 		{
@@ -168,7 +169,7 @@ func TestSpan_Matching_False(t *testing.T) {
 			properties: &filterconfig.MatchProperties{
 				Config:     *createConfig(filterset.Strict),
 				Attributes: []filterconfig.Attribute{},
-				SpanKinds:  []string{ptrace.SpanKindProducer.String()},
+				SpanKinds:  []string{traceutil.SpanKindStr(ptrace.SpanKindProducer)},
 			},
 		},
 	}
@@ -250,7 +251,7 @@ func TestSpan_Matching_True(t *testing.T) {
 			properties: &filterconfig.MatchProperties{
 				Config: *createConfig(filterset.Strict),
 				SpanKinds: []string{
-					ptrace.SpanKindClient.String(),
+					traceutil.SpanKindStr(ptrace.SpanKindClient),
 				},
 				Attributes: []filterconfig.Attribute{},
 			},
@@ -270,16 +271,16 @@ func TestSpan_Matching_True(t *testing.T) {
 	span := ptrace.NewSpan()
 	span.SetName("spanName")
 
-	span.Attributes().PutString("keyString", "arithmetic")
+	span.Attributes().PutStr("keyString", "arithmetic")
 	span.Attributes().PutInt("keyInt", 123)
 	span.Attributes().PutDouble("keyDouble", 3245.6)
 	span.Attributes().PutBool("keyBool", true)
-	span.Attributes().PutString("keyExists", "present")
+	span.Attributes().PutStr("keyExists", "present")
 	span.SetKind(ptrace.SpanKindClient)
 	assert.NotNil(t, span)
 
 	resource := pcommon.NewResource()
-	resource.Attributes().PutString(conventions.AttributeServiceName, "svcA")
+	resource.Attributes().PutStr(conventions.AttributeServiceName, "svcA")
 
 	library := pcommon.NewInstrumentationScope()
 

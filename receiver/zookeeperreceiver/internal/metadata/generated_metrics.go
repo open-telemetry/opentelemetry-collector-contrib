@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -13,6 +14,25 @@ import (
 // MetricSettings provides common settings for a particular metric.
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledProvidedByUser bool
+}
+
+// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
+func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
+	return ms.enabledProvidedByUser
+}
+
+func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ms.enabledProvidedByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // MetricsSettings provides settings for zookeeperreceiver metrics.
@@ -28,8 +48,6 @@ type MetricsSettings struct {
 	ZookeeperLatencyMax                  MetricSettings `mapstructure:"zookeeper.latency.max"`
 	ZookeeperLatencyMin                  MetricSettings `mapstructure:"zookeeper.latency.min"`
 	ZookeeperPacketCount                 MetricSettings `mapstructure:"zookeeper.packet.count"`
-	ZookeeperPacketReceivedCount         MetricSettings `mapstructure:"zookeeper.packet.received.count"`
-	ZookeeperPacketSentCount             MetricSettings `mapstructure:"zookeeper.packet.sent.count"`
 	ZookeeperRequestActive               MetricSettings `mapstructure:"zookeeper.request.active"`
 	ZookeeperSyncPending                 MetricSettings `mapstructure:"zookeeper.sync.pending"`
 	ZookeeperWatchCount                  MetricSettings `mapstructure:"zookeeper.watch.count"`
@@ -69,12 +87,6 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		ZookeeperPacketCount: MetricSettings{
-			Enabled: true,
-		},
-		ZookeeperPacketReceivedCount: MetricSettings{
-			Enabled: true,
-		},
-		ZookeeperPacketSentCount: MetricSettings{
 			Enabled: true,
 		},
 		ZookeeperRequestActive: MetricSettings{
@@ -157,7 +169,7 @@ func (m *metricZookeeperConnectionActive) init() {
 	m.data.SetUnit("{connections}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricZookeeperConnectionActive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -208,7 +220,7 @@ func (m *metricZookeeperDataTreeEphemeralNodeCount) init() {
 	m.data.SetUnit("{nodes}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricZookeeperDataTreeEphemeralNodeCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -259,7 +271,7 @@ func (m *metricZookeeperDataTreeSize) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricZookeeperDataTreeSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -359,7 +371,7 @@ func (m *metricZookeeperFileDescriptorOpen) init() {
 	m.data.SetUnit("{file_descriptors}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricZookeeperFileDescriptorOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -410,7 +422,7 @@ func (m *metricZookeeperFollowerCount) init() {
 	m.data.SetUnit("{followers}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -422,7 +434,7 @@ func (m *metricZookeeperFollowerCount) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("state", stateAttributeValue)
+	dp.Attributes().PutStr("state", stateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -463,7 +475,7 @@ func (m *metricZookeeperFsyncExceededThresholdCount) init() {
 	m.data.SetUnit("{events}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricZookeeperFsyncExceededThresholdCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -661,7 +673,7 @@ func (m *metricZookeeperPacketCount) init() {
 	m.data.SetUnit("{packets}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -673,7 +685,7 @@ func (m *metricZookeeperPacketCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutString("direction", directionAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -701,108 +713,6 @@ func newMetricZookeeperPacketCount(settings MetricSettings) metricZookeeperPacke
 	return m
 }
 
-type metricZookeeperPacketReceivedCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills zookeeper.packet.received.count metric with initial data.
-func (m *metricZookeeperPacketReceivedCount) init() {
-	m.data.SetName("zookeeper.packet.received.count")
-	m.data.SetDescription("The number of ZooKeeper packets received by a server.")
-	m.data.SetUnit("{packets}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-}
-
-func (m *metricZookeeperPacketReceivedCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricZookeeperPacketReceivedCount) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricZookeeperPacketReceivedCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricZookeeperPacketReceivedCount(settings MetricSettings) metricZookeeperPacketReceivedCount {
-	m := metricZookeeperPacketReceivedCount{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricZookeeperPacketSentCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills zookeeper.packet.sent.count metric with initial data.
-func (m *metricZookeeperPacketSentCount) init() {
-	m.data.SetName("zookeeper.packet.sent.count")
-	m.data.SetDescription("The number of ZooKeeper packets sent by a server.")
-	m.data.SetUnit("{packets}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-}
-
-func (m *metricZookeeperPacketSentCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricZookeeperPacketSentCount) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricZookeeperPacketSentCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricZookeeperPacketSentCount(settings MetricSettings) metricZookeeperPacketSentCount {
-	m := metricZookeeperPacketSentCount{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricZookeeperRequestActive struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -816,7 +726,7 @@ func (m *metricZookeeperRequestActive) init() {
 	m.data.SetUnit("{requests}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricZookeeperRequestActive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -867,7 +777,7 @@ func (m *metricZookeeperSyncPending) init() {
 	m.data.SetUnit("{syncs}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricZookeeperSyncPending) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -918,7 +828,7 @@ func (m *metricZookeeperWatchCount) init() {
 	m.data.SetUnit("{watches}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricZookeeperWatchCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -969,7 +879,7 @@ func (m *metricZookeeperZnodeCount) init() {
 	m.data.SetUnit("{znodes}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricZookeeperZnodeCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1026,8 +936,6 @@ type MetricsBuilder struct {
 	metricZookeeperLatencyMax                  metricZookeeperLatencyMax
 	metricZookeeperLatencyMin                  metricZookeeperLatencyMin
 	metricZookeeperPacketCount                 metricZookeeperPacketCount
-	metricZookeeperPacketReceivedCount         metricZookeeperPacketReceivedCount
-	metricZookeeperPacketSentCount             metricZookeeperPacketSentCount
 	metricZookeeperRequestActive               metricZookeeperRequestActive
 	metricZookeeperSyncPending                 metricZookeeperSyncPending
 	metricZookeeperWatchCount                  metricZookeeperWatchCount
@@ -1060,8 +968,6 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricZookeeperLatencyMax:                  newMetricZookeeperLatencyMax(settings.ZookeeperLatencyMax),
 		metricZookeeperLatencyMin:                  newMetricZookeeperLatencyMin(settings.ZookeeperLatencyMin),
 		metricZookeeperPacketCount:                 newMetricZookeeperPacketCount(settings.ZookeeperPacketCount),
-		metricZookeeperPacketReceivedCount:         newMetricZookeeperPacketReceivedCount(settings.ZookeeperPacketReceivedCount),
-		metricZookeeperPacketSentCount:             newMetricZookeeperPacketSentCount(settings.ZookeeperPacketSentCount),
 		metricZookeeperRequestActive:               newMetricZookeeperRequestActive(settings.ZookeeperRequestActive),
 		metricZookeeperSyncPending:                 newMetricZookeeperSyncPending(settings.ZookeeperSyncPending),
 		metricZookeeperWatchCount:                  newMetricZookeeperWatchCount(settings.ZookeeperWatchCount),
@@ -1089,14 +995,14 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 // WithServerState sets provided value as "server.state" attribute for current resource.
 func WithServerState(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("server.state", val)
+		rm.Resource().Attributes().PutStr("server.state", val)
 	}
 }
 
 // WithZkVersion sets provided value as "zk.version" attribute for current resource.
 func WithZkVersion(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("zk.version", val)
+		rm.Resource().Attributes().PutStr("zk.version", val)
 	}
 }
 
@@ -1143,8 +1049,6 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricZookeeperLatencyMax.emit(ils.Metrics())
 	mb.metricZookeeperLatencyMin.emit(ils.Metrics())
 	mb.metricZookeeperPacketCount.emit(ils.Metrics())
-	mb.metricZookeeperPacketReceivedCount.emit(ils.Metrics())
-	mb.metricZookeeperPacketSentCount.emit(ils.Metrics())
 	mb.metricZookeeperRequestActive.emit(ils.Metrics())
 	mb.metricZookeeperSyncPending.emit(ils.Metrics())
 	mb.metricZookeeperWatchCount.emit(ils.Metrics())
@@ -1221,16 +1125,6 @@ func (mb *MetricsBuilder) RecordZookeeperLatencyMinDataPoint(ts pcommon.Timestam
 // RecordZookeeperPacketCountDataPoint adds a data point to zookeeper.packet.count metric.
 func (mb *MetricsBuilder) RecordZookeeperPacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
 	mb.metricZookeeperPacketCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
-}
-
-// RecordZookeeperPacketReceivedCountDataPoint adds a data point to zookeeper.packet.received.count metric.
-func (mb *MetricsBuilder) RecordZookeeperPacketReceivedCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricZookeeperPacketReceivedCount.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordZookeeperPacketSentCountDataPoint adds a data point to zookeeper.packet.sent.count metric.
-func (mb *MetricsBuilder) RecordZookeeperPacketSentCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricZookeeperPacketSentCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordZookeeperRequestActiveDataPoint adds a data point to zookeeper.request.active metric.

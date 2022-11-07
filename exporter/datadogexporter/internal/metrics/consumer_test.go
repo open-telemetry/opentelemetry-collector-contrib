@@ -28,7 +28,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 type testProvider string
@@ -53,15 +53,15 @@ func TestRunningMetrics(t *testing.T) {
 
 	rm := rms.AppendEmpty()
 	resAttrs := rm.Resource().Attributes()
-	resAttrs.PutString(attributes.AttributeDatadogHostname, "resource-hostname-1")
+	resAttrs.PutStr(attributes.AttributeDatadogHostname, "resource-hostname-1")
 
 	rm = rms.AppendEmpty()
 	resAttrs = rm.Resource().Attributes()
-	resAttrs.PutString(attributes.AttributeDatadogHostname, "resource-hostname-1")
+	resAttrs.PutStr(attributes.AttributeDatadogHostname, "resource-hostname-1")
 
 	rm = rms.AppendEmpty()
 	resAttrs = rm.Resource().Attributes()
-	resAttrs.PutString(attributes.AttributeDatadogHostname, "resource-hostname-2")
+	resAttrs.PutStr(attributes.AttributeDatadogHostname, "resource-hostname-2")
 
 	rms.AppendEmpty()
 
@@ -91,7 +91,7 @@ func TestTagsMetrics(t *testing.T) {
 	rms := ms.ResourceMetrics()
 
 	rm := rms.AppendEmpty()
-	baseAttrs := testutils.NewAttributeMap(map[string]string{
+	baseAttrs := testutil.NewAttributeMap(map[string]string{
 		conventions.AttributeCloudProvider:      conventions.AttributeCloudProviderAWS,
 		conventions.AttributeCloudPlatform:      conventions.AttributeCloudPlatformAWSECS,
 		conventions.AttributeAWSECSTaskFamily:   "example-task-family",
@@ -99,15 +99,15 @@ func TestTagsMetrics(t *testing.T) {
 		conventions.AttributeAWSECSLaunchtype:   conventions.AttributeAWSECSLaunchtypeFargate,
 	})
 	baseAttrs.CopyTo(rm.Resource().Attributes())
-	rm.Resource().Attributes().PutString(conventions.AttributeAWSECSTaskARN, "task-arn-1")
+	rm.Resource().Attributes().PutStr(conventions.AttributeAWSECSTaskARN, "task-arn-1")
 
 	rm = rms.AppendEmpty()
 	baseAttrs.CopyTo(rm.Resource().Attributes())
-	rm.Resource().Attributes().PutString(conventions.AttributeAWSECSTaskARN, "task-arn-2")
+	rm.Resource().Attributes().PutStr(conventions.AttributeAWSECSTaskARN, "task-arn-2")
 
 	rm = rms.AppendEmpty()
 	baseAttrs.CopyTo(rm.Resource().Attributes())
-	rm.Resource().Attributes().PutString(conventions.AttributeAWSECSTaskARN, "task-arn-3")
+	rm.Resource().Attributes().PutStr(conventions.AttributeAWSECSTaskARN, "task-arn-3")
 
 	logger, _ := zap.NewProduction()
 	tr := newTranslator(t, logger)

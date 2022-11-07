@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -166,9 +166,9 @@ func TestJTagsToInternalAttributes(t *testing.T) {
 	expected := pcommon.NewMap()
 	expected.PutBool("bool-val", true)
 	expected.PutInt("int-val", 123)
-	expected.PutString("string-val", "abc")
+	expected.PutStr("string-val", "abc")
 	expected.PutDouble("double-val", 1.23)
-	expected.PutString("binary-val", "AAAAAABkfZg=")
+	expected.PutStr("binary-val", "AAAAAABkfZg=")
 
 	got := pcommon.NewMap()
 	jTagsToInternalAttributes(tags, got)
@@ -251,6 +251,21 @@ func TestProtoToTraces(t *testing.T) {
 				}},
 			td: generateTracesTwoSpansWithFollower(),
 		},
+		{
+			name: "a-spans-with-two-parent",
+			jb: []*model.Batch{
+				{
+					Process: &model.Process{
+						ServiceName: tracetranslator.ResourceNoServiceName,
+					},
+					Spans: []*model.Span{
+						generateProtoSpan(),
+						generateProtoFollowerSpan(),
+						generateProtoTwoParentsSpan(),
+					},
+				}},
+			td: generateTracesSpanWithTwoParents(),
+		},
 	}
 
 	for _, test := range tests {
@@ -326,26 +341,26 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 
 func TestSetInternalSpanStatus(t *testing.T) {
 
-	emptyStatus := ptrace.NewSpanStatus()
+	emptyStatus := ptrace.NewStatus()
 
-	okStatus := ptrace.NewSpanStatus()
+	okStatus := ptrace.NewStatus()
 	okStatus.SetCode(ptrace.StatusCodeOk)
 
-	errorStatus := ptrace.NewSpanStatus()
+	errorStatus := ptrace.NewStatus()
 	errorStatus.SetCode(ptrace.StatusCodeError)
 
-	errorStatusWithMessage := ptrace.NewSpanStatus()
+	errorStatusWithMessage := ptrace.NewStatus()
 	errorStatusWithMessage.SetCode(ptrace.StatusCodeError)
 	errorStatusWithMessage.SetMessage("Error: Invalid argument")
 
-	errorStatusWith404Message := ptrace.NewSpanStatus()
+	errorStatusWith404Message := ptrace.NewStatus()
 	errorStatusWith404Message.SetCode(ptrace.StatusCodeError)
 	errorStatusWith404Message.SetMessage("HTTP 404: Not Found")
 
 	tests := []struct {
 		name             string
 		attrs            map[string]interface{}
-		status           ptrace.SpanStatus
+		status           ptrace.Status
 		attrsModifiedLen int // Length of attributes map after dropping converted fields
 	}{
 		{
@@ -420,7 +435,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			status := ptrace.NewSpanStatus()
+			status := ptrace.NewStatus()
 			attrs := pcommon.NewMap()
 			attrs.FromRaw(test.attrs)
 			setInternalSpanStatus(attrs, status)
@@ -590,7 +605,7 @@ func TestChecksum(t *testing.T) {
 func generateTracesResourceOnly() ptrace.Traces {
 	td := testdata.GenerateTracesOneEmptyResourceSpans()
 	rs := td.ResourceSpans().At(0).Resource()
-	rs.Attributes().PutString(conventions.AttributeServiceName, "service-1")
+	rs.Attributes().PutStr(conventions.AttributeServiceName, "service-1")
 	rs.Attributes().PutInt("int-attr-1", 123)
 	return td
 }
@@ -860,6 +875,10 @@ func generateTracesTwoSpansWithFollower() ptrace.Traces {
 	link := span.Links().AppendEmpty()
 	link.SetTraceID(span.TraceID())
 	link.SetSpanID(spans.At(0).SpanID())
+	link.Attributes().PutStr(
+		conventions.AttributeOpentracingRefType,
+		conventions.AttributeOpentracingRefTypeFollowsFrom,
+	)
 	return td
 }
 
@@ -896,6 +915,75 @@ func generateProtoFollowerSpan() *model.Span {
 				TraceID: traceID,
 				SpanID:  model.NewSpanID(binary.BigEndian.Uint64([]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})),
 				RefType: model.SpanRefType_FOLLOWS_FROM,
+			},
+		},
+	}
+}
+
+func generateTracesSpanWithTwoParents() ptrace.Traces {
+	td := generateTracesTwoSpansWithFollower()
+	spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
+	parent := spans.At(0)
+	parent2 := spans.At(1)
+	span := spans.AppendEmpty()
+	span.SetName("operationD")
+	span.SetSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x20})
+	span.SetTraceID(parent.TraceID())
+	span.SetStartTimestamp(parent.StartTimestamp())
+	span.SetEndTimestamp(parent.EndTimestamp())
+	span.SetParentSpanID(parent.SpanID())
+	span.SetKind(ptrace.SpanKindConsumer)
+	span.Status().SetCode(ptrace.StatusCodeOk)
+	span.Status().SetMessage("status-ok")
+
+	link := span.Links().AppendEmpty()
+	link.SetTraceID(parent2.TraceID())
+	link.SetSpanID(parent2.SpanID())
+	link.Attributes().PutStr(
+		conventions.AttributeOpentracingRefType,
+		conventions.AttributeOpentracingRefTypeChildOf,
+	)
+	return td
+}
+
+func generateProtoTwoParentsSpan() *model.Span {
+	traceID := model.NewTraceID(
+		binary.BigEndian.Uint64([]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}),
+		binary.BigEndian.Uint64([]byte{0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}),
+	)
+	return &model.Span{
+		TraceID:       traceID,
+		SpanID:        model.NewSpanID(binary.BigEndian.Uint64([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x20})),
+		OperationName: "operationD",
+		StartTime:     testSpanStartTime,
+		Duration:      testSpanEndTime.Sub(testSpanStartTime),
+		Tags: []model.KeyValue{
+			{
+				Key:   tracetranslator.TagSpanKind,
+				VType: model.ValueType_STRING,
+				VStr:  string(tracetranslator.OpenTracingSpanKindConsumer),
+			},
+			{
+				Key:   conventions.OtelStatusCode,
+				VType: model.ValueType_STRING,
+				VStr:  statusOk,
+			},
+			{
+				Key:   conventions.OtelStatusDescription,
+				VType: model.ValueType_STRING,
+				VStr:  "status-ok",
+			},
+		},
+		References: []model.SpanRef{
+			{
+				TraceID: traceID,
+				SpanID:  model.NewSpanID(binary.BigEndian.Uint64([]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})),
+				RefType: model.SpanRefType_CHILD_OF,
+			},
+			{
+				TraceID: traceID,
+				SpanID:  model.NewSpanID(binary.BigEndian.Uint64([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})),
+				RefType: model.SpanRefType_CHILD_OF,
 			},
 		},
 	}

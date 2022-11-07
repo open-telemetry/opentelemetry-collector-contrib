@@ -80,7 +80,7 @@ func (sr *sapmReceiver) handleRequest(req *http.Request) error {
 			for i := 0; i < rSpans.Len(); i++ {
 				rSpan := rSpans.At(i)
 				attrs := rSpan.Resource().Attributes()
-				attrs.PutString(splunk.SFxAccessTokenLabel, accessToken)
+				attrs.PutStr(splunk.SFxAccessTokenLabel, accessToken)
 			}
 		}
 	}
@@ -223,7 +223,7 @@ func newReceiver(
 		config:          config,
 		nextConsumer:    nextConsumer,
 		defaultResponse: defaultResponseBytes,
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             config.ID(),
 			Transport:              transport,
 			ReceiverCreateSettings: params,

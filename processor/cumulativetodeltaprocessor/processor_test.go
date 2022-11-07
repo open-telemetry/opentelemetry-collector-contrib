@@ -384,9 +384,9 @@ func generateTestSumMetrics(tm testSumMetric) pmetric.Metrics {
 		sum.SetIsMonotonic(true)
 
 		if tm.isCumulative[i] {
-			sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+			sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		} else {
-			sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+			sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 		}
 
 		for _, value := range tm.metricValues[i] {
@@ -411,9 +411,9 @@ func generateTestHistogramMetrics(tm testHistogramMetric) pmetric.Metrics {
 		hist := m.SetEmptyHistogram()
 
 		if tm.isCumulative[i] {
-			hist.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+			hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		} else {
-			hist.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+			hist.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 		}
 
 		for index, count := range tm.metricCounts[i] {
@@ -456,10 +456,10 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 	m := ilms.Metrics().AppendEmpty()
 	m.SetEmptySum().SetIsMonotonic(true)
 	dp := m.Sum().DataPoints().AppendEmpty()
-	dp.Attributes().PutString("tag", "value")
+	dp.Attributes().PutStr("tag", "value")
 
 	reset := func() {
-		m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		dp.SetDoubleValue(100.0)
 	}
 

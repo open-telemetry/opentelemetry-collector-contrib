@@ -15,10 +15,10 @@
 package ottlfuncs
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -26,16 +26,17 @@ import (
 
 func Test_keepKeys(t *testing.T) {
 	input := pcommon.NewMap()
-	input.PutString("test", "hello world")
+	input.PutStr("test", "hello world")
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
 	target := &ottl.StandardGetSetter[pcommon.Map]{
-		Getter: func(ctx pcommon.Map) interface{} {
-			return ctx
+		Getter: func(ctx context.Context, tCtx pcommon.Map) (interface{}, error) {
+			return tCtx, nil
 		},
-		Setter: func(ctx pcommon.Map, val interface{}) {
-			val.(pcommon.Map).CopyTo(ctx)
+		Setter: func(ctx context.Context, tCtx pcommon.Map, val interface{}) error {
+			val.(pcommon.Map).CopyTo(tCtx)
+			return nil
 		},
 	}
 
@@ -50,7 +51,7 @@ func Test_keepKeys(t *testing.T) {
 			target: target,
 			keys:   []string{"test"},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 			},
 		},
 		{
@@ -58,7 +59,7 @@ func Test_keepKeys(t *testing.T) {
 			target: target,
 			keys:   []string{"test", "test2"},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutString("test", "hello world")
+				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutInt("test2", 3)
 			},
 		},
@@ -87,8 +88,10 @@ func Test_keepKeys(t *testing.T) {
 			input.CopyTo(scenarioMap)
 
 			exprFunc, err := KeepKeys(tt.target, tt.keys)
-			require.NoError(t, err)
-			exprFunc(scenarioMap)
+			assert.NoError(t, err)
+
+			_, err = exprFunc(nil, scenarioMap)
+			assert.Nil(t, err)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
@@ -101,36 +104,42 @@ func Test_keepKeys(t *testing.T) {
 func Test_keepKeys_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
-			return ctx
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return tCtx, nil
 		},
-		Setter: func(ctx interface{}, val interface{}) {
+		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
 	keys := []string{"anything"}
 
 	exprFunc, err := KeepKeys[interface{}](target, keys)
-	require.NoError(t, err)
-	exprFunc(input)
+	assert.NoError(t, err)
+
+	_, err = exprFunc(nil, input)
+	assert.Nil(t, err)
 
 	assert.Equal(t, pcommon.NewValueStr("not a map"), input)
 }
 
 func Test_keepKeys_get_nil(t *testing.T) {
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
-			return ctx
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return tCtx, nil
 		},
-		Setter: func(ctx interface{}, val interface{}) {
+		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
 	keys := []string{"anything"}
 
 	exprFunc, err := KeepKeys[interface{}](target, keys)
-	require.NoError(t, err)
-	assert.Nil(t, exprFunc(nil))
+	assert.NoError(t, err)
+	result, err := exprFunc(nil, nil)
+	assert.NoError(t, err)
+	assert.Nil(t, result)
 }
