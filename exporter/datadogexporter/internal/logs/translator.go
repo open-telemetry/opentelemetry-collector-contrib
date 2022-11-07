@@ -111,7 +111,7 @@ func Transform(lr plog.LogRecord, res pcommon.Resource, logger *zap.Logger) data
 		case "ddtags":
 			var tags = append(attributes.TagsFromAttributes(res.Attributes()), v.AsString(), otelTag)
 			tagStr := strings.Join(tags, ",")
-			l.SetDdtags(tagStr)
+			l.Ddtags = datadog.PtrString(tagStr)
 		default:
 			l.AdditionalProperties[k] = v.AsString()
 		}

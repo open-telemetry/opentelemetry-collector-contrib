@@ -61,6 +61,9 @@ func NewSender(endpoint string, logger *zap.Logger, s exporterhelper.TimeoutSett
 // SubmitLogs submits the logs contained in payload to the Datadog intake
 func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem) error {
 	s.logger.Debug("Submitting logs", zap.Any("payload", payload))
+	if payload[0].HasDdtags() {
+		s.opts.Ddtags = datadog.PtrString(payload[0].GetDdtags())
+	}
 	_, r, err := s.api.SubmitLog(ctx, payload, s.opts)
 	if err != nil {
 		b := make([]byte, 1024) // 1KB message max
