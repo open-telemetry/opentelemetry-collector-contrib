@@ -19,7 +19,7 @@ import (
 	"fmt"
 )
 
-func (p *Parser[K]) evaluateMathExpression(expr *expression) (Getter[K], error) {
+func (p *Parser[K]) evaluateMathExpression(expr *mathExpression) (Getter[K], error) {
 	mainGetter, err := p.evaluateAddSubTerm(expr.Left)
 	if err != nil {
 		return nil, err

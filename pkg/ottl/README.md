@@ -8,7 +8,7 @@ The OTTL is signal agnostic; it is not aware of the type of telemetry on which i
 
 ## Grammar
 
-The OTTL grammar includes Invocations, Values and Expressions.
+The OTTL grammar includes Invocations, Values and Boolean Expressions.
 
 ### Invocations
 
@@ -52,7 +52,7 @@ Values are passed as input to an Invocation or are used in a Boolean Expression.
 - [Literals](#literals).
 - [Enums](#enums).
 - [Invocations](#invocations).
-- [Expressions](#expressions)
+- [Math Expressions](#math_expressions)
 
 Invocations as Values allows calling functions as parameters to other functions. See [Invocations](#invocations) for details on Invocation syntax.
 
@@ -72,7 +72,7 @@ Example Paths
 
 #### Lists
 
-A List Value comprises a sequence of Expressions or supported Literals.
+A List Value comprises a sequence of Values.
 
 Example List Values:
 - `[]`
@@ -107,24 +107,24 @@ Within the grammar Enums are always used as `int64`.  As a result, the Enum's sy
 
 When defining a function that will be used as an Invocation by the OTTL, if the function needs to take an Enum then the function must use the `Enum` type for that argument, not an `int64`.
 
-#### Expressions
+#### Math Expressions
 
-Expressions represent an arithmetic calculations.  The support `+`, `-`, `*`, and `/`, along with `()` for grouping.
+Math Expressions represent an arithmetic calculations.  The support `+`, `-`, `*`, and `/`, along with `()` for grouping.
 
-Expressions currently only support `int64` and `float64`.
-Expressions support `Paths` and `Invocations` that return supported types.
+Math Expressions currently only support `int64` and `float64`.
+Math Expressions support `Paths` and `Invocations` that return supported types.
 Note that `*` and `/` take precedence over `+` and `-`.
-Operations that share the same level of precedence will be executed in the order that they appear in the Expression.
-Expressions can be grouped with parentheses to override evaluation precedence.
-Expressions that mix `int64` and `float64` will result in an error.
-It is up to the function using the Expression to determine what to do with that error and the default return value of `0`.
+Operations that share the same level of precedence will be executed in the order that they appear in the Math Expression.
+Math Expressions can be grouped with parentheses to override evaluation precedence.
+Math Expressions that mix `int64` and `float64` will result in an error.
+It is up to the function using the Math Expression to determine what to do with that error and the default return value of `0`.
 Normal arithmetic operations that would result in a panic, such as division by zero, will still result in a panic.
 Division of integers results in an integer and follows Go's rules for division of integers.
 
-Since Expressions support `Path` and `Invocation`, they are evaluated during data processing.
-__As a result, in order for a function to be able to accept an Expressions as a parameter it must use a `Getter`.__
+Since Math Expressions support `Path` and `Invocation`, they are evaluated during data processing.
+__As a result, in order for a function to be able to accept an Math Expressions as a parameter it must use a `Getter`.__
 
-Example Expressions
+Example Math Expressions
 - `1 + 1`
 - `end_time_unix_nano - end_time_unix_nano`
 - `sum([1, 2, 3, 4]) + (10 / 1) - 1`

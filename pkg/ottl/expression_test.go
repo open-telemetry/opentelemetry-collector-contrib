@@ -46,7 +46,7 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "float literal",
 			val: value{
-				Literal: &exprLiteral{
+				Literal: &mathExprLiteral{
 					Float: ottltest.Floatp(1.2),
 				},
 			},
@@ -55,7 +55,7 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "int literal",
 			val: value{
-				Literal: &exprLiteral{
+				Literal: &mathExprLiteral{
 					Int: ottltest.Intp(12),
 				},
 			},
@@ -83,9 +83,9 @@ func Test_newGetter(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "path expression",
+			name: "path mathExpression",
 			val: value{
-				Literal: &exprLiteral{
+				Literal: &mathExprLiteral{
 					Path: &Path{
 						Fields: []Field{
 							{
@@ -100,7 +100,7 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "function call",
 			val: value{
-				Literal: &exprLiteral{
+				Literal: &mathExprLiteral{
 					Invocation: &invocation{
 						Function: "hello",
 					},

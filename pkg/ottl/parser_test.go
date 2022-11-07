@@ -60,7 +60,7 @@ func Test_parse(t *testing.T) {
 					Function: "met",
 					Arguments: []value{
 						{
-							Literal: &exprLiteral{
+							Literal: &mathExprLiteral{
 								Float: ottltest.Floatp(1.2),
 							},
 						},
@@ -77,7 +77,7 @@ func Test_parse(t *testing.T) {
 					Function: "fff",
 					Arguments: []value{
 						{
-							Literal: &exprLiteral{
+							Literal: &mathExprLiteral{
 								Int: ottltest.Intp(12),
 							},
 						},
@@ -97,12 +97,12 @@ func Test_parse(t *testing.T) {
 							String: ottltest.Strp("foo"),
 						},
 						{
-							Literal: &exprLiteral{
+							Literal: &mathExprLiteral{
 								Invocation: &invocation{
 									Function: "getSomething",
 									Arguments: []value{
 										{
-											Literal: &exprLiteral{
+											Literal: &mathExprLiteral{
 												Path: &Path{
 													Fields: []Field{
 														{
@@ -132,7 +132,7 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []value{
 						{
-							Literal: &exprLiteral{
+							Literal: &mathExprLiteral{
 								Path: &Path{
 									Fields: []Field{
 										{
@@ -165,7 +165,7 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []value{
 						{
-							Literal: &exprLiteral{
+							Literal: &mathExprLiteral{
 								Path: &Path{
 									Fields: []Field{
 										{
@@ -192,7 +192,7 @@ func Test_parse(t *testing.T) {
 						Left: &booleanValue{
 							Comparison: &comparison{
 								Left: value{
-									Literal: &exprLiteral{
+									Literal: &mathExprLiteral{
 										Path: &Path{
 											Fields: []Field{
 												{
@@ -220,7 +220,7 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []value{
 						{
-							Literal: &exprLiteral{
+							Literal: &mathExprLiteral{
 								Path: &Path{
 									Fields: []Field{
 										{
@@ -247,7 +247,7 @@ func Test_parse(t *testing.T) {
 						Left: &booleanValue{
 							Comparison: &comparison{
 								Left: value{
-									Literal: &exprLiteral{
+									Literal: &mathExprLiteral{
 										Path: &Path{
 											Fields: []Field{
 												{
@@ -275,7 +275,7 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []value{
 						{
-							Literal: &exprLiteral{
+							Literal: &mathExprLiteral{
 								Path: &Path{
 									Fields: []Field{
 										{
@@ -302,7 +302,7 @@ func Test_parse(t *testing.T) {
 						Left: &booleanValue{
 							Comparison: &comparison{
 								Left: value{
-									Literal: &exprLiteral{
+									Literal: &mathExprLiteral{
 										Path: &Path{
 											Fields: []Field{
 												{
@@ -381,7 +381,7 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []value{
 						{
-							Literal: &exprLiteral{
+							Literal: &mathExprLiteral{
 								Path: &Path{
 									Fields: []Field{
 										{
@@ -408,7 +408,7 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []value{
 						{
-							Literal: &exprLiteral{
+							Literal: &mathExprLiteral{
 								Path: &Path{
 									Fields: []Field{
 										{
@@ -435,7 +435,7 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []value{
 						{
-							Literal: &exprLiteral{
+							Literal: &mathExprLiteral{
 								Path: &Path{
 									Fields: []Field{
 										{
@@ -462,7 +462,7 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []value{
 						{
-							Literal: &exprLiteral{
+							Literal: &mathExprLiteral{
 								Path: &Path{
 									Fields: []Field{
 										{
@@ -491,7 +491,7 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []value{
 						{
-							Literal: &exprLiteral{
+							Literal: &mathExprLiteral{
 								Path: &Path{
 									Fields: []Field{
 										{
@@ -524,7 +524,7 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []value{
 						{
-							Literal: &exprLiteral{
+							Literal: &mathExprLiteral{
 								Path: &Path{
 									Fields: []Field{
 										{
@@ -560,7 +560,7 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []value{
 						{
-							Literal: &exprLiteral{
+							Literal: &mathExprLiteral{
 								Path: &Path{
 									Fields: []Field{
 										{
@@ -575,7 +575,7 @@ func Test_parse(t *testing.T) {
 							List: &list{
 								Values: []value{
 									{
-										Literal: &exprLiteral{
+										Literal: &mathExprLiteral{
 											Invocation: &invocation{
 												Function: "Concat",
 												Arguments: []value{
@@ -605,12 +605,12 @@ func Test_parse(t *testing.T) {
 													String: ottltest.Strp("1"),
 												},
 												{
-													Literal: &exprLiteral{
+													Literal: &mathExprLiteral{
 														Int: ottltest.Intp(2),
 													},
 												},
 												{
-													Literal: &exprLiteral{
+													Literal: &mathExprLiteral{
 														Float: ottltest.Floatp(3.0),
 													},
 												},
@@ -621,7 +621,7 @@ func Test_parse(t *testing.T) {
 										IsNil: (*isNil)(ottltest.Boolp(true)),
 									},
 									{
-										Literal: &exprLiteral{
+										Literal: &mathExprLiteral{
 											Path: &Path{
 												Fields: []Field{
 													{
@@ -641,14 +641,14 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "Invocation math expression",
+			name:      "Invocation math mathExpression",
 			statement: `set(attributes["test"], 1000 - 600) where 1 + 1 * 2 == three / one()`,
 			expected: &parsedStatement{
 				Invocation: invocation{
 					Function: "set",
 					Arguments: []value{
 						{
-							Literal: &exprLiteral{
+							Literal: &mathExprLiteral{
 								Path: &Path{
 									Fields: []Field{
 										{
@@ -660,10 +660,10 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							MathExpression: &expression{
+							MathExpression: &mathExpression{
 								Left: &addSubTerm{
 									Left: &mathValue{
-										Literal: &exprLiteral{
+										Literal: &mathExprLiteral{
 											Int: ottltest.Intp(1000),
 										},
 									},
@@ -673,7 +673,7 @@ func Test_parse(t *testing.T) {
 										Operator: SUB,
 										Term: &addSubTerm{
 											Left: &mathValue{
-												Literal: &exprLiteral{
+												Literal: &mathExprLiteral{
 													Int: ottltest.Intp(600),
 												},
 											},
@@ -689,10 +689,10 @@ func Test_parse(t *testing.T) {
 						Left: &booleanValue{
 							Comparison: &comparison{
 								Left: value{
-									MathExpression: &expression{
+									MathExpression: &mathExpression{
 										Left: &addSubTerm{
 											Left: &mathValue{
-												Literal: &exprLiteral{
+												Literal: &mathExprLiteral{
 													Int: ottltest.Intp(1),
 												},
 											},
@@ -702,7 +702,7 @@ func Test_parse(t *testing.T) {
 												Operator: ADD,
 												Term: &addSubTerm{
 													Left: &mathValue{
-														Literal: &exprLiteral{
+														Literal: &mathExprLiteral{
 															Int: ottltest.Intp(1),
 														},
 													},
@@ -710,7 +710,7 @@ func Test_parse(t *testing.T) {
 														{
 															Operator: MULT,
 															Value: &mathValue{
-																Literal: &exprLiteral{
+																Literal: &mathExprLiteral{
 																	Int: ottltest.Intp(2),
 																},
 															},
@@ -723,10 +723,10 @@ func Test_parse(t *testing.T) {
 								},
 								Op: EQ,
 								Right: value{
-									MathExpression: &expression{
+									MathExpression: &mathExpression{
 										Left: &addSubTerm{
 											Left: &mathValue{
-												Literal: &exprLiteral{
+												Literal: &mathExprLiteral{
 													Path: &Path{
 														Fields: []Field{
 															{
@@ -740,7 +740,7 @@ func Test_parse(t *testing.T) {
 												{
 													Operator: DIV,
 													Value: &mathValue{
-														Literal: &exprLiteral{
+														Literal: &mathExprLiteral{
 															Invocation: &invocation{
 																Function: "one",
 															},
@@ -822,7 +822,7 @@ func setNameTest(b *booleanExpression) *parsedStatement {
 			Function: "set",
 			Arguments: []value{
 				{
-					Literal: &exprLiteral{
+					Literal: &mathExprLiteral{
 						Path: &Path{
 							Fields: []Field{
 								{
@@ -1021,7 +1021,7 @@ func Test_parseWhere(t *testing.T) {
 					Left: &booleanValue{
 						Comparison: &comparison{
 							Left: value{
-								Literal: &exprLiteral{
+								Literal: &mathExprLiteral{
 									Path: &Path{
 										Fields: []Field{
 											{
@@ -1043,7 +1043,7 @@ func Test_parseWhere(t *testing.T) {
 							Value: &booleanValue{
 								Comparison: &comparison{
 									Left: value{
-										Literal: &exprLiteral{
+										Literal: &mathExprLiteral{
 											Path: &Path{
 												Fields: []Field{
 													{
@@ -1071,7 +1071,7 @@ func Test_parseWhere(t *testing.T) {
 					Left: &booleanValue{
 						Comparison: &comparison{
 							Left: value{
-								Literal: &exprLiteral{
+								Literal: &mathExprLiteral{
 									Path: &Path{
 										Fields: []Field{
 											{
@@ -1095,7 +1095,7 @@ func Test_parseWhere(t *testing.T) {
 							Left: &booleanValue{
 								Comparison: &comparison{
 									Left: value{
-										Literal: &exprLiteral{
+										Literal: &mathExprLiteral{
 											Path: &Path{
 												Fields: []Field{
 													{

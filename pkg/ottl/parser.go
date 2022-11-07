@@ -30,7 +30,7 @@ type Parser[K any] struct {
 }
 
 // Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
-// invocation and the expression to match telemetry for invoking the function.
+// invocation and the mathExpression to match telemetry for invoking the function.
 type Statement[K any] struct {
 	function  Expr[K]
 	condition BoolExpr[K]

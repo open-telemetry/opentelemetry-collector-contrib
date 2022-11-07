@@ -37,7 +37,7 @@ func valueFor(x any) value {
 		switch {
 		case v == "NAME":
 			// if the string is NAME construct a path of "name".
-			val.Literal = &exprLiteral{
+			val.Literal = &mathExprLiteral{
 				Path: &Path{
 					Fields: []Field{
 						{
@@ -53,13 +53,13 @@ func valueFor(x any) value {
 			val.String = ottltest.Strp(v)
 		}
 	case float64:
-		val.Literal = &exprLiteral{Float: ottltest.Floatp(v)}
+		val.Literal = &mathExprLiteral{Float: ottltest.Floatp(v)}
 	case *float64:
-		val.Literal = &exprLiteral{Float: v}
+		val.Literal = &mathExprLiteral{Float: v}
 	case int:
-		val.Literal = &exprLiteral{Int: ottltest.Intp(int64(v))}
+		val.Literal = &mathExprLiteral{Int: ottltest.Intp(int64(v))}
 	case *int64:
-		val.Literal = &exprLiteral{Int: v}
+		val.Literal = &mathExprLiteral{Int: v}
 	case bool:
 		val.Bool = booleanp(boolean(v))
 	case nil:
@@ -98,8 +98,8 @@ func Test_newComparisonEvaluator(t *testing.T) {
 	}{
 		{name: "literals match", l: "hello", r: "hello", op: "==", want: true},
 		{name: "literals don't match", l: "hello", r: "goodbye", op: "!=", want: true},
-		{name: "path expression matches", l: "NAME", r: "bear", op: "==", item: "bear", want: true},
-		{name: "path expression not matches", l: "NAME", r: "cat", op: "!=", item: "bear", want: true},
+		{name: "path mathExpression matches", l: "NAME", r: "bear", op: "==", item: "bear", want: true},
+		{name: "path mathExpression not matches", l: "NAME", r: "cat", op: "!=", item: "bear", want: true},
 		{name: "compare Enum to int", l: "TEST_ENUM", r: 0, op: "==", want: true},
 		{name: "compare int to Enum", l: 2, r: "TEST_ENUM_TWO", op: "==", want: true},
 		{name: "2 > Enum 0", l: 2, r: "TEST_ENUM", op: ">", want: true},

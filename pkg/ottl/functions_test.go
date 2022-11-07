@@ -72,7 +72,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Function: "testing_getter",
 				Arguments: []value{
 					{
-						Literal: &exprLiteral{
+						Literal: &mathExprLiteral{
 							Invocation: &invocation{
 								Function: "unknownfunc",
 							},
@@ -87,7 +87,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Function: "testing_multiple_args",
 				Arguments: []value{
 					{
-						Literal: &exprLiteral{
+						Literal: &mathExprLiteral{
 							Path: &Path{
 								Fields: []Field{
 									{
@@ -109,7 +109,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Function: "testing_multiple_args",
 				Arguments: []value{
 					{
-						Literal: &exprLiteral{
+						Literal: &mathExprLiteral{
 							Path: &Path{
 								Fields: []Field{
 									{
@@ -154,12 +154,12 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 						String: ottltest.Strp("test"),
 					},
 					{
-						Literal: &exprLiteral{
+						Literal: &mathExprLiteral{
 							Int: ottltest.Intp(10),
 						},
 					},
 					{
-						Literal: &exprLiteral{
+						Literal: &mathExprLiteral{
 							Int: ottltest.Intp(10),
 						},
 					},
@@ -172,7 +172,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Function: "testing_string",
 				Arguments: []value{
 					{
-						Literal: &exprLiteral{
+						Literal: &mathExprLiteral{
 							Int: ottltest.Intp(10),
 						},
 					},
@@ -208,7 +208,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 									String: ottltest.Strp("test"),
 								},
 								{
-									Literal: &exprLiteral{
+									Literal: &mathExprLiteral{
 										Int: ottltest.Intp(10),
 									},
 								},
@@ -316,17 +316,17 @@ func Test_NewFunctionCall(t *testing.T) {
 						List: &list{
 							Values: []value{
 								{
-									Literal: &exprLiteral{
+									Literal: &mathExprLiteral{
 										Float: ottltest.Floatp(1.1),
 									},
 								},
 								{
-									Literal: &exprLiteral{
+									Literal: &mathExprLiteral{
 										Float: ottltest.Floatp(1.2),
 									},
 								},
 								{
-									Literal: &exprLiteral{
+									Literal: &mathExprLiteral{
 										Float: ottltest.Floatp(1.3),
 									},
 								},
@@ -346,17 +346,17 @@ func Test_NewFunctionCall(t *testing.T) {
 						List: &list{
 							Values: []value{
 								{
-									Literal: &exprLiteral{
+									Literal: &mathExprLiteral{
 										Int: ottltest.Intp(1),
 									},
 								},
 								{
-									Literal: &exprLiteral{
+									Literal: &mathExprLiteral{
 										Int: ottltest.Intp(1),
 									},
 								},
 								{
-									Literal: &exprLiteral{
+									Literal: &mathExprLiteral{
 										Int: ottltest.Intp(1),
 									},
 								},
@@ -376,7 +376,7 @@ func Test_NewFunctionCall(t *testing.T) {
 						List: &list{
 							Values: []value{
 								{
-									Literal: &exprLiteral{
+									Literal: &mathExprLiteral{
 										Path: &Path{
 											Fields: []Field{
 												{
@@ -390,12 +390,12 @@ func Test_NewFunctionCall(t *testing.T) {
 									String: ottltest.Strp("test"),
 								},
 								{
-									Literal: &exprLiteral{
+									Literal: &mathExprLiteral{
 										Int: ottltest.Intp(1),
 									},
 								},
 								{
-									Literal: &exprLiteral{
+									Literal: &mathExprLiteral{
 										Float: ottltest.Floatp(1.1),
 									},
 								},
@@ -406,12 +406,12 @@ func Test_NewFunctionCall(t *testing.T) {
 									Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM")),
 								},
 								{
-									Literal: &exprLiteral{
+									Literal: &mathExprLiteral{
 										Invocation: &invocation{
 											Function: "testing_getter",
 											Arguments: []value{
 												{
-													Literal: &exprLiteral{
+													Literal: &mathExprLiteral{
 														Path: &Path{
 															Fields: []Field{
 																{
@@ -437,7 +437,7 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_setter",
 				Arguments: []value{
 					{
-						Literal: &exprLiteral{
+						Literal: &mathExprLiteral{
 							Path: &Path{
 								Fields: []Field{
 									{
@@ -457,7 +457,7 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_getsetter",
 				Arguments: []value{
 					{
-						Literal: &exprLiteral{
+						Literal: &mathExprLiteral{
 							Path: &Path{
 								Fields: []Field{
 									{
@@ -477,7 +477,7 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_getter",
 				Arguments: []value{
 					{
-						Literal: &exprLiteral{
+						Literal: &mathExprLiteral{
 							Path: &Path{
 								Fields: []Field{
 									{
@@ -521,7 +521,7 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_float",
 				Arguments: []value{
 					{
-						Literal: &exprLiteral{
+						Literal: &mathExprLiteral{
 							Float: ottltest.Floatp(1.1),
 						},
 					},
@@ -535,7 +535,7 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_int",
 				Arguments: []value{
 					{
-						Literal: &exprLiteral{
+						Literal: &mathExprLiteral{
 							Int: ottltest.Intp(1),
 						},
 					},
@@ -573,7 +573,7 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_multiple_args",
 				Arguments: []value{
 					{
-						Literal: &exprLiteral{
+						Literal: &mathExprLiteral{
 							Path: &Path{
 								Fields: []Field{
 									{
@@ -587,12 +587,12 @@ func Test_NewFunctionCall(t *testing.T) {
 						String: ottltest.Strp("test"),
 					},
 					{
-						Literal: &exprLiteral{
+						Literal: &mathExprLiteral{
 							Float: ottltest.Floatp(1.1),
 						},
 					},
 					{
-						Literal: &exprLiteral{
+						Literal: &mathExprLiteral{
 							Int: ottltest.Intp(1),
 						},
 					},
@@ -624,7 +624,7 @@ func Test_NewFunctionCall(t *testing.T) {
 						String: ottltest.Strp("test1"),
 					},
 					{
-						Literal: &exprLiteral{
+						Literal: &mathExprLiteral{
 							Int: ottltest.Intp(1),
 						},
 					},
@@ -644,7 +644,7 @@ func Test_NewFunctionCall(t *testing.T) {
 						String: ottltest.Strp("test1"),
 					},
 					{
-						Literal: &exprLiteral{
+						Literal: &mathExprLiteral{
 							Int: ottltest.Intp(1),
 						},
 					},
@@ -664,7 +664,7 @@ func Test_NewFunctionCall(t *testing.T) {
 						String: ottltest.Strp("test1"),
 					},
 					{
-						Literal: &exprLiteral{
+						Literal: &mathExprLiteral{
 							Int: ottltest.Intp(1),
 						},
 					},

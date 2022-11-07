@@ -35,7 +35,7 @@ type booleanValue struct {
 	SubExpr    *booleanExpression `parser:"| '(' @@ ')' )"`
 }
 
-// opAndBooleanValue represents the right side of an AND boolean expression.
+// opAndBooleanValue represents the right side of an AND boolean mathExpression.
 type opAndBooleanValue struct {
 	Operator string        `parser:"@OpAnd"`
 	Value    *booleanValue `parser:"@@"`
@@ -47,7 +47,7 @@ type term struct {
 	Right []*opAndBooleanValue `parser:"@@*"`
 }
 
-// opOrTerm represents the right side of an OR boolean expression.
+// opOrTerm represents the right side of an OR boolean mathExpression.
 type opOrTerm struct {
 	Operator string `parser:"@OpOr"`
 	Term     *term  `parser:"@@"`
@@ -127,19 +127,19 @@ type invocation struct {
 }
 
 // value represents a part of a parsed statement which is resolved to a value of some sort. This can be a telemetry path
-// expression, function call, or literal.
+// mathExpression, function call, or literal.
 type value struct {
-	IsNil          *isNil       `parser:"( @'nil'"`
-	Literal        *exprLiteral `parser:"| @@ (?! OpAddSub | OpMultDiv)"`
-	MathExpression *expression  `parser:"| @@"`
-	Bytes          *byteSlice   `parser:"| @Bytes"`
-	String         *string      `parser:"| @String"`
-	Bool           *boolean     `parser:"| @Boolean"`
-	Enum           *EnumSymbol  `parser:"| @Uppercase"`
-	List           *list        `parser:"| @@)"`
+	IsNil          *isNil           `parser:"( @'nil'"`
+	Literal        *mathExprLiteral `parser:"| @@ (?! OpAddSub | OpMultDiv)"`
+	MathExpression *mathExpression  `parser:"| @@"`
+	Bytes          *byteSlice       `parser:"| @Bytes"`
+	String         *string          `parser:"| @String"`
+	Bool           *boolean         `parser:"| @Boolean"`
+	Enum           *EnumSymbol      `parser:"| @Uppercase"`
+	List           *list            `parser:"| @@)"`
 }
 
-// Path represents a telemetry path expression.
+// Path represents a telemetry path mathExpression.
 type Path struct {
 	Fields []Field `parser:"@@ ( '.' @@ )*"`
 }
@@ -183,7 +183,7 @@ func (n *isNil) Capture(_ []string) error {
 	return nil
 }
 
-type exprLiteral struct {
+type mathExprLiteral struct {
 	Invocation *invocation `parser:"( @@"`
 	Float      *float64    `parser:"| @Float"`
 	Int        *int64      `parser:"| @Int"`
@@ -191,8 +191,8 @@ type exprLiteral struct {
 }
 
 type mathValue struct {
-	Literal       *exprLiteral `parser:"( @@"`
-	SubExpression *expression  `parser:"| '(' @@ ')' )"`
+	Literal       *mathExprLiteral `parser:"( @@"`
+	SubExpression *mathExpression  `parser:"| '(' @@ ')' )"`
 }
 
 type opMultDivValue struct {
@@ -210,7 +210,7 @@ type opAddSubTerm struct {
 	Term     *addSubTerm `parser:"@@"`
 }
 
-type expression struct {
+type mathExpression struct {
 	Left  *addSubTerm     `parser:"@@"`
 	Right []*opAddSubTerm `parser:"@@*"`
 }
