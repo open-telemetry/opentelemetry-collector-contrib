@@ -441,7 +441,7 @@ func TestSumConsumerDelta(t *testing.T) {
 		"test.delta.metric", pmetric.MetricTypeSum)
 	sum := deltaMetric.Sum()
 	mi := metricInfo{Metric: deltaMetric, Source: "test_source", SourceKey: "host.name", ResourceAttrs: map[string]string{"res_attr_key": "res_attr_value"}}
-	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 	dataPoints := sum.DataPoints()
 	dataPoints.EnsureCapacity(2)
 	addDataPoint(
@@ -493,7 +493,7 @@ func TestSumConsumerErrorOnSend(t *testing.T) {
 		"test.delta.metric", pmetric.MetricTypeSum)
 	sum := deltaMetric.Sum()
 	mi := metricInfo{Metric: deltaMetric, Source: "test_source", SourceKey: "host.name"}
-	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 	dataPoints := sum.DataPoints()
 	dataPoints.EnsureCapacity(2)
 	addDataPoint(
@@ -529,7 +529,7 @@ func TestSumConsumerCumulative(t *testing.T) {
 		"test.cumulative.metric", pmetric.MetricTypeSum)
 	sum := cumulativeMetric.Sum()
 	mi := metricInfo{Metric: cumulativeMetric, Source: "test_source", SourceKey: "host.name", ResourceAttrs: map[string]string{"res_attr_key": "res_attr_value"}}
-	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	dataPoints := sum.DataPoints()
 	dataPoints.EnsureCapacity(1)
 	addDataPoint(
@@ -567,7 +567,7 @@ func TestSumConsumerUnspecified(t *testing.T) {
 		"test.unspecified.metric", pmetric.MetricTypeSum)
 	sum := cumulativeMetric.Sum()
 	mi := metricInfo{Metric: cumulativeMetric, Source: "test_source", SourceKey: "host.name", ResourceAttrs: map[string]string{"res_attr_key": "res_attr_value"}}
-	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityUnspecified)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityUnspecified)
 	dataPoints := sum.DataPoints()
 	dataPoints.EnsureCapacity(1)
 	addDataPoint(
@@ -604,7 +604,7 @@ func TestSumConsumerMissingValue(t *testing.T) {
 	metric := newMetric("missing.value.metric", pmetric.MetricTypeSum)
 	sum := metric.Sum()
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name", ResourceAttrs: map[string]string{"res_attr_key": "res_attr_value"}}
-	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 	dataPoints := sum.DataPoints()
 	dataPoints.EnsureCapacity(1)
 	addDataPoint(
@@ -643,7 +643,7 @@ func TestHistogramConsumerDeltaAggregation(t *testing.T) {
 	numBucketCountsForEachDataPoint := []int{2, 5, 10}
 	deltaMetric := newHistogramMetricWithDataPoints(
 		"delta.metric",
-		pmetric.MetricAggregationTemporalityDelta,
+		pmetric.AggregationTemporalityDelta,
 		numBucketCountsForEachDataPoint)
 	mi := metricInfo{Metric: deltaMetric, Source: "test_source", SourceKey: "host.name", ResourceAttrs: map[string]string{"res_attr_key": "res_attr_value"}}
 	sender := &mockGaugeSender{}
@@ -675,7 +675,7 @@ func TestHistogramConsumerCumulativeAggregation(t *testing.T) {
 	numBucketCountsForEachDataPoint := []int{2, 5, 10}
 	cumulativeMetric := newHistogramMetricWithDataPoints(
 		"cumulative.metric",
-		pmetric.MetricAggregationTemporalityCumulative,
+		pmetric.AggregationTemporalityCumulative,
 		numBucketCountsForEachDataPoint)
 	mi := metricInfo{Metric: cumulativeMetric, Source: "test_source", SourceKey: "host.name", ResourceAttrs: map[string]string{"res_attr_key": "res_attr_value"}}
 	sender := &mockGaugeSender{}
@@ -711,7 +711,7 @@ func TestHistogramConsumerNoAggregation(t *testing.T) {
 	// Create a histogram metric with missing aggregation attribute
 	metric := newHistogramMetricWithDataPoints(
 		"missing.aggregation.metric",
-		pmetric.MetricAggregationTemporalityUnspecified,
+		pmetric.AggregationTemporalityUnspecified,
 		nil)
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name", ResourceAttrs: map[string]string{"res_attr_key": "res_attr_value"}}
 	sender := &mockGaugeSender{}
@@ -1222,11 +1222,11 @@ func setQuantileValues(dataPoint pmetric.SummaryDataPoint, quantileValues ...flo
 
 func TestExponentialHistogramConsumerSpec(t *testing.T) {
 	metric := newExponentialHistogramMetricWithDataPoints(
-		"a.metric", pmetric.MetricAggregationTemporalityDelta, []uint64{4, 7, 11})
+		"a.metric", pmetric.AggregationTemporalityDelta, []uint64{4, 7, 11})
 	assert.Equal(t, pmetric.MetricTypeExponentialHistogram, exponentialHistogram.Type())
 	assert.Equal(
 		t,
-		pmetric.MetricAggregationTemporalityDelta,
+		pmetric.AggregationTemporalityDelta,
 		exponentialHistogram.AggregationTemporality(metric))
 	points := exponentialHistogram.DataPoints(metric)
 	assert.Len(t, points, 3)
@@ -1313,7 +1313,7 @@ func TestExponentialHistogramDataPoint_ZeroOnly(t *testing.T) {
 // data point.
 func newHistogramMetricWithDataPoints(
 	name string,
-	temporality pmetric.MetricAggregationTemporality,
+	temporality pmetric.AggregationTemporality,
 	numBucketCountsForEachDataPoint []int,
 ) pmetric.Metric {
 	result := newMetric(name, pmetric.MetricTypeHistogram)
@@ -1331,7 +1331,7 @@ func newHistogramMetricWithDataPoints(
 // Works like newHistogramMetricWithDataPoints but creates an exponential histogram metric
 func newExponentialHistogramMetricWithDataPoints(
 	name string,
-	temporality pmetric.MetricAggregationTemporality,
+	temporality pmetric.AggregationTemporality,
 	positiveAndNegativeBucketCountsForEachDataPoint []uint64,
 ) pmetric.Metric {
 	result := newMetric(name, pmetric.MetricTypeExponentialHistogram)
