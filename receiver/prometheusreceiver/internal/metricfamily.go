@@ -48,7 +48,7 @@ type metricFamily struct {
 // a couple data complexValue (buckets and count/sum), a group of a metric family always share a same set of tags. for
 // simple types like counter and gauge, each data point is a group of itself
 type metricGroup struct {
-	family       *metricFamily
+	mtype        pmetric.MetricType
 	ts           int64
 	ls           labels.Labels
 	count        float64
@@ -85,12 +85,6 @@ func (mf *metricFamily) includesMetric(metricName string) bool {
 	}
 	// If it isn't a merged type, the metricName and family name should match
 	return metricName == mf.name
-}
-
-func (mf *metricFamily) getGroupKey(ls labels.Labels) uint64 {
-	bytes := make([]byte, 0, 2048)
-	hash, _ := ls.HashWithoutLabels(bytes, getSortedNotUsefulLabels(mf.mtype)...)
-	return hash
 }
 
 func (mg *metricGroup) sortPoints() {
@@ -209,7 +203,7 @@ func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
 	tsNanos := timestampFromMs(mg.ts)
 	point := dest.AppendEmpty()
 	// gauge/undefined types have no start time.
-	if mg.family.mtype == pmetric.MetricTypeSum {
+	if mg.mtype == pmetric.MetricTypeSum {
 		point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	}
 	point.SetTimestamp(tsNanos)
@@ -245,7 +239,7 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Label
 	mg, ok := mf.groups[groupKey]
 	if !ok {
 		mg = &metricGroup{
-			family:    mf,
+			mtype:     mf.mtype,
 			ts:        ts,
 			ls:        ls,
 			exemplars: pmetric.NewExemplarSlice(),
@@ -257,9 +251,8 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Label
 	return mg
 }
 
-func (mf *metricFamily) Add(metricName string, ls labels.Labels, t int64, v float64) error {
-	groupKey := mf.getGroupKey(ls)
-	mg := mf.loadMetricGroupOrCreate(groupKey, ls, t)
+func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels.Labels, t int64, v float64) error {
+	mg := mf.loadMetricGroupOrCreate(seriesRef, ls, t)
 	if mg.ts != t {
 		return fmt.Errorf("inconsistent timestamps on metric points for metric %v", metricName)
 	}
@@ -340,9 +333,8 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) {
 	metric.MoveTo(metrics.AppendEmpty())
 }
 
-func (mf *metricFamily) addExemplar(l labels.Labels, e exemplar.Exemplar) {
-	gk := mf.getGroupKey(l)
-	mg := mf.groups[gk]
+func (mf *metricFamily) addExemplar(seriesRef uint64, e exemplar.Exemplar) {
+	mg := mf.groups[seriesRef]
 	if mg == nil {
 		return
 	}
