@@ -9,6 +9,3 @@ filelog:
         layout: '%Y-%m-%d'
       severity:
         parse_from: attributes.sev
-  converter:
-    max_flush_count: 100
-    flush_interval: 100ms
