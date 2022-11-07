@@ -55,19 +55,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsRec
 
 		operators := append([]operator.Config{inputCfg}, baseCfg.Operators...)
 
-		emitterOpts := []LogEmitterOption{
-			LogEmitterWithLogger(params.Logger.Sugar()),
-		}
-
-		if baseCfg.Converter.MaxFlushCount > 0 {
-			emitterOpts = append(emitterOpts, LogEmitterWithMaxBatchSize(baseCfg.Converter.MaxFlushCount))
-		}
-
-		if baseCfg.Converter.FlushInterval > 0 {
-			emitterOpts = append(emitterOpts, LogEmitterWithFlushInterval(baseCfg.Converter.FlushInterval))
-		}
-
-		emitter := NewLogEmitter(emitterOpts...)
+		emitter := NewLogEmitter(params.Logger.Sugar())
 		pipe, err := pipeline.Config{
 			Operators:     operators,
 			DefaultOutput: emitter,
@@ -76,14 +64,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsRec
 			return nil, err
 		}
 
-		opts := []ConverterOption{
-			WithLogger(params.Logger),
-		}
-
-		if baseCfg.Converter.WorkerCount > 0 {
-			opts = append(opts, WithWorkerCount(baseCfg.Converter.WorkerCount))
-		}
-		converter := NewConverter(opts...)
+		converter := NewConverter(params.Logger)
 		obsrecv := obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             cfg.ID(),
 			ReceiverCreateSettings: params,

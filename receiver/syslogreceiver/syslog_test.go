@@ -106,10 +106,6 @@ func testdataConfigYaml() *SysLogConfig {
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        []operator.Config{},
-			Converter: adapter.ConverterConfig{
-				FlushInterval: 100 * time.Millisecond,
-				WorkerCount:   1,
-			},
 		},
 		InputConfig: func() syslog.Config {
 			c := syslog.NewConfig()
@@ -126,10 +122,6 @@ func testdataUDPConfig() *SysLogConfig {
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        []operator.Config{},
-			Converter: adapter.ConverterConfig{
-				FlushInterval: 100 * time.Millisecond,
-				WorkerCount:   1,
-			},
 		},
 		InputConfig: func() syslog.Config {
 			c := syslog.NewConfig()
