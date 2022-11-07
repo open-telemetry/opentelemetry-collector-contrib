@@ -100,8 +100,7 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 
 	mg.sortPoints()
 
-	// for OCAgent Proto, the bounds won't include +inf
-	// TODO: (@odeke-em) should we also check OpenTelemetry Pdata for bucket bounds?
+	// for OTLP the bounds won't include +inf
 	bounds := make([]float64, len(mg.complexValue)-1)
 	bucketCounts := make([]uint64, len(mg.complexValue))
 
@@ -109,7 +108,7 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 
 	for i := 0; i < len(mg.complexValue); i++ {
 		if i != len(mg.complexValue)-1 {
-			// not need to add +inf as bound to oc proto
+			// not need to add +inf as OTLP assumes it
 			bounds[i] = mg.complexValue[i].boundary
 		}
 		adjustedCount := mg.complexValue[i].value
