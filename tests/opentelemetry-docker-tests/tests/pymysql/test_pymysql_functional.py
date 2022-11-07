@@ -109,3 +109,19 @@ class TestFunctionalPyMysql(TestBase):
         ):
             self._cursor.callproc("test", ())
             self.validate_spans("test")
+
+    def test_commit(self):
+        stmt = "INSERT INTO test (id) VALUES (%s)"
+        with self._tracer.start_as_current_span("rootSpan"):
+            data = (("4",), ("5",), ("6",))
+            self._cursor.executemany(stmt, data)
+            self._connection.commit()
+        self.validate_spans("INSERT")
+
+    def test_rollback(self):
+        stmt = "INSERT INTO test (id) VALUES (%s)"
+        with self._tracer.start_as_current_span("rootSpan"):
+            data = (("7",), ("8",), ("9",))
+            self._cursor.executemany(stmt, data)
+            self._connection.rollback()
+        self.validate_spans("INSERT")

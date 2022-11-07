@@ -79,6 +79,9 @@ def trace_integration(
         tracer_provider: The :class:`opentelemetry.trace.TracerProvider` to
             use. If omitted the current configured one is used.
         capture_parameters: Configure if db.statement.parameters should be captured.
+        enable_commenter: Flag to enable/disable sqlcommenter.
+        db_api_integration_factory: The `DatabaseApiIntegration` to use. If none is passed the
+            default one is used.
     """
     wrap_connect(
         __name__,
@@ -121,6 +124,8 @@ def wrap_connect(
             use. If omitted the current configured one is used.
         capture_parameters: Configure if db.statement.parameters should be captured.
         enable_commenter: Flag to enable/disable sqlcommenter.
+        db_api_integration_factory: The `DatabaseApiIntegration` to use. If none is passed the
+            default one is used.
         commenter_options: Configurations for tags to be appended at the sql query.
 
     """
@@ -197,7 +202,7 @@ def instrument_connection(
     Returns:
         An instrumented connection.
     """
-    if isinstance(connection, wrapt.ObjectProxy):
+    if isinstance(connection, _TracedConnectionProxy):
         _logger.warning("Connection already instrumented")
         return connection
 
@@ -327,6 +332,14 @@ def get_traced_connection_proxy(
             self._connection = connection
 
         def __getattr__(self, name):
+            return object.__getattribute__(
+                object.__getattribute__(self, "_connection"), name
+            )
+
+        def __getattribute__(self, name):
+            if object.__getattribute__(self, name):
+                return object.__getattribute__(self, name)
+
             return object.__getattribute__(
                 object.__getattribute__(self, "_connection"), name
             )

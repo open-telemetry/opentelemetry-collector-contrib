@@ -7,10 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- `opentelemetry-instrumentation-pymysql` Add tests for commit() and rollback().
+  ([#1424](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1424))
+
 ### Fixed
 
 - Fix bug in Urllib instrumentation - add status code to span attributes only if the status code is not None. 
   ([#1430](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1430))
+- `opentelemetry-instrumentation-pymysql` Fix dbapi connection instrument wrapper has no _sock member.
+  ([#1424](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1424))
+- `opentelemetry-instrumentation-dbapi` Fix the check for the connection already being instrumented in instrument_connection().
+  ([#1424](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1424))
 
 ## Version 1.14.0/0.35b0 (2022-11-03)
 
