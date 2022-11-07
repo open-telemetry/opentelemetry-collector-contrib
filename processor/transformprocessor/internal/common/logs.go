@@ -62,8 +62,10 @@ type LogParserCollection struct {
 	logParser ottl.Parser[ottllogs.TransformContext]
 }
 
-func NewLogParserCollection(functions map[string]interface{}, settings component.TelemetrySettings) LogParserCollection {
-	return LogParserCollection{
+type LogParserCollectionOption func(*LogParserCollection) error
+
+func NewLogParserCollection(functions map[string]interface{}, settings component.TelemetrySettings, options ...LogParserCollectionOption) (*LogParserCollection, error) {
+	lpc := &LogParserCollection{
 		parserCollection: parserCollection{
 			settings:       settings,
 			resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
@@ -71,6 +73,15 @@ func NewLogParserCollection(functions map[string]interface{}, settings component
 		},
 		logParser: ottllogs.NewParser(functions, settings),
 	}
+
+	for _, op := range options {
+		err := op(lpc)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return lpc, nil
 }
 
 func (pc LogParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Logs, error) {

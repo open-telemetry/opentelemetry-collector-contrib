@@ -98,8 +98,10 @@ type TraceParserCollection struct {
 	spanEventParser ottl.Parser[ottlspanevent.TransformContext]
 }
 
-func NewTraceParserCollection(functions map[string]interface{}, settings component.TelemetrySettings) TraceParserCollection {
-	return TraceParserCollection{
+type TraceParserCollectionOption func(*TraceParserCollection) error
+
+func NewTraceParserCollection(functions map[string]interface{}, settings component.TelemetrySettings, options ...TraceParserCollectionOption) (*TraceParserCollection, error) {
+	tpc := &TraceParserCollection{
 		parserCollection: parserCollection{
 			settings:       settings,
 			resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
@@ -107,6 +109,15 @@ func NewTraceParserCollection(functions map[string]interface{}, settings compone
 		},
 		traceParser: ottltraces.NewParser(functions, settings),
 	}
+
+	for _, op := range options {
+		err := op(tpc)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return tpc, nil
 }
 
 func (pc TraceParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Traces, error) {

@@ -159,8 +159,10 @@ type MetricParserCollection struct {
 	dataPointParser ottl.Parser[ottldatapoints.TransformContext]
 }
 
-func NewMetricParserCollection(functions map[string]interface{}, settings component.TelemetrySettings) MetricParserCollection {
-	return MetricParserCollection{
+type MetricParserCollectionOption func(*MetricParserCollection) error
+
+func NewMetricParserCollection(functions map[string]interface{}, settings component.TelemetrySettings, options ...MetricParserCollectionOption) (*MetricParserCollection, error) {
+	mpc := &MetricParserCollection{
 		parserCollection: parserCollection{
 			settings:       settings,
 			resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
@@ -169,6 +171,15 @@ func NewMetricParserCollection(functions map[string]interface{}, settings compon
 		metricParser:    ottlmetric.NewParser(functions, settings),
 		dataPointParser: ottldatapoints.NewParser(functions, settings),
 	}
+
+	for _, op := range options {
+		err := op(mpc)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return mpc, nil
 }
 
 func (pc MetricParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Metrics, error) {
