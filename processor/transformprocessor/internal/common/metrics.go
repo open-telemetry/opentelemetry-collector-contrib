@@ -40,8 +40,8 @@ func (m metricStatements) Capabilities() consumer.Capabilities {
 }
 
 func (m metricStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	for i := 0; i < td.ResourceMetrics().Len(); i++ {
-		rmetrics := td.ResourceMetrics().At(i)
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		rmetrics := md.ResourceMetrics().At(i)
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
 			smetrics := rmetrics.ScopeMetrics().At(j)
 			metrics := smetrics.Metrics()
@@ -69,9 +69,9 @@ func (d dataPointStatements) Capabilities() consumer.Capabilities {
 	}
 }
 
-func (d dataPointStatements) ConsumeMetrics(ctx context.Context, td pmetric.Metrics) error {
-	for i := 0; i < td.ResourceMetrics().Len(); i++ {
-		rmetrics := td.ResourceMetrics().At(i)
+func (d dataPointStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		rmetrics := md.ResourceMetrics().At(i)
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
 			smetrics := rmetrics.ScopeMetrics().At(j)
 			metrics := smetrics.Metrics()

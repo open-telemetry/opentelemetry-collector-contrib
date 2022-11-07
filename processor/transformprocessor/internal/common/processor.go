@@ -32,6 +32,7 @@ import (
 var _ consumer.Traces = &resourceStatements{}
 var _ consumer.Metrics = &resourceStatements{}
 var _ consumer.Logs = &resourceStatements{}
+var _ baseContext = &resourceStatements{}
 
 type resourceStatements []*ottl.Statement[ottlresource.TransformContext]
 
@@ -55,9 +56,9 @@ func (r resourceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces)
 	return nil
 }
 
-func (r resourceStatements) ConsumeMetrics(ctx context.Context, td pmetric.Metrics) error {
-	for i := 0; i < td.ResourceMetrics().Len(); i++ {
-		rmetrics := td.ResourceMetrics().At(i)
+func (r resourceStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		rmetrics := md.ResourceMetrics().At(i)
 		tCtx := ottlresource.NewTransformContext(rmetrics.Resource())
 		for _, statement := range r {
 			_, _, err := statement.Execute(ctx, tCtx)
@@ -69,9 +70,9 @@ func (r resourceStatements) ConsumeMetrics(ctx context.Context, td pmetric.Metri
 	return nil
 }
 
-func (r resourceStatements) ConsumeLogs(ctx context.Context, td plog.Logs) error {
-	for i := 0; i < td.ResourceLogs().Len(); i++ {
-		rlogs := td.ResourceLogs().At(i)
+func (r resourceStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+		rlogs := ld.ResourceLogs().At(i)
 		tCtx := ottlresource.NewTransformContext(rlogs.Resource())
 		for _, statement := range r {
 			_, _, err := statement.Execute(ctx, tCtx)
@@ -86,6 +87,7 @@ func (r resourceStatements) ConsumeLogs(ctx context.Context, td plog.Logs) error
 var _ consumer.Traces = &scopeStatements{}
 var _ consumer.Metrics = &scopeStatements{}
 var _ consumer.Logs = &scopeStatements{}
+var _ baseContext = &scopeStatements{}
 
 type scopeStatements []*ottl.Statement[ottlscope.TransformContext]
 
@@ -112,9 +114,9 @@ func (s scopeStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 	return nil
 }
 
-func (s scopeStatements) ConsumeMetrics(ctx context.Context, td pmetric.Metrics) error {
-	for i := 0; i < td.ResourceMetrics().Len(); i++ {
-		rmetrics := td.ResourceMetrics().At(i)
+func (s scopeStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		rmetrics := md.ResourceMetrics().At(i)
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
 			smetrics := rmetrics.ScopeMetrics().At(j)
 			tCtx := ottlscope.NewTransformContext(smetrics.Scope(), rmetrics.Resource())
@@ -129,9 +131,9 @@ func (s scopeStatements) ConsumeMetrics(ctx context.Context, td pmetric.Metrics)
 	return nil
 }
 
-func (s scopeStatements) ConsumeLogs(ctx context.Context, td plog.Logs) error {
-	for i := 0; i < td.ResourceLogs().Len(); i++ {
-		rlogs := td.ResourceLogs().At(i)
+func (s scopeStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+		rlogs := ld.ResourceLogs().At(i)
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
 			slogs := rlogs.ScopeLogs().At(j)
 			tCtx := ottlscope.NewTransformContext(slogs.Scope(), rlogs.Resource())

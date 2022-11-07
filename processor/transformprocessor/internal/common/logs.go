@@ -38,8 +38,8 @@ func (l logStatements) Capabilities() consumer.Capabilities {
 }
 
 func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	for i := 0; i < td.ResourceLogs().Len(); i++ {
-		rlogs := td.ResourceLogs().At(i)
+	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+		rlogs := ld.ResourceLogs().At(i)
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
 			slogs := rlogs.ScopeLogs().At(j)
 			logs := slogs.LogRecords()
