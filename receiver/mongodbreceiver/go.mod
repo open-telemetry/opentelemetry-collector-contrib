@@ -12,7 +12,7 @@ require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.63.0
 	github.com/testcontainers/testcontainers-go v0.15.0
-	go.mongodb.org/mongo-driver v1.10.3
+	go.mongodb.org/mongo-driver v1.11.0
 	go.opentelemetry.io/collector/pdata v0.63.2-0.20221103164255-2ed41215f324
 	go.uber.org/zap v1.23.0
 )
@@ -55,6 +55,7 @@ require (
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
