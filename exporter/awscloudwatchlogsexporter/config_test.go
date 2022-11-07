@@ -110,3 +110,39 @@ func TestLoadConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestRetentionValidateCorrect(t *testing.T) {
+	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
+	cfg := &Config{
+		ExporterSettings:   config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "1")),
+		RetrySettings:      defaultRetrySettings,
+		LogGroupName:       "test-1",
+		LogStreamName:      "testing",
+		Endpoint:           "",
+		LogRetention:       365,
+		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
+		QueueSettings: QueueSettings{
+			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
+		},
+	}
+	assert.NoError(t, cfg.Validate())
+
+}
+
+func TestRetentionValidateWrong(t *testing.T) {
+	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
+	wrongcfg := &Config{
+		ExporterSettings:   config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
+		RetrySettings:      defaultRetrySettings,
+		LogGroupName:       "test-1",
+		LogStreamName:      "testing",
+		Endpoint:           "",
+		LogRetention:       366,
+		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
+		QueueSettings: QueueSettings{
+			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
+		},
+	}
+	assert.Error(t, wrongcfg.Validate())
+
+}
