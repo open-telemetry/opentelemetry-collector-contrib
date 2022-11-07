@@ -39,7 +39,7 @@ func (m metricStatements) Capabilities() consumer.Capabilities {
 	}
 }
 
-func (m metricStatements) ConsumeMetrics(ctx context.Context, td pmetric.Metrics) error {
+func (m metricStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
 		rmetrics := td.ResourceMetrics().At(i)
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
