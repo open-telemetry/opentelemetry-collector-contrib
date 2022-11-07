@@ -17,7 +17,6 @@ package logstransformprocessor // import "github.com/open-telemetry/opentelemetr
 import (
 	"context"
 	"errors"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -51,10 +50,6 @@ func createDefaultConfig() config.Processor {
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		BaseConfig: adapter.BaseConfig{
 			Operators: []operator.Config{},
-			Converter: adapter.ConverterConfig{
-				MaxFlushCount: 100,
-				FlushInterval: 100 * time.Millisecond,
-			},
 		},
 	}
 }
