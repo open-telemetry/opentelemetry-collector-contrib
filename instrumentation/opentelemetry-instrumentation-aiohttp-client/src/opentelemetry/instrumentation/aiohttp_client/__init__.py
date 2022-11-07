@@ -232,12 +232,13 @@ def create_trace_config(
         if trace_config_ctx.span is None:
             return
 
-        if callable(response_hook):
-            response_hook(trace_config_ctx.span, params)
-
         if trace_config_ctx.span.is_recording() and params.exception:
             trace_config_ctx.span.set_status(Status(StatusCode.ERROR))
             trace_config_ctx.span.record_exception(params.exception)
+
+        if callable(response_hook):
+            response_hook(trace_config_ctx.span, params)
+
         _end_trace(trace_config_ctx)
 
     def _trace_config_ctx_factory(**kwargs):

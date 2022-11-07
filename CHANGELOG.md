@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix bug in Urllib instrumentation - add status code to span attributes only if the status code is not None. 
   ([#1430](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1430))
+- `opentelemetry-instrumentation-aiohttp-client` Allow overriding of status in response hook. 
+  ([#1394](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1394))
 - `opentelemetry-instrumentation-pymysql` Fix dbapi connection instrument wrapper has no _sock member.
   ([#1424](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1424))
 - `opentelemetry-instrumentation-dbapi` Fix the check for the connection already being instrumented in instrument_connection().
