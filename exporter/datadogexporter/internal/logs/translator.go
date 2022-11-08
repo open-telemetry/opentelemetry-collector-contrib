@@ -156,6 +156,12 @@ func Transform(lr plog.LogRecord, res pcommon.Resource, logger *zap.Logger) data
 		l.Message = lr.Body().AsString()
 	}
 
+	if !l.HasDdtags() {
+		var tags = append(attributes.TagsFromAttributes(res.Attributes()), otelTag)
+		tagStr := strings.Join(tags, ",")
+		l.Ddtags = datadog.PtrString(tagStr)
+	}
+
 	return l
 }
 
