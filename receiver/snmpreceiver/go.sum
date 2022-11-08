@@ -886,8 +886,8 @@ go.opentelemetry.io/collector/pdata v0.63.2-0.20221108014805-0b08d5316426 h1:wKD
 go.opentelemetry.io/collector/pdata v0.63.2-0.20221108014805-0b08d5316426/go.mod h1:IzvXUGQml2mrnvdb8zIlEW3qQs9oFLdD2hLwJdZ+pek=
 go.opentelemetry.io/collector/processor/batchprocessor v0.0.0-20221103161931-a167b006e8c0 h1:MybyhzAzHIb85NOg5yHQixODm6fq6kJnOTl6xb7GxFc=
 go.opentelemetry.io/collector/processor/batchprocessor v0.0.0-20221103161931-a167b006e8c0/go.mod h1:WBv1Nayi8p12K0vxLxTkHpRGr79JXYT3TXL2X0B/PRU=
-go.opentelemetry.io/collector/semconv v0.63.1 h1:o9Zz/vwqT85XXYf9XTIXa0qkmfEY8b/JMm4lXf+dwpc=
-go.opentelemetry.io/collector/semconv v0.63.1/go.mod h1:5o9yhOa+ABt7g2E5JABDxGZ1PQPbtfxrKNbYn+LOTXU=
+go.opentelemetry.io/collector/semconv v0.63.2-0.20221108014805-0b08d5316426 h1:pqIl7OC531J6i9ttBCj3zLmZI/BSF4q323YpK0GgKGk=
+go.opentelemetry.io/collector/semconv v0.63.2-0.20221108014805-0b08d5316426/go.mod h1:5o9yhOa+ABt7g2E5JABDxGZ1PQPbtfxrKNbYn+LOTXU=
 go.opentelemetry.io/contrib/propagators/b3 v1.11.1 h1:icQ6ttRV+r/2fnU46BIo/g/mPu6Rs5Ug8Rtohe3KqzI=
 go.opentelemetry.io/contrib/propagators/b3 v1.11.1/go.mod h1:ECIveyMXgnl4gorxFcA7RYjJY/Ql9n20ubhbfDc3QfA=
 go.opentelemetry.io/contrib/zpages v0.36.4 h1:Z2VK5WsDhWs9VwZ1p0TM5RyusTOgAQfdMMDDQPRnlmY=
