@@ -57,7 +57,7 @@ func TestTransform(t *testing.T) {
 				res: pcommon.NewResource(),
 			},
 			want: datadogV2.HTTPLogItem{
-				Ddtags:  datadog.PtrString("otel:true"),
+				Ddtags:  datadog.PtrString("otel_source:datadog_exporter"),
 				Message: *datadog.PtrString(""),
 				AdditionalProperties: map[string]string{
 					"app":              "test",
@@ -83,7 +83,7 @@ func TestTransform(t *testing.T) {
 				}(),
 			},
 			want: datadogV2.HTTPLogItem{
-				Ddtags:  datadog.PtrString("service:otlp_col,otel:true"),
+				Ddtags:  datadog.PtrString("service:otlp_col,otel_source:datadog_exporter"),
 				Message: *datadog.PtrString(""),
 				Service: datadog.PtrString("otlp_col"),
 				AdditionalProperties: map[string]string{
@@ -111,7 +111,7 @@ func TestTransform(t *testing.T) {
 				}(),
 			},
 			want: datadogV2.HTTPLogItem{
-				Ddtags:  datadog.PtrString("service:otlp_col,foo:bar,otel:true"),
+				Ddtags:  datadog.PtrString("service:otlp_col,foo:bar,otel_source:datadog_exporter"),
 				Message: *datadog.PtrString(""),
 				Service: datadog.PtrString("otlp_col"),
 				AdditionalProperties: map[string]string{
@@ -138,7 +138,7 @@ func TestTransform(t *testing.T) {
 				}(),
 			},
 			want: datadogV2.HTTPLogItem{
-				Ddtags:  datadog.PtrString("otel:true"),
+				Ddtags:  datadog.PtrString("otel_source:datadog_exporter"),
 				Message: *datadog.PtrString(""),
 				Service: datadog.PtrString("otlp_col"),
 				AdditionalProperties: map[string]string{
@@ -167,7 +167,7 @@ func TestTransform(t *testing.T) {
 				}(),
 			},
 			want: datadogV2.HTTPLogItem{
-				Ddtags:  datadog.PtrString("otel:true"),
+				Ddtags:  datadog.PtrString("otel_source:datadog_exporter"),
 				Message: *datadog.PtrString(""),
 				Service: datadog.PtrString("otlp_col"),
 				AdditionalProperties: map[string]string{
@@ -200,7 +200,7 @@ func TestTransform(t *testing.T) {
 				}(),
 			},
 			want: datadogV2.HTTPLogItem{
-				Ddtags:  datadog.PtrString("otel:true"),
+				Ddtags:  datadog.PtrString("otel_source:datadog_exporter"),
 				Message: *datadog.PtrString(""),
 				Service: datadog.PtrString("otlp_col"),
 				AdditionalProperties: map[string]string{
@@ -233,7 +233,7 @@ func TestTransform(t *testing.T) {
 				}(),
 			},
 			want: datadogV2.HTTPLogItem{
-				Ddtags:  datadog.PtrString("otel:true"),
+				Ddtags:  datadog.PtrString("otel_source:datadog_exporter"),
 				Message: *datadog.PtrString(""),
 				Service: datadog.PtrString("otlp_col"),
 				AdditionalProperties: map[string]string{
@@ -266,7 +266,7 @@ func TestTransform(t *testing.T) {
 				}(),
 			},
 			want: datadogV2.HTTPLogItem{
-				Ddtags:  datadog.PtrString("otel:true"),
+				Ddtags:  datadog.PtrString("otel_source:datadog_exporter"),
 				Message: *datadog.PtrString(""),
 				Service: datadog.PtrString("otlp_col"),
 				AdditionalProperties: map[string]string{
@@ -301,7 +301,7 @@ func TestTransform(t *testing.T) {
 				}(),
 			},
 			want: datadogV2.HTTPLogItem{
-				Ddtags:  datadog.PtrString("otel:true"),
+				Ddtags:  datadog.PtrString("otel_source:datadog_exporter"),
 				Message: *datadog.PtrString(""),
 				Service: datadog.PtrString("otlp_col"),
 				AdditionalProperties: map[string]string{
@@ -336,7 +336,7 @@ func TestTransform(t *testing.T) {
 				}(),
 			},
 			want: datadogV2.HTTPLogItem{
-				Ddtags:  datadog.PtrString("otel:true"),
+				Ddtags:  datadog.PtrString("otel_source:datadog_exporter"),
 				Message: *datadog.PtrString(""),
 				Service: datadog.PtrString("otlp_col"),
 				AdditionalProperties: map[string]string{

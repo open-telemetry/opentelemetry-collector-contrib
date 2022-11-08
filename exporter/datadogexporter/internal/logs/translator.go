@@ -61,7 +61,7 @@ const (
 )
 
 // This constant specifies a tag to be added to all logs sent from the Datadog exporter
-const otelTag = "otel:true"
+const otelTag = "otel_source:datadog_exporter"
 
 // Transform converts the log record in lr, which came in with the resource in res to a Datadog log item.
 // the variable specifies if the log body should be sent as an attribute or as a plain message.
