@@ -17,7 +17,6 @@ package logs // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"encoding/binary"
 	"encoding/hex"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -156,19 +155,7 @@ func Transform(lr plog.LogRecord, res pcommon.Resource, logger *zap.Logger) data
 		// set the Message to the Body in case it wasn't already parsed as part of the attributes
 		l.Message = lr.Body().AsString()
 	}
-	if l.HasDdtags() {
-		fmt.Printf("------------------- ddtags: %v -------------------\n", *l.Ddtags)
-	}
 
-	if !l.HasDdtags() {
-		fmt.Printf("------------------- IN HAS DDTAGS -------------------\n")
-		var tags = append(attributes.TagsFromAttributes(res.Attributes()), otelTag)
-		tagStr := strings.Join(tags, ",")
-		l.Ddtags = datadog.PtrString(tagStr)
-	}
-	if l.HasDdtags() {
-		fmt.Printf("------------------- ddtags: %v -------------------\n", *l.Ddtags)
-	}
 	return l
 }
 
