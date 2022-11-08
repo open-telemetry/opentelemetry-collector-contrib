@@ -51,13 +51,13 @@ func TestProcessorStart(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
-			exporters := map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.MetricsDataType: {
+			exporters := map[component.DataType]map[component.ID]component.Exporter{
+				component.DataTypeMetrics: {
 					otlpConfig.ID(): tc.exporter,
 				},
 			}
 			mHost := &mockHost{
-				GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
+				GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
 					return exporters
 				},
 			}
@@ -113,10 +113,10 @@ func TestProcessorConsume(t *testing.T) {
 	processor := newProcessor(zaptest.NewLogger(t), cfg, consumertest.NewNop())
 
 	mHost := &mockHost{
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.MetricsDataType: {
-					config.NewComponentID("mock"): mockMetricsExporter,
+		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
+			return map[component.DataType]map[component.ID]component.Exporter{
+				component.DataTypeMetrics: {
+					component.NewID("mock"): mockMetricsExporter,
 				},
 			}
 		},
@@ -237,7 +237,7 @@ func sampleTraces() ptrace.Traces {
 func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExporter, component.TracesExporter) {
 	otlpExpFactory := otlpexporter.NewFactory()
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID("otlp")),
+		ExporterSettings: config.NewExporterSettings(component.NewID("otlp")),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
@@ -254,10 +254,10 @@ var _ component.Host = (*mockHost)(nil)
 
 type mockHost struct {
 	component.Host
-	GetExportersFunc func() map[config.DataType]map[config.ComponentID]component.Exporter
+	GetExportersFunc func() map[component.DataType]map[component.ID]component.Exporter
 }
 
-func (m *mockHost) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
+func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Exporter {
 	if m.GetExportersFunc != nil {
 		return m.GetExportersFunc()
 	}

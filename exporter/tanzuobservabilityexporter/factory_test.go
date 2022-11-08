@@ -16,24 +16,17 @@ package tanzuobservabilityexporter
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	require.NoError(t, configtest.CheckConfigStruct(cfg))
+	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 
 	actual, ok := cfg.(*Config)
 	require.True(t, ok, "invalid Config: %#v", cfg)
@@ -41,44 +34,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.False(t, actual.hasTracesEndpoint())
 	assert.False(t, actual.Metrics.ResourceAttrsIncluded)
 	assert.False(t, actual.Metrics.AppTagsExcluded)
-}
-
-func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[exporterType] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	actual, ok := cfg.Exporters[config.NewComponentID("tanzuobservability")]
-	require.True(t, ok)
-	expected := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID("tanzuobservability")),
-		Traces: TracesConfig{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:40001"},
-		},
-		Metrics: MetricsConfig{
-			HTTPClientSettings:    confighttp.HTTPClientSettings{Endpoint: "http://localhost:2916"},
-			ResourceAttrsIncluded: true,
-			AppTagsExcluded:       true,
-		},
-		QueueSettings: exporterhelper.QueueSettings{
-			Enabled:      true,
-			NumConsumers: 2,
-			QueueSize:    10,
-		},
-		RetrySettings: exporterhelper.RetrySettings{
-			Enabled:         true,
-			InitialInterval: 10 * time.Second,
-			MaxInterval:     60 * time.Second,
-			MaxElapsedTime:  10 * time.Minute,
-		},
-	}
-	assert.Equal(t, expected, actual)
 }
 
 func TestCreateExporter(t *testing.T) {

@@ -22,7 +22,7 @@ import (
 )
 
 // The value of extension "type" in configuration.
-const typeStr config.Type = "db_storage"
+const typeStr component.Type = "db_storage"
 
 // NewFactory creates a factory for DBStorage extension.
 func NewFactory() component.ExtensionFactory {
@@ -34,16 +34,16 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() config.Extension {
+func createDefaultConfig() component.ExtensionConfig {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 	}
 }
 
 func createExtension(
 	_ context.Context,
 	params component.ExtensionCreateSettings,
-	cfg config.Extension,
+	cfg component.ExtensionConfig,
 ) (component.Extension, error) {
 	return newDBStorage(params.Logger, cfg.(*Config))
 }

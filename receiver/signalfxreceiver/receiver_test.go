@@ -155,7 +155,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	}
 
 	expCfg := &signalfxexporter.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID("signalfx")),
+		ExporterSettings: config.NewExporterSettings(component.NewID("signalfx")),
 		IngestURL:        "http://" + addr,
 		APIURL:           "http://localhost",
 		AccessToken:      "access_token",

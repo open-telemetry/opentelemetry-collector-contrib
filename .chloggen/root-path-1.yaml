@@ -1,0 +1,4 @@
+change_type: enhancement
+component: hostmetricsreceiver
+note: "Added `root_path` config option, allowing the user to specify where the host filesystem is."
+issues: [5879, 16026]

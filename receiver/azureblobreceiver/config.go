@@ -14,9 +14,7 @@
 
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
-import (
-	"go.opentelemetry.io/collector/config"
-)
+import "go.opentelemetry.io/collector/config"
 
 type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"`

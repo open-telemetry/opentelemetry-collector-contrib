@@ -17,6 +17,7 @@ package awskinesisexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -56,4 +57,4 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
-var _ config.Exporter = (*Config)(nil)
+var _ component.ExporterConfig = (*Config)(nil)

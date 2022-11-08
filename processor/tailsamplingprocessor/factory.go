@@ -48,9 +48,9 @@ func NewFactory() component.ProcessorFactory {
 		component.WithTracesProcessor(createTracesProcessor, stability))
 }
 
-func createDefaultConfig() config.Processor {
+func createDefaultConfig() component.ProcessorConfig {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		DecisionWait:      30 * time.Second,
 		NumTraces:         50000,
 	}
@@ -59,7 +59,7 @@ func createDefaultConfig() config.Processor {
 func createTracesProcessor(
 	_ context.Context,
 	params component.ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg component.ProcessorConfig,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	tCfg := cfg.(*Config)

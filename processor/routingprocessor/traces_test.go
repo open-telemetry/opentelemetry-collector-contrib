@@ -46,7 +46,7 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 
 	otlpExpFactory := otlpexporter.NewFactory()
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID("otlp")),
+		ExporterSettings: config.NewExporterSettings(component.NewID("otlp")),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
@@ -56,9 +56,9 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.TracesDataType: {
+		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
+			return map[component.DataType]map[component.ID]component.Exporter{
+				component.DataTypeTraces: {
 					otlpConfig.ID(): otlpExp,
 				},
 			}
@@ -87,10 +87,10 @@ func TestTraces_InvalidExporter(t *testing.T) {
 
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.TracesDataType: {
-					config.NewComponentID("otlp"): &mockComponent{},
+		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
+			return map[component.DataType]map[component.ID]component.Exporter{
+				component.DataTypeTraces: {
+					component.NewID("otlp"): &mockComponent{},
 				},
 			}
 		},
@@ -109,11 +109,11 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.TracesDataType: {
-					config.NewComponentID("otlp"):              defaultExp,
-					config.NewComponentIDWithName("otlp", "2"): tExp,
+		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
+			return map[component.DataType]map[component.ID]component.Exporter{
+				component.DataTypeTraces: {
+					component.NewID("otlp"):              defaultExp,
+					component.NewIDWithName("otlp", "2"): tExp,
 				},
 			}
 		},
@@ -169,11 +169,11 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.TracesDataType: {
-					config.NewComponentID("otlp"):              defaultExp,
-					config.NewComponentIDWithName("otlp", "2"): tExp,
+		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
+			return map[component.DataType]map[component.ID]component.Exporter{
+				component.DataTypeTraces: {
+					component.NewID("otlp"):              defaultExp,
+					component.NewIDWithName("otlp", "2"): tExp,
 				},
 			}
 		},
@@ -233,11 +233,11 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.TracesDataType: {
-					config.NewComponentID("otlp"):              defaultExp,
-					config.NewComponentIDWithName("otlp", "2"): tExp,
+		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
+			return map[component.DataType]map[component.ID]component.Exporter{
+				component.DataTypeTraces: {
+					component.NewID("otlp"):              defaultExp,
+					component.NewIDWithName("otlp", "2"): tExp,
 				},
 			}
 		},
@@ -291,11 +291,11 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.TracesDataType: {
-					config.NewComponentID("otlp"):              defaultExp,
-					config.NewComponentIDWithName("otlp", "2"): tExp,
+		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
+			return map[component.DataType]map[component.ID]component.Exporter{
+				component.DataTypeTraces: {
+					component.NewID("otlp"):              defaultExp,
+					component.NewIDWithName("otlp", "2"): tExp,
 				},
 			}
 		},
@@ -341,12 +341,12 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.TracesDataType: {
-					config.NewComponentID("otlp"):              defaultExp,
-					config.NewComponentIDWithName("otlp", "1"): firstExp,
-					config.NewComponentIDWithName("otlp", "2"): secondExp,
+		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
+			return map[component.DataType]map[component.ID]component.Exporter{
+				component.DataTypeTraces: {
+					component.NewID("otlp"):              defaultExp,
+					component.NewIDWithName("otlp", "1"): firstExp,
+					component.NewIDWithName("otlp", "2"): secondExp,
 				},
 			}
 		},

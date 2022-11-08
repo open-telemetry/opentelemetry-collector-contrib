@@ -36,9 +36,9 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.ExporterConfig {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
@@ -63,7 +63,7 @@ func createDefaultConfig() config.Exporter {
 	}
 }
 
-func createTraceExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
+func createTraceExporter(ctx context.Context, set component.ExporterCreateSettings, config component.ExporterConfig) (component.TracesExporter, error) {
 	cfg := config.(*Config)
 
 	// Use deprecated jaeger endpoint if it's not empty
@@ -109,7 +109,7 @@ func createTraceExporter(ctx context.Context, set component.ExporterCreateSettin
 func createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.ExporterConfig,
 ) (component.MetricsExporter, error) {
 	oce, err := newMetricsExporter(cfg, set)
 	if err != nil {
@@ -133,7 +133,7 @@ func createMetricsExporter(
 func createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.ExporterConfig,
 ) (component.LogsExporter, error) {
 	oce, err := newLogsExporter(cfg, set)
 	if err != nil {

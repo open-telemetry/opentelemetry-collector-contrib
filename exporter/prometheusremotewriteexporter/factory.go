@@ -43,7 +43,7 @@ func NewFactory() component.ExporterFactory {
 }
 
 func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings,
-	cfg config.Exporter) (component.MetricsExporter, error) {
+	cfg component.ExporterConfig) (component.MetricsExporter, error) {
 
 	prwCfg, ok := cfg.(*Config)
 	if !ok {
@@ -82,9 +82,9 @@ func createMetricsExporter(ctx context.Context, set component.ExporterCreateSett
 	return resourcetotelemetry.WrapMetricsExporter(prwCfg.ResourceToTelemetrySettings, exporter), nil
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.ExporterConfig {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		Namespace:        "",
 		ExternalLabels:   map[string]string{},
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),

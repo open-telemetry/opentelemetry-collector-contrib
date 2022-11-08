@@ -23,7 +23,6 @@ import (
 	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
 	quotainformersv1 "github.com/openshift/client-go/quota/informers/externalversions"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -282,7 +281,7 @@ func (rw *resourceWatcher) waitForInitialInformerSync() {
 }
 
 func (rw *resourceWatcher) setupMetadataExporters(
-	exporters map[config.ComponentID]component.Exporter,
+	exporters map[component.ID]component.Exporter,
 	metadataExportersFromConfig []string,
 ) error {
 	var out []metadataConsumer
@@ -311,7 +310,7 @@ func (rw *resourceWatcher) setupMetadataExporters(
 }
 
 func validateMetadataExporters(metadataExporters map[string]bool,
-	exporters map[config.ComponentID]component.Exporter,
+	exporters map[component.ID]component.Exporter,
 ) error {
 	configuredExporters := map[string]bool{}
 	for cfg := range exporters {

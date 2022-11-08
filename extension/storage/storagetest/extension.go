@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
-var testStorageType config.Type = "test_storage"
+var testStorageType component.Type = "test_storage"
 
 // TestStorage is an in memory storage extension designed for testing
 type TestStorage struct {
@@ -33,8 +33,8 @@ type TestStorage struct {
 // Ensure this storage extension implements the appropriate interface
 var _ storage.Extension = (*TestStorage)(nil)
 
-func NewStorageID(name string) config.ComponentID {
-	return config.NewComponentIDWithName(testStorageType, name)
+func NewStorageID(name string) component.ID {
+	return component.NewIDWithName(testStorageType, name)
 }
 
 // NewInMemoryStorageExtension creates a TestStorage extension
@@ -67,7 +67,7 @@ func (s *TestStorage) Shutdown(ctx context.Context) error {
 }
 
 // GetClient returns a storage client for an individual component
-func (s *TestStorage) GetClient(ctx context.Context, kind component.Kind, ent config.ComponentID, name string) (storage.Client, error) {
+func (s *TestStorage) GetClient(ctx context.Context, kind component.Kind, ent component.ID, name string) (storage.Client, error) {
 	var client *TestClient
 	if s.storageDir == "" {
 		client = NewInMemoryClient(kind, ent, name)
@@ -77,7 +77,7 @@ func (s *TestStorage) GetClient(ctx context.Context, kind component.Kind, ent co
 	return client, setCreatorID(ctx, client, s.ID())
 }
 
-var nonStorageType config.Type = "non_storage"
+var nonStorageType component.Type = "non_storage"
 
 // NonStorage is useful for testing expected behaviors that involve
 // non-storage extensions
@@ -88,8 +88,8 @@ type NonStorage struct {
 // Ensure this extension implements the appropriate interface
 var _ component.Extension = (*NonStorage)(nil)
 
-func NewNonStorageID(name string) config.ComponentID {
-	return config.NewComponentIDWithName(nonStorageType, name)
+func NewNonStorageID(name string) component.ID {
+	return component.NewIDWithName(nonStorageType, name)
 }
 
 // NewNonStorageExtension creates a NonStorage extension

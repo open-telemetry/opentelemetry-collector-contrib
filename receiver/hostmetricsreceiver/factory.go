@@ -17,9 +17,9 @@ package hostmetricsreceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -75,7 +75,7 @@ func getScraperFactory(key string) (internal.ScraperFactory, bool) {
 }
 
 // createDefaultConfig creates the default configuration for receiver.
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.ReceiverConfig {
 	return &Config{ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr)}
 }
 
@@ -83,13 +83,17 @@ func createDefaultConfig() config.Receiver {
 func createMetricsReceiver(
 	ctx context.Context,
 	set component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	cfg component.ReceiverConfig,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	oCfg := cfg.(*Config)
 
 	addScraperOptions, err := createAddScraperOptions(ctx, set, oCfg, scraperFactories)
 	if err != nil {
+		return nil, err
+	}
+
+	if err = setGoPsutilEnvVars(oCfg.RootPath, &osEnv{}); err != nil {
 		return nil, err
 	}
 
@@ -136,4 +140,21 @@ func createHostMetricsScraper(ctx context.Context, set component.ReceiverCreateS
 	ok = true
 	scraper, err = factory.CreateMetricsScraper(ctx, set, cfg)
 	return
+}
+
+type environment interface {
+	Lookup(k string) (string, bool)
+	Set(k, v string) error
+}
+
+type osEnv struct{}
+
+var _ environment = (*osEnv)(nil)
+
+func (e *osEnv) Set(k, v string) error {
+	return os.Setenv(k, v)
+}
+
+func (e *osEnv) Lookup(k string) (string, bool) {
+	return os.LookupEnv(k)
 }
