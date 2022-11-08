@@ -33,7 +33,7 @@ The following configuration settings are optional:
 
 ```yaml
 receivers:
-  http_check:
+  httpcheck:
     endpoint: http://endpoint:80
     method: GET
     collection_interval: 10s
