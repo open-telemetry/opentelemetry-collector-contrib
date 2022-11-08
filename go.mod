@@ -180,7 +180,7 @@ require (
 	cloud.google.com/go/iam v0.6.0 // indirect
 	cloud.google.com/go/logging v1.4.2 // indirect
 	cloud.google.com/go/longrunning v0.1.1 // indirect
-	cloud.google.com/go/monitoring v1.7.0 // indirect
+	cloud.google.com/go/monitoring v1.8.0 // indirect
 	cloud.google.com/go/pubsub v1.26.0 // indirect
 	cloud.google.com/go/spanner v1.40.0 // indirect
 	cloud.google.com/go/trace v1.3.0 // indirect
