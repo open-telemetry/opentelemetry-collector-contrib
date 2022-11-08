@@ -60,7 +60,7 @@ const (
 	logLevelFatal = "fatal"
 )
 
-// This constant specifies a tag to be added to all logs sent from the Datadog exporter
+// otelTag specifies a tag to be added to all logs sent from the Datadog exporter
 const otelTag = "otel_source:datadog_exporter"
 
 // Transform converts the log record in lr, which came in with the resource in res to a Datadog log item.
@@ -90,7 +90,7 @@ func Transform(lr plog.LogRecord, res pcommon.Resource, logger *zap.Logger) data
 			status = v.AsString()
 		case "traceid", "contextmap.traceid", "oteltraceid":
 			if traceID, err := decodeTraceID(v.AsString()); err != nil {
-				logger.Error("failed to decode trace id",
+				logger.Warn("failed to decode trace id",
 					zap.String("trace_id", v.AsString()),
 					zap.Error(err))
 			} else if l.AdditionalProperties[ddTraceID] == "" {
@@ -99,10 +99,10 @@ func Transform(lr plog.LogRecord, res pcommon.Resource, logger *zap.Logger) data
 			}
 		case "spanid", "contextmap.spanid", "otelspanid":
 			if spanID, err := decodeSpanID(v.AsString()); err != nil {
-				logger.Error("failed to decode span id",
+				logger.Warn("failed to decode span id",
 					zap.String("span_id", v.AsString()),
 					zap.Error(err))
-			} else {
+			} else if l.AdditionalProperties[ddSpanID] == "" {
 				l.AdditionalProperties[ddSpanID] = strconv.FormatUint(spanIDToUint64(spanID), 10)
 				l.AdditionalProperties[otelSpanID] = v.AsString()
 			}
