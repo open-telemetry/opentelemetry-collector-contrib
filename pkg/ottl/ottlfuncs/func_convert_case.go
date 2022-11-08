@@ -36,36 +36,34 @@ func ConvertCase[K any](target ottl.Getter[K], toCase string) (ottl.ExprFunc[K],
 			return nil, err
 		}
 
-		if val != nil {
+		if valStr, ok := val.(string); ok {
 
-			if valStr, ok := val.(string); ok {
+			if valStr == "" {
+				return valStr, nil
+			}
 
-				if valStr == "" {
-					return valStr, nil
-				}
+			switch toCase {
+			// Convert string to lowercase (SOME_NAME -> some_name)
+			case "lower":
+				return strings.ToLower(valStr), nil
 
-				switch toCase {
-				// Convert string to lowercase (SOME_NAME -> some_name)
-				case "lower":
-					return strings.ToLower(valStr), nil
+			// Convert string to uppercase (some_name -> SOME_NAME)
+			case "upper":
+				return strings.ToUpper(valStr), nil
 
-				// Convert string to uppercase (some_name -> SOME_NAME)
-				case "upper":
-					return strings.ToUpper(valStr), nil
+			// Convert string to snake case (someName -> some_name)
+			case "snake":
+				return strcase.ToSnake(valStr), nil
 
-				// Convert string to snake case (someName -> some_name)
-				case "snake":
-					return strcase.ToSnake(valStr), nil
+			// Convert string to camel case (some_name -> SomeName)
+			case "camel":
+				return strcase.ToCamel(valStr), nil
 
-				// Convert string to camel case (some_name -> SomeName)
-				case "camel":
-					return strcase.ToCamel(valStr), nil
-
-				default:
-					return nil, fmt.Errorf("error handling unexpected case: %s", toCase)
-				}
+			default:
+				return nil, fmt.Errorf("error handling unexpected case: %s", toCase)
 			}
 		}
+
 		return nil, nil
 	}, nil
 }
