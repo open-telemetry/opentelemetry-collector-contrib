@@ -3,16 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/stora
 go 1.18
 
 require (
+	github.com/jackc/pgx/v4 v4.17.2
+	github.com/mattn/go-sqlite3 v2.0.3+incompatible
 	github.com/stretchr/testify v1.8.1
 	go.etcd.io/bbolt v1.3.6
 	go.opentelemetry.io/collector v0.63.2-0.20221108014805-0b08d5316426
 	go.uber.org/zap v1.23.0
-
-)
-
-require (
-	github.com/jackc/pgx/v4 v4.17.2
-	github.com/mattn/go-sqlite3 v2.0.3+incompatible
 )
 
 require (
