@@ -81,6 +81,7 @@ These are the metrics available for this scraper.
 | **jvm.gc.collections.elapsed** | The approximate accumulated collection elapsed time | ms | Sum(Int) | <ul> <li>collector_name</li> </ul> |
 | **jvm.memory.heap.committed** | The amount of memory that is guaranteed to be available for the heap | By | Gauge(Int) | <ul> </ul> |
 | **jvm.memory.heap.max** | The maximum amount of memory can be used for the heap | By | Gauge(Int) | <ul> </ul> |
+| jvm.memory.heap.percentage | Percentage of heap memory usage | % | Gauge(Int) | <ul> </ul> |
 | **jvm.memory.heap.used** | The current heap memory usage | By | Gauge(Int) | <ul> </ul> |
 | **jvm.memory.nonheap.committed** | The amount of memory that is guaranteed to be available for non-heap purposes | By | Gauge(Int) | <ul> </ul> |
 | **jvm.memory.nonheap.used** | The current non-heap memory usage | By | Gauge(Int) | <ul> </ul> |

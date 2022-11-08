@@ -234,6 +234,8 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 
 		r.mb.RecordJvmThreadsCountDataPoint(now, info.JVMInfo.JVMThreadInfo.Count)
 
+		r.mb.RecordJvmMemoryHeapPercentageDataPoint(now, info.JVMInfo.JVMMemoryInfo.HeapUsedPercent)
+
 		// Elasticsearch version 7.10+ is required to collect `elasticsearch.indexing_pressure.memory.limit`.
 		// Reference: https://github.com/elastic/elasticsearch/pull/60342/files#diff-13864344bab3afc267797d67b2746e2939a3fd8af7611ac9fbda376323e2f5eaR37
 		if r.version != nil && r.version.GreaterThanOrEqual(es7_10) {
