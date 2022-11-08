@@ -89,23 +89,21 @@ func Transform(lr plog.LogRecord, res pcommon.Resource, logger *zap.Logger) data
 		case "status", "severity", "level", "syslog.severity":
 			status = v.AsString()
 		case "traceid", "contextmap.traceid", "oteltraceid":
-			ret, err := decodeTraceID(v.AsString())
-			if err != nil {
+			if traceID, err := decodeTraceID(v.AsString()); err != nil {
 				logger.Error("failed to decode trace id",
 					zap.String("trace_id", v.AsString()),
 					zap.Error(err))
 			} else if l.AdditionalProperties[ddTraceID] == "" {
-				l.AdditionalProperties[ddTraceID] = strconv.FormatUint(traceIDToUint64(ret), 10)
+				l.AdditionalProperties[ddTraceID] = strconv.FormatUint(traceIDToUint64(traceID), 10)
 				l.AdditionalProperties[otelTraceID] = v.AsString()
 			}
 		case "spanid", "contextmap.spanid", "otelspanid":
-			ret, err := decodeSpanID(v.AsString())
-			if err != nil {
+			if spanID, err := decodeSpanID(v.AsString()); err != nil {
 				logger.Error("failed to decode span id",
 					zap.String("span_id", v.AsString()),
 					zap.Error(err))
 			} else {
-				l.AdditionalProperties[ddSpanID] = strconv.FormatUint(spanIDToUint64(ret), 10)
+				l.AdditionalProperties[ddSpanID] = strconv.FormatUint(spanIDToUint64(spanID), 10)
 				l.AdditionalProperties[otelSpanID] = v.AsString()
 			}
 		case "ddtags":
