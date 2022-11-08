@@ -45,6 +45,7 @@ func TestScraper(t *testing.T) {
 
 	config.Metrics.ElasticsearchNodeOperationsGetCompleted.Enabled = true
 	config.Metrics.ElasticsearchNodeOperationsGetTime.Enabled = true
+	config.Metrics.ElasticsearchNodeSegmentsMemory.Enabled = true
 
 	config.Metrics.JvmMemoryHeapUtilization.Enabled = true
 

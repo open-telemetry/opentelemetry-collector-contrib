@@ -63,6 +63,7 @@ These are the metrics available for this scraper.
 | **elasticsearch.node.script.cache_evictions** | Total number of times the script cache has evicted old data. | 1 | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.script.compilation_limit_triggered** | Total number of times the script compilation circuit breaker has limited inline script compilations. | 1 | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.script.compilations** | Total number of inline script compilations performed by the node. | {compilations} | Sum(Int) | <ul> </ul> |
+| elasticsearch.node.segments.memory | Size of memory for segment object of a node. | By | Sum(Int) | <ul> <li>segments_memory_object_type</li> </ul> |
 | **elasticsearch.node.shards.data_set.size** | Total data set size of all shards assigned to the node. This includes the size of shards not stored fully on the node, such as the cache for partially mounted indices. | By | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.shards.reserved.size** | A prediction of how much larger the shard stores on this node will eventually grow due to ongoing peer recoveries, restoring snapshots, and similar activities. A value of -1 indicates that this is not available. | By | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.shards.size** | The size of the shards assigned to this node. | By | Sum(Int) | <ul> </ul> |
