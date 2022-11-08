@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	cloudmonitoringpb "cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -29,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"google.golang.org/api/option"
 	cloudmetricpb "google.golang.org/genproto/googleapis/api/metric"
-	cloudmonitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/emptypb"
