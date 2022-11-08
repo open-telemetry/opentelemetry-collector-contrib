@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -27,14 +28,14 @@ import (
 func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		configFile string
-		id         config.ComponentID
-		expected   config.Processor
+		id         component.ID
+		expected   component.ProcessorConfig
 	}{
 		{
 			configFile: "config_full.yaml",
-			id:         config.NewComponentID(typeStr),
+			id:         component.NewID(typeStr),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Transforms: []Transform{
 					{
 						MetricIncludeFilter: FilterConfig{
@@ -49,9 +50,9 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			configFile: "config_full.yaml",
-			id:         config.NewComponentIDWithName(typeStr, "multiple"),
+			id:         component.NewIDWithName(typeStr, "multiple"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Transforms: []Transform{
 					{
 						MetricIncludeFilter: FilterConfig{
@@ -165,7 +166,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
 
 			assert.NoError(t, cfg.Validate())
 			assert.Equal(t, tt.expected, cfg)

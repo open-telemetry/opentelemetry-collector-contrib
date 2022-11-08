@@ -17,6 +17,7 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"errors"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
 )
@@ -70,7 +71,7 @@ type Rotation struct {
 	LocalTime bool `mapstructure:"localtime"`
 }
 
-var _ config.Exporter = (*Config)(nil)
+var _ component.ExporterConfig = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {

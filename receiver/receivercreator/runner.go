@@ -20,7 +20,6 @@ import (
 
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
@@ -37,7 +36,7 @@ type runner interface {
 // receiverRunner handles starting/stopping of a concrete subreceiver instance.
 type receiverRunner struct {
 	params      component.ReceiverCreateSettings
-	idNamespace config.ComponentID
+	idNamespace component.ID
 	host        component.Host
 }
 
@@ -84,7 +83,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	factory component.ReceiverFactory,
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
-) (config.Receiver, error) {
+) (component.ReceiverConfig, error) {
 	// Merge in the config values specified in the config file.
 	mergedConfig := confmap.NewFromStringMap(receiver.config)
 
@@ -96,7 +95,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	receiverCfg := factory.CreateDefaultConfig()
 	receiverCfg.SetIDName(receiver.id.Name())
 
-	if err := config.UnmarshalReceiver(mergedConfig, receiverCfg); err != nil {
+	if err := component.UnmarshalReceiverConfig(mergedConfig, receiverCfg); err != nil {
 		return nil, fmt.Errorf("failed to load template config: %w", err)
 	}
 	// Sets dynamically created receiver to something like receiver_creator/1/redis{endpoint="localhost:6380"}/<EndpointID>.
@@ -107,7 +106,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 // createRuntimeReceiver creates a receiver that is discovered at runtime.
 func (run *receiverRunner) createRuntimeReceiver(
 	factory component.ReceiverFactory,
-	cfg config.Receiver,
+	cfg component.ReceiverConfig,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	runParams := run.params

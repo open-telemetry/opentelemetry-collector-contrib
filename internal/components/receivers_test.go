@@ -32,7 +32,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	tcpop "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
@@ -57,7 +56,7 @@ func TestDefaultReceivers(t *testing.T) {
 	rcvrFactories := allFactories.Receivers
 
 	tests := []struct {
-		receiver     config.Type
+		receiver     component.Type
 		skipLifecyle bool
 		getConfigFn  getReceiverConfigFn
 	}{
@@ -73,7 +72,7 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "awscloudwatch",
-			getConfigFn: func() config.Receiver {
+			getConfigFn: func() component.ReceiverConfig {
 				cfg := rcvrFactories["awscloudwatch"].CreateDefaultConfig().(*awscloudwatchreceiver.Config)
 				cfg.Region = "us-west-2"
 				cfg.Logs.Groups = awscloudwatchreceiver.GroupConfig{AutodiscoverConfig: nil}
@@ -98,7 +97,7 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "azureeventhub",
-			getConfigFn: func() config.Receiver {
+			getConfigFn: func() component.ReceiverConfig {
 				cfg := rcvrFactories["azureeventhub"].CreateDefaultConfig().(*azureeventhubreceiver.Config)
 				cfg.Connection = "Endpoint=sb://example.com/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
 				return cfg
@@ -110,7 +109,7 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "carbon",
-			getConfigFn: func() config.Receiver {
+			getConfigFn: func() component.ReceiverConfig {
 				cfg := rcvrFactories["carbon"].CreateDefaultConfig().(*carbonreceiver.Config)
 				cfg.Endpoint = "0.0.0.0:0"
 				return cfg
@@ -123,7 +122,7 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "chrony",
-			getConfigFn: func() config.Receiver {
+			getConfigFn: func() component.ReceiverConfig {
 				cfg := rcvrFactories["chrony"].CreateDefaultConfig().(*chronyreceiver.Config)
 				cfg.Endpoint = "udp://localhost:323"
 				return cfg
@@ -151,7 +150,7 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "filelog",
-			getConfigFn: func() config.Receiver {
+			getConfigFn: func() component.ReceiverConfig {
 				cfg := rcvrFactories["filelog"].CreateDefaultConfig().(*filelogreceiver.FileLogConfig)
 				cfg.InputConfig.Include = []string{filepath.Join(t.TempDir(), "*")}
 				return cfg
@@ -226,7 +225,7 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver: "mongodbatlas",
 			// MongoDB Atlas needs unique config IDs
-			getConfigFn: func() config.Receiver {
+			getConfigFn: func() component.ReceiverConfig {
 				cfg := rcvrFactories["mongodbatlas"].CreateDefaultConfig().(*mongodbatlasreceiver.Config)
 				cfg.SetIDName(strconv.Itoa(int(time.Now().UnixNano())))
 				cfg.Logs.Enabled = true
@@ -254,7 +253,7 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "otlpjsonfile",
-			getConfigFn: func() config.Receiver {
+			getConfigFn: func() component.ReceiverConfig {
 				cfg := rcvrFactories["otlpjsonfile"].CreateDefaultConfig().(*otlpjsonfilereceiver.Config)
 				cfg.Include = []string{"/tmp/*.log"}
 				return cfg
@@ -269,7 +268,7 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "prometheus",
-			getConfigFn: func() config.Receiver {
+			getConfigFn: func() component.ReceiverConfig {
 				cfg := rcvrFactories["prometheus"].CreateDefaultConfig().(*prometheusreceiver.Config)
 				cfg.PrometheusConfig = &promconfig.Config{
 					ScrapeConfigs: []*promconfig.ScrapeConfig{
@@ -316,7 +315,7 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "snmp",
-			getConfigFn: func() config.Receiver {
+			getConfigFn: func() component.ReceiverConfig {
 				cfg := rcvrFactories["snmp"].CreateDefaultConfig().(*snmpreceiver.Config)
 				cfg.Metrics = map[string]*snmpreceiver.MetricConfig{
 					"m1": {
@@ -363,7 +362,7 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "syslog",
-			getConfigFn: func() config.Receiver {
+			getConfigFn: func() component.ReceiverConfig {
 				cfg := rcvrFactories["syslog"].CreateDefaultConfig().(*syslogreceiver.SysLogConfig)
 				cfg.InputConfig.TCP = &tcpop.NewConfig().BaseConfig
 				cfg.InputConfig.TCP.ListenAddress = "0.0.0.0:0"
@@ -373,7 +372,7 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "tcplog",
-			getConfigFn: func() config.Receiver {
+			getConfigFn: func() component.ReceiverConfig {
 				cfg := rcvrFactories["tcplog"].CreateDefaultConfig().(*tcplogreceiver.TCPLogConfig)
 				cfg.InputConfig.ListenAddress = "0.0.0.0:0"
 				return cfg
@@ -381,7 +380,7 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "udplog",
-			getConfigFn: func() config.Receiver {
+			getConfigFn: func() component.ReceiverConfig {
 				cfg := rcvrFactories["udplog"].CreateDefaultConfig().(*udplogreceiver.UDPLogConfig)
 				cfg.InputConfig.ListenAddress = "0.0.0.0:0"
 				return cfg
@@ -402,7 +401,7 @@ func TestDefaultReceivers(t *testing.T) {
 			factory, ok := rcvrFactories[tt.receiver]
 			require.True(t, ok)
 			assert.Equal(t, tt.receiver, factory.Type())
-			assert.Equal(t, config.NewComponentID(tt.receiver), factory.CreateDefaultConfig().ID())
+			assert.Equal(t, component.NewID(tt.receiver), factory.CreateDefaultConfig().ID())
 
 			if tt.skipLifecyle {
 				t.Skip("Skipping lifecycle test", tt.receiver)
@@ -417,7 +416,7 @@ func TestDefaultReceivers(t *testing.T) {
 // getReceiverConfigFn is used customize the configuration passed to the verification.
 // This is used to change ports or provide values required but not provided by the
 // default configuration.
-type getReceiverConfigFn func() config.Receiver
+type getReceiverConfigFn func() component.ReceiverConfig
 
 // verifyReceiverLifecycle is used to test if a receiver type can handle the typical
 // lifecycle of a component. The getConfigFn parameter only need to be specified if
@@ -457,23 +456,23 @@ func verifyReceiverLifecycle(t *testing.T, factory component.ReceiverFactory, ge
 type createReceiverFn func(
 	ctx context.Context,
 	set component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	cfg component.ReceiverConfig,
 ) (component.Receiver, error)
 
 func wrapCreateLogsRcvr(factory component.ReceiverFactory) createReceiverFn {
-	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg config.Receiver) (component.Receiver, error) {
+	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg component.ReceiverConfig) (component.Receiver, error) {
 		return factory.CreateLogsReceiver(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateMetricsRcvr(factory component.ReceiverFactory) createReceiverFn {
-	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg config.Receiver) (component.Receiver, error) {
+	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg component.ReceiverConfig) (component.Receiver, error) {
 		return factory.CreateMetricsReceiver(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateTracesRcvr(factory component.ReceiverFactory) createReceiverFn {
-	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg config.Receiver) (component.Receiver, error) {
+	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg component.ReceiverConfig) (component.Receiver, error) {
 		return factory.CreateTracesReceiver(ctx, set, cfg, consumertest.NewNop())
 	}
 }

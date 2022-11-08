@@ -43,9 +43,9 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.ExporterConfig {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		HTTPClientSettings: HTTPClientSettings{
 			Timeout: 90 * time.Second,
 		},
@@ -72,7 +72,7 @@ func createDefaultConfig() config.Exporter {
 func createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.ExporterConfig,
 ) (component.LogsExporter, error) {
 	if cfg.(*Config).Index != "" {
 		set.Logger.Warn("index option are deprecated and replaced with logs_index and traces_index.")
@@ -94,7 +94,7 @@ func createLogsExporter(
 
 func createTracesExporter(ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter) (component.TracesExporter, error) {
+	cfg component.ExporterConfig) (component.TracesExporter, error) {
 
 	exporter, err := newTracesExporter(set.Logger, cfg.(*Config))
 	if err != nil {

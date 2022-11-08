@@ -44,10 +44,10 @@ func NewFactory() component.ReceiverFactory {
 }
 
 // createDefaultConfig creates a config for Big-IP with as many default values as possible
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.ReceiverConfig {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 			CollectionInterval: 10 * time.Second,
 		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -59,7 +59,7 @@ func createDefaultConfig() config.Receiver {
 }
 
 // creates the metric receiver for Big-IP
-func createMetricsReceiver(_ context.Context, params component.ReceiverCreateSettings, rConf config.Receiver, consumer consumer.Metrics) (component.MetricsReceiver, error) {
+func createMetricsReceiver(_ context.Context, params component.ReceiverCreateSettings, rConf component.ReceiverConfig, consumer consumer.Metrics) (component.MetricsReceiver, error) {
 	cfg, ok := rConf.(*Config)
 	if !ok {
 		return nil, errConfigNotBigip

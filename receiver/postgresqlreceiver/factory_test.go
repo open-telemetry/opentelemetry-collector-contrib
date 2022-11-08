@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -47,7 +48,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		componenttest.NewNopReceiverCreateSettings(),
 		&Config{
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID("postgresql")),
+				ReceiverSettings:   config.NewReceiverSettings(component.NewID("postgresql")),
 				CollectionInterval: 10 * time.Second,
 			},
 			Username: "otel",

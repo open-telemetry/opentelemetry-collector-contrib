@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -31,14 +32,14 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id           config.ComponentID
-		expected     config.Exporter
+		id           component.ID
+		expected     component.ExporterConfig
 		errorMessage string
 	}{
 		{
-			id: config.NewComponentIDWithName(typeStr, ""),
+			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				ClusterURI:       "https://CLUSTER.kusto.windows.net",
 				ApplicationID:    "f80da32c-108c-415c-a19e-643f461a677a",
 				ApplicationKey:   "xx-xx-xx-xx",
@@ -51,11 +52,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "2"),
+			id:           component.NewIDWithName(typeStr, "2"),
 			errorMessage: `mandatory configurations "cluster_uri" ,"application_id" , "application_key" and "tenant_id" are missing or empty `,
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "3"),
+			id:           component.NewIDWithName(typeStr, "3"),
 			errorMessage: `unsupported configuration for ingestion_type. Accepted types [managed, queued] Provided [streaming]`,
 		},
 	}
@@ -67,7 +68,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalExporter(sub, cfg))
+			require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
 			if tt.expected == nil {
 				assert.EqualError(t, cfg.Validate(), tt.errorMessage)

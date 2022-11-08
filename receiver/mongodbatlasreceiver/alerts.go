@@ -33,7 +33,6 @@ import (
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -91,8 +90,8 @@ type alertsReceiver struct {
 	pageSize      int64
 	maxPages      int64
 	doneChan      chan bool
-	id            config.ComponentID  // ID of the receiver component
-	storageID     *config.ComponentID // ID of the storage extension component
+	id            component.ID  // ID of the receiver component
+	storageID     *component.ID // ID of the storage extension component
 	storageClient storage.Client
 }
 

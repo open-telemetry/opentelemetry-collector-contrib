@@ -125,7 +125,7 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
-	receiverID := config.NewComponentID("TestSegmentsPassedToConsumer")
+	receiverID := component.NewID("TestSegmentsPassedToConsumer")
 
 	addr, rcvr, _ := createAndOptionallyStartReceiver(t, receiverID, nil, true, tt.ToReceiverCreateSettings())
 	defer func() {
@@ -157,7 +157,7 @@ func TestTranslatorErrorsOut(t *testing.T) {
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
-	receiverID := config.NewComponentID("TestTranslatorErrorsOut")
+	receiverID := component.NewID("TestTranslatorErrorsOut")
 
 	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverID, nil, true, tt.ToReceiverCreateSettings())
 	defer func() {
@@ -185,7 +185,7 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
-	receiverID := config.NewComponentID("TestSegmentsConsumerErrorsOut")
+	receiverID := component.NewID("TestSegmentsConsumerErrorsOut")
 
 	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverID,
 		consumertest.NewErr(errors.New("can't consume traces")), true, tt.ToReceiverCreateSettings())
@@ -217,7 +217,7 @@ func TestPollerCloseError(t *testing.T) {
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
-	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewComponentID("TestPollerCloseError"), nil, false, tt.ToReceiverCreateSettings())
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, component.NewID("TestPollerCloseError"), nil, false, tt.ToReceiverCreateSettings())
 	mPoller := &mockPoller{closeErr: errors.New("mockPollerCloseErr")}
 	rcvr.(*xrayReceiver).poller = mPoller
 	rcvr.(*xrayReceiver).server = &mockProxy{}
@@ -234,7 +234,7 @@ func TestProxyCloseError(t *testing.T) {
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
-	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewComponentID("TestPollerCloseError"), nil, false, tt.ToReceiverCreateSettings())
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, component.NewID("TestPollerCloseError"), nil, false, tt.ToReceiverCreateSettings())
 	mProxy := &mockProxy{closeErr: errors.New("mockProxyCloseErr")}
 	rcvr.(*xrayReceiver).poller = &mockPoller{}
 	rcvr.(*xrayReceiver).server = mProxy
@@ -251,7 +251,7 @@ func TestBothPollerAndProxyCloseError(t *testing.T) {
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
-	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewComponentID("TestBothPollerAndProxyCloseError"), nil, false, tt.ToReceiverCreateSettings())
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, component.NewID("TestBothPollerAndProxyCloseError"), nil, false, tt.ToReceiverCreateSettings())
 	mPoller := &mockPoller{closeErr: errors.New("mockPollerCloseErr")}
 	mProxy := &mockProxy{closeErr: errors.New("mockProxyCloseErr")}
 	rcvr.(*xrayReceiver).poller = mPoller
@@ -295,7 +295,7 @@ func (m *mockProxy) Shutdown(ctx context.Context) error {
 
 func createAndOptionallyStartReceiver(
 	t *testing.T,
-	receiverID config.ComponentID,
+	receiverID component.ID,
 	csu consumer.Traces,
 	start bool,
 	set component.ReceiverCreateSettings) (string, component.TracesReceiver, *observer.ObservedLogs) {

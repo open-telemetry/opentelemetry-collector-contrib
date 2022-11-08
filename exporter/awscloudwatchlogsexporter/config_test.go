@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -37,14 +38,14 @@ func TestLoadConfig(t *testing.T) {
 	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
 
 	tests := []struct {
-		id           config.ComponentID
-		expected     config.Exporter
+		id           component.ID
+		expected     component.ExporterConfig
 		errorMessage string
 	}{
 		{
-			id: config.NewComponentIDWithName(typeStr, "e1-defaults"),
+			id: component.NewIDWithName(typeStr, "e1-defaults"),
 			expected: &Config{
-				ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings:   config.NewExporterSettings(component.NewID(typeStr)),
 				RetrySettings:      defaultRetrySettings,
 				LogGroupName:       "test-1",
 				LogStreamName:      "testing",
@@ -56,9 +57,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "e2-no-retries-short-queue"),
+			id: component.NewIDWithName(typeStr, "e2-no-retries-short-queue"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				RetrySettings: exporterhelper.RetrySettings{
 					Enabled:         false,
 					InitialInterval: defaultRetrySettings.InitialInterval,
@@ -74,19 +75,19 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "invalid_queue_size"),
+			id:           component.NewIDWithName(typeStr, "invalid_queue_size"),
 			errorMessage: "'sending_queue.queue_size' must be 1 or greater",
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "invalid_required_field_stream"),
+			id:           component.NewIDWithName(typeStr, "invalid_required_field_stream"),
 			errorMessage: "'log_stream_name' must be set",
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "invalid_required_field_group"),
+			id:           component.NewIDWithName(typeStr, "invalid_required_field_group"),
 			errorMessage: "'log_group_name' must be set",
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "invalid_queue_setting"),
+			id:           component.NewIDWithName(typeStr, "invalid_queue_setting"),
 			errorMessage: `'sending_queue' has invalid keys: enabled, num_consumers`,
 		},
 	}
@@ -98,7 +99,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			err = config.UnmarshalExporter(sub, cfg)
+			err = component.UnmarshalExporterConfig(sub, cfg)
 
 			if tt.expected == nil {
 				err = multierr.Append(err, cfg.Validate())
@@ -114,7 +115,7 @@ func TestLoadConfig(t *testing.T) {
 func TestRetentionValidateCorrect(t *testing.T) {
 	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
 	cfg := &Config{
-		ExporterSettings:   config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "1")),
+		ExporterSettings:   config.NewExporterSettings(component.NewIDWithName(typeStr, "1")),
 		RetrySettings:      defaultRetrySettings,
 		LogGroupName:       "test-1",
 		LogStreamName:      "testing",
@@ -132,7 +133,7 @@ func TestRetentionValidateCorrect(t *testing.T) {
 func TestRetentionValidateWrong(t *testing.T) {
 	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
 	wrongcfg := &Config{
-		ExporterSettings:   config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
+		ExporterSettings:   config.NewExporterSettings(component.NewIDWithName(typeStr, "2")),
 		RetrySettings:      defaultRetrySettings,
 		LogGroupName:       "test-1",
 		LogStreamName:      "testing",

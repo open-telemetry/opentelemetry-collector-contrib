@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -53,7 +53,7 @@ func TestLoadConfigRootPath(t *testing.T) {
 	require.NoError(t, err)
 	globalRootPath = ""
 
-	r := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
+	r := cfg.Receivers[component.NewID(typeStr)].(*Config)
 	expectedConfig := factory.CreateDefaultConfig().(*Config)
 	expectedConfig.RootPath = "testdata"
 	cpuScraperCfg := (&cpuscraper.Factory{}).CreateDefaultConfig()

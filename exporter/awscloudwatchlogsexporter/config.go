@@ -17,6 +17,7 @@ package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelem
 import (
 	"errors"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -62,7 +63,7 @@ type QueueSettings struct {
 	QueueSize int `mapstructure:"queue_size"`
 }
 
-var _ config.Exporter = (*Config)(nil)
+var _ component.ExporterConfig = (*Config)(nil)
 
 // Validate config
 func (config *Config) Validate() error {

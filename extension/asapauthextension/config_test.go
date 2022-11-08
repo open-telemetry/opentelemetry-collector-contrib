@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -38,14 +39,14 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id          config.ComponentID
-		expected    config.Extension
+		id          component.ID
+		expected    component.ExtensionConfig
 		expectedErr error
 	}{
 		{
-			id: config.NewComponentID(typeStr),
+			id: component.NewID(typeStr),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+				ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 				TTL:               60 * time.Second,
 				Audience:          []string{"test_service1", "test_service2"},
 				Issuer:            "test_issuer",
@@ -54,19 +55,19 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "missingkeyid"),
+			id:          component.NewIDWithName(typeStr, "missingkeyid"),
 			expectedErr: errNoKeyIDProvided,
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "missingissuer"),
+			id:          component.NewIDWithName(typeStr, "missingissuer"),
 			expectedErr: errNoIssuerProvided,
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "missingaudience"),
+			id:          component.NewIDWithName(typeStr, "missingaudience"),
 			expectedErr: errNoAudienceProvided,
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "missingpk"),
+			id:          component.NewIDWithName(typeStr, "missingpk"),
 			expectedErr: errNoPrivateKeyProvided,
 		},
 	}
@@ -78,7 +79,7 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalExtension(sub, cfg))
+			require.NoError(t, component.UnmarshalExtensionConfig(sub, cfg))
 			if tt.expectedErr != nil {
 				assert.ErrorIs(t, cfg.Validate(), tt.expectedErr)
 				return

@@ -23,7 +23,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/kinesis"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -47,7 +46,7 @@ var (
 	_ component.LogsExporter    = (*Exporter)(nil)
 )
 
-func createExporter(ctx context.Context, c config.Exporter, log *zap.Logger) (*Exporter, error) {
+func createExporter(ctx context.Context, c component.ExporterConfig, log *zap.Logger) (*Exporter, error) {
 	conf, ok := c.(*Config)
 	if !ok || conf == nil {
 		return nil, errors.New("incorrect config provided")
