@@ -27,6 +27,3 @@ extension/fluentbitextension
 ## UNMANTAINED components
 extension/httpforwarder
 receiver/dotnetdiagnosticsreceiver
-
-# OTHER; Looking for an owner
-pkg/experimentalmetricmetadata
