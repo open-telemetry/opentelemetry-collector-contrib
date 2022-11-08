@@ -93,41 +93,52 @@ func TestGetStatusCodeFromHTTPStatusAttr(t *testing.T) {
 	tests := []struct {
 		name string
 		attr pcommon.Value
+		kind ptrace.SpanKind
 		code ptrace.StatusCode
 	}{
 		{
 			name: "string-unknown",
 			attr: pcommon.NewValueStr("10"),
+			kind: ptrace.SpanKindClient,
 			code: ptrace.StatusCodeError,
 		},
 
 		{
 			name: "string-ok",
 			attr: pcommon.NewValueStr("101"),
+			kind: ptrace.SpanKindClient,
 			code: ptrace.StatusCodeUnset,
 		},
 
 		{
 			name: "int-not-found",
 			attr: pcommon.NewValueInt(404),
+			kind: ptrace.SpanKindClient,
 			code: ptrace.StatusCodeError,
+		},
+		{
+			name: "int-not-found-client-span",
+			attr: pcommon.NewValueInt(404),
+			kind: ptrace.SpanKindServer,
+			code: ptrace.StatusCodeUnset,
 		},
 		{
 			name: "int-invalid-arg",
 			attr: pcommon.NewValueInt(408),
+			kind: ptrace.SpanKindClient,
 			code: ptrace.StatusCodeError,
 		},
-
 		{
 			name: "int-internal",
 			attr: pcommon.NewValueInt(500),
+			kind: ptrace.SpanKindClient,
 			code: ptrace.StatusCodeError,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			code, err := getStatusCodeFromHTTPStatusAttr(test.attr)
+			code, err := getStatusCodeFromHTTPStatusAttr(test.attr, test.kind)
 			assert.NoError(t, err)
 			assert.Equal(t, test.code, code)
 		})
@@ -361,6 +372,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		name             string
 		attrs            map[string]interface{}
 		status           ptrace.Status
+		kind             ptrace.SpanKind
 		attrsModifiedLen int // Length of attributes map after dropping converted fields
 	}{
 		{
@@ -431,14 +443,26 @@ func TestSetInternalSpanStatus(t *testing.T) {
 			status:           errorStatus,
 			attrsModifiedLen: 1,
 		},
+		{
+			name: "the 4xx range span status MUST be left unset in case of SpanKind.SERVER",
+			kind: ptrace.SpanKindServer,
+			attrs: map[string]interface{}{
+				tracetranslator.TagError:            false,
+				conventions.AttributeHTTPStatusCode: 404,
+			},
+			status:           emptyStatus,
+			attrsModifiedLen: 2,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			status := ptrace.NewStatus()
+			span := ptrace.NewSpan()
+			span.SetKind(test.kind)
+			status := span.Status()
 			attrs := pcommon.NewMap()
 			attrs.FromRaw(test.attrs)
-			setInternalSpanStatus(attrs, status)
+			setInternalSpanStatus(attrs, span)
 			assert.EqualValues(t, test.status, status)
 			assert.Equal(t, test.attrsModifiedLen, attrs.Len())
 		})
