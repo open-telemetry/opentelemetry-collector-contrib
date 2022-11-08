@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.uber.org/atomic"
@@ -30,7 +29,7 @@ import (
 
 // solaceTracesReceiver uses azure AMQP to consume and handle telemetry data from SOlace. Implements component.TracesReceiver
 type solaceTracesReceiver struct {
-	instanceID config.ComponentID
+	instanceID component.ID
 	// config is the receiver.Config instance used to build the receiver
 	config *Config
 

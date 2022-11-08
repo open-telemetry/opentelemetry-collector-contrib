@@ -27,7 +27,6 @@ import (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
-	serverName                              string
 	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
 }
 
@@ -40,7 +39,6 @@ var (
 )
 
 func (cfg *Config) Validate() error {
-
 	u, err := url.Parse(cfg.Endpoint)
 	if err != nil {
 		return fmt.Errorf("invalid endpoint: '%s': %w", cfg.Endpoint, err)
@@ -54,6 +52,5 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("query must be 'auto': '%s'", cfg.Endpoint)
 	}
 
-	cfg.serverName = u.Hostname()
 	return nil
 }

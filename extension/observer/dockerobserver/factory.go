@@ -24,7 +24,7 @@ import (
 
 const (
 	// The value of extension "type" in configuration.
-	typeStr config.Type = "docker_observer"
+	typeStr component.Type = "docker_observer"
 )
 
 // NewFactory should be called to create a factory with default values.
@@ -37,9 +37,9 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() config.Extension {
+func createDefaultConfig() component.ExtensionConfig {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		Endpoint:          "unix:///var/run/docker.sock",
 		Timeout:           5 * time.Second,
 		CacheSyncInterval: 60 * time.Minute,
@@ -50,7 +50,7 @@ func createDefaultConfig() config.Extension {
 func createExtension(
 	_ context.Context,
 	settings component.ExtensionCreateSettings,
-	cfg config.Extension,
+	cfg component.ExtensionConfig,
 ) (component.Extension, error) {
 	config := cfg.(*Config)
 	return newObserver(settings.Logger, config)

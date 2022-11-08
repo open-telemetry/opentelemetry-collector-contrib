@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -32,16 +32,16 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalExporter(sub, cfg))
+	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
 	defaultConfig := factory.CreateDefaultConfig().(*Config)
 	assert.Equal(t, cfg, defaultConfig)
 
-	sub, err = cm.Sub(config.NewComponentIDWithName(typeStr, "customname").String())
+	sub, err = cm.Sub(component.NewIDWithName(typeStr, "customname").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalExporter(sub, cfg))
+	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
 	customConfig := factory.CreateDefaultConfig().(*Config)
 

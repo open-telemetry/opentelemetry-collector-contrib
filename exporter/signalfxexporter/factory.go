@@ -54,9 +54,9 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.ExporterConfig {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultHTTPTimeout},
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
@@ -73,7 +73,7 @@ func createDefaultConfig() config.Exporter {
 func createTracesExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	eCfg config.Exporter,
+	eCfg component.ExporterConfig,
 ) (component.TracesExporter, error) {
 	cfg := eCfg.(*Config)
 	corrCfg := cfg.Correlation
@@ -103,7 +103,7 @@ func createTracesExporter(
 func createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	config config.Exporter,
+	config component.ExporterConfig,
 ) (component.MetricsExporter, error) {
 
 	cfg := config.(*Config)
@@ -186,7 +186,7 @@ func loadConfig(bytes []byte) (Config, error) {
 func createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.ExporterConfig,
 ) (component.LogsExporter, error) {
 	expCfg := cfg.(*Config)
 

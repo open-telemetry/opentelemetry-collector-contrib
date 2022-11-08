@@ -137,6 +137,7 @@ type value struct {
 	Bool       *boolean    `parser:"| @Boolean"`
 	IsNil      *isNil      `parser:"| @'nil'"`
 	Enum       *EnumSymbol `parser:"| @Uppercase"`
+	List       *list       `parser:"| @@"`
 	Path       *Path       `parser:"| @@ )"`
 }
 
@@ -149,6 +150,10 @@ type Path struct {
 type Field struct {
 	Name   string  `parser:"@Lowercase"`
 	MapKey *string `parser:"( '[' @String ']' )?"`
+}
+
+type list struct {
+	Values []value `parser:"'[' (@@)* (',' @@)* ']'"`
 }
 
 // byteSlice type for capturing byte slices

@@ -109,7 +109,7 @@ func (f *SyslogWriter) Send(lr plog.LogRecord) error {
 		sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", k, v.Str()))
 		return true
 	})
-	msg := fmt.Sprintf("<166> %s localhost - - - [%s] %s\n", ts, sdid.String(), lr.Body().Str())
+	msg := fmt.Sprintf("<166> %s 127.0.0.1 - - - [%s] %s\n", ts, sdid.String(), lr.Body().Str())
 
 	f.buf = append(f.buf, msg)
 	return f.SendCheck()

@@ -174,6 +174,28 @@ func TestSetExtraLabels(t *testing.T) {
 			wantError: "pod \"uid-1234\" with container \"container1\" not found in the fetched metadata",
 		},
 		{
+			name: "set_container_id_is_empty",
+			metadata: NewMetadata([]MetadataLabel{MetadataLabelContainerID}, &v1.PodList{
+				Items: []v1.Pod{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							UID: "uid-1234",
+						},
+						Status: v1.PodStatus{
+							ContainerStatuses: []v1.ContainerStatus{
+								{
+									Name:        "container1",
+									ContainerID: "",
+								},
+							},
+						},
+					},
+				},
+			}, nil),
+			args:      []string{"uid-1234", "container.id", "container1"},
+			wantError: "pod \"uid-1234\" with container \"container1\" has an empty containerID",
+		},
+		{
 			name:      "set_volume_type_no_metadata",
 			metadata:  NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, nil, nil),
 			args:      []string{"uid-1234", "k8s.volume.type", "volume0"},

@@ -44,9 +44,9 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
@@ -62,9 +62,9 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// Test CreateMetricsReceiver
-	sub, err = cm.Sub(config.NewComponentIDWithName(typeStr, "test").String())
+	sub, err = cm.Sub(component.NewIDWithName(typeStr, "test").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 	metricReceiver, err = factory.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
 	assert.Equal(t, nil, err)
 
@@ -73,7 +73,7 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 		config:   cfg.(*Config),
 		consumer: nil,
 		promReceiverConfig: &prometheusreceiver.Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 			PrometheusConfig: &promconfig.Config{
 				ScrapeConfigs: []*promconfig.ScrapeConfig{
 					{

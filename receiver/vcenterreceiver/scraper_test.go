@@ -32,7 +32,7 @@ import (
 
 func TestScrape(t *testing.T) {
 	ctx := context.Background()
-	mockServer := mock.MockServer(t)
+	mockServer := mock.MockServer(t, false)
 
 	cfg := &Config{
 		Metrics:  metadata.DefaultMetricsSettings(),
@@ -40,6 +40,28 @@ func TestScrape(t *testing.T) {
 		Username: mock.MockUsername,
 		Password: mock.MockPassword,
 	}
+
+	testScrape(ctx, t, cfg)
+}
+
+func TestScrape_TLS(t *testing.T) {
+	ctx := context.Background()
+	mockServer := mock.MockServer(t, true)
+
+	cfg := &Config{
+		Metrics:  metadata.DefaultMetricsSettings(),
+		Endpoint: mockServer.URL,
+		Username: mock.MockUsername,
+		Password: mock.MockPassword,
+	}
+
+	cfg.Insecure = true
+	cfg.InsecureSkipVerify = true
+
+	testScrape(ctx, t, cfg)
+}
+
+func testScrape(ctx context.Context, t *testing.T, cfg *Config) {
 	scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, componenttest.NewNopReceiverCreateSettings())
 
 	metrics, err := scraper.scrape(ctx)

@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 
@@ -28,7 +29,7 @@ import (
 
 func TestNewMetricsExporter(t *testing.T) {
 	got, err := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		Endpoint:         "us-west-1.log.aliyuncs.com",
 		Project:          "demo-project",
 		Logstore:         "demo-logstore",

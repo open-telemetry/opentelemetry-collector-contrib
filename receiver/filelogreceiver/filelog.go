@@ -38,27 +38,26 @@ func NewFactory() component.ReceiverFactory {
 type ReceiverType struct{}
 
 // Type is the receiver type
-func (f ReceiverType) Type() config.Type {
+func (f ReceiverType) Type() component.Type {
 	return typeStr
 }
 
 // CreateDefaultConfig creates a config with type and version
-func (f ReceiverType) CreateDefaultConfig() config.Receiver {
+func (f ReceiverType) CreateDefaultConfig() component.ReceiverConfig {
 	return createDefaultConfig()
 }
 func createDefaultConfig() *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 			Operators:        []operator.Config{},
-			Converter:        adapter.ConverterConfig{},
 		},
 		InputConfig: *file.NewConfig(),
 	}
 }
 
 // BaseConfig gets the base config from config, for now
-func (f ReceiverType) BaseConfig(cfg config.Receiver) adapter.BaseConfig {
+func (f ReceiverType) BaseConfig(cfg component.ReceiverConfig) adapter.BaseConfig {
 	return cfg.(*FileLogConfig).BaseConfig
 }
 
@@ -69,6 +68,6 @@ type FileLogConfig struct {
 }
 
 // InputConfig unmarshals the input operator
-func (f ReceiverType) InputConfig(cfg config.Receiver) operator.Config {
+func (f ReceiverType) InputConfig(cfg component.ReceiverConfig) operator.Config {
 	return operator.NewConfig(&cfg.(*FileLogConfig).InputConfig)
 }

@@ -47,6 +47,16 @@ attributes:
     description: Breakdown of CPU usage by type.
     enum: [system, user, wait]
 
+  paging_fault_type:
+    value: type
+    description: Type of memory paging fault.
+    enum: [major, minor]
+
+  context_switch_type:
+    value: type
+    description: Type of context switched.
+    enum: [involuntary, voluntary]
+
 metrics:
   process.cpu.time:
     enabled: true
@@ -60,6 +70,15 @@ metrics:
 
   process.memory.physical_usage:
     enabled: true
+    description: "Deprecated: use `process.memory.usage` metric instead. The amount of physical memory in use."
+    unit: By
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+
+  process.memory.usage:
+    enabled: false
     description: The amount of physical memory in use.
     unit: By
     sum:
@@ -69,6 +88,15 @@ metrics:
 
   process.memory.virtual_usage:
     enabled: true
+    description: "Deprecated: Use `process.memory.virtual` metric instead. Virtual memory size."
+    unit: By
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+
+  process.memory.virtual:
+    enabled: false
     description: Virtual memory size.
     unit: By
     sum:
@@ -86,6 +114,16 @@ metrics:
       monotonic: true
     attributes: [direction]
 
+  process.paging.faults:
+    enabled: false
+    description: Number of page faults the process has made. This metric is only available on Linux.
+    unit: "{faults}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [paging_fault_type]
+
   process.threads:
     enabled: false
     description: Process threads count.
@@ -94,3 +132,22 @@ metrics:
       value_type: int
       aggregation: cumulative
       monotonic: false
+
+  process.open_file_descriptors:
+    enabled: false
+    description: Number of file descriptors in use by the process.
+    unit: '{count}'
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+  
+  process.context_switches:
+    enabled: false
+    description: Number of times the process has been context switched.
+    unit: '{count}'
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [context_switch_type]

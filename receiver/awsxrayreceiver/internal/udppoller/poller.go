@@ -22,7 +22,6 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
@@ -66,14 +65,14 @@ type RawSegment struct {
 // Config represents the configurations needed to
 // start the UDP poller
 type Config struct {
-	ReceiverID         config.ComponentID
+	ReceiverID         component.ID
 	Transport          string
 	Endpoint           string
 	NumOfPollerToStart int
 }
 
 type poller struct {
-	receiverID           config.ComponentID
+	receiverID           component.ID
 	udpSock              socketconn.SocketConn
 	logger               *zap.Logger
 	wg                   sync.WaitGroup
@@ -116,7 +115,7 @@ func New(cfg *Config, set component.ReceiverCreateSettings) (Poller, error) {
 		maxPollerCount: cfg.NumOfPollerToStart,
 		shutDown:       make(chan struct{}),
 		segChan:        make(chan RawSegment, segChanSize),
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             cfg.ReceiverID,
 			Transport:              cfg.Transport,
 			LongLivedCtx:           true,

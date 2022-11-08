@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 // HumioLink represents a relation between two spans
@@ -185,10 +187,10 @@ func (e *humioTracesExporter) spanToHumioEvent(span ptrace.Span, inst pcommon.In
 			SpanID:            span.SpanID().HexString(),
 			ParentSpanID:      span.ParentSpanID().HexString(),
 			Name:              span.Name(),
-			Kind:              span.Kind().String(),
+			Kind:              traceutil.SpanKindStr(span.Kind()),
 			Start:             span.StartTimestamp().AsTime().UnixNano(),
 			End:               span.EndTimestamp().AsTime().UnixNano(),
-			StatusCode:        span.Status().Code().String(),
+			StatusCode:        traceutil.StatusCodeStr(span.Status().Code()),
 			StatusDescription: span.Status().Message(),
 			ServiceName:       serviceName,
 			Links:             toHumioLinks(span.Links()),

@@ -44,7 +44,7 @@ type SignalConfig struct {
 	Statements []string `mapstructure:"statements"`
 }
 
-var _ config.Processor = (*Config)(nil)
+var _ component.ProcessorConfig = (*Config)(nil)
 
 func (c *Config) Validate() error {
 	var errors error

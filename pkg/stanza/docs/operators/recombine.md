@@ -82,7 +82,7 @@ Output logs:
 
 #### Recombine stack traces into multiline logs
 
-Some apps output multiple log lines which are in fact a single log message. A common example is a stack trace:
+Some apps output multiple log lines which are in fact a single log record. A common example is a stack trace:
 
 ```console
 java.lang.Exception: Stack trace
@@ -94,7 +94,7 @@ java.lang.Exception: Stack trace
         at Main.main(Main.java:3)
 ```
 
-To recombine such log lines into a single log message, you need a way to tell when a log message starts or ends.
+To recombine such log lines into a single log record, you need a way to tell when a log record starts or ends.
 In the example above, the first line differs from the other lines in not starting with a whitespace.
 This can be expressed with the following configuration:
 

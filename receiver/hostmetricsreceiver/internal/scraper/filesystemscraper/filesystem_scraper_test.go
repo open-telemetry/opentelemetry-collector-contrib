@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"runtime"
 	"testing"
 
@@ -38,6 +39,7 @@ func TestScrape(t *testing.T) {
 	type testCase struct {
 		name                     string
 		config                   Config
+		rootPath                 string
 		bootTimeFunc             func() (uint64, error)
 		partitionsFunc           func(bool) ([]disk.PartitionStat, error)
 		usageFunc                func(string) (*disk.UsageStat, error)
@@ -79,6 +81,26 @@ func TestScrape(t *testing.T) {
 				IncludeDevices: DeviceMatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
 			},
 			expectMetrics: false,
+		},
+		{
+			name: "Include device filtering that includes virtual partitions",
+			config: Config{
+				Metrics:          metadata.DefaultMetricsSettings(),
+				IncludeVirtualFS: true,
+				IncludeFSTypes:   FSTypeMatchConfig{Config: filterset.Config{MatchType: filterset.Strict}, FSTypes: []string{"tmpfs"}},
+			},
+			partitionsFunc: func(includeVirtual bool) (paritions []disk.PartitionStat, err error) {
+				paritions = append(paritions, disk.PartitionStat{Device: "root-device", Fstype: "ext4"})
+				if includeVirtual {
+					paritions = append(paritions, disk.PartitionStat{Device: "shm", Fstype: "tmpfs"})
+				}
+				return paritions, err
+			},
+			usageFunc: func(s string) (*disk.UsageStat, error) {
+				return &disk.UsageStat{}, nil
+			},
+			expectMetrics:            true,
+			expectedDeviceDataPoints: 1,
 		},
 		{
 			name: "Include filter with devices, filesystem type and mount points",
@@ -145,6 +167,40 @@ func TestScrape(t *testing.T) {
 					"device":     pcommon.NewValueStr("device_b"),
 					"mountpoint": pcommon.NewValueStr("mount_point_d"),
 					"type":       pcommon.NewValueStr("fs_type_c"),
+					"mode":       pcommon.NewValueStr("unknown"),
+				},
+			},
+		},
+		{
+			name: "RootPath at /hostfs",
+			config: Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+			},
+			rootPath: filepath.Join("/", "hostfs"),
+			usageFunc: func(s string) (*disk.UsageStat, error) {
+				if s != filepath.Join("/hostfs", "mount_point_a") {
+					return nil, errors.New("mountpoint not translated according to RootPath")
+				}
+				return &disk.UsageStat{
+					Fstype: "fs_type_a",
+				}, nil
+			},
+			partitionsFunc: func(b bool) ([]disk.PartitionStat, error) {
+				return []disk.PartitionStat{
+					{
+						Device:     "device_a",
+						Mountpoint: "mount_point_a",
+						Fstype:     "fs_type_a",
+					},
+				}, nil
+			},
+			expectMetrics:            true,
+			expectedDeviceDataPoints: 1,
+			expectedDeviceAttributes: []map[string]pcommon.Value{
+				{
+					"device":     pcommon.NewValueStr("device_a"),
+					"mountpoint": pcommon.NewValueStr("mount_point_a"),
+					"type":       pcommon.NewValueStr("fs_type_a"),
 					"mode":       pcommon.NewValueStr("unknown"),
 				},
 			},
@@ -266,7 +322,10 @@ func TestScrape(t *testing.T) {
 	}
 
 	for _, test := range testCases {
+		test := test
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			test.config.SetRootPath(test.rootPath)
 			scraper, err := newFileSystemScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &test.config)
 			if test.newErrRegex != "" {
 				require.Error(t, err)

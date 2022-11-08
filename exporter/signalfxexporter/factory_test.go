@@ -26,9 +26,9 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -41,7 +41,7 @@ import (
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
@@ -111,7 +111,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		AccessToken:      "testToken",
 		Realm:            "us1",
 		Headers: map[string]string{
@@ -135,7 +135,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "negative_duration",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AccessToken:      "testToken",
 				Realm:            "lab",
 				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: -2 * time.Second},
@@ -145,7 +145,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "empty_realm_and_urls",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AccessToken:      "testToken",
 			},
 			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
@@ -154,7 +154,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "empty_realm_and_api_url",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AccessToken:      "testToken",
 				IngestURL:        "http://localhost:123",
 			},
@@ -164,7 +164,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "negative_MaxConnections",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AccessToken:      "testToken",
 				Realm:            "lab",
 				IngestURL:        "http://localhost:123",
@@ -263,7 +263,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 
 func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		AccessToken:      "testToken",
 		Realm:            "us1",
 	}
@@ -278,7 +278,7 @@ func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
 
 func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		AccessToken:      "testToken",
 		Realm:            "us1",
 		ExcludeMetrics: []dpfilters.MetricFilter{
@@ -298,7 +298,7 @@ func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 
 func TestCreateMetricsExporterWithEmptyExcludeMetrics(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		AccessToken:      "testToken",
 		Realm:            "us1",
 		ExcludeMetrics:   []dpfilters.MetricFilter{},
@@ -621,7 +621,7 @@ func TestHostmetricsCPUTranslations(t *testing.T) {
 	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "")
 	require.NoError(t, err)
 
-	jsonpb := pmetric.NewJSONUnmarshaler()
+	jsonpb := &pmetric.JSONUnmarshaler{}
 	bytes1, err := os.ReadFile(filepath.Join("testdata", "json", "hostmetrics_system_cpu_time_1.json"))
 	require.NoError(t, err)
 	md1, err := jsonpb.UnmarshalMetrics(bytes1)
@@ -695,7 +695,7 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	require.NoError(t, err)
 
 	md := getMetrics(metrics)
-	require.Equal(t, 71, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	require.Equal(t, 69, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
 	require.Equal(t, 0, len(dps))
 }
@@ -714,7 +714,7 @@ func BenchmarkMetricConversion(b *testing.B) {
 	bytes, err := os.ReadFile("testdata/json/hostmetrics.json")
 	require.NoError(b, err)
 
-	unmarshaller := pmetric.NewJSONUnmarshaler()
+	unmarshaller := &pmetric.JSONUnmarshaler{}
 	metrics, err := unmarshaller.UnmarshalMetrics(bytes)
 	require.NoError(b, err)
 

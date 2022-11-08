@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -102,7 +103,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NotNil(t, cfg)
 			assert.Equal(t,
 				&Config{
-					ProcessorSettings:       config.NewProcessorSettings(config.NewComponentID(typeStr)),
+					ProcessorSettings:       config.NewProcessorSettings(component.NewID(typeStr)),
 					MetricsExporter:         tc.wantMetricsExporter,
 					LatencyHistogramBuckets: tc.wantLatencyHistogramBuckets,
 					Dimensions:              tc.wantDimensions,
@@ -110,7 +111,7 @@ func TestLoadConfig(t *testing.T) {
 					AggregationTemporality:  tc.wantAggregationTemporality,
 					CollectorID:             tc.wantCollectorID,
 				},
-				cfg.Processors[config.NewComponentID(typeStr)],
+				cfg.Processors[component.NewID(typeStr)],
 			)
 		})
 	}

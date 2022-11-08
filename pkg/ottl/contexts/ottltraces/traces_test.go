@@ -15,6 +15,7 @@
 package ottltraces
 
 import (
+	"context"
 	"encoding/hex"
 	"testing"
 	"time"
@@ -524,10 +525,12 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			span, il, resource := createTelemetry()
 
-			got := accessor.Get(NewTransformContext(span, il, resource))
+			got, err := accessor.Get(context.Background(), NewTransformContext(span, il, resource))
+			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(NewTransformContext(span, il, resource), tt.newVal)
+			err = accessor.Set(context.Background(), NewTransformContext(span, il, resource), tt.newVal)
+			assert.Nil(t, err)
 
 			exSpan, exIl, exRes := createTelemetry()
 			tt.modified(exSpan, exIl, exRes)

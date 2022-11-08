@@ -12,7 +12,7 @@
                         "description": "Measures the duration of the HTTP check.",
                         "name": "httpcheck.duration",
                         "gauge": {
-                            "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                            "aggregationTemporality": 2,
                             "dataPoints": [
                                 {
                                     "asInt": "0",
@@ -33,7 +33,7 @@
                         "description": "1 if the check resulted in status_code matching the status_class, otherwise 0.",
                         "name": "httpcheck.status",
                         "sum": {
-                            "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                            "aggregationTemporality": 2,
                             "dataPoints": [
                                 {
                                     "asInt": "0",

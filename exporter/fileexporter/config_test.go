@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -31,14 +32,14 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id           config.ComponentID
-		expected     config.Exporter
+		id           component.ID
+		expected     component.ExporterConfig
 		errorMessage string
 	}{
 		{
-			id: config.NewComponentIDWithName(typeStr, "2"),
+			id: component.NewIDWithName(typeStr, "2"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				Path:             "./filename.json",
 				Rotation: &Rotation{
 					MaxMegabytes: 10,
@@ -50,9 +51,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "3"),
+			id: component.NewIDWithName(typeStr, "3"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				Path:             "./filename",
 				Rotation: &Rotation{
 					MaxMegabytes: 10,
@@ -65,9 +66,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "rotation_with_default_settings"),
+			id: component.NewIDWithName(typeStr, "rotation_with_default_settings"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				Path:             "./foo",
 				FormatType:       formatTypeJSON,
 				Rotation: &Rotation{
@@ -76,9 +77,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "rotation_with_custom_settings"),
+			id: component.NewIDWithName(typeStr, "rotation_with_custom_settings"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				Path:             "./foo",
 				Rotation: &Rotation{
 					MaxMegabytes: 1234,
@@ -88,15 +89,15 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "compression_error"),
+			id:           component.NewIDWithName(typeStr, "compression_error"),
 			errorMessage: "compression is not supported",
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "format_error"),
+			id:           component.NewIDWithName(typeStr, "format_error"),
 			errorMessage: "format type is not supported",
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, ""),
+			id:           component.NewIDWithName(typeStr, ""),
 			errorMessage: "path must be non-empty",
 		},
 	}
@@ -108,7 +109,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalExporter(sub, cfg))
+			require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
 			if tt.expected == nil {
 				assert.EqualError(t, cfg.Validate(), tt.errorMessage)
