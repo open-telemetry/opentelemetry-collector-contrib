@@ -110,18 +110,21 @@ func TestConfigNormal(t *testing.T) {
 	assert.NoError(t, c.Validate())
 }
 
-func TestConfigIncludeResAttrs(t *testing.T) {
+func TestMetricConfig(t *testing.T) {
 	c := &Config{
 		Metrics: MetricsConfig{},
 	}
 	assert.NoError(t, c.Validate())
 	assert.False(t, c.Metrics.ResourceAttrsIncluded)
+	assert.False(t, c.Metrics.AppTagsExcluded)
 
 	c = &Config{
 		Metrics: MetricsConfig{
 			ResourceAttrsIncluded: true,
+			AppTagsExcluded:       true,
 		},
 	}
 	assert.NoError(t, c.Validate())
 	assert.True(t, c.Metrics.ResourceAttrsIncluded)
+	assert.True(t, c.Metrics.AppTagsExcluded)
 }
