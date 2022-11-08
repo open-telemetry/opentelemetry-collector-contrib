@@ -93,6 +93,22 @@ var factories = map[string]internal.ScraperFactory{
 	processscraper.TypeStr:    &processscraper.Factory{},
 }
 
+type testEnv struct {
+	env map[string]string
+}
+
+var _ environment = (*testEnv)(nil)
+
+func (e *testEnv) Lookup(k string) (string, bool) {
+	v, ok := e.env[k]
+	return v, ok
+}
+
+func (e *testEnv) Set(k, v string) error {
+	e.env[k] = v
+	return nil
+}
+
 func TestGatherMetrics_EndToEnd(t *testing.T) {
 	scraperFactories = factories
 
@@ -207,6 +223,8 @@ func appendMapInto(m1 map[string]struct{}, m2 map[string]struct{}) {
 const mockTypeStr = "mock"
 
 type mockConfig struct{}
+
+func (m *mockConfig) SetRootPath(_ string) {}
 
 type mockFactory struct{ mock.Mock }
 type mockScraper struct{ mock.Mock }
