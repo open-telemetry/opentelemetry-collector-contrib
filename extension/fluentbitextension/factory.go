@@ -40,9 +40,9 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() config.Extension {
+func createDefaultConfig() component.ExtensionConfig {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 	}
 }
 
@@ -52,7 +52,7 @@ func logDeprecation(logger *zap.Logger) {
 	})
 }
 
-func createExtension(_ context.Context, params component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
+func createExtension(_ context.Context, params component.ExtensionCreateSettings, cfg component.ExtensionConfig) (component.Extension, error) {
 	logDeprecation(params.Logger)
 	config := cfg.(*Config)
 	return newProcessManager(config, params.Logger), nil

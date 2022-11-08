@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -28,17 +28,17 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id          config.ComponentID
-		expected    config.Extension
+		id          component.ID
+		expected    component.ExtensionConfig
 		expectedErr bool
 	}{
 		{
-			id:       config.NewComponentID(typeStr),
+			id:       component.NewID(typeStr),
 			expected: NewFactory().CreateDefaultConfig(),
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "1"),
-			expected: func() config.Extension {
+			id: component.NewIDWithName(typeStr, "1"),
+			expected: func() component.ExtensionConfig {
 				cfg := DefaultConfig()
 				cfg.ClusterRegion = "us-west-2"
 				cfg.JobLabelName = "my_prometheus_job"
@@ -46,12 +46,12 @@ func TestLoadConfig(t *testing.T) {
 			}(),
 		},
 		{
-			id:       config.NewComponentIDWithName(typeStr, "2"),
+			id:       component.NewIDWithName(typeStr, "2"),
 			expected: exampleConfig(),
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "3"),
-			expected: func() config.Extension {
+			id: component.NewIDWithName(typeStr, "3"),
+			expected: func() component.ExtensionConfig {
 				cfg := DefaultConfig()
 				cfg.DockerLabels = []DockerLabelConfig{
 					{
@@ -62,7 +62,7 @@ func TestLoadConfig(t *testing.T) {
 			}(),
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "invalid"),
+			id:          component.NewIDWithName(typeStr, "invalid"),
 			expectedErr: true,
 		},
 	}
@@ -74,7 +74,7 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalExtension(sub, cfg))
+			require.NoError(t, component.UnmarshalExtensionConfig(sub, cfg))
 			if tt.expectedErr {
 				assert.Error(t, cfg.Validate())
 				return

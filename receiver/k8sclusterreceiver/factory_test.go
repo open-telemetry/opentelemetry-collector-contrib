@@ -34,14 +34,14 @@ import (
 
 func TestFactory(t *testing.T) {
 	f := NewFactory()
-	require.Equal(t, config.Type("k8s_cluster"), f.Type())
+	require.Equal(t, component.Type("k8s_cluster"), f.Type())
 
 	cfg := f.CreateDefaultConfig()
 	rCfg, ok := cfg.(*Config)
 	require.True(t, ok)
 
 	require.Equal(t, &Config{
-		ReceiverSettings:           config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings:           config.NewReceiverSettings(component.NewID(typeStr)),
 		Distribution:               distributionKubernetes,
 		CollectionInterval:         10 * time.Second,
 		NodeConditionTypesToReport: defaultNodeConditionsToReport,
@@ -71,7 +71,7 @@ func TestFactory(t *testing.T) {
 
 func TestFactoryDistributions(t *testing.T) {
 	f := NewFactory()
-	require.Equal(t, config.Type("k8s_cluster"), f.Type())
+	require.Equal(t, component.Type("k8s_cluster"), f.Type())
 
 	cfg := f.CreateDefaultConfig()
 	rCfg, ok := cfg.(*Config)
@@ -115,19 +115,19 @@ var _ component.Host = (*nopHostWithExporters)(nil)
 func (n nopHostWithExporters) ReportFatalError(error) {
 }
 
-func (n nopHostWithExporters) GetFactory(component.Kind, config.Type) component.Factory {
+func (n nopHostWithExporters) GetFactory(component.Kind, component.Type) component.Factory {
 	return nil
 }
 
-func (n nopHostWithExporters) GetExtensions() map[config.ComponentID]component.Extension {
+func (n nopHostWithExporters) GetExtensions() map[component.ID]component.Extension {
 	return nil
 }
 
-func (n nopHostWithExporters) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
-	return map[config.DataType]map[config.ComponentID]component.Exporter{
-		config.MetricsDataType: {
-			config.NewComponentIDWithName("nop", "withoutmetadata"): MockExporter{},
-			config.NewComponentIDWithName("nop", "withmetadata"):    mockExporterWithK8sMetadata{},
+func (n nopHostWithExporters) GetExporters() map[component.DataType]map[component.ID]component.Exporter {
+	return map[component.DataType]map[component.ID]component.Exporter{
+		component.DataTypeMetrics: {
+			component.NewIDWithName("nop", "withoutmetadata"): MockExporter{},
+			component.NewIDWithName("nop", "withmetadata"):    mockExporterWithK8sMetadata{},
 		},
 	}
 }

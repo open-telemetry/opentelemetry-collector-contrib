@@ -31,7 +31,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -388,7 +387,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.Traces, set component.Rece
 		}
 	}
 
-	oci, err := New(config.NewComponentID("opencensus"), sr, set)
+	oci, err := New(component.NewID("opencensus"), sr, set)
 	require.NoError(t, err, "Failed to create the Receiver: %v", err)
 
 	// Now run it as a gRPC server

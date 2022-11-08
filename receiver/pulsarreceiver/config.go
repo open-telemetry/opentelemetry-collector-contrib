@@ -18,6 +18,7 @@ import (
 	"errors"
 
 	"github.com/apache/pulsar-client-go/pulsar"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -73,7 +74,7 @@ type OAuth2 struct {
 	Audience  string `mapstructure:"audience"`
 }
 
-var _ config.Receiver = (*Config)(nil)
+var _ component.ReceiverConfig = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {

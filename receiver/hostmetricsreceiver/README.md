@@ -12,12 +12,13 @@ deployed as an agent.
 
 ## Getting Started
 
-The collection interval and the categories of metrics to be scraped can be
+The collection interval, root path, and the categories of metrics to be scraped can be
 configured:
 
 ```yaml
 hostmetrics:
   collection_interval: <duration> # default = 1m
+  root_path: <string>
   scrapers:
     <scraper1>:
     <scraper2>:
@@ -141,6 +142,33 @@ service:
       receivers: [hostmetrics, hostmetrics/disk]
 ```
 
+### Collecting host metrics from inside a container (Linux only)
+
+Host metrics are collected from the Linux system directories on the filesystem.
+You likely want to collect metrics about the host system and not the container.
+This is achievable by following these steps: 
+
+#### 1. Bind mount the host filesystem
+
+The simplest configuration is to mount the entire host filesystem when running 
+the container. e.g. `docker run -v /:/hostfs ...`.
+
+You can also choose which parts of the host filesystem to mount, if you know 
+exactly what you'll need. e.g. `docker run -v /proc:/hostfs/proc`.
+
+#### 2. Configure `root_path`
+
+Configure `root_path` so the hostmetrics receiver knows where the root filesystem is.
+Note: if running multiple instances of the host metrics receiver, they must all have
+the same `root_path`.
+
+Example:
+```yaml
+receivers:
+  hostmetrics:
+    root_path: /hostfs
+```
+
 ## Resource attributes
 
 Currently, the hostmetrics receiver does not set any Resource attributes on the exported metrics. However, if you want to set Resource attributes, you can provide them via environment variables via the [resourcedetection](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor#environment-variable) processor. For example, you can add the following resource attributes to adhere to [Resource Semantic Conventions](https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/):
@@ -166,9 +194,9 @@ the following process will be followed to phase out the old metrics:
 
 - Until and including `v0.63.0`, only the old metrics `process.memory.physical_usage` and `process.memory.virtual_usage` are emitted.
   You can use the [Metrics Transform processor][metricstransformprocessor_docs] to rename them.
-- Between `v0.64.0` and `v0.66.0`, the new metrics are introduced and the old metrics are marked as deprecated.
-  Both the new and the old metrics are emitted by default.
-- Between `v0.67.0` and `v0.69.0`, the old metrics are disabled by default.
+- Between `v0.64.0` and `v0.66.0`, the new metrics are introduced as optional (disabled by default) and the old metrics are marked as deprecated.
+  Only the old metrics are emitted by default.
+- Between `v0.67.0` and `v0.69.0`, the new metrics are enabled and the old metrics are disabled by default.
 - In `v0.70.0` and up, the old metrics are removed.
 
 To change the enabled state for the specific metrics, use the standard configuration options that are available for all metrics.

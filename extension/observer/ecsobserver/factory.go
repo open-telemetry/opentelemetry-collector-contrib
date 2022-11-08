@@ -19,11 +19,10 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 )
 
 const (
-	typeStr config.Type = "ecs_observer"
+	typeStr component.Type = "ecs_observer"
 )
 
 // NewFactory creates a factory for ECSObserver extension.
@@ -36,12 +35,12 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() config.Extension {
+func createDefaultConfig() component.ExtensionConfig {
 	cfg := DefaultConfig()
 	return &cfg
 }
 
-func createExtension(ctx context.Context, params component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
+func createExtension(ctx context.Context, params component.ExtensionCreateSettings, cfg component.ExtensionConfig) (component.Extension, error) {
 	sdCfg := cfg.(*Config)
 	fetcher, err := newTaskFetcherFromConfig(*sdCfg, params.Logger)
 	if err != nil {

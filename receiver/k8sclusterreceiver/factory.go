@@ -40,9 +40,9 @@ const (
 
 var defaultNodeConditionsToReport = []string{"Ready"}
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.ReceiverConfig {
 	return &Config{
-		ReceiverSettings:           config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings:           config.NewReceiverSettings(component.NewID(typeStr)),
 		Distribution:               defaultDistribution,
 		CollectionInterval:         defaultCollectionInterval,
 		NodeConditionTypesToReport: defaultNodeConditionsToReport,

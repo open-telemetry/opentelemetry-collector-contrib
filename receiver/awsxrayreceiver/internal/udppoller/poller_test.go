@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.uber.org/zap"
@@ -129,7 +128,7 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	receiverID := config.NewComponentID("TestSuccessfullyPollPacket")
+	receiverID := component.NewID("TestSuccessfullyPollPacket")
 
 	addr, p, _ := createAndOptionallyStartPoller(t, receiverID, true, tt.ToReceiverCreateSettings())
 	defer p.Close()
@@ -165,7 +164,7 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	receiverID := config.NewComponentID("TestIncompletePacketNoSeparator")
+	receiverID := component.NewID("TestIncompletePacketNoSeparator")
 
 	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true, tt.ToReceiverCreateSettings())
 	defer p.Close()
@@ -196,7 +195,7 @@ func TestIncompletePacketNoBody(t *testing.T) {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	receiverID := config.NewComponentID("TestIncompletePacketNoBody")
+	receiverID := component.NewID("TestIncompletePacketNoBody")
 
 	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true, tt.ToReceiverCreateSettings())
 	defer p.Close()
@@ -222,7 +221,7 @@ func TestNonJsonHeader(t *testing.T) {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	receiverID := config.NewComponentID("TestNonJsonHeader")
+	receiverID := component.NewID("TestNonJsonHeader")
 
 	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true, tt.ToReceiverCreateSettings())
 	defer p.Close()
@@ -253,7 +252,7 @@ func TestJsonInvalidHeader(t *testing.T) {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	receiverID := config.NewComponentID("TestJsonInvalidHeader")
+	receiverID := component.NewID("TestJsonInvalidHeader")
 
 	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true, tt.ToReceiverCreateSettings())
 	defer p.Close()
@@ -290,7 +289,7 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	receiverID := config.NewComponentID("TestSocketReadIrrecoverableNetError")
+	receiverID := component.NewID("TestSocketReadIrrecoverableNetError")
 
 	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, false, tt.ToReceiverCreateSettings())
 	// close the actual socket because we are going to mock it out below
@@ -327,7 +326,7 @@ func TestSocketReadTimeOutNetError(t *testing.T) {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	receiverID := config.NewComponentID("TestSocketReadTimeOutNetError")
+	receiverID := component.NewID("TestSocketReadTimeOutNetError")
 
 	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, false, tt.ToReceiverCreateSettings())
 	// close the actual socket because we are going to mock it out below
@@ -365,7 +364,7 @@ func TestSocketGenericReadError(t *testing.T) {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	receiverID := config.NewComponentID("TestSocketGenericReadError")
+	receiverID := component.NewID("TestSocketGenericReadError")
 
 	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, false, tt.ToReceiverCreateSettings())
 	// close the actual socket because we are going to mock it out below
@@ -443,7 +442,7 @@ func (m *mockSocketConn) Close() error { return nil }
 
 func createAndOptionallyStartPoller(
 	t *testing.T,
-	receiverID config.ComponentID,
+	receiverID component.ID,
 	start bool,
 	set component.ReceiverCreateSettings) (string, Poller, *observer.ObservedLogs) {
 	addr, err := findAvailableAddress()

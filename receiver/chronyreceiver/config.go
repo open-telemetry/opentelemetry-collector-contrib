@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/chrony"
@@ -42,12 +42,12 @@ type Config struct {
 }
 
 var (
-	_ config.Receiver = (*Config)(nil)
+	_ component.ReceiverConfig = (*Config)(nil)
 
 	errInvalidValue = errors.New("invalid value")
 )
 
-func newDefaultCongfig() config.Receiver {
+func newDefaultCongfig() component.ReceiverConfig {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
 		MetricsSettings:           metadata.DefaultMetricsSettings(),

@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -30,7 +29,7 @@ import (
 )
 
 type scraper struct {
-	id                 config.ComponentID
+	id                 component.ID
 	query              Query
 	scrapeCfg          scraperhelper.ScraperControllerSettings
 	startTime          pcommon.Timestamp
@@ -43,7 +42,7 @@ type scraper struct {
 
 var _ scraperhelper.Scraper = (*scraper)(nil)
 
-func (s scraper) ID() config.ComponentID {
+func (s scraper) ID() component.ID {
 	return s.id
 }
 

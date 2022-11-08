@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -30,12 +31,12 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 	assert.Equal(t, &Config{
-		ReceiverSettings:      config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings:      config.NewReceiverSettings(component.NewID(typeStr)),
 		Topic:                 "otel-pulsar",
 		Endpoint:              "pulsar://localhost:6500",
 		ConsumerName:          "otel-collector",

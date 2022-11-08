@@ -99,8 +99,8 @@ func TestProcessorStart(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
-			exporters := map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.MetricsDataType: {
+			exporters := map[component.DataType]map[component.ID]component.Exporter{
+				component.DataTypeMetrics: {
 					otlpConfig.ID(): tc.exporter,
 				},
 			}
@@ -327,14 +327,14 @@ func TestMetricKeyCache(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 
 	// 0 key was cached at beginning
-	assert.Empty(t, p.metricKeyToDimensions.Keys())
+	assert.Zero(t, p.metricKeyToDimensions.Len())
 
 	err := p.ConsumeTraces(ctx, traces)
 	// Validate
 	require.NoError(t, err)
 	// 2 key was cached, 1 key was evicted and cleaned after the processing
 	assert.Eventually(t, func() bool {
-		return assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
+		return assert.Equal(t, DimensionsCacheSize, p.metricKeyToDimensions.Len())
 	}, 10*time.Second, time.Millisecond*100)
 
 	// consume another batch of traces
@@ -343,7 +343,7 @@ func TestMetricKeyCache(t *testing.T) {
 
 	// 2 key was cached, other keys were evicted and cleaned after the processing
 	assert.Eventually(t, func() bool {
-		return assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
+		return assert.Equal(t, DimensionsCacheSize, p.metricKeyToDimensions.Len())
 	}, 10*time.Second, time.Millisecond*100)
 }
 
@@ -635,7 +635,7 @@ func initSpan(span span, s ptrace.Span) {
 func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExporter, component.TracesExporter) {
 	otlpExpFactory := otlpexporter.NewFactory()
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID("otlp")),
+		ExporterSettings: config.NewExporterSettings(component.NewID("otlp")),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},

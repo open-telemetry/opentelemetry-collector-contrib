@@ -22,10 +22,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 )
 
-var id = config.NewComponentID("test")
+var id = component.NewID("test")
 
 func TestNewSharedComponents(t *testing.T) {
 	comps := NewSharedComponents()

@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 )
 
 func TestStorageHostWithNone(t *testing.T) {
@@ -26,7 +26,7 @@ func TestStorageHostWithNone(t *testing.T) {
 }
 
 func TestStorageHostWithOne(t *testing.T) {
-	storageID := config.NewComponentIDWithName(testStorageType, "one")
+	storageID := component.NewIDWithName(testStorageType, "one")
 
 	host := NewStorageHost().WithInMemoryStorageExtension("one")
 
@@ -42,8 +42,8 @@ func TestStorageHostWithOne(t *testing.T) {
 }
 
 func TestStorageHostWithTwo(t *testing.T) {
-	storageOneID := config.NewComponentIDWithName(testStorageType, "one")
-	storageTwoID := config.NewComponentIDWithName(testStorageType, "two")
+	storageOneID := component.NewIDWithName(testStorageType, "one")
+	storageTwoID := component.NewIDWithName(testStorageType, "two")
 
 	host := NewStorageHost().
 		WithInMemoryStorageExtension("one").
@@ -68,9 +68,9 @@ func TestStorageHostWithTwo(t *testing.T) {
 }
 
 func TestStorageHostWithMixed(t *testing.T) {
-	storageOneID := config.NewComponentIDWithName(testStorageType, "one")
-	storageTwoID := config.NewComponentIDWithName(testStorageType, "two")
-	nonStorageID := config.NewComponentIDWithName(nonStorageType, "non-storage")
+	storageOneID := component.NewIDWithName(testStorageType, "one")
+	storageTwoID := component.NewIDWithName(testStorageType, "two")
+	nonStorageID := component.NewIDWithName(nonStorageType, "non-storage")
 
 	host := NewStorageHost().
 		WithInMemoryStorageExtension("one").

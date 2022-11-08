@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 
@@ -28,10 +27,10 @@ import (
 
 // LogReceiverType is the interface used by stanza-based log receivers
 type LogReceiverType interface {
-	Type() config.Type
-	CreateDefaultConfig() config.Receiver
-	BaseConfig(config.Receiver) BaseConfig
-	InputConfig(config.Receiver) operator.Config
+	Type() component.Type
+	CreateDefaultConfig() component.ReceiverConfig
+	BaseConfig(component.ReceiverConfig) BaseConfig
+	InputConfig(component.ReceiverConfig) operator.Config
 }
 
 // NewFactory creates a factory for a Stanza-based receiver
@@ -47,7 +46,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsRec
 	return func(
 		ctx context.Context,
 		params component.ReceiverCreateSettings,
-		cfg config.Receiver,
+		cfg component.ReceiverConfig,
 		nextConsumer consumer.Logs,
 	) (component.LogsReceiver, error) {
 		inputCfg := logReceiverType.InputConfig(cfg)
@@ -55,19 +54,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsRec
 
 		operators := append([]operator.Config{inputCfg}, baseCfg.Operators...)
 
-		emitterOpts := []LogEmitterOption{
-			LogEmitterWithLogger(params.Logger.Sugar()),
-		}
-
-		if baseCfg.Converter.MaxFlushCount > 0 {
-			emitterOpts = append(emitterOpts, LogEmitterWithMaxBatchSize(baseCfg.Converter.MaxFlushCount))
-		}
-
-		if baseCfg.Converter.FlushInterval > 0 {
-			emitterOpts = append(emitterOpts, LogEmitterWithFlushInterval(baseCfg.Converter.FlushInterval))
-		}
-
-		emitter := NewLogEmitter(emitterOpts...)
+		emitter := NewLogEmitter(params.Logger.Sugar())
 		pipe, err := pipeline.Config{
 			Operators:     operators,
 			DefaultOutput: emitter,
@@ -76,14 +63,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsRec
 			return nil, err
 		}
 
-		opts := []ConverterOption{
-			WithLogger(params.Logger),
-		}
-
-		if baseCfg.Converter.WorkerCount > 0 {
-			opts = append(opts, WithWorkerCount(baseCfg.Converter.WorkerCount))
-		}
-		converter := NewConverter(opts...)
+		converter := NewConverter(params.Logger)
 		obsrecv := obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             cfg.ID(),
 			ReceiverCreateSettings: params,

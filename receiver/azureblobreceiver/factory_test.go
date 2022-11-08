@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -65,9 +66,9 @@ func TestTracesAndLogsReceiversAreSame(t *testing.T) {
 	assert.Equal(t, logsReceiver, tracesReceiver)
 }
 
-func getConfig() config.Receiver {
+func getConfig() component.ReceiverConfig {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		ConnectionString: goodConnectionString,
 		Logs:             LogsConfig{ContainerName: logsContainerName},
 		Traces:           TracesConfig{ContainerName: tracesContainerName},

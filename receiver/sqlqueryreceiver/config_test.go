@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -31,16 +32,16 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		fname        string
-		id           config.ComponentID
-		expected     config.Receiver
+		id           component.ID
+		expected     component.ReceiverConfig
 		errorMessage string
 	}{
 		{
-			id:    config.NewComponentIDWithName(typeStr, ""),
+			id:    component.NewIDWithName(typeStr, ""),
 			fname: "config.yaml",
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: 10 * time.Second,
 				},
 				Driver:     "mydriver",
@@ -66,57 +67,57 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			fname:        "config-invalid-datatype.yaml",
-			id:           config.NewComponentIDWithName(typeStr, ""),
+			id:           component.NewIDWithName(typeStr, ""),
 			errorMessage: "unsupported data_type: 'xyzgauge'",
 		},
 		{
 			fname:        "config-invalid-valuetype.yaml",
-			id:           config.NewComponentIDWithName(typeStr, ""),
+			id:           component.NewIDWithName(typeStr, ""),
 			errorMessage: "unsupported value_type: 'xyzint'",
 		},
 		{
 			fname:        "config-invalid-aggregation.yaml",
-			id:           config.NewComponentIDWithName(typeStr, ""),
+			id:           component.NewIDWithName(typeStr, ""),
 			errorMessage: "unsupported aggregation: 'xyzcumulative'",
 		},
 		{
 			fname:        "config-invalid-missing-metricname.yaml",
-			id:           config.NewComponentIDWithName(typeStr, ""),
+			id:           component.NewIDWithName(typeStr, ""),
 			errorMessage: "'metric_name' cannot be empty",
 		},
 		{
 			fname:        "config-invalid-missing-valuecolumn.yaml",
-			id:           config.NewComponentIDWithName(typeStr, ""),
+			id:           component.NewIDWithName(typeStr, ""),
 			errorMessage: "'value_column' cannot be empty",
 		},
 		{
 			fname:        "config-invalid-missing-sql.yaml",
-			id:           config.NewComponentIDWithName(typeStr, ""),
+			id:           component.NewIDWithName(typeStr, ""),
 			errorMessage: "'query.sql' cannot be empty",
 		},
 		{
 			fname:        "config-invalid-missing-queries.yaml",
-			id:           config.NewComponentIDWithName(typeStr, ""),
+			id:           component.NewIDWithName(typeStr, ""),
 			errorMessage: "'queries' cannot be empty",
 		},
 		{
 			fname:        "config-invalid-missing-driver.yaml",
-			id:           config.NewComponentIDWithName(typeStr, ""),
+			id:           component.NewIDWithName(typeStr, ""),
 			errorMessage: "'driver' cannot be empty",
 		},
 		{
 			fname:        "config-invalid-missing-metrics.yaml",
-			id:           config.NewComponentIDWithName(typeStr, ""),
+			id:           component.NewIDWithName(typeStr, ""),
 			errorMessage: "'query.metrics' cannot be empty",
 		},
 		{
 			fname:        "config-invalid-missing-datasource.yaml",
-			id:           config.NewComponentIDWithName(typeStr, ""),
+			id:           component.NewIDWithName(typeStr, ""),
 			errorMessage: "'datasource' cannot be empty",
 		},
 		{
 			fname:        "config-unnecessary-aggregation.yaml",
-			id:           config.NewComponentIDWithName(typeStr, ""),
+			id:           component.NewIDWithName(typeStr, ""),
 			errorMessage: "aggregation=cumulative but data_type=gauge does not support aggregation",
 		},
 	}
@@ -131,7 +132,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 			if tt.expected == nil {
 				assert.ErrorContains(t, cfg.Validate(), tt.errorMessage)
@@ -155,9 +156,9 @@ func TestConfig_Validate_Multierr(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 	err = cfg.Validate()
 
