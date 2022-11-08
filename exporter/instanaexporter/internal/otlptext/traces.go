@@ -14,7 +14,11 @@
 
 package otlptext // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter/internal/otlptext"
 
-import "go.opentelemetry.io/collector/pdata/ptrace"
+import (
+	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+)
 
 // NewTextTracesMarshaler returns a serializer.TracesMarshaler to encode to OTLP text bytes.
 func NewTextTracesMarshaler() ptrace.Marshaler {
@@ -45,11 +49,11 @@ func (textTracesMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
 				buf.logAttr("Parent ID", span.ParentSpanID().HexString())
 				buf.logAttr("ID", span.SpanID().HexString())
 				buf.logAttr("Name", span.Name())
-				buf.logAttr("Kind", span.Kind().String())
+				buf.logAttr("Kind", traceutil.SpanKindStr(span.Kind()))
 				buf.logAttr("Start time", span.StartTimestamp().String())
 				buf.logAttr("End time", span.EndTimestamp().String())
 
-				buf.logAttr("Status code", span.Status().Code().String())
+				buf.logAttr("Status code", traceutil.StatusCodeStr(span.Status().Code()))
 				buf.logAttr("Status message", span.Status().Message())
 
 				buf.logAttributes("Attributes", span.Attributes())

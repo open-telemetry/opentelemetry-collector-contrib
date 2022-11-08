@@ -126,3 +126,35 @@ func TestConfigValidate(t *testing.T) {
 		{unit: "Megabytes", metricName: "memory_usage"},
 	}, cfg.MetricDescriptors)
 }
+
+func TestRetentionValidateCorrect(t *testing.T) {
+	cfg := &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "1")),
+		AWSSessionSettings: awsutil.AWSSessionSettings{
+			RequestTimeoutSeconds: 30,
+			MaxRetries:            1,
+		},
+		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+		LogRetention:                365,
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+		logger:                      zap.NewNop(),
+	}
+	assert.NoError(t, cfg.Validate())
+
+}
+
+func TestRetentionValidateWrong(t *testing.T) {
+	wrongcfg := &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
+		AWSSessionSettings: awsutil.AWSSessionSettings{
+			RequestTimeoutSeconds: 30,
+			MaxRetries:            1,
+		},
+		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+		LogRetention:                366,
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+		logger:                      zap.NewNop(),
+	}
+	assert.Error(t, wrongcfg.Validate())
+
+}

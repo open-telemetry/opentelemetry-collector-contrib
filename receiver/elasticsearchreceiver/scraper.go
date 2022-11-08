@@ -160,6 +160,12 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchNodeOperationsTimeDataPoint(now, info.Indices.FlushOperations.TotalTimeInMs, metadata.AttributeOperationFlush)
 		r.mb.RecordElasticsearchNodeOperationsTimeDataPoint(now, info.Indices.WarmerOperations.TotalTimeInMs, metadata.AttributeOperationWarmer)
 
+		r.mb.RecordElasticsearchNodeOperationsGetCompletedDataPoint(now, info.Indices.GetOperation.Exists, metadata.AttributeGetResultHit)
+		r.mb.RecordElasticsearchNodeOperationsGetCompletedDataPoint(now, info.Indices.GetOperation.Missing, metadata.AttributeGetResultMiss)
+
+		r.mb.RecordElasticsearchNodeOperationsGetTimeDataPoint(now, info.Indices.GetOperation.ExistsTimeInMs, metadata.AttributeGetResultHit)
+		r.mb.RecordElasticsearchNodeOperationsGetTimeDataPoint(now, info.Indices.GetOperation.MissingTimeInMs, metadata.AttributeGetResultMiss)
+
 		r.mb.RecordElasticsearchNodeShardsSizeDataPoint(now, info.Indices.StoreInfo.SizeInBy)
 
 		// Elasticsearch version 7.13+ is required to collect `elasticsearch.node.shards.data_set.size`.
@@ -377,9 +383,15 @@ func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name
 	r.mb.RecordElasticsearchIndexSegmentsCountDataPoint(
 		now, stats.Total.SegmentsStats.Count, metadata.AttributeIndexAggregationTypeTotal,
 	)
+	r.mb.RecordElasticsearchIndexSegmentsCountDataPoint(
+		now, stats.Primaries.SegmentsStats.Count, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
 
 	r.mb.RecordElasticsearchIndexSegmentsSizeDataPoint(
 		now, stats.Total.SegmentsStats.MemoryInBy, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexSegmentsSizeDataPoint(
+		now, stats.Primaries.SegmentsStats.MemoryInBy, metadata.AttributeIndexAggregationTypePrimaryShards,
 	)
 
 	r.mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(
@@ -404,6 +416,30 @@ func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name
 		now,
 		stats.Total.SegmentsStats.TermsMemoryInBy,
 		metadata.AttributeIndexAggregationTypeTotal,
+		metadata.AttributeSegmentsMemoryObjectTypeTerm,
+	)
+	r.mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(
+		now,
+		stats.Primaries.SegmentsStats.DocumentValuesMemoryInBy,
+		metadata.AttributeIndexAggregationTypePrimaryShards,
+		metadata.AttributeSegmentsMemoryObjectTypeDocValue,
+	)
+	r.mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(
+		now,
+		stats.Primaries.SegmentsStats.FixedBitSetMemoryInBy,
+		metadata.AttributeIndexAggregationTypePrimaryShards,
+		metadata.AttributeSegmentsMemoryObjectTypeFixedBitSet,
+	)
+	r.mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(
+		now,
+		stats.Primaries.SegmentsStats.IndexWriterMemoryInBy,
+		metadata.AttributeIndexAggregationTypePrimaryShards,
+		metadata.AttributeSegmentsMemoryObjectTypeIndexWriter,
+	)
+	r.mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(
+		now,
+		stats.Primaries.SegmentsStats.TermsMemoryInBy,
+		metadata.AttributeIndexAggregationTypePrimaryShards,
 		metadata.AttributeSegmentsMemoryObjectTypeTerm,
 	)
 

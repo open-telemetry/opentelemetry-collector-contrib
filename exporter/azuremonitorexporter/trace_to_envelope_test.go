@@ -26,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 const (
@@ -368,7 +370,7 @@ func TestRPCClientSpanToRemoteDependencyData(t *testing.T) {
 	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
 
 	assert.Equal(t, "8", data.ResultCode)
-	assert.Equal(t, span.Status().Code().String(), data.Properties[attributeOtelStatusCode])
+	assert.Equal(t, traceutil.StatusCodeStr(span.Status().Code()), data.Properties[attributeOtelStatusCode])
 	assert.Equal(t, span.Status().Message(), data.Properties[attributeOtelStatusDescription])
 }
 

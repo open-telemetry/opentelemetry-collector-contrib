@@ -38,7 +38,7 @@ func Test_traceID(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := TraceID[interface{}](tt.bytes)
 			assert.NoError(t, err)
-			result, err := exprFunc(nil)
+			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, result)
 		})

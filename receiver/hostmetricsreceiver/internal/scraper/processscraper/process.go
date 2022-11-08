@@ -94,6 +94,8 @@ type processHandle interface {
 	CreateTime() (int64, error)
 	Parent() (*process.Process, error)
 	PageFaults() (*process.PageFaultsStat, error)
+	NumCtxSwitches() (*process.NumCtxSwitchesStat, error)
+	NumFDs() (int32, error)
 }
 
 type gopsProcessHandles struct {

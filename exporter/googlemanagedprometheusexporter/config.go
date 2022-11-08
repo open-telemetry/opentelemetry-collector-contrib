@@ -36,16 +36,25 @@ type Config struct {
 
 // GMPConfig is a subset of the collector config applicable to the GMP exporter.
 type GMPConfig struct {
-	ProjectID    string                 `mapstructure:"project"`
-	UserAgent    string                 `mapstructure:"user_agent"`
+	ProjectID    string       `mapstructure:"project"`
+	UserAgent    string       `mapstructure:"user_agent"`
+	MetricConfig MetricConfig `mapstructure:"metric"`
+}
+
+type MetricConfig struct {
+	// Prefix configures the prefix of metrics sent to GoogleManagedPrometheus.  Defaults to prometheus.googleapis.com.
+	// Changing this prefix is not recommended, as it may cause metrics to not be queryable with promql in the Cloud Monitoring UI.
+	Prefix       string                 `mapstructure:"prefix"`
 	ClientConfig collector.ClientConfig `mapstructure:",squash"`
 }
 
 func (c *GMPConfig) toCollectorConfig() collector.Config {
 	// start with whatever the default collector config is.
 	cfg := collector.DefaultConfig()
-	// hard-code some config options to make it work with GMP
-	cfg.MetricConfig.Prefix = "prometheus.googleapis.com"
+	cfg.MetricConfig.Prefix = c.MetricConfig.Prefix
+	if c.MetricConfig.Prefix == "" {
+		cfg.MetricConfig.Prefix = "prometheus.googleapis.com"
+	}
 	cfg.MetricConfig.SkipCreateMetricDescriptor = true
 	cfg.MetricConfig.InstrumentationLibraryLabels = false
 	cfg.MetricConfig.ServiceResourceLabels = false
@@ -57,7 +66,7 @@ func (c *GMPConfig) toCollectorConfig() collector.Config {
 	// map the GMP config's fields to the collector config
 	cfg.ProjectID = c.ProjectID
 	cfg.UserAgent = c.UserAgent
-	cfg.MetricConfig.ClientConfig = c.ClientConfig
+	cfg.MetricConfig.ClientConfig = c.MetricConfig.ClientConfig
 	return cfg
 }
 

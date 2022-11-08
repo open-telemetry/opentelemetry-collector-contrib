@@ -13,18 +13,35 @@
 // limitations under the License.
 
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
-
-const (
-	Resource  string = "resource"
-	Scope     string = "scope"
-	Trace     string = "trace"
-	SpanEvent string = "spanevent"
-	Metric    string = "metric"
-	DataPoint string = "datapoint"
-	Log       string = "log"
+import (
+	"fmt"
+	"strings"
 )
 
+type ContextID string
+
+const (
+	Resource  ContextID = "resource"
+	Scope     ContextID = "scope"
+	Trace     ContextID = "trace"
+	SpanEvent ContextID = "spanevent"
+	Metric    ContextID = "metric"
+	DataPoint ContextID = "datapoint"
+	Log       ContextID = "log"
+)
+
+func (c *ContextID) UnmarshalText(text []byte) error {
+	str := ContextID(strings.ToLower(string(text)))
+	switch str {
+	case Resource, Scope, Trace, SpanEvent, Metric, DataPoint, Log:
+		*c = str
+		return nil
+	default:
+		return fmt.Errorf("unknown context %v", str)
+	}
+}
+
 type ContextStatements struct {
-	Context    string   `mapstructure:"context"`
-	Statements []string `mapstructure:"statements"`
+	Context    ContextID `mapstructure:"context"`
+	Statements []string  `mapstructure:"statements"`
 }

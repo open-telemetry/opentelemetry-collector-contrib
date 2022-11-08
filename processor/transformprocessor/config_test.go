@@ -21,7 +21,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -153,22 +152,18 @@ func TestLoadConfig(t *testing.T) {
 			id:           config.NewComponentIDWithName(typeStr, "unknown_function_log"),
 			errorMessage: "undefined function not_a_function",
 		},
-		{
-			id:           config.NewComponentIDWithName(typeStr, "unknown_context"),
-			errorMessage: "context, test, is not a valid context",
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
 			sub, err := cm.Sub(tt.id.String())
-			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+			assert.NoError(t, err)
+			assert.NoError(t, config.UnmarshalProcessor(sub, cfg))
 
 			if tt.expected == nil {
 				assert.EqualError(t, cfg.Validate(), tt.errorMessage)
@@ -178,4 +173,18 @@ func TestLoadConfig(t *testing.T) {
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
+}
+
+func Test_UnknownContextID(t *testing.T) {
+	id := config.NewComponentIDWithName(typeStr, "unknown_context")
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(id.String())
+	assert.NoError(t, err)
+	assert.Error(t, config.UnmarshalProcessor(sub, cfg))
 }

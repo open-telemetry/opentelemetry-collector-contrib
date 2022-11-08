@@ -15,6 +15,7 @@
 package spanmetricsprocessor
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"testing"
@@ -296,7 +297,7 @@ func TestProcessorConsumeTraces(t *testing.T) {
 			})).Return(nil)
 			tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
-			defaultNullValue := "defaultNullValue"
+			defaultNullValue := pcommon.NewValueStr("defaultNullValue")
 			p := newProcessorImp(mexp, tcon, &defaultNullValue, tc.aggregationTemporality, zaptest.NewLogger(t))
 
 			for _, traces := range tc.traces {
@@ -318,7 +319,7 @@ func TestMetricKeyCache(t *testing.T) {
 	mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
-	defaultNullValue := "defaultNullValue"
+	defaultNullValue := pcommon.NewValueStr("defaultNullValue")
 	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(t))
 	traces := buildSampleTrace()
 
@@ -326,14 +327,14 @@ func TestMetricKeyCache(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 
 	// 0 key was cached at beginning
-	assert.Empty(t, p.metricKeyToDimensions.Keys())
+	assert.Zero(t, p.metricKeyToDimensions.Len())
 
 	err := p.ConsumeTraces(ctx, traces)
 	// Validate
 	require.NoError(t, err)
 	// 2 key was cached, 1 key was evicted and cleaned after the processing
 	assert.Eventually(t, func() bool {
-		return assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
+		return assert.Equal(t, DimensionsCacheSize, p.metricKeyToDimensions.Len())
 	}, 10*time.Second, time.Millisecond*100)
 
 	// consume another batch of traces
@@ -342,7 +343,7 @@ func TestMetricKeyCache(t *testing.T) {
 
 	// 2 key was cached, other keys were evicted and cleaned after the processing
 	assert.Eventually(t, func() bool {
-		return assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
+		return assert.Equal(t, DimensionsCacheSize, p.metricKeyToDimensions.Len())
 	}, 10*time.Second, time.Millisecond*100)
 }
 
@@ -354,7 +355,7 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
-	defaultNullValue := "defaultNullValue"
+	defaultNullValue := pcommon.NewValueStr("defaultNullValue")
 	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(b))
 
 	traces := buildSampleTrace()
@@ -366,10 +367,10 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	}
 }
 
-func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *string, temporality string, logger *zap.Logger) *processorImp {
-	defaultNotInSpanAttrVal := "defaultNotInSpanAttrVal"
+func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *pcommon.Value, temporality string, logger *zap.Logger) *processorImp {
+	defaultNotInSpanAttrVal := pcommon.NewValueStr("defaultNotInSpanAttrVal")
 	// use size 2 for LRU cache for testing purpose
-	metricKeyToDimensions, err := cache.NewCache(DimensionsCacheSize)
+	metricKeyToDimensions, err := cache.NewCache[metricKey, pcommon.Map](DimensionsCacheSize)
 	if err != nil {
 		panic(err)
 	}
@@ -382,7 +383,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 		startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
 		histograms:     make(map[metricKey]*histogramData),
 		latencyBounds:  defaultLatencyHistogramBucketsMs,
-		dimensions: []Dimension{
+		dimensions: []dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
 			{stringAttrName, nil},
 			{intAttrName, nil},
@@ -398,6 +399,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 			// Add a resource attribute to test "process" attributes like IP, host, region, cluster, etc.
 			{regionResourceAttrName, nil},
 		},
+		keyBuf:                new(bytes.Buffer),
 		metricKeyToDimensions: metricKeyToDimensions,
 	}
 }
@@ -649,22 +651,24 @@ func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExpo
 func TestBuildKeySameServiceOperationCharSequence(t *testing.T) {
 	span0 := ptrace.NewSpan()
 	span0.SetName("c")
-	k0 := buildKey("ab", span0, nil, pcommon.NewMap())
-
+	buf := &bytes.Buffer{}
+	buildKey(buf, "ab", span0, nil, pcommon.NewMap())
+	k0 := metricKey(buf.String())
+	buf.Reset()
 	span1 := ptrace.NewSpan()
 	span1.SetName("bc")
-	k1 := buildKey("a", span1, nil, pcommon.NewMap())
-
+	buildKey(buf, "a", span1, nil, pcommon.NewMap())
+	k1 := metricKey(buf.String())
 	assert.NotEqual(t, k0, k1)
 	assert.Equal(t, metricKey("ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k0)
 	assert.Equal(t, metricKey("a\u0000bc\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k1)
 }
 
 func TestBuildKeyWithDimensions(t *testing.T) {
-	defaultFoo := "bar"
+	defaultFoo := pcommon.NewValueStr("bar")
 	for _, tc := range []struct {
 		name            string
-		optionalDims    []Dimension
+		optionalDims    []dimension
 		resourceAttrMap map[string]interface{}
 		spanAttrMap     map[string]interface{}
 		wantKey         string
@@ -675,22 +679,22 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 		{
 			name: "neither span nor resource contains key, dim provides default",
-			optionalDims: []Dimension{
-				{Name: "foo", Default: &defaultFoo},
+			optionalDims: []dimension{
+				{name: "foo", value: &defaultFoo},
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000bar",
 		},
 		{
 			name: "neither span nor resource contains key, dim provides no default",
-			optionalDims: []Dimension{
-				{Name: "foo"},
+			optionalDims: []dimension{
+				{name: "foo"},
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET",
 		},
 		{
 			name: "span attribute contains dimension",
-			optionalDims: []Dimension{
-				{Name: "foo"},
+			optionalDims: []dimension{
+				{name: "foo"},
 			},
 			spanAttrMap: map[string]interface{}{
 				"foo": 99,
@@ -699,8 +703,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 		{
 			name: "resource attribute contains dimension",
-			optionalDims: []Dimension{
-				{Name: "foo"},
+			optionalDims: []dimension{
+				{name: "foo"},
 			},
 			resourceAttrMap: map[string]interface{}{
 				"foo": 99,
@@ -709,8 +713,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 		{
 			name: "both span and resource attribute contains dimension, should prefer span attribute",
-			optionalDims: []Dimension{
-				{Name: "foo"},
+			optionalDims: []dimension{
+				{name: "foo"},
 			},
 			spanAttrMap: map[string]interface{}{
 				"foo": 100,
@@ -727,9 +731,9 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			span0 := ptrace.NewSpan()
 			span0.Attributes().FromRaw(tc.spanAttrMap)
 			span0.SetName("c")
-			k := buildKey("ab", span0, tc.optionalDims, resAttr)
-
-			assert.Equal(t, metricKey(tc.wantKey), k)
+			buf := &bytes.Buffer{}
+			buildKey(buf, "ab", span0, tc.optionalDims, resAttr)
+			assert.Equal(t, tc.wantKey, buf.String())
 		})
 	}
 }

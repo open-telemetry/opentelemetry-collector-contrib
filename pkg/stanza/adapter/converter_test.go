@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
@@ -434,9 +435,7 @@ func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			t.Parallel()
 
-			converter := NewConverter(
-				WithWorkerCount(1),
-			)
+			converter := NewConverter(zap.NewNop())
 			converter.Start()
 			defer converter.Stop()
 
@@ -498,7 +497,7 @@ func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
 }
 
 func TestConverterCancelledContextCancellsTheFlush(t *testing.T) {
-	converter := NewConverter()
+	converter := NewConverter(zap.NewNop())
 	converter.Start()
 	defer converter.Stop()
 	var wg sync.WaitGroup
@@ -890,9 +889,7 @@ func BenchmarkConverter(b *testing.B) {
 		b.Run(fmt.Sprintf("worker_count=%d", wc), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 
-				converter := NewConverter(
-					WithWorkerCount(wc),
-				)
+				converter := NewConverter(zap.NewNop())
 				converter.Start()
 				defer converter.Stop()
 				b.ResetTimer()

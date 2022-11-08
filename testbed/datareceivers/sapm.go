@@ -43,7 +43,7 @@ func NewSapmDataReceiver(port int) *SapmDataReceiver {
 func (sr *SapmDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
 	sapmCfg := sapmreceiver.Config{
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: fmt.Sprintf("localhost:%d", sr.Port),
+			Endpoint: fmt.Sprintf("127.0.0.1:%d", sr.Port),
 		},
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{AccessTokenPassthrough: true},
 	}
@@ -70,7 +70,7 @@ func (sr *SapmDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   sapm:
-    endpoint: "http://localhost:%d/v2/trace"
+    endpoint: "http://127.0.0.1:%d/v2/trace"
     disable_compression: true
     access_token_passthrough: true`, sr.Port)
 }

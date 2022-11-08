@@ -42,7 +42,7 @@ func NewPrometheusDataReceiver(port int) testbed.DataReceiver {
 func (dr *prometheusDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ consumer.Logs) error {
 	factory := prometheusreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*prometheusreceiver.Config)
-	addr := fmt.Sprintf("0.0.0.0:%d", dr.Port)
+	addr := fmt.Sprintf("127.0.0.1:%d", dr.Port)
 	cfg.PrometheusConfig = &promconfig.Config{
 		ScrapeConfigs: []*promconfig.ScrapeConfig{{
 			JobName:        "testbed-job",
@@ -77,7 +77,7 @@ func (dr *prometheusDataReceiver) Stop() error {
 func (dr *prometheusDataReceiver) GenConfigYAMLStr() string {
 	format := `
   prometheus:
-    endpoint: "localhost:%d"
+    endpoint: "127.0.0.1:%d"
 `
 	return fmt.Sprintf(format, dr.Port)
 }

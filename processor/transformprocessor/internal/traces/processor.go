@@ -16,6 +16,7 @@ package traces // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/consumer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -26,7 +27,7 @@ import (
 )
 
 type Processor struct {
-	contexts []common.Context
+	contexts []consumer.Traces
 	// Deprecated.  Use contexts instead
 	statements []*ottl.Statement[ottltraces.TransformContext]
 }
@@ -43,17 +44,26 @@ func NewProcessor(statements []string, contextStatements []common.ContextStateme
 		}, nil
 	}
 
-	pc := common.NewParserCollection(settings, common.WithTraceParser(Functions()), common.WithSpanEventParser(Functions()))
-	contexts, err := pc.ParseContextStatements(contextStatements)
+	pc, err := common.NewTraceParserCollection(Functions(), settings)
 	if err != nil {
 		return nil, err
 	}
+
+	contexts := make([]consumer.Traces, len(contextStatements))
+	for i, cs := range contextStatements {
+		context, err := pc.ParseContextStatements(cs)
+		if err != nil {
+			return nil, err
+		}
+		contexts[i] = context
+	}
+
 	return &Processor{
 		contexts: contexts,
 	}, nil
 }
 
-func (p *Processor) ProcessTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+func (p *Processor) ProcessTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	if len(p.statements) > 0 {
 		for i := 0; i < td.ResourceSpans().Len(); i++ {
 			rspans := td.ResourceSpans().At(i)
@@ -61,16 +71,22 @@ func (p *Processor) ProcessTraces(_ context.Context, td ptrace.Traces) (ptrace.T
 				sspan := rspans.ScopeSpans().At(j)
 				spans := sspan.Spans()
 				for k := 0; k < spans.Len(); k++ {
-					ctx := ottltraces.NewTransformContext(spans.At(k), sspan.Scope(), rspans.Resource())
+					tCtx := ottltraces.NewTransformContext(spans.At(k), sspan.Scope(), rspans.Resource())
 					for _, statement := range p.statements {
-						statement.Execute(ctx)
+						_, _, err := statement.Execute(ctx, tCtx)
+						if err != nil {
+							return td, err
+						}
 					}
 				}
 			}
 		}
 	} else {
-		for _, contexts := range p.contexts {
-			contexts.(common.TracesContext).ProcessTraces(td)
+		for _, c := range p.contexts {
+			err := c.ConsumeTraces(ctx, td)
+			if err != nil {
+				return td, err
+			}
 		}
 	}
 	return td, nil

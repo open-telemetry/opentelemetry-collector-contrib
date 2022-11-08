@@ -15,6 +15,7 @@
 package ottl
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -119,9 +120,9 @@ func Test_newComparisonEvaluator(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			comp := comparisonHelper(tt.l, tt.r, tt.op)
-			evaluate, err := p.newComparisonEvaluator(comp)
+			evaluator, err := p.newComparisonEvaluator(comp)
 			assert.NoError(t, err)
-			result, err := evaluate(tt.item)
+			result, err := evaluator.Eval(context.Background(), tt.item)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, result)
 		})
@@ -351,9 +352,9 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evaluate, err := p.newBooleanExpressionEvaluator(tt.expr)
+			evaluator, err := p.newBoolExpr(tt.expr)
 			assert.NoError(t, err)
-			result, err := evaluate(nil)
+			result, err := evaluator.Eval(context.Background(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, result)
 		})

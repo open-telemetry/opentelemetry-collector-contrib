@@ -57,10 +57,6 @@ var (
 					}(),
 				},
 			},
-			Converter: adapter.ConverterConfig{
-				MaxFlushCount: 100,
-				FlushInterval: 100 * time.Millisecond,
-			},
 		},
 	}
 )

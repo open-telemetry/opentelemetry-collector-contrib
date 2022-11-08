@@ -130,7 +130,7 @@ func Test_convertGaugeToSum(t *testing.T) {
 
 			exprFunc, _ := convertGaugeToSum(tt.stringAggTemp, tt.monotonic)
 
-			_, err := exprFunc(ctx)
+			_, err := exprFunc(nil, ctx)
 			assert.Nil(t, err)
 
 			expected := pmetric.NewMetric()

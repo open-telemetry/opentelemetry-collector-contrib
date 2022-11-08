@@ -29,6 +29,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
 )
 
@@ -189,7 +190,7 @@ func populateStatus(status ptrace.Status, zs *zipkinmodel.SpanModel, tags map[st
 		return
 	}
 
-	tags[conventions.OtelStatusCode] = status.Code().String()
+	tags[conventions.OtelStatusCode] = traceutil.StatusCodeStr(status.Code())
 	if status.Message() != "" {
 		tags[conventions.OtelStatusDescription] = status.Message()
 		zs.Err = fmt.Errorf("%s", status.Message())

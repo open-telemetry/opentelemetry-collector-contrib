@@ -17,7 +17,6 @@ package adapter
 import (
 	"context"
 	"errors"
-	"time"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -96,10 +95,6 @@ func (f TestReceiverType) CreateDefaultConfig() config.Receiver {
 		BaseConfig: BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(testType)),
 			Operators:        []operator.Config{},
-			Converter: ConverterConfig{
-				MaxFlushCount: 1,
-				FlushInterval: 100 * time.Millisecond,
-			},
 		},
 		Input: operator.NewConfig(noop.NewConfig()),
 	}

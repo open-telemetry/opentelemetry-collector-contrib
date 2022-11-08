@@ -15,33 +15,39 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
+	"context"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-type TracesContext interface {
-	ProcessTraces(td ptrace.Traces) error
-}
-
-var _ Context = &traceStatements{}
-var _ TracesContext = &traceStatements{}
+var _ consumer.Traces = &traceStatements{}
 
 type traceStatements []*ottl.Statement[ottltraces.TransformContext]
 
-func (t traceStatements) isContext() {}
+func (t traceStatements) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{
+		MutatesData: true,
+	}
+}
 
-func (t traceStatements) ProcessTraces(td ptrace.Traces) error {
+func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
 			sspans := rspans.ScopeSpans().At(j)
 			spans := sspans.Spans()
 			for k := 0; k < spans.Len(); k++ {
-				ctx := ottltraces.NewTransformContext(spans.At(k), sspans.Scope(), rspans.Resource())
+				tCtx := ottltraces.NewTransformContext(spans.At(k), sspans.Scope(), rspans.Resource())
 				for _, statement := range t {
-					_, _, err := statement.Execute(ctx)
+					_, _, err := statement.Execute(ctx, tCtx)
 					if err != nil {
 						return err
 					}
@@ -52,14 +58,17 @@ func (t traceStatements) ProcessTraces(td ptrace.Traces) error {
 	return nil
 }
 
-var _ Context = &spanEventStatements{}
-var _ TracesContext = &spanEventStatements{}
+var _ consumer.Traces = &spanEventStatements{}
 
 type spanEventStatements []*ottl.Statement[ottlspanevent.TransformContext]
 
-func (s spanEventStatements) isContext() {}
+func (s spanEventStatements) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{
+		MutatesData: true,
+	}
+}
 
-func (s spanEventStatements) ProcessTraces(td ptrace.Traces) error {
+func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
@@ -69,9 +78,9 @@ func (s spanEventStatements) ProcessTraces(td ptrace.Traces) error {
 				span := spans.At(k)
 				spanEvents := span.Events()
 				for n := 0; n < spanEvents.Len(); n++ {
-					ctx := ottlspanevent.NewTransformContext(spanEvents.At(k), span, sspans.Scope(), rspans.Resource())
+					tCtx := ottlspanevent.NewTransformContext(spanEvents.At(k), span, sspans.Scope(), rspans.Resource())
 					for _, statement := range s {
-						_, _, err := statement.Execute(ctx)
+						_, _, err := statement.Execute(ctx, tCtx)
 						if err != nil {
 							return err
 						}
@@ -81,4 +90,51 @@ func (s spanEventStatements) ProcessTraces(td ptrace.Traces) error {
 		}
 	}
 	return nil
+}
+
+type TraceParserCollection struct {
+	parserCollection
+	traceParser     ottl.Parser[ottltraces.TransformContext]
+	spanEventParser ottl.Parser[ottlspanevent.TransformContext]
+}
+
+type TraceParserCollectionOption func(*TraceParserCollection) error
+
+func NewTraceParserCollection(functions map[string]interface{}, settings component.TelemetrySettings, options ...TraceParserCollectionOption) (*TraceParserCollection, error) {
+	tpc := &TraceParserCollection{
+		parserCollection: parserCollection{
+			settings:       settings,
+			resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
+			scopeParser:    ottlscope.NewParser(ScopeFunctions(), settings),
+		},
+		traceParser: ottltraces.NewParser(functions, settings),
+	}
+
+	for _, op := range options {
+		err := op(tpc)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return tpc, nil
+}
+
+func (pc TraceParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Traces, error) {
+	switch contextStatements.Context {
+	case Trace:
+		tStatements, err := pc.traceParser.ParseStatements(contextStatements.Statements)
+		if err != nil {
+			return nil, err
+		}
+		return traceStatements(tStatements), nil
+	case SpanEvent:
+		seStatements, err := pc.spanEventParser.ParseStatements(contextStatements.Statements)
+		if err != nil {
+			return nil, err
+		}
+		return spanEventStatements(seStatements), nil
+	default:
+		return pc.parseCommonContextStatements(contextStatements)
+	}
 }

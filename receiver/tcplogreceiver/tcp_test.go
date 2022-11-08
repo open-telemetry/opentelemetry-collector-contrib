@@ -92,9 +92,6 @@ func testdataConfigYaml() *TCPLogConfig {
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        []operator.Config{},
-			Converter: adapter.ConverterConfig{
-				WorkerCount: 1,
-			},
 		},
 		InputConfig: func() tcp.Config {
 			c := tcp.NewConfig()

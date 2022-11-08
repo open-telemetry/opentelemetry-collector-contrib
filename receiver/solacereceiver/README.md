@@ -1,8 +1,12 @@
 # Solace Receiver
 
-The Solace receiver receives trace data from a [Solace PubSub+ Event Broker](https://solace.com/products/event-broker/).
+| Status                   |           |
+|--------------------------|-----------|
+| Stability                | [alpha]   |
+| Supported pipeline types | traces    |
+| Distributions            | [contrib] |
 
-Supported pipeline types: `traces`
+The Solace receiver receives trace data from a [Solace PubSub+ Event Broker](https://solace.com/products/event-broker/).
 
 ## Getting Started
 To get started with the Solace receiver, a telemetry queue and authentication details must be configured. If connecting to a broker other than localhost, the `broker` field should be configured.
@@ -87,3 +91,6 @@ service:
     traces/solace:
       receivers: [solace/primary,solace/backup]
 ```
+
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

@@ -16,6 +16,7 @@ package logs // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/consumer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -26,7 +27,7 @@ import (
 )
 
 type Processor struct {
-	contexts []common.Context
+	contexts []consumer.Logs
 	// Deprecated.  Use contexts instead
 	statements []*ottl.Statement[ottllogs.TransformContext]
 }
@@ -42,35 +43,51 @@ func NewProcessor(statements []string, contextStatements []common.ContextStateme
 			statements: parsedStatements,
 		}, nil
 	}
-	pc := common.NewParserCollection(settings, common.WithLogParser(Functions()))
-	contexts, err := pc.ParseContextStatements(contextStatements)
+
+	pc, err := common.NewLogParserCollection(Functions(), settings)
 	if err != nil {
 		return nil, err
 	}
+
+	contexts := make([]consumer.Logs, len(contextStatements))
+	for i, cs := range contextStatements {
+		context, err := pc.ParseContextStatements(cs)
+		if err != nil {
+			return nil, err
+		}
+		contexts[i] = context
+	}
+
 	return &Processor{
 		contexts: contexts,
 	}, nil
 }
 
-func (p *Processor) ProcessLogs(_ context.Context, td plog.Logs) (plog.Logs, error) {
+func (p *Processor) ProcessLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	if len(p.statements) > 0 {
-		for i := 0; i < td.ResourceLogs().Len(); i++ {
-			rlogs := td.ResourceLogs().At(i)
+		for i := 0; i < ld.ResourceLogs().Len(); i++ {
+			rlogs := ld.ResourceLogs().At(i)
 			for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
 				slogs := rlogs.ScopeLogs().At(j)
 				logs := slogs.LogRecords()
 				for k := 0; k < logs.Len(); k++ {
-					ctx := ottllogs.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
+					tCtx := ottllogs.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
 					for _, statement := range p.statements {
-						statement.Execute(ctx)
+						_, _, err := statement.Execute(ctx, tCtx)
+						if err != nil {
+							return ld, err
+						}
 					}
 				}
 			}
 		}
 	} else {
-		for _, contexts := range p.contexts {
-			contexts.(common.LogsContext).ProcessLogs(td)
+		for _, c := range p.contexts {
+			err := c.ConsumeLogs(ctx, ld)
+			if err != nil {
+				return ld, err
+			}
 		}
 	}
-	return td, nil
+	return ld, nil
 }
