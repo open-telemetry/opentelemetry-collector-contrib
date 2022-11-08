@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -37,13 +38,13 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id       config.ComponentID
-		expected config.Exporter
+		id       component.ID
+		expected component.ExporterConfig
 	}{
 		{
-			id: config.NewComponentIDWithName(typeStr, ""),
+			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 				PrivateKey:       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
@@ -97,9 +98,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "all"),
+			id: component.NewIDWithName(typeStr, "all"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 				PrivateKey:       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
@@ -163,7 +164,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalExporter(sub, cfg))
+			require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
 			assert.NoError(t, cfg.Validate())
 			assert.Equal(t, tt.expected, cfg)
@@ -177,9 +178,9 @@ func TestTraceExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalExporter(sub, cfg))
+	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
 	params := componenttest.NewNopExporterCreateSettings()
 	te, err := newTracesExporter(cfg, params)
@@ -194,9 +195,9 @@ func TestJaegerBasedTraceExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "trace").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "trace").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalExporter(sub, cfg))
+	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
 	params := componenttest.NewNopExporterCreateSettings()
 	te, err := newCoralogixExporter(cfg.(*Config), params)

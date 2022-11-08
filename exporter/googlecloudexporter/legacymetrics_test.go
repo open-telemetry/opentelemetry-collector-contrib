@@ -101,7 +101,7 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 	}
 
 	sde, err := newLegacyGoogleCloudMetricsExporter(&LegacyConfig{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		ProjectID:        "idk",
 		Endpoint:         "127.0.0.1:8080",
 		UserAgent:        "MyAgent {{version}}",

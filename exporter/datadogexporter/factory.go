@@ -81,14 +81,14 @@ func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
 }
 
 // createDefaultConfig creates the default exporter configuration
-func (f *factory) createDefaultConfig() config.Exporter {
+func (f *factory) createDefaultConfig() component.ExporterConfig {
 	hostnameSource := HostnameSourceFirstResource
 	if f.registry.IsEnabled(metadata.HostnamePreviewFeatureGate) {
 		hostnameSource = HostnameSourceConfigOrSystem
 	}
 
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		TimeoutSettings:  defaulttimeoutSettings(),
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
@@ -140,7 +140,7 @@ func (f *factory) createDefaultConfig() config.Exporter {
 
 // checkAndCastConfig checks the configuration type and its warnings, and casts it to
 // the Datadog Config struct.
-func checkAndCastConfig(c config.Exporter) *Config {
+func checkAndCastConfig(c component.ExporterConfig) *Config {
 	cfg, ok := c.(*Config)
 	if !ok {
 		panic("programming error: config structure is not of type *datadogexporter.Config")
@@ -152,7 +152,7 @@ func checkAndCastConfig(c config.Exporter) *Config {
 func (f *factory) createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	c config.Exporter,
+	c component.ExporterConfig,
 ) (component.MetricsExporter, error) {
 	cfg := checkAndCastConfig(c)
 
@@ -212,7 +212,7 @@ func (f *factory) createMetricsExporter(
 func (f *factory) createTracesExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	c config.Exporter,
+	c component.ExporterConfig,
 ) (component.TracesExporter, error) {
 	cfg := checkAndCastConfig(c)
 
@@ -275,7 +275,7 @@ func (f *factory) createTracesExporter(
 func (f *factory) createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	c config.Exporter,
+	c component.ExporterConfig,
 ) (component.LogsExporter, error) {
 	cfg := checkAndCastConfig(c)
 

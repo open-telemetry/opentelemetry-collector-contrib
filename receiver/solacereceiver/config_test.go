@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -32,14 +33,14 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id          config.ComponentID
-		expected    config.Receiver
+		id          component.ID
+		expected    component.ReceiverConfig
 		expectedErr error
 	}{
 		{
-			id: config.NewComponentIDWithName(componentType, "primary"),
+			id: component.NewIDWithName(componentType, "primary"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(componentType)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(componentType)),
 				Broker:           []string{"myHost:5671"},
 				Auth: Authentication{
 					PlainText: &SaslPlainTextConfig{
@@ -56,11 +57,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          config.NewComponentIDWithName(componentType, "noauth"),
+			id:          component.NewIDWithName(componentType, "noauth"),
 			expectedErr: errMissingAuthDetails,
 		},
 		{
-			id:          config.NewComponentIDWithName(componentType, "noqueue"),
+			id:          component.NewIDWithName(componentType, "noqueue"),
 			expectedErr: errMissingQueueName,
 		},
 	}
@@ -72,7 +73,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 			if tt.expectedErr != nil {
 				assert.ErrorIs(t, cfg.Validate(), tt.expectedErr)

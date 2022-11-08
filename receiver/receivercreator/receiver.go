@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 
@@ -78,7 +77,7 @@ func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 		},
 	}
 
-	observers := map[config.ComponentID]observer.Observable{}
+	observers := map[component.ID]observer.Observable{}
 
 	// Match all configured observables to the extensions that are running.
 	for _, watchObserver := range rc.cfg.WatchObservers {

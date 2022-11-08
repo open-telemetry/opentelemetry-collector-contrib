@@ -15,6 +15,7 @@
 package adapter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 
 import (
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -23,6 +24,6 @@ import (
 // BaseConfig is the common configuration of a stanza-based receiver
 type BaseConfig struct {
 	config.ReceiverSettings `mapstructure:",squash"`
-	Operators               []operator.Config   `mapstructure:"operators"`
-	StorageID               *config.ComponentID `mapstructure:"storage"`
+	Operators               []operator.Config `mapstructure:"operators"`
+	StorageID               *component.ID     `mapstructure:"storage"`
 }

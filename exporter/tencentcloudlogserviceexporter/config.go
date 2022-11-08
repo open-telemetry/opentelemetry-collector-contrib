@@ -17,6 +17,7 @@ package tencentcloudlogserviceexporter // import "github.com/open-telemetry/open
 import (
 	"errors"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -37,7 +38,7 @@ type Config struct {
 	SecretKey string `mapstructure:"secret_key"`
 }
 
-var _ config.Exporter = (*Config)(nil)
+var _ component.ExporterConfig = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {

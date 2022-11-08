@@ -15,6 +15,7 @@
 package probabilisticsamplerprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor"
 
 import (
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -32,7 +33,7 @@ type Config struct {
 	HashSeed uint32 `mapstructure:"hash_seed"`
 }
 
-var _ config.Processor = (*Config)(nil)
+var _ component.ProcessorConfig = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {

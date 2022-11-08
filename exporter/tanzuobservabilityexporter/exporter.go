@@ -22,7 +22,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -62,7 +61,7 @@ type tracesExporter struct {
 	logger *zap.Logger
 }
 
-func newTracesExporter(settings component.ExporterCreateSettings, c config.Exporter) (*tracesExporter, error) {
+func newTracesExporter(settings component.ExporterCreateSettings, c component.ExporterConfig) (*tracesExporter, error) {
 	cfg, ok := c.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config: %#v", c)

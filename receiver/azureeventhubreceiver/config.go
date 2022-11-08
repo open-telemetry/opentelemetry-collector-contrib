@@ -17,6 +17,7 @@ import (
 	"errors"
 
 	"github.com/Azure/azure-amqp-common-go/v3/conn"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -26,10 +27,10 @@ var (
 
 type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"`
-	Connection              string              `mapstructure:"connection"`
-	Partition               string              `mapstructure:"partition"`
-	Offset                  string              `mapstructure:"offset"`
-	StorageID               *config.ComponentID `mapstructure:"storage"`
+	Connection              string        `mapstructure:"connection"`
+	Partition               string        `mapstructure:"partition"`
+	Offset                  string        `mapstructure:"offset"`
+	StorageID               *component.ID `mapstructure:"storage"`
 }
 
 // Validate config

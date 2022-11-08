@@ -20,8 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
@@ -38,12 +38,12 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 2)
 
-	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
+	r0 := cfg.Receivers[component.NewID(typeStr)]
 	assert.Equal(t, "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName", r0.(*Config).Connection)
 	assert.Equal(t, "", r0.(*Config).Offset)
 	assert.Equal(t, "", r0.(*Config).Partition)
 
-	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "all")]
+	r1 := cfg.Receivers[component.NewIDWithName(typeStr, "all")]
 	assert.Equal(t, "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName", r1.(*Config).Connection)
 	assert.Equal(t, "1234-5566", r1.(*Config).Offset)
 	assert.Equal(t, "foo", r1.(*Config).Partition)

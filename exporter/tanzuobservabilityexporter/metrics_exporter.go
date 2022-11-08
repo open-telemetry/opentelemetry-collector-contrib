@@ -20,7 +20,6 @@ import (
 
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -53,7 +52,7 @@ func createMetricsConsumer(endpoint string, settings component.TelemetrySettings
 type metricsConsumerCreator func(endpoint string, settings component.TelemetrySettings, otelVersion string) (
 	*metricsConsumer, error)
 
-func newMetricsExporter(settings component.ExporterCreateSettings, c config.Exporter, creator metricsConsumerCreator) (*metricsExporter, error) {
+func newMetricsExporter(settings component.ExporterCreateSettings, c component.ExporterConfig, creator metricsConsumerCreator) (*metricsExporter, error) {
 	cfg, ok := c.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config: %#v", c)

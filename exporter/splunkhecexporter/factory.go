@@ -60,11 +60,11 @@ func NewFactory() component.ExporterFactory {
 		component.WithLogsExporter(createLogsExporter, stability))
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.ExporterConfig {
 	return &Config{
 		LogDataEnabled:       true,
 		ProfilingDataEnabled: true,
-		ExporterSettings:     config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings:     config.NewExporterSettings(component.NewID(typeStr)),
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: defaultHTTPTimeout,
 		},
@@ -92,7 +92,7 @@ func createDefaultConfig() config.Exporter {
 func createTracesExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	config config.Exporter,
+	config component.ExporterConfig,
 ) (component.TracesExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
@@ -120,7 +120,7 @@ func createTracesExporter(
 func createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	config config.Exporter,
+	config component.ExporterConfig,
 ) (component.MetricsExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
@@ -159,7 +159,7 @@ func createMetricsExporter(
 func createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	config config.Exporter,
+	config component.ExporterConfig,
 ) (exporter component.LogsExporter, err error) {
 	if config == nil {
 		return nil, errors.New("nil config")

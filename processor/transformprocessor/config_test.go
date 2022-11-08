@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -28,14 +29,14 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id           config.ComponentID
-		expected     config.Processor
+		id           component.ID
+		expected     component.ProcessorConfig
 		errorMessage string
 	}{
 		{
-			id: config.NewComponentIDWithName(typeStr, ""),
+			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				OTTLConfig: OTTLConfig{
 					Traces: SignalConfig{
 						Statements: []string{
@@ -59,28 +60,28 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "bad_syntax_trace"),
+			id:           component.NewIDWithName(typeStr, "bad_syntax_trace"),
 			errorMessage: "1:18: unexpected token \"where\" (expected \")\")",
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "unknown_function_trace"),
+			id:           component.NewIDWithName(typeStr, "unknown_function_trace"),
 			errorMessage: "undefined function not_a_function",
 		},
 
 		{
-			id:           config.NewComponentIDWithName(typeStr, "bad_syntax_metric"),
+			id:           component.NewIDWithName(typeStr, "bad_syntax_metric"),
 			errorMessage: "1:18: unexpected token \"where\" (expected \")\")",
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "unknown_function_metric"),
+			id:           component.NewIDWithName(typeStr, "unknown_function_metric"),
 			errorMessage: "undefined function not_a_function",
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "bad_syntax_log"),
+			id:           component.NewIDWithName(typeStr, "bad_syntax_log"),
 			errorMessage: "1:18: unexpected token \"where\" (expected \")\")",
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "unknown_function_log"),
+			id:           component.NewIDWithName(typeStr, "unknown_function_log"),
 			errorMessage: "undefined function not_a_function",
 		},
 	}
@@ -94,7 +95,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
 
 			if tt.expected == nil {
 				assert.EqualError(t, cfg.Validate(), tt.errorMessage)

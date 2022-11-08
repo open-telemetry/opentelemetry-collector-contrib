@@ -21,9 +21,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -35,9 +34,9 @@ func TestCreateMetricsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalExporter(sub, cfg))
+	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
 	params := componenttest.NewNopExporterCreateSettings()
 	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
@@ -53,9 +52,9 @@ func TestCreateMetricsExporterWhenIngestEmpty(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "2").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "2").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalExporter(sub, cfg))
+	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
 	params := componenttest.NewNopExporterCreateSettings()
 	// Load the #3 which has empty
@@ -69,7 +68,7 @@ func TestCreateMetricsExporterWhenIngestEmpty(t *testing.T) {
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	assert.Equal(t, otelDb, cfg.Database)
 	assert.Equal(t, queuedIngestTest, cfg.IngestionType)
 }
@@ -82,9 +81,9 @@ func TestCreateLogsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalExporter(sub, cfg))
+	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
 	params := componenttest.NewNopExporterCreateSettings()
 	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
@@ -100,9 +99,9 @@ func TestCreateLogsExporterWhenIngestEmpty(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "2").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "2").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalExporter(sub, cfg))
+	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
 	params := componenttest.NewNopExporterCreateSettings()
 	// Load the #3 which has empty
@@ -121,9 +120,9 @@ func TestCreateTracesExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalExporter(sub, cfg))
+	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
 	params := componenttest.NewNopExporterCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
@@ -139,9 +138,9 @@ func TestCreateTracesExporterWhenIngestEmpty(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "2").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "2").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalExporter(sub, cfg))
+	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
 	params := componenttest.NewNopExporterCreateSettings()
 	// Load the #3 which has empty

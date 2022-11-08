@@ -43,10 +43,10 @@ func NewFactory() component.ReceiverFactory {
 }
 
 // createDefaultConfig creates a config for SNMP with as many default values as possible
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.ReceiverConfig {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 			CollectionInterval: defaultCollectionInterval,
 		},
 		Endpoint:      defaultEndpoint,
@@ -62,7 +62,7 @@ func createDefaultConfig() config.Receiver {
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	config config.Receiver,
+	config component.ReceiverConfig,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	snmpConfig, ok := config.(*Config)

@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -33,19 +34,19 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	initSupportedJars()
 	tests := []struct {
-		id          config.ComponentID
-		expected    config.Receiver
+		id          component.ID
+		expected    component.ReceiverConfig
 		expectedErr string
 	}{
 		{
-			id:          config.NewComponentIDWithName(typeStr, ""),
+			id:          component.NewIDWithName(typeStr, ""),
 			expectedErr: "missing required fields: `endpoint`, `target_system`",
 			expected:    createDefaultConfig(),
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "all"),
+			id: component.NewIDWithName(typeStr, "all"),
 			expected: &Config{
-				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 				JARPath:            "testdata/fake_jmx.jar",
 				Endpoint:           "myendpoint:12345",
 				TargetSystem:       "jvm",
@@ -79,9 +80,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "missingendpoint"),
+			id: component.NewIDWithName(typeStr, "missingendpoint"),
 			expected: &Config{
-				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 				JARPath:            "testdata/fake_jmx.jar",
 				TargetSystem:       "jvm",
 				CollectionInterval: 10 * time.Second,
@@ -94,10 +95,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "missingtarget"),
+			id:          component.NewIDWithName(typeStr, "missingtarget"),
 			expectedErr: "jmx missing required field: `target_system`",
 			expected: &Config{
-				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 				JARPath:            "testdata/fake_jmx.jar",
 				Endpoint:           "service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi",
 				CollectionInterval: 10 * time.Second,
@@ -110,10 +111,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "invalidinterval"),
+			id:          component.NewIDWithName(typeStr, "invalidinterval"),
 			expectedErr: "`interval` must be positive: -100ms",
 			expected: &Config{
-				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 				JARPath:            "testdata/fake_jmx.jar",
 				Endpoint:           "myendpoint:23456",
 				TargetSystem:       "jvm",
@@ -127,10 +128,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "invalidotlptimeout"),
+			id:          component.NewIDWithName(typeStr, "invalidotlptimeout"),
 			expectedErr: "`otlp.timeout` must be positive: -100ms",
 			expected: &Config{
-				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 				JARPath:            "testdata/fake_jmx.jar",
 				Endpoint:           "myendpoint:34567",
 				TargetSystem:       "jvm",
@@ -145,11 +146,11 @@ func TestLoadConfig(t *testing.T) {
 		},
 
 		{
-			id: config.NewComponentIDWithName(typeStr, "nonexistentjar"),
+			id: component.NewIDWithName(typeStr, "nonexistentjar"),
 			// Error is different based on OS, which is why this is contains, not equals
 			expectedErr: "error validating `jar_path`: error hashing file: open testdata/file_does_not_exist.jar:",
 			expected: &Config{
-				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 				JARPath:            "testdata/file_does_not_exist.jar",
 				Endpoint:           "myendpoint:23456",
 				TargetSystem:       "jvm",
@@ -163,10 +164,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "invalidjar"),
+			id:          component.NewIDWithName(typeStr, "invalidjar"),
 			expectedErr: "error validating `jar_path`: jar hash does not match known versions",
 			expected: &Config{
-				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 				JARPath:            "testdata/fake_jmx_wrong.jar",
 				Endpoint:           "myendpoint:23456",
 				TargetSystem:       "jvm",
@@ -180,10 +181,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "invalidloglevel"),
+			id:          component.NewIDWithName(typeStr, "invalidloglevel"),
 			expectedErr: "jmx `log_level` must be one of 'debug', 'error', 'info', 'off', 'trace', 'warn'",
 			expected: &Config{
-				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 				JARPath:            "testdata/fake_jmx.jar",
 				Endpoint:           "myendpoint:55555",
 				TargetSystem:       "jvm",
@@ -198,10 +199,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "invalidtargetsystem"),
+			id:          component.NewIDWithName(typeStr, "invalidtargetsystem"),
 			expectedErr: "`target_system` list may only be a subset of 'activemq', 'cassandra', 'hadoop', 'hbase', 'jetty', 'jvm', 'kafka', 'kafka-consumer', 'kafka-producer', 'solr', 'tomcat', 'wildfly'",
 			expected: &Config{
-				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 				JARPath:            "testdata/fake_jmx.jar",
 				Endpoint:           "myendpoint:55555",
 				TargetSystem:       "jvm,fakejvmtechnology",
@@ -228,7 +229,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 			if tt.expectedErr != "" {
 				assert.ErrorContains(t, cfg.(*Config).validate(), tt.expectedErr)
@@ -252,9 +253,9 @@ func TestCustomMetricsGathererConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "invalidtargetsystem").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "invalidtargetsystem").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 	conf := cfg.(*Config)
 

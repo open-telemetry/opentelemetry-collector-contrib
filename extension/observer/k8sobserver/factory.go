@@ -25,7 +25,7 @@ import (
 
 const (
 	// The value of extension "type" in configuration.
-	typeStr config.Type = "k8s_observer"
+	typeStr component.Type = "k8s_observer"
 )
 
 // NewFactory should be called to create a factory with default values.
@@ -39,9 +39,9 @@ func NewFactory() component.ExtensionFactory {
 }
 
 // CreateDefaultConfig creates the default configuration for the extension.
-func createDefaultConfig() config.Extension {
+func createDefaultConfig() component.ExtensionConfig {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 		ObservePods:       true,
 		ObserveNodes:      false,
@@ -52,7 +52,7 @@ func createDefaultConfig() config.Extension {
 func createExtension(
 	ctx context.Context,
 	params component.ExtensionCreateSettings,
-	cfg config.Extension,
+	cfg component.ExtensionConfig,
 ) (component.Extension, error) {
 	return newObserver(cfg.(*Config), params.TelemetrySettings)
 }

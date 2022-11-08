@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -30,18 +31,18 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id          config.ComponentID
-		expected    config.Extension
+		id          component.ID
+		expected    component.ExtensionConfig
 		expectedErr string
 	}{
 		{
-			id:       config.NewComponentID(typeStr),
+			id:       component.NewID(typeStr),
 			expected: NewFactory().CreateDefaultConfig(),
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "with-endpoint"),
+			id: component.NewIDWithName(typeStr, "with-endpoint"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+				ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://a.valid.url:1234/path",
 				},
@@ -50,15 +51,15 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "with-port-labels"),
+			id: component.NewIDWithName(typeStr, "with-port-labels"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+				ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 				PortLabels:        []string{"A_PORT_LABEL", "ANOTHER_PORT_LABEL"},
 				RefreshInterval:   30 * time.Second,
 			},
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "invalid"),
+			id:          component.NewIDWithName(typeStr, "invalid"),
 			expectedErr: `failed to parse ecs task metadata endpoint "_:invalid": parse "_:invalid": first path segment in URL cannot contain colon`,
 		},
 	}
@@ -70,7 +71,7 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalExtension(sub, cfg))
+			require.NoError(t, component.UnmarshalExtensionConfig(sub, cfg))
 			if tt.expectedErr != "" {
 				assert.EqualError(t, cfg.Validate(), tt.expectedErr)
 				return

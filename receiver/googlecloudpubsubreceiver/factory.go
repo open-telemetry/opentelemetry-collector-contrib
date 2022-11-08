@@ -48,13 +48,13 @@ type pubsubReceiverFactory struct {
 	receivers map[*Config]*pubsubReceiver
 }
 
-func (factory *pubsubReceiverFactory) CreateDefaultConfig() config.Receiver {
+func (factory *pubsubReceiverFactory) CreateDefaultConfig() component.ReceiverConfig {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 	}
 }
 
-func (factory *pubsubReceiverFactory) ensureReceiver(params component.ReceiverCreateSettings, config config.Receiver) *pubsubReceiver {
+func (factory *pubsubReceiverFactory) ensureReceiver(params component.ReceiverCreateSettings, config component.ReceiverConfig) *pubsubReceiver {
 	receiver := factory.receivers[config.(*Config)]
 	if receiver != nil {
 		return receiver
@@ -77,7 +77,7 @@ func (factory *pubsubReceiverFactory) ensureReceiver(params component.ReceiverCr
 func (factory *pubsubReceiverFactory) CreateTracesReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	cfg component.ReceiverConfig,
 	consumer consumer.Traces) (component.TracesReceiver, error) {
 
 	if consumer == nil {
@@ -95,7 +95,7 @@ func (factory *pubsubReceiverFactory) CreateTracesReceiver(
 func (factory *pubsubReceiverFactory) CreateMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	cfg component.ReceiverConfig,
 	consumer consumer.Metrics) (component.MetricsReceiver, error) {
 
 	if consumer == nil {
@@ -113,7 +113,7 @@ func (factory *pubsubReceiverFactory) CreateMetricsReceiver(
 func (factory *pubsubReceiverFactory) CreateLogsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	cfg component.ReceiverConfig,
 	consumer consumer.Logs) (component.LogsReceiver, error) {
 
 	if consumer == nil {

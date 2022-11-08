@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 
@@ -28,10 +27,10 @@ import (
 
 // LogReceiverType is the interface used by stanza-based log receivers
 type LogReceiverType interface {
-	Type() config.Type
-	CreateDefaultConfig() config.Receiver
-	BaseConfig(config.Receiver) BaseConfig
-	InputConfig(config.Receiver) operator.Config
+	Type() component.Type
+	CreateDefaultConfig() component.ReceiverConfig
+	BaseConfig(component.ReceiverConfig) BaseConfig
+	InputConfig(component.ReceiverConfig) operator.Config
 }
 
 // NewFactory creates a factory for a Stanza-based receiver
@@ -47,7 +46,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsRec
 	return func(
 		ctx context.Context,
 		params component.ReceiverCreateSettings,
-		cfg config.Receiver,
+		cfg component.ReceiverConfig,
 		nextConsumer consumer.Logs,
 	) (component.LogsReceiver, error) {
 		inputCfg := logReceiverType.InputConfig(cfg)

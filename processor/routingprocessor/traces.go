@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -39,7 +38,7 @@ type tracesProcessor struct {
 	router    router[component.TracesExporter, ottltraces.TransformContext]
 }
 
-func newTracesProcessor(settings component.TelemetrySettings, config config.Processor) *tracesProcessor {
+func newTracesProcessor(settings component.TelemetrySettings, config component.ProcessorConfig) *tracesProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
 	return &tracesProcessor{
@@ -56,7 +55,7 @@ func newTracesProcessor(settings component.TelemetrySettings, config config.Proc
 }
 
 func (p *tracesProcessor) Start(_ context.Context, host component.Host) error {
-	err := p.router.registerExporters(host.GetExporters()[config.TracesDataType])
+	err := p.router.registerExporters(host.GetExporters()[component.DataTypeTraces])
 	if err != nil {
 		return err
 	}

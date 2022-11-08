@@ -116,7 +116,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 
 	cfg := &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 			CollectionInterval: 100 * time.Millisecond,
 		},
 		Scrapers: map[string]internal.Config{
@@ -235,7 +235,7 @@ func (m *mockFactory) CreateMetricsScraper(context.Context, component.ReceiverCr
 	return args.Get(0).(scraperhelper.Scraper), args.Error(1)
 }
 
-func (m *mockScraper) ID() config.ComponentID                      { return config.NewComponentID("") }
+func (m *mockScraper) ID() component.ID                            { return component.NewID("") }
 func (m *mockScraper) Start(context.Context, component.Host) error { return nil }
 func (m *mockScraper) Shutdown(context.Context) error              { return nil }
 func (m *mockScraper) Scrape(context.Context) (pmetric.Metrics, error) {

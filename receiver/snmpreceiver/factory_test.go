@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -42,9 +43,9 @@ func TestNewFactory(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 
-				var expectedCfg config.Receiver = &Config{
+				var expectedCfg component.ReceiverConfig = &Config{
 					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-						ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+						ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 						CollectionInterval: defaultCollectionInterval,
 					},
 					Endpoint:      defaultEndpoint,
