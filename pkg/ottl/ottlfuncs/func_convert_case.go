@@ -24,14 +24,7 @@ import (
 )
 
 func ConvertCase[K any](target ottl.Getter[K], toCase string) (ottl.ExprFunc[K], error) {
-	var caseInvalid = true
-	for _, validCase := range []string{"lower", "upper", "snake", "camel"} {
-		if toCase == validCase {
-			caseInvalid = false
-			break
-		}
-	}
-	if caseInvalid {
+	if toCase != "lower" && toCase != "upper" && toCase != "snake" && toCase != "camel" {
 		return nil, fmt.Errorf("invalid case: %s, allowed cases are: lower, upper, snake, camel", toCase)
 	}
 
