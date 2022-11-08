@@ -3,16 +3,15 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasti
 go 1.18
 
 require (
-	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.63.2-0.20221108014805-0b08d5316426
-	go.uber.org/multierr v1.8.0
-	go.uber.org/zap v1.23.0
-)
-
-require (
 	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/go-version v1.6.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.63.0
+	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.15.0
+	go.opentelemetry.io/collector v0.63.2-0.20221108014805-0b08d5316426
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221108014805-0b08d5316426
+	go.uber.org/multierr v1.8.0
+	go.uber.org/zap v1.23.0
 )
 
 require (
@@ -63,18 +62,13 @@ require (
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect
 	go.opentelemetry.io/otel/trace v1.11.1 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
+	golang.org/x/net v0.0.0-20220617184016-355a448f1bc9 // indirect
 	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20220617124728-180714bec0ad // indirect
 	google.golang.org/grpc v1.50.1 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-)
-
-require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.63.0
-	go.opentelemetry.io/collector/pdata v0.63.2-0.20221108014805-0b08d5316426
-	golang.org/x/net v0.0.0-20220617184016-355a448f1bc9 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => ../../internal/scrapertest
