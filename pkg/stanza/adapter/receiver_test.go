@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
@@ -137,7 +136,7 @@ func BenchmarkReadLine(b *testing.B) {
 
 	storageClient := storagetest.NewInMemoryClient(
 		component.KindReceiver,
-		config.NewComponentID("foolog"),
+		component.NewID("foolog"),
 		"test",
 	)
 
@@ -202,7 +201,7 @@ func BenchmarkParseAndMap(b *testing.B) {
 
 	storageClient := storagetest.NewInMemoryClient(
 		component.KindReceiver,
-		config.NewComponentID("foolog"),
+		component.NewID("foolog"),
 		"test",
 	)
 

@@ -42,14 +42,14 @@ func TestCreateTracesExporter(t *testing.T) {
 	factory := newHumioFactory(t)
 	testCases := []struct {
 		desc              string
-		cfg               config.Exporter
+		cfg               component.ExporterConfig
 		wantErrorOnCreate bool
 		wantErrorOnStart  bool
 	}{
 		{
 			desc: "Valid trace configuration",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				Tag:              TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",
@@ -63,7 +63,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			desc: "Unsanitizable trace configuration",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				Tag:              TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "\n",
@@ -74,7 +74,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			desc: "Missing ingest token",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				Tag:              TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",
@@ -85,7 +85,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			desc: "Invalid client configuration",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				Tag:              TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",

@@ -46,9 +46,9 @@ func NewFactory() component.ProcessorFactory {
 	)
 }
 
-func createDefaultConfig() config.Processor {
+func createDefaultConfig() component.ProcessorConfig {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		OTTLConfig: OTTLConfig{
 			Logs: SignalConfig{
 				Statements: []string{},
@@ -69,7 +69,7 @@ func createDefaultConfig() config.Processor {
 func createLogsProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg component.ProcessorConfig,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	oCfg := cfg.(*Config)
@@ -90,7 +90,7 @@ func createLogsProcessor(
 func createTracesProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg component.ProcessorConfig,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	oCfg := cfg.(*Config)
@@ -111,7 +111,7 @@ func createTracesProcessor(
 func createMetricsProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg component.ProcessorConfig,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	oCfg := cfg.(*Config)

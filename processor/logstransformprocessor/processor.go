@@ -23,7 +23,6 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -41,7 +40,7 @@ type outputType struct {
 type logsTransformProcessor struct {
 	logger *zap.Logger
 	config *Config
-	id     config.ComponentID
+	id     component.ID
 
 	pipe          *pipeline.DirectedPipeline
 	firstOperator operator.Operator

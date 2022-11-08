@@ -19,9 +19,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestNewFactory(t *testing.T) {
@@ -37,14 +37,14 @@ func TestNewFactory(t *testing.T) {
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
-	expectedExtensionSettings := config.NewExtensionSettings(config.NewComponentID(typeStr))
+	expectedExtensionSettings := config.NewExtensionSettings(component.NewID(typeStr))
 	expectedComponentID := expectedExtensionSettings.ID()
 
 	cfg := createDefaultConfig().(*Config)
 
 	assert.Equal(t, expectedExtensionSettings, cfg.ExtensionSettings)
 	assert.Equal(t, expectedComponentID, cfg.ExtensionSettings.ID())
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestCreateExtension(t *testing.T) {

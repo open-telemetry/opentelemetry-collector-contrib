@@ -81,9 +81,9 @@ func ensureExporter(params component.ExporterCreateSettings, pCfg *Config) *pubs
 }
 
 // createDefaultConfig creates the default configuration for exporter.
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.ExporterConfig {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		UserAgent:        "opentelemetry-collector-contrib {{version}}",
 		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
 		Watermark: WatermarkConfig{
@@ -96,7 +96,7 @@ func createDefaultConfig() config.Exporter {
 func createTracesExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter) (component.TracesExporter, error) {
+	cfg component.ExporterConfig) (component.TracesExporter, error) {
 
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)
@@ -118,7 +118,7 @@ func createTracesExporter(
 func createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter) (component.MetricsExporter, error) {
+	cfg component.ExporterConfig) (component.MetricsExporter, error) {
 
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)
@@ -139,7 +139,7 @@ func createMetricsExporter(
 func createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter) (component.LogsExporter, error) {
+	cfg component.ExporterConfig) (component.LogsExporter, error) {
 
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)

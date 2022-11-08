@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -49,7 +48,7 @@ func NewFactory() component.ReceiverFactory {
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	rConf config.Receiver,
+	rConf component.ReceiverConfig,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
@@ -65,7 +64,7 @@ func createMetricsReceiver(
 func createCombinedLogReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateSettings,
-	rConf config.Receiver,
+	rConf component.ReceiverConfig,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	cfg := rConf.(*Config)
@@ -91,7 +90,7 @@ func createCombinedLogReceiver(
 	return recv, nil
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.ReceiverConfig {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
 		Granularity:               defaultGranularity,

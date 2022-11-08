@@ -40,9 +40,9 @@ func NewFactory() component.ExporterFactory {
 		component.WithMetricsExporter(createMetricsExporter, stability))
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.ExporterConfig {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Headers: map[string]string{},
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
@@ -52,7 +52,7 @@ func createDefaultConfig() config.Exporter {
 	}
 }
 
-func createTracesExporter(ctx context.Context, set component.ExporterCreateSettings, cfg config.Exporter) (component.TracesExporter, error) {
+func createTracesExporter(ctx context.Context, set component.ExporterCreateSettings, cfg component.ExporterConfig) (component.TracesExporter, error) {
 	oCfg := cfg.(*Config)
 	oce, err := newTracesExporter(ctx, oCfg, set.TelemetrySettings)
 	if err != nil {
@@ -71,7 +71,7 @@ func createTracesExporter(ctx context.Context, set component.ExporterCreateSetti
 		exporterhelper.WithShutdown(oce.shutdown))
 }
 
-func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings, cfg config.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings, cfg component.ExporterConfig) (component.MetricsExporter, error) {
 	oCfg := cfg.(*Config)
 	oce, err := newMetricsExporter(ctx, oCfg, set.TelemetrySettings)
 	if err != nil {

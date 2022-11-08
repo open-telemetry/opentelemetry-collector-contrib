@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -36,13 +37,13 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	sub, err := cm.Sub(config.NewComponentID(typeStr).String())
+	sub, err := cm.Sub(component.NewID(typeStr).String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalExtension(sub, cfg))
+	require.NoError(t, component.UnmarshalExtensionConfig(sub, cfg))
 
 	assert.NoError(t, cfg.Validate())
 	assert.Equal(t, &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		Region:            "region",
 		Service:           "service",
 		AssumeRole: AssumeRole{
@@ -59,8 +60,8 @@ func TestLoadConfigError(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "missing_credentials").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "missing_credentials").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalExtension(sub, cfg))
+	require.NoError(t, component.UnmarshalExtensionConfig(sub, cfg))
 	assert.Error(t, cfg.Validate())
 }

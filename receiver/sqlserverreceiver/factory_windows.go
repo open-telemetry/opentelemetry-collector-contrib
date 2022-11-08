@@ -22,7 +22,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
@@ -33,7 +32,7 @@ var errConfigNotSqlServer = errors.New("config was not a sqlserver receiver conf
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	receiverCfg config.Receiver,
+	receiverCfg component.ReceiverConfig,
 	metricsConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg, ok := receiverCfg.(*Config)

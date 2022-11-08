@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -36,13 +37,13 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id       config.ComponentID
-		expected config.Receiver
+		id       component.ID
+		expected component.ReceiverConfig
 	}{
 		{
-			id: config.NewComponentIDWithName(typeStr, "customname"),
+			id: component.NewIDWithName(typeStr, "customname"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
 						NetAddr: confignet.NetAddr{
@@ -83,9 +84,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "defaults"),
+			id: component.NewIDWithName(typeStr, "defaults"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
 						NetAddr: confignet.NetAddr{
@@ -108,9 +109,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "mixed"),
+			id: component.NewIDWithName(typeStr, "mixed"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
 						NetAddr: confignet.NetAddr{
@@ -126,9 +127,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "tls"),
+			id: component.NewIDWithName(typeStr, "tls"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
 						NetAddr: confignet.NetAddr{
@@ -157,7 +158,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 			assert.NoError(t, cfg.Validate())
 			assert.Equal(t, tt.expected, cfg)
@@ -171,19 +172,19 @@ func TestFailedLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "typo_default_proto_config").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "typo_default_proto_config").String())
 	require.NoError(t, err)
-	err = config.UnmarshalReceiver(sub, cfg)
+	err = component.UnmarshalReceiverConfig(sub, cfg)
 	assert.EqualError(t, err, "1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
 
-	sub, err = cm.Sub(config.NewComponentIDWithName(typeStr, "bad_proto_config").String())
+	sub, err = cm.Sub(component.NewIDWithName(typeStr, "bad_proto_config").String())
 	require.NoError(t, err)
-	err = config.UnmarshalReceiver(sub, cfg)
+	err = component.UnmarshalReceiverConfig(sub, cfg)
 	assert.EqualError(t, err, "1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
 
-	sub, err = cm.Sub(config.NewComponentIDWithName(typeStr, "empty").String())
+	sub, err = cm.Sub(component.NewIDWithName(typeStr, "empty").String())
 	require.NoError(t, err)
-	err = config.UnmarshalReceiver(sub, cfg)
+	err = component.UnmarshalReceiverConfig(sub, cfg)
 	assert.EqualError(t, err, "empty config for Jaeger receiver")
 }
 

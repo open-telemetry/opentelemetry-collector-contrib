@@ -33,6 +33,7 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -594,7 +595,7 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 
 	cms := new(consumertest.MetricsSink)
 	receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
-		ReceiverSettings:     config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings:     config.NewReceiverSettings(component.NewID(typeStr)),
 		PrometheusConfig:     cfg,
 		UseStartTimeMetric:   useStartTimeMetric,
 		StartTimeMetricRegex: startTimeMetricRegex,

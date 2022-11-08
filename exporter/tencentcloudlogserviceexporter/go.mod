@@ -6,13 +6,13 @@ require (
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/stretchr/testify v1.8.1
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.526
-	go.opentelemetry.io/collector v0.63.2-0.20221104003159-6b27644724d8
+	go.opentelemetry.io/collector v0.63.2-0.20221108014805-0b08d5316426
 	go.uber.org/zap v1.23.0
 )
 
 require (
-	go.opentelemetry.io/collector/pdata v0.63.2-0.20221104003159-6b27644724d8
-	go.opentelemetry.io/collector/semconv v0.63.2-0.20221104003159-6b27644724d8
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221108014805-0b08d5316426
+	go.opentelemetry.io/collector/semconv v0.63.2-0.20221108014805-0b08d5316426
 	google.golang.org/protobuf v1.28.1
 )
 
@@ -32,7 +32,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opencensus.io v0.23.0 // indirect
+	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect
 	go.opentelemetry.io/otel/trace v1.11.1 // indirect

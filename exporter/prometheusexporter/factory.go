@@ -41,9 +41,9 @@ func NewFactory() component.ExporterFactory {
 		component.WithMetricsExporter(createMetricsExporter, stability))
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.ExporterConfig {
 	return &Config{
-		ExporterSettings:  config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings:  config.NewExporterSettings(component.NewID(typeStr)),
 		ConstLabels:       map[string]string{},
 		SendTimestamps:    false,
 		MetricExpiration:  time.Minute * 5,
@@ -54,7 +54,7 @@ func createDefaultConfig() config.Exporter {
 func createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.ExporterConfig,
 ) (component.MetricsExporter, error) {
 	pcfg := cfg.(*Config)
 

@@ -38,10 +38,10 @@ func NewFactory() component.ReceiverFactory {
 	)
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.ReceiverConfig {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 			CollectionInterval: defaultCollectionInterval,
 		},
 		Metrics: metadata.DefaultMetricsSettings(),

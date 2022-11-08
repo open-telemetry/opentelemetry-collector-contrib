@@ -35,10 +35,10 @@ func NewFactory() component.ReceiverFactory {
 		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
-func createMetricsReceiver(ctx context.Context, settings component.ReceiverCreateSettings, receiver config.Receiver, metrics consumer.Metrics) (component.MetricsReceiver, error) {
+func createMetricsReceiver(ctx context.Context, settings component.ReceiverCreateSettings, receiver component.ReceiverConfig, metrics consumer.Metrics) (component.MetricsReceiver, error) {
 	return &oracledbreceiver{}, nil
 }
 
-func createDefaultConfig() config.Receiver {
-	return &Config{ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr))}
+func createDefaultConfig() component.ReceiverConfig {
+	return &Config{ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr))}
 }

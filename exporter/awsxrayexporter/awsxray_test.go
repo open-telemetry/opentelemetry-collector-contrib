@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -95,7 +94,7 @@ func initializeTracesExporter(t testing.TB) component.TracesExporter {
 	return traceExporter
 }
 
-func generateConfig(t testing.TB) config.Exporter {
+func generateConfig(t testing.TB) component.ExporterConfig {
 	t.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
 	t.Setenv("AWS_DEFAULT_REGION", "us-east-1")

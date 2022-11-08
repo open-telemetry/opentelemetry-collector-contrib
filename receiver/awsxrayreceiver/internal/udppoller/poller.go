@@ -22,7 +22,6 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
@@ -66,14 +65,14 @@ type RawSegment struct {
 // Config represents the configurations needed to
 // start the UDP poller
 type Config struct {
-	ReceiverID         config.ComponentID
+	ReceiverID         component.ID
 	Transport          string
 	Endpoint           string
 	NumOfPollerToStart int
 }
 
 type poller struct {
-	receiverID           config.ComponentID
+	receiverID           component.ID
 	udpSock              socketconn.SocketConn
 	logger               *zap.Logger
 	wg                   sync.WaitGroup

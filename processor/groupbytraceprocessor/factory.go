@@ -27,7 +27,7 @@ import (
 
 const (
 	// typeStr is the value of "type" for this processor in the configuration.
-	typeStr config.Type = "groupbytrace"
+	typeStr component.Type = "groupbytrace"
 	// The stability level of the processor.
 	stability = component.StabilityLevelBeta
 
@@ -55,9 +55,9 @@ func NewFactory() component.ProcessorFactory {
 }
 
 // createDefaultConfig creates the default configuration for the processor.
-func createDefaultConfig() config.Processor {
+func createDefaultConfig() component.ProcessorConfig {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		NumTraces:         defaultNumTraces,
 		NumWorkers:        defaultNumWorkers,
 		WaitDuration:      defaultWaitDuration,
@@ -72,7 +72,7 @@ func createDefaultConfig() config.Processor {
 func createTracesProcessor(
 	_ context.Context,
 	params component.ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg component.ProcessorConfig,
 	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 
 	oCfg := cfg.(*Config)

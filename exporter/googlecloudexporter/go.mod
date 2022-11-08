@@ -3,29 +3,30 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/google
 go 1.18
 
 require (
+	cloud.google.com/go/monitoring v1.8.0
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.14
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.34.1
 	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.63.0
 	github.com/stretchr/testify v1.8.1
-	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.63.2-0.20221104003159-6b27644724d8
-	go.opentelemetry.io/collector/pdata v0.63.2-0.20221104003159-6b27644724d8
-	go.opentelemetry.io/collector/semconv v0.63.2-0.20221104003159-6b27644724d8
+	go.opencensus.io v0.24.0
+	go.opentelemetry.io/collector v0.63.2-0.20221108014805-0b08d5316426
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221108014805-0b08d5316426
+	go.opentelemetry.io/collector/semconv v0.63.2-0.20221108014805-0b08d5316426
 	google.golang.org/api v0.102.0
-	google.golang.org/genproto v0.0.0-20221024183307-1bc688fe9f3e
+	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c
 	google.golang.org/grpc v1.50.1
 	google.golang.org/protobuf v1.28.1
 )
 
 require (
-	cloud.google.com/go v0.104.0 // indirect
+	cloud.google.com/go v0.105.0 // indirect
 	cloud.google.com/go/compute v1.12.1 // indirect
 	cloud.google.com/go/compute/metadata v0.2.1 // indirect
 	cloud.google.com/go/logging v1.4.2 // indirect
-	cloud.google.com/go/monitoring v1.5.0 // indirect
-	cloud.google.com/go/trace v1.2.0 // indirect
+	cloud.google.com/go/longrunning v0.1.1 // indirect
+	cloud.google.com/go/trace v1.3.0 // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.10.1 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.34.1 // indirect
@@ -60,7 +61,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/prometheus/client_golang v1.13.0 // indirect
+	github.com/prometheus/client_golang v1.13.1 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect

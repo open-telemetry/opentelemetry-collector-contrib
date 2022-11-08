@@ -22,7 +22,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -30,7 +29,7 @@ import (
 func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	cfg component.ReceiverConfig,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	return nil, errors.New("the windows perf counters receiver is only supported on Windows")
