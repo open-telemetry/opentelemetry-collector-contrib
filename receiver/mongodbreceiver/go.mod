@@ -3,17 +3,14 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongod
 go 1.18
 
 require (
-	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.63.2-0.20221108014805-0b08d5316426
-	go.uber.org/multierr v1.8.0
-)
-
-require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.63.0
+	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.15.0
 	go.mongodb.org/mongo-driver v1.10.3
+	go.opentelemetry.io/collector v0.63.2-0.20221108014805-0b08d5316426
 	go.opentelemetry.io/collector/pdata v0.63.2-0.20221108014805-0b08d5316426
+	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 )
 
