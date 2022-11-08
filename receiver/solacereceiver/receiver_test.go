@@ -70,13 +70,13 @@ func TestReceiveMessage(t *testing.T) {
 		},
 		{ // unmarshal error expecting the error to be swallowed, the message to be acknowledged, stats incremented
 			name:         "Unmarshal Error",
-			unmarshalErr: errUnknownTraceMessgeType,
+			unmarshalErr: errUnknownTopic,
 			validation:   validateMetrics(1, 1, 1, nil),
 		},
 		{ // unmarshal error with wrong version expecting error to be propagated, message to be rejected
 			name:         "Unmarshal Version Error",
-			unmarshalErr: errUnknownTraceMessgeVersion,
-			expectedErr:  errUnknownTraceMessgeVersion,
+			unmarshalErr: errUpgradeRequired,
+			expectedErr:  errUpgradeRequired,
 			expectNack:   true,
 			validation:   validateMetrics(1, nil, 1, nil),
 		},
@@ -284,7 +284,7 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 	nackCalled := make(chan struct{})
 	closeDone := make(chan struct{})
 	unmarshaller.unmarshalFunc = func(msg *inboundMessage) (ptrace.Traces, error) {
-		return ptrace.Traces{}, errUnknownTraceMessgeVersion
+		return ptrace.Traces{}, errUpgradeRequired
 	}
 	msgService.dialFunc = func() error {
 		// after we receive an unmarshalling version error, we should not call dial again

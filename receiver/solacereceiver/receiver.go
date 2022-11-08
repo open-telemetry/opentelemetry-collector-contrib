@@ -162,7 +162,7 @@ reconnectionLoop:
 
 			if err := s.receiveMessages(ctx, service); err != nil {
 				s.settings.Logger.Debug("Encountered error while receiving messages", zap.Error(err))
-				if errors.Is(err, errUnknownTraceMessgeVersion) {
+				if errors.Is(err, errUpgradeRequired) {
 					s.metrics.recordNeedUpgrade()
 					disable = true
 					return
@@ -224,7 +224,7 @@ func (s *solaceTracesReceiver) receiveMessage(ctx context.Context, service messa
 	if unmarshalErr != nil {
 		s.settings.Logger.Error("Encountered error while unmarshalling message", zap.Error(unmarshalErr))
 		s.metrics.recordFatalUnmarshallingError()
-		if errors.Is(unmarshalErr, errUnknownTraceMessgeVersion) {
+		if errors.Is(unmarshalErr, errUpgradeRequired) {
 			disposition = service.failed // if we don't know the version, reject the trace message since we will disable the receiver
 			return unmarshalErr
 		}

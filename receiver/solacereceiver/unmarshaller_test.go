@@ -32,8 +32,9 @@ import (
 
 // Validate entire unmarshal flow
 func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
-	validTopicVersion := "_telemetry/broker/trace/receive/v1"
-	invalidTopicVersion := "_telemetry/broker/trace/receive/v2"
+	validReceiveTopicVersion := "_telemetry/broker/trace/receive/v1"
+	invalidReceiveTopicVersion := "_telemetry/broker/trace/receive/v2"
+	invalidTelemetryTopic := "_telemetry/broker/trace/somethingNew"
 	invalidTopicString := "some unknown topic string that won't be valid"
 
 	tests := []struct {
@@ -49,23 +50,32 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 					To: &invalidTopicString,
 				},
 			},
-			err: errUnknownTraceMessgeType,
+			err: errUnknownTopic,
 		},
 		{
 			name: "Bad Topic Version",
 			message: &inboundMessage{
 				Properties: &amqp.MessageProperties{
-					To: &invalidTopicVersion,
+					To: &invalidReceiveTopicVersion,
 				},
 			},
-			err: errUnknownTraceMessgeVersion,
+			err: errUpgradeRequired,
+		},
+		{
+			name: "Unknown Telemetry Topic",
+			message: &inboundMessage{
+				Properties: &amqp.MessageProperties{
+					To: &invalidTelemetryTopic,
+				},
+			},
+			err: errUpgradeRequired,
 		},
 		{
 			name: "No Message Properties",
 			message: &inboundMessage{
 				Properties: nil,
 			},
-			err: errUnknownTraceMessgeType,
+			err: errUnknownTopic,
 		},
 		{
 			name: "No Topic String",
@@ -74,14 +84,14 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 					To: nil,
 				},
 			},
-			err: errUnknownTraceMessgeType,
+			err: errUnknownTopic,
 		},
 		{
 			name: "Empty Message Data",
 			message: &amqp.Message{
 				Data: [][]byte{{}},
 				Properties: &amqp.MessageProperties{
-					To: &validTopicVersion,
+					To: &validReceiveTopicVersion,
 				},
 			},
 			err: errEmptyPayload,
@@ -91,7 +101,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 			message: &amqp.Message{
 				Data: [][]byte{{1, 2, 3, 4, 5}},
 				Properties: &amqp.MessageProperties{
-					To: &validTopicVersion,
+					To: &validReceiveTopicVersion,
 				},
 			},
 			err: errors.New("cannot parse invalid wire-format data"),
@@ -178,7 +188,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 					return validData
 				}()},
 				Properties: &amqp.MessageProperties{
-					To: &validTopicVersion,
+					To: &validReceiveTopicVersion,
 				},
 			},
 			want: func() *ptrace.Traces {
@@ -1096,7 +1106,7 @@ func TestUnmarshallerInsertUserProperty(t *testing.T) {
 		},
 	}
 
-	unmarshaller := &solaceMessageUnmarshallerV1{
+	unmarshaller := &brokerTraceReceiveUnmarshallerV1{
 		logger: zap.NewNop(),
 	}
 	for _, testCase := range testCases {
@@ -1124,7 +1134,7 @@ func TestSolaceMessageUnmarshallerV1InsertUserPropertyUnsupportedType(t *testing
 	validateMetric(t, u.metrics.views.recoverableUnmarshallingErrors, 1)
 }
 
-func newTestV1Unmarshaller(t *testing.T) *solaceMessageUnmarshallerV1 {
+func newTestV1Unmarshaller(t *testing.T) *brokerTraceReceiveUnmarshallerV1 {
 	m := newTestMetrics(t)
-	return &solaceMessageUnmarshallerV1{zap.NewNop(), m}
+	return &brokerTraceReceiveUnmarshallerV1{zap.NewNop(), m}
 }
