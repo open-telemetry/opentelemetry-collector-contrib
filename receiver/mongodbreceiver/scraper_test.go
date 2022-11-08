@@ -136,21 +136,6 @@ func TestScraperScrape(t *testing.T) {
 			expectedErr: errors.New("no client was initialized before calling scrape"),
 		},
 		{
-			desc:       "Failed to get version",
-			partialErr: false,
-			setupMockClient: func(t *testing.T) client {
-				fc := &fakeClient{}
-				mongo40, err := version.NewVersion("4.0")
-				require.NoError(t, err)
-				fc.On("GetVersion", mock.Anything).Return(mongo40, errors.New("some version error"))
-				return fc
-			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				return pmetric.NewMetrics()
-			},
-			expectedErr: errors.New("unable to determine version of mongo scraping against: some version error"),
-		},
-		{
 			desc:       "Failed to fetch database names",
 			partialErr: true,
 			setupMockClient: func(t *testing.T) client {
