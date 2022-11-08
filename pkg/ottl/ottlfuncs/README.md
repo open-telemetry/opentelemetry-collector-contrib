@@ -9,6 +9,7 @@ Factory Functions
 - [SpanID](#spanid)
 - [Split](#split)
 - [TraceID](#traceid)
+- [ConvertCase](#convertcase)
 
 Functions
 - [delete_key](#delete_key)
@@ -121,6 +122,29 @@ The `TraceID` factory function returns a `pdata.TraceID` struct from the given b
 Examples:
 
 - `TraceID(0x00000000000000000000000000000000)`
+
+## ConvertCase
+
+`ConvertCase(target, toCase)`
+
+The `ConvertCase` factory function converts the `target` string into the desired case `toCase`.
+
+`target` is a string. `toCase` is a string.
+
+If the `target` is not a string or does not exist, the `ConvertCase` factory function will return `nil`.
+
+`toCase` can be:
+
+- `lower`: Converts the `target` string to lowercase (e.g. `MY_METRIC` to `my_metric`)
+- `upper`: Converts the `target` string to uppercase (e.g. `my_metric` to `MY_METRIC`)
+- `snake`: Converts the `target` string to snakecase (e.g. `myMetric` to `my_metric`)
+- `camel`: Converts the `target` string to camelcase (e.g. `my_metric` to `MyMetric`)
+
+If `toCase` is any value other than the options above, the `ConvertCase` factory function will return an error during collector startup.
+
+Examples:
+
+- `ConvertCase(metric.name, "snake")`
 
 ## delete_key
 
