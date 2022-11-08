@@ -22,6 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -53,7 +54,7 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 
 func TestNewLogsExporter(t *testing.T) {
 	got, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		Endpoint:         "us-west-1.log.aliyuncs.com",
 		Project:          "demo-project",
 		Logstore:         "demo-logstore",
@@ -69,7 +70,7 @@ func TestNewLogsExporter(t *testing.T) {
 
 func TestSTSTokenExporter(t *testing.T) {
 	got, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		Endpoint:         "us-west-1.log.aliyuncs.com",
 		Project:          "demo-project",
 		Logstore:         "demo-logstore",

@@ -34,11 +34,11 @@ import (
 type mockHostFactories struct {
 	component.Host
 	factories  component.Factories
-	extensions map[config.ComponentID]component.Extension
+	extensions map[component.ID]component.Extension
 }
 
 // GetFactory of the specified kind. Returns the factory for a component type.
-func (mh *mockHostFactories) GetFactory(kind component.Kind, componentType config.Type) component.Factory {
+func (mh *mockHostFactories) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
 	switch kind {
 	case component.KindReceiver:
 		return mh.factories.Receivers[componentType]
@@ -52,7 +52,7 @@ func (mh *mockHostFactories) GetFactory(kind component.Kind, componentType confi
 	return nil
 }
 
-func (mh *mockHostFactories) GetExtensions() map[config.ComponentID]component.Extension {
+func (mh *mockHostFactories) GetExtensions() map[component.ID]component.Extension {
 	return mh.extensions
 }
 
@@ -63,21 +63,21 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id       config.ComponentID
-		expected config.Receiver
+		id       component.ID
+		expected component.ReceiverConfig
 	}{
 		{
-			id:       config.NewComponentIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(typeStr, ""),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "1"),
+			id: component.NewIDWithName(typeStr, "1"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				receiverTemplates: map[string]receiverTemplate{
 					"examplereceiver/1": {
 						receiverConfig: receiverConfig{
-							id: config.NewComponentIDWithName("examplereceiver", "1"),
+							id: component.NewIDWithName("examplereceiver", "1"),
 							config: userConfigMap{
 								"key": "value",
 							},
@@ -89,7 +89,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					"nop/1": {
 						receiverConfig: receiverConfig{
-							id: config.NewComponentIDWithName("nop", "1"),
+							id: component.NewIDWithName("nop", "1"),
 							config: userConfigMap{
 								endpointConfigKey: "localhost:12345",
 							},
@@ -100,9 +100,9 @@ func TestLoadConfig(t *testing.T) {
 						rule:               newRuleOrPanic(`type == "port"`),
 					},
 				},
-				WatchObservers: []config.ComponentID{
-					config.NewComponentID("mock_observer"),
-					config.NewComponentIDWithName("mock_observer", "with_name"),
+				WatchObservers: []component.ID{
+					component.NewID("mock_observer"),
+					component.NewIDWithName("mock_observer", "with_name"),
 				},
 				ResourceAttributes: map[observer.EndpointType]map[string]string{
 					observer.ContainerType: {"container.key": "container.value"},
@@ -122,7 +122,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 			assert.NoError(t, cfg.Validate())
 			assert.Equal(t, tt.expected, cfg)
@@ -171,9 +171,9 @@ type nopWithEndpointReceiver struct {
 	component.ReceiverCreateSettings
 }
 
-func (*nopWithEndpointFactory) CreateDefaultConfig() config.Receiver {
+func (*nopWithEndpointFactory) CreateDefaultConfig() component.ReceiverConfig {
 	return &nopWithEndpointConfig{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("nop")),
+		ReceiverSettings: config.NewReceiverSettings(component.NewID("nop")),
 	}
 }
 
@@ -185,7 +185,7 @@ type mockComponent struct {
 func (*nopWithEndpointFactory) CreateMetricsReceiver(
 	ctx context.Context,
 	rcs component.ReceiverCreateSettings,
-	_ config.Receiver,
+	_ component.ReceiverConfig,
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	return &nopWithEndpointReceiver{
 		Component:              mockComponent{},

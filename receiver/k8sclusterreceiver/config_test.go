@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
@@ -34,18 +35,18 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id          config.ComponentID
-		expected    config.Receiver
+		id          component.ID
+		expected    component.ReceiverConfig
 		expectedErr error
 	}{
 		{
-			id:       config.NewComponentIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(typeStr, ""),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "all_settings"),
+			id: component.NewIDWithName(typeStr, "all_settings"),
 			expected: &Config{
-				ReceiverSettings:           config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings:           config.NewReceiverSettings(component.NewID(typeStr)),
 				Distribution:               distributionKubernetes,
 				CollectionInterval:         30 * time.Second,
 				NodeConditionTypesToReport: []string{"Ready", "MemoryPressure"},
@@ -57,9 +58,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "partial_settings"),
+			id: component.NewIDWithName(typeStr, "partial_settings"),
 			expected: &Config{
-				ReceiverSettings:           config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings:           config.NewReceiverSettings(component.NewID(typeStr)),
 				Distribution:               distributionOpenShift,
 				CollectionInterval:         30 * time.Second,
 				NodeConditionTypesToReport: []string{"Ready"},
@@ -77,7 +78,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 			assert.NoError(t, cfg.Validate())
 			assert.Equal(t, tt.expected, cfg)
@@ -88,7 +89,7 @@ func TestLoadConfig(t *testing.T) {
 func TestInvalidConfig(t *testing.T) {
 	// No APIConfig
 	cfg := &Config{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "all_settings")),
+		ReceiverSettings:   config.NewReceiverSettings(component.NewIDWithName(typeStr, "all_settings")),
 		Distribution:       distributionKubernetes,
 		CollectionInterval: 30 * time.Second,
 	}
@@ -98,7 +99,7 @@ func TestInvalidConfig(t *testing.T) {
 
 	// Wrong distro
 	cfg = &Config{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "all_settings")),
+		ReceiverSettings:   config.NewReceiverSettings(component.NewIDWithName(typeStr, "all_settings")),
 		Distribution:       "wrong",
 		CollectionInterval: 30 * time.Second,
 	}

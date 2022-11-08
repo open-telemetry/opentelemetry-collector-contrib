@@ -28,9 +28,9 @@ import (
 	"github.com/observiq/nanojack"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -48,7 +48,7 @@ func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NotNil(t, cfg, "failed to create default config")
-	require.NoError(t, configtest.CheckConfigStruct(cfg))
+	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -58,9 +58,9 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentID("filelog").String())
+	sub, err := cm.Sub(component.NewID("filelog").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 	assert.NoError(t, cfg.Validate())
 	assert.Equal(t, testdataConfigYaml(), cfg)
@@ -261,7 +261,7 @@ func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
 func testdataConfigYaml() *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 			Operators: []operator.Config{
 				{
 					Builder: func() *regex.Config {
@@ -293,7 +293,7 @@ func testdataConfigYaml() *FileLogConfig {
 func rotationTestConfig(tempDir string) *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 			Operators: []operator.Config{
 				{
 					Builder: func() *regex.Config {

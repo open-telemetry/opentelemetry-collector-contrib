@@ -41,9 +41,9 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() config.Extension {
+func createDefaultConfig() component.ExtensionConfig {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
@@ -52,7 +52,7 @@ func createDefaultConfig() config.Extension {
 	}
 }
 
-func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
+func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg component.ExtensionConfig) (component.Extension, error) {
 	config := cfg.(*Config)
 
 	return newServer(*config, set.TelemetrySettings), nil

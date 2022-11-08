@@ -24,7 +24,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -78,7 +77,7 @@ func newCwLogsPusher(expConfig *Config, params component.ExporterCreateSettings)
 	return logsExporter, nil
 }
 
-func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSettings) (component.LogsExporter, error) {
+func newCwLogsExporter(config component.ExporterConfig, params component.ExporterCreateSettings) (component.LogsExporter, error) {
 	expConfig := config.(*Config)
 	logsExporter, err := newCwLogsPusher(expConfig, params)
 	if err != nil {

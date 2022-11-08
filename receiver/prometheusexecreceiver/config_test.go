@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
@@ -34,14 +35,14 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id          config.ComponentID
-		expected    config.Receiver
+		id          component.ID
+		expected    component.ReceiverConfig
 		expectedErr error
 	}{
 		{
-			id: config.NewComponentIDWithName(typeStr, "test"),
+			id: component.NewIDWithName(typeStr, "test"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				ScrapeInterval:   60 * time.Second,
 				ScrapeTimeout:    10 * time.Second,
 				Port:             9104,
@@ -52,9 +53,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "test2"),
+			id: component.NewIDWithName(typeStr, "test2"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				ScrapeInterval:   90 * time.Second,
 				ScrapeTimeout:    10 * time.Second,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
@@ -64,9 +65,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "end_to_end_test/1"),
+			id: component.NewIDWithName(typeStr, "end_to_end_test/1"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				ScrapeInterval:   1 * time.Second,
 				ScrapeTimeout:    1 * time.Second,
 				Port:             9999,
@@ -86,9 +87,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "end_to_end_test/2"),
+			id: component.NewIDWithName(typeStr, "end_to_end_test/2"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				ScrapeInterval:   1 * time.Second,
 				ScrapeTimeout:    1 * time.Second,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
@@ -106,7 +107,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 			assert.NoError(t, cfg.Validate())
 			assert.Equal(t, tt.expected, cfg)

@@ -31,8 +31,8 @@ import (
 	jaegerthrift "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -42,7 +42,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-var jaegerAgent = config.NewComponentIDWithName(typeStr, "agent_test")
+var jaegerAgent = component.NewIDWithName(typeStr, "agent_test")
 
 func TestJaegerAgentUDP_ThriftCompact(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)

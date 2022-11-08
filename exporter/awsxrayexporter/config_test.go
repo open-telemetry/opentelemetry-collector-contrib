@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
@@ -33,17 +34,17 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id       config.ComponentID
-		expected config.Exporter
+		id       component.ID
+		expected component.ExporterConfig
 	}{
 		{
-			id:       config.NewComponentIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(typeStr, ""),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "customname"),
+			id: component.NewIDWithName(typeStr, "customname"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AWSSessionSettings: awsutil.AWSSessionSettings{
 					NumberOfWorkers:       8,
 					Endpoint:              "",
@@ -69,7 +70,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalExporter(sub, cfg))
+			require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
 			assert.NoError(t, cfg.Validate())
 			assert.Equal(t, tt.expected, cfg)

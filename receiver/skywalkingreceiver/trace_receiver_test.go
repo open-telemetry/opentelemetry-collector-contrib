@@ -23,8 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"google.golang.org/grpc"
@@ -34,7 +34,7 @@ import (
 )
 
 var (
-	skywalkingReceiver = config.NewComponentIDWithName("skywalking", "receiver_test")
+	skywalkingReceiver = component.NewIDWithName("skywalking", "receiver_test")
 )
 
 func TestTraceSource(t *testing.T) {

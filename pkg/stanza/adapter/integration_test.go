@@ -20,8 +20,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport"
@@ -46,9 +46,9 @@ func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 		return nil, err
 	}
 
-	receiverID, _ := config.NewComponentIDFromString("test")
+	receiverID := component.NewID("test")
 	return &receiver{
-		id:        config.NewComponentID("testReceiver"),
+		id:        component.NewID("testReceiver"),
 		pipe:      pipe,
 		emitter:   emitter,
 		consumer:  nextConsumer,

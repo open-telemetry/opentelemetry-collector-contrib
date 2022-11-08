@@ -40,9 +40,9 @@ func NewFactory() component.ExporterFactory {
 		component.WithMetricsExporter(createMetricsExporter, stability))
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.ExporterConfig {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
@@ -58,7 +58,7 @@ func createDefaultConfig() config.Exporter {
 func createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.ExporterConfig,
 ) (component.LogsExporter, error) {
 	oCfg := cfg.(*Config)
 	oce := newLogsExporter(ctx, oCfg, set.TelemetrySettings)
@@ -76,7 +76,7 @@ func createLogsExporter(
 	)
 }
 
-func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings, cfg config.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings, cfg component.ExporterConfig) (component.MetricsExporter, error) {
 	oCfg := cfg.(*Config)
 	oce := newMetricsExporter(ctx, oCfg, set.TelemetrySettings)
 	return exporterhelper.NewMetricsExporter(

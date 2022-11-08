@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -29,17 +30,17 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id       config.ComponentID
-		expected config.Extension
+		id       component.ID
+		expected component.ExtensionConfig
 	}{
 		{
-			id:       config.NewComponentID(typeStr),
+			id:       component.NewID(typeStr),
 			expected: NewFactory().CreateDefaultConfig(),
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "all_settings"),
+			id: component.NewIDWithName(typeStr, "all_settings"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+				ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 				RefreshInterval:   20 * time.Second,
 			},
 		},
@@ -52,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalExtension(sub, cfg))
+			require.NoError(t, component.UnmarshalExtensionConfig(sub, cfg))
 
 			assert.NoError(t, cfg.Validate())
 			assert.Equal(t, tt.expected, cfg)

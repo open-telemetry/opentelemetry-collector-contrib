@@ -22,6 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -58,19 +59,19 @@ func TestLoadConfig(t *testing.T) {
 	}
 
 	tests := []struct {
-		id          config.ComponentID
-		expected    config.Receiver
+		id          component.ID
+		expected    component.ReceiverConfig
 		expectedErr string
 	}{
 		{
-			id:       config.NewComponentIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(typeStr, ""),
 			expected: singleObject,
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "customname"),
+			id: component.NewIDWithName(typeStr, "customname"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: 30 * time.Second,
 				},
 				PerfCounters: []ObjectConfig{
@@ -106,10 +107,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "nometrics"),
+			id: component.NewIDWithName(typeStr, "nometrics"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: 60 * time.Second,
 				},
 				PerfCounters: []ObjectConfig{
@@ -121,10 +122,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "nometricspecified"),
+			id: component.NewIDWithName(typeStr, "nometricspecified"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: 60 * time.Second,
 				},
 				PerfCounters: []ObjectConfig{
@@ -143,10 +144,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "summetric"),
+			id: component.NewIDWithName(typeStr, "summetric"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: 60 * time.Second,
 				},
 				PerfCounters: []ObjectConfig{
@@ -168,10 +169,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "unspecifiedmetrictype"),
+			id: component.NewIDWithName(typeStr, "unspecifiedmetrictype"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: 60 * time.Second,
 				},
 				PerfCounters: []ObjectConfig{
@@ -190,23 +191,23 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "negative-collection-interval"),
+			id:          component.NewIDWithName(typeStr, "negative-collection-interval"),
 			expectedErr: negativeCollectionIntervalErr,
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "noperfcounters"),
+			id:          component.NewIDWithName(typeStr, "noperfcounters"),
 			expectedErr: noPerfCountersErr,
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "noobjectname"),
+			id:          component.NewIDWithName(typeStr, "noobjectname"),
 			expectedErr: noObjectNameErr,
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "nocounters"),
+			id:          component.NewIDWithName(typeStr, "nocounters"),
 			expectedErr: fmt.Sprintf(noCountersErr, "object"),
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "allerrors"),
+			id: component.NewIDWithName(typeStr, "allerrors"),
 			expectedErr: fmt.Sprintf(
 				"%s; %s; %s; %s",
 				negativeCollectionIntervalErr,
@@ -216,7 +217,7 @@ func TestLoadConfig(t *testing.T) {
 			),
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "emptyinstance"),
+			id:          component.NewIDWithName(typeStr, "emptyinstance"),
 			expectedErr: fmt.Sprintf(emptyInstanceErr, "object"),
 		},
 	}
@@ -228,7 +229,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 			if tt.expectedErr != "" {
 				assert.Equal(t, cfg.Validate().Error(), tt.expectedErr)

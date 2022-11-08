@@ -18,7 +18,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -38,7 +38,7 @@ type Config struct {
 	RootPath string `mapstructure:"root_path"`
 }
 
-var _ config.Receiver = (*Config)(nil)
+var _ component.ReceiverConfig = (*Config)(nil)
 var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid

@@ -45,9 +45,9 @@ func NewFactory() component.ProcessorFactory {
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.
-func createDefaultConfig() config.Processor {
+func createDefaultConfig() component.ProcessorConfig {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		BaseConfig: adapter.BaseConfig{
 			Operators: []operator.Config{},
 		},
@@ -57,7 +57,7 @@ func createDefaultConfig() config.Processor {
 func createLogsProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg component.ProcessorConfig,
 	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 	pCfg, ok := cfg.(*Config)
 	if !ok {
