@@ -17,6 +17,7 @@ package filesystemscraper // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/disk"
@@ -90,9 +91,10 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		if !s.fsFilter.includePartition(partition) {
 			continue
 		}
-		usage, usageErr := s.usage(partition.Mountpoint)
+		translatedMountpoint := translateMountpoint(s.config.RootPath, partition.Mountpoint)
+		usage, usageErr := s.usage(translatedMountpoint)
 		if usageErr != nil {
-			errors.AddPartial(0, fmt.Errorf("failed to read usage at %s: %w", partition.Mountpoint, usageErr))
+			errors.AddPartial(0, fmt.Errorf("failed to read usage at %s: %w", translatedMountpoint, usageErr))
 			continue
 		}
 
@@ -153,4 +155,9 @@ func (f *fsFilter) includeFSType(fsType string) bool {
 func (f *fsFilter) includeMountPoint(mountPoint string) bool {
 	return (f.includeMountPointFilter == nil || f.includeMountPointFilter.Matches(mountPoint)) &&
 		(f.excludeMountPointFilter == nil || !f.excludeMountPointFilter.Matches(mountPoint))
+}
+
+// translateMountsRootPath translates a mountpoint from the host perspective to the chrooted perspective.
+func translateMountpoint(rootPath, mountpoint string) string {
+	return filepath.Join(rootPath, mountpoint)
 }
