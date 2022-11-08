@@ -35,12 +35,12 @@ func NewFactory() component.ReceiverFactory {
 		component.WithTracesReceiver(createTracesReceiver, component.StabilityLevelBeta))
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.ReceiverConfig {
 	// reference the existing default configurations provided
 	// in the X-Ray daemon:
 	// https://github.com/aws/aws-xray-daemon/blob/master/pkg/cfg/cfg.go#L99
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(awsxray.TypeStr)),
+		ReceiverSettings: config.NewReceiverSettings(component.NewID(awsxray.TypeStr)),
 		// X-Ray daemon defaults to 127.0.0.1:2000 but
 		// the default in OT is 0.0.0.0.
 		NetAddr: confignet.NetAddr{
@@ -54,7 +54,7 @@ func createDefaultConfig() config.Receiver {
 func createTracesReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	cfg component.ReceiverConfig,
 	consumer consumer.Traces) (component.TracesReceiver, error) {
 	rcfg := cfg.(*Config)
 	return newReceiver(rcfg, consumer, params)

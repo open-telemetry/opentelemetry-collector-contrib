@@ -15,7 +15,6 @@
 package mezmoexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -180,14 +179,14 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 }
 
 func (m *mezmoExporter) sendLinesToMezmo(post string) (errs error) {
-	req, _ := http.NewRequest("POST", m.config.IngestURL, bytes.NewBuffer([]byte(post)))
+	req, _ := http.NewRequest("POST", m.config.IngestURL, strings.NewReader(post))
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("User-Agent", m.userAgentString)
 	req.Header.Add("apikey", m.config.IngestKey)
 
 	var res *http.Response
-	if res, errs = http.DefaultClient.Do(req); errs != nil {
+	if res, errs = m.client.Do(req); errs != nil {
 		return fmt.Errorf("failed to POST log to Mezmo: %w", errs)
 	}
 	if res.StatusCode >= 400 {

@@ -27,6 +27,7 @@ import (
 
 	"github.com/Azure/go-amqp"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
@@ -80,7 +81,7 @@ const (
 )
 
 func TestNewAMQPMessagingServiceFactory(t *testing.T) {
-	receiverSettings := config.NewReceiverSettings(config.NewComponentID("someID"))
+	receiverSettings := config.NewReceiverSettings(component.NewID("someID"))
 	broker := "some-broker:1234"
 	queue := "someQueue"
 	maxUnacked := uint32(100)

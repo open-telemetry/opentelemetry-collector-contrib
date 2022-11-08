@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 type tracesExporter struct {
@@ -99,12 +101,12 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 						r.ParentSpanID().HexString(),
 						r.TraceState().AsRaw(),
 						r.Name(),
-						r.Kind().String(),
+						traceutil.SpanKindStr(r.Kind()),
 						serviceName,
 						resAttr,
 						spanAttr,
 						r.EndTimestamp().AsTime().Sub(r.StartTimestamp().AsTime()).Nanoseconds(),
-						status.Code().String(),
+						traceutil.StatusCodeStr(status.Code()),
 						status.Message(),
 						eventTimes,
 						eventNames,
@@ -250,8 +252,8 @@ const (
 	createTraceIDTsTableSQL = `
 create table IF NOT EXISTS %s_trace_id_ts (
      TraceId String CODEC(ZSTD(1)),
-     Start DateTime CODEC(ZSTD(1)),
-     End DateTime CODEC(ZSTD(1)),
+     Start DateTime64(9) CODEC(Delta, ZSTD(1)),
+     End DateTime64(9) CODEC(Delta, ZSTD(1)),
      INDEX idx_trace_id TraceId TYPE bloom_filter(0.01) GRANULARITY 1
 ) ENGINE MergeTree()
 %s
@@ -263,8 +265,8 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS %s_trace_id_ts_mv
 TO %s.%s_trace_id_ts
 AS SELECT
 TraceId,
-min(toDateTime(Timestamp)) as Start,
-max(toDateTime(Timestamp)) as End
+min(Timestamp) as Start,
+max(Timestamp) as End
 FROM
 %s.%s
 WHERE TraceId!=''

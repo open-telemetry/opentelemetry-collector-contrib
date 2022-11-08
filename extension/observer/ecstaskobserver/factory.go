@@ -20,14 +20,13 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 )
 
 const (
-	typeStr config.Type = "ecs_task_observer"
+	typeStr component.Type = "ecs_task_observer"
 )
 
 // NewFactory creates a factory for ECSTaskObserver extension.
@@ -40,7 +39,7 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() config.Extension {
+func createDefaultConfig() component.ExtensionConfig {
 	cfg := defaultConfig()
 	return &cfg
 }
@@ -53,7 +52,7 @@ type extension struct {
 func createExtension(
 	_ context.Context,
 	params component.ExtensionCreateSettings,
-	cfg config.Extension,
+	cfg component.ExtensionConfig,
 ) (component.Extension, error) {
 	obsCfg := cfg.(*Config)
 

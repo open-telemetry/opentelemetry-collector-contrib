@@ -4,22 +4,20 @@ go 1.18
 
 require (
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.62.2-0.20221025202712-36d142f003d8
-	go.opentelemetry.io/collector/pdata v0.62.2-0.20221025202712-36d142f003d8
-	go.opentelemetry.io/collector/semconv v0.62.2-0.20221025202712-36d142f003d8
+	go.opentelemetry.io/collector v0.63.2-0.20221108014805-0b08d5316426
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221108014805-0b08d5316426
+	go.opentelemetry.io/collector/semconv v0.63.2-0.20221108014805-0b08d5316426
 	go.uber.org/zap v1.23.0
 	k8s.io/apimachinery v0.25.3
 	k8s.io/client-go v0.25.3
 )
 
 require (
-	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/openshift/api v0.0.0-20210521075222-e273a339932a // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.11.1 // indirect
+	go.opencensus.io v0.24.0 // indirect
 )
 
 require (
@@ -46,7 +44,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.60.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.63.0
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect

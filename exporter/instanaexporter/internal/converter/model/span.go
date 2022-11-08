@@ -20,6 +20,8 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 const (
@@ -130,7 +132,7 @@ func ConvertPDataSpanToInstanaSpan(fromS FromS, otelSpan ptrace.Span, serviceNam
 	errornous := false
 	if otelSpan.Status().Code() == ptrace.StatusCodeError {
 		errornous = true
-		instanaSpan.Data.Tags[InstanaDataError] = otelSpan.Status().Code().String()
+		instanaSpan.Data.Tags[InstanaDataError] = traceutil.StatusCodeStr(otelSpan.Status().Code())
 		instanaSpan.Data.Tags[InstanaDataErrorDetail] = otelSpan.Status().Message()
 	}
 

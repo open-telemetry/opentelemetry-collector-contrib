@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -157,7 +156,7 @@ func testProcessor(t *testing.T, include []string, exclude []string) (component.
 	return proc, next, logs
 }
 
-func exprConfig(factory component.ProcessorFactory, include []string, exclude []string) config.Processor {
+func exprConfig(factory component.ProcessorFactory, include []string, exclude []string) component.ProcessorConfig {
 	cfg := factory.CreateDefaultConfig()
 	pCfg := cfg.(*Config)
 	pCfg.Metrics = MetricFilters{}

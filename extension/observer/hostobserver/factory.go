@@ -24,7 +24,7 @@ import (
 
 const (
 	// The value of extension "type" in configuration.
-	typeStr config.Type = "host_observer"
+	typeStr component.Type = "host_observer"
 
 	defaultCollectionInterval = 10
 )
@@ -39,9 +39,9 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() config.Extension {
+func createDefaultConfig() component.ExtensionConfig {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		RefreshInterval:   defaultCollectionInterval * time.Second,
 	}
 }
@@ -49,7 +49,7 @@ func createDefaultConfig() config.Extension {
 func createExtension(
 	_ context.Context,
 	params component.ExtensionCreateSettings,
-	cfg config.Extension,
+	cfg component.ExtensionConfig,
 ) (component.Extension, error) {
 	config := cfg.(*Config)
 	return newObserver(params.Logger, config)

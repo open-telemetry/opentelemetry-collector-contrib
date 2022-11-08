@@ -39,9 +39,9 @@ func NewFactory() component.ExporterFactory {
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.ExporterConfig {
 	return &Config{
-		ExporterSettings:      config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings:      config.NewExporterSettings(component.NewID(typeStr)),
 		AWSSessionSettings:    awsutil.CreateDefaultSessionConfig(),
 		LogGroupName:          "",
 		LogStreamName:         "",
@@ -55,7 +55,7 @@ func createDefaultConfig() config.Exporter {
 // createMetricsExporter creates a metrics exporter based on this config.
 func createMetricsExporter(_ context.Context,
 	params component.ExporterCreateSettings,
-	config config.Exporter) (component.MetricsExporter, error) {
+	config component.ExporterConfig) (component.MetricsExporter, error) {
 
 	expCfg := config.(*Config)
 

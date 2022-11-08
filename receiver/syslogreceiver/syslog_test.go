@@ -24,6 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -56,10 +57,10 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 
 	var conn net.Conn
 	if cfg.InputConfig.TCP != nil {
-		conn, err = net.Dial("tcp", "0.0.0.0:29018")
+		conn, err = net.Dial("tcp", "127.0.0.1:29018")
 		require.NoError(t, err)
 	} else {
-		conn, err = net.Dial("udp", "0.0.0.0:29018")
+		conn, err = net.Dial("udp", "127.0.0.1:29018")
 		require.NoError(t, err)
 	}
 
@@ -95,7 +96,7 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub("syslog")
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 	assert.NoError(t, cfg.Validate())
 	assert.Equal(t, testdataConfigYaml(), cfg)
@@ -104,17 +105,13 @@ func TestLoadConfig(t *testing.T) {
 func testdataConfigYaml() *SysLogConfig {
 	return &SysLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 			Operators:        []operator.Config{},
-			Converter: adapter.ConverterConfig{
-				FlushInterval: 100 * time.Millisecond,
-				WorkerCount:   1,
-			},
 		},
 		InputConfig: func() syslog.Config {
 			c := syslog.NewConfig()
 			c.TCP = &tcp.NewConfig().BaseConfig
-			c.TCP.ListenAddress = "0.0.0.0:29018"
+			c.TCP.ListenAddress = "127.0.0.1:29018"
 			c.Protocol = "rfc5424"
 			return *c
 		}(),
@@ -124,17 +121,13 @@ func testdataConfigYaml() *SysLogConfig {
 func testdataUDPConfig() *SysLogConfig {
 	return &SysLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 			Operators:        []operator.Config{},
-			Converter: adapter.ConverterConfig{
-				FlushInterval: 100 * time.Millisecond,
-				WorkerCount:   1,
-			},
 		},
 		InputConfig: func() syslog.Config {
 			c := syslog.NewConfig()
 			c.UDP = &udp.NewConfig().BaseConfig
-			c.UDP.ListenAddress = "0.0.0.0:29018"
+			c.UDP.ListenAddress = "127.0.0.1:29018"
 			c.Protocol = "rfc5424"
 			return *c
 		}(),
@@ -146,7 +139,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 	factory := NewFactory()
 	badCfg := &SysLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 			Operators:        []operator.Config{},
 		},
 		InputConfig: func() syslog.Config {

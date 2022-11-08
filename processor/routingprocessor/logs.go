@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -39,7 +38,7 @@ type logProcessor struct {
 	router    router[component.LogsExporter, ottllogs.TransformContext]
 }
 
-func newLogProcessor(settings component.TelemetrySettings, config config.Processor) *logProcessor {
+func newLogProcessor(settings component.TelemetrySettings, config component.ProcessorConfig) *logProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
 	return &logProcessor{
@@ -56,7 +55,7 @@ func newLogProcessor(settings component.TelemetrySettings, config config.Process
 }
 
 func (p *logProcessor) Start(_ context.Context, host component.Host) error {
-	err := p.router.registerExporters(host.GetExporters()[config.LogsDataType])
+	err := p.router.registerExporters(host.GetExporters()[component.DataTypeLogs])
 	if err != nil {
 		return err
 	}
@@ -101,7 +100,11 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 
 		matchCount := len(p.router.routes)
 		for key, route := range p.router.routes {
-			if _, isMatch := route.statement.Execute(ltx); !isMatch {
+			_, isMatch, err := route.statement.Execute(ctx, ltx)
+			if err != nil {
+				return err
+			}
+			if !isMatch {
 				matchCount--
 				continue
 			}

@@ -15,6 +15,7 @@
 package ottl
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -640,11 +641,12 @@ func Test_parse_failure(t *testing.T) {
 func testParsePath(val *Path) (GetSetter[interface{}], error) {
 	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "name" {
 		return &StandardGetSetter[interface{}]{
-			Getter: func(ctx interface{}) interface{} {
-				return ctx
+			Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return tCtx, nil
 			},
-			Setter: func(ctx interface{}, val interface{}) {
-				reflect.DeepEqual(ctx, val)
+			Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+				reflect.DeepEqual(tCtx, val)
+				return nil
 			},
 		}, nil
 	}
@@ -1023,8 +1025,8 @@ func Test_Execute(t *testing.T) {
 		{
 			name:      "Condition matched",
 			condition: alwaysTrue[interface{}],
-			function: func(ctx interface{}) interface{} {
-				return 1
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return 1, nil
 			},
 			expectedCondition: true,
 			expectedResult:    1,
@@ -1032,8 +1034,8 @@ func Test_Execute(t *testing.T) {
 		{
 			name:      "Condition not matched",
 			condition: alwaysFalse[interface{}],
-			function: func(ctx interface{}) interface{} {
-				return 1
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return 1, nil
 			},
 			expectedCondition: false,
 			expectedResult:    nil,
@@ -1041,8 +1043,8 @@ func Test_Execute(t *testing.T) {
 		{
 			name:      "No result",
 			condition: alwaysTrue[interface{}],
-			function: func(ctx interface{}) interface{} {
-				return nil
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return nil, nil
 			},
 			expectedCondition: true,
 			expectedResult:    nil,
@@ -1051,12 +1053,12 @@ func Test_Execute(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			statement := Statement[interface{}]{
-				condition: tt.condition,
-				function:  tt.function,
+				condition: BoolExpr[any]{tt.condition},
+				function:  Expr[any]{exprFunc: tt.function},
 			}
 
-			result, condition := statement.Execute(nil)
-
+			result, condition, err := statement.Execute(context.Background(), nil)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedCondition, condition)
 			assert.Equal(t, tt.expectedResult, result)
 		})

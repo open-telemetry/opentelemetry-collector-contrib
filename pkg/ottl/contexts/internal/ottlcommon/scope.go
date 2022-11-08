@@ -15,6 +15,7 @@
 package ottlcommon // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ottlcommon"
 
 import (
+	"context"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -51,76 +52,82 @@ func ScopePathGetSetter[K InstrumentationScopeContext](path []ottl.Field) (ottl.
 
 func accessInstrumentationScope[K InstrumentationScopeContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx K) interface{} {
-			return ctx.GetInstrumentationScope()
+		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+			return tCtx.GetInstrumentationScope(), nil
 		},
-		Setter: func(ctx K, val interface{}) {
+		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
 			if newIl, ok := val.(pcommon.InstrumentationScope); ok {
-				newIl.CopyTo(ctx.GetInstrumentationScope())
+				newIl.CopyTo(tCtx.GetInstrumentationScope())
 			}
+			return nil
 		},
 	}
 }
 
 func accessInstrumentationScopeAttributes[K InstrumentationScopeContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx K) interface{} {
-			return ctx.GetInstrumentationScope().Attributes()
+		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+			return tCtx.GetInstrumentationScope().Attributes(), nil
 		},
-		Setter: func(ctx K, val interface{}) {
+		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
 			if attrs, ok := val.(pcommon.Map); ok {
-				attrs.CopyTo(ctx.GetInstrumentationScope().Attributes())
+				attrs.CopyTo(tCtx.GetInstrumentationScope().Attributes())
 			}
+			return nil
 		},
 	}
 }
 
 func accessInstrumentationScopeAttributesKey[K InstrumentationScopeContext](mapKey *string) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx K) interface{} {
-			return GetMapValue(ctx.GetInstrumentationScope().Attributes(), *mapKey)
+		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+			return GetMapValue(tCtx.GetInstrumentationScope().Attributes(), *mapKey), nil
 		},
-		Setter: func(ctx K, val interface{}) {
-			SetMapValue(ctx.GetInstrumentationScope().Attributes(), *mapKey, val)
+		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
+			SetMapValue(tCtx.GetInstrumentationScope().Attributes(), *mapKey, val)
+			return nil
 		},
 	}
 }
 
 func accessInstrumentationScopeName[K InstrumentationScopeContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx K) interface{} {
-			return ctx.GetInstrumentationScope().Name()
+		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+			return tCtx.GetInstrumentationScope().Name(), nil
 		},
-		Setter: func(ctx K, val interface{}) {
+		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
 			if str, ok := val.(string); ok {
-				ctx.GetInstrumentationScope().SetName(str)
+				tCtx.GetInstrumentationScope().SetName(str)
 			}
+			return nil
 		},
 	}
 }
 
 func accessInstrumentationScopeVersion[K InstrumentationScopeContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx K) interface{} {
-			return ctx.GetInstrumentationScope().Version()
+		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+			return tCtx.GetInstrumentationScope().Version(), nil
 		},
-		Setter: func(ctx K, val interface{}) {
+		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
 			if str, ok := val.(string); ok {
-				ctx.GetInstrumentationScope().SetVersion(str)
+				tCtx.GetInstrumentationScope().SetVersion(str)
 			}
+			return nil
 		},
 	}
 }
 
 func accessInstrumentationScopeDroppedAttributesCount[K InstrumentationScopeContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx K) interface{} {
-			return int64(ctx.GetInstrumentationScope().DroppedAttributesCount())
+		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+			return int64(tCtx.GetInstrumentationScope().DroppedAttributesCount()), nil
 		},
-		Setter: func(ctx K, val interface{}) {
+		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
 			if i, ok := val.(int64); ok {
-				ctx.GetInstrumentationScope().SetDroppedAttributesCount(uint32(i))
+				tCtx.GetInstrumentationScope().SetDroppedAttributesCount(uint32(i))
 			}
+			return nil
 		},
 	}
 }

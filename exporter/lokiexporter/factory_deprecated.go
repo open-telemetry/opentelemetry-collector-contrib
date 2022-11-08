@@ -24,9 +24,9 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-func createDefaultLegacyConfig() config.Exporter {
+func createDefaultLegacyConfig() component.ExporterConfig {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "",
 			Timeout:  30 * time.Second,

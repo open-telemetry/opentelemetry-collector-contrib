@@ -15,6 +15,8 @@
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/collector/config"
 	"go.uber.org/zap"
 
@@ -48,6 +50,11 @@ type Config struct {
 	// "SingleDimensionRollupOnly" - Enable single dimension rollup
 	// "NoDimensionRollup" - No dimension rollup (only keep original metrics which contain all dimensions)
 	DimensionRollupOption string `mapstructure:"dimension_rollup_option"`
+
+	// LogRetention is the option to set the log retention policy for the CloudWatch Log Group. Defaults to Never Expire if not specified or set to 0
+	// Possible values are 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653
+	LogRetention int64 `mapstructure:"log_retention"`
+
 	// ParseJSONEncodedAttributeValues is an array of attribute keys whose corresponding values are JSON-encoded as strings.
 	// Those strings will be decoded to its original json structure.
 	ParseJSONEncodedAttributeValues []string `mapstructure:"parse_json_encoded_attr_values"`
@@ -113,7 +120,43 @@ func (config *Config) Validate() error {
 		}
 	}
 	config.MetricDescriptors = validDescriptors
+
+	if !isValidRetentionValue(config.LogRetention) {
+		return errors.New("invalid value for retention policy.  Please make sure to use the following values: 0 (Never Expire), 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653")
+	}
+
 	return nil
+}
+
+// Added function to check if value is an accepted number of log retention days
+func isValidRetentionValue(input int64) bool {
+	switch input {
+	case
+		0,
+		1,
+		3,
+		5,
+		7,
+		14,
+		30,
+		60,
+		90,
+		120,
+		150,
+		180,
+		365,
+		400,
+		545,
+		731,
+		1827,
+		2192,
+		2557,
+		2922,
+		3288,
+		3653:
+		return true
+	}
+	return false
 }
 
 func newEMFSupportedUnits() map[string]interface{} {

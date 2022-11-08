@@ -19,7 +19,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -33,7 +32,7 @@ type transformer struct {
 
 func newTransformer(
 	_ context.Context,
-	conf config.Processor,
+	conf component.ProcessorConfig,
 	set component.ProcessorCreateSettings,
 ) (*transformer, error) {
 	cfg, ok := conf.(*Config)

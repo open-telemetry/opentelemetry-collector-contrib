@@ -37,16 +37,16 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.ExporterConfig {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 	}
 }
 
 func createTracesExporter(
 	_ context.Context,
 	params component.ExporterCreateSettings,
-	config config.Exporter,
+	config component.ExporterConfig,
 ) (component.TracesExporter, error) {
 	sentryConfig, ok := config.(*Config)
 	if !ok {

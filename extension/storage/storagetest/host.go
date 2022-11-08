@@ -17,22 +17,21 @@ package storagetest // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 )
 
 type StorageHost struct {
 	component.Host
-	extensions map[config.ComponentID]component.Extension
+	extensions map[component.ID]component.Extension
 }
 
 func NewStorageHost() *StorageHost {
 	return &StorageHost{
 		Host:       componenttest.NewNopHost(),
-		extensions: make(map[config.ComponentID]component.Extension),
+		extensions: make(map[component.ID]component.Extension),
 	}
 }
 
-func (h *StorageHost) WithExtension(id config.ComponentID, ext component.Extension) *StorageHost {
+func (h *StorageHost) WithExtension(id component.ID, ext component.Extension) *StorageHost {
 	h.extensions[id] = ext
 	return h
 }
@@ -55,6 +54,6 @@ func (h *StorageHost) WithNonStorageExtension(name string) *StorageHost {
 	return h
 }
 
-func (h *StorageHost) GetExtensions() map[config.ComponentID]component.Extension {
+func (h *StorageHost) GetExtensions() map[component.ID]component.Extension {
 	return h.extensions
 }

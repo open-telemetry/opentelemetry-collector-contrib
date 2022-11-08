@@ -44,14 +44,14 @@ func NewFactoryWithTokenSourceGetter(tsg TokenSourceGetter) component.ExporterFa
 	return &f5cloudFactory{ExporterFactory: otlphttp.NewFactory(), getTokenSource: tsg}
 }
 
-func (f *f5cloudFactory) Type() config.Type {
+func (f *f5cloudFactory) Type() component.Type {
 	return typeStr
 }
 
 func (f *f5cloudFactory) CreateMetricsExporter(
 	ctx context.Context,
 	params component.ExporterCreateSettings,
-	config config.Exporter) (component.MetricsExporter, error) {
+	config component.ExporterConfig) (component.MetricsExporter, error) {
 
 	cfg := config.(*Config)
 
@@ -67,7 +67,7 @@ func (f *f5cloudFactory) CreateMetricsExporter(
 func (f *f5cloudFactory) CreateTracesExporter(
 	ctx context.Context,
 	params component.ExporterCreateSettings,
-	config config.Exporter) (component.TracesExporter, error) {
+	config component.ExporterConfig) (component.TracesExporter, error) {
 
 	cfg := config.(*Config)
 
@@ -83,7 +83,7 @@ func (f *f5cloudFactory) CreateTracesExporter(
 func (f *f5cloudFactory) CreateLogsExporter(
 	ctx context.Context,
 	params component.ExporterCreateSettings,
-	config config.Exporter) (component.LogsExporter, error) {
+	config component.ExporterConfig) (component.LogsExporter, error) {
 
 	cfg := config.(*Config)
 
@@ -96,7 +96,7 @@ func (f *f5cloudFactory) CreateLogsExporter(
 	return f.ExporterFactory.CreateLogsExporter(ctx, params, &cfg.Config)
 }
 
-func (f *f5cloudFactory) CreateDefaultConfig() config.Exporter {
+func (f *f5cloudFactory) CreateDefaultConfig() component.ExporterConfig {
 	cfg := &Config{
 		Config: *f.ExporterFactory.CreateDefaultConfig().(*otlphttp.Config),
 		AuthConfig: AuthConfig{
@@ -105,7 +105,7 @@ func (f *f5cloudFactory) CreateDefaultConfig() config.Exporter {
 		},
 	}
 
-	cfg.ExporterSettings = config.NewExporterSettings(config.NewComponentID(typeStr))
+	cfg.ExporterSettings = config.NewExporterSettings(component.NewID(typeStr))
 
 	cfg.Headers["User-Agent"] = "opentelemetry-collector-contrib {{version}}"
 

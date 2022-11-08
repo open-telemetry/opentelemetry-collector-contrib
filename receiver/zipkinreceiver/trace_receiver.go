@@ -26,7 +26,6 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -47,7 +46,7 @@ var errNextConsumerRespBody = []byte(`"Internal Server Error"`)
 // zipkinReceiver type is used to handle spans received in the Zipkin format.
 type zipkinReceiver struct {
 	nextConsumer consumer.Traces
-	id           config.ComponentID
+	id           component.ID
 
 	shutdownWG sync.WaitGroup
 	server     *http.Server
@@ -203,7 +202,7 @@ func (zr *zipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	asZipkinv1 := r.URL != nil && strings.Contains(r.URL.Path, "api/v1/spans")
 
 	transportTag := transportType(r, asZipkinv1)
-	obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv := obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             zr.id,
 		Transport:              transportTag,
 		ReceiverCreateSettings: zr.settings,

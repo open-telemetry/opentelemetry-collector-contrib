@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -40,19 +41,19 @@ func TestLoadConfig(t *testing.T) {
 	metricCfg.ProcessRuntimeMemstatsMallocs.Enabled = false
 
 	tests := []struct {
-		id           config.ComponentID
-		expected     config.Receiver
+		id           component.ID
+		expected     component.ReceiverConfig
 		errorMessage string
 	}{
 		{
-			id:       config.NewComponentIDWithName(typeStr, "default"),
+			id:       component.NewIDWithName(typeStr, "default"),
 			expected: factory.CreateDefaultConfig(),
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "custom"),
+			id: component.NewIDWithName(typeStr, "custom"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: 30 * time.Second,
 				},
 				HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -63,15 +64,15 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "bad_schemeless_endpoint"),
+			id:           component.NewIDWithName(typeStr, "bad_schemeless_endpoint"),
 			errorMessage: "scheme must be 'http' or 'https', but was 'localhost'",
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "bad_hostless_endpoint"),
+			id:           component.NewIDWithName(typeStr, "bad_hostless_endpoint"),
 			errorMessage: "host not found in HTTP endpoint",
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "bad_invalid_url"),
+			id:           component.NewIDWithName(typeStr, "bad_invalid_url"),
 			errorMessage: "endpoint is not a valid URL: parse \"#$%^&*()_\": invalid URL escape \"%^&\"",
 		},
 	}
@@ -86,7 +87,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 			if tt.expected == nil {
 				assert.EqualError(t, cfg.Validate(), tt.errorMessage)

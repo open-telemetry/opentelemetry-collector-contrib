@@ -19,6 +19,8 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 type AdxTrace struct {
@@ -60,8 +62,8 @@ func mapToAdxTrace(resource pcommon.Resource, scope pcommon.InstrumentationScope
 		SpanID:             spanData.SpanID().HexString(),
 		ParentID:           spanData.ParentSpanID().HexString(),
 		SpanName:           spanData.Name(),
-		SpanStatus:         spanData.Status().Code().String(),
-		SpanKind:           spanData.Kind().String(),
+		SpanStatus:         traceutil.StatusCodeStr(spanData.Status().Code()),
+		SpanKind:           traceutil.SpanKindStr(spanData.Kind()),
 		StartTime:          spanData.StartTimestamp().AsTime().Format(time.RFC3339),
 		EndTime:            spanData.EndTimestamp().AsTime().Format(time.RFC3339),
 		ResourceAttributes: resource.Attributes().AsRaw(),
