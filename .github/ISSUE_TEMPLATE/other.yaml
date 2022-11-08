@@ -80,6 +80,7 @@ body:
       - extension/storage/filestorage
       - pkg/batchperresourceattr
       - pkg/batchpersignal
+      - pkg/experimentalmetricmetadata
       - pkg/ottl
       - pkg/resourcetotelemetry
       - pkg/stanza
