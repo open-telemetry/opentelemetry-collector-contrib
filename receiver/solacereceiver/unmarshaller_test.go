@@ -588,6 +588,7 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 // Validate that all event types are properly handled and appended into the span data
 func TestUnmarshallerEvents(t *testing.T) {
 	someErrorString := "some error"
+	somePartitionNumber := uint32(345)
 	tests := []struct {
 		name                 string
 		spanData             *model_v1.SpanData
@@ -604,8 +605,9 @@ func TestUnmarshallerEvents(t *testing.T) {
 			spanData: &model_v1.SpanData{
 				EnqueueEvents: []*model_v1.SpanData_EnqueueEvent{
 					{
-						Dest:         &model_v1.SpanData_EnqueueEvent_QueueName{QueueName: "somequeue"},
-						TimeUnixNano: 123456789,
+						Dest:            &model_v1.SpanData_EnqueueEvent_QueueName{QueueName: "somequeue"},
+						TimeUnixNano:    123456789,
+						PartitionNumber: &somePartitionNumber,
 					},
 				},
 			},
@@ -613,6 +615,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]interface{}{
 					"messaging.solace.destination_type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
+					"messaging.solace.partition_number":     345,
 				})
 			},
 		},

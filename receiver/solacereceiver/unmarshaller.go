@@ -337,6 +337,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v
 		messagingDestinationTypeEventKey = "messaging.solace.destination_type"
 		statusMessageEventKey            = "messaging.solace.enqueue_error_message"
 		rejectsAllEnqueuesKey            = "messaging.solace.rejects_all_enqueues"
+		partitionNumberKey               = "messaging.solace.partition_number"
 		queueKind                        = "queue"
 		topicEndpointKind                = "topic-endpoint"
 	)
@@ -362,6 +363,9 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v
 	clientEvent.Attributes().PutBool(rejectsAllEnqueuesKey, enqueueEvent.RejectsAllEnqueues)
 	if enqueueEvent.ErrorDescription != nil {
 		clientEvent.Attributes().PutStr(statusMessageEventKey, enqueueEvent.GetErrorDescription())
+	}
+	if enqueueEvent.PartitionNumber != nil {
+		clientEvent.Attributes().PutInt(partitionNumberKey, int64(*enqueueEvent.PartitionNumber))
 	}
 }
 
