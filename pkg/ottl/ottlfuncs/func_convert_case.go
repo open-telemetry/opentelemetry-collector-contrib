@@ -47,19 +47,19 @@ func ConvertCase[K any](target ottl.Getter[K], toCase string) (ottl.ExprFunc[K],
 				switch toCase {
 				// Convert string to lowercase (SOME_NAME -> some_name)
 				case "lower":
-					return convertCaseLower(valStr), nil
+					return strings.ToLower(valStr), nil
 
 				// Convert string to uppercase (some_name -> SOME_NAME)
 				case "upper":
-					return convertCaseUpper(valStr), nil
+					return strings.ToUpper(valStr), nil
 
 				// Convert string to snake case (someName -> some_name)
 				case "snake":
-					return convertCaseSnake(valStr), nil
+					return strcase.ToSnake(valStr), nil
 
 				// Convert string to camel case (some_name -> SomeName)
 				case "camel":
-					return convertCaseCamel(valStr), nil
+					return strcase.ToCamel(valStr), nil
 
 				default:
 					return nil, fmt.Errorf("error handling unexpected case: %s", toCase)
@@ -68,20 +68,4 @@ func ConvertCase[K any](target ottl.Getter[K], toCase string) (ottl.ExprFunc[K],
 		}
 		return nil, nil
 	}, nil
-}
-
-func convertCaseLower(input string) string {
-	return strings.ToLower(input)
-}
-
-func convertCaseUpper(input string) string {
-	return strings.ToUpper(input)
-}
-
-func convertCaseSnake(input string) string {
-	return strcase.ToSnake(input)
-}
-
-func convertCaseCamel(input string) string {
-	return strcase.ToCamel(input)
 }
