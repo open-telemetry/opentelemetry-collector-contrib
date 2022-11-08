@@ -92,6 +92,57 @@ func Test_convertCase(t *testing.T) {
 			toCase:   "snake",
 			expected: "",
 		},
+		// camel case
+		{
+			name: "camel simple convert",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "simple_string", nil
+				},
+			},
+			toCase:   "camel",
+			expected: "SimpleString",
+		},
+		{
+			name: "snake noop already snake case",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "SimpleString", nil
+				},
+			},
+			toCase:   "camel",
+			expected: "SimpleString",
+		},
+		{
+			name: "snake hyphens",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "simple-string", nil
+				},
+			},
+			toCase:   "camel",
+			expected: "SimpleString",
+		},
+		{
+			name: "snake nil",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			toCase:   "camel",
+			expected: nil,
+		},
+		{
+			name: "snake empty string",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "", nil
+				},
+			},
+			toCase:   "camel",
+			expected: "",
+		},
 		// upper case
 		{
 			name: "upper simple",
@@ -208,7 +259,7 @@ func Test_convertCaseError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := ConvertCase(tt.target, tt.toCase)
 			require.Error(t, err)
-			assert.ErrorContains(t, err, "invalid case: unset, allowed cases are: lower, upper, or snake")
+			assert.ErrorContains(t, err, "invalid case: unset, allowed cases are: lower, upper, snake, camel")
 		})
 	}
 }

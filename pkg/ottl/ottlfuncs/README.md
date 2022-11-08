@@ -138,6 +138,7 @@ If the `target` is not a string or does not exist, the `ConvertCase` factory fun
 - `lower`: Converts the `target` string to lowercase (e.g. `MY_METRIC` to `my_metric`)
 - `upper`: Converts the `target` string to uppercase (e.g. `my_metric` to `MY_METRIC`)
 - `snake`: Converts the `target` string to snakecase (e.g. `myMetric` to `my_metric`)
+- `camel`: Converts the `target` string to camelcase (e.g. `my_metric` to `MyMetric`)
 
 If `toCase` is any value other than the options above, the `ConvertCase` factory function will return an error.
 

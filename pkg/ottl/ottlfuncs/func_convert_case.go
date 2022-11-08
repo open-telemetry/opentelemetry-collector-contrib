@@ -25,14 +25,14 @@ import (
 
 func ConvertCase[K any](target ottl.Getter[K], toCase string) (ottl.ExprFunc[K], error) {
 	var caseInvalid = true
-	for _, validCase := range []string{"lower", "upper", "snake"} {
+	for _, validCase := range []string{"lower", "upper", "snake", "camel"} {
 		if toCase == validCase {
 			caseInvalid = false
 			break
 		}
 	}
 	if caseInvalid {
-		return nil, fmt.Errorf("invalid case: %s, allowed cases are: lower, upper, or snake", toCase)
+		return nil, fmt.Errorf("invalid case: %s, allowed cases are: lower, upper, snake, camel", toCase)
 	}
 
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
@@ -51,10 +51,6 @@ func ConvertCase[K any](target ottl.Getter[K], toCase string) (ottl.ExprFunc[K],
 				}
 
 				switch toCase {
-				// Convert string to snake case (someName -> some_name)
-				case "snake":
-					return convertCaseSnake(valStr), nil
-
 				// Convert string to lowercase (SOME_NAME -> some_name)
 				case "lower":
 					return convertCaseLower(valStr), nil
@@ -62,6 +58,13 @@ func ConvertCase[K any](target ottl.Getter[K], toCase string) (ottl.ExprFunc[K],
 				// Convert string to uppercase (some_name -> SOME_NAME)
 				case "upper":
 					return convertCaseUpper(valStr), nil
+
+				// Convert string to snake case (someName -> some_name)
+				case "snake":
+					return convertCaseSnake(valStr), nil
+
+				case "camel":
+					return convertCaseCamel(valStr), nil
 
 				default:
 					return nil, fmt.Errorf("error handling unexpected case: %s", toCase)
@@ -82,4 +85,8 @@ func convertCaseUpper(input string) string {
 
 func convertCaseSnake(input string) string {
 	return strcase.ToSnake(input)
+}
+
+func convertCaseCamel(input string) string {
+	return strcase.ToCamel(input)
 }
