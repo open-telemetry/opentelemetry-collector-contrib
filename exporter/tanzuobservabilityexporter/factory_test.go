@@ -32,6 +32,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 	require.True(t, ok, "invalid Config: %#v", cfg)
 	assert.False(t, actual.hasMetricsEndpoint())
 	assert.False(t, actual.hasTracesEndpoint())
+	assert.False(t, actual.Metrics.ResourceAttrsIncluded)
+	assert.False(t, actual.Metrics.AppTagsExcluded)
 }
 
 func TestCreateExporter(t *testing.T) {
