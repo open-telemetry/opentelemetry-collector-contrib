@@ -275,3 +275,10 @@ traces:
 metrics:
   create_gauge("pod.cpu.utilized", read_gauge("pod.cpu.usage") / read_gauge("node.cpu.limit")
 ```
+
+### Convert metric name to snake case
+
+```
+metrics:
+  set(metric.name, ConvertCase(metric.name, "snake"))
+```
