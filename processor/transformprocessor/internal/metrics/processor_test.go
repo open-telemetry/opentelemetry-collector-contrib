@@ -366,6 +366,20 @@ func TestProcess(t *testing.T) {
 			statements: []string{`set(attributes["test"], Split(attributes["not_exist"], "|"))`},
 			want:       func(td pmetric.Metrics) {},
 		},
+		{
+			statements: []string{
+				`set(metric.name,        ConvertCase(metric.name, "snake")) where metric.name == "operationA"`,
+				`set(metric.name,        ConvertCase(metric.name, "lower")) where metric.name == "operationB"`,
+				`set(metric.name,        ConvertCase(metric.name, "upper")) where metric.name == "operationC"`,
+				`set(metric.description, ConvertCase(metric.name, "camel")) where metric.name == "operation_a"`,
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("operation_a")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetName("operationb")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).SetName("OPERATIONC")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetDescription("OperationA")
+			},
+		},
 	}
 
 	for _, tt := range tests {
