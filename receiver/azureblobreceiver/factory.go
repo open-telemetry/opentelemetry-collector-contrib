@@ -54,9 +54,9 @@ func NewFactory() component.ReceiverFactory {
 		component.WithLogsReceiver(f.createLogsReceiver, component.StabilityLevelBeta))
 }
 
-func (f *blobReceiverFactory) createDefaultConfig() config.Receiver {
+func (f *blobReceiverFactory) createDefaultConfig() component.ReceiverConfig {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		Logs:             LogsConfig{ContainerName: logsContainerName},
 		Traces:           TracesConfig{ContainerName: tracesContainerName},
 	}
@@ -65,7 +65,7 @@ func (f *blobReceiverFactory) createDefaultConfig() config.Receiver {
 func (f *blobReceiverFactory) createLogsReceiver(
 	ctx context.Context,
 	set component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	cfg component.ReceiverConfig,
 	nextConsumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 
@@ -84,7 +84,7 @@ func (f *blobReceiverFactory) createLogsReceiver(
 func (f *blobReceiverFactory) createTracesReceiver(
 	ctx context.Context,
 	set component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	cfg component.ReceiverConfig,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 
@@ -101,7 +101,7 @@ func (f *blobReceiverFactory) createTracesReceiver(
 
 func (f *blobReceiverFactory) getReceiver(
 	set component.ReceiverCreateSettings,
-	cfg config.Receiver) (component.Receiver, error) {
+	cfg component.ReceiverConfig) (component.Receiver, error) {
 
 	var err error
 	r := f.receivers.GetOrAdd(cfg, func() component.Component {

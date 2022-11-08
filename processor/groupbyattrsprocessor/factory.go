@@ -28,7 +28,7 @@ import (
 
 const (
 	// typeStr is the value of "type" for this processor in the configuration.
-	typeStr config.Type = "groupbyattrs"
+	typeStr component.Type = "groupbyattrs"
 	// The stability level of the processor.
 	stability = component.StabilityLevelBeta
 )
@@ -55,9 +55,9 @@ func NewFactory() component.ProcessorFactory {
 }
 
 // createDefaultConfig creates the default configuration for the processor.
-func createDefaultConfig() config.Processor {
+func createDefaultConfig() component.ProcessorConfig {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		GroupByKeys:       []string{},
 	}
 }
@@ -85,7 +85,7 @@ func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) *group
 func createTracesProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg component.ProcessorConfig,
 	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 
 	oCfg := cfg.(*Config)
@@ -104,7 +104,7 @@ func createTracesProcessor(
 func createLogsProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg component.ProcessorConfig,
 	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 
 	oCfg := cfg.(*Config)
@@ -123,7 +123,7 @@ func createLogsProcessor(
 func createMetricsProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg component.ProcessorConfig,
 	nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
 
 	oCfg := cfg.(*Config)

@@ -19,18 +19,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	// prepare and test
 	expected := &Config{
-		ExtensionSettings:  config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		ExtensionSettings:  config.NewExtensionSettings(component.NewID(typeStr)),
 		HTTPServerSettings: &confighttp.HTTPServerSettings{Endpoint: ":5778"},
 		GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{
 			Endpoint:  ":14250",
@@ -43,7 +43,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	// verify
 	assert.Equal(t, expected, cfg)
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestCreateExtension(t *testing.T) {

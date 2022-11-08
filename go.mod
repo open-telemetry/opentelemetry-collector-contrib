@@ -13,10 +13,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.63.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.63.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter v0.63.0
@@ -78,7 +78,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor v0.63.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.63.0
@@ -111,7 +111,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.63.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.63.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.63.0
@@ -159,13 +159,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.63.0
 	github.com/prometheus/prometheus v1.8.2-0.20220303173753-edfe657b5405
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.63.2-0.20221104003159-6b27644724d8
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.63.2-0.20221104003159-6b27644724d8
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.63.2-0.20221104003159-6b27644724d8
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.63.2-0.20221104003159-6b27644724d8
+	go.opentelemetry.io/collector v0.63.2-0.20221108014805-0b08d5316426
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.63.2-0.20221108014805-0b08d5316426
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.63.2-0.20221108014805-0b08d5316426
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.63.2-0.20221108014805-0b08d5316426
 	go.opentelemetry.io/collector/extension/ballastextension v0.0.0-20221103164255-2ed41215f324
 	go.opentelemetry.io/collector/extension/zpagesextension v0.0.0-20221102221454-bfc45c16c979
-	go.opentelemetry.io/collector/processor/batchprocessor v0.0.0-20221104003159-6b27644724d8
+	go.opentelemetry.io/collector/processor/batchprocessor v0.0.0-20221108014805-0b08d5316426
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.0.0-20221103164255-2ed41215f324
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.63.1
 	go.uber.org/multierr v1.8.0
@@ -524,7 +524,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
-	github.com/prometheus/client_golang v1.13.1-0.20221013115219-dcea97eee2b3 // indirect
+	github.com/prometheus/client_golang v1.13.1 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
@@ -596,9 +596,9 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.4 // indirect
 	go.mongodb.org/atlas v0.18.0 // indirect
 	go.mongodb.org/mongo-driver v1.10.3 // indirect
-	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.63.2-0.20221104003159-6b27644724d8 // indirect
-	go.opentelemetry.io/collector/semconv v0.63.2-0.20221104003159-6b27644724d8 // indirect
+	go.opencensus.io v0.24.0 // indirect
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221108014805-0b08d5316426 // indirect
+	go.opentelemetry.io/collector/semconv v0.63.2-0.20221108014805-0b08d5316426 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.4 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.11.1 // indirect
@@ -1040,4 +1040,4 @@ exclude github.com/docker/distribution v2.8.0+incompatible
 // at the time of this inclusion, v0.38.0 was the latest version available (also tagged as v2.38.0)
 replace github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.38.0
 
-replace go.opentelemetry.io/collector/receiver/otlpreceiver => go.opentelemetry.io/collector/receiver/otlpreceiver v0.0.0-20221101161158-df8deb48186b
+replace go.opentelemetry.io/collector/receiver/otlpreceiver => go.opentelemetry.io/collector/receiver/otlpreceiver v0.0.0-20221108014805-0b08d5316426

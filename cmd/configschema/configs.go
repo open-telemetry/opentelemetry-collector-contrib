@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 )
 
 const (
@@ -34,7 +33,7 @@ type CfgInfo struct {
 	// the name of the component group, e.g. "receiver"
 	Group string
 	// the component type, e.g. "otlpreceiver.Config"
-	Type config.Type
+	Type component.Type
 	// an instance of the component's configuration struct
 	CfgInstance interface{}
 }
@@ -78,7 +77,7 @@ func GetAllCfgInfos(components component.Factories) []CfgInfo {
 // config for the component specified by the passed-in componentType and
 // componentName.
 func GetCfgInfo(components component.Factories, componentType, componentName string) (CfgInfo, error) {
-	t := config.Type(componentName)
+	t := component.Type(componentName)
 	switch componentType {
 	case receiver:
 		f := components.Receivers[t]

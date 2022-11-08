@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -129,7 +130,7 @@ func TestFilterTraceProcessor(t *testing.T) {
 			ctx := context.Background()
 			next := new(consumertest.TracesSink)
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Spans: SpanFilters{
 					Include: test.inc,
 					Exclude: test.exc,

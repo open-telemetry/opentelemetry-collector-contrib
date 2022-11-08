@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
@@ -95,7 +94,7 @@ func TestFindCorrectStorageExtension(t *testing.T) {
 }
 
 func TestFailOnMissingStorageExtension(t *testing.T) {
-	id := config.NewComponentIDWithName("test", "missing")
+	id := component.NewIDWithName("test", "missing")
 	r := createReceiver(t, id)
 	err := r.Start(context.Background(), storagetest.NewStorageHost())
 	require.Error(t, err)
@@ -114,7 +113,7 @@ func TestFailOnNonStorageExtension(t *testing.T) {
 	require.Equal(t, "storage client: non-storage extension 'non_storage/non' found", err.Error())
 }
 
-func createReceiver(t *testing.T, storageID config.ComponentID) *receiver {
+func createReceiver(t *testing.T, storageID component.ID) *receiver {
 	params := component.ReceiverCreateSettings{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}

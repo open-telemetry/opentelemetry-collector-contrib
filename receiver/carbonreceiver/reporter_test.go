@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
@@ -31,7 +31,7 @@ func TestReporterObservability(t *testing.T) {
 		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	receiverID := config.NewComponentIDWithName(typeStr, "fake_receiver")
+	receiverID := component.NewIDWithName(typeStr, "fake_receiver")
 	reporter := newReporter(receiverID, tt.ToReceiverCreateSettings())
 
 	ctx := reporter.OnDataReceived(context.Background())

@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/multierr"
@@ -40,7 +39,7 @@ const (
 // xrayReceiver implements the component.TracesReceiver interface for converting
 // AWS X-Ray segment document into the OT internal trace format.
 type xrayReceiver struct {
-	instanceID config.ComponentID
+	instanceID component.ID
 	poller     udppoller.Poller
 	server     proxy.Server
 	settings   component.ReceiverCreateSettings

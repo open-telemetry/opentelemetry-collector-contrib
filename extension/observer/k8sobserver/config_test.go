@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
@@ -30,27 +31,27 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id          config.ComponentID
-		expected    config.Extension
+		id          component.ID
+		expected    component.ExtensionConfig
 		expectedErr string
 	}{
 		{
-			id:       config.NewComponentID(typeStr),
+			id:       component.NewID(typeStr),
 			expected: NewFactory().CreateDefaultConfig(),
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "own-node-only"),
+			id: component.NewIDWithName(typeStr, "own-node-only"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+				ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 				Node:              "node-1",
 				APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
 				ObservePods:       true,
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "observe-all"),
+			id: component.NewIDWithName(typeStr, "observe-all"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+				ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 				Node:              "",
 				APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
 				ObservePods:       true,
@@ -58,11 +59,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "invalid_auth"),
+			id:          component.NewIDWithName(typeStr, "invalid_auth"),
 			expectedErr: "invalid authType for kubernetes: not a real auth type",
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "invalid_no_observing"),
+			id:          component.NewIDWithName(typeStr, "invalid_no_observing"),
 			expectedErr: "one of observe_pods and observe_nodes must be true",
 		},
 	}
@@ -74,7 +75,7 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalExtension(sub, cfg))
+			require.NoError(t, component.UnmarshalExtensionConfig(sub, cfg))
 			if tt.expectedErr != "" {
 				assert.EqualError(t, cfg.Validate(), tt.expectedErr)
 				return

@@ -54,7 +54,7 @@ type factory struct {
 
 	// providers stores a provider for each named processor that
 	// may a different set of detectors configured.
-	providers map[config.ComponentID]*internal.ResourceProvider
+	providers map[component.ID]*internal.ResourceProvider
 	lock      sync.Mutex
 }
 
@@ -79,7 +79,7 @@ func NewFactory() component.ProcessorFactory {
 
 	f := &factory{
 		resourceProviderFactory: resourceProviderFactory,
-		providers:               map[config.ComponentID]*internal.ResourceProvider{},
+		providers:               map[component.ID]*internal.ResourceProvider{},
 	}
 
 	return component.NewProcessorFactory(
@@ -91,13 +91,13 @@ func NewFactory() component.ProcessorFactory {
 }
 
 // Type gets the type of the Option config created by this factory.
-func (*factory) Type() config.Type {
+func (*factory) Type() component.Type {
 	return typeStr
 }
 
-func createDefaultConfig() config.Processor {
+func createDefaultConfig() component.ProcessorConfig {
 	return &Config{
-		ProcessorSettings:  config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 		Detectors:          []string{env.TypeStr},
 		HTTPClientSettings: defaultHTTPClientSettings(),
 		Override:           true,
@@ -116,7 +116,7 @@ func defaultHTTPClientSettings() confighttp.HTTPClientSettings {
 func (f *factory) createTracesProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg component.ProcessorConfig,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	rdp, err := f.getResourceDetectionProcessor(set, cfg)
@@ -137,7 +137,7 @@ func (f *factory) createTracesProcessor(
 func (f *factory) createMetricsProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg component.ProcessorConfig,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	rdp, err := f.getResourceDetectionProcessor(set, cfg)
@@ -158,7 +158,7 @@ func (f *factory) createMetricsProcessor(
 func (f *factory) createLogsProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg component.ProcessorConfig,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	rdp, err := f.getResourceDetectionProcessor(set, cfg)
@@ -178,7 +178,7 @@ func (f *factory) createLogsProcessor(
 
 func (f *factory) getResourceDetectionProcessor(
 	params component.ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg component.ProcessorConfig,
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
 
@@ -197,7 +197,7 @@ func (f *factory) getResourceDetectionProcessor(
 
 func (f *factory) getResourceProvider(
 	params component.ProcessorCreateSettings,
-	processorName config.ComponentID,
+	processorName component.ID,
 	timeout time.Duration,
 	configuredDetectors []string,
 	detectorConfigs DetectorConfig,

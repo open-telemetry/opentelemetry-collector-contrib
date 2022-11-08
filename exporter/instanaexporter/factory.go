@@ -42,9 +42,9 @@ func NewFactory() component.ExporterFactory {
 }
 
 // createDefaultConfig creates the default exporter configuration
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.ExporterConfig {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint:        "",
 			Timeout:         30 * time.Second,
@@ -55,7 +55,7 @@ func createDefaultConfig() config.Exporter {
 }
 
 // createTracesExporter creates a trace exporter based on this configuration
-func createTracesExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
+func createTracesExporter(ctx context.Context, set component.ExporterCreateSettings, config component.ExporterConfig) (component.TracesExporter, error) {
 	cfg := config.(*Config)
 
 	ctx, cancel := context.WithCancel(ctx)

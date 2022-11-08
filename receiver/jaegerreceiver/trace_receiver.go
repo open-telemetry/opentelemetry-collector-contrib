@@ -41,7 +41,6 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
@@ -67,7 +66,7 @@ type configuration struct {
 // This receiver is basically a Jaeger collector.
 type jReceiver struct {
 	nextConsumer consumer.Traces
-	id           config.ComponentID
+	id           component.ID
 
 	config *configuration
 
@@ -105,7 +104,7 @@ var (
 // newJaegerReceiver creates a TracesReceiver that receives traffic as a Jaeger collector, and
 // also as a Jaeger agent.
 func newJaegerReceiver(
-	id config.ComponentID,
+	id component.ID,
 	config *configuration,
 	nextConsumer consumer.Traces,
 	set component.ReceiverCreateSettings,
