@@ -400,3 +400,49 @@ func spanWithStatus(statusCode ptrace.StatusCode, message string) ptrace.Span {
 	status.CopyTo(span.Status())
 	return span
 }
+
+func TestAppAttributesToTags(t *testing.T) {
+	// 1. other attributes provided
+	attrMap := newMap(map[string]string{"k": "v"})
+	tags := appAttributesToTags(attrMap)
+	assert.Equal(t, map[string]string{}, tags)
+
+	// 2. service.name provided
+	attrMap = newMap(map[string]string{"k": "v", "application": "test_app", "service.name": "test_service.name", "shard": "test_shard", "cluster": "test_cluster"})
+	tags1 := appAttributesToTags(attrMap)
+	assert.Equal(t, map[string]string{"application": "test_app", "service.name": "test_service.name", "shard": "test_shard", "cluster": "test_cluster"}, tags1)
+
+	// 3. service and service.name both provided
+	attrMap = newMap(map[string]string{"k": "v", "application": "test_app", "service.name": "test_service.name", "shard": "test_shard", "cluster": "test_cluster", "service": "test_service"})
+	tags2 := appAttributesToTags(attrMap)
+	assert.Equal(t, map[string]string{"application": "test_app", "service": "test_service", "shard": "test_shard", "cluster": "test_cluster", "service.name": "test_service.name"}, tags2)
+}
+
+func TestFixServiceTag(t *testing.T) {
+	// service get picked up when both the tags are provided
+	attrMap := map[string]string{"application": "test_app", "shard": "test_shard", "cluster": "test_cluster", "service.name": "test_service"}
+	fixServiceTag(attrMap)
+	assert.Equal(t, map[string]string{"application": "test_app", "service": "test_service", "shard": "test_shard", "cluster": "test_cluster"}, attrMap)
+}
+
+func TestPointAndResAttrsToTagsAndFixSource(t *testing.T) {
+	// 1. service.name provided
+	attrMap := newMap(map[string]string{"application": "test_app", "service.name": "test_service.name", "source": "test_source"})
+	tags := pointAndResAttrsToTagsAndFixSource("source", attrMap)
+	assert.Equal(t, map[string]string{"application": "test_app", "service": "test_service.name"}, tags)
+
+	// 2. service and service.name both provided
+	attrMap = newMap(map[string]string{"application": "test_app", "service.name": "test_service.name", "source": "test_source", "service": "test_service"})
+	tags = pointAndResAttrsToTagsAndFixSource("source", attrMap)
+	assert.Equal(t, map[string]string{"application": "test_app", "service": "test_service", "service.name": "test_service.name"}, tags)
+
+	// 3. service.name provided sourceKey other than "source"
+	attrMap = newMap(map[string]string{"application": "test_app", "service.name": "test_service.name", "source": "test_source", "other_source": "test_other_source"})
+	tags = pointAndResAttrsToTagsAndFixSource("other_source", attrMap)
+	assert.Equal(t, map[string]string{"application": "test_app", "service": "test_service.name", "_source": "test_source"}, tags)
+
+	// 2. service and service.name both provided
+	attrMap = newMap(map[string]string{"application": "test_app", "service.name": "test_service.name", "source": "test_source", "service": "test_service", "other_source": "test_other_source"})
+	tags = pointAndResAttrsToTagsAndFixSource("other_source", attrMap)
+	assert.Equal(t, map[string]string{"application": "test_app", "service": "test_service", "service.name": "test_service.name", "_source": "test_source"}, tags)
+}
