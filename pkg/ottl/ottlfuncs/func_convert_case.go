@@ -57,6 +57,7 @@ func ConvertCase[K any](target ottl.Getter[K], toCase string) (ottl.ExprFunc[K],
 				case "snake":
 					return convertCaseSnake(valStr), nil
 
+				// Convert string to camel case (some_name -> SomeName)
 				case "camel":
 					return convertCaseCamel(valStr), nil
 
