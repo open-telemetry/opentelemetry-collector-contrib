@@ -18,8 +18,8 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"unicode"
 
+	"github.com/iancoleman/strcase"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
@@ -81,60 +81,5 @@ func convertCaseUpper(input string) string {
 }
 
 func convertCaseSnake(input string) string {
-	if len(input) == 1 {
-		return strings.ToLower(input)
-	}
-	source := []rune(input)
-	dist := strings.Builder{}
-	dist.Grow(len(input) + len(input)/3)
-	skipNext := false
-
-	for i := 0; i < len(source); i++ {
-		cur := source[i]
-
-		switch cur {
-		case '-', '_':
-			dist.WriteRune('_')
-			skipNext = true
-			continue
-		}
-		if unicode.IsLower(cur) || unicode.IsDigit(cur) {
-			dist.WriteRune(cur)
-			continue
-		}
-
-		if i == 0 {
-			dist.WriteRune(unicode.ToLower(cur))
-			continue
-		}
-
-		last := source[i-1]
-
-		if (!unicode.IsLetter(last)) || unicode.IsLower(last) {
-			if skipNext {
-				skipNext = false
-			} else {
-				dist.WriteRune('_')
-			}
-			dist.WriteRune(unicode.ToLower(cur))
-			continue
-		}
-
-		if i < len(source)-1 {
-			next := source[i+1]
-			if unicode.IsLower(next) {
-				if skipNext {
-					skipNext = false
-				} else {
-					dist.WriteRune('_')
-				}
-				dist.WriteRune(unicode.ToLower(cur))
-				continue
-			}
-		}
-
-		dist.WriteRune(unicode.ToLower(cur))
-	}
-
-	return dist.String()
+	return strcase.ToSnake(input)
 }
