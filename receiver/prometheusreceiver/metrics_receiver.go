@@ -312,6 +312,13 @@ func gcInterval(cfg *config.Config) time.Duration {
 
 // Shutdown stops and cancels the underlying Prometheus scrapers.
 func (r *pReceiver) Shutdown(context.Context) error {
+	select {
+	case <-r.configLoaded:
+		// recevier has been correctly started
+		// so it is safe to continue shutdown.
+	default:
+		return nil
+	}
 	r.cancelFunc()
 	r.scrapeManager.Stop()
 	close(r.targetAllocatorStop)
