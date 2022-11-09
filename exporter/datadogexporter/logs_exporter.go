@@ -94,7 +94,7 @@ func (exp *logsExporter) consumeLogs(ctx context.Context, ld plog.Logs) (err err
 			// iterate over Logs
 			for k := 0; k < lsl.Len(); k++ {
 				log := lsl.At(k)
-				payload = append(payload, logs.Transform(log, res))
+				payload = append(payload, logs.Transform(log, res, exp.params.Logger))
 			}
 		}
 	}
