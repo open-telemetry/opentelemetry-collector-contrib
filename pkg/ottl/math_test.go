@@ -195,6 +195,10 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 			name:  "mixing int and float",
 			input: "1 - 1.0",
 		},
+		{
+			name:  "divide by 0 is gracefully handled",
+			input: "1 / 0",
+		},
 	}
 
 	functions := map[string]interface{}{

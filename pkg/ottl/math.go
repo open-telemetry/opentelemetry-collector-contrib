@@ -80,13 +80,21 @@ func attemptMathOperation[K any](lhs Getter[K], op mathOp, rhs Getter[K]) Getter
 					if !ok {
 						return nil, fmt.Errorf("cannot convert %v to int64", y)
 					}
-					return performOp[int64](newX, newY, op)
+					result, err := performOp[int64](newX, newY, op)
+					if err != nil {
+						return nil, err
+					}
+					return result, nil
 				case float64:
 					newY, ok := y.(float64)
 					if !ok {
 						return nil, fmt.Errorf("cannot convert %v to float64", y)
 					}
-					return performOp[float64](newX, newY, op)
+					result, err := performOp[float64](newX, newY, op)
+					if err != nil {
+						return nil, err
+					}
+					return result, nil
 				default:
 					return nil, fmt.Errorf("%v must be int64 or float64", x)
 				}
@@ -104,6 +112,9 @@ func performOp[N int64 | float64](x N, y N, op mathOp) (N, error) {
 	case MULT:
 		return x * y, nil
 	case DIV:
+		if y == 0 {
+			return 0, fmt.Errorf("attempted to divide by 0")
+		}
 		return x / y, nil
 	}
 	return 0, fmt.Errorf("invalid operation %v", op)
