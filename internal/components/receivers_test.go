@@ -289,7 +289,7 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "promtail",
-			getConfigFn: func() config.Receiver {
+			getConfigFn: func() component.ReceiverConfig {
 				cfg := rcvrFactories["promtail"].CreateDefaultConfig().(*promtailreceiver.PromtailConfig)
 				cfg.InputConfig = *promtailreceiver.NewConfigWithID("testconfig")
 				cfg.InputConfig.Input = promtailreceiver.PromtailInputConfig{
