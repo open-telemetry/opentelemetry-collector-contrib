@@ -1,0 +1,19 @@
+name: 'Add code owners to a PR'
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
+jobs:
+  add-owners-to-pr:
+    runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run add-codeowners-to-pr.sh
+        run: ./.github/workflows/scripts/add-codeowners-to-pr.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.number }}
