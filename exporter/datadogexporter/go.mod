@@ -53,6 +53,7 @@ require (
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
 	github.com/antonmedv/expr v1.9.0 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
+	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmatcuk/doublestar/v3 v3.0.0 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect

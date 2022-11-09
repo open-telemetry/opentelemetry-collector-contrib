@@ -16,6 +16,7 @@ package logs // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
@@ -61,6 +62,15 @@ func NewSender(endpoint string, logger *zap.Logger, s exporterhelper.TimeoutSett
 // SubmitLogs submits the logs contained in payload to the Datadog intake
 func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem) error {
 	s.logger.Debug("Submitting logs", zap.Any("payload", payload))
+
+	// Correctly sets apiSubmitLogRequest ddtags field based on tags from translator Transform method
+	if payload[0].HasDdtags() {
+		tags := datadog.PtrString(payload[0].GetDdtags())
+		if s.opts.Ddtags != nil {
+			tags = datadog.PtrString(fmt.Sprint(*s.opts.Ddtags, ",", payload[0].GetDdtags()))
+		}
+		s.opts.Ddtags = tags
+	}
 	_, r, err := s.api.SubmitLog(ctx, payload, s.opts)
 	if err != nil {
 		b := make([]byte, 1024) // 1KB message max
