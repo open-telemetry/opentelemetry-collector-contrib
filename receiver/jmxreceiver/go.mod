@@ -7,9 +7,9 @@ require (
 	github.com/shirou/gopsutil/v3 v3.22.10
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.15.0
-	go.opentelemetry.io/collector v0.63.2-0.20221108014805-0b08d5316426
-	go.opentelemetry.io/collector/pdata v0.63.2-0.20221108014805-0b08d5316426
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.0.0-20221108014805-0b08d5316426
+	go.opentelemetry.io/collector v0.63.2-0.20221108195658-727ca568c38b
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221108195658-727ca568c38b
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.0.0-20221108195658-727ca568c38b
 	go.uber.org/atomic v1.10.0
 	go.uber.org/zap v1.23.0
 )

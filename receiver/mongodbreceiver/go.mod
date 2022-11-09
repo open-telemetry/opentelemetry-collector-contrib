@@ -8,8 +8,8 @@ require (
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.15.0
 	go.mongodb.org/mongo-driver v1.10.3
-	go.opentelemetry.io/collector v0.63.2-0.20221108014805-0b08d5316426
-	go.opentelemetry.io/collector/pdata v0.63.2-0.20221108014805-0b08d5316426
+	go.opentelemetry.io/collector v0.63.2-0.20221108195658-727ca568c38b
+	go.opentelemetry.io/collector/pdata v0.63.2-0.20221108195658-727ca568c38b
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 )
