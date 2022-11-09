@@ -5,7 +5,7 @@ go 1.18
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
 
 require (
-	github.com/grafana/loki v1.6.2-0.20221004103251-a8d1839b2245
+	github.com/grafana/loki v1.6.2-0.20221109162728-4064ccba6e73
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.62.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.64.2-0.20221115155901-1550938c18fd
@@ -177,7 +177,7 @@ require (
 	github.com/sercand/kuberesolver v2.4.0+incompatible // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
-	github.com/sony/gobreaker v0.4.1 // indirect
+	github.com/sony/gobreaker v0.5.0 // indirect
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -253,6 +253,3 @@ replace github.com/bradfitz/gomemcache => github.com/grafana/gomemcache v0.0.0-2
 // fork containing a line-buffered logger which should improve logging performance.
 // TODO: submit PR to upstream and remove this
 replace github.com/go-kit/log => github.com/dannykopping/go-kit-log v0.2.2-0.20221002180827-5591c1641b6b
-
-// TODO remove when https://github.com/grafana/loki/pull/7587 is merged
-replace github.com/grafana/loki v1.6.2-0.20221004103251-a8d1839b2245 => github.com/mar4uk/loki v1.6.2-0.20221104093258-0b3085fa40db

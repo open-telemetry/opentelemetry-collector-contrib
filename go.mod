@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 go 1.18
 
 require (
-	github.com/grafana/loki v1.6.2-0.20221004103251-a8d1839b2245
+	github.com/grafana/loki v1.6.2-0.20221109162728-4064ccba6e73
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.66.0
@@ -577,7 +577,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/snowflakedb/gosnowflake v1.6.15 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
-	github.com/sony/gobreaker v0.4.1 // indirect
+	github.com/sony/gobreaker v0.5.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
@@ -1092,6 +1092,3 @@ replace github.com/bradfitz/gomemcache => github.com/grafana/gomemcache v0.0.0-2
 // fork containing a line-buffered logger which should improve logging performance.
 // TODO: submit PR to upstream and remove this
 replace github.com/go-kit/log => github.com/dannykopping/go-kit-log v0.2.2-0.20221002180827-5591c1641b6b
-
-// TODO remove when https://github.com/grafana/loki/pull/7587 is merged
-replace github.com/grafana/loki v1.6.2-0.20221004103251-a8d1839b2245 => github.com/mar4uk/loki v1.6.2-0.20221104093258-0b3085fa40db

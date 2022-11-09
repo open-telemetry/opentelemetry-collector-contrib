@@ -68,6 +68,22 @@ receivers:
           sync_period: 5s
 ```
 
+## Promtail Journal support
+
+Promtail receiver can receive logs from journal on Linux and CentOS. By default, Journal support is disabled since it requires CGO enabled.
+To turn on Journal support you should enable CGO, pass build flag tag `protail_journal_enabled` and install systemd headers.
+
+With Journal support on Ubuntu, run with the following commands:
+```shell
+sudo yum install -y systemd-devel
+CGO_ENABLED=1 go build ./cmd/otelcontribcol --tags=promtail_journal_enabled
+```
+
+With Journal support on CentOS, run with the following commands:
+```shell
+sudo apt install -y libsystemd-dev
+CGO_ENABLED=1 go build ./cmd/otelcontribcol --tags=promtail_journal_enabled
+```
 
 [sc]: https://grafana.com/docs/loki/latest/clients/promtail/configuration/#scrape_configs
 
