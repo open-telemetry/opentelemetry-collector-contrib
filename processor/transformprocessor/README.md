@@ -147,6 +147,7 @@ metric_statements:
 
 Whenever possible, associate your statements to the context that the statement intend to transform.
 Although you can modify resource attributes associated to a span using the `trace` context, it is more efficient to use the `resource` context.
+This is because modifying resource attributes at the `trace` context means modifying the resource once per span associated to the resource.
 
 ## Supported functions:
 
