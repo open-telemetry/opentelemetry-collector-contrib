@@ -2132,7 +2132,6 @@ go.opentelemetry.io/collector/extension/zpagesextension v0.64.0/go.mod h1:lNcphx
 go.opentelemetry.io/collector/pdata v0.56.0/go.mod h1:mYcCREWiIJyHss0dbU+GSiz2tmGZ6u09vtfkKTciog4=
 go.opentelemetry.io/collector/pdata v0.57.2/go.mod h1:RU9I8lwBUxucwOsSYzHEcHi15M9QaX78hgQ2PRdSxV0=
 go.opentelemetry.io/collector/pdata v0.63.0/go.mod h1:IzvXUGQml2mrnvdb8zIlEW3qQs9oFLdD2hLwJdZ+pek=
-go.opentelemetry.io/collector/pdata v0.63.2-0.20221108014805-0b08d5316426/go.mod h1:IzvXUGQml2mrnvdb8zIlEW3qQs9oFLdD2hLwJdZ+pek=
 go.opentelemetry.io/collector/pdata v0.64.0 h1:Mx0ZawbR5F0WyUPCGB1EYsCJYsEj0iJBqX+hm3CFH40=
 go.opentelemetry.io/collector/pdata v0.64.0/go.mod h1:IzvXUGQml2mrnvdb8zIlEW3qQs9oFLdD2hLwJdZ+pek=
 go.opentelemetry.io/collector/processor/batchprocessor v0.64.0 h1:QHLmr0Mw3j9EwbmIaQELjubCZPDTfWINhUjUesnm/xM=
@@ -2144,7 +2143,6 @@ go.opentelemetry.io/collector/receiver/otlpreceiver v0.0.0-20221108014805-0b08d5
 go.opentelemetry.io/collector/semconv v0.56.0/go.mod h1:EH1wbDvTyqKpKBBpoMIe0KQk2plCcFS66Mo17WtR7CQ=
 go.opentelemetry.io/collector/semconv v0.57.2/go.mod h1:84YnUjmm+nhGu4YTDLnHCbxnL74ooWpismPG79tFD7w=
 go.opentelemetry.io/collector/semconv v0.63.0/go.mod h1:5o9yhOa+ABt7g2E5JABDxGZ1PQPbtfxrKNbYn+LOTXU=
-go.opentelemetry.io/collector/semconv v0.63.2-0.20221108014805-0b08d5316426/go.mod h1:5o9yhOa+ABt7g2E5JABDxGZ1PQPbtfxrKNbYn+LOTXU=
 go.opentelemetry.io/collector/semconv v0.64.0 h1:6RP8UHRyUDwlAxGmoWFMHbHDfCo4V1+L48hwEFDqd/E=
 go.opentelemetry.io/collector/semconv v0.64.0/go.mod h1:5o9yhOa+ABt7g2E5JABDxGZ1PQPbtfxrKNbYn+LOTXU=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.33.0/go.mod h1:y/SlJpJQPd2UzfBCj0E9Flk9FDCtTyqUmaCB41qFrWI=
