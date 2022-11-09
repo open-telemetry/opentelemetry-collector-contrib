@@ -46,7 +46,7 @@ Valid values for `context` are:
 
 ## Example
 
-The example takes advantage of context efficiency by grouping transformations with the context which it indents to transform.
+The example takes advantage of context efficiency by grouping transformations with the context which it intends to transform.
 See [Contexts](#contexts) for more details.
 
 Example configuration:
