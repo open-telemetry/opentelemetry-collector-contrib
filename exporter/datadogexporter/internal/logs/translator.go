@@ -16,6 +16,7 @@ package logs // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"strconv"
 	"strings"
 	"time"
@@ -27,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.uber.org/zap"
 )
 
 const (
@@ -58,9 +60,12 @@ const (
 	logLevelFatal = "fatal"
 )
 
+// otelTag specifies a tag to be added to all logs sent from the Datadog exporter
+const otelTag = "otel_source:datadog_exporter"
+
 // Transform converts the log record in lr, which came in with the resource in res to a Datadog log item.
 // the variable specifies if the log body should be sent as an attribute or as a plain message.
-func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
+func Transform(lr plog.LogRecord, res pcommon.Resource, logger *zap.Logger) datadogV2.HTTPLogItem {
 	host, service := extractHostNameAndServiceName(res.Attributes(), lr.Attributes())
 
 	l := datadogV2.HTTPLogItem{
@@ -83,6 +88,34 @@ func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
 			l.Message = v.AsString()
 		case "status", "severity", "level", "syslog.severity":
 			status = v.AsString()
+		case "traceid", "contextmap.traceid", "oteltraceid":
+			traceID, err := decodeTraceID(v.AsString())
+			if err != nil {
+				logger.Warn("failed to decode trace id",
+					zap.String("trace_id", v.AsString()),
+					zap.Error(err))
+				break
+			}
+			if l.AdditionalProperties[ddTraceID] == "" {
+				l.AdditionalProperties[ddTraceID] = strconv.FormatUint(traceIDToUint64(traceID), 10)
+				l.AdditionalProperties[otelTraceID] = v.AsString()
+			}
+		case "spanid", "contextmap.spanid", "otelspanid":
+			spanID, err := decodeSpanID(v.AsString())
+			if err != nil {
+				logger.Warn("failed to decode span id",
+					zap.String("span_id", v.AsString()),
+					zap.Error(err))
+				break
+			}
+			if l.AdditionalProperties[ddSpanID] == "" {
+				l.AdditionalProperties[ddSpanID] = strconv.FormatUint(spanIDToUint64(spanID), 10)
+				l.AdditionalProperties[otelSpanID] = v.AsString()
+			}
+		case "ddtags":
+			var tags = append(attributes.TagsFromAttributes(res.Attributes()), v.AsString(), otelTag)
+			tagStr := strings.Join(tags, ",")
+			l.Ddtags = datadog.PtrString(tagStr)
 		default:
 			l.AdditionalProperties[k] = v.AsString()
 		}
@@ -123,11 +156,12 @@ func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
 		l.Message = lr.Body().AsString()
 	}
 
-	var tags = attributes.TagsFromAttributes(res.Attributes())
-	if len(tags) > 0 {
+	if !l.HasDdtags() {
+		var tags = append(attributes.TagsFromAttributes(res.Attributes()), otelTag)
 		tagStr := strings.Join(tags, ",")
 		l.Ddtags = datadog.PtrString(tagStr)
 	}
+
 	return l
 }
 
@@ -153,6 +187,18 @@ func extractHostNameAndServiceName(resourceAttrs pcommon.Map, logAttrs pcommon.M
 		}
 	}
 	return host, service
+}
+
+func decodeTraceID(traceID string) ([16]byte, error) {
+	var ret [16]byte
+	_, err := hex.Decode(ret[:], []byte(traceID))
+	return ret, err
+}
+
+func decodeSpanID(spanID string) ([8]byte, error) {
+	var ret [8]byte
+	_, err := hex.Decode(ret[:], []byte(spanID))
+	return ret, err
 }
 
 // traceIDToUint64 converts 128bit traceId to 64 bit uint64
