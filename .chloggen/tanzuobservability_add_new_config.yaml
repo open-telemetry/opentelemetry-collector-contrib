@@ -1,6 +1,0 @@
-change_type: breaking
-component: tanzuobservabilityexporter
-note: Add a new metric exporter config(app_tags_excluded) to exclude application resource attrs(application, service.name, cluster, shard) from the metric tags.
-      Rename the config resource_attributes to resource_attrs_included.
-      Build in-house logic in the tanzuobservability exporter and remove the usage of resourcetotelemetry.
-issues: [14733]
