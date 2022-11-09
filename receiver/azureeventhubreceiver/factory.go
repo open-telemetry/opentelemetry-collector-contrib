@@ -27,7 +27,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "azureeventhub"
 	// The stability level of the exporter.
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelAlpha
 )
 
 // NewFactory creates a factory for the Azure Event Hub receiver.
