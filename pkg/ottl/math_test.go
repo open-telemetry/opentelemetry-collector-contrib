@@ -17,6 +17,7 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 	"fmt"
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -151,6 +152,46 @@ func Test_evaluateMathExpression(t *testing.T) {
 			name:     "int division",
 			input:    "10 / 3",
 			expected: 3,
+		},
+		{
+			name:     "multiply large ints",
+			input:    "9223372036854775807 * 9223372036854775807",
+			expected: 1,
+		},
+		{
+			name:     "division by large ints",
+			input:    "9223372036854775807 / 9223372036854775807",
+			expected: 1,
+		},
+		{
+			name:     "add large ints",
+			input:    "9223372036854775807 + 9223372036854775807",
+			expected: -2,
+		},
+		{
+			name:     "subtraction by large ints",
+			input:    "9223372036854775807 - 9223372036854775807",
+			expected: 0,
+		},
+		{
+			name:     "multiply large floats",
+			input:    "1.79769313486231570814527423731704356798070e+308 * 1.79769313486231570814527423731704356798070e+308",
+			expected: math.Inf(0),
+		},
+		{
+			name:     "division by large floats",
+			input:    "1.79769313486231570814527423731704356798070e+308 / 1.79769313486231570814527423731704356798070e+308",
+			expected: 1,
+		},
+		{
+			name:     "add large numbers",
+			input:    "1.79769313486231570814527423731704356798070e+308 + 1.79769313486231570814527423731704356798070e+308",
+			expected: math.Inf(0),
+		},
+		{
+			name:     "subtraction by large numbers",
+			input:    "1.79769313486231570814527423731704356798070e+308 - 1.79769313486231570814527423731704356798070e+308",
+			expected: 0,
 		},
 	}
 

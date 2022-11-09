@@ -117,8 +117,8 @@ Note that `*` and `/` take precedence over `+` and `-`.
 Operations that share the same level of precedence will be executed in the order that they appear in the Math Expression.
 Math Expressions can be grouped with parentheses to override evaluation precedence.
 Math Expressions that mix `int64` and `float64` will result in an error.
-It is up to the function using the Math Expression to determine what to do with that error and the default return value of `0`.
-Normal arithmetic operations that would result in a panic, such as division by zero, will still result in a panic.
+It is up to the function using the Math Expression to determine what to do with that error and the default return value of `nil`.
+Division by zero is gracefully handled with an error, but other arithmetic operations that would result in a panic will still result in a panic.
 Division of integers results in an integer and follows Go's rules for division of integers.
 
 Since Math Expressions support `Path` and `Invocation`, they are evaluated during data processing.
