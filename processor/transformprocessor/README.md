@@ -40,9 +40,9 @@ Valid values for `context` are:
 
 | Signal            | Context Values                                 |
 |-------------------|------------------------------------------------|
-| trace_statements  | `resrouce`, `scope`, `trace`, and `spanevent`  |
-| metric_statements | `resrouce`, `scope`, `metric`, and `datapoint` |
-| log_statements    | `resrouce`, `scope`, and `log`                 |
+| trace_statements  | `resource`, `scope`, `trace`, and `spanevent`  |
+| metric_statements | `resource`, `scope`, `metric`, and `datapoint` |
+| log_statements    | `resource`, `scope`, and `log`                 |
 
 ## Example
 
