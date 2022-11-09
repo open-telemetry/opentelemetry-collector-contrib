@@ -37,6 +37,11 @@ main () {
     declare -A PROCESSED_COMPONENTS
 
     for COMPONENT in ${COMPONENTS}; do
+        # Files will be in alphabetical order and there are many files to
+        # a component, so loop through files in an inner loop. This allows
+        # us to remove all files for a component from the list so they
+        # won't be checked against the remaining components in the components
+        # list. This provides a meaningful speedup in practice.
         for FILE in ${FILES}; do
             MATCH=$(echo "${FILE}" | grep -E "^${COMPONENT}" || true)
 
