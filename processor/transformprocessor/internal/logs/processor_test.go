@@ -354,6 +354,34 @@ func Test_ProcessLogs_MixContext(t *testing.T) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("test", "pass")
 			},
 		},
+		{
+			name: "reuse context",
+			contextStatments: []common.ContextStatements{
+				{
+					Context: "scope",
+					Statements: []string{
+						`set(attributes["test"], "pass")`,
+					},
+				},
+				{
+					Context: "log",
+					Statements: []string{
+						`set(attributes["test"], "pass") where instrumentation_scope.attributes["test"] == "pass"`,
+					},
+				},
+				{
+					Context: "scope",
+					Statements: []string{
+						`set(attributes["test"], "fail")`,
+					},
+				},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("test", "fail")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
 	}
 
 	for _, tt := range tests {

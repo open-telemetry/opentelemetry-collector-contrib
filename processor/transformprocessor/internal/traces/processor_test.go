@@ -401,6 +401,34 @@ func Test_ProcessTraces_MixContext(t *testing.T) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().PutStr("test", "pass")
 			},
 		},
+		{
+			name: "reuse context",
+			contextStatments: []common.ContextStatements{
+				{
+					Context: "scope",
+					Statements: []string{
+						`set(attributes["test"], "pass")`,
+					},
+				},
+				{
+					Context: "trace",
+					Statements: []string{
+						`set(attributes["test"], "pass") where instrumentation_scope.attributes["test"] == "pass"`,
+					},
+				},
+				{
+					Context: "scope",
+					Statements: []string{
+						`set(attributes["test"], "fail")`,
+					},
+				},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().PutStr("test", "fail")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
 	}
 
 	for _, tt := range tests {
