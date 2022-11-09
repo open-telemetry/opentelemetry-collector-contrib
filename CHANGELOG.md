@@ -4,6 +4,97 @@
 
 <!-- next version -->
 
+## v0.64.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/stanza, filelog, journald, syslog, tcplog, udplog, windowseventlog, logstransform`: Remove ability to configure `converter`. (#15696)
+  The design of the converter is opaque and its behavior may change in the future.
+  Because of this, the `converter` settings are deemed unstable. The actual behavior of the
+  converter remains unchanged, but will always use the former default values.
+  
+- `exporter/googlemanagedprometheusexporter`: Moved ClientConfig under MetricConfig, and added an option to change the default metric name prefix for advanced use cases. (#10543)
+- `pkg/ottl`: Update `ExprFunc`, `Set`, and `Get` to all return errors. (#15649)
+- `pkg/ottl`: Change Statement to use `Expr[K]` and `BoolExpr[K]` and for `Statement.Execute` to require `context.Context`. (#15709)
+- `tanzuobservabilityexporter`: Add a new metric exporter config(app_tags_excluded) to exclude application resource attrs(application, service.name, cluster, shard) from the metric tags. Rename the config resource_attributes to resource_attrs_included. Build in-house logic in the tanzuobservability exporter and remove the usage of resourcetotelemetry. (#14733)
+
+### 🚩 Deprecations 🚩
+
+- `hostmetricsreceiver`: Introduce renamed process memory metrics (#14327)
+  This starts the process of phasing out incorrect metric names:
+  
+  - `process.memory.physical_usage`
+  - `process.memory.virtual_usage`
+  
+  and replacing them with the names adhering to the semantic conventions:
+  
+  - `process.memory.usage`
+  - `process.memory.virtual`
+  
+  At this stage, the new metrics are added, but they are disabled by default.
+  See the "Deprecations" section of the Host Metrics receiver's README for details.
+  
+
+### 💡 Enhancements 💡
+
+- `awsemfexporter`: Added a `log_retention` field to the config to specify log retention policy for a Cloudwatch Log Group (#15678)
+- `translator/jaeger`: Add refType as attribute to link when translating Jaeger span references to OTEL. (#14465)
+  The attribute is used to set the proper refType when translating back from OTEL to Jager.
+  
+  In the case of a span with multiple parents, which Jaeger supports, all the refType are properly translated.
+  
+- `apachereceiver`: add port resource attribute (#14791)
+- `apachereceiver`: Extract server name as resource attribute (#14791)
+  The feature is enabled through a feature gate and will be enabled by default in v0.65.
+- `mysqlreceiver`: add more mysql metrics (#14138)
+  - Add mysql.connection.errors metric (#14723)
+  - Add mysql.mysqlx_connections metric (#14727)
+  - Add mysql.joins metric (#14728)
+  - Add mysql.table_open_cache metric (#14737)
+  - Add mysql queries (all, client and slow) count metrics (#14738)
+  - Add metrics based on events_statements_summary_by_digest table (#14770)
+  - Add mysql.client.network.io metric (#14744)
+  
+- `elasticsearchreceiver`: Add metrics related to GET operations (#14635)
+- `elastisearchreceiver`: Add new metrics related to segments, aggregated by all shards (#14635)
+- `elasticsearchreceiver`: add store size metric for index level (#14635)
+- `elasticsearchreceiver`: Add metrics related to merge operations with aggregated for all shards (#14635)
+- `elasticsearchreceiver`: add translog metrics on index level (#14635)
+- `hostmetricsreceiver`: Add new process metrics (#12482)
+  Add `process.context_switches` and `process.open_file_descriptors` as process metrics. They are disabled by default.
+- `metricstransformprocessor`: Add support for scaling histogram metrics (#15690)
+- `datadogexporter`: Use minimum and maximum fields from delta OTLP Histograms and OTLP ExponentialHistograms when available. (#16048)
+- `pkg/ottl`: Add `ConvertCase` OTTL function with `lower`, `upper`, `camel` and `snake` case options. (#15379, #16070, #16083)
+- `pkg/ottl`: Add `parent_span_id.string` accessor. (#16041)
+- `pkg/ottl`: Add new Span Event context to allow for efficient transformation of Span Event telemetry. (#14907)
+- `pkg/stanza, filelog, journald, syslog, tcplog, udplog, windowseventlog, logstransform`: This component does not mutate data, but can be useful as a generic node in complex pipelines. (#15706)
+- `pkg/stanza`: improve performance (#16028)
+- `signalfxexporter`: Allow 2 additional metrics to be included when exporting to SignalFx, k8s.container.cpu_request and k8s.container.memory_request. (#16009)
+- `hostmetricsreceiver`: Added `root_path` config option, allowing the user to specify where the host filesystem is. (#5879, #16026)
+- `snmpreceiver`: adds integration tests for SNMP metric receiver (#13409)
+- `snmpreceiver`: adds scraper for SNMP metric receiver (#13409)
+- `spanmetricsprocessor`: Improve spanmetricsprocessor performance, reuse buffer to calculate key (#16033)
+- `global`: Update gopsutil to 3.22.10 to return Windows partitions, regardless of errors (#14315)
+
+### 🧰 Bug fixes 🧰
+
+- `clickhouseexporter`: remove unnecessary function in trace table creation SQL (#15679)
+- `elasticsearchexporter`: Fixed nil panic error when setting custom headers in elasticsearch exporter (#16017)
+- `elasticsearchreceiver`: emit missing data points related to segments, aggregated by primary shards (#14635)
+- `zipkinreceiver`: Fix invalid timestamps when using Zipkin V1 receiver (#15720)
+- `kubeletstatsreceiver`: return an error if metadata containerID is empty and log a warning message (#16061)
+  The kubelet apiserver /pod metadata endpoint might not have the containerID set for newly created containers.
+  Mark these datapoints as failed and don't process them. The issue should be resolved on the nexy poll.
+        
+  
+- `jaegertranslator`: For HTTP status codes in the 4xx range span status MUST be left unset in case of SpanKind.SERVER and MUST be set to Error in case of SpanKind.CLIENT. (#8273)
+- `mezmoexporter`: Fix usage of HTTP client to honor settings (#15246)
+  This change fixes mezmoexporter's usage of the user supplied HTTP client
+  settings. Previously, the settings were ignored for every request.
+  
+- `vcenterreceiver`: Print the correct error message if VM fetch fails. (#15682)
+- `vcenterreceiver`: Fix x509 with TLS.InsecureSkipVerify setting (#15701)
+
 ## v0.63.0
 
 ### 🛑 Breaking changes 🛑

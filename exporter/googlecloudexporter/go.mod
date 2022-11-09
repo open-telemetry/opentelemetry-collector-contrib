@@ -7,13 +7,13 @@ require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.14
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.34.1
 	github.com/census-instrumentation/opencensus-proto v0.4.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.63.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.63.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.64.0
 	github.com/stretchr/testify v1.8.1
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector v0.63.2-0.20221108014805-0b08d5316426
-	go.opentelemetry.io/collector/pdata v0.63.2-0.20221108014805-0b08d5316426
-	go.opentelemetry.io/collector/semconv v0.63.2-0.20221108014805-0b08d5316426
+	go.opentelemetry.io/collector v0.64.0
+	go.opentelemetry.io/collector/pdata v0.64.0
+	go.opentelemetry.io/collector/semconv v0.64.0
 	google.golang.org/api v0.102.0
 	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c
 	google.golang.org/grpc v1.50.1
@@ -74,7 +74,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.10 // indirect
 	github.com/tklauser/numcpus v0.4.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
-	go.opentelemetry.io/collector/processor/batchprocessor v0.0.0-20221103161931-a167b006e8c0 // indirect
+	go.opentelemetry.io/collector/processor/batchprocessor v0.64.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.11.1 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.33.0 // indirect
