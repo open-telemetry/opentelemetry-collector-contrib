@@ -15,12 +15,15 @@
 package prometheusreceiver
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/prometheus/common/model"
 	promConfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -1535,4 +1538,16 @@ func TestGCInterval(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSafeShutdown(t *testing.T) {
+	p := newPrometheusReceiver(
+		componenttest.NewNopReceiverCreateSettings(),
+		&Config{},
+		consumertest.NewNop(),
+		featuregate.GetRegistry(),
+	)
+	assert.NotPanics(t, func() {
+		assert.NoError(t, p.Shutdown(context.Background()))
+	}, "Must not panic when shutting down")
 }
