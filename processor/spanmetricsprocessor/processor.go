@@ -449,7 +449,7 @@ func (p *processorImp) resetExemplarData() {
 
 func (p *processorImp) buildDimensionKVs(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map) pcommon.Map {
 	dims := pcommon.NewMap()
-  dims.EnsureCapacity(5 + len(p.dimensions))
+	dims.EnsureCapacity(5 + len(p.dimensions))
 
 	dims.PutStr(collectorIDKey, p.collectorID)
 	dims.PutStr(serviceNameKey, serviceName)
