@@ -175,6 +175,10 @@ func (s *mongodbScraper) recordNormalServerStats(now pcommon.Timestamp, doc bson
 	s.recordConnections(now, doc, dbName, errs)
 	s.recordDocumentOperations(now, doc, dbName, errs)
 	s.recordMemoryUsage(now, doc, dbName, errs)
+	s.recordLockAcquireCounts(now, doc, dbName, errs)
+	s.recordLockAcquireWaitCounts(now, doc, dbName, errs)
+	s.recordLockTimeAcquiringMicros(now, doc, dbName, errs)
+	s.recordLockDeadlockCount(now, doc, dbName, errs)
 }
 
 func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M, errs *scrapererror.ScrapeErrors) {
