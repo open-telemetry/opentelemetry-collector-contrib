@@ -50,6 +50,10 @@ type MetricsSettings struct {
 	MongodbIndexAccessCount       MetricSettings `mapstructure:"mongodb.index.access.count"`
 	MongodbIndexCount             MetricSettings `mapstructure:"mongodb.index.count"`
 	MongodbIndexSize              MetricSettings `mapstructure:"mongodb.index.size"`
+	MongodbLockAcquireCount       MetricSettings `mapstructure:"mongodb.lock.acquire.count"`
+	MongodbLockAcquireTime        MetricSettings `mapstructure:"mongodb.lock.acquire.time"`
+	MongodbLockAcquireWaitCount   MetricSettings `mapstructure:"mongodb.lock.acquire.wait_count"`
+	MongodbLockDeadlockCount      MetricSettings `mapstructure:"mongodb.lock.deadlock.count"`
 	MongodbMemoryUsage            MetricSettings `mapstructure:"mongodb.memory.usage"`
 	MongodbNetworkIoReceive       MetricSettings `mapstructure:"mongodb.network.io.receive"`
 	MongodbNetworkIoTransmit      MetricSettings `mapstructure:"mongodb.network.io.transmit"`
@@ -101,6 +105,18 @@ func DefaultMetricsSettings() MetricsSettings {
 		},
 		MongodbIndexSize: MetricSettings{
 			Enabled: true,
+		},
+		MongodbLockAcquireCount: MetricSettings{
+			Enabled: false,
+		},
+		MongodbLockAcquireTime: MetricSettings{
+			Enabled: false,
+		},
+		MongodbLockAcquireWaitCount: MetricSettings{
+			Enabled: false,
+		},
+		MongodbLockDeadlockCount: MetricSettings{
+			Enabled: false,
 		},
 		MongodbMemoryUsage: MetricSettings{
 			Enabled: true,
@@ -160,6 +176,90 @@ var MapAttributeConnectionType = map[string]AttributeConnectionType{
 	"active":    AttributeConnectionTypeActive,
 	"available": AttributeConnectionTypeAvailable,
 	"current":   AttributeConnectionTypeCurrent,
+}
+
+// AttributeLockMode specifies the a value lock_mode attribute.
+type AttributeLockMode int
+
+const (
+	_ AttributeLockMode = iota
+	AttributeLockModeShared
+	AttributeLockModeExclusive
+	AttributeLockModeIntentShared
+	AttributeLockModeIntentExclusive
+)
+
+// String returns the string representation of the AttributeLockMode.
+func (av AttributeLockMode) String() string {
+	switch av {
+	case AttributeLockModeShared:
+		return "shared"
+	case AttributeLockModeExclusive:
+		return "exclusive"
+	case AttributeLockModeIntentShared:
+		return "intent_shared"
+	case AttributeLockModeIntentExclusive:
+		return "intent_exclusive"
+	}
+	return ""
+}
+
+// MapAttributeLockMode is a helper map of string to AttributeLockMode attribute value.
+var MapAttributeLockMode = map[string]AttributeLockMode{
+	"shared":           AttributeLockModeShared,
+	"exclusive":        AttributeLockModeExclusive,
+	"intent_shared":    AttributeLockModeIntentShared,
+	"intent_exclusive": AttributeLockModeIntentExclusive,
+}
+
+// AttributeLockType specifies the a value lock_type attribute.
+type AttributeLockType int
+
+const (
+	_ AttributeLockType = iota
+	AttributeLockTypeParallelBatchWriteMode
+	AttributeLockTypeReplicationStateTransition
+	AttributeLockTypeGlobal
+	AttributeLockTypeDatabase
+	AttributeLockTypeCollection
+	AttributeLockTypeMutex
+	AttributeLockTypeMetadata
+	AttributeLockTypeOplog
+)
+
+// String returns the string representation of the AttributeLockType.
+func (av AttributeLockType) String() string {
+	switch av {
+	case AttributeLockTypeParallelBatchWriteMode:
+		return "parallel_batch_write_mode"
+	case AttributeLockTypeReplicationStateTransition:
+		return "replication_state_transition"
+	case AttributeLockTypeGlobal:
+		return "global"
+	case AttributeLockTypeDatabase:
+		return "database"
+	case AttributeLockTypeCollection:
+		return "collection"
+	case AttributeLockTypeMutex:
+		return "mutex"
+	case AttributeLockTypeMetadata:
+		return "metadata"
+	case AttributeLockTypeOplog:
+		return "oplog"
+	}
+	return ""
+}
+
+// MapAttributeLockType is a helper map of string to AttributeLockType attribute value.
+var MapAttributeLockType = map[string]AttributeLockType{
+	"parallel_batch_write_mode":    AttributeLockTypeParallelBatchWriteMode,
+	"replication_state_transition": AttributeLockTypeReplicationStateTransition,
+	"global":                       AttributeLockTypeGlobal,
+	"database":                     AttributeLockTypeDatabase,
+	"collection":                   AttributeLockTypeCollection,
+	"mutex":                        AttributeLockTypeMutex,
+	"metadata":                     AttributeLockTypeMetadata,
+	"oplog":                        AttributeLockTypeOplog,
 }
 
 // AttributeMemoryType specifies the a value memory_type attribute.
@@ -940,6 +1040,226 @@ func newMetricMongodbIndexSize(settings MetricSettings) metricMongodbIndexSize {
 	return m
 }
 
+type metricMongodbLockAcquireCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mongodb.lock.acquire.count metric with initial data.
+func (m *metricMongodbLockAcquireCount) init() {
+	m.data.SetName("mongodb.lock.acquire.count")
+	m.data.SetDescription("Number of times the lock was acquired in the specified mode.")
+	m.data.SetUnit("{count}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMongodbLockAcquireCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue string, lockModeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("database", databaseAttributeValue)
+	dp.Attributes().PutStr("lock_type", lockTypeAttributeValue)
+	dp.Attributes().PutStr("lock_mode", lockModeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbLockAcquireCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbLockAcquireCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbLockAcquireCount(settings MetricSettings) metricMongodbLockAcquireCount {
+	m := metricMongodbLockAcquireCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMongodbLockAcquireTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mongodb.lock.acquire.time metric with initial data.
+func (m *metricMongodbLockAcquireTime) init() {
+	m.data.SetName("mongodb.lock.acquire.time")
+	m.data.SetDescription("Cumulative wait time for the lock acquisitions.")
+	m.data.SetUnit("microseconds")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMongodbLockAcquireTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue string, lockModeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("database", databaseAttributeValue)
+	dp.Attributes().PutStr("lock_type", lockTypeAttributeValue)
+	dp.Attributes().PutStr("lock_mode", lockModeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbLockAcquireTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbLockAcquireTime) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbLockAcquireTime(settings MetricSettings) metricMongodbLockAcquireTime {
+	m := metricMongodbLockAcquireTime{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMongodbLockAcquireWaitCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mongodb.lock.acquire.wait_count metric with initial data.
+func (m *metricMongodbLockAcquireWaitCount) init() {
+	m.data.SetName("mongodb.lock.acquire.wait_count")
+	m.data.SetDescription("Number of times the lock acquisitions encountered waits because the locks were held in a conflicting mode.")
+	m.data.SetUnit("{count}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMongodbLockAcquireWaitCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue string, lockModeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("database", databaseAttributeValue)
+	dp.Attributes().PutStr("lock_type", lockTypeAttributeValue)
+	dp.Attributes().PutStr("lock_mode", lockModeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbLockAcquireWaitCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbLockAcquireWaitCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbLockAcquireWaitCount(settings MetricSettings) metricMongodbLockAcquireWaitCount {
+	m := metricMongodbLockAcquireWaitCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMongodbLockDeadlockCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mongodb.lock.deadlock.count metric with initial data.
+func (m *metricMongodbLockDeadlockCount) init() {
+	m.data.SetName("mongodb.lock.deadlock.count")
+	m.data.SetDescription("Number of times the lock acquisitions encountered deadlocks.")
+	m.data.SetUnit("{count}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMongodbLockDeadlockCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue string, lockModeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("database", databaseAttributeValue)
+	dp.Attributes().PutStr("lock_type", lockTypeAttributeValue)
+	dp.Attributes().PutStr("lock_mode", lockModeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbLockDeadlockCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbLockDeadlockCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbLockDeadlockCount(settings MetricSettings) metricMongodbLockDeadlockCount {
+	m := metricMongodbLockDeadlockCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMongodbMemoryUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -1431,6 +1751,10 @@ type MetricsBuilder struct {
 	metricMongodbIndexAccessCount       metricMongodbIndexAccessCount
 	metricMongodbIndexCount             metricMongodbIndexCount
 	metricMongodbIndexSize              metricMongodbIndexSize
+	metricMongodbLockAcquireCount       metricMongodbLockAcquireCount
+	metricMongodbLockAcquireTime        metricMongodbLockAcquireTime
+	metricMongodbLockAcquireWaitCount   metricMongodbLockAcquireWaitCount
+	metricMongodbLockDeadlockCount      metricMongodbLockDeadlockCount
 	metricMongodbMemoryUsage            metricMongodbMemoryUsage
 	metricMongodbNetworkIoReceive       metricMongodbNetworkIoReceive
 	metricMongodbNetworkIoTransmit      metricMongodbNetworkIoTransmit
@@ -1470,6 +1794,10 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricMongodbIndexAccessCount:       newMetricMongodbIndexAccessCount(settings.MongodbIndexAccessCount),
 		metricMongodbIndexCount:             newMetricMongodbIndexCount(settings.MongodbIndexCount),
 		metricMongodbIndexSize:              newMetricMongodbIndexSize(settings.MongodbIndexSize),
+		metricMongodbLockAcquireCount:       newMetricMongodbLockAcquireCount(settings.MongodbLockAcquireCount),
+		metricMongodbLockAcquireTime:        newMetricMongodbLockAcquireTime(settings.MongodbLockAcquireTime),
+		metricMongodbLockAcquireWaitCount:   newMetricMongodbLockAcquireWaitCount(settings.MongodbLockAcquireWaitCount),
+		metricMongodbLockDeadlockCount:      newMetricMongodbLockDeadlockCount(settings.MongodbLockDeadlockCount),
 		metricMongodbMemoryUsage:            newMetricMongodbMemoryUsage(settings.MongodbMemoryUsage),
 		metricMongodbNetworkIoReceive:       newMetricMongodbNetworkIoReceive(settings.MongodbNetworkIoReceive),
 		metricMongodbNetworkIoTransmit:      newMetricMongodbNetworkIoTransmit(settings.MongodbNetworkIoTransmit),
@@ -1551,6 +1879,10 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMongodbIndexAccessCount.emit(ils.Metrics())
 	mb.metricMongodbIndexCount.emit(ils.Metrics())
 	mb.metricMongodbIndexSize.emit(ils.Metrics())
+	mb.metricMongodbLockAcquireCount.emit(ils.Metrics())
+	mb.metricMongodbLockAcquireTime.emit(ils.Metrics())
+	mb.metricMongodbLockAcquireWaitCount.emit(ils.Metrics())
+	mb.metricMongodbLockDeadlockCount.emit(ils.Metrics())
 	mb.metricMongodbMemoryUsage.emit(ils.Metrics())
 	mb.metricMongodbNetworkIoReceive.emit(ils.Metrics())
 	mb.metricMongodbNetworkIoTransmit.emit(ils.Metrics())
@@ -1642,6 +1974,26 @@ func (mb *MetricsBuilder) RecordMongodbIndexCountDataPoint(ts pcommon.Timestamp,
 // RecordMongodbIndexSizeDataPoint adds a data point to mongodb.index.size metric.
 func (mb *MetricsBuilder) RecordMongodbIndexSizeDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
 	mb.metricMongodbIndexSize.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+}
+
+// RecordMongodbLockAcquireCountDataPoint adds a data point to mongodb.lock.acquire.count metric.
+func (mb *MetricsBuilder) RecordMongodbLockAcquireCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
+	mb.metricMongodbLockAcquireCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
+}
+
+// RecordMongodbLockAcquireTimeDataPoint adds a data point to mongodb.lock.acquire.time metric.
+func (mb *MetricsBuilder) RecordMongodbLockAcquireTimeDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
+	mb.metricMongodbLockAcquireTime.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
+}
+
+// RecordMongodbLockAcquireWaitCountDataPoint adds a data point to mongodb.lock.acquire.wait_count metric.
+func (mb *MetricsBuilder) RecordMongodbLockAcquireWaitCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
+	mb.metricMongodbLockAcquireWaitCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
+}
+
+// RecordMongodbLockDeadlockCountDataPoint adds a data point to mongodb.lock.deadlock.count metric.
+func (mb *MetricsBuilder) RecordMongodbLockDeadlockCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
+	mb.metricMongodbLockDeadlockCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
 }
 
 // RecordMongodbMemoryUsageDataPoint adds a data point to mongodb.memory.usage metric.
