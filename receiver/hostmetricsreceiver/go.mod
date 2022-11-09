@@ -13,7 +13,6 @@ require (
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8
-
 )
 
 require (
