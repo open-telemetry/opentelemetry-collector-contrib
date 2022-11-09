@@ -5,7 +5,7 @@ change_type: enhancement
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add ability to preform basic (+, -, *, and /) arithmetic operations on ints and floats.  Paths and Functions that return ints/floats are allowed.
+note: Add ability to perform basic (+, -, *, and /) arithmetic operations on ints and floats.  Paths and Functions that return ints/floats are allowed.
 
 # One or more tracking issues related to the change
 issues: [15711]
