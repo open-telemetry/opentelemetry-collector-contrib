@@ -240,6 +240,27 @@ func TestProcess(t *testing.T) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("entrypoint", "operationB")
 			},
 		},
+		{
+			statement: `set(attributes["test"], ConvertCase(name, "lower")) where name == "operationA"`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "operationa")
+			},
+		}, {
+			statement: `set(attributes["test"], ConvertCase(name, "upper")) where name == "operationA"`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "OPERATIONA")
+			},
+		}, {
+			statement: `set(attributes["test"], ConvertCase(name, "snake")) where name == "operationA"`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "operation_a")
+			},
+		}, {
+			statement: `set(attributes["test"], ConvertCase(name, "camel")) where name == "operationA"`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "OperationA")
+			},
+		},
 	}
 
 	for _, tt := range tests {
