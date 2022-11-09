@@ -35,7 +35,7 @@ type booleanValue struct {
 	SubExpr    *booleanExpression `parser:"| '(' @@ ')' )"`
 }
 
-// opAndBooleanValue represents the right side of an AND boolean mathExpression.
+// opAndBooleanValue represents the right side of an AND boolean expression.
 type opAndBooleanValue struct {
 	Operator string        `parser:"@OpAnd"`
 	Value    *booleanValue `parser:"@@"`
@@ -47,7 +47,7 @@ type term struct {
 	Right []*opAndBooleanValue `parser:"@@*"`
 }
 
-// opOrTerm represents the right side of an OR boolean mathExpression.
+// opOrTerm represents the right side of an OR boolean expression.
 type opOrTerm struct {
 	Operator string `parser:"@OpOr"`
 	Term     *term  `parser:"@@"`

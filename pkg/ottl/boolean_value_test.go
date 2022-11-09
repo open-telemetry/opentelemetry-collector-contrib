@@ -98,8 +98,8 @@ func Test_newComparisonEvaluator(t *testing.T) {
 	}{
 		{name: "literals match", l: "hello", r: "hello", op: "==", want: true},
 		{name: "literals don't match", l: "hello", r: "goodbye", op: "!=", want: true},
-		{name: "path mathExpression matches", l: "NAME", r: "bear", op: "==", item: "bear", want: true},
-		{name: "path mathExpression not matches", l: "NAME", r: "cat", op: "!=", item: "bear", want: true},
+		{name: "path expression matches", l: "NAME", r: "bear", op: "==", item: "bear", want: true},
+		{name: "path expression not matches", l: "NAME", r: "cat", op: "!=", item: "bear", want: true},
 		{name: "compare Enum to int", l: "TEST_ENUM", r: 0, op: "==", want: true},
 		{name: "compare int to Enum", l: 2, r: "TEST_ENUM_TWO", op: "==", want: true},
 		{name: "2 > Enum 0", l: 2, r: "TEST_ENUM", op: ">", want: true},
