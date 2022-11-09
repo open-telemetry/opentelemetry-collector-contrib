@@ -129,7 +129,7 @@ func (t *transaction) Append(ref storage.SeriesRef, ls labels.Labels, atMs int64
 
 	curMF := t.getOrCreateMetricFamily(metricName)
 
-	return 0, curMF.addSeries(t.getSeriesRef(ls, curMF.mtype), metricName, ls, atMs, val)
+	return 0, curMF.addSeries(t.getSeriesRef(ls, curMF.mtype, metricName), metricName, ls, atMs, val)
 }
 
 func (t *transaction) getOrCreateMetricFamily(mn string) *metricFamily {
@@ -174,14 +174,14 @@ func (t *transaction) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e e
 	}
 
 	mf := t.getOrCreateMetricFamily(mn)
-	mf.addExemplar(t.getSeriesRef(l, mf.mtype), e)
+	mf.addExemplar(t.getSeriesRef(l, mf.mtype, mf.name), e)
 
 	return 0, nil
 }
 
-func (t *transaction) getSeriesRef(ls labels.Labels, mtype pmetric.MetricType) uint64 {
+func (t *transaction) getSeriesRef(ls labels.Labels, mtype pmetric.MetricType, mname string) uint64 {
 	var hash uint64
-	hash, t.bufBytes = getSeriesRef(t.bufBytes, ls, mtype)
+	hash, t.bufBytes = getSeriesRef(t.bufBytes, ls, mtype, mname)
 	return hash
 }
 
@@ -273,6 +273,6 @@ func (t *transaction) AddTargetInfo(labels labels.Labels) error {
 	return nil
 }
 
-func getSeriesRef(bytes []byte, ls labels.Labels, mtype pmetric.MetricType) (uint64, []byte) {
-	return ls.HashWithoutLabels(bytes, getSortedNotUsefulLabels(mtype)...)
+func getSeriesRef(bytes []byte, ls labels.Labels, mtype pmetric.MetricType, name string) (uint64, []byte) {
+	return ls.HashWithoutLabels(bytes, getSortedNotUsefulLabels(mtype, name)...)
 }

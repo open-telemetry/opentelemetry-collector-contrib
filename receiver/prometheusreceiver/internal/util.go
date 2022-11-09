@@ -53,6 +53,7 @@ var (
 	notUsefulLabelsHistogram = sortString([]string{model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel, model.BucketLabel})
 	notUsefulLabelsSummary   = sortString([]string{model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel, model.QuantileLabel})
 	notUsefulLabelsOther     = sortString([]string{model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel})
+	notUsefulLabelsInternal  = sortString([]string{model.MetricNameLabel, model.SchemeLabel})
 )
 
 func sortString(strs []string) []string {
@@ -60,7 +61,14 @@ func sortString(strs []string) []string {
 	return strs
 }
 
-func getSortedNotUsefulLabels(mType pmetric.MetricType) []string {
+func getSortedNotUsefulLabels(mType pmetric.MetricType, mName string) []string {
+	if _, ok := internalMetricMetadata[mName]; ok {
+		// For internal time series don't filter instance, job, or metrics path labels as these
+		// differentiate federated instances in cases of otherwise equivalent labels.
+		// Internal metrics are all gauges.
+		return notUsefulLabelsInternal
+	}
+
 	switch mType {
 	case pmetric.MetricTypeHistogram:
 		return notUsefulLabelsHistogram

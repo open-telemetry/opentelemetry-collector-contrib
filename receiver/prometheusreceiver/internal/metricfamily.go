@@ -49,6 +49,7 @@ type metricFamily struct {
 // simple types like counter and gauge, each data point is a group of itself
 type metricGroup struct {
 	mtype        pmetric.MetricType
+	name         string
 	ts           int64
 	ls           labels.Labels
 	count        float64
@@ -141,7 +142,7 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	tsNanos := timestampFromMs(mg.ts)
 	point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	point.SetTimestamp(tsNanos)
-	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
+	populateAttributes(pmetric.MetricTypeHistogram, mg.name, mg.ls, point.Attributes())
 	mg.setExemplars(point.Exemplars())
 }
 
@@ -195,7 +196,7 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 	tsNanos := timestampFromMs(mg.ts)
 	point.SetTimestamp(tsNanos)
 	point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-	populateAttributes(pmetric.MetricTypeSummary, mg.ls, point.Attributes())
+	populateAttributes(pmetric.MetricTypeSummary, mg.name, mg.ls, point.Attributes())
 }
 
 func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
@@ -211,13 +212,13 @@ func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
 	} else {
 		point.SetDoubleValue(mg.value)
 	}
-	populateAttributes(pmetric.MetricTypeGauge, mg.ls, point.Attributes())
+	populateAttributes(pmetric.MetricTypeGauge, mg.name, mg.ls, point.Attributes())
 	mg.setExemplars(point.Exemplars())
 }
 
-func populateAttributes(mType pmetric.MetricType, ls labels.Labels, dest pcommon.Map) {
+func populateAttributes(mType pmetric.MetricType, mName string, ls labels.Labels, dest pcommon.Map) {
 	dest.EnsureCapacity(ls.Len())
-	names := getSortedNotUsefulLabels(mType)
+	names := getSortedNotUsefulLabels(mType, mName)
 	j := 0
 	for i := range ls {
 		for j < len(names) && names[j] < ls[i].Name {
@@ -239,6 +240,7 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Label
 	if !ok {
 		mg = &metricGroup{
 			mtype:     mf.mtype,
+			name:      mf.name,
 			ts:        ts,
 			ls:        ls,
 			exemplars: pmetric.NewExemplarSlice(),

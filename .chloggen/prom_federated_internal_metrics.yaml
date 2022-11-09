@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: prometheusreceiver
+note: Don't ignore instance, job, or metric path labels for internal metrics
+issues: [14453]

@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/textparse"
 	"github.com/prometheus/prometheus/model/value"
@@ -187,7 +188,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				} else {
 					lbls = tt.labels.Copy()
 				}
-				sRef, _ := getSeriesRef(nil, lbls, mp.mtype)
+				sRef, _ := getSeriesRef(nil, lbls, mp.mtype, mp.name)
 				err := mp.addSeries(sRef, tv.metric, lbls, tv.at, tv.value)
 				if tt.wantErr {
 					if i != 0 {
@@ -400,7 +401,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 			for _, lbs := range tt.labelsScrapes {
 				for i, scrape := range lbs.scrapes {
 					lb := lbs.labels.Copy()
-					sRef, _ := getSeriesRef(nil, lb, mp.mtype)
+					sRef, _ := getSeriesRef(nil, lb, mp.mtype, mp.name)
 					err := mp.addSeries(sRef, scrape.metric, lb, scrape.at, scrape.value)
 					if tt.wantErr {
 						// The first scrape won't have an error
@@ -496,7 +497,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			mp := newMetricFamily(tt.metricKind, mc, zap.NewNop())
 			for _, tv := range tt.scrapes {
 				lb := tt.labels.Copy()
-				sRef, _ := getSeriesRef(nil, lb, mp.mtype)
+				sRef, _ := getSeriesRef(nil, lb, mp.mtype, mp.name)
 				require.NoError(t, mp.addSeries(sRef, tv.metric, lb, tv.at, tv.value))
 			}
 
@@ -515,6 +516,64 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			got := ndpL.At(0)
 			want := tt.want()
 			require.Equal(t, want, got, "Expected the points to be equal")
+		})
+	}
+}
+
+func TestMetricGroupData_toInternalMetric(t *testing.T) {
+	tests := []struct{ name string }{
+		{name: "up"},
+		{name: "scrape_duration_seconds"},
+		{name: "scrape_samples_scraped"},
+		{name: "scrape_series_added"},
+		{name: "scrape_samples_post_metric_relabeling"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mp := newMetricFamily(tt.name, mc, zap.NewNop())
+
+			lb := labels.FromMap(map[string]string{
+				"a": "A", "b": "B",
+				model.MetricsPathLabel: "a.path",
+				model.MetricNameLabel:  "scrape_duration_seconds",
+				model.SchemeLabel:      "a.scheme",
+				model.InstanceLabel:    "an.instance",
+				model.JobLabel:         "a.job",
+			})
+
+			sRef, _ := getSeriesRef(nil, lb, mp.mtype, mp.name)
+			require.NoError(t, mp.addSeries(sRef, "value", lb, 28, 99.9))
+
+			require.Len(t, mp.groups, 1)
+
+			sl := pmetric.NewMetricSlice()
+			mp.appendMetric(sl)
+
+			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
+			metric := sl.At(0)
+			require.Equal(t, internalMetricMetadata[tt.name].Help, metric.Description(), "Expected help metadata in metric description")
+			require.Equal(t, internalMetricMetadata[tt.name].Unit, metric.Unit(), "Expected unit metadata in metric")
+
+			ndpL := metric.Gauge().DataPoints()
+			require.Equal(t, 1, ndpL.Len(), "Exactly one point expected")
+			got := ndpL.At(0)
+			want := pmetric.NewNumberDataPoint()
+			want.SetDoubleValue(99.9)
+			want.SetTimestamp(pcommon.Timestamp(28 * time.Millisecond))
+			want.Attributes().FromRaw(
+				map[string]interface{}{
+					"a": "A", "b": "B",
+					model.MetricsPathLabel: "a.path",
+					model.InstanceLabel:    "an.instance",
+					model.JobLabel:         "a.job",
+				})
+
+			// require.Equal doesn't work well w/ *[]otlpcommon.KeyValue
+			// so assert the attribute maps are the same before clearing
+			require.Equal(t, want.Attributes().AsRaw(), got.Attributes().AsRaw())
+			got.Attributes().Clear()
+			want.Attributes().Clear()
+			require.EqualValues(t, want, got, "Expected the points to be equal")
 		})
 	}
 }
