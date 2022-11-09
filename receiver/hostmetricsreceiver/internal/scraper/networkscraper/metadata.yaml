@@ -17,7 +17,7 @@ attributes:
 metrics:
   system.network.packets:
     enabled: true
-    description: The number of packets transferred. (Deprecated)
+    description: The number of packets transferred.
     unit: "{packets}"
     sum:
       value_type: int
@@ -26,7 +26,7 @@ metrics:
     attributes: [device, direction]
   system.network.dropped:
     enabled: true
-    description: The number of packets dropped. (Deprecated)
+    description: The number of packets dropped.
     unit: "{packets}"
     sum:
       value_type: int
@@ -35,7 +35,7 @@ metrics:
     attributes: [device, direction]
   system.network.errors:
     enabled: true
-    description: The number of errors encountered. (Deprecated)
+    description: The number of errors encountered.
     unit: "{errors}"
     sum:
       value_type: int
@@ -44,7 +44,7 @@ metrics:
     attributes: [device, direction]
   system.network.io:
     enabled: true
-    description: The number of bytes transmitted and received. (Deprecated)
+    description: The number of bytes transmitted and received.
     unit: "By"
     sum:
       value_type: int
