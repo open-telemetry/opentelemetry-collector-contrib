@@ -194,25 +194,25 @@ func TestProcess(t *testing.T) {
 			want:      func(td plog.Logs) {},
 		},
 		{
-			statement: `set(attributes["test"], ConvertCase(name, "lower")) where name == "operationA""`,
+			statement: `set(attributes["test"], ConvertCase(body, "lower")) where body == "operationA"`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "operationa")
 			},
 		},
 		{
-			statement: `set(attributes["test"], ConvertCase(name, "upper")) where name == "operationA"`,
+			statement: `set(attributes["test"], ConvertCase(body, "upper")) where body == "operationA"`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "OPERATIONA")
 			},
 		},
 		{
-			statement: `set(attributes["test"], ConvertCase(name, "snake")) where name == "operationA"`,
+			statement: `set(attributes["test"], ConvertCase(body, "snake")) where body == "operationA"`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "operation_a")
 			},
 		},
 		{
-			statement: `set(attributes["test"], ConvertCase(name, "camel")) where name == "operationA"`,
+			statement: `set(attributes["test"], ConvertCase(body, "camel")) where body == "operationA"`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "OperationA")
 			},
