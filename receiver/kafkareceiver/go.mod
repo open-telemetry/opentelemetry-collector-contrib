@@ -7,21 +7,21 @@ require (
 	github.com/apache/thrift v0.17.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.39.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.63.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.63.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.63.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.63.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.64.0
 	github.com/openzipkin/zipkin-go v0.4.1
 	github.com/stretchr/testify v1.8.1
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector v0.63.2-0.20221108014805-0b08d5316426
-	go.opentelemetry.io/collector/pdata v0.63.2-0.20221108014805-0b08d5316426
-	go.opentelemetry.io/collector/semconv v0.63.2-0.20221108014805-0b08d5316426
+	go.opentelemetry.io/collector v0.64.0
+	go.opentelemetry.io/collector/pdata v0.64.0
+	go.opentelemetry.io/collector/semconv v0.64.0
 	go.uber.org/zap v1.23.0
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.44.132 // indirect
+	github.com/aws/aws-sdk-go v1.44.133 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/eapache/go-resiliency v1.3.0 // indirect
