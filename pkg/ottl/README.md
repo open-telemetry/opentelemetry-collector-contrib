@@ -109,7 +109,7 @@ When defining a function that will be used as an Invocation by the OTTL, if the 
 
 #### Math Expressions
 
-Math Expressions represent an arithmetic calculations.  The support `+`, `-`, `*`, and `/`, along with `()` for grouping.
+Math Expressions represent arithmetic calculations.  They support `+`, `-`, `*`, and `/`, along with `()` for grouping.
 
 Math Expressions currently only support `int64` and `float64`.
 Math Expressions support `Paths` and `Invocations` that return supported types.
