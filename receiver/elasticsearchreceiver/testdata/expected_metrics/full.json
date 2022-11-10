@@ -2249,6 +2249,20 @@
                      },
                      "name": "jvm.threads.count",
                      "unit": "1"
+                  },
+                  {
+                     "description": "Fraction of heap memory usage",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asDouble": "0.56",
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "name": "jvm.memory.heap.utilization",
+                     "unit": "1"
                   }
                ],
                "scope": {

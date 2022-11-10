@@ -473,6 +473,13 @@ metrics:
       value_type: int
     attributes: []
     enabled: true
+  jvm.memory.heap.utilization:
+    description: Fraction of heap memory usage
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: []
+    enabled: false
   jvm.memory.heap.committed:
     description: The amount of memory that is guaranteed to be available for the heap
     unit: By
