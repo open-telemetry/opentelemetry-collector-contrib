@@ -22,14 +22,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 )
 
 var _ consumer.Logs = &logStatements{}
 
-type logStatements []*ottl.Statement[ottllogs.TransformContext]
+type logStatements []*ottl.Statement[ottllog.TransformContext]
 
 func (l logStatements) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{
@@ -44,7 +44,7 @@ func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			slogs := rlogs.ScopeLogs().At(j)
 			logs := slogs.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				tCtx := ottllogs.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
+				tCtx := ottllog.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
 				for _, statement := range l {
 					_, _, err := statement.Execute(ctx, tCtx)
 					if err != nil {
@@ -59,7 +59,7 @@ func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 
 type LogParserCollection struct {
 	parserCollection
-	logParser ottl.Parser[ottllogs.TransformContext]
+	logParser ottl.Parser[ottllog.TransformContext]
 }
 
 type LogParserCollectionOption func(*LogParserCollection) error
@@ -71,7 +71,7 @@ func NewLogParserCollection(functions map[string]interface{}, settings component
 			resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
 			scopeParser:    ottlscope.NewParser(ScopeFunctions(), settings),
 		},
-		logParser: ottllogs.NewParser(functions, settings),
+		logParser: ottllog.NewParser(functions, settings),
 	}
 
 	for _, op := range options {
