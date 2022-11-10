@@ -140,7 +140,10 @@ func (p *Parser[K]) buildArg(argDef value, argType reflect.Type, index int) (any
 	case strings.HasPrefix(name, "Setter"):
 		fallthrough
 	case strings.HasPrefix(name, "GetSetter"):
-		arg, err := p.pathParser(argDef.Path)
+		if argDef.Literal == nil || argDef.Literal.Path == nil {
+			return nil, fmt.Errorf("invalid argument at position %v must be a Path", index)
+		}
+		arg, err := p.pathParser(argDef.Literal.Path)
 		if err != nil {
 			return nil, fmt.Errorf("invalid argument at position %v %w", index, err)
 		}
@@ -159,19 +162,19 @@ func (p *Parser[K]) buildArg(argDef value, argType reflect.Type, index int) (any
 		return *arg, nil
 	case name == reflect.String.String():
 		if argDef.String == nil {
-			return nil, fmt.Errorf("invalid argument at position %v, must be an string", index)
+			return nil, fmt.Errorf("invalid argument at position %v, must be a string", index)
 		}
 		return *argDef.String, nil
 	case name == reflect.Float64.String():
-		if argDef.Float == nil {
-			return nil, fmt.Errorf("invalid argument at position %v, must be an float", index)
+		if argDef.Literal == nil || argDef.Literal.Float == nil {
+			return nil, fmt.Errorf("invalid argument at position %v, must be a float", index)
 		}
-		return *argDef.Float, nil
+		return *argDef.Literal.Float, nil
 	case name == reflect.Int64.String():
-		if argDef.Int == nil {
+		if argDef.Literal == nil || argDef.Literal.Int == nil {
 			return nil, fmt.Errorf("invalid argument at position %v, must be an int", index)
 		}
-		return *argDef.Int, nil
+		return *argDef.Literal.Int, nil
 	case name == reflect.Bool.String():
 		if argDef.Bool == nil {
 			return nil, fmt.Errorf("invalid argument at position %v, must be a bool", index)
