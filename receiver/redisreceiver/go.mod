@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/go-redis/redis/v7 v7.4.1
 	github.com/stretchr/testify v1.8.1
-  github.com/testcontainers/testcontainers-go v0.15.0
+	github.com/testcontainers/testcontainers-go v0.15.0
 	go.opentelemetry.io/collector v0.64.0
 	go.opentelemetry.io/collector/pdata v0.64.0
 	go.uber.org/zap v1.23.0
