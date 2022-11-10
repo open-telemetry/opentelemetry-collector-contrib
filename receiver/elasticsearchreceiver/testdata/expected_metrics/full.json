@@ -2261,7 +2261,7 @@
                            }
                         ]
                      },
-                     "name": "jvm.memory.heap.percentage",
+                     "name": "jvm.memory.heap.utilization",
                      "unit": "%"
                   }
                ],

@@ -46,7 +46,7 @@ func TestScraper(t *testing.T) {
 	config.Metrics.ElasticsearchNodeOperationsGetCompleted.Enabled = true
 	config.Metrics.ElasticsearchNodeOperationsGetTime.Enabled = true
 
-	config.Metrics.JvmMemoryHeapPercentage.Enabled = true
+	config.Metrics.JvmMemoryHeapUtilization.Enabled = true
 
 	config.Metrics.ElasticsearchIndexOperationsMergeSize.Enabled = true
 	config.Metrics.ElasticsearchIndexOperationsMergeDocsCount.Enabled = true

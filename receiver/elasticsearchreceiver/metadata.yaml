@@ -473,6 +473,13 @@ metrics:
       value_type: int
     attributes: []
     enabled: true
+  jvm.memory.heap.utilization:
+    description: Percentage of heap memory usage
+    unit: '%'
+    gauge:
+      value_type: int
+    attributes:
+    enabled: false
   jvm.memory.heap.committed:
     description: The amount of memory that is guaranteed to be available for the heap
     unit: By
@@ -515,14 +522,6 @@ metrics:
       value_type: int
     attributes: []
     enabled: true
-  # other jvm metrics, disabled by default
-  jvm.memory.heap.percentage:
-    description: Percentage of heap memory usage
-    unit: '%'
-    gauge:
-      value_type: int
-    attributes:
-    enabled: false
   # these metrics are from /_cluster/pending_tasks, and are cluster level metrics
   elasticsearch.cluster.pending_tasks:
     description: The number of cluster-level changes that have not yet been executed.
