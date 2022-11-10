@@ -8,65 +8,146 @@
 | Warnings                 | [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other](#warnings) |
 
 The transform processor modifies telemetry based on configuration using the [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl).
-The processor takes a list of statements for each signal type and executes the statements against the incoming telemetry in the order specified in the config.  Each statement can access and transform telemetry using functions and allow the use of a condition to help decide whether the function should be executed.
+
+For each signal type, the processor takes a list of statements associated to a [Context type](#contexts) and executes the statements against the incoming telemetry in the order specified in the config.
+Each statement can access and transform telemetry using functions and allow the use of a condition to help decide whether the function should be executed.
 
 ## Config
 
-The transform processor allows configuring statements for traces, metrics, and logs. Each signal specifies a list of string statements that get passed to the OTTL for interpretation.
+The transform processor allows configuring multiple context statements for traces, metrics, and logs.
+The value of `context` specifies which [OTTL Context](#contexts) to use when interpreting the associated statements.
+The statement strings, which must be OTTL compatible, will be passed to the OTTL and interpreted using the associated context. 
+Each context will be processed in the order specified and each statement for a context will be executed in the order specified.
 
 ```yaml
 transform:
-  <traces|metrics|logs>:
-    statements:
-      - string
-      - string
-      - string
+  <trace|metric|log>_statements:
+    - context: string
+      statements:
+        - string
+        - string
+        - string
+    - context: string
+      statements:
+        - string
+        - string
+        - string
 ```
 
+Proper use of contexts will provide increased performance and capabilities.  See [Contexts](#contexts) for more details.
+
+Valid values for `context` are:
+
+| Signal            | Context Values                                 |
+|-------------------|------------------------------------------------|
+| trace_statements  | `resource`, `scope`, `trace`, and `spanevent`  |
+| metric_statements | `resource`, `scope`, `metric`, and `datapoint` |
+| log_statements    | `resource`, `scope`, and `log`                 |
+
 ## Example
+
+The example takes advantage of context efficiency by grouping transformations with the context which it intends to transform.
+See [Contexts](#contexts) for more details.
 
 Example configuration:
 ```yaml
 transform:
-  traces:
-    statements:
-      - set(status.code, 1) where attributes["http.path"] == "/health"
-      - keep_keys(resource.attributes, ["service.name", "service.namespace", "cloud.region", "process.command_line"])
-      - set(name, attributes["http.route"])
-      - replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")
-      - replace_pattern(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")
-      - limit(attributes, 100, [])
-      - limit(resource.attributes, 100, [])
+  trace_statements:
+    - context: resource
+      statements:
+        - keep_keys(attributes, ["service.name", "service.namespace", "cloud.region", "process.command_line"])
+        - replace_pattern(attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")
+        - limit(attributes, 100, [])
+        - truncate_all(attributes, 4096)
+    - context: trace
+      statements:
+        - set(status.code, 1) where attributes["http.path"] == "/health"
+        - set(name, attributes["http.route"])
+        - replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")
+        - limit(attributes, 100, [])
+        - truncate_all(attributes, 4096)
+
+  metric_statements:
+    - context: resource
+      statements:
+      - keep_keys(attributes, ["host.name"])
       - truncate_all(attributes, 4096)
-      - truncate_all(resource.attributes, 4096)
-  metrics:
-    statements:
-      - set(metric.description, "Sum") where metric.type == "Sum"
-      - keep_keys(resource.attributes, ["host.name"])
-      - limit(attributes, 100, ["host.name"])
-      - truncate_all(attributes, 4096)
-      - truncate_all(resource.attributes, 4096)
-      - convert_sum_to_gauge() where metric.name == "system.processes.count"
-      - convert_gauge_to_sum("cumulative", false) where metric.name == "prometheus_metric"
-  logs:
-    statements:
-      - set(severity_text, "FAIL") where body == "request failed"
-      - replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
-      - replace_all_patterns(attributes, "/account/\\d{4}", "/account/{accountId}")
-      - set(body, attributes["http.route"])
-      - keep_keys(resource.attributes, ["service.name", "service.namespace", "cloud.region"])
+    - context: metric
+      statements:
+        - set(description, "Sum") where type == "Sum"
+    - context: datapoint
+      statements:
+        - limit(attributes, 100, ["host.name"])
+        - truncate_all(attributes, 4096)
+        - convert_sum_to_gauge() where metric.name == "system.processes.count"
+        - convert_gauge_to_sum("cumulative", false) where metric.name == "prometheus_metric"
+        
+  log_statements:
+    - context: resource
+      statements:
+        - keep_keys(resource.attributes, ["service.name", "service.namespace", "cloud.region"])
+    - context: log
+      statements:
+        - set(severity_text, "FAIL") where body == "request failed"
+        - replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
+        - replace_all_patterns(attributes, "/account/\\d{4}", "/account/{accountId}")
+        - set(body, attributes["http.route"])
 ```
+
 ## Grammar
 
 You can learn more in-depth details on the capabilities and limitations of the OpenTelemetry Transformation Language used by the transform processor by reading about its [grammar](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl#grammar).
 
 ## Contexts
 
-The transform processor utilizes the OTTL's standard contexts for Traces, Metrics and Logs.  The contexts allow the OTTL to interact with the underlying telemetry data in its pdata form.
+The transform processor utilizes the OTTL's contexts to transform Resource, Scope, Trace, SpanEvent, Metric, DataPoint, and Log telemetry.
+The contexts allow the OTTL to interact with the underlying telemetry data in its pdata form.
 
+- [Resource Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlresource)
+- [Scope Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlscope)
 - [Traces Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottltraces)
-- [Metrics Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottldatapoints)
+- [SpanEvent Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspanevent)
+- [Metric Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlmetric)
+- [DataPoint Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottldatapoints)
 - [Logs Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottllogs)
+
+Each context allows transformation of its type of telemetry.  
+For example, statements associated to a `resource` context will be able to transform the resource's `attributes` and `dropped_attributes_count`.
+
+Contexts __NEVER__ supply access to individual items "lower" in the protobuf definition.
+- This means statements associated to a `resource` __WILL NOT__ be able to access the underlying instrumentation scopes.
+- This means statements associated to a `scope` __WILL NOT__ be able to access the underlying telemetry slices (spans, metrics, or logs).
+- Similarly, statements associated to a  `metric` __WILL NOT__ be able to access individual datapoints, but can access the entire datapoints slice.
+- Similarly, statements associated to a  `trace` __WILL NOT__ be able to access individual SpanEvents, but can access the entire SpanEvents slice.
+
+For practical purposes, this means that a context cannot make decisions on its telemetry based on telemetry "lower" in the structure.
+For example, __the following context statement is not possible__ because it attempts to use individual datapoint attributes in the condition of a statements that is associated to a `metric`
+
+```yaml
+metric_statements:
+- context: metric
+  statements:
+  - set(description, "test passed") where datapoints.attributes["test"] == "pass"
+```
+
+Context __ALWAYS__ supply access to the items "higher" in the protobuf definition that are associated to the telemetry being transformed.
+- This means that statements associated to a `datapoint` have access to a datapoint's metric, instrumentation scope, and resource.
+- This means that statements associated to a `spanevent` have access to a spanevent's span, instrumentation scope, and resource.
+- This means that statements associated to a `trace`/`metric`/`log` have access to the telemetry's instrumentation scope, and resource.
+- This means that statements associated to a `scope` have access to the scope's resource.
+
+For example, __the following context statement is possible__ because `datapoint` statements can access the datapoint's metric.
+
+```yaml
+metric_statements:
+- context: datapoint
+  statements:
+    - set(metric.description, "test passed") where attributes["test"] == "pass"
+```
+
+Whenever possible, associate your statements to the context that the statement intend to transform.
+Although you can modify resource attributes associated to a span using the `trace` context, it is more efficient to use the `resource` context.
+This is because contexts are nested: the efficiency comes because higher-level contexts can avoid iterating through any of the contexts at a lower level. 
 
 ## Supported functions:
 
