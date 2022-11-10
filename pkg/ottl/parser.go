@@ -56,12 +56,28 @@ func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 	return result, condition, nil
 }
 
-func NewParser[K any](functions map[string]interface{}, pathParser PathExpressionParser[K], enumParser EnumParser, telemetrySettings component.TelemetrySettings) Parser[K] {
-	return Parser[K]{
+func NewParser[K any](
+	functions map[string]interface{},
+	pathParser PathExpressionParser[K],
+	settings component.TelemetrySettings,
+	options ...Option[K],
+) Parser[K] {
+	p := Parser[K]{
 		functions:         functions,
 		pathParser:        pathParser,
-		enumParser:        enumParser,
-		telemetrySettings: telemetrySettings,
+		telemetrySettings: settings,
+	}
+	for _, opt := range options {
+		opt(&p)
+	}
+	return p
+}
+
+type Option[K any] func(*Parser[K])
+
+func WithEnumParser[K any](parser EnumParser) Option[K] {
+	return func(p *Parser[K]) {
+		p.enumParser = parser
 	}
 }
 
