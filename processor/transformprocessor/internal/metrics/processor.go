@@ -22,15 +22,15 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
 type Processor struct {
-	statements []*ottl.Statement[ottldatapoints.TransformContext]
+	statements []*ottl.Statement[ottldatapoint.TransformContext]
 }
 
 func NewProcessor(statements []string, settings component.TelemetrySettings) (*Processor, error) {
-	ottlp := ottldatapoints.NewParser(Functions(), settings)
+	ottlp := ottldatapoint.NewParser(Functions(), settings)
 	parsedStatements, err := ottlp.ParseStatements(statements)
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func (p *Processor) ProcessMetrics(ctx context.Context, td pmetric.Metrics) (pme
 
 func (p *Processor) handleNumberDataPoints(ctx context.Context, dps pmetric.NumberDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
-		tCtx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
+		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		err := p.callFunctions(ctx, tCtx)
 		if err != nil {
 			return err
@@ -83,7 +83,7 @@ func (p *Processor) handleNumberDataPoints(ctx context.Context, dps pmetric.Numb
 
 func (p *Processor) handleHistogramDataPoints(ctx context.Context, dps pmetric.HistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
-		tCtx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
+		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		err := p.callFunctions(ctx, tCtx)
 		if err != nil {
 			return err
@@ -94,7 +94,7 @@ func (p *Processor) handleHistogramDataPoints(ctx context.Context, dps pmetric.H
 
 func (p *Processor) handleExponetialHistogramDataPoints(ctx context.Context, dps pmetric.ExponentialHistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
-		tCtx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
+		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		err := p.callFunctions(ctx, tCtx)
 		if err != nil {
 			return err
@@ -105,7 +105,7 @@ func (p *Processor) handleExponetialHistogramDataPoints(ctx context.Context, dps
 
 func (p *Processor) handleSummaryDataPoints(ctx context.Context, dps pmetric.SummaryDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
-		tCtx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
+		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		err := p.callFunctions(ctx, tCtx)
 		if err != nil {
 			return err
@@ -114,7 +114,7 @@ func (p *Processor) handleSummaryDataPoints(ctx context.Context, dps pmetric.Sum
 	return nil
 }
 
-func (p *Processor) callFunctions(ctx context.Context, tCtx ottldatapoints.TransformContext) error {
+func (p *Processor) callFunctions(ctx context.Context, tCtx ottldatapoint.TransformContext) error {
 	for _, statement := range p.statements {
 		_, _, err := statement.Execute(ctx, tCtx)
 		if err != nil {
