@@ -138,7 +138,7 @@ func (s *mongodbScraper) recordExtentCount(now pcommon.Timestamp, doc bson.M, db
 	// Mongo version 4.4+ no longer returns numExtents since it is part of the obsolete MMAPv1
 	// https://www.mongodb.com/docs/manual/release-notes/4.4-compatibility/#mmapv1-cleanup
 	mongo44, _ := version.NewVersion("4.4")
-	if s.mongoVersion.LessThan(mongo44) {
+	if s.mongoVersion != nil && s.mongoVersion.LessThan(mongo44) {
 		metricPath := []string{"numExtents"}
 		metricName := "mongodb.extent.count"
 		val, err := collectMetric(doc, metricPath)
@@ -152,13 +152,7 @@ func (s *mongodbScraper) recordExtentCount(now pcommon.Timestamp, doc bson.M, db
 
 // ServerStatus
 func (s *mongodbScraper) recordConnections(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
-	mongo40, _ := version.NewVersion("4.0")
 	for ctVal, ct := range metadata.MapAttributeConnectionType {
-		// Mongo version 4.0 added active
-		// reference: https://www.mongodb.com/docs/v4.0/reference/command/serverStatus/#serverstatus.connections.active
-		if s.mongoVersion.LessThan(mongo40) && ctVal == "active" {
-			continue
-		}
 		metricPath := []string{"connections", ctVal}
 		metricName := "mongodb.connection.count"
 		metricAttributes := fmt.Sprintf("%s, %s", ctVal, dbName)
@@ -202,13 +196,6 @@ func (s *mongodbScraper) recordDocumentOperations(now pcommon.Timestamp, doc bso
 }
 
 func (s *mongodbScraper) recordSessionCount(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	// Collect session count for version 3.0+
-	// https://www.mongodb.com/docs/v3.0/reference/command/serverStatus/#serverStatus.wiredTiger.session
-	mongo30, _ := version.NewVersion("3.0")
-	if s.mongoVersion.LessThan(mongo30) {
-		return
-	}
-
 	storageEngine, err := dig(doc, []string{"storageEngine", "name"})
 	if err != nil {
 		errs.AddPartial(1, errors.New("failed to find storage engine for session count"))
@@ -244,14 +231,6 @@ func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, err
 }
 
 func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	// Collect Cache Hits & Misses if wiredTiger storage engine is used
-	// WiredTiger.cache metrics are available in 3.0+
-	// https://www.mongodb.com/docs/v4.0/reference/command/serverStatus/#serverstatus.wiredTiger.cache
-	mongo30, _ := version.NewVersion("3.0")
-	if s.mongoVersion.LessThan(mongo30) {
-		return
-	}
-
 	storageEngine, err := dig(doc, []string{"storageEngine", "name"})
 	if err != nil {
 		errs.AddPartial(1, errors.New("failed to find storage engine for cache operations"))
@@ -457,29 +436,24 @@ func (s *mongodbScraper) recordLockDeadlockCount(now pcommon.Timestamp, doc bson
 
 // Index Stats
 func (s *mongodbScraper) recordIndexAccess(now pcommon.Timestamp, documents []bson.M, dbName string, collectionName string, errs *scrapererror.ScrapeErrors) {
-	// Collect the index access given a collection and database if version is >= 3.2
-	// https://www.mongodb.com/docs/v3.2/reference/operator/aggregation/indexStats/
-	mongo32, _ := version.NewVersion("3.2")
-	if s.mongoVersion.GreaterThanOrEqual(mongo32) {
-		metricName := "mongodb.index.access.count"
-		var indexAccessTotal int64
-		for _, doc := range documents {
-			metricAttributes := fmt.Sprintf("%s, %s", dbName, collectionName)
-			indexAccess, ok := doc["accesses"].(bson.M)["ops"]
-			if !ok {
-				err := errors.New("could not find key for index access metric")
-				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
-				return
-			}
-			indexAccessValue, err := parseInt(indexAccess)
-			if err != nil {
-				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
-				return
-			}
-			indexAccessTotal += indexAccessValue
+	metricName := "mongodb.index.access.count"
+	var indexAccessTotal int64
+	for _, doc := range documents {
+		metricAttributes := fmt.Sprintf("%s, %s", dbName, collectionName)
+		indexAccess, ok := doc["accesses"].(bson.M)["ops"]
+		if !ok {
+			err := errors.New("could not find key for index access metric")
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
+			return
 		}
-		s.mb.RecordMongodbIndexAccessCountDataPoint(now, indexAccessTotal, dbName, collectionName)
+		indexAccessValue, err := parseInt(indexAccess)
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
+			return
+		}
+		indexAccessTotal += indexAccessValue
 	}
+	s.mb.RecordMongodbIndexAccessCountDataPoint(now, indexAccessTotal, dbName, collectionName)
 }
 
 // Top Stats
