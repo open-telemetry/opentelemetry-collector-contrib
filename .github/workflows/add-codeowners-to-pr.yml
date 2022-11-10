@@ -16,4 +16,5 @@ jobs:
         run: ./.github/workflows/scripts/add-codeowners-to-pr.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
           PR: ${{ github.event.number }}
