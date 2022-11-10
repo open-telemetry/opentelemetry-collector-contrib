@@ -474,11 +474,11 @@ metrics:
     attributes: []
     enabled: true
   jvm.memory.heap.utilization:
-    description: Percentage of heap memory usage
-    unit: '%'
+    description: Fraction of heap memory usage
+    unit: 1
     gauge:
-      value_type: int
-    attributes:
+      value_type: double
+    attributes: []
     enabled: false
   jvm.memory.heap.committed:
     description: The amount of memory that is guaranteed to be available for the heap

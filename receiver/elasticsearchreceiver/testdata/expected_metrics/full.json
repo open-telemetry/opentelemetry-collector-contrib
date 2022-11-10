@@ -2251,18 +2251,18 @@
                      "unit": "1"
                   },
                   {
-                     "description": "Percentage of heap memory usage",
+                     "description": "Fraction of heap memory usage",
                      "gauge": {
                         "dataPoints": [
                            {
-                              "asInt": "56",
+                              "asDouble": "0.56",
                               "startTimeUnixNano": "1661811689941624000",
                               "timeUnixNano": "1661811689943245000"
                            }
                         ]
                      },
                      "name": "jvm.memory.heap.utilization",
-                     "unit": "%"
+                     "unit": "1"
                   }
                ],
                "scope": {

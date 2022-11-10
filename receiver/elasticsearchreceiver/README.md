@@ -55,6 +55,5 @@ The following metric are available with versions:
 - `elasticsearch.cluster.state_update.time` >= [7.16.0](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/release-notes-7.16.0.html)
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
-
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

@@ -4777,19 +4777,19 @@ type metricJvmMemoryHeapUtilization struct {
 // init fills jvm.memory.heap.utilization metric with initial data.
 func (m *metricJvmMemoryHeapUtilization) init() {
 	m.data.SetName("jvm.memory.heap.utilization")
-	m.data.SetDescription("Percentage of heap memory usage")
-	m.data.SetUnit("%")
+	m.data.SetDescription("Fraction of heap memory usage")
+	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricJvmMemoryHeapUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricJvmMemoryHeapUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -5794,7 +5794,7 @@ func (mb *MetricsBuilder) RecordJvmMemoryHeapUsedDataPoint(ts pcommon.Timestamp,
 }
 
 // RecordJvmMemoryHeapUtilizationDataPoint adds a data point to jvm.memory.heap.utilization metric.
-func (mb *MetricsBuilder) RecordJvmMemoryHeapUtilizationDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordJvmMemoryHeapUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricJvmMemoryHeapUtilization.recordDataPoint(mb.startTime, ts, val)
 }
 
