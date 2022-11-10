@@ -28,7 +28,6 @@ def _extract_conn_attributes(conn_kwargs):
         SpanAttributes.DB_SYSTEM: DbSystemValues.REDIS.value,
     }
     db = conn_kwargs.get("db", 0)
-    attributes[SpanAttributes.DB_NAME] = db
     attributes[SpanAttributes.DB_REDIS_DATABASE_INDEX] = db
     try:
         attributes[SpanAttributes.NET_PEER_NAME] = conn_kwargs.get(

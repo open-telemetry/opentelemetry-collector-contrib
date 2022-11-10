@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#1424](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1424))
 - `opentelemetry-instrumentation-dbapi` Fix the check for the connection already being instrumented in instrument_connection().
   ([#1424](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1424))
+- Remove db.name attribute from Redis instrumentation
+  ([#1427](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1427))
 
 ## Version 1.14.0/0.35b0 (2022-11-03)
 
