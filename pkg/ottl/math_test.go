@@ -193,6 +193,16 @@ func Test_evaluateMathExpression(t *testing.T) {
 			input:    "1.79769313486231570814527423731704356798070e+308 - 1.79769313486231570814527423731704356798070e+308",
 			expected: 0,
 		},
+		{
+			name:     "x is float, y is int",
+			input:    "4.0 / 2",
+			expected: 2.0,
+		},
+		{
+			name:     "x is int, y is float",
+			input:    "4 / 2.0",
+			expected: 2.0,
+		},
 	}
 
 	functions := map[string]interface{}{
@@ -232,10 +242,6 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 		name  string
 		input string
 	}{
-		{
-			name:  "mixing int and float",
-			input: "1 - 1.0",
-		},
 		{
 			name:  "divide by 0 is gracefully handled",
 			input: "1 / 0",

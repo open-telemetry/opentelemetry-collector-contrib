@@ -102,18 +102,21 @@ func Test_lexer(t *testing.T) {
 			{"Uppercase", "BC"},
 			{"Lowercase", "d"},
 		}},
-		{"Math Equations", `set(attributes["duration_ms"], 1000 - 600)`, false, []result{
-			{"Lowercase", "set"},
-			{"LParen", "("},
-			{"Lowercase", "attributes"},
-			{"Punct", "["},
-			{"String", `"duration_ms"`},
-			{"Punct", "]"},
-			{"Punct", ","},
+		{"Math Operations", `+-*/`, false, []result{
+			{"OpAddSub", "+"},
+			{"OpAddSub", "-"},
+			{"OpMultDiv", "*"},
+			{"OpMultDiv", "/"},
+		}},
+		{"Math Equations", `1000 - 600`, false, []result{
 			{"Int", "1000"},
 			{"OpAddSub", "-"},
 			{"Int", "600"},
-			{"RParen", ")"},
+		}},
+		{"Math Equations", `1.1 * 2.9`, false, []result{
+			{"Float", "1.1"},
+			{"OpMultDiv", "*"},
+			{"Float", "2.9"},
 		}},
 	}
 

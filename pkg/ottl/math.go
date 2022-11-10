@@ -76,25 +76,39 @@ func attemptMathOperation[K any](lhs Getter[K], op mathOp, rhs Getter[K]) Getter
 				}
 				switch newX := x.(type) {
 				case int64:
-					newY, ok := y.(int64)
-					if !ok {
-						return nil, fmt.Errorf("cannot convert %v to int64", y)
+					switch newY := y.(type) {
+					case int64:
+						result, err := performOp[int64](newX, newY, op)
+						if err != nil {
+							return nil, err
+						}
+						return result, nil
+					case float64:
+						result, err := performOp[float64](float64(newX), newY, op)
+						if err != nil {
+							return nil, err
+						}
+						return result, nil
+					default:
+						return nil, fmt.Errorf("%v must be int64 or float64", y)
 					}
-					result, err := performOp[int64](newX, newY, op)
-					if err != nil {
-						return nil, err
-					}
-					return result, nil
 				case float64:
-					newY, ok := y.(float64)
-					if !ok {
-						return nil, fmt.Errorf("cannot convert %v to float64", y)
+					switch newY := y.(type) {
+					case int64:
+						result, err := performOp[float64](newX, float64(newY), op)
+						if err != nil {
+							return nil, err
+						}
+						return result, nil
+					case float64:
+						result, err := performOp[float64](newX, newY, op)
+						if err != nil {
+							return nil, err
+						}
+						return result, nil
+					default:
+						return nil, fmt.Errorf("%v must be int64 or float64", y)
 					}
-					result, err := performOp[float64](newX, newY, op)
-					if err != nil {
-						return nil, err
-					}
-					return result, nil
 				default:
 					return nil, fmt.Errorf("%v must be int64 or float64", x)
 				}
