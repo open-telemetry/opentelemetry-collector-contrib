@@ -84,7 +84,7 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 
 	transport := newTransport(config, tlsCfg)
 
-	var headers http.Header
+	headers := make(http.Header)
 	for k, v := range config.Headers {
 		headers.Add(k, v)
 	}

@@ -113,6 +113,10 @@ by tenant and send requests with the `X-Scope-OrgID` header set to relevant tena
 If the `loki.tenant` hint attribute is present in both resource or log attributes,
 then the look-up for a tenant value from resource attributes takes precedence.
 
+## Severity
+
+OpenTelemetry uses `record.severity` to track log levels where loki uses `record.attributes.level` for the same. The exporter automatically maps the two, except if a "level" attribute already exists.
+
 ## Advanced Configuration
 
 Several helper files are leveraged to provide additional capabilities automatically:

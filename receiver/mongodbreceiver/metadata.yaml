@@ -37,6 +37,24 @@ attributes:
     enum:
       - hit
       - miss
+  lock_type:
+    description: The Resource over which the Lock controls access
+    enum:
+      - parallel_batch_write_mode
+      - replication_state_transition
+      - global
+      - database
+      - collection
+      - mutex
+      - metadata
+      - oplog
+  lock_mode:
+    description: The mode of Lock which denotes the degree of access
+    enum:
+      - shared
+      - exclusive
+      - intent_shared
+      - intent_exclusive
 
 metrics:
   mongodb.cache.operations:
@@ -238,3 +256,39 @@ metrics:
       aggregation: cumulative
       monotonic: false
     attributes: []
+  mongodb.lock.acquire.count:
+    description: Number of times the lock was acquired in the specified mode.
+    unit: "{count}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [database, lock_type, lock_mode]
+  mongodb.lock.acquire.wait_count:
+    description: Number of times the lock acquisitions encountered waits because the locks were held in a conflicting mode.
+    unit: "{count}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [database, lock_type, lock_mode]
+  mongodb.lock.acquire.time:
+    description: Cumulative wait time for the lock acquisitions.
+    unit: "microseconds"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [database, lock_type, lock_mode]
+  mongodb.lock.deadlock.count:
+    description: Number of times the lock acquisitions encountered deadlocks.
+    unit: "{count}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [database, lock_type, lock_mode]

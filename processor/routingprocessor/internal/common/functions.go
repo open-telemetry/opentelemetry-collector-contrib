@@ -15,6 +15,8 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 
 import (
+	"context"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
@@ -27,7 +29,7 @@ func Functions[K any]() map[string]interface{} {
 		// noop function, it is required since the parsing of conditions is not implemented yet,
 		// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13545
 		"route": func() (ottl.ExprFunc[K], error) {
-			return func(K) (interface{}, error) {
+			return func(context.Context, K) (interface{}, error) {
 				return true, nil
 			}, nil
 		},

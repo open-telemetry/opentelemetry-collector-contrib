@@ -1,5 +1,0 @@
-change_type: enhancement
-component: elasticsearchreceiver
-note: Add metrics related to merge operations with aggregated for all shards
-issues: [14635]
-

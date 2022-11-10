@@ -19,6 +19,7 @@ import (
 	"net/url"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -61,7 +62,7 @@ type Config struct {
 	Timeout time.Duration `mapstructure:"timeout,omitempty"`
 }
 
-var _ config.Extension = (*Config)(nil)
+var _ component.ExtensionConfig = (*Config)(nil)
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {

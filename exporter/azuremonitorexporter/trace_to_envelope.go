@@ -27,6 +27,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 const (
@@ -107,7 +109,7 @@ func spanToEnvelope(
 	}
 
 	// Record the raw Span status values as properties
-	dataProperties[attributeOtelStatusCode] = span.Status().Code().String()
+	dataProperties[attributeOtelStatusCode] = traceutil.StatusCodeStr(span.Status().Code())
 	statusMessage := span.Status().Message()
 	if len(statusMessage) > 0 {
 		dataProperties[attributeOtelStatusDescription] = statusMessage

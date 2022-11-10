@@ -25,7 +25,6 @@ import (
 
 	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -76,7 +75,7 @@ type processor struct {
 	shutdownCh chan interface{}
 }
 
-func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer consumer.Traces) *processor {
+func newProcessor(logger *zap.Logger, config component.ProcessorConfig, nextConsumer consumer.Traces) *processor {
 	pConfig := config.(*Config)
 
 	bounds := defaultLatencyHistogramBucketsMs
@@ -108,7 +107,7 @@ func (p *processor) Start(_ context.Context, host component.Host) error {
 	exporters := host.GetExporters()
 
 	// The available list of exporters come from any configured metrics pipelines' exporters.
-	for k, exp := range exporters[config.MetricsDataType] {
+	for k, exp := range exporters[component.DataTypeMetrics] {
 		metricsExp, ok := exp.(component.MetricsExporter)
 		if k.String() == p.config.MetricsExporter && ok {
 			p.metricsExporter = metricsExp

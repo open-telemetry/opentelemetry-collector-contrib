@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
@@ -44,7 +43,7 @@ func TestExtensionIntegrity(t *testing.T) {
 
 	type mockComponent struct {
 		kind component.Kind
-		name config.ComponentID
+		name component.ID
 	}
 
 	components := []mockComponent{
@@ -59,14 +58,14 @@ func TestExtensionIntegrity(t *testing.T) {
 	}
 
 	// Make a client for each component
-	clients := make(map[config.ComponentID]storage.Client)
+	clients := make(map[component.ID]storage.Client)
 	for _, c := range components {
 		client, err := se.GetClient(ctx, c.kind, c.name, "")
 		require.NoError(t, err)
 		clients[c.name] = client
 	}
 
-	thrashClient := func(wg *sync.WaitGroup, n config.ComponentID, c storage.Client) {
+	thrashClient := func(wg *sync.WaitGroup, n component.ID, c storage.Client) {
 		// keys and values
 		keys := []string{"a", "b", "c", "d", "e"}
 		myBytes := []byte(n.Name())
@@ -127,6 +126,6 @@ func newTestExtension(t *testing.T) storage.Extension {
 	return se
 }
 
-func newTestEntity(name string) config.ComponentID {
-	return config.NewComponentIDWithName("nop", name)
+func newTestEntity(name string) component.ID {
+	return component.NewIDWithName("nop", name)
 }

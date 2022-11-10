@@ -42,6 +42,10 @@ func TestScraper(t *testing.T) {
 	t.Parallel()
 
 	config := createDefaultConfig().(*Config)
+
+	config.Metrics.ElasticsearchNodeOperationsGetCompleted.Enabled = true
+	config.Metrics.ElasticsearchNodeOperationsGetTime.Enabled = true
+
 	config.Metrics.ElasticsearchIndexOperationsMergeSize.Enabled = true
 	config.Metrics.ElasticsearchIndexOperationsMergeDocsCount.Enabled = true
 	config.Metrics.ElasticsearchIndexSegmentsCount.Enabled = true

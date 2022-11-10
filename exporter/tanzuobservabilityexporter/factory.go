@@ -21,8 +21,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 const (
@@ -41,9 +39,9 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.ExporterConfig {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(exporterType)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(exporterType)),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 	}
@@ -54,14 +52,17 @@ func createDefaultConfig() config.Exporter {
 func createTracesExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.ExporterConfig,
 ) (component.TracesExporter, error) {
 	exp, err := newTracesExporter(set, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	tobsCfg := cfg.(*Config)
+	tobsCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("invalid config: %#v", cfg)
+	}
 
 	return exporterhelper.NewTracesExporter(
 		ctx,
@@ -77,14 +78,16 @@ func createTracesExporter(
 func createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.ExporterConfig,
 ) (component.MetricsExporter, error) {
-	exp, err := newMetricsExporter(set, cfg, createMetricsConsumer)
+	tobsCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("invalid config: %#v", cfg)
+	}
+	exp, err := newMetricsExporter(set, tobsCfg, createMetricsConsumer)
 	if err != nil {
 		return nil, err
 	}
-
-	tobsCfg := cfg.(*Config)
 
 	exporter, err := exporterhelper.NewMetricsExporter(
 		ctx,
@@ -98,12 +101,6 @@ func createMetricsExporter(
 	if err != nil {
 		return nil, err
 	}
-	ourConfig, ok := cfg.(*Config)
-	if !ok {
-		return nil, fmt.Errorf("invalid config: %#v", cfg)
-	}
-	return resourcetotelemetry.WrapMetricsExporter(
-		ourConfig.Metrics.ResourceAttributes,
-		exporter,
-	), nil
+
+	return exporter, nil
 }

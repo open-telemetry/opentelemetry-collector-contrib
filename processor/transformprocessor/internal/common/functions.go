@@ -15,6 +15,8 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
@@ -26,6 +28,7 @@ func Functions[K any]() map[string]interface{} {
 		"Concat":               ottlfuncs.Concat[K],
 		"Split":                ottlfuncs.Split[K],
 		"Int":                  ottlfuncs.Int[K],
+		"ConvertCase":          ottlfuncs.ConvertCase[K],
 		"keep_keys":            ottlfuncs.KeepKeys[K],
 		"set":                  ottlfuncs.Set[K],
 		"truncate_all":         ottlfuncs.TruncateAll[K],
@@ -37,4 +40,12 @@ func Functions[K any]() map[string]interface{} {
 		"delete_key":           ottlfuncs.DeleteKey[K],
 		"delete_matching_keys": ottlfuncs.DeleteMatchingKeys[K],
 	}
+}
+
+func ResourceFunctions() map[string]interface{} {
+	return Functions[ottlresource.TransformContext]()
+}
+
+func ScopeFunctions() map[string]interface{} {
+	return Functions[ottlscope.TransformContext]()
 }

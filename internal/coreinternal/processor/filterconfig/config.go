@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 // MatchConfig has two optional MatchProperties one to define what is processed
@@ -141,11 +142,11 @@ var (
 	ErrMissingRequiredLogField = errors.New(`at least one of "attributes", "libraries", "span_kinds", "resources", "log_bodies", "log_severity_texts" or "log_severity_number" field must be specified`)
 
 	spanKinds = map[string]bool{
-		ptrace.SpanKindInternal.String(): true,
-		ptrace.SpanKindClient.String():   true,
-		ptrace.SpanKindServer.String():   true,
-		ptrace.SpanKindConsumer.String(): true,
-		ptrace.SpanKindProducer.String(): true,
+		traceutil.SpanKindStr(ptrace.SpanKindInternal): true,
+		traceutil.SpanKindStr(ptrace.SpanKindClient):   true,
+		traceutil.SpanKindStr(ptrace.SpanKindServer):   true,
+		traceutil.SpanKindStr(ptrace.SpanKindConsumer): true,
+		traceutil.SpanKindStr(ptrace.SpanKindProducer): true,
 	}
 )
 

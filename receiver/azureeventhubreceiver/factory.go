@@ -27,7 +27,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "azureeventhub"
 	// The stability level of the exporter.
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelAlpha
 )
 
 // NewFactory creates a factory for the Azure Event Hub receiver.
@@ -38,17 +38,17 @@ func NewFactory() component.ReceiverFactory {
 		component.WithLogsReceiver(createLogsReceiver, stability))
 }
 
-func createDefaultConfig() config.Receiver {
-	return &Config{ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr))}
+func createDefaultConfig() component.ReceiverConfig {
+	return &Config{ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr))}
 }
 
-func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSettings, receiver config.Receiver, logs consumer.Logs) (component.LogsReceiver, error) {
+func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSettings, receiver component.ReceiverConfig, logs consumer.Logs) (component.LogsReceiver, error) {
 
 	return &client{
 		logger:   settings.Logger,
 		consumer: logs,
 		config:   receiver.(*Config),
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             receiver.ID(),
 			Transport:              "azureeventhub",
 			ReceiverCreateSettings: settings,

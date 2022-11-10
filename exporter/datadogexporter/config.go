@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"strings"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
@@ -362,9 +363,9 @@ type Config struct {
 	OnlyMetadata bool `mapstructure:"only_metadata"`
 }
 
-var _ config.Exporter = (*Config)(nil)
+var _ component.ExporterConfig = (*Config)(nil)
 
-// Validate the configuration for errors. This is required by config.Exporter.
+// Validate the configuration for errors. This is required by component.ExporterConfig.
 func (c *Config) Validate() error {
 	if c.OnlyMetadata && (!c.HostMetadata.Enabled || c.HostMetadata.HostnameSource != HostnameSourceFirstResource) {
 		return errNoMetadata

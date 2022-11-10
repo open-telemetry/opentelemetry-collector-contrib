@@ -15,6 +15,7 @@
 package ottlcommon
 
 import (
+	"context"
 	"encoding/hex"
 	"testing"
 	"time"
@@ -150,6 +151,22 @@ func TestSpanPathGetSetter(t *testing.T) {
 			},
 			orig:   pcommon.SpanID(spanID2),
 			newVal: pcommon.SpanID(spanID),
+			modified: func(span ptrace.Span) {
+				span.SetParentSpanID(spanID)
+			},
+		},
+		{
+			name: "parent_span_id string",
+			path: []ottl.Field{
+				{
+					Name: "parent_span_id",
+				},
+				{
+					Name: "string",
+				},
+			},
+			orig:   hex.EncodeToString(spanID2[:]),
+			newVal: hex.EncodeToString(spanID[:]),
 			modified: func(span ptrace.Span) {
 				span.SetParentSpanID(spanID)
 			},
@@ -498,11 +515,11 @@ func TestSpanPathGetSetter(t *testing.T) {
 
 			span := createSpan()
 
-			got, err := accessor.Get(newSpanContext(span))
+			got, err := accessor.Get(context.Background(), newSpanContext(span))
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(newSpanContext(span), tt.newVal)
+			err = accessor.Set(context.Background(), newSpanContext(span), tt.newVal)
 			assert.NoError(t, err)
 
 			expectedSpan := createSpan()

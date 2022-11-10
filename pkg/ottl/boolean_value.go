@@ -15,26 +15,35 @@
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
 import (
+	"context"
 	"fmt"
 )
 
 // boolExpressionEvaluator is a function that returns the result.
-type boolExpressionEvaluator[K any] func(ctx K) (bool, error)
+type boolExpressionEvaluator[K any] func(ctx context.Context, tCtx K) (bool, error)
 
-func alwaysTrue[K any](K) (bool, error) {
+type BoolExpr[K any] struct {
+	boolExpressionEvaluator[K]
+}
+
+func (e BoolExpr[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
+	return e.boolExpressionEvaluator(ctx, tCtx)
+}
+
+func alwaysTrue[K any](context.Context, K) (bool, error) {
 	return true, nil
 }
 
-func alwaysFalse[K any](K) (bool, error) {
+func alwaysFalse[K any](context.Context, K) (bool, error) {
 	return false, nil
 }
 
 // builds a function that returns a short-circuited result of ANDing
 // boolExpressionEvaluator funcs
-func andFuncs[K any](funcs []boolExpressionEvaluator[K]) boolExpressionEvaluator[K] {
-	return func(ctx K) (bool, error) {
+func andFuncs[K any](funcs []BoolExpr[K]) BoolExpr[K] {
+	return BoolExpr[K]{func(ctx context.Context, tCtx K) (bool, error) {
 		for _, f := range funcs {
-			result, err := f(ctx)
+			result, err := f.Eval(ctx, tCtx)
 			if err != nil {
 				return false, err
 			}
@@ -43,15 +52,15 @@ func andFuncs[K any](funcs []boolExpressionEvaluator[K]) boolExpressionEvaluator
 			}
 		}
 		return true, nil
-	}
+	}}
 }
 
 // builds a function that returns a short-circuited result of ORing
 // boolExpressionEvaluator funcs
-func orFuncs[K any](funcs []boolExpressionEvaluator[K]) boolExpressionEvaluator[K] {
-	return func(ctx K) (bool, error) {
+func orFuncs[K any](funcs []BoolExpr[K]) BoolExpr[K] {
+	return BoolExpr[K]{func(ctx context.Context, tCtx K) (bool, error) {
 		for _, f := range funcs {
-			result, err := f(ctx)
+			result, err := f.Eval(ctx, tCtx)
 			if err != nil {
 				return false, err
 			}
@@ -60,50 +69,50 @@ func orFuncs[K any](funcs []boolExpressionEvaluator[K]) boolExpressionEvaluator[
 			}
 		}
 		return false, nil
-	}
+	}}
 }
 
-func (p *Parser[K]) newComparisonEvaluator(comparison *comparison) (boolExpressionEvaluator[K], error) {
+func (p *Parser[K]) newComparisonEvaluator(comparison *comparison) (BoolExpr[K], error) {
 	if comparison == nil {
-		return alwaysTrue[K], nil
+		return BoolExpr[K]{alwaysTrue[K]}, nil
 	}
 	left, err := p.newGetter(comparison.Left)
 	if err != nil {
-		return nil, err
+		return BoolExpr[K]{}, err
 	}
 	right, err := p.newGetter(comparison.Right)
 	if err != nil {
-		return nil, err
+		return BoolExpr[K]{}, err
 	}
 
 	// The parser ensures that we'll never get an invalid comparison.Op, so we don't have to check that case.
-	return func(ctx K) (bool, error) {
-		a, leftErr := left.Get(ctx)
+	return BoolExpr[K]{func(ctx context.Context, tCtx K) (bool, error) {
+		a, leftErr := left.Get(ctx, tCtx)
 		if leftErr != nil {
 			return false, leftErr
 		}
-		b, rightErr := right.Get(ctx)
+		b, rightErr := right.Get(ctx, tCtx)
 		if rightErr != nil {
 			return false, rightErr
 		}
 		return p.compare(a, b, comparison.Op), nil
-	}, nil
+	}}, nil
 
 }
 
-func (p *Parser[K]) newBooleanExpressionEvaluator(expr *booleanExpression) (boolExpressionEvaluator[K], error) {
+func (p *Parser[K]) newBoolExpr(expr *booleanExpression) (BoolExpr[K], error) {
 	if expr == nil {
-		return alwaysTrue[K], nil
+		return BoolExpr[K]{alwaysTrue[K]}, nil
 	}
 	f, err := p.newBooleanTermEvaluator(expr.Left)
 	if err != nil {
-		return nil, err
+		return BoolExpr[K]{}, err
 	}
-	funcs := []boolExpressionEvaluator[K]{f}
+	funcs := []BoolExpr[K]{f}
 	for _, rhs := range expr.Right {
 		f, err := p.newBooleanTermEvaluator(rhs.Term)
 		if err != nil {
-			return nil, err
+			return BoolExpr[K]{}, err
 		}
 		funcs = append(funcs, f)
 	}
@@ -111,19 +120,19 @@ func (p *Parser[K]) newBooleanExpressionEvaluator(expr *booleanExpression) (bool
 	return orFuncs(funcs), nil
 }
 
-func (p *Parser[K]) newBooleanTermEvaluator(term *term) (boolExpressionEvaluator[K], error) {
+func (p *Parser[K]) newBooleanTermEvaluator(term *term) (BoolExpr[K], error) {
 	if term == nil {
-		return alwaysTrue[K], nil
+		return BoolExpr[K]{alwaysTrue[K]}, nil
 	}
 	f, err := p.newBooleanValueEvaluator(term.Left)
 	if err != nil {
-		return nil, err
+		return BoolExpr[K]{}, err
 	}
-	funcs := []boolExpressionEvaluator[K]{f}
+	funcs := []BoolExpr[K]{f}
 	for _, rhs := range term.Right {
 		f, err := p.newBooleanValueEvaluator(rhs.Value)
 		if err != nil {
-			return nil, err
+			return BoolExpr[K]{}, err
 		}
 		funcs = append(funcs, f)
 	}
@@ -131,25 +140,25 @@ func (p *Parser[K]) newBooleanTermEvaluator(term *term) (boolExpressionEvaluator
 	return andFuncs(funcs), nil
 }
 
-func (p *Parser[K]) newBooleanValueEvaluator(value *booleanValue) (boolExpressionEvaluator[K], error) {
+func (p *Parser[K]) newBooleanValueEvaluator(value *booleanValue) (BoolExpr[K], error) {
 	if value == nil {
-		return alwaysTrue[K], nil
+		return BoolExpr[K]{alwaysTrue[K]}, nil
 	}
 	switch {
 	case value.Comparison != nil:
 		comparison, err := p.newComparisonEvaluator(value.Comparison)
 		if err != nil {
-			return nil, err
+			return BoolExpr[K]{}, err
 		}
 		return comparison, nil
 	case value.ConstExpr != nil:
 		if *value.ConstExpr {
-			return alwaysTrue[K], nil
+			return BoolExpr[K]{alwaysTrue[K]}, nil
 		}
-		return alwaysFalse[K], nil
+		return BoolExpr[K]{alwaysFalse[K]}, nil
 	case value.SubExpr != nil:
-		return p.newBooleanExpressionEvaluator(value.SubExpr)
+		return p.newBoolExpr(value.SubExpr)
 	}
 
-	return nil, fmt.Errorf("unhandled boolean operation %v", value)
+	return BoolExpr[K]{}, fmt.Errorf("unhandled boolean operation %v", value)
 }

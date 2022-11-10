@@ -29,7 +29,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 
@@ -58,13 +57,13 @@ func TestDefaultExtensions(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 
 	tests := []struct {
-		extension     config.Type
+		extension     component.Type
 		getConfigFn   getExtensionConfigFn
 		skipLifecycle bool
 	}{
 		{
 			extension: "health_check",
-			getConfigFn: func() config.Extension {
+			getConfigFn: func() component.ExtensionConfig {
 				cfg := extFactories["health_check"].CreateDefaultConfig().(*healthcheckextension.Config)
 				cfg.Endpoint = endpoint
 				return cfg
@@ -72,7 +71,7 @@ func TestDefaultExtensions(t *testing.T) {
 		},
 		{
 			extension: "pprof",
-			getConfigFn: func() config.Extension {
+			getConfigFn: func() component.ExtensionConfig {
 				cfg := extFactories["pprof"].CreateDefaultConfig().(*pprofextension.Config)
 				cfg.TCPAddr.Endpoint = endpoint
 				return cfg
@@ -80,14 +79,14 @@ func TestDefaultExtensions(t *testing.T) {
 		},
 		{
 			extension: "sigv4auth",
-			getConfigFn: func() config.Extension {
+			getConfigFn: func() component.ExtensionConfig {
 				cfg := extFactories["sigv4auth"].CreateDefaultConfig().(*sigv4authextension.Config)
 				return cfg
 			},
 		},
 		{
 			extension: "zpages",
-			getConfigFn: func() config.Extension {
+			getConfigFn: func() component.ExtensionConfig {
 				cfg := extFactories["zpages"].CreateDefaultConfig().(*zpagesextension.Config)
 				cfg.TCPAddr.Endpoint = endpoint
 				return cfg
@@ -95,7 +94,7 @@ func TestDefaultExtensions(t *testing.T) {
 		},
 		{
 			extension: "basicauth",
-			getConfigFn: func() config.Extension {
+			getConfigFn: func() component.ExtensionConfig {
 				cfg := extFactories["basicauth"].CreateDefaultConfig().(*basicauthextension.Config)
 				// No need to clean up, t.TempDir will be deleted entirely.
 				fileName := filepath.Join(t.TempDir(), "random.file")
@@ -110,7 +109,7 @@ func TestDefaultExtensions(t *testing.T) {
 		},
 		{
 			extension: "bearertokenauth",
-			getConfigFn: func() config.Extension {
+			getConfigFn: func() component.ExtensionConfig {
 				cfg := extFactories["bearertokenauth"].CreateDefaultConfig().(*bearertokenauthextension.Config)
 				cfg.BearerToken = "sometoken"
 				return cfg
@@ -118,14 +117,14 @@ func TestDefaultExtensions(t *testing.T) {
 		},
 		{
 			extension: "memory_ballast",
-			getConfigFn: func() config.Extension {
+			getConfigFn: func() component.ExtensionConfig {
 				cfg := extFactories["memory_ballast"].CreateDefaultConfig().(*ballastextension.Config)
 				return cfg
 			},
 		},
 		{
 			extension: "asapclient",
-			getConfigFn: func() config.Extension {
+			getConfigFn: func() component.ExtensionConfig {
 				cfg := extFactories["asapclient"].CreateDefaultConfig().(*asapauthextension.Config)
 				cfg.KeyID = "test_issuer/test_kid"
 				cfg.Issuer = "test_issuer"
@@ -143,7 +142,7 @@ func TestDefaultExtensions(t *testing.T) {
 		},
 		{
 			extension: "ecs_task_observer",
-			getConfigFn: func() config.Extension {
+			getConfigFn: func() component.ExtensionConfig {
 				cfg := extFactories["ecs_task_observer"].CreateDefaultConfig().(*ecstaskobserver.Config)
 				cfg.Endpoint = "http://localhost"
 				return cfg
@@ -155,7 +154,7 @@ func TestDefaultExtensions(t *testing.T) {
 		},
 		{
 			extension: "fluentbit",
-			getConfigFn: func() config.Extension {
+			getConfigFn: func() component.ExtensionConfig {
 				cfg := extFactories["fluentbit"].CreateDefaultConfig().(*fluentbitextension.Config)
 				cfg.TCPEndpoint = "http://" + endpoint
 				return cfg
@@ -163,7 +162,7 @@ func TestDefaultExtensions(t *testing.T) {
 		},
 		{
 			extension: "http_forwarder",
-			getConfigFn: func() config.Extension {
+			getConfigFn: func() component.ExtensionConfig {
 				cfg := extFactories["http_forwarder"].CreateDefaultConfig().(*httpforwarder.Config)
 				cfg.Egress.Endpoint = "http://" + endpoint
 				cfg.Ingress.Endpoint = testutil.GetAvailableLocalAddress(t)
@@ -172,7 +171,7 @@ func TestDefaultExtensions(t *testing.T) {
 		},
 		{
 			extension: "oauth2client",
-			getConfigFn: func() config.Extension {
+			getConfigFn: func() component.ExtensionConfig {
 				cfg := extFactories["oauth2client"].CreateDefaultConfig().(*oauth2clientauthextension.Config)
 				cfg.ClientID = "otel-extension"
 				cfg.ClientSecret = "testsarehard"
@@ -186,7 +185,7 @@ func TestDefaultExtensions(t *testing.T) {
 		},
 		{
 			extension: "db_storage",
-			getConfigFn: func() config.Extension {
+			getConfigFn: func() component.ExtensionConfig {
 				cfg := extFactories["db_storage"].CreateDefaultConfig().(*dbstorage.Config)
 				cfg.DriverName = "sqlite3"
 				cfg.DataSource = filepath.Join(t.TempDir(), "foo.db")
@@ -195,7 +194,7 @@ func TestDefaultExtensions(t *testing.T) {
 		},
 		{
 			extension: "file_storage",
-			getConfigFn: func() config.Extension {
+			getConfigFn: func() component.ExtensionConfig {
 				cfg := extFactories["file_storage"].CreateDefaultConfig().(*filestorage.Config)
 				cfg.Directory = t.TempDir()
 				return cfg
@@ -203,7 +202,7 @@ func TestDefaultExtensions(t *testing.T) {
 		},
 		{
 			extension: "host_observer",
-			getConfigFn: func() config.Extension {
+			getConfigFn: func() component.ExtensionConfig {
 				cfg := extFactories["host_observer"].CreateDefaultConfig().(*hostobserver.Config)
 				return cfg
 			},
@@ -214,7 +213,7 @@ func TestDefaultExtensions(t *testing.T) {
 		},
 		{
 			extension: "headers_setter",
-			getConfigFn: func() config.Extension {
+			getConfigFn: func() component.ExtensionConfig {
 				cfg := extFactories["headers_setter"].CreateDefaultConfig().(*headerssetterextension.Config)
 				return cfg
 			},
@@ -227,7 +226,7 @@ func TestDefaultExtensions(t *testing.T) {
 			factory, ok := extFactories[tt.extension]
 			require.True(t, ok)
 			assert.Equal(t, tt.extension, factory.Type())
-			assert.Equal(t, config.NewComponentID(tt.extension), factory.CreateDefaultConfig().ID())
+			assert.Equal(t, component.NewID(tt.extension), factory.CreateDefaultConfig().ID())
 
 			if tt.skipLifecycle {
 				t.Skip("Skipping lifecycle test for ", tt.extension)
@@ -242,7 +241,7 @@ func TestDefaultExtensions(t *testing.T) {
 // getExtensionConfigFn is used customize the configuration passed to the verification.
 // This is used to change ports or provide values required but not provided by the
 // default configuration.
-type getExtensionConfigFn func() config.Extension
+type getExtensionConfigFn func() component.ExtensionConfig
 
 // verifyExtensionLifecycle is used to test if an extension type can handle the typical
 // lifecycle of a component. The getConfigFn parameter only need to be specified if

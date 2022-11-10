@@ -33,6 +33,7 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -370,36 +371,40 @@ func doCompare(t *testing.T, name string, want pcommon.Map, got pmetric.Resource
 func assertMetricPresent(name string, metricTypeExpectations metricTypeComparator, dataPointExpectations []dataPointExpectation) testExpectation {
 	return func(t *testing.T, rm pmetric.ResourceMetrics) {
 		allMetrics := getMetrics(rm)
+		var present bool
 		for _, m := range allMetrics {
 			if name != m.Name() {
 				continue
 			}
+
+			present = true
 			metricTypeExpectations(t, m)
 			for i, de := range dataPointExpectations {
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
 					for _, npc := range de.numberPointComparator {
-						require.Equal(t, m.Gauge().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Gauge metric does not match to testdata")
+						require.Equal(t, m.Gauge().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Gauge metric '%s' does not match to testdata", name)
 						npc(t, m.Gauge().DataPoints().At(i))
 					}
 				case pmetric.MetricTypeSum:
 					for _, npc := range de.numberPointComparator {
-						require.Equal(t, m.Sum().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Sum metric does not match to testdata")
+						require.Equal(t, m.Sum().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Sum metric '%s' does not match to testdata", name)
 						npc(t, m.Sum().DataPoints().At(i))
 					}
 				case pmetric.MetricTypeHistogram:
 					for _, hpc := range de.histogramPointComparator {
-						require.Equal(t, m.Histogram().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Histogram metric does not match to testdata")
+						require.Equal(t, m.Histogram().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Histogram metric '%s' does not match to testdata", name)
 						hpc(t, m.Histogram().DataPoints().At(i))
 					}
 				case pmetric.MetricTypeSummary:
 					for _, spc := range de.summaryPointComparator {
-						require.Equal(t, m.Summary().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Summary metric does not match to testdata")
+						require.Equal(t, m.Summary().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Summary metric '%s' does not match to testdata", name)
 						spc(t, m.Summary().DataPoints().At(i))
 					}
 				}
 			}
 		}
+		require.True(t, present, "expected metric '%s' is not present", name)
 	}
 }
 
@@ -590,7 +595,7 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 
 	cms := new(consumertest.MetricsSink)
 	receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
-		ReceiverSettings:     config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings:     config.NewReceiverSettings(component.NewID(typeStr)),
 		PrometheusConfig:     cfg,
 		UseStartTimeMetric:   useStartTimeMetric,
 		StartTimeMetricRegex: startTimeMetricRegex,

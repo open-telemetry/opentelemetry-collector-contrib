@@ -21,9 +21,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -33,7 +34,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint:        "",
 			Timeout:         30 * time.Second,
@@ -42,7 +43,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		},
 	}, cfg, "failed to create default config")
 
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 // TestLoadConfig tests that the configuration is loaded correctly
@@ -53,15 +54,15 @@ func TestLoadConfig(t *testing.T) {
 
 	t.Run("valid config", func(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
-		sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "valid").String())
+		sub, err := cm.Sub(component.NewIDWithName(typeStr, "valid").String())
 		require.NoError(t, err)
-		require.NoError(t, config.UnmarshalExporter(sub, cfg))
+		require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
 		err = cfg.Validate()
 
 		require.NoError(t, err)
 		assert.Equal(t, &Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+			ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint:        "http://example.com/api/",
 				Timeout:         30 * time.Second,
@@ -75,9 +76,9 @@ func TestLoadConfig(t *testing.T) {
 
 	t.Run("bad endpoint", func(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
-		sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "bad_endpoint").String())
+		sub, err := cm.Sub(component.NewIDWithName(typeStr, "bad_endpoint").String())
 		require.NoError(t, err)
-		require.NoError(t, config.UnmarshalExporter(sub, cfg))
+		require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
 		err = cfg.Validate()
 		require.Error(t, err)
@@ -85,9 +86,9 @@ func TestLoadConfig(t *testing.T) {
 
 	t.Run("missing agent key", func(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
-		sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "missing_agent_key").String())
+		sub, err := cm.Sub(component.NewIDWithName(typeStr, "missing_agent_key").String())
 		require.NoError(t, err)
-		require.NoError(t, config.UnmarshalExporter(sub, cfg))
+		require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
 		err = cfg.Validate()
 		require.Error(t, err)

@@ -15,6 +15,7 @@
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 
@@ -37,8 +38,8 @@ func ReplaceAllPatterns[K any](target ottl.GetSetter[K], mode string, regexPatte
 		return nil, fmt.Errorf("invalid mode %v, must be either 'key' or 'value'", mode)
 	}
 
-	return func(ctx K) (interface{}, error) {
-		val, err := target.Get(ctx)
+	return func(ctx context.Context, tCtx K) (interface{}, error) {
+		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -70,7 +71,7 @@ func ReplaceAllPatterns[K any](target ottl.GetSetter[K], mode string, regexPatte
 			}
 			return true
 		})
-		err = target.Set(ctx, updated)
+		err = target.Set(ctx, tCtx, updated)
 		if err != nil {
 			return nil, err
 		}

@@ -43,17 +43,17 @@ func NewFactory() component.ReceiverFactory {
 	)
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.ReceiverConfig {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 			CollectionInterval: time.Minute,
 		},
 		Metrics: metadata.DefaultMetricsSettings(),
 	}
 }
 
-func createMetricsReceiver(ctx context.Context, params component.ReceiverCreateSettings, rConf config.Receiver, consumer consumer.Metrics) (component.MetricsReceiver, error) {
+func createMetricsReceiver(ctx context.Context, params component.ReceiverCreateSettings, rConf component.ReceiverConfig, consumer consumer.Metrics) (component.MetricsReceiver, error) {
 	cfg, ok := rConf.(*Config)
 	if !ok {
 		return nil, errConfigNotNSX

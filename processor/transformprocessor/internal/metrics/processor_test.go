@@ -366,6 +366,24 @@ func TestProcess(t *testing.T) {
 			statements: []string{`set(attributes["test"], Split(attributes["not_exist"], "|"))`},
 			want:       func(td pmetric.Metrics) {},
 		},
+		{
+			statements: []string{
+				`set(attributes["test_lower"], ConvertCase(metric.name, "lower")) where metric.name == "operationA"`,
+				`set(attributes["test_upper"], ConvertCase(metric.name, "upper")) where metric.name == "operationA"`,
+				`set(attributes["test_snake"], ConvertCase(metric.name, "snake")) where metric.name == "operationA"`,
+				`set(attributes["test_camel"], ConvertCase(metric.name, "camel")) where metric.name == "operationA"`,
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test_lower", "operationa")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test_lower", "operationa")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test_upper", "OPERATIONA")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test_upper", "OPERATIONA")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test_snake", "operation_a")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test_snake", "operation_a")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test_camel", "OperationA")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test_camel", "OperationA")
+			},
+		},
 	}
 
 	for _, tt := range tests {

@@ -18,6 +18,7 @@ import (
 	"errors"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -51,7 +52,7 @@ type Source struct {
 	ReloadInterval time.Duration `mapstructure:"reload_interval"`
 }
 
-var _ config.Extension = (*Config)(nil)
+var _ component.ExtensionConfig = (*Config)(nil)
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {

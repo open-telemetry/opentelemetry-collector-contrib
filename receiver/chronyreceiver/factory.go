@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -44,7 +43,7 @@ func NewFactory() component.ReceiverFactory {
 func newMetricsReceiver(
 	ctx context.Context,
 	set component.ReceiverCreateSettings,
-	rCfg config.Receiver,
+	rCfg component.ReceiverConfig,
 	consumer consumer.Metrics) (component.MetricsReceiver, error) {
 	cfg, ok := rCfg.(*Config)
 	if !ok {

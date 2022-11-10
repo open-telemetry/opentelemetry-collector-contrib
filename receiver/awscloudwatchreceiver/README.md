@@ -73,8 +73,7 @@ awscloudwatch:
     groups:
       named:
         /aws/eks/dev-0/cluster: 
-          streams:
-            names: [kube-apiserver-ea9c831555adca1815ae04b87661klasdj]
+          names: [kube-apiserver-ea9c831555adca1815ae04b87661klasdj]
 ```
 
 ## Sample Configs

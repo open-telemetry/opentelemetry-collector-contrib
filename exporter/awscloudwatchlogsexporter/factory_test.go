@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -26,7 +27,7 @@ import (
 
 func TestDefaultConfig_exporterSettings(t *testing.T) {
 	want := &Config{
-		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings:   config.NewExporterSettings(component.NewID(typeStr)),
 		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 		QueueSettings: QueueSettings{
