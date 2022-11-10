@@ -37,10 +37,12 @@ func valueFor(x any) value {
 		switch {
 		case v == "NAME":
 			// if the string is NAME construct a path of "name".
-			val.Path = &Path{
-				Fields: []Field{
-					{
-						Name: "name",
+			val.Literal = &mathExprLiteral{
+				Path: &Path{
+					Fields: []Field{
+						{
+							Name: "name",
+						},
 					},
 				},
 			}
@@ -51,13 +53,13 @@ func valueFor(x any) value {
 			val.String = ottltest.Strp(v)
 		}
 	case float64:
-		val.Float = ottltest.Floatp(v)
+		val.Literal = &mathExprLiteral{Float: ottltest.Floatp(v)}
 	case *float64:
-		val.Float = v
+		val.Literal = &mathExprLiteral{Float: v}
 	case int:
-		val.Int = ottltest.Intp(int64(v))
+		val.Literal = &mathExprLiteral{Int: ottltest.Intp(int64(v))}
 	case *int64:
-		val.Int = v
+		val.Literal = &mathExprLiteral{Int: v}
 	case bool:
 		val.Bool = booleanp(boolean(v))
 	case nil:
