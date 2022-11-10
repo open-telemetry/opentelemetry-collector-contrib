@@ -19,7 +19,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
-func Functions() map[string]interface{} {
+func SpanFunctions() map[string]interface{} {
+	// No trace-only functions yet.
+	return common.Functions[ottltraces.TransformContext]()
+}
+
+func SpanEventFunctions() map[string]interface{} {
 	// No trace-only functions yet.
 	return common.Functions[ottltraces.TransformContext]()
 }

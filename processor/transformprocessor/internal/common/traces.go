@@ -94,20 +94,33 @@ func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces
 
 type TraceParserCollection struct {
 	parserCollection
-	traceParser     ottl.Parser[ottltraces.TransformContext]
+	spanParser      ottl.Parser[ottltraces.TransformContext]
 	spanEventParser ottl.Parser[ottlspanevent.TransformContext]
 }
 
 type TraceParserCollectionOption func(*TraceParserCollection) error
 
-func NewTraceParserCollection(functions map[string]interface{}, settings component.TelemetrySettings, options ...TraceParserCollectionOption) (*TraceParserCollection, error) {
+func WithSpanParser(functions map[string]interface{}) TraceParserCollectionOption {
+	return func(tp *TraceParserCollection) error {
+		tp.spanParser = ottltraces.NewParser(functions, tp.settings)
+		return nil
+	}
+}
+
+func WithSpanEventParser(functions map[string]interface{}) TraceParserCollectionOption {
+	return func(tp *TraceParserCollection) error {
+		tp.spanEventParser = ottlspanevent.NewParser(functions, tp.settings)
+		return nil
+	}
+}
+
+func NewTraceParserCollection(settings component.TelemetrySettings, options ...TraceParserCollectionOption) (*TraceParserCollection, error) {
 	tpc := &TraceParserCollection{
 		parserCollection: parserCollection{
 			settings:       settings,
 			resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
 			scopeParser:    ottlscope.NewParser(ScopeFunctions(), settings),
 		},
-		traceParser: ottltraces.NewParser(functions, settings),
 	}
 
 	for _, op := range options {
@@ -123,7 +136,7 @@ func NewTraceParserCollection(functions map[string]interface{}, settings compone
 func (pc TraceParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Traces, error) {
 	switch contextStatements.Context {
 	case Trace:
-		tStatements, err := pc.traceParser.ParseStatements(contextStatements.Statements)
+		tStatements, err := pc.spanParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}

@@ -34,7 +34,7 @@ type Processor struct {
 
 func NewProcessor(statements []string, contextStatements []common.ContextStatements, settings component.TelemetrySettings) (*Processor, error) {
 	if len(statements) > 0 {
-		ottlp := ottltraces.NewParser(Functions(), settings)
+		ottlp := ottltraces.NewParser(SpanFunctions(), settings)
 		parsedStatements, err := ottlp.ParseStatements(statements)
 		if err != nil {
 			return nil, err
@@ -44,7 +44,7 @@ func NewProcessor(statements []string, contextStatements []common.ContextStateme
 		}, nil
 	}
 
-	pc, err := common.NewTraceParserCollection(Functions(), settings)
+	pc, err := common.NewTraceParserCollection(settings, common.WithSpanParser(SpanFunctions()), common.WithSpanEventParser(SpanEventFunctions()))
 	if err != nil {
 		return nil, err
 	}
