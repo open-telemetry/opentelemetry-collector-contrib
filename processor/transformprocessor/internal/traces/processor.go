@@ -22,8 +22,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 type Processor struct {
