@@ -41,6 +41,8 @@ type MockAwsXrayReceiver struct {
 	server *http.Server
 
 	nextConsumer consumer.Traces
+	obsrecv      *obsreport.Receiver
+	httpsObsrecv *obsreport.Receiver
 }
 
 // New creates a new awsxrayreceiver.MockAwsXrayReceiver reference.
@@ -52,10 +54,21 @@ func New(
 		return nil, component.ErrNilNextConsumer
 	}
 
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: "http"})
+	if err != nil {
+		return nil, err
+	}
+	httpsObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: "https"})
+	if err != nil {
+		return nil, err
+	}
+
 	ar := &MockAwsXrayReceiver{
 		logger:       params.Logger,
 		config:       config,
 		nextConsumer: nextConsumer,
+		obsrecv:      obsrecv,
+		httpsObsrecv: httpsObsrecv,
 	}
 	return ar, nil
 }
@@ -92,12 +105,12 @@ func (ar *MockAwsXrayReceiver) Start(_ context.Context, host component.Host) err
 
 // handleRequest parses an http request containing aws json request and passes the count of the traces to next consumer
 func (ar *MockAwsXrayReceiver) handleRequest(req *http.Request) error {
-	transport := "http"
+	obsrecv := ar.obsrecv
+
 	if ar.config.TLSCredentials != nil {
-		transport = "https"
+		obsrecv = ar.httpsObsrecv
 	}
 
-	obsrecv := obsreport.MustNewReceiver(obsreport.ReceiverSettings{ReceiverID: ar.config.ID(), Transport: transport})
 	ctx := obsrecv.StartTracesOp(req.Context())
 	body, err := io.ReadAll(req.Body)
 	if err != nil {

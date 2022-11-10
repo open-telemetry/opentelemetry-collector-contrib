@@ -64,10 +64,13 @@ func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsRec
 		}
 
 		converter := NewConverter(params.Logger)
-		obsrecv := obsreport.MustNewReceiver(obsreport.ReceiverSettings{
+		obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             cfg.ID(),
 			ReceiverCreateSettings: params,
 		})
+		if err != nil {
+			return nil, err
+		}
 		return &receiver{
 			id:        cfg.ID(),
 			pipe:      pipe,

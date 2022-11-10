@@ -58,7 +58,8 @@ type zipkinReceiver struct {
 	protobufUnmarshaler      ptrace.Unmarshaler
 	protobufDebugUnmarshaler ptrace.Unmarshaler
 
-	settings component.ReceiverCreateSettings
+	settings  component.ReceiverCreateSettings
+	obsrecvrs map[string]*obsreport.Receiver
 }
 
 var _ http.Handler = (*zipkinReceiver)(nil)
@@ -67,6 +68,20 @@ var _ http.Handler = (*zipkinReceiver)(nil)
 func newReceiver(config *Config, nextConsumer consumer.Traces, settings component.ReceiverCreateSettings) (*zipkinReceiver, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
+	}
+
+	transports := []string{receiverTransportV1Thrift, receiverTransportV1JSON, receiverTransportV2JSON, receiverTransportV2PROTO}
+	obsrecvrs := make(map[string]*obsreport.Receiver)
+	for _, transport := range transports {
+		obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             config.ID(),
+			Transport:              transport,
+			ReceiverCreateSettings: settings,
+		})
+		if err != nil {
+			return nil, err
+		}
+		obsrecvrs[transport] = obsrecv
 	}
 
 	zr := &zipkinReceiver{
@@ -79,6 +94,7 @@ func newReceiver(config *Config, nextConsumer consumer.Traces, settings componen
 		protobufUnmarshaler:      zipkinv2.NewProtobufTracesUnmarshaler(false, config.ParseStringTags),
 		protobufDebugUnmarshaler: zipkinv2.NewProtobufTracesUnmarshaler(true, config.ParseStringTags),
 		settings:                 settings,
+		obsrecvrs:                obsrecvrs,
 	}
 	return zr, nil
 }
@@ -202,11 +218,7 @@ func (zr *zipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	asZipkinv1 := r.URL != nil && strings.Contains(r.URL.Path, "api/v1/spans")
 
 	transportTag := transportType(r, asZipkinv1)
-	obsrecv := obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             zr.id,
-		Transport:              transportTag,
-		ReceiverCreateSettings: zr.settings,
-	})
+	obsrecv := zr.obsrecvrs[transportTag]
 	ctx = obsrecv.StartTracesOp(ctx)
 
 	pr := processBodyIfNecessary(r)

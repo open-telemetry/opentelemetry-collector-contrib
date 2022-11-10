@@ -32,7 +32,8 @@ func TestReporterObservability(t *testing.T) {
 	}()
 
 	receiverID := component.NewIDWithName(typeStr, "fake_receiver")
-	reporter := newReporter(receiverID, tt.ToReceiverCreateSettings())
+	reporter, err := newReporter(receiverID, tt.ToReceiverCreateSettings())
+	require.NoError(t, err)
 
 	ctx := reporter.OnDataReceived(context.Background())
 

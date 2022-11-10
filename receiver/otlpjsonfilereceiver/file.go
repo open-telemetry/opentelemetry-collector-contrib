@@ -78,11 +78,14 @@ func (f *receiver) Shutdown(ctx context.Context) error {
 
 func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSettings, configuration component.ReceiverConfig, logs consumer.Logs) (component.LogsReceiver, error) {
 	logsUnmarshaler := &plog.JSONUnmarshaler{}
-	obsrecv := obsreport.MustNewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             configuration.ID(),
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
 	})
+	if err != nil {
+		return nil, err
+	}
 	cfg := configuration.(*Config)
 	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
 		ctx = obsrecv.StartLogsOp(ctx)
@@ -103,11 +106,14 @@ func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSett
 
 func createMetricsReceiver(_ context.Context, settings component.ReceiverCreateSettings, configuration component.ReceiverConfig, metrics consumer.Metrics) (component.MetricsReceiver, error) {
 	metricsUnmarshaler := &pmetric.JSONUnmarshaler{}
-	obsrecv := obsreport.MustNewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             configuration.ID(),
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
 	})
+	if err != nil {
+		return nil, err
+	}
 	cfg := configuration.(*Config)
 	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
 		ctx = obsrecv.StartMetricsOp(ctx)
@@ -128,11 +134,14 @@ func createMetricsReceiver(_ context.Context, settings component.ReceiverCreateS
 
 func createTracesReceiver(ctx context.Context, settings component.ReceiverCreateSettings, configuration component.ReceiverConfig, traces consumer.Traces) (component.TracesReceiver, error) {
 	tracesUnmarshaler := &ptrace.JSONUnmarshaler{}
-	obsrecv := obsreport.MustNewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             configuration.ID(),
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
 	})
+	if err != nil {
+		return nil, err
+	}
 	cfg := configuration.(*Config)
 	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
 		ctx = obsrecv.StartTracesOp(ctx)

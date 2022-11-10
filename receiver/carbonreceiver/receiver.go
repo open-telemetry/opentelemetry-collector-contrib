@@ -80,12 +80,17 @@ func New(
 		return nil, err
 	}
 
+	rep, err := newReporter(config.ID(), set)
+	if err != nil {
+		return nil, err
+	}
+
 	r := carbonReceiver{
 		settings:     set,
 		config:       &config,
 		nextConsumer: nextConsumer,
 		server:       server,
-		reporter:     newReporter(config.ID(), set),
+		reporter:     rep,
 		parser:       parser,
 	}
 

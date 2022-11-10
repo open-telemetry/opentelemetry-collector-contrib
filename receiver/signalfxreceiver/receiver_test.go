@@ -86,11 +86,12 @@ func Test_signalfxeceiver_New(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := newReceiver(componenttest.NewNopReceiverCreateSettings(), tt.args.config)
+			got, err := newReceiver(componenttest.NewNopReceiverCreateSettings(), tt.args.config)
+			require.NoError(t, err)
 			if tt.args.nextConsumer != nil {
 				got.RegisterMetricsConsumer(tt.args.nextConsumer)
 			}
-			err := got.Start(context.Background(), componenttest.NewNopHost())
+			err = got.Start(context.Background(), componenttest.NewNopHost())
 			assert.Equal(t, tt.wantStartErr, err)
 		})
 	}
@@ -101,7 +102,8 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
 	sink := new(consumertest.MetricsSink)
-	r := newReceiver(componenttest.NewNopReceiverCreateSettings(), *cfg)
+	r, err := newReceiver(componenttest.NewNopReceiverCreateSettings(), *cfg)
+	require.NoError(t, err)
 	r.RegisterMetricsConsumer(sink)
 
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -341,7 +343,8 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.MetricsSink)
-			rcv := newReceiver(componenttest.NewNopReceiverCreateSettings(), *config)
+			rcv, err := newReceiver(componenttest.NewNopReceiverCreateSettings(), *config)
+			require.NoError(t, err)
 			if !tt.skipRegistration {
 				rcv.RegisterMetricsConsumer(sink)
 			}
@@ -516,7 +519,8 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv := newReceiver(componenttest.NewNopReceiverCreateSettings(), *config)
+			rcv, err := newReceiver(componenttest.NewNopReceiverCreateSettings(), *config)
+			require.NoError(t, err)
 			if !tt.skipRegistration {
 				rcv.RegisterLogsConsumer(sink)
 			}
@@ -547,7 +551,8 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 		},
 	}
 	sink := new(consumertest.MetricsSink)
-	r := newReceiver(componenttest.NewNopReceiverCreateSettings(), *cfg)
+	r, err := newReceiver(componenttest.NewNopReceiverCreateSettings(), *cfg)
+	require.NoError(t, err)
 	r.RegisterMetricsConsumer(sink)
 	defer func() {
 		require.NoError(t, r.Shutdown(context.Background()))
@@ -651,7 +656,8 @@ func Test_sfxReceiver_DatapointAccessTokenPassthrough(t *testing.T) {
 			config.AccessTokenPassthrough = tt.passthrough
 
 			sink := new(consumertest.MetricsSink)
-			rcv := newReceiver(componenttest.NewNopReceiverCreateSettings(), *config)
+			rcv, err := newReceiver(componenttest.NewNopReceiverCreateSettings(), *config)
+			require.NoError(t, err)
 			rcv.RegisterMetricsConsumer(sink)
 
 			currentTime := time.Now().Unix() * 1e3
@@ -728,7 +734,8 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 			config.AccessTokenPassthrough = tt.passthrough
 
 			sink := new(consumertest.LogsSink)
-			rcv := newReceiver(componenttest.NewNopReceiverCreateSettings(), *config)
+			rcv, err := newReceiver(componenttest.NewNopReceiverCreateSettings(), *config)
+			require.NoError(t, err)
 			rcv.RegisterLogsConsumer(sink)
 
 			currentTime := time.Now().Unix() * 1e3

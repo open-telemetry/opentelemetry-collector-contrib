@@ -47,6 +47,14 @@ func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 	}
 
 	receiverID := component.NewID("test")
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             receiverID,
+		ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &receiver{
 		id:        component.NewID("testReceiver"),
 		pipe:      pipe,
@@ -54,10 +62,7 @@ func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 		consumer:  nextConsumer,
 		logger:    zap.NewNop(),
 		converter: NewConverter(zap.NewNop()),
-		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             receiverID,
-			ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings(),
-		}),
+		obsrecv:   obsrecv,
 	}, nil
 }
 
