@@ -8,7 +8,7 @@ The OTTL is signal agnostic; it is not aware of the type of telemetry on which i
 
 ## Grammar
 
-The OTTL grammar includes Invocations, Values and Expressions.
+The OTTL grammar includes Invocations, Values and Boolean Expressions.
 
 ### Invocations
 
@@ -27,7 +27,7 @@ Example Invocations
 
 The OTTL will use reflection to determine parameter types when parsing an invocation within a statement.
 
-The following types are supported for single parameter values:
+When developing functions that represent invocations, the following types are supported for single parameter values:
 - `Setter`
 - `GetSetter`
 - `Getter`
@@ -46,12 +46,13 @@ For slice parameters, the following types are supported:
 
 ### Values
 
-Values are passed as input to an Invocation or are used in an Expression. Values can take the form of:
+Values are passed as input to an Invocation or are used in a Boolean Expression. Values can take the form of:
 - [Paths](#paths).
 - [Lists](#lists).
 - [Literals](#literals).
 - [Enums](#enums).
 - [Invocations](#invocations).
+- [Math Expressions](#math_expressions)
 
 Invocations as Values allows calling functions as parameters to other functions. See [Invocations](#invocations) for details on Invocation syntax.
 
@@ -71,7 +72,7 @@ Example Paths
 
 #### Lists
 
-A List Value comprises a sequence of Expressions or supported Literals.
+A List Value comprises a sequence of Values.
 
 Example List Values:
 - `[]`
@@ -106,14 +107,37 @@ Within the grammar Enums are always used as `int64`.  As a result, the Enum's sy
 
 When defining a function that will be used as an Invocation by the OTTL, if the function needs to take an Enum then the function must use the `Enum` type for that argument, not an `int64`.
 
-### Expressions
+#### Math Expressions
 
-Expressions allow a decision to be made about whether an Invocation should be called. Expressions are optional.  When used, the parsed statement will include a `Condition`, which can be used to evaluate the result of the statement's Expression. Expressions always evaluate to a boolean value (true or false).
+Math Expressions represent arithmetic calculations.  They support `+`, `-`, `*`, and `/`, along with `()` for grouping.
 
-Expressions consist of the literal string `where` followed by one or more Booleans (see below).
+Math Expressions currently only support `int64` and `float64`.
+Math Expressions support `Paths` and `Invocations` that return supported types.
+Note that `*` and `/` take precedence over `+` and `-`.
+Operations that share the same level of precedence will be executed in the order that they appear in the Math Expression.
+Math Expressions can be grouped with parentheses to override evaluation precedence.
+Math Expressions that mix `int64` and `float64` will result in an error.
+It is up to the function using the Math Expression to determine what to do with that error and the default return value of `nil`.
+Division by zero is gracefully handled with an error, but other arithmetic operations that would result in a panic will still result in a panic.
+Division of integers results in an integer and follows Go's rules for division of integers.
+
+Since Math Expressions support `Path` and `Invocation`, they are evaluated during data processing.
+__As a result, in order for a function to be able to accept an Math Expressions as a parameter it must use a `Getter`.__
+
+Example Math Expressions
+- `1 + 1`
+- `end_time_unix_nano - end_time_unix_nano`
+- `sum([1, 2, 3, 4]) + (10 / 1) - 1`
+
+
+### Boolean Expressions
+
+Boolean Expressions allow a decision to be made about whether an Invocation should be called. Boolean Expressions are optional.  When used, the parsed statement will include a `Condition`, which can be used to evaluate the result of the statement's Boolean Expression. Boolean Expressions always evaluate to a boolean value (true or false).
+
+Boolean Expressions consist of the literal string `where` followed by one or more Booleans (see below).
 Booleans can be joined with the literal strings `and` and `or`.
-Note that `and` expressions have higher precedence than `or`.
-Expressions can be grouped with parentheses to override evaluation precedence.
+Note that `and` Boolean Expressions have higher precedence than `or`.
+Boolean Expressions can be grouped with parentheses to override evaluation precedence.
 
 ### Booleans
 

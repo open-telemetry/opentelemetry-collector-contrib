@@ -127,21 +127,19 @@ type invocation struct {
 }
 
 // value represents a part of a parsed statement which is resolved to a value of some sort. This can be a telemetry path
-// expression, function call, or literal.
+// mathExpression, function call, or literal.
 type value struct {
-	Invocation *invocation `parser:"( @@"`
-	Bytes      *byteSlice  `parser:"| @Bytes"`
-	String     *string     `parser:"| @String"`
-	Float      *float64    `parser:"| @Float"`
-	Int        *int64      `parser:"| @Int"`
-	Bool       *boolean    `parser:"| @Boolean"`
-	IsNil      *isNil      `parser:"| @'nil'"`
-	Enum       *EnumSymbol `parser:"| @Uppercase"`
-	List       *list       `parser:"| @@"`
-	Path       *Path       `parser:"| @@ )"`
+	IsNil          *isNil           `parser:"( @'nil'"`
+	Literal        *mathExprLiteral `parser:"| @@ (?! OpAddSub | OpMultDiv)"`
+	MathExpression *mathExpression  `parser:"| @@"`
+	Bytes          *byteSlice       `parser:"| @Bytes"`
+	String         *string          `parser:"| @String"`
+	Bool           *boolean         `parser:"| @Boolean"`
+	Enum           *EnumSymbol      `parser:"| @Uppercase"`
+	List           *list            `parser:"| @@)"`
 }
 
-// Path represents a telemetry path expression.
+// Path represents a telemetry path mathExpression.
 type Path struct {
 	Fields []Field `parser:"@@ ( '.' @@ )*"`
 }
@@ -185,6 +183,78 @@ func (n *isNil) Capture(_ []string) error {
 	return nil
 }
 
+type mathExprLiteral struct {
+	Invocation *invocation `parser:"( @@"`
+	Float      *float64    `parser:"| @Float"`
+	Int        *int64      `parser:"| @Int"`
+	Path       *Path       `parser:"| @@ )"`
+}
+
+type mathValue struct {
+	Literal       *mathExprLiteral `parser:"( @@"`
+	SubExpression *mathExpression  `parser:"| '(' @@ ')' )"`
+}
+
+type opMultDivValue struct {
+	Operator mathOp     `parser:"@OpMultDiv"`
+	Value    *mathValue `parser:"@@"`
+}
+
+type addSubTerm struct {
+	Left  *mathValue        `parser:"@@"`
+	Right []*opMultDivValue `parser:"@@*"`
+}
+
+type opAddSubTerm struct {
+	Operator mathOp      `parser:"@OpAddSub"`
+	Term     *addSubTerm `parser:"@@"`
+}
+
+type mathExpression struct {
+	Left  *addSubTerm     `parser:"@@"`
+	Right []*opAddSubTerm `parser:"@@*"`
+}
+
+type mathOp int
+
+const (
+	ADD mathOp = iota
+	SUB
+	MULT
+	DIV
+)
+
+var mathOpTable = map[string]mathOp{
+	"+": ADD,
+	"-": SUB,
+	"*": MULT,
+	"/": DIV,
+}
+
+func (m *mathOp) Capture(values []string) error {
+	op, ok := mathOpTable[values[0]]
+	if !ok {
+		return fmt.Errorf("'%s' is not a valid operator", values[0])
+	}
+	*m = op
+	return nil
+}
+
+func (m *mathOp) String() string {
+	switch *m {
+	case ADD:
+		return "+"
+	case SUB:
+		return "-"
+	case MULT:
+		return "*"
+	case DIV:
+		return "/"
+	default:
+		return "UNKNOWN OP!"
+	}
+}
+
 type EnumSymbol string
 
 // buildLexer constructs a SimpleLexer definition.
@@ -199,6 +269,8 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `OpOr`, Pattern: `\b(or)\b`},
 		{Name: `OpAnd`, Pattern: `\b(and)\b`},
 		{Name: `OpComparison`, Pattern: `==|!=|>=|<=|>|<`},
+		{Name: `OpAddSub`, Pattern: `\+|\-`},
+		{Name: `OpMultDiv`, Pattern: `\/|\*`},
 		{Name: `Boolean`, Pattern: `\b(true|false)\b`},
 		{Name: `LParen`, Pattern: `\(`},
 		{Name: `RParen`, Pattern: `\)`},

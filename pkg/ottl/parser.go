@@ -30,7 +30,7 @@ type Parser[K any] struct {
 }
 
 // Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
-// invocation and the expression to match telemetry for invoking the function.
+// invocation and the boolean expression to match telemetry for invoking the function.
 type Statement[K any] struct {
 	function  Expr[K]
 	condition BoolExpr[K]
@@ -96,7 +96,7 @@ func (p *Parser[K]) ParseStatements(statements []string) ([]*Statement[K], error
 	return parsedStatements, nil
 }
 
-var parser = newParser()
+var parser = newParser[parsedStatement]()
 
 func parseStatement(raw string) (*parsedStatement, error) {
 	parsed, err := parser.ParseString("", raw)
@@ -108,12 +108,13 @@ func parseStatement(raw string) (*parsedStatement, error) {
 
 // newParser returns a parser that can be used to read a string into a parsedStatement. An error will be returned if the string
 // is not formatted for the DSL.
-func newParser() *participle.Parser[parsedStatement] {
+func newParser[G any]() *participle.Parser[G] {
 	lex := buildLexer()
-	parser, err := participle.Build[parsedStatement](
+	parser, err := participle.Build[G](
 		participle.Lexer(lex),
 		participle.Unquote("String"),
 		participle.Elide("whitespace"),
+		participle.UseLookahead(participle.MaxLookahead), // Allows negative lookahead to work properly in 'value' for 'mathExprLiteral'.
 	)
 	if err != nil {
 		panic("Unable to initialize parser; this is a programming error in the transformprocessor:" + err.Error())
