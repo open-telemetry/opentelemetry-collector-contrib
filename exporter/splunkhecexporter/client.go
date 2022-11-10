@@ -86,7 +86,7 @@ func (b *bufferState) Close() error {
 }
 
 // accept returns true if data is accepted by the buffer
-func (b *bufferState) accept(data []byte) bool {
+func (b *bufferState) accept(data []byte) (bool, error) {
 	_, err := b.writer.Write(data)
 	overCapacity := errors.Is(err, errOverCapacity)
 	bufLen := b.buf.Len()
@@ -109,7 +109,7 @@ func (b *bufferState) accept(data []byte) bool {
 		// the new data is so big, even with a zip writer, we are over the max limit.
 		// abandon and return false, so we can send what is already in our buffer.
 		if _, err2 := zipWriter.Write(b.buf.Bytes()); err2 != nil {
-			return false
+			return false, err2
 		}
 		b.writer = zipWriter
 		b.buf = tmpBuf
@@ -117,13 +117,16 @@ func (b *bufferState) accept(data []byte) bool {
 		// if the byte writer was over capacity, try to write the new entry in the zip writer:
 		if overCapacity {
 			if _, err2 := zipWriter.Write(data); err2 != nil {
-				return false
+				return false, err2
 			}
 
 		}
-		return true
+		return true, nil
 	}
-	return !overCapacity
+	if overCapacity {
+		return false, nil
+	}
+	return true, err
 }
 
 type cancellableBytesWriter struct {
@@ -393,8 +396,13 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 		}
 
 		// Continue adding events to buffer up to capacity.
-		// 0 capacity is interpreted as unknown/unbound consistent with ContentLength in http.Request.
-		if state.accept(b) {
+		accept, e := state.accept(b)
+		if e != nil {
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
+				fmt.Errorf("error writing the event: %w", e)))
+			continue
+		}
+		if accept {
 			continue
 		}
 
@@ -406,7 +414,13 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 		state.reset()
 
 		// Writing truncated bytes back to buffer.
-		if !state.accept(b) {
+		accept, e = state.accept(b)
+		if e != nil {
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
+				fmt.Errorf("error writing the event: %w", e)))
+			continue
+		}
+		if !accept {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("dropped log event error: event size %d bytes larger than configured max content length %d bytes", len(b), state.bufferMaxLen)))
 			continue
@@ -447,9 +461,14 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMet
 		}
 
 		// Continue adding events to buffer up to capacity.
-		// 0 capacity is interpreted as unknown/unbound consistent with ContentLength in http.Request.
 		b := buf.Bytes()
-		if state.accept(b) {
+		accept, e := state.accept(b)
+		if e != nil {
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
+				fmt.Errorf("error writing the event: %w", e)))
+			continue
+		}
+		if accept {
 			continue
 		}
 
@@ -461,7 +480,13 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMet
 		state.reset()
 
 		// Writing truncated bytes back to buffer.
-		if !state.accept(b) {
+		accept, e = state.accept(b)
+		if e != nil {
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
+				fmt.Errorf("error writing the event: %w", e)))
+			continue
+		}
+		if !accept {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max content length %d bytes", len(b), state.bufferMaxLen)))
 			continue
@@ -499,7 +524,13 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 		}
 
 		// Continue adding events to buffer up to capacity.
-		if state.accept(b) {
+		accept, e := state.accept(b)
+		if e != nil {
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
+				fmt.Errorf("error writing the event: %w", e)))
+			continue
+		}
+		if accept {
 			continue
 		}
 
@@ -511,7 +542,13 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 		state.reset()
 
 		// Writing truncated bytes back to buffer.
-		if !state.accept(b) {
+		accept, e = state.accept(b)
+		if e != nil {
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
+				fmt.Errorf("error writing the event: %w", e)))
+			continue
+		}
+		if !accept {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("dropped trace event error: event size %d bytes larger than configured max content length %d bytes", len(b), state.bufferMaxLen)))
 			continue
