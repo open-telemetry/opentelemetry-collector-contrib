@@ -94,7 +94,7 @@ func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces
 
 type TraceParserCollection struct {
 	parserCollection
-	traceParser     ottl.Parser[ottlspan.TransformContext]
+	spanParser      ottl.Parser[ottlspan.TransformContext]
 	spanEventParser ottl.Parser[ottlspanevent.TransformContext]
 }
 
@@ -107,7 +107,7 @@ func NewTraceParserCollection(functions map[string]interface{}, settings compone
 			resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
 			scopeParser:    ottlscope.NewParser(ScopeFunctions(), settings),
 		},
-		traceParser: ottlspan.NewParser(functions, settings),
+		spanParser: ottlspan.NewParser(functions, settings),
 	}
 
 	for _, op := range options {
@@ -123,7 +123,7 @@ func NewTraceParserCollection(functions map[string]interface{}, settings compone
 func (pc TraceParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Traces, error) {
 	switch contextStatements.Context {
 	case Trace:
-		tStatements, err := pc.traceParser.ParseStatements(contextStatements.Statements)
+		tStatements, err := pc.spanParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}

@@ -111,6 +111,7 @@ type MetricsSettings struct {
 	JvmMemoryHeapCommitted                                    MetricSettings `mapstructure:"jvm.memory.heap.committed"`
 	JvmMemoryHeapMax                                          MetricSettings `mapstructure:"jvm.memory.heap.max"`
 	JvmMemoryHeapUsed                                         MetricSettings `mapstructure:"jvm.memory.heap.used"`
+	JvmMemoryHeapUtilization                                  MetricSettings `mapstructure:"jvm.memory.heap.utilization"`
 	JvmMemoryNonheapCommitted                                 MetricSettings `mapstructure:"jvm.memory.nonheap.committed"`
 	JvmMemoryNonheapUsed                                      MetricSettings `mapstructure:"jvm.memory.nonheap.used"`
 	JvmMemoryPoolMax                                          MetricSettings `mapstructure:"jvm.memory.pool.max"`
@@ -341,6 +342,9 @@ func DefaultMetricsSettings() MetricsSettings {
 		},
 		JvmMemoryHeapUsed: MetricSettings{
 			Enabled: true,
+		},
+		JvmMemoryHeapUtilization: MetricSettings{
+			Enabled: false,
 		},
 		JvmMemoryNonheapCommitted: MetricSettings{
 			Enabled: true,
@@ -4764,6 +4768,55 @@ func newMetricJvmMemoryHeapUsed(settings MetricSettings) metricJvmMemoryHeapUsed
 	return m
 }
 
+type metricJvmMemoryHeapUtilization struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills jvm.memory.heap.utilization metric with initial data.
+func (m *metricJvmMemoryHeapUtilization) init() {
+	m.data.SetName("jvm.memory.heap.utilization")
+	m.data.SetDescription("Fraction of heap memory usage")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricJvmMemoryHeapUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricJvmMemoryHeapUtilization) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricJvmMemoryHeapUtilization) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricJvmMemoryHeapUtilization(settings MetricSettings) metricJvmMemoryHeapUtilization {
+	m := metricJvmMemoryHeapUtilization{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricJvmMemoryNonheapCommitted struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -5095,6 +5148,7 @@ type MetricsBuilder struct {
 	metricJvmMemoryHeapCommitted                                    metricJvmMemoryHeapCommitted
 	metricJvmMemoryHeapMax                                          metricJvmMemoryHeapMax
 	metricJvmMemoryHeapUsed                                         metricJvmMemoryHeapUsed
+	metricJvmMemoryHeapUtilization                                  metricJvmMemoryHeapUtilization
 	metricJvmMemoryNonheapCommitted                                 metricJvmMemoryNonheapCommitted
 	metricJvmMemoryNonheapUsed                                      metricJvmMemoryNonheapUsed
 	metricJvmMemoryPoolMax                                          metricJvmMemoryPoolMax
@@ -5191,6 +5245,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricJvmMemoryHeapCommitted:                                    newMetricJvmMemoryHeapCommitted(settings.JvmMemoryHeapCommitted),
 		metricJvmMemoryHeapMax:                                          newMetricJvmMemoryHeapMax(settings.JvmMemoryHeapMax),
 		metricJvmMemoryHeapUsed:                                         newMetricJvmMemoryHeapUsed(settings.JvmMemoryHeapUsed),
+		metricJvmMemoryHeapUtilization:                                  newMetricJvmMemoryHeapUtilization(settings.JvmMemoryHeapUtilization),
 		metricJvmMemoryNonheapCommitted:                                 newMetricJvmMemoryNonheapCommitted(settings.JvmMemoryNonheapCommitted),
 		metricJvmMemoryNonheapUsed:                                      newMetricJvmMemoryNonheapUsed(settings.JvmMemoryNonheapUsed),
 		metricJvmMemoryPoolMax:                                          newMetricJvmMemoryPoolMax(settings.JvmMemoryPoolMax),
@@ -5343,6 +5398,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricJvmMemoryHeapCommitted.emit(ils.Metrics())
 	mb.metricJvmMemoryHeapMax.emit(ils.Metrics())
 	mb.metricJvmMemoryHeapUsed.emit(ils.Metrics())
+	mb.metricJvmMemoryHeapUtilization.emit(ils.Metrics())
 	mb.metricJvmMemoryNonheapCommitted.emit(ils.Metrics())
 	mb.metricJvmMemoryNonheapUsed.emit(ils.Metrics())
 	mb.metricJvmMemoryPoolMax.emit(ils.Metrics())
@@ -5735,6 +5791,11 @@ func (mb *MetricsBuilder) RecordJvmMemoryHeapMaxDataPoint(ts pcommon.Timestamp, 
 // RecordJvmMemoryHeapUsedDataPoint adds a data point to jvm.memory.heap.used metric.
 func (mb *MetricsBuilder) RecordJvmMemoryHeapUsedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricJvmMemoryHeapUsed.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordJvmMemoryHeapUtilizationDataPoint adds a data point to jvm.memory.heap.utilization metric.
+func (mb *MetricsBuilder) RecordJvmMemoryHeapUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricJvmMemoryHeapUtilization.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordJvmMemoryNonheapCommittedDataPoint adds a data point to jvm.memory.nonheap.committed metric.
