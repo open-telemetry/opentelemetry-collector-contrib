@@ -122,7 +122,7 @@ func NewTraceParserCollection(functions map[string]interface{}, settings compone
 
 func (pc TraceParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Traces, error) {
 	switch contextStatements.Context {
-	case Trace, Span:
+	case Span:
 		tStatements, err := pc.spanParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
