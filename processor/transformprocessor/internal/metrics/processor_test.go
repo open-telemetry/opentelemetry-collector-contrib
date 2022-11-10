@@ -50,6 +50,17 @@ func Test_ProcessMetrics_ResourceContext(t *testing.T) {
 			want: func(td pmetric.Metrics) {
 			},
 		},
+		{
+			statement: `drop()`,
+			want: func(td pmetric.Metrics) {
+				empty := pmetric.NewResourceMetricsSlice()
+				empty.CopyTo(td.ResourceMetrics())
+			},
+		},
+		{
+			statement: `drop() where dropped_attributes_count == 100`,
+			want:      func(td pmetric.Metrics) {},
+		},
 	}
 
 	for _, tt := range tests {
@@ -84,6 +95,17 @@ func Test_ProcessMetrics_ScopeContext(t *testing.T) {
 			statement: `set(attributes["test"], "pass") where version == 2`,
 			want: func(td pmetric.Metrics) {
 			},
+		},
+		{
+			statement: `drop()`,
+			want: func(td pmetric.Metrics) {
+				empty := pmetric.NewResourceMetricsSlice()
+				empty.CopyTo(td.ResourceMetrics())
+			},
+		},
+		{
+			statement: `drop() where name != "scope"`,
+			want:      func(td pmetric.Metrics) {},
 		},
 	}
 
@@ -456,6 +478,25 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test_camel", "OperationA")
 			},
 		},
+		{
+			statements: []string{
+				`drop()`,
+			},
+			want: func(td pmetric.Metrics) {
+				empty := pmetric.NewResourceMetricsSlice()
+				empty.CopyTo(td.ResourceMetrics())
+			},
+		},
+		{
+			statements: []string{
+				`drop() where metric.type == METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM`,
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() == pmetric.MetricTypeExponentialHistogram
+				})
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -586,6 +627,28 @@ func Test_ProcessMetrics_MixContext(t *testing.T) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().PutStr("test", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().PutStr("test", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "drop stops statement execution",
+			contextStatments: []common.ContextStatements{
+				{
+					Context: "metric",
+					Statements: []string{
+						`drop() where instrumentation_scope.name == "scope"`,
+						`set(name, "pass")`,
+					},
+				},
+				{
+					Context: "scope",
+					Statements: []string{
+						`set(attributes["test"], "pass")`,
+					},
+				},
+			},
+			want: func(td pmetric.Metrics) {
+				empty := pmetric.NewResourceMetricsSlice()
+				empty.CopyTo(td.ResourceMetrics())
 			},
 		},
 	}

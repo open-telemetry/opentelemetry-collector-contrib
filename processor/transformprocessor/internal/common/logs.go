@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
@@ -38,23 +39,23 @@ func (l logStatements) Capabilities() consumer.Capabilities {
 }
 
 func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	for i := 0; i < ld.ResourceLogs().Len(); i++ {
-		rlogs := ld.ResourceLogs().At(i)
-		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
-			slogs := rlogs.ScopeLogs().At(j)
-			logs := slogs.LogRecords()
-			for k := 0; k < logs.Len(); k++ {
-				tCtx := ottllog.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
-				for _, statement := range l {
-					_, _, err := statement.Execute(ctx, tCtx)
-					if err != nil {
-						return err
-					}
+	var errors error
+	ld.ResourceLogs().RemoveIf(func(rlogs plog.ResourceLogs) bool {
+		rlogs.ScopeLogs().RemoveIf(func(slogs plog.ScopeLogs) bool {
+			slogs.LogRecords().RemoveIf(func(logRecord plog.LogRecord) bool {
+				tCtx := ottllog.NewTransformContext(logRecord, slogs.Scope(), rlogs.Resource())
+				remove, err := executeStatements(ctx, tCtx, l)
+				if err != nil {
+					errors = multierr.Append(errors, err)
+					return false
 				}
-			}
-		}
-	}
-	return nil
+				return bool(remove)
+			})
+			return slogs.LogRecords().Len() == 0
+		})
+		return rlogs.ScopeLogs().Len() == 0
+	})
+	return errors
 }
 
 type LogParserCollection struct {

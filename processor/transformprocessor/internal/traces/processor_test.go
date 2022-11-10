@@ -55,6 +55,17 @@ func Test_ProcessTraces_ResourceContext(t *testing.T) {
 			want: func(td ptrace.Traces) {
 			},
 		},
+		{
+			statement: `drop()`,
+			want: func(td ptrace.Traces) {
+				empty := ptrace.NewResourceSpansSlice()
+				empty.CopyTo(td.ResourceSpans())
+			},
+		},
+		{
+			statement: `drop() where dropped_attributes_count == 100`,
+			want:      func(td ptrace.Traces) {},
+		},
 	}
 
 	for _, tt := range tests {
@@ -89,6 +100,17 @@ func Test_ProcessTraces_ScopeContext(t *testing.T) {
 			statement: `set(attributes["test"], "pass") where version == 2`,
 			want: func(td ptrace.Traces) {
 			},
+		},
+		{
+			statement: `drop()`,
+			want: func(td ptrace.Traces) {
+				empty := ptrace.NewResourceSpansSlice()
+				empty.CopyTo(td.ResourceSpans())
+			},
+		},
+		{
+			statement: `drop() where name != "scope"`,
+			want:      func(td ptrace.Traces) {},
 		},
 	}
 
@@ -333,6 +355,21 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "OperationA")
 			},
 		},
+		{
+			statement: `drop()`,
+			want: func(td ptrace.Traces) {
+				empty := ptrace.NewResourceSpansSlice()
+				empty.CopyTo(td.ResourceSpans())
+			},
+		},
+		{
+			statement: `drop() where name == "operationA"`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().RemoveIf(func(span ptrace.Span) bool {
+					return span.Name() == "operationA"
+				})
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -448,6 +485,30 @@ func Test_ProcessTraces_MixContext(t *testing.T) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().PutStr("test", "fail")
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "pass")
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "drop stops statement execution",
+			contextStatments: []common.ContextStatements{
+				{
+					Context: "spanevent",
+					Statements: []string{
+						`drop() where name == "spanEventA"`,
+						`set(name, "pass")`,
+					},
+				},
+				{
+					Context: "span",
+					Statements: []string{
+						`set(attributes["test"], "pass")`,
+					},
+				},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("test", "pass")
+				empty := ptrace.NewSpanEventSlice()
+				empty.CopyTo(td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Events())
 			},
 		},
 	}
@@ -609,6 +670,8 @@ func fillSpanTwo(span ptrace.Span) {
 	span.Attributes().PutStr("http.path", "/health")
 	span.Attributes().PutStr("http.url", "http://localhost/health")
 	span.Attributes().PutStr("flags", "C|D")
+	spanEvent := span.Events().AppendEmpty()
+	spanEvent.SetName("spanEventA")
 	link0 := span.Links().AppendEmpty()
 	link0.SetDroppedAttributesCount(4)
 	link1 := span.Links().AppendEmpty()

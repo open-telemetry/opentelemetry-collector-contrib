@@ -39,6 +39,7 @@ func Functions[K any]() map[string]interface{} {
 		"replace_all_patterns": ottlfuncs.ReplaceAllPatterns[K],
 		"delete_key":           ottlfuncs.DeleteKey[K],
 		"delete_matching_keys": ottlfuncs.DeleteMatchingKeys[K],
+		"drop":                 drop[K],
 	}
 }
 

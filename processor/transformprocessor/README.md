@@ -12,6 +12,15 @@ The transform processor modifies telemetry based on configuration using the [Ope
 For each signal type, the processor takes a list of statements associated to a [Context type](#contexts) and executes the statements against the incoming telemetry in the order specified in the config.
 Each statement can access and transform telemetry using functions and allow the use of a condition to help decide whether the function should be executed.
 
+**Tables of Contents**
+- [Config](#config)
+- [Example](#example)
+- [Grammar](#grammar)
+- [Contexts](#contexts)
+- [Supported Functions](#supported-functions)
+- [Contributing](#contributing)
+- [Warnings](#warnings)
+
 ## Config
 
 The transform processor allows configuring multiple context statements for traces, metrics, and logs.
@@ -105,11 +114,11 @@ The contexts allow the OTTL to interact with the underlying telemetry data in it
 
 - [Resource Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlresource)
 - [Scope Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlscope)
-- [Span Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspan) <!-- markdown-link-check-disable-line -->
+- [Span Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspan)
 - [SpanEvent Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspanevent)
 - [Metric Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlmetric)
-- [DataPoint Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottldatapoint) <!-- markdown-link-check-disable-line -->
-- [Log Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottllog) <!-- markdown-link-check-disable-line -->
+- [DataPoint Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottldatapoint)
+- [Log Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottllog)
 
 Each context allows transformation of its type of telemetry.  
 For example, statements associated to a `resource` context will be able to transform the resource's `attributes` and `dropped_attributes_count`.
@@ -152,16 +161,54 @@ This is because contexts are nested: the efficiency comes because higher-level c
 ## Supported functions:
 
 Since the transform processor utilizes the OTTL's contexts for Traces, Metrics, and Logs, it is able to utilize functions that expect pdata in addition to any common functions. These common functions can be used for any signal.
-<!-- markdown-link-check-disable-next-line -->
+
 - [OTTL Functions](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs)
 
 In addition to OTTL functions, the processor defines its own functions to help with transformations specific to this processor:
+
+**Common functions**
+- [drop](#drop)
 
 **Metrics only functions**
 - [convert_sum_to_gauge](#convert_sum_to_gauge)
 - [convert_gauge_to_sum](#convert_gauge_to_sum)
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
+
+## drop
+
+`drop()`
+
+Drops the specified [Context's](#contexts) telemetry from the collector.  Best used with a condition, otherwise all the Context's telemetry would be dropped.
+
+If a Metric ever has an empty DataPoints slice, the metric will also be dropped. 
+If a Scope ever has an empty Span/Metric/Log slice the scope will also be dropped. 
+If a Resource ever has an empty Scope slice the resource will also be dropped. 
+An empty SpanEvents slice will not cause a Span to be dropped.
+
+**Be very careful when dropping telemetry**.  Dropping telemetry can result in [unsound transformations or orphaned telemetry](#warnings).
+Drop does not attempt to reconcile any issues such as orphaned spans/logs or re-aggregation of metric datapoints.
+
+Examples:
+```yaml
+- context: datapoint
+  statements:
+    # drops any datapoint that has an attribute named "test" with a value of "pass".
+    - drop() where attributes["test"] == "pass"
+```
+```yaml
+- context: resource
+  statements:
+    # drops any resource (and therefore all its scopes and spans/metrics/logs) 
+    # that has an attribute named "test" with a value of "pass".
+    - drop() where attributes["test"] == "pass"
+```
+```yaml
+- context: spanevent
+  statements:
+    # drops any span event that has a name of "drop-me"
+    - drop() where name == "drop-me"
+```
 
 ## convert_sum_to_gauge
 
@@ -241,8 +288,8 @@ The transform processor's implementation of the [OpenTelemetry Transformation La
 
 - [Unsound Transformations](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#unsound-transformations): Several Metric-only functions allow you to transform one metric data type to another or create new metrics from an existing metrics.  Transformations between metric data types are not defined in the [metrics data model](https://github.com/open-telemetry/opentelemetry-specification/blob/main//specification/metrics/data-model.md).  These functions have the expectation that you understand the incoming data and know that it can be meaningfully converted to a new metric data type or can meaningfully be used to create new metrics.
   - Although the OTTL allows the `set` function to be used with `metric.data_type`, its implementation in the transform processor is NOOP.  To modify a data type you must use a function specific to that purpose.
-- [Identity Conflict](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#identity-conflict): Transformation of metrics have the potential to affect the identity of a metric leading to an Identity Crisis. Be especially cautious when transforming metric name and when reducing/changing existing attributes.  Adding new attributes is safe.
-- [Orphaned Telemetry](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#orphaned-telemetry): The processor allows you to modify `span_id`, `trace_id`, and `parent_span_id` for traces and `span_id`, and `trace_id` logs.  Modifying these fields could lead to orphaned spans or logs.
+- [Identity Conflict](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#identity-conflict): Transformation of metrics have the potential to affect the identity of a metric leading to an Identity Crisis. Be especially cautious when transforming metric name, when reducing/changing existing attributes, and when dropping datapoints.  Adding new attributes is safe.
+- [Orphaned Telemetry](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#orphaned-telemetry): The processor allows you to modify `span_id`, `trace_id`, and `parent_span_id` for traces and `span_id`, and `trace_id` logs.  It also allows dropping spans and logs.  Modifying these fields or dropping spans/logs could lead to orphaned spans or logs.
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

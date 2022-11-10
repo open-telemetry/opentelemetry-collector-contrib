@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
@@ -39,23 +40,23 @@ func (t traceStatements) Capabilities() consumer.Capabilities {
 }
 
 func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
-		rspans := td.ResourceSpans().At(i)
-		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
-			sspans := rspans.ScopeSpans().At(j)
-			spans := sspans.Spans()
-			for k := 0; k < spans.Len(); k++ {
-				tCtx := ottlspan.NewTransformContext(spans.At(k), sspans.Scope(), rspans.Resource())
-				for _, statement := range t {
-					_, _, err := statement.Execute(ctx, tCtx)
-					if err != nil {
-						return err
-					}
+	var errors error
+	td.ResourceSpans().RemoveIf(func(rspans ptrace.ResourceSpans) bool {
+		rspans.ScopeSpans().RemoveIf(func(sspans ptrace.ScopeSpans) bool {
+			sspans.Spans().RemoveIf(func(span ptrace.Span) bool {
+				tCtx := ottlspan.NewTransformContext(span, sspans.Scope(), rspans.Resource())
+				remove, err := executeStatements(ctx, tCtx, t)
+				if err != nil {
+					errors = multierr.Append(errors, err)
+					return false
 				}
-			}
-		}
-	}
-	return nil
+				return bool(remove)
+			})
+			return sspans.Spans().Len() == 0
+		})
+		return rspans.ScopeSpans().Len() == 0
+	})
+	return errors
 }
 
 var _ consumer.Traces = &spanEventStatements{}
@@ -69,27 +70,26 @@ func (s spanEventStatements) Capabilities() consumer.Capabilities {
 }
 
 func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
-		rspans := td.ResourceSpans().At(i)
-		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
-			sspans := rspans.ScopeSpans().At(j)
-			spans := sspans.Spans()
-			for k := 0; k < spans.Len(); k++ {
-				span := spans.At(k)
-				spanEvents := span.Events()
-				for n := 0; n < spanEvents.Len(); n++ {
-					tCtx := ottlspanevent.NewTransformContext(spanEvents.At(k), span, sspans.Scope(), rspans.Resource())
-					for _, statement := range s {
-						_, _, err := statement.Execute(ctx, tCtx)
-						if err != nil {
-							return err
-						}
+	var errors error
+	td.ResourceSpans().RemoveIf(func(rspans ptrace.ResourceSpans) bool {
+		rspans.ScopeSpans().RemoveIf(func(sspans ptrace.ScopeSpans) bool {
+			sspans.Spans().RemoveIf(func(span ptrace.Span) bool {
+				span.Events().RemoveIf(func(spanEvent ptrace.SpanEvent) bool {
+					tCtx := ottlspanevent.NewTransformContext(spanEvent, span, sspans.Scope(), rspans.Resource())
+					remove, err := executeStatements(ctx, tCtx, s)
+					if err != nil {
+						errors = multierr.Append(errors, err)
+						return false
 					}
-				}
-			}
-		}
-	}
-	return nil
+					return bool(remove)
+				})
+				return false
+			})
+			return false
+		})
+		return false
+	})
+	return errors
 }
 
 type TraceParserCollection struct {

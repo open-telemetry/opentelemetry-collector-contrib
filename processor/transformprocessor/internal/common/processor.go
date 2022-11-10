@@ -23,11 +23,27 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 )
+
+type shouldRemove bool
+
+func executeStatements[K any](ctx context.Context, tCtx K, statements []*ottl.Statement[K]) (shouldRemove, error) {
+	for _, statement := range statements {
+		value, _, err := statement.Execute(ctx, tCtx)
+		if err != nil {
+			return false, err
+		}
+		if remove, ok := value.(shouldRemove); ok && bool(remove) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
 
 var _ consumer.Traces = &resourceStatements{}
 var _ consumer.Metrics = &resourceStatements{}
@@ -43,45 +59,45 @@ func (r resourceStatements) Capabilities() consumer.Capabilities {
 }
 
 func (r resourceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
-		rspans := td.ResourceSpans().At(i)
+	var errors error
+	td.ResourceSpans().RemoveIf(func(rspans ptrace.ResourceSpans) bool {
 		tCtx := ottlresource.NewTransformContext(rspans.Resource())
-		for _, statement := range r {
-			_, _, err := statement.Execute(ctx, tCtx)
-			if err != nil {
-				return err
-			}
+		remove, err := executeStatements(ctx, tCtx, r)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			return false
 		}
-	}
-	return nil
+		return bool(remove)
+	})
+	return errors
 }
 
 func (r resourceStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		rmetrics := md.ResourceMetrics().At(i)
+	var errors error
+	md.ResourceMetrics().RemoveIf(func(rmetrics pmetric.ResourceMetrics) bool {
 		tCtx := ottlresource.NewTransformContext(rmetrics.Resource())
-		for _, statement := range r {
-			_, _, err := statement.Execute(ctx, tCtx)
-			if err != nil {
-				return err
-			}
+		remove, err := executeStatements(ctx, tCtx, r)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			return false
 		}
-	}
-	return nil
+		return bool(remove)
+	})
+	return errors
 }
 
 func (r resourceStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	for i := 0; i < ld.ResourceLogs().Len(); i++ {
-		rlogs := ld.ResourceLogs().At(i)
+	var errors error
+	ld.ResourceLogs().RemoveIf(func(rlogs plog.ResourceLogs) bool {
 		tCtx := ottlresource.NewTransformContext(rlogs.Resource())
-		for _, statement := range r {
-			_, _, err := statement.Execute(ctx, tCtx)
-			if err != nil {
-				return err
-			}
+		remove, err := executeStatements(ctx, tCtx, r)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			return false
 		}
-	}
-	return nil
+		return bool(remove)
+	})
+	return errors
 }
 
 var _ consumer.Traces = &scopeStatements{}
@@ -98,54 +114,54 @@ func (s scopeStatements) Capabilities() consumer.Capabilities {
 }
 
 func (s scopeStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
-		rspans := td.ResourceSpans().At(i)
-		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
-			sspans := rspans.ScopeSpans().At(j)
+	var errors error
+	td.ResourceSpans().RemoveIf(func(rspans ptrace.ResourceSpans) bool {
+		rspans.ScopeSpans().RemoveIf(func(sspans ptrace.ScopeSpans) bool {
 			tCtx := ottlscope.NewTransformContext(sspans.Scope(), rspans.Resource())
-			for _, statement := range s {
-				_, _, err := statement.Execute(ctx, tCtx)
-				if err != nil {
-					return err
-				}
+			remove, err := executeStatements(ctx, tCtx, s)
+			if err != nil {
+				errors = multierr.Append(errors, err)
+				return false
 			}
-		}
-	}
-	return nil
+			return bool(remove)
+		})
+		return rspans.ScopeSpans().Len() == 0
+	})
+	return errors
 }
 
 func (s scopeStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		rmetrics := md.ResourceMetrics().At(i)
-		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
-			smetrics := rmetrics.ScopeMetrics().At(j)
+	var errors error
+	md.ResourceMetrics().RemoveIf(func(rmetrics pmetric.ResourceMetrics) bool {
+		rmetrics.ScopeMetrics().RemoveIf(func(smetrics pmetric.ScopeMetrics) bool {
 			tCtx := ottlscope.NewTransformContext(smetrics.Scope(), rmetrics.Resource())
-			for _, statement := range s {
-				_, _, err := statement.Execute(ctx, tCtx)
-				if err != nil {
-					return err
-				}
+			remove, err := executeStatements(ctx, tCtx, s)
+			if err != nil {
+				errors = multierr.Append(errors, err)
+				return false
 			}
-		}
-	}
-	return nil
+			return bool(remove)
+		})
+		return rmetrics.ScopeMetrics().Len() == 0
+	})
+	return errors
 }
 
 func (s scopeStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	for i := 0; i < ld.ResourceLogs().Len(); i++ {
-		rlogs := ld.ResourceLogs().At(i)
-		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
-			slogs := rlogs.ScopeLogs().At(j)
+	var errors error
+	ld.ResourceLogs().RemoveIf(func(rlogs plog.ResourceLogs) bool {
+		rlogs.ScopeLogs().RemoveIf(func(slogs plog.ScopeLogs) bool {
 			tCtx := ottlscope.NewTransformContext(slogs.Scope(), rlogs.Resource())
-			for _, statement := range s {
-				_, _, err := statement.Execute(ctx, tCtx)
-				if err != nil {
-					return err
-				}
+			remove, err := executeStatements(ctx, tCtx, s)
+			if err != nil {
+				errors = multierr.Append(errors, err)
+				return false
 			}
-		}
-	}
-	return nil
+			return bool(remove)
+		})
+		return rlogs.ScopeLogs().Len() == 0
+	})
+	return errors
 }
 
 type parserCollection struct {

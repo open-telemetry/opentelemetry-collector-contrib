@@ -54,6 +54,17 @@ func Test_ProcessLogs_ResourceContext(t *testing.T) {
 			want: func(td plog.Logs) {
 			},
 		},
+		{
+			statement: `drop()`,
+			want: func(td plog.Logs) {
+				empty := plog.NewResourceLogsSlice()
+				empty.CopyTo(td.ResourceLogs())
+			},
+		},
+		{
+			statement: `drop() where dropped_attributes_count == 100`,
+			want:      func(td plog.Logs) {},
+		},
 	}
 
 	for _, tt := range tests {
@@ -88,6 +99,17 @@ func Test_ProcessLogs_ScopeContext(t *testing.T) {
 			statement: `set(attributes["test"], "pass") where version == 2`,
 			want: func(td plog.Logs) {
 			},
+		},
+		{
+			statement: `drop()`,
+			want: func(td plog.Logs) {
+				empty := plog.NewResourceLogsSlice()
+				empty.CopyTo(td.ResourceLogs())
+			},
+		},
+		{
+			statement: `drop() where name != "scope"`,
+			want:      func(td plog.Logs) {},
 		},
 	}
 
@@ -289,6 +311,21 @@ func Test_ProcessLogs_LogContext(t *testing.T) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "OperationA")
 			},
 		},
+		{
+			statement: `drop()`,
+			want: func(td plog.Logs) {
+				empty := plog.NewResourceLogsSlice()
+				empty.CopyTo(td.ResourceLogs())
+			},
+		},
+		{
+			statement: `drop() where body == "operationA"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().RemoveIf(func(logRecord plog.LogRecord) bool {
+					return logRecord.Body().AsString() == "operationA"
+				})
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -404,6 +441,28 @@ func Test_ProcessLogs_MixContext(t *testing.T) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("test", "fail")
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "drop stops statement execution",
+			contextStatments: []common.ContextStatements{
+				{
+					Context: "log",
+					Statements: []string{
+						`drop() where instrumentation_scope.name == "scope"`,
+						`set(attributes["test"], "pass")`,
+					},
+				},
+				{
+					Context: "scope",
+					Statements: []string{
+						`set(attributes["test"], "pass")`,
+					},
+				},
+			},
+			want: func(td plog.Logs) {
+				empty := plog.NewResourceLogsSlice()
+				empty.CopyTo(td.ResourceLogs())
 			},
 		},
 	}
