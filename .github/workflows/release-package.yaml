@@ -94,7 +94,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.ACTIONS_TOKEN }}
       - name: Build otel col contrib
-        run: make otelcontribcol && cp ./bin/otelcontribcol_* ./cmd/otelcontribcol/otelcontribcol
+        run: GOOS=linux GOARCH=amd64 make otelcontribcol && cp ./bin/otelcontribcol_linux_amd64 ./cmd/otelcontribcol/otelcontribcol
       - name: Push tracegen to Github packages
         uses: docker/build-push-action@v3
         with:
