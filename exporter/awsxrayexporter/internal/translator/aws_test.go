@@ -182,7 +182,25 @@ func TestAwsFromEksResource(t *testing.T) {
 }
 
 func TestAwsWithAwsSqsResources(t *testing.T) {
+	instanceID := "i-00f7c0bcb26da2a99"
+	containerName := "signup_aggregator-x82ufje83"
+	containerID := "0123456789A"
 	resource := pcommon.NewResource()
+	attrs := pcommon.NewMap()
+	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.PutStr(conventions.AttributeCloudAccountID, "123456789")
+	attrs.PutStr(conventions.AttributeCloudAvailabilityZone, "us-east-1c")
+	attrs.PutStr(conventions.AttributeContainerName, containerName)
+	attrs.PutStr(conventions.AttributeContainerImageName, "otel/signupaggregator")
+	attrs.PutStr(conventions.AttributeContainerImageTag, "v1")
+	attrs.PutStr(conventions.AttributeK8SClusterName, "production")
+	attrs.PutStr(conventions.AttributeK8SNamespaceName, "default")
+	attrs.PutStr(conventions.AttributeK8SDeploymentName, "signup_aggregator")
+	attrs.PutStr(conventions.AttributeK8SPodName, "my-deployment-65dcf7d447-ddjnl")
+	attrs.PutStr(conventions.AttributeContainerName, containerName)
+	attrs.PutStr(conventions.AttributeContainerID, containerID)
+	attrs.PutStr(conventions.AttributeHostID, instanceID)
+	attrs.PutStr(conventions.AttributeHostType, "m5.xlarge")
 
 	queueURL := "https://sqs.use1.amazonaws.com/Meltdown-Alerts"
 	attributes := make(map[string]pcommon.Value)
