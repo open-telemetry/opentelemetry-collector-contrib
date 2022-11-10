@@ -48,6 +48,8 @@ type Config struct {
 	MaxRecordSize      int       `mapstructure:"max_record_size"`
 }
 
+var _ component.ExporterConfig = (*Config)(nil)
+
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
 	if err := cfg.QueueSettings.Validate(); err != nil {
@@ -56,5 +58,3 @@ func (cfg *Config) Validate() error {
 
 	return nil
 }
-
-var _ component.ExporterConfig = (*Config)(nil)
