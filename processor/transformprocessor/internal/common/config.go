@@ -21,9 +21,11 @@ import (
 type ContextID string
 
 const (
-	Resource  ContextID = "resource"
-	Scope     ContextID = "scope"
+	Resource ContextID = "resource"
+	Scope    ContextID = "scope"
+	// Trace Deprecated
 	Trace     ContextID = "trace"
+	Span      ContextID = "span"
 	SpanEvent ContextID = "spanevent"
 	Metric    ContextID = "metric"
 	DataPoint ContextID = "datapoint"
@@ -33,7 +35,7 @@ const (
 func (c *ContextID) UnmarshalText(text []byte) error {
 	str := ContextID(strings.ToLower(string(text)))
 	switch str {
-	case Resource, Scope, Trace, SpanEvent, Metric, DataPoint, Log:
+	case Resource, Scope, Trace, Span, SpanEvent, Metric, DataPoint, Log:
 		*c = str
 		return nil
 	default:
