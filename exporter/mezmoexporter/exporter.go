@@ -16,6 +16,7 @@ package mezmoexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -102,14 +103,12 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 					attrs["hostname"] = resourceHostName.AsString()
 				}
 
-				traceID := log.TraceID().HexString()
-				if traceID != "" {
-					attrs["trace.id"] = traceID
+				if traceID := log.TraceID(); !traceID.IsEmpty() {
+					attrs["trace.id"] = hex.EncodeToString(traceID[:])
 				}
 
-				spanID := log.SpanID().HexString()
-				if spanID != "" {
-					attrs["span.id"] = spanID
+				if spanID := log.SpanID(); !spanID.IsEmpty() {
+					attrs["span.id"] = hex.EncodeToString(spanID[:])
 				}
 
 				log.Attributes().Range(func(k string, v pcommon.Value) bool {
