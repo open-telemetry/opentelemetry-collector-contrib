@@ -1,4 +1,30 @@
 transform:
+  trace_statements:
+    - context: trace
+      statements:
+        - set(name, "bear") where attributes["http.path"] == "/animal"
+        - keep_keys(attributes, ["http.method", "http.path"])
+    - context: resource
+      statements:
+        - set(attributes["name"], "bear")
+  metric_statements:
+    - context: datapoint
+      statements:
+        - set(metric.name, "bear") where attributes["http.path"] == "/animal"
+        - keep_keys(attributes, ["http.method", "http.path"])
+    - context: resource
+      statements:
+        - set(attributes["name"], "bear")
+  log_statements:
+    - context: log
+      statements:
+        - set(body, "bear") where attributes["http.path"] == "/animal"
+        - keep_keys(attributes, ["http.method", "http.path"])
+    - context: resource
+      statements:
+        - set(attributes["name"], "bear")
+
+transform/deprecated_format:
   traces:
     statements:
       - set(name, "bear") where attributes["http.path"] == "/animal"
@@ -10,40 +36,63 @@ transform:
   logs:
     statements:
       - set(body, "bear") where attributes["http.path"] == "/animal"
+      - keep_keys(attributes, ["http.method", "http.path"])
+
+transform/using_both_formats:
+  trace_statements:
+    - context: trace
+      statements:
+        - set(name, "bear") where attributes["http.path"] == "/animal"
+        - keep_keys(attributes, ["http.method", "http.path"])
+  traces:
+    statements:
+      - set(name, "bear") where attributes["http.path"] == "/animal"
       - keep_keys(attributes, ["http.method", "http.path"])
 
 transform/bad_syntax_log:
-  logs:
-    statements:
-      - set(body, "bear" where attributes["http.path"] == "/animal"
-      - keep_keys(attributes, ["http.method", "http.path"])
+  log_statements:
+    - context: log
+      statements:
+        - set(body, "bear" where attributes["http.path"] == "/animal"
+        - keep_keys(attributes, ["http.method", "http.path"])
 
 transform/bad_syntax_metric:
-  metrics:
-    statements:
-      - set(name, "bear" where attributes["http.path"] == "/animal"
-      - keep_keys(attributes, ["http.method", "http.path"])
+  metric_statements:
+    - context: datapoint
+      statements:
+        - set(name, "bear" where attributes["http.path"] == "/animal"
+        - keep_keys(attributes, ["http.method", "http.path"])
 
 transform/bad_syntax_trace:
-  traces:
-    statements:
-      - set(name, "bear" where attributes["http.path"] == "/animal"
-      - keep_keys(attributes, ["http.method", "http.path"])
+  trace_statements:
+    - context: trace
+      statements:
+        - set(name, "bear" where attributes["http.path"] == "/animal"
+        - keep_keys(attributes, ["http.method", "http.path"])
 
 transform/unknown_function_log:
-  logs:
-    statements:
-      - set(body, "bear") where attributes["http.path"] == "/animal"
-      - not_a_function(attributes, ["http.method", "http.path"])
+  log_statements:
+    - context: log
+      statements:
+        - set(body, "bear") where attributes["http.path"] == "/animal"
+        - not_a_function(attributes, ["http.method", "http.path"])
 
 transform/unknown_function_metric:
-  metrics:
-    statements:
-      - set(metric.name, "bear") where attributes["http.path"] == "/animal"
-      - not_a_function(attributes, ["http.method", "http.path"])
+  metric_statements:
+    - context: datapoint
+      statements:
+        - set(metric.name, "bear") where attributes["http.path"] == "/animal"
+        - not_a_function(attributes, ["http.method", "http.path"])
 
 transform/unknown_function_trace:
-  traces:
-    statements:
-      - set(name, "bear") where attributes["http.path"] == "/animal"
-      - not_a_function(attributes, ["http.method", "http.path"])
+  trace_statements:
+    - context: trace
+      statements:
+        - set(name, "bear") where attributes["http.path"] == "/animal"
+        - not_a_function(attributes, ["http.method", "http.path"])
+
+transform/unknown_context:
+  trace_statements:
+    - context: test
+      statements:
+        - set(name, "bear") where attributes["http.path"] == "/animal"

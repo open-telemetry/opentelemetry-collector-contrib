@@ -120,9 +120,6 @@ func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) (
 			},
 		},
 		logger: logger,
-		zippers: sync.Pool{New: func() interface{} {
-			return gzip.NewWriter(nil)
-		}},
 		headers: map[string]string{
 			"Connection":           "keep-alive",
 			"Content-Type":         "application/json",
@@ -132,5 +129,8 @@ func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) (
 			"__splunk_app_version": config.SplunkAppVersion,
 		},
 		config: config,
+		gzipWriterPool: &sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
 	}, nil
 }
