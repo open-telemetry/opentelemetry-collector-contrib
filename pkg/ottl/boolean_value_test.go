@@ -80,10 +80,10 @@ func comparisonHelper(left any, right any, op string) *comparison {
 
 func Test_newComparisonEvaluator(t *testing.T) {
 	p := NewParser(
-		defaultFunctionsForTests(),
-		testParsePath,
-		testParseEnum,
-		componenttest.NewNopTelemetrySettings(),
+		WithFunctions(defaultFunctionsForTests()),
+		WithPathParser(testParsePath),
+		WithEnumParser(testParseEnum),
+		WithTelemetrySettings(componenttest.NewNopTelemetrySettings()),
 	)
 
 	var tests = []struct {
@@ -131,10 +131,10 @@ func Test_newComparisonEvaluator(t *testing.T) {
 
 func Test_newConditionEvaluator_invalid(t *testing.T) {
 	p := NewParser(
-		defaultFunctionsForTests(),
-		testParsePath,
-		testParseEnum,
-		component.TelemetrySettings{},
+		WithFunctions(defaultFunctionsForTests()),
+		WithPathParser(testParsePath),
+		WithEnumParser(testParseEnum),
+		WithTelemetrySettings(component.TelemetrySettings{}),
 	)
 
 	tests := []struct {
@@ -164,10 +164,10 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 
 func Test_newBooleanExpressionEvaluator(t *testing.T) {
 	p := NewParser(
-		defaultFunctionsForTests(),
-		testParsePath,
-		testParseEnum,
-		component.TelemetrySettings{},
+		WithFunctions(defaultFunctionsForTests()),
+		WithEnumParser(testParseEnum),
+		WithPathParser(testParsePath),
+		WithTelemetrySettings(component.TelemetrySettings{}),
 	)
 
 	tests := []struct {

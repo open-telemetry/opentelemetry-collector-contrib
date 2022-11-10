@@ -112,10 +112,10 @@ func Test_newGetter(t *testing.T) {
 	functions := map[string]interface{}{"hello": hello[interface{}]}
 
 	p := NewParser(
-		functions,
-		testParsePath,
-		testParseEnum,
-		component.TelemetrySettings{},
+		WithFunctions(functions),
+		WithPathParser(testParsePath),
+		WithEnumParser(testParseEnum),
+		WithTelemetrySettings(component.TelemetrySettings{}),
 	)
 
 	for _, tt := range tests {

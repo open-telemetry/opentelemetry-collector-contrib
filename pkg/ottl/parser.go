@@ -55,13 +55,63 @@ func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 	return result, condition, nil
 }
 
-func NewParser[K any](functions map[string]interface{}, pathParser PathExpressionParser[K], enumParser EnumParser, telemetrySettings component.TelemetrySettings) Parser[K] {
-	return Parser[K]{
-		functions:         functions,
-		pathParser:        pathParser,
-		enumParser:        enumParser,
-		telemetrySettings: telemetrySettings,
+func NewParser[K any](options ...ParserOption) Parser[K] {
+	var cfg config
+	for _, opt := range options {
+		cfg = opt.apply(cfg)
 	}
+
+	return Parser[K]{
+		functions:         cfg.functions,
+		pathParser:        PathExpressionParser[K](cfg.pathParser),
+		enumParser:        cfg.enumParser,
+		telemetrySettings: cfg.telemetrySettings,
+	}
+}
+
+type config struct {
+	functions         map[string]interface{}
+	pathParser        PathExpressionParser[any]
+	enumParser        EnumParser
+	telemetrySettings component.TelemetrySettings
+}
+
+type ParserOption interface {
+	apply(config) config
+}
+
+type parserOptionFunc func(config) config
+
+func (f parserOptionFunc) apply(cfg config) config {
+	return f(cfg)
+}
+
+func WithFunctions(functions map[string]interface{}) ParserOption {
+	return parserOptionFunc(func(c config) config {
+		c.functions = functions
+		return c
+	})
+}
+
+func WithPathParser[K any](parser PathExpressionParser[K]) ParserOption {
+	return parserOptionFunc(func(c config) config {
+		c.pathParser = PathExpressionParser[any](parser)
+		return c
+	})
+}
+
+func WithEnumParser(parser EnumParser) ParserOption {
+	return parserOptionFunc(func(c config) config {
+		c.enumParser = parser
+		return c
+	})
+}
+
+func WithTelemetrySettings(settings component.TelemetrySettings) ParserOption {
+	return parserOptionFunc(func(c config) config {
+		c.telemetrySettings = settings
+		return c
+	})
 }
 
 func (p *Parser[K]) ParseStatements(statements []string) ([]*Statement[K], error) {

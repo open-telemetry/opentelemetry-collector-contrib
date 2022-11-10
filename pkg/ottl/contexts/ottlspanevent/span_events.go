@@ -64,7 +64,12 @@ func (tCtx TransformContext) GetResource() pcommon.Resource {
 }
 
 func NewParser(functions map[string]interface{}, telemetrySettings component.TelemetrySettings) ottl.Parser[TransformContext] {
-	return ottl.NewParser[TransformContext](functions, parsePath, parseEnum, telemetrySettings)
+	return ottl.NewParser[TransformContext](
+		ottl.WithFunctions(functions),
+		ottl.WithEnumParser(parseEnum),
+		ottl.WithPathParser(parsePath),
+		ottl.WithTelemetrySettings(telemetrySettings),
+	)
 }
 
 func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
