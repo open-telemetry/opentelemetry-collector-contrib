@@ -31,7 +31,7 @@ fi
 main () {
     CUR_DIRECTORY=$(dirname "$0")
     JSON=$(gh pr view "${PR}" --json "files,author")
-    AUTHOR=$(printf "${JSON}"| jq '.author.login')
+    AUTHOR=$(printf "${JSON}"| jq -r '.author.login')
     FILES=$(printf "${JSON}"| jq -r '.files[].path')
     COMPONENTS=$(grep -oE '^[a-z]+/[a-z/]+ ' < .github/CODEOWNERS)
     REVIEWERS=""
@@ -62,12 +62,16 @@ main () {
 
             OWNERS=$(COMPONENT="${COMPONENT}" bash "${CUR_DIRECTORY}/get-codeowners.sh")
 
-            if [[ -n "${OWNERS}" ]]; then
+            for OWNER in ${OWNERS}; do
+                if [[ "${OWNER}" = "@${AUTHOR}" ]]; then
+                    continue
+                fi
+
                 if [[ -n "${REVIEWERS}" ]]; then
                     REVIEWERS+=","
                 fi
-                REVIEWERS+="$(echo "${OWNERS}" | sed -E 's/@([A-Za-z0-9_-]+)( |$)/"\1"\2/g' | sed -E "s/${AUTHOR} ?//g" | sed 's/ /,/g')"
-            fi
+                REVIEWERS+=$(echo "${OWNER}" | sed -E 's/@(.+)/"\1"/')
+            done
 
             # Convert the CODEOWNERS entry to a label
             COMPONENT_CLEAN=$(echo "${COMPONENT}" | sed -E 's%/$%%')
