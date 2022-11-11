@@ -7,8 +7,8 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.64.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.64.0
-	go.opentelemetry.io/collector/pdata v0.64.0
+	go.opentelemetry.io/collector v0.64.2-0.20221110222631-20e3aac00413
+	go.opentelemetry.io/collector/pdata v0.64.2-0.20221110222631-20e3aac00413
 	go.uber.org/zap v1.23.0
 )
 
@@ -70,8 +70,8 @@ require (
 	github.com/tklauser/numcpus v0.4.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/processor/batchprocessor v0.64.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.64.0 // indirect
+	go.opentelemetry.io/collector/processor/batchprocessor v0.64.2-0.20221110222631-20e3aac00413 // indirect
+	go.opentelemetry.io/collector/semconv v0.64.2-0.20221110222631-20e3aac00413 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.11.1 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.33.0 // indirect

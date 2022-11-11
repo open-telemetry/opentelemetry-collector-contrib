@@ -37,18 +37,23 @@ type reporter struct {
 
 var _ transport.Reporter = (*reporter)(nil)
 
-func newReporter(id component.ID, set component.ReceiverCreateSettings) transport.Reporter {
+func newReporter(id component.ID, set component.ReceiverCreateSettings) (transport.Reporter, error) {
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             id,
+		Transport:              "tcp",
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &reporter{
 		id:            id,
 		spanName:      id.String() + ".receiver",
 		logger:        set.Logger,
 		sugaredLogger: set.Logger.Sugar(),
-		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             id,
-			Transport:              "tcp",
-			ReceiverCreateSettings: set,
-		}),
-	}
+		obsrecv:       obsrecv,
+	}, nil
 }
 
 // OnDataReceived is called when a message or request is received from

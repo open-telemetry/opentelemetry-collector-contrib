@@ -108,6 +108,16 @@ func New(cfg *Config, set component.ReceiverCreateSettings) (Poller, error) {
 	set.Logger.Info("Listening on endpoint for X-Ray segments",
 		zap.String(Transport, addr.String()))
 
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             cfg.ReceiverID,
+		Transport:              cfg.Transport,
+		LongLivedCtx:           true,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &poller{
 		receiverID:     cfg.ReceiverID,
 		udpSock:        sock,
@@ -115,12 +125,7 @@ func New(cfg *Config, set component.ReceiverCreateSettings) (Poller, error) {
 		maxPollerCount: cfg.NumOfPollerToStart,
 		shutDown:       make(chan struct{}),
 		segChan:        make(chan RawSegment, segChanSize),
-		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             cfg.ReceiverID,
-			Transport:              cfg.Transport,
-			LongLivedCtx:           true,
-			ReceiverCreateSettings: set,
-		}),
+		obsrecv:        obsrecv,
 	}, nil
 }
 

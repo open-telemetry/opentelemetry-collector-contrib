@@ -39,7 +39,8 @@ var (
 
 func TestTraceSource(t *testing.T) {
 	set := componenttest.NewNopReceiverCreateSettings()
-	jr := newSkywalkingReceiver(skywalkingReceiver, &configuration{}, nil, set)
+	jr, err := newSkywalkingReceiver(skywalkingReceiver, &configuration{}, nil, set)
+	require.NoError(t, err)
 	require.NotNil(t, jr)
 }
 
@@ -54,7 +55,8 @@ func TestStartAndShutdown(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 
 	set := componenttest.NewNopReceiverCreateSettings()
-	sr := newSkywalkingReceiver(skywalkingReceiver, config, sink, set)
+	sr, err := newSkywalkingReceiver(skywalkingReceiver, config, sink, set)
+	require.NoError(t, err)
 
 	require.NoError(t, sr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, sr.Shutdown(context.Background())) })
@@ -70,7 +72,8 @@ func TestGRPCReception(t *testing.T) {
 
 	set := componenttest.NewNopReceiverCreateSettings()
 
-	swReceiver := newSkywalkingReceiver(skywalkingReceiver, config, sink, set)
+	swReceiver, err := newSkywalkingReceiver(skywalkingReceiver, config, sink, set)
+	require.NoError(t, err)
 
 	require.NoError(t, swReceiver.Start(context.Background(), componenttest.NewNopHost()))
 

@@ -108,23 +108,32 @@ func newJaegerReceiver(
 	config *configuration,
 	nextConsumer consumer.Traces,
 	set component.ReceiverCreateSettings,
-) *jReceiver {
+) (*jReceiver, error) {
+	grpcObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             id,
+		Transport:              grpcTransport,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+	httpObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             id,
+		Transport:              collectorHTTPTransport,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &jReceiver{
 		config:       config,
 		nextConsumer: nextConsumer,
 		id:           id,
 		settings:     set,
-		grpcObsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             id,
-			Transport:              grpcTransport,
-			ReceiverCreateSettings: set,
-		}),
-		httpObsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             id,
-			Transport:              collectorHTTPTransport,
-			ReceiverCreateSettings: set,
-		}),
-	}
+		grpcObsrecv:  grpcObsrecv,
+		httpObsrecv:  httpObsrecv,
+	}, nil
 }
 
 func (jr *jReceiver) Start(_ context.Context, host component.Host) error {
@@ -231,13 +240,18 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 	}
 
 	if jr.config.AgentBinaryThrift.Endpoint != "" {
+		obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             jr.id,
+			Transport:              agentTransportBinary,
+			ReceiverCreateSettings: jr.settings,
+		})
+		if err != nil {
+			return err
+		}
+
 		h := &agentHandler{
 			nextConsumer: jr.nextConsumer,
-			obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-				ReceiverID:             jr.id,
-				Transport:              agentTransportBinary,
-				ReceiverCreateSettings: jr.settings,
-			}),
+			obsrecv:      obsrecv,
 		}
 		processor, err := jr.buildProcessor(jr.config.AgentBinaryThrift.Endpoint, jr.config.AgentBinaryThrift.ServerConfigUDP, apacheThrift.NewTBinaryProtocolFactoryConf(nil), h)
 		if err != nil {
@@ -247,13 +261,17 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 	}
 
 	if jr.config.AgentCompactThrift.Endpoint != "" {
+		obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             jr.id,
+			Transport:              agentTransportCompact,
+			ReceiverCreateSettings: jr.settings,
+		})
+		if err != nil {
+			return err
+		}
 		h := &agentHandler{
 			nextConsumer: jr.nextConsumer,
-			obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-				ReceiverID:             jr.id,
-				Transport:              agentTransportCompact,
-				ReceiverCreateSettings: jr.settings,
-			}),
+			obsrecv:      obsrecv,
 		}
 		processor, err := jr.buildProcessor(jr.config.AgentCompactThrift.Endpoint, jr.config.AgentCompactThrift.ServerConfigUDP, apacheThrift.NewTCompactProtocolFactoryConf(nil), h)
 		if err != nil {
