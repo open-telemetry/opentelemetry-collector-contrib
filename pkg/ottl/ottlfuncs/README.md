@@ -27,7 +27,7 @@ Functions
 
 `Concat(values[], delimiter)`
 
-The `Concat` factory function takes a delimiter and a sequence of values and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string.
+The `Concat` factory function takes a delimiter and a sequence of values and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string. A debug log is printed when Concat is passed an unsupported value.
 
 `values` is a list of values passed as arguments. It supports paths, primitive values, and byte slices (such as trace IDs or span IDs).
 

@@ -19,6 +19,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -29,6 +33,7 @@ func Test_concat(t *testing.T) {
 		vals      []ottl.StandardGetSetter[interface{}]
 		delimiter string
 		expected  string
+		shouldLog bool
 	}{
 		{
 			name: "concat strings",
@@ -46,6 +51,7 @@ func Test_concat(t *testing.T) {
 			},
 			delimiter: " ",
 			expected:  "hello world",
+			shouldLog: false,
 		},
 		{
 			name: "nil",
@@ -68,6 +74,7 @@ func Test_concat(t *testing.T) {
 			},
 			delimiter: "",
 			expected:  "hello<nil>world",
+			shouldLog: false,
 		},
 		{
 			name: "integers",
@@ -85,6 +92,7 @@ func Test_concat(t *testing.T) {
 			},
 			delimiter: "",
 			expected:  "hello1",
+			shouldLog: false,
 		},
 		{
 			name: "floats",
@@ -102,6 +110,7 @@ func Test_concat(t *testing.T) {
 			},
 			delimiter: "",
 			expected:  "hello3.14159",
+			shouldLog: false,
 		},
 		{
 			name: "booleans",
@@ -119,6 +128,7 @@ func Test_concat(t *testing.T) {
 			},
 			delimiter: " ",
 			expected:  "hello true",
+			shouldLog: false,
 		},
 		{
 			name: "byte slices",
@@ -131,6 +141,7 @@ func Test_concat(t *testing.T) {
 			},
 			delimiter: "",
 			expected:  "00000000000000000ed2e63cbe71f5a8",
+			shouldLog: false,
 		},
 		{
 			name: "non-byte slices",
@@ -143,6 +154,7 @@ func Test_concat(t *testing.T) {
 			},
 			delimiter: "",
 			expected:  "",
+			shouldLog: true,
 		},
 		{
 			name: "maps",
@@ -155,6 +167,7 @@ func Test_concat(t *testing.T) {
 			},
 			delimiter: "",
 			expected:  "",
+			shouldLog: true,
 		},
 		{
 			name: "unprintable value in the middle",
@@ -177,6 +190,7 @@ func Test_concat(t *testing.T) {
 			},
 			delimiter: "-",
 			expected:  "hello--world",
+			shouldLog: true,
 		},
 		{
 			name: "empty string values",
@@ -199,6 +213,7 @@ func Test_concat(t *testing.T) {
 			},
 			delimiter: "__",
 			expected:  "____",
+			shouldLog: false,
 		},
 		{
 			name: "single argument",
@@ -211,33 +226,46 @@ func Test_concat(t *testing.T) {
 			},
 			delimiter: "-",
 			expected:  "hello",
+			shouldLog: false,
 		},
 		{
 			name:      "no arguments",
 			vals:      []ottl.StandardGetSetter[interface{}]{},
 			delimiter: "-",
 			expected:  "",
+			shouldLog: false,
 		},
 		{
 			name:      "no arguments with an empty delimiter",
 			vals:      []ottl.StandardGetSetter[interface{}]{},
 			delimiter: "",
 			expected:  "",
+			shouldLog: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			core, logs := observer.New(zap.DebugLevel)
+			settings := component.TelemetrySettings{Logger: zap.New(core)}
 			getters := make([]ottl.Getter[interface{}], len(tt.vals))
 
 			for i, val := range tt.vals {
 				getters[i] = val
 			}
 
-			exprFunc, err := Concat(getters, tt.delimiter)
+			exprFunc, err := Concat(settings, getters, tt.delimiter)
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
+
+			logOutput := logs.All()
+			if tt.shouldLog {
+				require.Equal(t, 1, len(logOutput))
+				assert.Equal(t, zap.DebugLevel, logOutput[0].Level)
+			} else {
+				assert.Equal(t, 0, len(logOutput))
+			}
 		})
 	}
 }

@@ -20,9 +20,10 @@ import (
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"go.opentelemetry.io/collector/component"
 )
 
-func Concat[K any](vals []ottl.Getter[K], delimiter string) (ottl.ExprFunc[K], error) {
+func Concat[K any](settings component.TelemetrySettings, vals []ottl.Getter[K], delimiter string) (ottl.ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		builder := strings.Builder{}
 		for i, rv := range vals {
@@ -43,6 +44,8 @@ func Concat[K any](vals []ottl.Getter[K], delimiter string) (ottl.ExprFunc[K], e
 				builder.WriteString(fmt.Sprint(v))
 			case nil:
 				builder.WriteString(fmt.Sprint(v))
+			default:
+				settings.Logger.Debug(fmt.Sprintf("Unprintable value passed to Concat at index %v in values list", i))
 			}
 
 			if i != len(vals)-1 {
