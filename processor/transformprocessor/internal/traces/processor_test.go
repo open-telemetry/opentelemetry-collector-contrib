@@ -338,7 +338,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor(nil, []common.ContextStatements{{Context: "trace", Statements: []string{tt.statement}}}, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(nil, []common.ContextStatements{{Context: "span", Statements: []string{tt.statement}}}, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessTraces(context.Background(), td)
@@ -368,7 +368,7 @@ func Test_ProcessTraces_MixContext(t *testing.T) {
 					},
 				},
 				{
-					Context: "trace",
+					Context: "span",
 					Statements: []string{
 						`set(attributes["test"], "pass") where resource.attributes["test"] == "pass"`,
 					},
@@ -390,7 +390,7 @@ func Test_ProcessTraces_MixContext(t *testing.T) {
 					},
 				},
 				{
-					Context: "trace",
+					Context: "span",
 					Statements: []string{
 						`set(attributes["test"], "pass") where instrumentation_scope.attributes["test"] == "pass"`,
 					},
@@ -406,7 +406,7 @@ func Test_ProcessTraces_MixContext(t *testing.T) {
 			name: "order matters",
 			contextStatments: []common.ContextStatements{
 				{
-					Context: "trace",
+					Context: "span",
 					Statements: []string{
 						`set(attributes["test"], "pass") where instrumentation_scope.attributes["test"] == "pass"`,
 					},
@@ -432,7 +432,7 @@ func Test_ProcessTraces_MixContext(t *testing.T) {
 					},
 				},
 				{
-					Context: "trace",
+					Context: "span",
 					Statements: []string{
 						`set(attributes["test"], "pass") where instrumentation_scope.attributes["test"] == "pass"`,
 					},

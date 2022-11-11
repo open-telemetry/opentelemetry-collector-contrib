@@ -22,19 +22,19 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 type Processor struct {
 	contexts []consumer.Traces
 	// Deprecated.  Use contexts instead
-	statements []*ottl.Statement[ottltraces.TransformContext]
+	statements []*ottl.Statement[ottlspan.TransformContext]
 }
 
 func NewProcessor(statements []string, contextStatements []common.ContextStatements, settings component.TelemetrySettings) (*Processor, error) {
 	if len(statements) > 0 {
-		ottlp := ottltraces.NewParser(Functions(), settings)
+		ottlp := ottlspan.NewParser(Functions(), settings)
 		parsedStatements, err := ottlp.ParseStatements(statements)
 		if err != nil {
 			return nil, err
@@ -71,7 +71,7 @@ func (p *Processor) ProcessTraces(ctx context.Context, td ptrace.Traces) (ptrace
 				sspan := rspans.ScopeSpans().At(j)
 				spans := sspan.Spans()
 				for k := 0; k < spans.Len(); k++ {
-					tCtx := ottltraces.NewTransformContext(spans.At(k), sspan.Scope(), rspans.Resource())
+					tCtx := ottlspan.NewTransformContext(spans.At(k), sspan.Scope(), rspans.Resource())
 					for _, statement := range p.statements {
 						_, _, err := statement.Execute(ctx, tCtx)
 						if err != nil {

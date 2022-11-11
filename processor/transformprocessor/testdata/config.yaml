@@ -1,6 +1,6 @@
 transform:
   trace_statements:
-    - context: trace
+    - context: span
       statements:
         - set(name, "bear") where attributes["http.path"] == "/animal"
         - keep_keys(attributes, ["http.method", "http.path"])
@@ -40,7 +40,7 @@ transform/deprecated_format:
 
 transform/using_both_formats:
   trace_statements:
-    - context: trace
+    - context: span
       statements:
         - set(name, "bear") where attributes["http.path"] == "/animal"
         - keep_keys(attributes, ["http.method", "http.path"])
@@ -65,7 +65,7 @@ transform/bad_syntax_metric:
 
 transform/bad_syntax_trace:
   trace_statements:
-    - context: trace
+    - context: span
       statements:
         - set(name, "bear" where attributes["http.path"] == "/animal"
         - keep_keys(attributes, ["http.method", "http.path"])
@@ -86,7 +86,7 @@ transform/unknown_function_metric:
 
 transform/unknown_function_trace:
   trace_statements:
-    - context: trace
+    - context: span
       statements:
         - set(name, "bear") where attributes["http.path"] == "/animal"
         - not_a_function(attributes, ["http.method", "http.path"])
