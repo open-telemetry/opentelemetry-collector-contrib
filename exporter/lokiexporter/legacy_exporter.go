@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -337,14 +338,16 @@ func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Reso
 		b.WriteString(strconv.Itoa(int(lr.SeverityNumber())))
 		b.WriteRune(' ')
 	}
-	if _, ok := l.config.Labels.RecordAttributes["traceID"]; !ok && !lr.TraceID().IsEmpty() {
+	traceID := lr.TraceID()
+	if _, ok := l.config.Labels.RecordAttributes["traceID"]; !ok && !traceID.IsEmpty() {
 		b.WriteString("traceID=")
-		b.WriteString(lr.TraceID().HexString())
+		b.WriteString(hex.EncodeToString(traceID[:]))
 		b.WriteRune(' ')
 	}
-	if _, ok := l.config.Labels.RecordAttributes["spanID"]; !ok && !lr.SpanID().IsEmpty() {
+	spanID := lr.SpanID()
+	if _, ok := l.config.Labels.RecordAttributes["spanID"]; !ok && !spanID.IsEmpty() {
 		b.WriteString("spanID=")
-		b.WriteString(lr.SpanID().HexString())
+		b.WriteString(hex.EncodeToString(spanID[:]))
 		b.WriteRune(' ')
 	}
 
