@@ -40,7 +40,7 @@ Valid values for `context` are:
 
 | Signal            | Context Values                                 |
 |-------------------|------------------------------------------------|
-| trace_statements  | `resource`, `scope`, `trace`, and `spanevent`  |
+| trace_statements  | `resource`, `scope`, `span`, and `spanevent`   |
 | metric_statements | `resource`, `scope`, `metric`, and `datapoint` |
 | log_statements    | `resource`, `scope`, and `log`                 |
 
@@ -105,7 +105,7 @@ The contexts allow the OTTL to interact with the underlying telemetry data in it
 
 - [Resource Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlresource)
 - [Scope Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlscope)
-- [Traces Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottltraces)
+- [Span Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspan) <!-- markdown-link-check-disable-line -->
 - [SpanEvent Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspanevent)
 - [Metric Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlmetric)
 - [DataPoint Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottldatapoint) <!-- markdown-link-check-disable-line -->

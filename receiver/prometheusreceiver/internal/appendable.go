@@ -46,12 +46,17 @@ func NewAppendable(
 	useStartTimeMetric bool,
 	startTimeMetricRegex *regexp.Regexp,
 	receiverID component.ID,
-	externalLabels labels.Labels) storage.Appendable {
+	externalLabels labels.Labels) (storage.Appendable, error) {
 	var metricAdjuster MetricsAdjuster
 	if !useStartTimeMetric {
 		metricAdjuster = NewInitialPointAdjuster(set.Logger, gcInterval)
 	} else {
 		metricAdjuster = NewStartTimeMetricAdjuster(set.Logger, startTimeMetricRegex)
+	}
+
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiverID, Transport: transport, ReceiverCreateSettings: set})
+	if err != nil {
+		return nil, err
 	}
 
 	return &appendable{
@@ -61,8 +66,8 @@ func NewAppendable(
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: startTimeMetricRegex,
 		externalLabels:       externalLabels,
-		obsrecv:              obsreport.MustNewReceiver(obsreport.ReceiverSettings{ReceiverID: receiverID, Transport: transport, ReceiverCreateSettings: set}),
-	}
+		obsrecv:              obsrecv,
+	}, nil
 }
 
 func (o *appendable) Appender(ctx context.Context) storage.Appender {

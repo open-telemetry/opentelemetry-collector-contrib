@@ -62,24 +62,24 @@ var (
 )
 
 func TestTransactionCommitWithoutAdding(t *testing.T) {
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv(t))
 	assert.NoError(t, tr.Commit())
 }
 
 func TestTransactionRollbackDoesNothing(t *testing.T) {
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv(t))
 	assert.NoError(t, tr.Rollback())
 }
 
 func TestTransactionUpdateMetadataDoesNothing(t *testing.T) {
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv(t))
 	_, err := tr.UpdateMetadata(0, labels.New(), metadata.Metadata{})
 	assert.NoError(t, err)
 }
 
 func TestTransactionAppendNoTarget(t *testing.T) {
 	badLabels := labels.FromStrings(model.MetricNameLabel, "counter_test")
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv(t))
 	_, err := tr.Append(0, badLabels, time.Now().Unix()*1000, 1.0)
 	assert.Error(t, err)
 }
@@ -89,7 +89,7 @@ func TestTransactionAppendNoMetricName(t *testing.T) {
 		model.InstanceLabel: "localhost:8080",
 		model.JobLabel:      "test2",
 	})
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv(t))
 	_, err := tr.Append(0, jobNotFoundLb, time.Now().Unix()*1000, 1.0)
 	assert.ErrorIs(t, err, errMetricNameNotFound)
 
@@ -97,7 +97,7 @@ func TestTransactionAppendNoMetricName(t *testing.T) {
 }
 
 func TestTransactionAppendEmptyMetricName(t *testing.T) {
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv(t))
 	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test2",
@@ -108,7 +108,7 @@ func TestTransactionAppendEmptyMetricName(t *testing.T) {
 
 func TestTransactionAppendResource(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv(t))
 	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test",
@@ -137,7 +137,7 @@ func TestTransactionCommitErrorWhenAdjusterError(t *testing.T) {
 	})
 	sink := new(consumertest.MetricsSink)
 	adjusterErr := errors.New("adjuster error")
-	tr := newTransaction(scrapeCtx, &errorAdjuster{err: adjusterErr}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, &errorAdjuster{err: adjusterErr}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv(t))
 	_, err := tr.Append(0, goodLabels, time.Now().Unix()*1000, 1.0)
 	assert.NoError(t, err)
 	assert.ErrorIs(t, tr.Commit(), adjusterErr)
@@ -146,7 +146,7 @@ func TestTransactionCommitErrorWhenAdjusterError(t *testing.T) {
 // Ensure that we reject duplicate label keys. See https://github.com/open-telemetry/wg-prometheus/issues/44.
 func TestTransactionAppendDuplicateLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv(t))
 
 	dupLabels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -164,7 +164,7 @@ func TestTransactionAppendDuplicateLabels(t *testing.T) {
 
 func TestTransactionAppendHistogramNoLe(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv(t))
 
 	goodLabels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -178,7 +178,7 @@ func TestTransactionAppendHistogramNoLe(t *testing.T) {
 
 func TestTransactionAppendSummaryNoQuantile(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv(t))
 
 	goodLabels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -192,7 +192,7 @@ func TestTransactionAppendSummaryNoQuantile(t *testing.T) {
 
 func TestAppendExemplarWithNoMetricName(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv(t))
 
 	labels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -205,7 +205,7 @@ func TestAppendExemplarWithNoMetricName(t *testing.T) {
 
 func TestAppendExemplarWithEmptyMetricName(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv(t))
 
 	labels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -218,7 +218,7 @@ func TestAppendExemplarWithEmptyMetricName(t *testing.T) {
 
 func TestAppendExemplarWithDuplicateLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv(t))
 
 	labels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -234,7 +234,7 @@ func TestAppendExemplarWithDuplicateLabels(t *testing.T) {
 
 func TestAppendExemplarWithoutAddingMetric(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv(t))
 
 	labels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -248,7 +248,7 @@ func TestAppendExemplarWithoutAddingMetric(t *testing.T) {
 
 func TestAppendExemplarWithNoLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv(t))
 
 	_, err := tr.AppendExemplar(0, nil, exemplar.Exemplar{Value: 0})
 	assert.Equal(t, errNoJobInstance, err)
@@ -256,18 +256,20 @@ func TestAppendExemplarWithNoLabels(t *testing.T) {
 
 func TestAppendExemplarWithEmptyLabelArray(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv(t))
 
 	_, err := tr.AppendExemplar(0, []labels.Label{}, exemplar.Exemplar{Value: 0})
 	assert.Equal(t, errNoJobInstance, err)
 }
 
-func nopObsRecv() *obsreport.Receiver {
-	return obsreport.MustNewReceiver(obsreport.ReceiverSettings{
+func nopObsRecv(t *testing.T) *obsreport.Receiver {
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             component.NewID("prometheus"),
 		Transport:              transport,
 		ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings(),
 	})
+	require.NoError(t, err)
+	return obsrecv
 }
 
 func TestMetricBuilderCounters(t *testing.T) {
@@ -1366,7 +1368,7 @@ func (tt buildTestData) run(t *testing.T) {
 	st := ts
 	for i, page := range tt.inputs {
 		sink := new(consumertest.MetricsSink)
-		tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+		tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv(t))
 		for _, pt := range page.pts {
 			// set ts for testing
 			pt.t = st

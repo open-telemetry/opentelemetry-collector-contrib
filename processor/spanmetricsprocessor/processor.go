@@ -299,15 +299,15 @@ func (p *processorImp) buildMetrics() (pmetric.Metrics, error) {
 // collectLatencyMetrics collects the raw latency metrics, writing the data
 // into the given instrumentation library metrics.
 func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
+	mLatency := ilm.Metrics().AppendEmpty()
+	mLatency.SetName("latency")
+	mLatency.SetUnit("ms")
+	mLatency.SetEmptyHistogram().SetAggregationTemporality(p.config.GetAggregationTemporality())
+	dps := mLatency.Histogram().DataPoints()
+	dps.EnsureCapacity(len(p.histograms))
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	for key, hist := range p.histograms {
-		mLatency := ilm.Metrics().AppendEmpty()
-		mLatency.SetName("latency")
-		mLatency.SetUnit("ms")
-		mLatency.SetEmptyHistogram().SetAggregationTemporality(p.config.GetAggregationTemporality())
-
-		timestamp := pcommon.NewTimestampFromTime(time.Now())
-
-		dpLatency := mLatency.Histogram().DataPoints().AppendEmpty()
+		dpLatency := dps.AppendEmpty()
 		dpLatency.SetStartTimestamp(p.startTimestamp)
 		dpLatency.SetTimestamp(timestamp)
 		dpLatency.ExplicitBounds().FromRaw(p.latencyBounds)
@@ -330,15 +330,17 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 // collectCallMetrics collects the raw call count metrics, writing the data
 // into the given instrumentation library metrics.
 func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) error {
+	mCalls := ilm.Metrics().AppendEmpty()
+	mCalls.SetName("calls_total")
+	mCalls.SetEmptySum().SetIsMonotonic(true)
+	mCalls.Sum().SetAggregationTemporality(p.config.GetAggregationTemporality())
+	dps := mCalls.Sum().DataPoints()
+	dps.EnsureCapacity(len(p.histograms))
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	for key, hist := range p.histograms {
-		mCalls := ilm.Metrics().AppendEmpty()
-		mCalls.SetName("calls_total")
-		mCalls.SetEmptySum().SetIsMonotonic(true)
-		mCalls.Sum().SetAggregationTemporality(p.config.GetAggregationTemporality())
-
-		dpCalls := mCalls.Sum().DataPoints().AppendEmpty()
+		dpCalls := dps.AppendEmpty()
 		dpCalls.SetStartTimestamp(p.startTimestamp)
-		dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		dpCalls.SetTimestamp(timestamp)
 		dpCalls.SetIntValue(int64(hist.count))
 
 		dimensions, err := p.getDimensionsByMetricKey(key)

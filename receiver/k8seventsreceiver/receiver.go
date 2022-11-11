@@ -48,17 +48,22 @@ func newReceiver(
 ) (component.LogsReceiver, error) {
 	transport := "http"
 
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             config.ID(),
+		Transport:              transport,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &k8seventsReceiver{
 		settings:     set,
 		config:       config,
 		client:       client,
 		logsConsumer: consumer,
 		startTime:    time.Now(),
-		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
-			Transport:              transport,
-			ReceiverCreateSettings: set,
-		}),
+		obsrecv:      obsrecv,
 	}, nil
 }
 

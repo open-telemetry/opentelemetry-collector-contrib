@@ -16,6 +16,7 @@ package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelem
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"time"
@@ -192,10 +193,10 @@ func logToCWLog(resourceAttrs map[string]interface{}, log plog.LogRecord) (*clou
 		Flags:                  uint32(log.Flags()),
 	}
 	if traceID := log.TraceID(); !traceID.IsEmpty() {
-		body.TraceID = traceID.HexString()
+		body.TraceID = hex.EncodeToString(traceID[:])
 	}
 	if spanID := log.SpanID(); !spanID.IsEmpty() {
-		body.SpanID = spanID.HexString()
+		body.SpanID = hex.EncodeToString(spanID[:])
 	}
 	body.Attributes = attrsValue(log.Attributes())
 	body.Resource = resourceAttrs
