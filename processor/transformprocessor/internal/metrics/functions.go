@@ -15,7 +15,7 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
@@ -29,7 +29,7 @@ var registry = map[string]interface{}{
 
 func init() {
 	// Init metrics registry with default functions common to all signals
-	for k, v := range common.Functions[ottldatapoints.TransformContext]() {
+	for k, v := range common.Functions[ottldatapoint.TransformContext]() {
 		registry[k] = v
 	}
 }
