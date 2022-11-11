@@ -27,17 +27,17 @@ require (
 	github.com/prometheus/prometheus v0.38.0
 	github.com/shirou/gopsutil/v3 v3.22.10
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.64.0
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.64.0
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.64.0
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.64.0
-	go.opentelemetry.io/collector/extension/ballastextension v0.64.0
-	go.opentelemetry.io/collector/extension/zpagesextension v0.64.0
-	go.opentelemetry.io/collector/pdata v0.64.0
-	go.opentelemetry.io/collector/processor/batchprocessor v0.64.0
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.64.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.64.0
-	go.opentelemetry.io/collector/semconv v0.64.0
+	go.opentelemetry.io/collector v0.64.2-0.20221110222631-20e3aac00413
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.64.2-0.20221110222631-20e3aac00413
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.64.2-0.20221110222631-20e3aac00413
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.64.2-0.20221110222631-20e3aac00413
+	go.opentelemetry.io/collector/extension/ballastextension v0.64.2-0.20221110222631-20e3aac00413
+	go.opentelemetry.io/collector/extension/zpagesextension v0.64.2-0.20221110222631-20e3aac00413
+	go.opentelemetry.io/collector/pdata v0.64.2-0.20221110222631-20e3aac00413
+	go.opentelemetry.io/collector/processor/batchprocessor v0.64.2-0.20221110222631-20e3aac00413
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.64.2-0.20221110222631-20e3aac00413
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.64.2-0.20221110222631-20e3aac00413
+	go.opentelemetry.io/collector/semconv v0.64.2-0.20221110222631-20e3aac00413
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0

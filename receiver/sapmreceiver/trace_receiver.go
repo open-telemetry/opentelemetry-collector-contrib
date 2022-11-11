@@ -218,15 +218,19 @@ func newReceiver(
 	if config.TLSSetting != nil {
 		transport = "https"
 	}
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             config.ID(),
+		Transport:              transport,
+		ReceiverCreateSettings: params,
+	})
+	if err != nil {
+		return nil, err
+	}
 	return &sapmReceiver{
 		settings:        params.TelemetrySettings,
 		config:          config,
 		nextConsumer:    nextConsumer,
 		defaultResponse: defaultResponseBytes,
-		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
-			Transport:              transport,
-			ReceiverCreateSettings: params,
-		}),
+		obsrecv:         obsrecv,
 	}, nil
 }

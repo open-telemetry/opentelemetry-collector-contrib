@@ -44,17 +44,22 @@ func newReceiver(params component.ReceiverCreateSettings, config *Config, consum
 		return nil, err
 	}
 
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             config.ID(),
+		Transport:              transport,
+		ReceiverCreateSettings: params,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &k8sobjectsreceiver{
 		client:   client,
 		setting:  params,
 		consumer: consumer,
 		objects:  config.Objects,
-		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
-			Transport:              transport,
-			ReceiverCreateSettings: params,
-		}),
-		mu: sync.Mutex{},
+		obsrecv:  obsrecv,
+		mu:       sync.Mutex{},
 	}, nil
 }
 

@@ -75,17 +75,22 @@ func newReceiver(config *Config,
 		return nil, err
 	}
 
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             config.ID(),
+		Transport:              udppoller.Transport,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &xrayReceiver{
 		instanceID: config.ID(),
 		poller:     poller,
 		server:     srv,
 		settings:   set,
 		consumer:   consumer,
-		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
-			Transport:              udppoller.Transport,
-			ReceiverCreateSettings: set,
-		}),
+		obsrecv:    obsrecv,
 	}, nil
 }
 

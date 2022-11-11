@@ -24,13 +24,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
 )
 
 var _ consumer.Traces = &traceStatements{}
 
-type traceStatements []*ottl.Statement[ottltraces.TransformContext]
+type traceStatements []*ottl.Statement[ottlspan.TransformContext]
 
 func (t traceStatements) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{
@@ -45,7 +45,7 @@ func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 			sspans := rspans.ScopeSpans().At(j)
 			spans := sspans.Spans()
 			for k := 0; k < spans.Len(); k++ {
-				tCtx := ottltraces.NewTransformContext(spans.At(k), sspans.Scope(), rspans.Resource())
+				tCtx := ottlspan.NewTransformContext(spans.At(k), sspans.Scope(), rspans.Resource())
 				for _, statement := range t {
 					_, _, err := statement.Execute(ctx, tCtx)
 					if err != nil {
@@ -94,7 +94,7 @@ func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces
 
 type TraceParserCollection struct {
 	parserCollection
-	spanParser      ottl.Parser[ottltraces.TransformContext]
+	spanParser      ottl.Parser[ottlspan.TransformContext]
 	spanEventParser ottl.Parser[ottlspanevent.TransformContext]
 }
 
@@ -102,7 +102,7 @@ type TraceParserCollectionOption func(*TraceParserCollection) error
 
 func WithSpanParser(functions map[string]interface{}) TraceParserCollectionOption {
 	return func(tp *TraceParserCollection) error {
-		tp.spanParser = ottltraces.NewParser(functions, tp.settings)
+		tp.spanParser = ottlspan.NewParser(functions, tp.settings)
 		return nil
 	}
 }
@@ -135,7 +135,7 @@ func NewTraceParserCollection(settings component.TelemetrySettings, options ...T
 
 func (pc TraceParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Traces, error) {
 	switch contextStatements.Context {
-	case Trace:
+	case Span:
 		tStatements, err := pc.spanParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
