@@ -23,7 +23,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
@@ -60,8 +60,8 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.Traces.Statements) > 0 {
-		ottltracesp := ottltraces.NewParser(traces.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
-		_, err := ottltracesp.ParseStatements(c.Traces.Statements)
+		ottlspanp := ottlspan.NewParser(traces.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+		_, err := ottlspanp.ParseStatements(c.Traces.Statements)
 		if err != nil {
 			return err
 		}

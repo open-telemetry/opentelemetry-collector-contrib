@@ -15,11 +15,11 @@
 package traces // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 func Functions() map[string]interface{} {
 	// No trace-only functions yet.
-	return common.Functions[ottltraces.TransformContext]()
+	return common.Functions[ottlspan.TransformContext]()
 }
