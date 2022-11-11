@@ -44,7 +44,7 @@ func createDefaultConfig() component.ProcessorConfig {
 		ProcessorSettings:      config.NewProcessorSettings(component.NewID(typeStr)),
 		AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
 		DimensionsCacheSize:    defaultDimensionsCacheSize,
-		skipSanitizeLabel:      featuregate.GetRegistry().IsEnabled(dropSanitizationGate.GetID()),
+		skipSanitizeLabel:      featuregate.GetRegistry().IsEnabled(dropSanitizationGateID),
 	}
 }
 
