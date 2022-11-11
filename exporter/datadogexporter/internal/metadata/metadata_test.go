@@ -242,7 +242,7 @@ func TestMetadataFromAttributes(t *testing.T) {
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
 			registry := featuregate.NewRegistry()
-			registry.MustRegister(HostnamePreviewGate)
+			registry.MustRegisterID(HostnamePreviewFeatureGate, featuregate.StageBeta)
 			require.NoError(t, registry.Apply(map[string]bool{HostnamePreviewFeatureGate: testInstance.usePreviewHostnameLogic}))
 			metadata := metadataFromAttributesWithRegistry(registry, testInstance.attrs)
 			assert.Equal(t, testInstance.expected.InternalHostname, metadata.InternalHostname)
