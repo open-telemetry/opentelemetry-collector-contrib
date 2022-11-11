@@ -19,18 +19,29 @@ import (
 	"errors"
 	"sync"
 	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 var (
 	ErrTooManyItems = errors.New("too many items")
 )
 
-var _ Store = (*store)(nil)
+type Callback func(e *Edge)
 
-type store struct {
+type Key struct {
+	tid pcommon.TraceID
+	sid pcommon.SpanID
+}
+
+func NewKey(tid pcommon.TraceID, sid pcommon.SpanID) Key {
+	return Key{tid: tid, sid: sid}
+}
+
+type Store struct {
 	l   *list.List
 	mtx sync.Mutex
-	m   map[string]*list.Element
+	m   map[Key]*list.Element
 
 	onComplete Callback
 	onExpire   Callback
@@ -42,10 +53,10 @@ type store struct {
 // NewStore creates a Store to build service graphs. The store caches edges, each representing a
 // request between two services. Once an edge is complete its metrics can be collected. Edges that
 // have not found their pair are deleted after ttl time.
-func NewStore(ttl time.Duration, maxItems int, onComplete, onExpire Callback) Store {
-	s := &store{
+func NewStore(ttl time.Duration, maxItems int, onComplete, onExpire Callback) *Store {
+	s := &Store{
 		l: list.New(),
-		m: make(map[string]*list.Element),
+		m: make(map[Key]*list.Element),
 
 		onComplete: onComplete,
 		onExpire:   onExpire,
@@ -58,14 +69,14 @@ func NewStore(ttl time.Duration, maxItems int, onComplete, onExpire Callback) St
 }
 
 // len is only used for testing.
-func (s *store) len() int {
+func (s *Store) len() int {
 	return s.l.Len()
 }
 
 // UpsertEdge fetches an Edge from the store and updates it using the given callback. If the Edge
 // doesn't exist yet, it creates a new one with the default TTL.
 // If the Edge is complete after applying the callback, it's completed and removed.
-func (s *store) UpsertEdge(key string, update Callback) (isNew bool, err error) {
+func (s *Store) UpsertEdge(key Key, update Callback) (isNew bool, err error) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 
@@ -103,7 +114,7 @@ func (s *store) UpsertEdge(key string, update Callback) (isNew bool, err error) 
 }
 
 // Expire evicts all expired items in the store.
-func (s *store) Expire() {
+func (s *Store) Expire() {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 
@@ -116,7 +127,7 @@ func (s *store) Expire() {
 // Returns true if the head was evicted.
 //
 // Must be called holding lock.
-func (s *store) tryEvictHead() bool {
+func (s *Store) tryEvictHead() bool {
 	head := s.l.Front()
 	if head == nil {
 		return false // list is empty
