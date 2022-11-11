@@ -620,7 +620,7 @@ go.opentelemetry.io/collector v0.64.2-0.20221110222631-20e3aac00413 h1:pTl1k/nzE
 go.opentelemetry.io/collector v0.64.2-0.20221110222631-20e3aac00413/go.mod h1:RxdEKzwxTEhBAgzC4wzyJEwSFgjWU73CHnLjKUKQDyo=
 go.opentelemetry.io/collector/pdata v0.64.2-0.20221110222631-20e3aac00413 h1:Ql3wWb5euyeB8/N6FGVZR2paZCi5Hy9uQTbC1Zg++h0=
 go.opentelemetry.io/collector/pdata v0.64.2-0.20221110222631-20e3aac00413/go.mod h1:IzvXUGQml2mrnvdb8zIlEW3qQs9oFLdD2hLwJdZ+pek=
-go.opentelemetry.io/collector/processor/batchprocessor v0.64.1 h1:FUlCpmzm/g3YNINwn04WASP5yj0RyWOKKREhs9JoQtQ=
+go.opentelemetry.io/collector/processor/batchprocessor v0.64.2-0.20221110222631-20e3aac00413 h1:3Ag20quYMKGtw3Eg5bu9j72DZAlSzG4YX/GOeP2UzBs=
 go.opentelemetry.io/collector/semconv v0.64.2-0.20221110222631-20e3aac00413 h1:5ou7Ur/2u1Kbn2XVVMsCxZMZqBOjsHTvkMIx6VII53s=
 go.opentelemetry.io/collector/semconv v0.64.2-0.20221110222631-20e3aac00413/go.mod h1:5o9yhOa+ABt7g2E5JABDxGZ1PQPbtfxrKNbYn+LOTXU=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4 h1:aUEBEdCa6iamGzg6fuYxDA8ThxvOG240mAvWDU+XLio=

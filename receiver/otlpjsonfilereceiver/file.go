@@ -89,7 +89,8 @@ func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSett
 	cfg := configuration.(*Config)
 	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
 		ctx = obsrecv.StartLogsOp(ctx)
-		l, err := logsUnmarshaler.UnmarshalLogs(token)
+		var l plog.Logs
+		l, err = logsUnmarshaler.UnmarshalLogs(token)
 		if err != nil {
 			obsrecv.EndLogsOp(ctx, typeStr, 0, err)
 		} else {
@@ -117,7 +118,8 @@ func createMetricsReceiver(_ context.Context, settings component.ReceiverCreateS
 	cfg := configuration.(*Config)
 	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
 		ctx = obsrecv.StartMetricsOp(ctx)
-		m, err := metricsUnmarshaler.UnmarshalMetrics(token)
+		var m pmetric.Metrics
+		m, err = metricsUnmarshaler.UnmarshalMetrics(token)
 		if err != nil {
 			obsrecv.EndMetricsOp(ctx, typeStr, 0, err)
 		} else {
@@ -145,7 +147,8 @@ func createTracesReceiver(ctx context.Context, settings component.ReceiverCreate
 	cfg := configuration.(*Config)
 	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
 		ctx = obsrecv.StartTracesOp(ctx)
-		t, err := tracesUnmarshaler.UnmarshalTraces(token)
+		var t ptrace.Traces
+		t, err = tracesUnmarshaler.UnmarshalTraces(token)
 		if err != nil {
 			obsrecv.EndTracesOp(ctx, typeStr, 0, err)
 		} else {
