@@ -22,7 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
@@ -102,7 +102,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.Logs.Statements) > 0 {
-		ottllogsp := ottllogs.NewParser(logs.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+		ottllogsp := ottllog.NewParser(logs.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
 		_, err := ottllogsp.ParseStatements(c.Logs.Statements)
 		if err != nil {
 			return err
