@@ -32,33 +32,27 @@ import (
 )
 
 const (
-	emitMetricsWithResourceAttributesFeatureGateID    = "receiver.postgresql.emitMetricsWithResourceAttributes"
+	emitMetricsWithResourceAttributesFeatureGateID  = "receiver.postgresql.emitMetricsWithResourceAttributes"
+	emitMetricsWithoutResourceAttributesDescription = "Postgresql metrics are transitioning from being reported with identifying metric attributes " +
+		"to being identified via resource attributes in order to fit the OpenTelemetry specification. This feature " +
+		"gate controls emitting the old metrics without resource attributes. For more details, see: " +
+		"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations"
 	emitMetricsWithoutResourceAttributesFeatureGateID = "receiver.postgresql.emitMetricsWithoutResourceAttributes"
-)
-
-var (
-	emitMetricsWithoutResourceAttributes = featuregate.Gate{
-		ID:      emitMetricsWithoutResourceAttributesFeatureGateID,
-		Enabled: false,
-		Description: "Postgresql metrics are transitioning from being reported with identifying metric attributes " +
-			"to being identified via resource attributes in order to fit the OpenTelemetry specification. This feature " +
-			"gate controls emitting the old metrics without resource attributes. For more details, see: " +
-			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations",
-	}
-
-	emitMetricsWithResourceAttributes = featuregate.Gate{
-		ID:      emitMetricsWithResourceAttributesFeatureGateID,
-		Enabled: true,
-		Description: "Postgresql metrics are transitioning from being reported with identifying metric attributes " +
-			"to being identified via resource attributes in order to fit the OpenTelemetry specification. This feature " +
-			"gate controls emitting the new metrics with resource attributes. For more details, see: " +
-			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations",
-	}
+	emitMetricsWithResourceAttributesDescription      = "Postgresql metrics are transitioning from being reported with identifying metric attributes " +
+		"to being identified via resource attributes in order to fit the OpenTelemetry specification. This feature " +
+		"gate controls emitting the new metrics with resource attributes. For more details, see: " +
+		"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations"
 )
 
 func init() {
-	featuregate.GetRegistry().MustRegister(emitMetricsWithoutResourceAttributes)
-	featuregate.GetRegistry().MustRegister(emitMetricsWithResourceAttributes)
+	featuregate.GetRegistry().MustRegisterID(
+		emitMetricsWithoutResourceAttributesFeatureGateID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription(emitMetricsWithoutResourceAttributesDescription))
+	featuregate.GetRegistry().MustRegisterID(
+		emitMetricsWithResourceAttributesFeatureGateID,
+		featuregate.StageBeta,
+		featuregate.WithRegisterDescription(emitMetricsWithResourceAttributesDescription))
 }
 
 type postgreSQLScraper struct {
