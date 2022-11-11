@@ -74,7 +74,7 @@ func Test_newTraceExporter(t *testing.T) {
 			"newTracesExporter: success",
 			args{
 				config: &Config{
-					ExporterSettings: config.NewExporterSettings(config.NewComponentID("logicmonitor")),
+					ExporterSettings: config.NewExporterSettings(component.NewID("logicmonitor")),
 					APIToken:         map[string]string{"access_id": "testid", "access_key": "testkey"},
 				},
 				logger:    zap.NewNop(),
@@ -112,7 +112,7 @@ func Test_newTraceExporter_InvalidURL(t *testing.T) {
 			"newTracesExporter: success",
 			args{
 				config: &Config{
-					ExporterSettings: config.NewExporterSettings(config.NewComponentID("logicmonitor")),
+					ExporterSettings: config.NewExporterSettings(component.NewID("logicmonitor")),
 					APIToken:         map[string]string{"access_id": "testid", "access_key": "testkey"},
 				},
 				logger:    zap.NewNop(),

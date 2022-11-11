@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/logicmonitor/lm-data-sdk-go/api/logs"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -37,7 +37,7 @@ const (
 )
 
 // Create new logs exporter
-func newLogsExporter(cfg config.Exporter, logger *zap.Logger) (*logExporter, error) {
+func newLogsExporter(cfg component.ExporterConfig, logger *zap.Logger) (*logExporter, error) {
 	oCfg := cfg.(*Config)
 
 	isBatchEnabled := oCfg.LogBatchingEnabled

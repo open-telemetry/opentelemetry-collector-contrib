@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/logicmonitor/lm-data-sdk-go/api/logs"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -45,7 +46,7 @@ func Test_NewLogsExporter(t *testing.T) {
 			"NewLogExporter: success",
 			args{
 				config: &Config{
-					ExporterSettings:    config.NewExporterSettings(config.NewComponentID("logicmonitor")),
+					ExporterSettings:    config.NewExporterSettings(component.NewID("logicmonitor")),
 					URL:                 "https://test.logicmonitor.com/rest",
 					APIToken:            map[string]string{"access_id": "testid", "access_key": "testkey"},
 					LogBatchingEnabled:  true,
@@ -59,7 +60,7 @@ func Test_NewLogsExporter(t *testing.T) {
 			"NewLogExporter: fail",
 			args{
 				config: &Config{
-					ExporterSettings:    config.NewExporterSettings(config.NewComponentID("logicmonitor")),
+					ExporterSettings:    config.NewExporterSettings(component.NewID("logicmonitor")),
 					URL:                 "https://test.logicmonitor.com/rest",
 					APIToken:            map[string]string{"access_id": "testid", "access_key": "testkey"},
 					LogBatchingEnabled:  true,

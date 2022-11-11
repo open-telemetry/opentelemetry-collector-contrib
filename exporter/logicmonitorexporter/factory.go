@@ -40,9 +40,9 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.ExporterConfig {
 	return &Config{
-		ExporterSettings:    config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings:    config.NewExporterSettings(component.NewID(typeStr)),
 		LogBatchingEnabled:  DefaultLogBatchingEnabled,
 		LogBatchingInterval: DefaultLogBatchingInterval,
 	}
@@ -51,7 +51,7 @@ func createDefaultConfig() config.Exporter {
 func createTracesExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	c config.Exporter,
+	c component.ExporterConfig,
 ) (component.TracesExporter, error) {
 	cfg := c.(*Config)
 	oce, err := newTracesExporter(cfg, set)
@@ -69,7 +69,7 @@ func createTracesExporter(
 		exporterhelper.WithQueue(cfg.QueueSettings))
 }
 
-func createLogsExporter(ctx context.Context, set component.ExporterCreateSettings, cfg config.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(ctx context.Context, set component.ExporterCreateSettings, cfg component.ExporterConfig) (component.LogsExporter, error) {
 	oce, err := newLogsExporter(cfg, set.Logger)
 	if err != nil {
 		return nil, err
