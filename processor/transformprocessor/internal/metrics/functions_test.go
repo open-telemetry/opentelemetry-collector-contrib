@@ -20,12 +20,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 func Test_DefaultFunctions(t *testing.T) {
-	expected := common.Functions[ottldatapoints.TransformContext]()
+	expected := common.Functions[ottldatapoint.TransformContext]()
 	expected["convert_sum_to_gauge"] = convertSumToGauge
 	expected["convert_gauge_to_sum"] = convertGaugeToSum
 	expected["convert_summary_sum_val_to_sum"] = convertSummarySumValToSum
