@@ -31,7 +31,7 @@ func main() {
 		fmt.Printf("error getting components %v", err)
 		os.Exit(1)
 	}
-	err = cfgmetadatagen.CLI(c, sourceDir, outputDir)
+	err = cfgmetadatagen.GenerateFiles(c, sourceDir, outputDir)
 	if err != nil {
 		fmt.Printf("cfg metadata generator failed: %v\n", err)
 	}

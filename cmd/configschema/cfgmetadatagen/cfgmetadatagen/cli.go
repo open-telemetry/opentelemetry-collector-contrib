@@ -24,9 +24,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 )
 
-// CLI is the entry point for the cfgmetadatagen CLI. Component factories are
+// GenerateFiles is the entry point for the cfgmetadatagen GenerateFiles. Component factories are
 // passed in so it can be used by other distros.
-func CLI(factories component.Factories, sourceDir string, outputDir string) error {
+func GenerateFiles(factories component.Factories, sourceDir string, outputDir string) error {
 	dr := configschema.NewDirResolver(sourceDir, configschema.DefaultModule)
 	writer := newMetadataFileWriter(outputDir)
 	configs := configschema.GetAllCfgInfos(factories)
