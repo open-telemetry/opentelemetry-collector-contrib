@@ -147,7 +147,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 			sink := new(consumertest.TracesSink)
 			tsp, err := newTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.cfg, sink)
 			if err != nil {
-				t.Errorf("error when creating tracesamplerprocessor: %v", err)
+				t.Errorf("error when creating traceSamplerProcessor: %v", err)
 				return
 			}
 			for _, td := range genRandomTestData(tt.numBatches, tt.numTracesPerBatch, testSvcName, 1) {
@@ -208,7 +208,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 			sink := new(consumertest.TracesSink)
 			tsp, err := newTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.cfg, sink)
 			if err != nil {
-				t.Errorf("error when creating tracesamplerprocessor: %v", err)
+				t.Errorf("error when creating traceSamplerProcessor: %v", err)
 				return
 			}
 
@@ -431,23 +431,6 @@ func getSpanWithAttributes(key string, value pcommon.Value) ptrace.Span {
 func initSpanWithAttribute(key string, value pcommon.Value, dest ptrace.Span) {
 	dest.SetName("spanName")
 	value.CopyTo(dest.Attributes().PutEmpty(key))
-}
-
-// Test_hash ensures that the hash function supports different key lengths even if in
-// practice it is only expected to receive keys with length 16 (trace id length in OC proto).
-func Test_hash(t *testing.T) {
-	// Statistically a random selection of such small number of keys should not result in
-	// collisions, but, of course it is possible that they happen, a different random source
-	// should avoid that.
-	r := rand.New(rand.NewSource(1))
-	fullKey := idutils.UInt64ToTraceID(r.Uint64(), r.Uint64())
-	seen := make(map[uint32]bool)
-	for i := 1; i <= len(fullKey); i++ {
-		key := fullKey[:i]
-		hash := hash(key, 1)
-		require.False(t, seen[hash], "Unexpected duplicated hash")
-		seen[hash] = true
-	}
 }
 
 // genRandomTestData generates a slice of ptrace.Traces with the numBatches elements which one with
