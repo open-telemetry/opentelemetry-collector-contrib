@@ -266,6 +266,9 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 			Transport:              agentTransportCompact,
 			ReceiverCreateSettings: jr.settings,
 		})
+		if err != nil {
+			return err
+		}
 		h := &agentHandler{
 			nextConsumer: jr.nextConsumer,
 			obsrecv:      obsrecv,

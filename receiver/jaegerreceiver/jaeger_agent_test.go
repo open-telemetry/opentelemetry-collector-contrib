@@ -159,7 +159,8 @@ func TestJaegerHTTP(t *testing.T) {
 
 	// allow http server to start
 	assert.Eventually(t, func() bool {
-		conn, err := net.Dial("tcp", endpoint)
+		var conn net.Conn
+		conn, err = net.Dial("tcp", endpoint)
 		if err == nil && conn != nil {
 			conn.Close()
 			return true
