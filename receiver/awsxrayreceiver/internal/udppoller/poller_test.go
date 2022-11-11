@@ -26,6 +26,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/obsreport"
@@ -141,11 +142,12 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 	assert.Eventuallyf(t, func() bool {
 		select {
 		case seg, open := <-p.(*poller).segChan:
-			obsrecv := obsreport.MustNewReceiver(obsreport.ReceiverSettings{
+			obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 				ReceiverID:             receiverID,
 				Transport:              Transport,
 				ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
 			})
+			require.NoError(t, err)
 			ctx := obsrecv.StartMetricsOp(seg.Ctx)
 			obsrecv.EndTracesOp(ctx, awsxray.TypeStr, 1, nil)
 			return open && randString.String() == string(seg.Payload)

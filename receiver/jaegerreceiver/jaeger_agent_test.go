@@ -62,7 +62,8 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 		},
 	}
 	set := componenttest.NewNopReceiverCreateSettings()
-	jr := newJaegerReceiver(jaegerAgent, config, nil, set)
+	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
+	require.NoError(t, err)
 
 	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
 
@@ -90,7 +91,8 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 		},
 	}
 	set := componenttest.NewNopReceiverCreateSettings()
-	jr := newJaegerReceiver(jaegerAgent, config, nil, set)
+	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
+	require.NoError(t, err)
 
 	assert.NoError(t, jr.startAgent(componenttest.NewNopHost()), "Start failed")
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
@@ -111,7 +113,8 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 		},
 	}
 	set := componenttest.NewNopReceiverCreateSettings()
-	jr := newJaegerReceiver(jaegerAgent, config, nil, set)
+	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
+	require.NoError(t, err)
 
 	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
 
@@ -148,14 +151,16 @@ func TestJaegerHTTP(t *testing.T) {
 		AgentHTTPEndpoint: endpoint,
 	}
 	set := componenttest.NewNopReceiverCreateSettings()
-	jr := newJaegerReceiver(jaegerAgent, config, nil, set)
+	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
+	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	assert.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()), "Start failed")
 
 	// allow http server to start
 	assert.Eventually(t, func() bool {
-		conn, err := net.Dial("tcp", endpoint)
+		var conn net.Conn
+		conn, err = net.Dial("tcp", endpoint)
 		if err == nil && conn != nil {
 			conn.Close()
 			return true
@@ -176,10 +181,10 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configu
 	// 1. Create the Jaeger receiver aka "server"
 	sink := new(consumertest.TracesSink)
 	set := componenttest.NewNopReceiverCreateSettings()
-	jr := newJaegerReceiver(jaegerAgent, receiverConfig, sink, set)
+	jr, err := newJaegerReceiver(jaegerAgent, receiverConfig, sink, set)
+	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
-	var err error
 	for i := 0; i < 3; i++ {
 		err = jr.Start(context.Background(), componenttest.NewNopHost())
 		if err == nil {

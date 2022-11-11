@@ -57,15 +57,20 @@ func newCloudFoundryReceiver(
 		return nil, component.ErrNilNextConsumer
 	}
 
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             config.ID(),
+		Transport:              transport,
+		ReceiverCreateSettings: settings,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &cloudFoundryReceiver{
-		settings:     settings.TelemetrySettings,
-		config:       config,
-		nextConsumer: nextConsumer,
-		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
-			Transport:              transport,
-			ReceiverCreateSettings: settings,
-		}),
+		settings:          settings.TelemetrySettings,
+		config:            config,
+		nextConsumer:      nextConsumer,
+		obsrecv:           obsrecv,
 		receiverStartTime: time.Now(),
 	}, nil
 }

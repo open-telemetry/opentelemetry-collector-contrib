@@ -116,15 +116,20 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 // newReceiver creates the Kubernetes cluster receiver with the given configuration.
 func newReceiver(_ context.Context, set component.ReceiverCreateSettings, cfg component.ReceiverConfig, consumer consumer.Metrics) (component.MetricsReceiver, error) {
 	rCfg := cfg.(*Config)
+
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             cfg.ID(),
+		Transport:              transport,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
 	return &kubernetesReceiver{
 		resourceWatcher: newResourceWatcher(set.Logger, rCfg),
 		settings:        set,
 		config:          rCfg,
 		consumer:        consumer,
-		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             cfg.ID(),
-			Transport:              transport,
-			ReceiverCreateSettings: set,
-		}),
+		obsrecv:         obsrecv,
 	}, nil
 }
