@@ -1,0 +1,35 @@
+name: Test Kubernetes Attributes
+
+on:
+  pull_request:
+    paths: 
+    - 'processor/k8sattributesprocessor/**'
+    branches:
+      - main
+
+jobs:
+  kubernetes-test:
+    needs: k8s-publish-dev
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.4.0
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Test
+        run: "cd processor/k8sattributesprocessor; export IMAGE=otel/opentelemetry-collector-contrib:0.64.1; go test -v --tags=e2e .; cd ../../"
+

@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-emailservice
+  labels:
+    helm.sh/chart: opentelemetry-demo-0.11.1
+    app.kubernetes.io/name: example
+    app.kubernetes.io/instance: example
+    app.kubernetes.io/component: emailservice
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/part-of: opentelemetry-demo
+    app.kubernetes.io/managed-by: Helm
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: example
+      app.kubernetes.io/instance: example
+      app.kubernetes.io/component: emailservice
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: example
+        app.kubernetes.io/instance: example
+        app.kubernetes.io/component: emailservice
+    spec:
+      containers:
+        - name: emailservice
+          image: 'otel/demo:v1.0.0-emailservice'
+          imagePullPolicy: IfNotPresent
+          ports:
+          - containerPort: 8080
+            name: service
+          env:
+          - name: OTEL_SERVICE_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.labels['app.kubernetes.io/component']
+          - name: OTEL_K8S_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          - name: OTEL_K8S_NODE_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: spec.nodeName
+          - name: OTEL_K8S_POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: OTEL_RESOURCE_ATTRIBUTES
+            value: service.name=$(OTEL_SERVICE_NAME),k8s.namespace.name=$(OTEL_K8S_NAMESPACE),k8s.node.name=$(OTEL_K8S_NODE_NAME),k8s.pod.name=$(OTEL_K8S_POD_NAME)
+          - name: APP_ENV
+            value: production
+          - name: PORT
+            value: "8080"
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://example-otelcol:4317
+          - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+            value: http://example-otelcol:4318/v1/traces
+          - name: EMAIL_SERVICE_PORT
+            value: "8080"

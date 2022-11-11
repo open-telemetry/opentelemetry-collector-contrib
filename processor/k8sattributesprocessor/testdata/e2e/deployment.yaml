@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-opentelemetry-collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: standalone-collector
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        component: standalone-collector
+    spec:
+      serviceAccountName: example-opentelemetry-collector
+      containers:
+        - name: opentelemetry-collector
+          command:
+            - /otelcol-contrib
+            - --config=/conf/relay.yaml
+          image: "otel/opentelemetry-collector-contrib:0.64.1"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: jaeger-compact
+              containerPort: 6831
+              protocol: UDP
+            - name: jaeger-grpc
+              containerPort: 14250
+              protocol: TCP
+            - name: jaeger-thrift
+              containerPort: 14268
+              protocol: TCP
+            - name: otlp
+              containerPort: 4317
+              protocol: TCP
+            - name: otlp-http
+              containerPort: 4318
+              protocol: TCP
+            - name: zipkin
+              containerPort: 9411
+              protocol: TCP
+          env:
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 13133
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 13133
+          volumeMounts:
+            - mountPath: /conf
+              name: opentelemetry-collector-configmap
+      volumes:
+        - name: opentelemetry-collector-configmap
+          configMap:
+            name: example-opentelemetry-collector
+            items:
+              - key: relay
+                path: relay.yaml
+      hostNetwork: false

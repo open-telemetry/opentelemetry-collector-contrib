@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: example-opentelemetry-collector
+data:
+  relay: |
+    exporters:
+      logging: {}
+    extensions:
+      health_check: {}
+      memory_ballast: {}
+    processors:
+      batch: {}
+      k8sattributes:
+        passthrough: false
+        pod_association:
+        - sources:
+          - from: resource_attribute
+            name: k8s.pod.ip
+        - sources:
+          - from: resource_attribute
+            name: k8s.pod.uid
+        - sources:
+          - from: connection
+        extract:
+          metadata: 
+            - "k8s.namespace.name"
+            - "k8s.deployment.name"
+            - "k8s.statefulset.name"
+            - "k8s.daemonset.name"
+            - "k8s.cronjob.name"
+            - "k8s.job.name"
+      memory_limiter:
+        check_interval: 5s
+        limit_mib: 3276
+        spike_limit_mib: 1024
+    receivers:
+      jaeger:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:14250
+          thrift_compact:
+            endpoint: 0.0.0.0:6831
+          thrift_http:
+            endpoint: 0.0.0.0:14268
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+      zipkin:
+        endpoint: 0.0.0.0:9411
+    service:
+      extensions:
+      - health_check
+      - memory_ballast
+      pipelines:
+        traces:
+          exporters:
+          - logging
+          processors:
+          - k8sattributes
+          - memory_limiter
+          - batch
+          receivers:
+          - otlp
+          - jaeger
+          - zipkin
+      telemetry:
+        metrics:
+          address: 0.0.0.0:8888
