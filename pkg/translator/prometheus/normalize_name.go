@@ -82,15 +82,15 @@ var perUnitMap = map[string]string{
 	"y":  "year",
 }
 
-var normalizeNameGate = featuregate.Gate{
-	ID:          "pkg.translator.prometheus.NormalizeName",
-	Enabled:     false,
-	Description: "Controls whether metrics names are automatically normalized to follow Prometheus naming convention",
-}
+const normalizeNameGateID = "pkg.translator.prometheus.NormalizeName"
 
 func init() {
 	// Register the feature gates
-	featuregate.GetRegistry().MustRegister(normalizeNameGate)
+	featuregate.GetRegistry().MustRegisterID(
+		normalizeNameGateID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("Controls whether metrics names are automatically normalized to follow Prometheus naming convention"),
+	)
 }
 
 // Build a Prometheus-compliant metric name for the specified metric
@@ -105,7 +105,7 @@ func BuildPromCompliantName(metric pmetric.Metric, namespace string) string {
 	var metricName string
 
 	// Full normalization following standard Prometheus naming conventions
-	if featuregate.GetRegistry().IsEnabled(normalizeNameGate.GetID()) {
+	if featuregate.GetRegistry().IsEnabled(normalizeNameGateID) {
 		return normalizeName(metric, namespace)
 	}
 
