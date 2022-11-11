@@ -93,7 +93,7 @@
           "evictions" : 0
         },
         "fielddata" : {
-          "memory_size_in_bytes" : 0,
+          "memory_size_in_bytes" : 3,
           "evictions" : 0
         },
         "completion" : {
@@ -221,7 +221,7 @@
           "evictions" : 0
         },
         "fielddata" : {
-          "memory_size_in_bytes" : 0,
+          "memory_size_in_bytes" : 3,
           "evictions" : 0
         },
         "completion" : {
@@ -353,7 +353,7 @@
             "evictions" : 0
           },
           "fielddata" : {
-            "memory_size_in_bytes" : 0,
+            "memory_size_in_bytes" : 3,
             "evictions" : 0
           },
           "completion" : {
@@ -481,7 +481,7 @@
             "evictions" : 0
           },
           "fielddata" : {
-            "memory_size_in_bytes" : 0,
+            "memory_size_in_bytes" : 3,
             "evictions" : 0
           },
           "completion" : {
