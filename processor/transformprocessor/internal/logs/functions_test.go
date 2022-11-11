@@ -20,12 +20,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 func Test_DefaultFunctions(t *testing.T) {
-	expected := common.Functions[ottllogs.TransformContext]()
+	expected := common.Functions[ottllog.TransformContext]()
 	actual := Functions()
 	require.Equal(t, len(expected), len(actual))
 	for k := range actual {
