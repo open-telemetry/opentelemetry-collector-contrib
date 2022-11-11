@@ -35,11 +35,11 @@ const (
 )
 
 func init() {
-	featuregate.GetRegistry().MustRegister(featuregate.Gate{
-		ID:          pdataExporterFeatureGate,
-		Description: "When enabled, the googlecloud exporter translates pdata directly to google cloud monitoring's types, rather than first translating to opencensus.",
-		Enabled:     true,
-	})
+	featuregate.GetRegistry().MustRegisterID(
+		pdataExporterFeatureGate,
+		featuregate.StageBeta,
+		featuregate.WithRegisterDescription("When enabled, the googlecloud exporter translates pdata directly to google cloud monitoring's types, rather than first translating to opencensus."),
+	)
 }
 
 // NewFactory creates a factory for the googlecloud exporter

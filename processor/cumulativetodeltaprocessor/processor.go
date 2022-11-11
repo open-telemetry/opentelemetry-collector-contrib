@@ -28,14 +28,8 @@ import (
 
 const enableHistogramSupportGateID = "processor.cumulativetodeltaprocessor.EnableHistogramSupport"
 
-var enableHistogramSupportGate = featuregate.Gate{
-	ID:          enableHistogramSupportGateID,
-	Enabled:     true,
-	Description: "Enables histogram conversion support",
-}
-
 func init() {
-	featuregate.GetRegistry().MustRegister(enableHistogramSupportGate)
+	featuregate.GetRegistry().MustRegisterID(enableHistogramSupportGateID, featuregate.StageBeta, featuregate.WithRegisterDescription("Enables histogram conversion support"))
 }
 
 type cumulativeToDeltaProcessor struct {

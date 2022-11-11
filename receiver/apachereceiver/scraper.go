@@ -38,26 +38,19 @@ const (
 	readmeURL                         = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/apachereceiver/README.md"
 	EmitServerNameAsResourceAttribute = "receiver.apache.emitServerNameAsResourceAttribute"
 	EmitPortAsResourceAttribute       = "receiver.apache.emitPortAsResourceAttribute"
-	featureGateWarning                = "Feature gate %s is not enabled. Please see the README.md file of apache receiver for more information."
-)
-
-var (
-	emitServerNameAsResourceAttribute = featuregate.Gate{
-		ID:      EmitServerNameAsResourceAttribute,
-		Enabled: false,
-		Description: "When enabled, the name of the server will be sent as an apache.server.name resource attribute " +
-			"instead of a metric-level server_name attribute.",
-	}
-	emitPortAsResourceAttribute = featuregate.Gate{
-		ID:          EmitPortAsResourceAttribute,
-		Enabled:     false,
-		Description: "When enabled, the port of the server will be sent as an apache.server.name resource attribute.",
-	}
 )
 
 func init() {
-	featuregate.GetRegistry().MustRegister(emitServerNameAsResourceAttribute)
-	featuregate.GetRegistry().MustRegister(emitPortAsResourceAttribute)
+	featuregate.GetRegistry().MustRegisterID(
+		EmitServerNameAsResourceAttribute,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, the name of the server will be sent as an apache.server.name resource attribute instead of a metric-level server_name attribute."),
+	)
+	featuregate.GetRegistry().MustRegisterID(
+		EmitPortAsResourceAttribute,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, the port of the server will be sent as an apache.server.name resource attribute."),
+	)
 }
 
 type apacheScraper struct {

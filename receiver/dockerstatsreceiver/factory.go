@@ -33,11 +33,11 @@ const (
 )
 
 func init() {
-	featuregate.GetRegistry().MustRegister(featuregate.Gate{
-		ID:          useScraperV2ID,
-		Description: "When enabled, the receiver will use the function ScrapeV2 to collect metrics. This allows each metric to be turned off/on via config. The new metrics are slightly different to the legacy implementation.",
-		Enabled:     false,
-	})
+	featuregate.GetRegistry().MustRegisterID(
+		useScraperV2ID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, the receiver will use the function ScrapeV2 to collect metrics. This allows each metric to be turned off/on via config. The new metrics are slightly different to the legacy implementation."),
+	)
 }
 
 func NewFactory() component.ReceiverFactory {
